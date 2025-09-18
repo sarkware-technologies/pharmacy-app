@@ -1,0 +1,13 @@
+import React from 'react';
+import Svg, { Path } from 'react-native-svg';
+import { colors } from '../../styles/colors';
+
+const Error = ({ width = 20, height = 20, color = colors.primary }) => {
+    return (
+        <Svg xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox="0 0 20 20">	
+            <Path fill="#d33" d="M13.728 1H6.272L1 6.272v7.456L6.272 19h7.456L19 13.728V6.272zM11 15H9v-2h2zm0-4H9V5h2z"/>
+        </Svg>
+    );
+};
+
+export default Error;

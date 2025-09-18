@@ -1,0 +1,6 @@
+node_modules
+build
+.vscode
+.bundle
+__tests__
+package-lock.json
