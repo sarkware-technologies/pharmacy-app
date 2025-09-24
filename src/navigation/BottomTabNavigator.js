@@ -220,10 +220,7 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
     paddingTop: 8,
-    // paddingBottom is now dynamic based on insets
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },

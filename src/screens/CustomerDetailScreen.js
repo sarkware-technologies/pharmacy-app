@@ -16,6 +16,14 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../styles/colors';
 
+import ChevronLeft from '../components/icons/ChevronLeft';
+import Details from '../components/icons/Details';
+import Linkage from '../components/icons/Linkage';
+import EyeOpen from '../components/icons/EyeOpen';
+import Download from '../components/icons/Download';
+
+import { Link } from '@react-navigation/native';
+
 const { width } = Dimensions.get('window');
 
 const CustomerDetailScreen = ({ navigation, route }) => {
@@ -160,19 +168,15 @@ const CustomerDetailScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View style={styles.container}>
-        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-        
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+      <View style={styles.container}>        
         {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="chevron-back" size={28} color="#333" />
+          <ChevronLeft color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Dr. Sudhakar Joshi</Text>
-        <TouchableOpacity>
-          <MaterialIcons name="tune" size={24} color="#333" />
-        </TouchableOpacity>
       </View>
 
       {/* Tabs */}
@@ -181,7 +185,7 @@ const CustomerDetailScreen = ({ navigation, route }) => {
           style={[styles.tab, activeTab === 'details' && styles.activeTab]}
           onPress={() => setActiveTab('details')}
         >
-          <Icon name="document-text-outline" size={20} color={activeTab === 'details' ? colors.primary : '#999'} />
+          <Details color={activeTab === 'details' ? colors.primary : '#999'} />
           <Text style={[styles.tabText, activeTab === 'details' && styles.activeTabText]}>
             Details
           </Text>
@@ -190,7 +194,7 @@ const CustomerDetailScreen = ({ navigation, route }) => {
           style={[styles.tab, activeTab === 'linkaged' && styles.activeTab]}
           onPress={() => setActiveTab('linkaged')}
         >
-          <Icon name="link-outline" size={20} color={activeTab === 'linkaged' ? colors.primary : '#999'} />
+          <Linkage color={activeTab === 'linkaged' ? colors.primary : '#999'} />
           <Text style={[styles.tabText, activeTab === 'linkaged' && styles.activeTabText]}>
             Linkaged
           </Text>
@@ -212,8 +216,11 @@ const CustomerDetailScreen = ({ navigation, route }) => {
           <AnimatedSection delay={100}>
             <Text style={styles.sectionTitle}>Details</Text>
             <View style={styles.card}>
-              <InfoRow label="Code" value={customerData.code} />
-              <InfoRow label="Mobile Number" value={customerData.mobileNumber} />
+              <View style={{ display: 'flex', flexDirection: 'row', gap: 120 }}>
+                <InfoRow label="Code" value={customerData.code} />
+                <InfoRow label="Mobile Number" value={customerData.mobileNumber} />
+              </View>
+              
               <InfoRow label="Email Address" value={customerData.email} />
             </View>
           </AnimatedSection>
@@ -222,20 +229,25 @@ const CustomerDetailScreen = ({ navigation, route }) => {
           <AnimatedSection delay={200}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Address Details</Text>
-              <TouchableOpacity
-                onPress={() => openDocument(customerData.documents.electricityBill)}
-                style={styles.linkButton}
-              >
+              <View style={{...styles.fileLinkGroup, marginTop: 4}}>
                 <Text style={styles.linkText}>{customerData.documents.electricityBill}</Text>
-                <View style={styles.iconGroup}>
-                  <Icon name="eye-outline" size={20} color={colors.primary} />
-                  <Icon name="download-outline" size={20} color={colors.primary} />
-                </View>
-              </TouchableOpacity>
+                <View style={{...styles.iconGroup, width: 60, justifyContent: 'space-around'}}>
+                  <TouchableOpacity
+                    onPress={() => openDocument(customerData.documents.electricityBill)}
+                    style={styles.linkButton}
+                  ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                  <Text style={{ color: '#777' }}>|</Text>
+                  <TouchableOpacity
+                    onPress={() => openDocument(customerData.documents.electricityBill)}
+                    style={styles.linkButton}
+                  ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                  </View>
+              </View>
+              
             </View>
             <View style={styles.card}>
               <InfoRow label="Address" value={customerData.address} />
-              <View style={styles.rowContainer}>
+              <View style={{...styles.rowContainer, marginTop: 5, paddingBottom: 10}}>
                 <View style={[styles.halfRow, { marginRight: 8 }]}>
                   <Text style={styles.infoLabel}>Pincode</Text>
                   <Text style={styles.infoValue}>{customerData.pincode}</Text>
@@ -266,21 +278,24 @@ const CustomerDetailScreen = ({ navigation, route }) => {
                   <Text style={styles.infoValue}>{customerData.registrationExpiry}</Text>
                 </View>
               </View>
-              <TouchableOpacity 
-                style={styles.uploadedFile}
-                onPress={() => openDocument(customerData.documents.registrationCertificate)}
-              >
+              
                 <Text style={styles.uploadedFileLabel}>Uploaded file</Text>
                 <View style={styles.fileRow}>
                   <Text style={styles.fileName}>{customerData.documents.registrationCertificate}</Text>
                   <View style={styles.iconGroup}>
-                    <Icon name="eye-outline" size={20} color={colors.primary} />
-                    <Icon name="download-outline" size={20} color={colors.primary} />
+                    <TouchableOpacity 
+                      style={styles.uploadedFile}
+                      onPress={() => openDocument(customerData.documents.registrationCertificate)}
+                    ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                    <Text style={{ color: '#777' }}>|</Text>
+                    <TouchableOpacity 
+                      style={styles.uploadedFile}
+                      onPress={() => openDocument(customerData.documents.registrationCertificate)}
+                    ><Download width={16} color={colors.primary} /></TouchableOpacity>
                   </View>
                 </View>
-              </TouchableOpacity>
               
-              <View style={[styles.licenseRow, { marginTop: 16 }]}>
+              <View style={[styles.licenseRow, { marginTop: 10 }]}>
                 <View style={styles.licenseInfo}>
                   <Text style={styles.infoLabel}>Practice License</Text>
                   <Text style={styles.infoValue}>{customerData.practiceNumber}</Text>
@@ -290,19 +305,22 @@ const CustomerDetailScreen = ({ navigation, route }) => {
                   <Text style={styles.infoValue}>{customerData.practiceExpiry}</Text>
                 </View>
               </View>
-              <TouchableOpacity 
-                style={styles.uploadedFile}
-                onPress={() => openDocument(customerData.documents.practiceCertificate)}
-              >
+              
                 <Text style={styles.uploadedFileLabel}>Uploaded file</Text>
-                <View style={styles.fileRow}>
+                <View style={{...styles.fileRow, marginBottom: 8}}>
                   <Text style={styles.fileName}>{customerData.documents.practiceCertificate}</Text>
                   <View style={styles.iconGroup}>
-                    <Icon name="eye-outline" size={20} color={colors.primary} />
-                    <Icon name="download-outline" size={20} color={colors.primary} />
+                    <TouchableOpacity 
+                      style={styles.uploadedFile}
+                      onPress={() => openDocument(customerData.documents.practiceCertificate)}
+                    ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                    <Text style={{ color: '#777' }}>|</Text>
+                    <TouchableOpacity 
+                      style={styles.uploadedFile}
+                      onPress={() => openDocument(customerData.documents.practiceCertificate)}
+                    ><Download width={16} color={colors.primary} /></TouchableOpacity>
                   </View>
                 </View>
-              </TouchableOpacity>
             </View>
           </AnimatedSection>
 
@@ -316,8 +334,13 @@ const CustomerDetailScreen = ({ navigation, route }) => {
                   <View style={styles.valueWithIcons}>
                     <Text style={styles.infoValue}>{customerData.pan}</Text>
                     <View style={styles.iconGroup}>
-                      <Icon name="eye-outline" size={20} color={colors.primary} />
-                      <Icon name="download-outline" size={20} color={colors.primary} />
+                      <TouchableOpacity 
+                        style={styles.uploadedFile}
+                      ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                      <Text style={{ color: '#777' }}>|</Text>
+                      <TouchableOpacity 
+                        style={styles.uploadedFile}                        
+                      ><Download width={16} color={colors.primary} /></TouchableOpacity>
                     </View>
                   </View>
                 </View>
@@ -326,8 +349,13 @@ const CustomerDetailScreen = ({ navigation, route }) => {
                   <View style={styles.valueWithIcons}>
                     <Text style={styles.infoValue}>{customerData.gst}</Text>
                     <View style={styles.iconGroup}>
-                      <Icon name="eye-outline" size={20} color={colors.primary} />
-                      <Icon name="download-outline" size={20} color={colors.primary} />
+                      <TouchableOpacity 
+                        style={styles.uploadedFile}
+                      ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                      <Text style={{ color: '#777' }}>|</Text>
+                      <TouchableOpacity 
+                        style={styles.uploadedFile}                        
+                      ><Download width={16} color={colors.primary} /></TouchableOpacity>
                     </View>
                   </View>
                 </View>
@@ -338,17 +366,19 @@ const CustomerDetailScreen = ({ navigation, route }) => {
           {/* Image */}
           <AnimatedSection delay={500}>
             <Text style={styles.sectionTitle}>Image</Text>
-            <View style={styles.card}>
-              <TouchableOpacity 
-                style={styles.imageRow}
-                onPress={() => openDocument(customerData.documents.image)}
-              >
+            <View style={{...styles.card, borderBottomWidth: 0, paddingBottom: 20}}>
+              <View style={styles.valueWithIcons}>
                 <Text style={styles.imageName}>{customerData.documents.image}</Text>
-                <View style={styles.iconGroup}>
-                  <Icon name="eye-outline" size={20} color={colors.primary} />
-                  <Icon name="download-outline" size={20} color={colors.primary} />
-                </View>
-              </TouchableOpacity>
+                <View style={{...styles.iconGroup}}>
+                  <TouchableOpacity 
+                    style={styles.uploadedFile}
+                  ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                  <Text style={{ color: '#777' }}>|</Text>              
+                  <TouchableOpacity 
+                        style={{...styles.uploadedFile}}                        
+                      ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                      </View>
+              </View>
             </View>
           </AnimatedSection>
         </Animated.View>
@@ -373,22 +403,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#fff'
+    backgroundColor: '#fff',
+    zIndex: 999
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
+    marginRight: 'auto',
+    marginLeft: 15
   },
   tabContainer: {
+    display: 'flex',
     flexDirection: 'row',
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
     paddingVertical: 8,
     borderBottomWidth: 1,
+    alignItems: 'flex-end',
     borderBottomColor: '#E0E0E0',
+    marginTop: -10,
+    zIndex: 999
   },
   tab: {
     flex: 1,
@@ -397,6 +434,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     borderBottomWidth: 2,
+    marginBottom: -8,
     borderBottomColor: 'transparent',
   },
   activeTab: {
@@ -413,7 +451,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
+    paddingVertical: 0,
+    paddingHorizontal: 20,
+    backgroundColor: '#fff'
   },
   sectionTitle: {
     fontSize: 16,
@@ -426,34 +466,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 12,
+    marginBottom: 2,
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#90909033',
+    paddingBottom: 10
   },
   infoRow: {
-    marginBottom: 16,
+    marginBottom: 10
   },
   infoContent: {
     flex: 1,
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#999',
     marginBottom: 4,
   },
   infoValue: {
     fontSize: 14,
-    color: '#333',
+    color: '#777777',
     fontWeight: '500',
   },
   infoIcon: {
@@ -472,32 +506,35 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 12,
-    color: colors.primary,
-    marginRight: 8,
+    color: '#777777',
+    marginRight: 0,
+  },
+  fileLinkGroup: {
+    flexDirection: 'row',
+    rowGap: 12,
+    alignItems: 'center'
   },
   iconGroup: {
     flexDirection: 'row',
-    gap: 12,
+    rowGap: 12,
+    marginRight: 'auto'
   },
   licenseRow: {
     flexDirection: 'row',
   },
   licenseInfo: {
-    flex: 1,
+    width: '50%'
   },
   licenseExpiry: {
-    marginLeft: 16,
+    marginLeft: 2,
   },
   uploadedFile: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    paddingHorizontal: 10,
   },
   uploadedFileLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#999',
-    marginBottom: 4,
+    marginTop: 10
   },
   fileRow: {
     flexDirection: 'row',
@@ -505,9 +542,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   fileName: {
-    fontSize: 13,
-    color: colors.primary,
-    flex: 1,
+    fontSize: 14,
+    width: '50%',
+    color: '#777777',
   },
   otherDetailRow: {
     flexDirection: 'row',
@@ -527,8 +564,7 @@ const styles = StyleSheet.create({
   },
   imageName: {
     fontSize: 14,
-    color: colors.primary,
-    flex: 1,
+    color: '#777777',
   },
   modalOverlay: {
     flex: 1,

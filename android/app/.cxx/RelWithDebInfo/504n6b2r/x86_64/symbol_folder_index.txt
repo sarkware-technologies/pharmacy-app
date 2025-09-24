@@ -1,0 +1,1 @@
+/Users/saravanakumar/Workspace/pharmacy-app/android/app/build/intermediates/cxx/RelWithDebInfo/504n6b2r/obj/x86_64

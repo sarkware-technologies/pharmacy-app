@@ -8,7 +8,8 @@ import {
     Dimensions,
     ScrollView,
     Keyboard,
-    Platform
+    Platform,
+    KeyboardAvoidingView
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import CustomInput from '../components/CustomInput';

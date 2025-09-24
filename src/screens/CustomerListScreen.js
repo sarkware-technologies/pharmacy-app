@@ -15,8 +15,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { colors } from '../styles/colors';
 
 import Menu from '../components/icons/Menu';
@@ -181,7 +179,7 @@ const CustomerListScreen = ({ navigation }) => {
               <Text style={styles.divider}>|</Text>
               <Text style={styles.infoText}>{item.type}</Text>
               <Text style={styles.divider}>|</Text>
-              <Text style={styles.infoText}>{item.category}</Text>
+              <Text style={{...styles.infoText, marginRight: 5}}>{item.category}</Text>
               {item.category === 'Hospital' && (
                 <AlertFilled color="#999" style={styles.infoIcon} />
               )}
@@ -189,7 +187,7 @@ const CustomerListScreen = ({ navigation }) => {
 
             <View style={styles.contactRow}>
               <Phone color="#999" />
-              <Text style={styles.contactText}>{item.phone}</Text>
+              <Text style={{...styles.contactText, marginRight: 15}}>{item.phone}</Text>
               <Email color="#999" style={styles.mailIcon} />
               <Text style={styles.contactText}>{item.email}</Text>
             </View>
@@ -528,7 +526,7 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 10,
     borderRadius: 8,
   },
   statusText: {
