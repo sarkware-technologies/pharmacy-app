@@ -29,16 +29,23 @@ import Locked from '../components/icons/Locked';
 import UnLocked from '../components/icons/UnLocked';
 import AlertFilled from '../components/icons/AlertFilled';
 import Bell from '../components/icons/Bell';
+import FilterModal from '../components/FilterModal';
+import CloseCircle from '../components/icons/CloseCircle';
+import EyeOpen from '../components/icons/EyeOpen';
+import Document from '../components/icons/Document';
 
 import { authAPI } from '../api/auth';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const CustomerListScreen = ({ navigation }) => {
+  
   const [activeTab, setActiveTab] = useState('all');
   const [searchText, setSearchText] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [downloadModalVisible, setDownloadModalVisible] = useState(false);
+  const [documentModalVisible, setDocumentModalVisible] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedFilters, setSelectedFilters] = useState({
     category: ['All', 'Pharmacists in hospitals', 'Hospitals', 'Doctors'],
     subCategory: [],
@@ -136,6 +143,185 @@ const CustomerListScreen = ({ navigation }) => {
     }
   };
 
+  const handleApplyFilters = (filters) => {
+    console.log('Applied filters:', filters);
+    // Apply your filtering logic here
+    // Update your customer list based on selected filters
+  };
+
+  // Document Download Modal for individual customer
+  const DocumentModal = () => {
+    const slideAnim = useRef(new Animated.Value(height * 0.5)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+      if (documentModalVisible) {
+        slideAnim.setValue(height * 0.5);
+        fadeAnim.setValue(0);
+        Animated.parallel([
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            friction: 8,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    }, [documentModalVisible]);
+
+    const handleClose = () => {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: height * 0.5,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setDocumentModalVisible(false);
+        setSelectedCustomer(null);
+      });
+    };
+
+    const documents = [
+      { name: 'Registration Certificate', icon: 'document-attach-outline' },
+      { name: 'Practice License', icon: 'document-outline' },
+      { name: 'Address Proof', icon: 'location-outline' },
+      { name: 'Image', icon: 'image-outline' },
+    ];
+
+    return (
+      <Modal
+        visible={documentModalVisible}
+        transparent
+        animationType="none"
+        onRequestClose={handleClose}
+      >
+        <Animated.View 
+          style={[
+            styles.documentModalOverlay,
+            {
+              opacity: fadeAnim,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.documentOverlayTouch}
+            activeOpacity={1}
+            onPress={handleClose}
+          />
+          
+          <Animated.View
+            style={[
+              styles.documentModalContent,
+              {
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            <View style={styles.documentModalHeader}>
+              <Text style={styles.documentModalTitle}>Click to download documents</Text>
+              <TouchableOpacity onPress={handleClose}>
+                <CloseCircle />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+              style={styles.documentList}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* GST and PAN special row at the top */}
+              <View style={styles.topDocumentRow}>
+                <TouchableOpacity 
+                  style={styles.topDocumentItem}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    console.log(`Download GST for ${selectedCustomer?.name}`);
+                  }}
+                >
+                  <View style={styles.topDocumentContent}>
+                    <Document />
+                    <Text style={styles.topDocumentName}>GST</Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.eyeIconButton}
+                    onPress={() => {
+                      console.log(`Preview GST for ${selectedCustomer?.name}`);
+                    }}
+                  >
+                    <EyeOpen width={18} color={colors.primary} />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.topDocumentItem}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    console.log(`Download PAN for ${selectedCustomer?.name}`);
+                  }}
+                >
+                  <View style={styles.topDocumentContent}>
+                    <Document />
+                    <Text style={styles.topDocumentName}>PAN</Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.eyeIconButton}
+                    onPress={() => {
+                      console.log(`Preview PAN for ${selectedCustomer?.name}`);
+                    }}
+                  >
+                    <EyeOpen width={18} color={colors.primary} />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.otherDocContainer}>
+              {/* Other documents */}
+              {documents.map((doc, index) => (
+                <View 
+                  key={index} 
+                  style={styles.documentItemNew}
+                >
+                  <TouchableOpacity 
+                    style={styles.documentRowContent}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      console.log(`Download ${doc.name} for ${selectedCustomer?.name}`);
+                    }}
+                  >
+                    <View style={styles.documentLeftSection}>
+                      <Document />
+                      <Text style={styles.documentName}>{doc.name}</Text>
+                    </View>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.eyeIconButton}
+                    onPress={() => {
+                      console.log(`Preview ${doc.name} for ${selectedCustomer?.name}`);
+                    }}
+                  >
+                    <EyeOpen width={18} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              </View>
+            </ScrollView>
+          </Animated.View>
+        </Animated.View>
+      </Modal>
+    );
+  };
+
   const renderCustomerItem = ({ item, index }) => {
     return (
       <Animated.View
@@ -164,7 +350,13 @@ const CustomerListScreen = ({ navigation }) => {
               <TouchableOpacity style={styles.actionButton}>
                 <Edit color="#666" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={() => {
+                  setSelectedCustomer(item);
+                  setDocumentModalVisible(true);
+                }}
+              >
                 <Download color="#666" />
               </TouchableOpacity>
             </View>
@@ -354,6 +546,13 @@ const CustomerListScreen = ({ navigation }) => {
         </Animated.View>
 
         <DownloadModal />
+        <DocumentModal />
+
+        <FilterModal 
+          visible={filterModalVisible}
+          onClose={() => setFilterModalVisible(false)}
+          onApply={handleApplyFilters}
+        />
 
       </View>
     </SafeAreaView>
@@ -613,6 +812,118 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 16,
     color: '#333',
+  },
+  // Document Modal Styles
+  documentModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  documentOverlayTouch: {
+    flex: 1,
+  },
+  documentModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: height * 0.5,
+    paddingTop: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
+  documentModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20
+  },
+  documentModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  documentList: {
+    flex: 1,
+    paddingTop: 8,
+  },
+  otherDocContainer: {
+    display: 'flex',
+    padding: 20,
+    gap: 20
+  },
+  documentItemNew: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: '#F5F5F5',
+    borderRadius: 8
+  },
+  documentRowContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  documentLeftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  documentIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  documentName: {
+    marginLeft: 20,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '400',
+  },
+  eyeIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topDocumentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 0,
+    gap: 12,
+  },
+  topDocumentItem: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#F5F5F5'
+  },
+  topDocumentContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    paddingLeft: 10
+  },
+  topDocumentName: {
+    marginLeft: 12,
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500',
   },
 });
 

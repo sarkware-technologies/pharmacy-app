@@ -1,6 +1,99 @@
-node_modules
-build
-.vscode
-.bundle
-__tests__
+# React Native
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+yarn.lock
 package-lock.json
+
+# Metro bundler cache
+.expo/
+.expo-shared/
+.expo-dev/
+.expo-env.local
+dist/
+.bundle/
+.expo/web-build/
+
+# React Native Packager
+*.packager
+*.packager.config.json
+
+# Expo
+.expo/*
+.expo-shared/*
+web-build/
+
+# Build outputs
+android/app/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+android/.cxx/
+android/build/
+
+ios/build/
+ios/Pods/
+ios/Podfile.lock
+ios/*.xcodeproj/*
+ios/*.xcworkspace/*
+ios/DerivedData/
+ios/.symlinks/
+ios/.generated/
+ios/*.xcuserdata/
+ios/xcuserdata/
+ios/*.moved-aside/
+
+# Xcode
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.xcscmblueprint
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+*.xcworkspace/xcuserdata/
+!*.xcworkspace/contents.xcworkspacedata
+
+# macOS
+.DS_Store
+*.swp
+*.swo
+
+# Android/IntelliJ
+*.iml
+.gradle
+local.properties
+*.log
+captures/
+.idea/
+*.hprof
+
+# VSCode
+.vscode/
+.history/
+*.code-workspace
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Bundle artifacts
+*.jsbundle
+*.map
+*.hbc
+
+# Misc
+.env
+.env.local
+.env.*.local

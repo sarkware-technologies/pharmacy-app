@@ -13,30 +13,81 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../styles/colors';
 
-const { height } = Dimensions.get('window');
+import CloseCircle from './icons/CloseCircle';
+import Search from './icons/Search';
+import FilterCheck from './icons/FilterCheck';
+
+const { height, width } = Dimensions.get('window');
 
 const FilterModal = ({ visible, onClose, onApply }) => {
+  // All hooks must be at the top
   const slideAnim = useRef(new Animated.Value(height)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  
+  const [activeSection, setActiveSection] = useState('category');
+  const [searchQuery, setSearchQuery] = useState('');
   
   const [filters, setFilters] = useState({
     category: ['All', 'Pharmacists in hospitals', 'Hospitals', 'Doctors'],
     subCategory: [],
     status: [],
-    state: '',
-    city: '',
+    state: [],
+    city: [],
   });
-  
-  const [expandedSections, setExpandedSections] = useState({
-    category: true,
-    subCategory: false,
-    status: false,
-    state: false,
-    city: false,
-  });
+
+  const [availableCities, setAvailableCities] = useState([]);
+
+  // Data constants after hooks
+  const indianStatesAndCities = {
+    "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Tirupati"],
+    "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane", "Aurangabad", "Solapur"],
+    "Karnataka": ["Bengaluru", "Mysore", "Mangalore", "Hubli", "Belgaum", "Dharwad"],
+    "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", "Tirunelveli"],
+    "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar"],
+    "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer", "Bikaner"],
+    "Uttar Pradesh": ["Lucknow", "Kanpur", "Ghaziabad", "Agra", "Varanasi", "Meerut", "Allahabad"],
+    "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Asansol", "Siliguri", "Bardhaman"],
+    "Delhi": ["New Delhi", "North Delhi", "South Delhi", "East Delhi", "West Delhi", "Central Delhi"],
+    "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Khammam"],
+    "Kerala": ["Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur", "Kollam"],
+    "Bihar": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Darbhanga"],
+    "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bathinda"],
+    "Haryana": ["Gurgaon", "Faridabad", "Panipat", "Ambala", "Yamunanagar"],
+    "Madhya Pradesh": ["Bhopal", "Indore", "Jabalpur", "Gwalior", "Ujjain"],
+    "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Puri", "Sambalpur"],
+    "Assam": ["Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Tezpur"],
+    "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro", "Hazaribagh"],
+    "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur", "Durg", "Korba"],
+    "Himachal Pradesh": ["Shimla", "Dharamshala", "Solan", "Mandi", "Kullu"],
+    "Uttarakhand": ["Dehradun", "Haridwar", "Haldwani", "Roorkee", "Rudrapur"],
+    "Goa": ["Panaji", "Margao", "Vasco da Gama", "Mapusa", "Ponda"],
+    "Tripura": ["Agartala", "Udaipur", "Dharmanagar", "Kailasahar"],
+    "Meghalaya": ["Shillong", "Tura", "Jowai", "Nongpoh"],
+    "Manipur": ["Imphal", "Thoubal", "Churachandpur", "Bishnupur"],
+    "Nagaland": ["Kohima", "Dimapur", "Mokokchung", "Tuensang"],
+    "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang"],
+    "Mizoram": ["Aizawl", "Lunglei", "Champhai", "Serchhip"],
+    "Sikkim": ["Gangtok", "Namchi", "Mangan", "Ravangla"],
+  };
+
+  const states = Object.keys(indianStatesAndCities).sort();
+  const subCategories = ["Pharmacy", "Clinic", "Laboratory", "Diagnostic Center", "Medical Store"];
+  const statusOptions = ["Active", "Inactive", "Pending", "Blocked", "Verified"];
+
+  const filterSections = [
+    { id: 'category', label: 'Category', hasSearch: false },
+    { id: 'subCategory', label: 'Sub-Category', hasSearch: false },
+    { id: 'status', label: 'Status', hasSearch: false },
+    { id: 'state', label: 'State', hasSearch: true },
+    { id: 'city', label: 'City', hasSearch: true },
+  ];
 
   useEffect(() => {
     if (visible) {
+      // Reset animation values before opening
+      slideAnim.setValue(height);
+      fadeAnim.setValue(0);
+      
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -51,6 +102,7 @@ const FilterModal = ({ visible, onClose, onApply }) => {
         }),
       ]).start();
     } else {
+      // Animate out when closing
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: height,
@@ -64,83 +116,91 @@ const FilterModal = ({ visible, onClose, onApply }) => {
         }),
       ]).start();
     }
-  }, [visible]);
+  }, [visible, slideAnim, fadeAnim]);
 
-  const toggleSection = (section) => {
-    const rotateAnim = new Animated.Value(expandedSections[section] ? 1 : 0);
-    
-    Animated.spring(rotateAnim, {
-      toValue: expandedSections[section] ? 0 : 1,
-      friction: 8,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
-    
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
+  useEffect(() => {
+    const cities = [];
+    filters.state.forEach(state => {
+      if (indianStatesAndCities[state]) {
+        cities.push(...indianStatesAndCities[state]);
+      }
+    });
+    setAvailableCities([...new Set(cities)].sort());
+  }, [filters.state]);
+
+  useEffect(() => {
+    // Clear search when changing sections
+    setSearchQuery('');
+  }, [activeSection]);
+
+  const getOptionsForSection = (section) => {
+    switch (section) {
+      case 'category':
+        return ['All', 'Pharmacists in hospitals', 'Hospitals', 'Doctors'];
+      case 'subCategory':
+        return subCategories;
+      case 'status':
+        return statusOptions;
+      case 'state':
+        return states;
+      case 'city':
+        return availableCities.length > 0 ? availableCities : 
+          [...new Set(Object.values(indianStatesAndCities).flat())].sort();
+      default:
+        return [];
+    }
   };
 
   const toggleFilter = (section, value) => {
     setFilters(prev => {
-      if (section === 'category' || section === 'subCategory' || section === 'status') {
-        const current = prev[section];
-        const index = current.indexOf(value);
+      const current = prev[section];
+      const index = current.indexOf(value);
+      
+      // Special handling for "All" in category
+      if (section === 'category' && value === 'All') {
         if (index > -1) {
-          return {
-            ...prev,
-            [section]: current.filter(item => item !== value),
-          };
+          return { ...prev, category: [] };
         } else {
-          return {
-            ...prev,
-            [section]: [...current, value],
-          };
+          return { ...prev, category: ['All', 'Pharmacists in hospitals', 'Hospitals', 'Doctors'] };
         }
       }
-      return prev;
+      
+      if (index > -1) {
+        return {
+          ...prev,
+          [section]: current.filter(item => item !== value),
+        };
+      } else {
+        return {
+          ...prev,
+          [section]: [...current, value],
+        };
+      }
     });
   };
 
   const clearFilters = () => {
-    const clearAnim = new Animated.Value(1);
-    
-    Animated.sequence([
-      Animated.timing(clearAnim, {
-        toValue: 1.1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(clearAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setFilters({
-        category: [],
-        subCategory: [],
-        status: [],
-        state: '',
-        city: '',
-      });
+    setFilters({
+      category: [],
+      subCategory: [],
+      status: [],
+      state: [],
+      city: [],
     });
+    setSearchQuery('');
   };
 
   const applyFilters = () => {
-    const bounceAnim = new Animated.Value(1);
-    
-    Animated.sequence([
-      Animated.timing(bounceAnim, {
-        toValue: 0.95,
-        duration: 100,
+    // Animate out first, then apply and close
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: height,
+        duration: 250,
         useNativeDriver: true,
       }),
-      Animated.spring(bounceAnim, {
-        toValue: 1,
-        friction: 3,
-        tension: 40,
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -149,87 +209,105 @@ const FilterModal = ({ visible, onClose, onApply }) => {
     });
   };
 
-  const FilterSection = ({ title, section, options, multiSelect = false }) => {
-    const sectionAnim = useRef(new Animated.Value(0)).current;
-    const isExpanded = expandedSections[section];
-    
-    useEffect(() => {
-      Animated.timing(sectionAnim, {
-        toValue: isExpanded ? 1 : 0,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-    }, [isExpanded]);
+  const renderLeftMenuItem = (section) => (
+    <TouchableOpacity
+      key={section.id}
+      style={[
+        styles.leftMenuItem,
+        activeSection === section.id && styles.leftMenuItemActive,
+      ]}
+      onPress={() => setActiveSection(section.id)}
+      activeOpacity={0.7}
+    >
+      <Text style={[
+        styles.leftMenuText,
+        activeSection === section.id && styles.leftMenuTextActive,
+      ]}>
+        {section.label}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderRightContent = () => {
+    const section = filterSections.find(s => s.id === activeSection);
+    const options = getOptionsForSection(activeSection);
+    const filteredOptions = searchQuery && section?.hasSearch
+      ? options.filter(option => 
+          option.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : options;
 
     return (
-      <View style={styles.filterSection}>
-        <TouchableOpacity 
-          style={styles.sectionHeader}
-          onPress={() => toggleSection(section)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.sectionTitle}>{title}</Text>
-          <Animated.View
-            style={{
-              transform: [
-                {
-                  rotate: sectionAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0deg', '180deg'],
-                  }),
-                },
-              ],
-            }}
-          >
-            <Icon name="chevron-down" size={20} color="#666" />
-          </Animated.View>
-        </TouchableOpacity>
-        
-        {isExpanded && (
-          <Animated.View
-            style={[
-              styles.sectionContent,
-              {
-                opacity: sectionAnim,
-                maxHeight: sectionAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 500],
-                }),
-              },
-            ]}
-          >
-            {section === 'state' || section === 'city' ? (
-              <TextInput
-                style={styles.textInput}
-                placeholder={`Enter ${title}`}
-                value={filters[section]}
-                onChangeText={(text) => setFilters(prev => ({ ...prev, [section]: text }))}
-                placeholderTextColor="#999"
-              />
-            ) : (
-              <View style={styles.optionsContainer}>
-                {options?.map((option, index) => {
-                  const isSelected = filters[section]?.includes(option);
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.optionItem}
-                      onPress={() => toggleFilter(section, option)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                        {isSelected && <Icon name="checkmark" size={16} color="#fff" />}
-                      </View>
-                      <Text style={styles.optionText}>{option}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-          </Animated.View>
+      <View style={styles.rightContent}>
+        {section?.hasSearch && (
+          <View style={styles.searchContainer}>
+            <Search width={16} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={`Search ${section.label.toLowerCase()}`}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor="#999"
+            />
+          </View>
         )}
+        
+        <ScrollView 
+          style={styles.optionsList}
+          showsVerticalScrollIndicator={false}
+        >
+          {filteredOptions.map((option, index) => {
+            const isChecked = filters[activeSection].includes(option);
+            
+            return (
+              <TouchableOpacity
+                key={index}
+                style={styles.optionItem}
+                onPress={() => toggleFilter(activeSection, option)}
+                activeOpacity={0.7}
+              >
+                <View style={[
+                  styles.checkbox, 
+                  isChecked && styles.checkboxChecked
+                ]}>
+                  {isChecked && (
+                    <FilterCheck />
+                  )}
+                </View>
+                <Text style={[
+                  styles.optionText,
+                  isChecked && styles.optionTextChecked,
+                ]}>
+                  {option}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+          
+          {filteredOptions.length === 0 && searchQuery && (
+            <Text style={styles.noResults}>No results found</Text>
+          )}
+        </ScrollView>
       </View>
     );
+  };
+
+  const handleClose = () => {
+    // Animate out first, then close
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: height,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onClose(); // Call onClose after animation completes
+    });
   };
 
   return (
@@ -237,7 +315,7 @@ const FilterModal = ({ visible, onClose, onApply }) => {
       visible={visible}
       transparent
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <Animated.View 
         style={[
@@ -250,7 +328,7 @@ const FilterModal = ({ visible, onClose, onApply }) => {
         <TouchableOpacity 
           style={styles.overlayTouch}
           activeOpacity={1}
-          onPress={onClose}
+          onPress={handleClose}
         />
         
         <Animated.View
@@ -263,46 +341,25 @@ const FilterModal = ({ visible, onClose, onApply }) => {
         >
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Filters</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Icon name="close-circle-outline" size={28} color="#666" />
+            <TouchableOpacity onPress={handleClose}>
+              <CloseCircle />
             </TouchableOpacity>
           </View>
           
-          <ScrollView 
-            style={styles.filterContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            <FilterSection
-              title="Category"
-              section="category"
-              options={['All', 'Pharmacists in hospitals', 'Hospitals', 'Doctors']}
-              multiSelect={true}
-            />
+          <View style={styles.splitContainer}>
+            {/* Left Side - Menu */}
+            <View style={styles.leftPanel}>
+              {filterSections.map(section => renderLeftMenuItem(section))}
+            </View>
             
-            <FilterSection
-              title="Sub-Category"
-              section="subCategory"
-              options={['Pharmacy', 'Clinic', 'Laboratory']}
-              multiSelect={true}
-            />
+            {/* Vertical Divider */}
+            <View style={styles.divider} />
             
-            <FilterSection
-              title="Status"
-              section="status"
-              options={['Active', 'Inactive', 'Pending']}
-              multiSelect={true}
-            />
-            
-            <FilterSection
-              title="State"
-              section="state"
-            />
-            
-            <FilterSection
-              title="City"
-              section="city"
-            />
-          </ScrollView>
+            {/* Right Side - Options */}
+            <View style={styles.rightPanel}>
+              {renderRightContent()}
+            </View>
+          </View>
           
           <View style={styles.modalFooter}>
             <TouchableOpacity 
@@ -343,7 +400,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: height * 0.85,
+    height: height * 0.8,  // Fixed height at 90% of screen
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
@@ -365,37 +422,72 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  filterContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  filterSection: {
-    marginBottom: 20,
-  },
-  sectionHeader: {
+  splitContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    flex: 1,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+  leftPanel: {
+    width: '40%',
+    backgroundColor: '#FAFAFA',
+    paddingVertical: 8,
   },
-  sectionContent: {
-    overflow: 'hidden',
+  leftMenuItem: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderLeftWidth: 3,
+    borderLeftColor: 'transparent',
   },
-  optionsContainer: {
+  leftMenuItemActive: {
+    backgroundColor: '#fff',
+    borderLeftColor: colors.primary,
+  },
+  leftMenuText: {
+    fontSize: 15,
+    color: '#666',
+    fontWeight: '400',
+  },
+  leftMenuTextActive: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  divider: {
+    width: 1,
+    backgroundColor: '#F0F0F0',
+  },
+  rightPanel: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  rightContent: {
+    flex: 1,
     paddingTop: 12,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#333',
+    padding: 0,
+  },
+  optionsList: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
   optionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
   },
   checkbox: {
     width: 20,
@@ -407,7 +499,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxSelected: {
+  checkboxChecked: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
@@ -415,15 +507,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
   },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginTop: 12,
-    fontSize: 15,
-    color: '#333',
+  optionTextChecked: {
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  noResults: {
+    textAlign: 'center',
+    color: '#999',
+    paddingVertical: 20,
+    fontSize: 14,
   },
   modalFooter: {
     flexDirection: 'row',
@@ -436,8 +528,8 @@ const styles = StyleSheet.create({
   clearButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 25,
-    borderWidth: 2,
+    borderRadius: 8,
+    borderWidth: 1,
     borderColor: colors.primary,
     alignItems: 'center',
   },
@@ -449,7 +541,7 @@ const styles = StyleSheet.create({
   applyButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 25,
+    borderRadius: 8,
     backgroundColor: colors.primary,
     alignItems: 'center',
   },
