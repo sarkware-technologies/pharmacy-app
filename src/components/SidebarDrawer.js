@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,17 +11,111 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch } from 'react-redux';
 import Icon from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { colors } from '../styles/colors';
+import { logout } from '../redux/slices/authSlice';
+
+// Import your custom icons
+import CloseCircle from './icons/CloseCircle';
+import SunLogo from './icons/SunLogo';
+import Phone from './icons/Phone';
+import HomeIcon from './icons/Home';
+import PrincipalsIcon from './icons/Principals';
+import ProductsIcon from './icons/Products';
+import InvoicesIcon from './icons/Invoices';
+import ChargebackIcon from './icons/Chargeback';
+import NetRateIcon from './icons/NetRate';
+import DistributorsIcon from './icons/Distributors';
+import DivisionsIcon from './icons/Divisions';
+import FieldIcon from './icons/Field';
+import SalesIcon from './icons/Sales';
+import ReportsIcon from './icons/Reports';
+import SettingsIcon from './icons/Settings';
+import LogoutIcon from './icons/Logout';
+import ArrowDown from './icons/ArrowDown';
+import ArrowUp from './icons/ArrowUp';
 
 const { width } = Dimensions.get('window');
 
+// Icon component mapping
+const iconComponents = {
+  home: HomeIcon,
+  principals: PrincipalsIcon,
+  products: ProductsIcon,
+  invoices: InvoicesIcon,
+  chargeback: ChargebackIcon,
+  netrate: NetRateIcon,
+  distributors: DistributorsIcon,
+  divisions: DivisionsIcon,
+  field: FieldIcon,
+  sales: SalesIcon,
+  reports: ReportsIcon,
+  settings: SettingsIcon,
+  logout: LogoutIcon,
+};
+
+// Menu configuration based on your JSON structure
+const menuConfig = [
+  {
+    id: "home",
+    label: "Home",
+    icon: "home",
+    route: "Home",
+    secondary: [],
+  },
+  {
+    id: "principals",
+    label: "Principals",
+    icon: "principals",
+    secondary: [
+      { id: "products", label: "Products", icon: "products", route: "Products" },
+      { id: "distributors", label: "Distributors", icon: "distributors", route: "Distributors" },
+      { id: "chargeback", label: "Chargeback", icon: "chargeback", route: "Chargeback" },
+      { id: "netrate", label: "Net Rate", icon: "netrate", route: "NetRate" },
+      { id: "divisions", label: "Divisions", icon: "divisions", route: "Divisions" },
+      { id: "field", label: "Field", icon: "field", route: "Field" },
+      { id: "invoices", label: "Invoices", icon: "invoices", route: "Invoices" }      
+    ],
+  },
+  {
+    id: "sales",
+    label: "Sales",
+    icon: "sales",
+    route: "Sales",
+    secondary: [],
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: "reports",
+    route: "Reports",
+    secondary: [],
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: "settings",
+    route: "Settings",
+    secondary: [],
+  },
+  {
+    id: "logout",
+    label: "Logout",
+    icon: "logout",
+    isLogout: true,
+    secondary: [],
+  }
+];
+
 const SidebarDrawer = ({ navigation }) => {
+  const dispatch = useDispatch();
   const slideAnim = useRef(new Animated.Value(-width * 0.75)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  
+  const [expandedMenus, setExpandedMenus] = useState({});
+  const [activeItem, setActiveItem] = useState('home'); // Default active item should be home
 
   useEffect(() => {
     Animated.parallel([
@@ -45,92 +139,7 @@ const SidebarDrawer = ({ navigation }) => {
     ]).start();
   }, []);
 
-  const menuItems = [
-    {
-      id: 'home',
-      icon: 'home-outline',
-      title: 'Home',
-      route: 'Home',
-    },
-    {
-      id: 'principals',
-      icon: 'git-network-outline',
-      title: 'Principals',
-      hasSubmenu: true,
-      submenu: [],
-    },
-    {
-      id: 'products',
-      icon: 'cube-outline',
-      title: 'Products',
-      route: 'Products',
-      isActive: true,
-    },
-    {
-      id: 'distributors',
-      icon: 'people-outline',
-      title: 'Distributors',
-      route: 'Distributors',
-    },
-    {
-      id: 'chargeback',
-      icon: 'trending-up-outline',
-      title: 'Chargeback',
-      route: 'Chargeback',
-    },
-    {
-      id: 'netrate',
-      icon: 'pulse-outline',
-      title: 'Net Rate',
-      route: 'NetRate',
-    },
-    {
-      id: 'divisions',
-      icon: 'grid-outline',
-      title: 'Divisions',
-      route: 'Divisions',
-    },
-    {
-      id: 'field',
-      icon: 'person-outline',
-      title: 'Field',
-      route: 'Field',
-    },
-    {
-      id: 'invoices',
-      icon: 'receipt-outline',
-      title: 'Invoices',
-      route: 'Invoices',
-    },
-    {
-      id: 'sales',
-      icon: 'cart-outline',
-      title: 'Sales',
-      route: 'Sales',
-    },
-    {
-      id: 'reports',
-      icon: 'document-text-outline',
-      title: 'Reports',
-      hasSubmenu: true,
-      submenu: [],
-    },
-    {
-      id: 'settings',
-      icon: 'settings-outline',
-      title: 'Settings',
-      hasSubmenu: true,
-      submenu: [],
-    },
-    {
-      id: 'logout',
-      icon: 'log-out-outline',
-      title: 'Logout',
-      isLogout: true,
-    },
-  ];
-
-  const handleMenuPress = (item, index) => {
+  const handleMenuPress = (item, isSubmenu = false) => {
     const bounceAnim = new Animated.Value(1);
     
     Animated.sequence([
@@ -148,18 +157,104 @@ const SidebarDrawer = ({ navigation }) => {
     ]).start(() => {
       if (item.isLogout) {
         // Handle logout
-        navigation.navigate('Login');
+        dispatch(logout());
+        navigation.navigate('Auth');
+      } else if (item.secondary && item.secondary.length > 0 && !isSubmenu) {
+        // Parent item with submenu - only expand/collapse
+        setExpandedMenus(prev => {
+          const newState = {};
+          // If current submenu is open, close it; otherwise open it
+          if (!prev[item.id]) {
+            newState[item.id] = true;
+          }
+          return newState;
+        });
       } else if (item.route) {
+        // Item with route (either top-level without submenu or submenu item)
+        setActiveItem(item.id);
+        if (!isSubmenu) {
+          // If it's a top-level item, close all submenus
+          setExpandedMenus({});
+        }
         navigation.navigate(item.route);
         navigation.closeDrawer();
       }
     });
   };
 
+  const renderSubmenu = (submenuItems, parentId) => {
+    const isExpanded = expandedMenus[parentId];
+    const submenuHeight = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+      Animated.timing(submenuHeight, {
+        toValue: isExpanded ? submenuItems.length * 56 : 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }, [isExpanded]);
+
+    return (
+      <Animated.View
+        style={[
+          styles.submenuContainer,
+          {
+            height: submenuHeight,
+            opacity: isExpanded ? 1 : 0,
+          }
+        ]}
+      >
+        {submenuItems.map((subItem, index) => (
+          <TouchableOpacity
+            key={subItem.id}
+            style={[
+              styles.submenuItem,
+              activeItem === subItem.id && styles.activeSubmenuItem,
+            ]}
+            onPress={() => handleMenuPress(subItem, true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.submenuItemContent}>
+              {(() => {
+                const IconComponent = iconComponents[subItem.icon];
+                if (IconComponent) {
+                  return (<View style={styles.menuIconBox}><IconComponent color='#fff' /></View>);
+                } else {
+                  // Fallback to Ionicons if custom icon not available
+                  return null
+                }
+              })()}
+              <Text style={[
+                styles.submenuItemText,
+                activeItem === subItem.id && styles.activeSubmenuItemText,
+              ]}>
+                {subItem.label}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </Animated.View>
+    );
+  };
+
   const renderMenuItem = (item, index) => {
     const itemAnim = useRef(new Animated.Value(0)).current;
+    const hasSubmenu = item.secondary && item.secondary.length > 0;
+    const isExpanded = expandedMenus[item.id];
     
-    React.useEffect(() => {
+    // Determine if this item or any of its children are active
+    let isActive = false;
+    let isParentOfActive = false;
+    
+    if (hasSubmenu) {
+      // For parent items, check if any child is active
+      isParentOfActive = item.secondary.some(sub => sub.id === activeItem);
+    } else {
+      // For leaf items, check if this item is active
+      isActive = activeItem === item.id;
+    }
+    
+    useEffect(() => {
       Animated.timing(itemAnim, {
         toValue: 1,
         duration: 400,
@@ -167,6 +262,16 @@ const SidebarDrawer = ({ navigation }) => {
         useNativeDriver: true,
       }).start();
     }, []);
+
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+      Animated.timing(rotateAnim, {
+        toValue: isExpanded ? 1 : 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }, [isExpanded]);
 
     return (
       <Animated.View
@@ -186,34 +291,51 @@ const SidebarDrawer = ({ navigation }) => {
         <TouchableOpacity
           style={[
             styles.menuItem,
-            item.isActive && styles.activeMenuItem,
+            isActive && styles.activeMenuItem,
+            isParentOfActive && styles.parentOfActiveMenuItem,
             item.isLogout && styles.logoutItem,
           ]}
-          onPress={() => handleMenuPress(item, index)}
+          onPress={() => handleMenuPress(item)}
           activeOpacity={0.7}
         >
           <View style={styles.menuItemContent}>
-            <Icon 
-              name={item.icon} 
-              size={24} 
-              color={item.isActive ? colors.primary : '#4A4A4A'} 
-            />
+            {(() => {
+              const IconComponent = iconComponents[item.icon];
+              if (IconComponent) {
+                return (<View style={styles.menuIconBox}><IconComponent color='#fff' /></View>);
+              } else {
+                // Fallback to Ionicons if custom icon not available
+                return null
+              }
+            })()}
             <Text style={[
               styles.menuItemText,
-              item.isActive && styles.activeMenuItemText,
+              isActive && styles.activeMenuItemText,
+              isParentOfActive && styles.parentOfActiveMenuItemText,
               item.isLogout && styles.logoutText,
             ]}>
-              {item.title}
+              {item.label}
             </Text>
           </View>
-          {item.hasSubmenu && (
-            <Icon 
-              name="chevron-forward-outline" 
-              size={20} 
-              color="#999" 
-            />
+          {hasSubmenu && (
+            <Animated.View
+              style={{
+                transform: [
+                  {
+                    rotate: rotateAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '180deg'],
+                    }),
+                  },
+                ],
+              }}
+            >
+              <ArrowDown />
+            </Animated.View>
           )}
         </TouchableOpacity>
+        
+        {hasSubmenu && renderSubmenu(item.secondary, item.id)}
       </Animated.View>
     );
   };
@@ -235,48 +357,47 @@ const SidebarDrawer = ({ navigation }) => {
         <StatusBar backgroundColor="#F5E6D3" barStyle="dark-content" />
         
         {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.closeButton}
-          onPress={() => navigation.closeDrawer()}
-        >
-          <Icon name="close" size={24} color="#333" />
-        </TouchableOpacity>
-        
-        <Animated.View 
-          style={[
-            styles.logoContainer,
-            {
-              transform: [
-                {
-                  rotate: fadeAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0deg', '360deg'],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <View style={styles.logo}>
-            <View style={[styles.logoCircle, { backgroundColor: colors.primary }]} />
-            <View style={[styles.logoCircle, styles.logoCircle2]} />
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.closeButton}
+            onPress={() => navigation.closeDrawer()}
+          >
+            <CloseCircle color='#fff' />
+          </TouchableOpacity>
+          
+          <Animated.View 
+            style={[
+              styles.logoContainer,
+              {
+                transform: [
+                  {
+                    rotate: fadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '360deg'],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.logo}>
+              <SunLogo width={36} />
+            </View>
+          </Animated.View>
+          
+          <Text style={styles.companyName}>Mahalxmi Distributors</Text>
+          <View style={styles.phoneContainer}>
+            <Phone color='#fff' />
+            <Text style={styles.phoneText}>9080704010</Text>
           </View>
-        </Animated.View>
-        
-        <Text style={styles.companyName}>Mahalxmi Distributors</Text>
-        <View style={styles.phoneContainer}>
-          <Icon name="call-outline" size={16} color="#666" />
-          <Text style={styles.phoneText}>9080704010</Text>
         </View>
-      </View>
 
-      {/* Menu Items */}
-      <ScrollView 
-        style={styles.menuContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {menuItems.map((item, index) => renderMenuItem(item, index))}
+        {/* Menu Items */}
+        <ScrollView 
+          style={styles.menuContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {menuConfig.map((item, index) => renderMenuItem(item, index))}
         </ScrollView>
       </Animated.View>
     </SafeAreaView>
@@ -286,23 +407,23 @@ const SidebarDrawer = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F5E6D3',
+    backgroundColor: '#D4C5A7',
   },
   container: {
     flex: 1,
-    backgroundColor: '#F5E6D3',
+    backgroundColor: '#D4C5A7',
   },
   header: {
-    paddingTop: 50,
+    paddingTop: 20,
     paddingBottom: 30,
     paddingHorizontal: 20,
-    backgroundColor: '#F5E6D3',
+    backgroundColor: '#D4C5A7',
     borderBottomWidth: 1,
     borderBottomColor: '#E0D0BD',
   },
   closeButton: {
     position: 'absolute',
-    top: 50,
+    top: 20,
     right: 20,
     zIndex: 1,
   },
@@ -312,25 +433,14 @@ const styles = StyleSheet.create({
   },
   logo: {
     width: 60,
-    height: 60,
+    height: 30,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    position: 'absolute',
-    opacity: 0.8,
-  },
-  logoCircle2: {
-    backgroundColor: '#FFB366',
-    transform: [{ translateX: 10 }, { translateY: -5 }],
-  },
   companyName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#fff',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -342,11 +452,11 @@ const styles = StyleSheet.create({
   phoneText: {
     marginLeft: 6,
     fontSize: 14,
-    color: '#666',
+    color: '#fff',
   },
   menuContainer: {
     flex: 1,
-    paddingTop: 20,
+    paddingTop: 0,
   },
   menuItem: {
     flexDirection: 'row',
@@ -354,27 +464,65 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 24,
-    marginHorizontal: 16,
+    marginHorizontal: 0,
     marginBottom: 4,
-    borderRadius: 12,
   },
   activeMenuItem: {
-    backgroundColor: '#FFEACC',
+    backgroundColor: '#BDAE95',
+  },
+  parentOfActiveMenuItem: {
+    backgroundColor: '#BDAE95',
   },
   menuItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
+  menuIconBox: {
+    width: 26,
+  },
   menuItemText: {
     marginLeft: 16,
     fontSize: 16,
-    color: '#4A4A4A',
+    color: '#fff',
     fontWeight: '500',
   },
   activeMenuItemText: {
-    color: colors.primary,
     fontWeight: '600',
+  },
+  parentOfActiveMenuItemText: {
+    fontWeight: '600',
+  },
+  submenuContainer: {
+    overflow: 'hidden',
+    backgroundColor: '#BDAE95',
+    marginBottom: 4,
+  },
+  submenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    paddingLeft: 48,
+    height: 56,
+  },
+  activeSubmenuItem: {
+    backgroundColor: '#FFC067',
+  },
+  submenuItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  submenuItemText: {
+    marginLeft: 12,
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '400',
+  },
+  activeSubmenuItemText: {
+    color: '#fff',
+    fontWeight: '500',
   },
   logoutItem: {
     marginTop: 20,
@@ -383,7 +531,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   logoutText: {
-    color: '#666',
+    color: '#fff',
   },
 });
 

@@ -5,7 +5,7 @@ import { colors } from '../../styles/colors';
 const SunLogo = ({ width = 62, height = 62 }) => {
     return (
         <Svg width={width} height={height} viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <Circle cx="25" cy="25" r="25" fill="white"/>
+            <Circle cx="25" cy="25" r="25" fill="none"/>
             <Mask id="mask0_2_1993" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="50" height="50">
                 <Circle cx="25" cy="25" r="25" fill="white"/>
             </Mask>

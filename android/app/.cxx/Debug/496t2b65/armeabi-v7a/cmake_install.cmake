@@ -44,6 +44,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
+  include("/Users/saravanakumar/Workspace/pharmacy-app/android/app/.cxx/Debug/496t2b65/armeabi-v7a/rnasyncstorage_autolinked_build/cmake_install.cmake")
   include("/Users/saravanakumar/Workspace/pharmacy-app/android/app/.cxx/Debug/496t2b65/armeabi-v7a/rngesturehandler_codegen_autolinked_build/cmake_install.cmake")
   include("/Users/saravanakumar/Workspace/pharmacy-app/android/app/.cxx/Debug/496t2b65/armeabi-v7a/rnreanimated_autolinked_build/cmake_install.cmake")
   include("/Users/saravanakumar/Workspace/pharmacy-app/android/app/.cxx/Debug/496t2b65/armeabi-v7a/safeareacontext_autolinked_build/cmake_install.cmake")

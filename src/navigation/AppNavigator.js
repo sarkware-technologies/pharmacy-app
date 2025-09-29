@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import { useSelector, useDispatch } from 'react-redux';
+import { View, ActivityIndicator } from 'react-native';
 
 // Auth Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -16,6 +18,9 @@ import BottomTabNavigator from './BottomTabNavigator';
 
 // Components
 import SidebarDrawer from '../components/SidebarDrawer';
+
+// Redux actions
+import { checkAuthStatus } from '../redux/slices/authSlice';
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -74,12 +79,29 @@ const DrawerNavigator = () => (
   </Drawer.Navigator>
 );
 
+// Loading Screen Component
+const LoadingScreen = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+    <ActivityIndicator size="large" color="#0066CC" />
+  </View>
+);
+
 // Root Navigator
 const AppNavigator = () => {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(true); // Set to true for testing
+  const dispatch = useDispatch();
   
-  // You can integrate with Redux here to check auth state
-  // const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
+  // Get auth state from Redux
+  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  
+  // Check auth status when app starts
+  useEffect(() => {
+    dispatch(checkAuthStatus());
+  }, [dispatch]);
+  
+  // Show loading screen while checking auth status
+  if (loading) {
+    return <LoadingScreen />;
+  }
   
   return (
     <NavigationContainer>

@@ -7,7 +7,9 @@ import {
   Animated,
   Alert,
   Keyboard,
-  Dimensions,  
+  Dimensions,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -24,6 +26,7 @@ import Error from '../components/icons/Error';
 const { width, height } = Dimensions.get('window');
 
 const OTPScreen = () => {
+
   const [otp, setOtp] = useState('');
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
@@ -32,9 +35,14 @@ const OTPScreen = () => {
   
   const dispatch = useDispatch();
   const navigation = useNavigation();
-  const { isLoading, error, sessionId, phoneNumber, isAuthenticated } = useSelector(
-    (state) => state.auth
-  );
+
+  const { 
+    sessionId, 
+    phoneOrEmail, // Get phoneOrEmail from Redux state
+    isAuthenticated, 
+    otpVerificationLoading, 
+    otpVerificationError 
+  } = useSelector((state) => state.auth);
 
   // Animation values
   const headerSlideAnim = useRef(new Animated.Value(-250)).current;
@@ -42,6 +50,34 @@ const OTPScreen = () => {
   const formTranslateAnim = useRef(new Animated.Value(0)).current;
   const initialFadeAnim = useRef(new Animated.Value(0)).current;
   const errorShakeAnim = useRef(new Animated.Value(0)).current;
+
+  // Format phone number for display
+  const formatPhoneOrEmail = (value) => {
+    if (!value) return 'your registered number';
+    
+    // Check if it's an email
+    if (value.includes('@')) {
+      // Mask email: show first 3 chars + *** + domain
+      const [localPart, domain] = value.split('@');
+      if (localPart.length <= 3) {
+        return `${localPart}***@${domain}`;
+      }
+      return `${localPart.substring(0, 3)}***@${domain}`;
+    }
+    
+    // It's a phone number - format it
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length === 10) {
+      // Indian format: +91 XXXXX XXXXX
+      return `+91 ${cleaned.substring(0, 5)} ${cleaned.substring(5)}`;
+    } else if (cleaned.length === 11 && cleaned.startsWith('91')) {
+      // With country code
+      return `+${cleaned.substring(0, 2)} ${cleaned.substring(2, 7)} ${cleaned.substring(7)}`;
+    }
+    
+    // Return as is if format doesn't match
+    return value;
+  };
 
   // Initial animations
   useEffect(() => {
@@ -147,22 +183,26 @@ const OTPScreen = () => {
     }
   }, [timer]);
 
-  // Handle authentication success
+  // Handle successful authentication
   useEffect(() => {
     if (isAuthenticated) {
-      Alert.alert('Success', 'Login successful!', [
-        { text: 'OK', onPress: () => navigation.navigate('Home') },
-      ]);
+      // Navigation will be handled automatically by AppNavigator
+      // since it's listening to isAuthenticated state
+      // Optionally, you can reset the navigation stack here
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
     }
   }, [isAuthenticated, navigation]);
-
-  // Handle errors
+  
+  // Handle OTP verification errors
   useEffect(() => {
-    if (error) {
-      setVerificationError('Invalid OTP. Please try again.');
+    if (otpVerificationError) {
+      setVerificationError(otpVerificationError);
       shakeError();
     }
-  }, [error]);
+  }, [otpVerificationError]);
 
   const shakeError = () => {
     Animated.sequence([
@@ -189,10 +229,22 @@ const OTPScreen = () => {
     ]).start();
   };
 
-  const handleVerify = () => {
-    setVerificationError('');
+  const handleVerify = async () => {
     if (otp.length === 4) {
-      dispatch(verifyOTP({ sessionId, otp }));
+      setVerificationError(''); // Clear any previous errors
+      
+      // Dispatch the verifyOTP action
+      const resultAction = await dispatch(verifyOTP({ sessionId, otp }));
+      
+      // Check if the action was fulfilled
+      if (verifyOTP.fulfilled.match(resultAction)) {
+        // Success! The isAuthenticated state will be set to true in Redux
+        // and AppNavigator will automatically switch to the Main stack
+        console.log('OTP verified successfully');
+      } else if (verifyOTP.rejected.match(resultAction)) {
+        // Error handling is done via the otpVerificationError state
+        console.log('OTP verification failed');
+      }
     } else {
       setVerificationError('Please enter a valid 4-digit OTP');
       shakeError();
@@ -200,11 +252,12 @@ const OTPScreen = () => {
   };
 
   const handleResend = () => {
-    dispatch(resendOTP({ sessionId }));
+    dispatch(resendOTP(sessionId));
     setTimer(60);
     setCanResend(false);
     setOtp('');
     setVerificationError('');
+    dispatch(clearError());
   };
 
   const formatTimer = () => {
@@ -214,7 +267,7 @@ const OTPScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.mainContainer}>
         {/* Back Button */}
         <TouchableOpacity
@@ -270,7 +323,7 @@ const OTPScreen = () => {
               <Text style={styles.title}>OTP Verification</Text>
               <Text style={styles.subtitle}>
                 We have sent a verification code to{'\n'}
-                <Text style={styles.phoneNumber}>{phoneNumber || 'your registered number'}</Text>
+                <Text style={styles.phoneNumber}>{formatPhoneOrEmail(phoneOrEmail)}</Text>
               </Text>
 
               <OTPInput value={otp} onChange={setOtp} length={4} />
@@ -291,7 +344,7 @@ const OTPScreen = () => {
               
               <TouchableOpacity
                 onPress={handleResend}
-                disabled={!canResend || isLoading}>
+                disabled={!canResend || otpVerificationLoading}>
                 <Text style={[styles.resendButton, !canResend && styles.resendDisabled]}>
                   Resend Code {!canResend && (
                     <Text style={styles.timerText}>in {formatTimer()}</Text>
@@ -303,7 +356,7 @@ const OTPScreen = () => {
                 <CustomButton
                   title="Verify"
                   onPress={handleVerify}
-                  loading={isLoading}
+                  loading={otpVerificationLoading}
                   disabled={otp.length !== 4}
                 />
               </View>
@@ -311,7 +364,7 @@ const OTPScreen = () => {
           </Animated.View>
         </Animated.ScrollView>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
