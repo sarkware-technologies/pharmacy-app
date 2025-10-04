@@ -1,7 +1,6 @@
 if(NOT TARGET react-native-reanimated::reanimated)
-add_library(react-native-reanimated::reanimated SHARED IMPORTED)
+add_library(react-native-reanimated::reanimated INTERFACE IMPORTED)
 set_target_properties(react-native-reanimated::reanimated PROPERTIES
-    IMPORTED_LOCATION "/Users/saravanakumar/Workspace/pharmacy-app/node_modules/react-native-reanimated/android/build/intermediates/cxx/RelWithDebInfo/542w3kw4/obj/x86/libreanimated.so"
     INTERFACE_INCLUDE_DIRECTORIES "/Users/saravanakumar/Workspace/pharmacy-app/node_modules/react-native-reanimated/android/build/prefab-headers/reanimated"
     INTERFACE_LINK_LIBRARIES ""
 )

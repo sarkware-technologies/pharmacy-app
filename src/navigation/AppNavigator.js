@@ -6,12 +6,19 @@ import { useSelector, useDispatch } from 'react-redux';
 import { View, ActivityIndicator } from 'react-native';
 
 // Auth Screens
-import LoginScreen from '../screens/LoginScreen';
-import OTPScreen from '../screens/OTPScreen';
-import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
-import ForgotPasswordOTPScreen from '../screens/ForgotPasswordOTPScreen';
-import SetNewPasswordScreen from '../screens/SetNewPasswordScreen';
-import PasswordSuccessScreen from '../screens/PasswordSuccessScreen';
+import LoginScreen from '../screens/unauthorized/LoginScreen';
+import OTPScreen from '../screens/unauthorized/OTPScreen';
+import ForgotPasswordScreen from '../screens/unauthorized/ForgotPasswordScreen';
+import ForgotPasswordOTPScreen from '../screens/unauthorized/ForgotPasswordOTPScreen';
+import SetNewPasswordScreen from '../screens/unauthorized/SetNewPasswordScreen';
+import PasswordSuccessScreen from '../screens/unauthorized/PasswordSuccessScreen';
+
+// Registration Screens
+import RegistrationType from '../screens/authorized/registration/RegistrationType';
+import ClinicRegistrationForm from '../screens/authorized/registration/ClinicRegistrationForm';
+import RegistrationSuccess from '../screens/authorized/registration/RegistrationSuccess';
+import HospitalSelector from '../screens/authorized/registration/HospitalSelector';
+import PharmacySelector from '../screens/authorized/registration/PharmacySelector';
 
 // Main Navigation
 import BottomTabNavigator from './BottomTabNavigator';
@@ -59,6 +66,44 @@ const AuthStack = () => (
   </Stack.Navigator>
 );
 
+// Main Stack (includes drawer and registration flows)
+const MainStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+      cardStyleInterpolator: ({ current, layouts }) => {
+        return {
+          cardStyle: {
+            transform: [
+              {
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              },
+            ],
+            opacity: current.progress.interpolate({
+              inputRange: [0, 0.5, 1],
+              outputRange: [0, 0.5, 1],
+            }),
+          },
+        };
+      },
+    }}
+  >
+    <Stack.Screen name="DrawerMain" component={DrawerNavigator} />
+    <Stack.Screen name="RegistrationType" component={RegistrationType} />
+    <Stack.Screen name="ClinicRegistrationForm" component={ClinicRegistrationForm} />
+    <Stack.Screen name="RegistrationSuccess" component={RegistrationSuccess} />
+    <Stack.Screen name="HospitalSelector" component={HospitalSelector} />
+    <Stack.Screen name="PharmacySelector" component={PharmacySelector} />
+    {/* Add other registration forms here as you create them */}
+    {/* <Stack.Screen name="PharmacyRegistrationForm" component={PharmacyRegistrationForm} /> */}
+    {/* <Stack.Screen name="HospitalRegistrationForm" component={HospitalRegistrationForm} /> */}
+    {/* <Stack.Screen name="DoctorRegistrationForm" component={DoctorRegistrationForm} /> */}
+  </Stack.Navigator>
+);
+
 // Drawer Navigator with Bottom Tabs
 const DrawerNavigator = () => (
   <Drawer.Navigator
@@ -82,7 +127,7 @@ const DrawerNavigator = () => (
 // Loading Screen Component
 const LoadingScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-    <ActivityIndicator size="large" color="#0066CC" />
+    <ActivityIndicator size="large" color="#FF9A3E" />
   </View>
 );
 
@@ -109,7 +154,7 @@ const AppNavigator = () => {
         {!isAuthenticated ? (
           <Stack.Screen name="Auth" component={AuthStack} />
         ) : (
-          <Stack.Screen name="Main" component={DrawerNavigator} />
+          <Stack.Screen name="Main" component={MainStack} />
         )}
       </Stack.Navigator>
     </NavigationContainer>

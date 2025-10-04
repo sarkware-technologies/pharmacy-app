@@ -20,19 +20,19 @@ import { logout } from '../redux/slices/authSlice';
 import CloseCircle from './icons/CloseCircle';
 import SunLogo from './icons/SunLogo';
 import Phone from './icons/Phone';
-import HomeIcon from './icons/Home';
-import PrincipalsIcon from './icons/Principals';
-import ProductsIcon from './icons/Products';
-import InvoicesIcon from './icons/Invoices';
-import ChargebackIcon from './icons/Chargeback';
-import NetRateIcon from './icons/NetRate';
-import DistributorsIcon from './icons/Distributors';
-import DivisionsIcon from './icons/Divisions';
-import FieldIcon from './icons/Field';
-import SalesIcon from './icons/Sales';
-import ReportsIcon from './icons/Reports';
-import SettingsIcon from './icons/Settings';
-import LogoutIcon from './icons/Logout';
+import HomeIcon from './icons/menu/Home';
+import PrincipalsIcon from './icons/menu/Principals';
+import ProductsIcon from './icons/menu/Products';
+import InvoicesIcon from './icons/menu/Invoices';
+import ChargebackIcon from './icons/menu/Chargeback';
+import NetRateIcon from './icons/menu/NetRate';
+import DistributorsIcon from './icons/menu/Distributors';
+import DivisionsIcon from './icons/menu/Divisions';
+import FieldIcon from './icons/menu/Field';
+import SalesIcon from './icons/menu/Sales';
+import ReportsIcon from './icons/menu/Reports';
+import SettingsIcon from './icons/menu/Settings';
+import LogoutIcon from './icons/menu/Logout';
 import ArrowDown from './icons/ArrowDown';
 import ArrowUp from './icons/ArrowUp';
 
@@ -464,8 +464,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 24,
-    marginHorizontal: 0,
-    marginBottom: 4,
+    marginHorizontal: 0
   },
   activeMenuItem: {
     backgroundColor: '#BDAE95',

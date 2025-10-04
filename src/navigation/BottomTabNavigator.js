@@ -8,16 +8,16 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { colors } from '../styles/colors';
 
-import Home from '../components/icons/Home';
-import Customer from '../components/icons/Customer';
-import Orders from '../components/icons/Orders';
-import Pricing from '../components/icons/Pricing';
-import More from '../components/icons/More';
+import Home from '../components/icons/menu/Home';
+import Customer from '../components/icons/menu/Customer';
+import Orders from '../components/icons/menu/Orders';
+import Pricing from '../components/icons/menu/Pricing';
+import More from '../components/icons/menu/More';
 
 // Import screens
-import CustomerListScreen from '../screens/CustomerListScreen';
-import CustomerDetailScreen from '../screens/CustomerDetailScreen';
-import CustomerSearchScreen from '../screens/CustomerSearchScreen';
+import CustomerList from '../screens/authorized/customer/CustomerList';
+import CustomerDetail from '../screens/authorized/customer/CustomerDetail';
+import CustomerSearch from '../screens/authorized/customer/CustomerSearch';
 
 // Placeholder screens for other tabs
 const HomeScreen = () => (
@@ -71,9 +71,9 @@ const CustomerStack = () => (
       },
     }}
   >
-    <Stack.Screen name="CustomerList" component={CustomerListScreen} />
-    <Stack.Screen name="CustomerDetail" component={CustomerDetailScreen} />
-    <Stack.Screen name="CustomerSearch" component={CustomerSearchScreen} />
+    <Stack.Screen name="CustomerList" component={CustomerList} />
+    <Stack.Screen name="CustomerDetail" component={CustomerDetail} />
+    <Stack.Screen name="CustomerSearch" component={CustomerSearch} />
   </Stack.Navigator>
 );
 
