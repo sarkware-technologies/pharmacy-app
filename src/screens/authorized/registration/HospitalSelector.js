@@ -15,6 +15,11 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
+import CloseCircle from '../../../components/icons/CloseCircle';
+import Filter from '../../../components/icons/Filter';
+import ArrowDown from '../../../components/icons/ArrowDown';
+import Search from '../../../components/icons/Search';
+import FilterCheck from '../../../components/icons/FilterCheck';
 
 // Mock hospital data
 const MOCK_HOSPITALS = [
@@ -119,7 +124,7 @@ const HospitalSelector = () => {
       >
         <View style={styles.checkboxContainer}>
           <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-            {isSelected && <Icon name="checkmark" size={16} color="#fff" />}
+            {isSelected && <FilterCheck />}
           </View>
         </View>
         
@@ -144,9 +149,8 @@ const HospitalSelector = () => {
       <TouchableOpacity
         style={styles.addNewButton}
         onPress={handleAddNewHospital}
-      >
-        <Icon name="add" size={20} color={colors.primary} />
-        <Text style={styles.addNewButtonText}>Add New Group Hospital</Text>
+      >        
+        <Text style={styles.addNewButtonText}>+Add New Group Hospital</Text>
       </TouchableOpacity>
     </View>
   );
@@ -160,8 +164,8 @@ const HospitalSelector = () => {
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.closeButton}
-        >
-          <Icon name="close" size={24} color="#333" />
+        >          
+          <CloseCircle />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Select Hospital</Text>
       </View>
@@ -172,7 +176,7 @@ const HospitalSelector = () => {
           style={styles.filterButton}
           onPress={() => setShowFilters(true)}
         >
-          <MaterialIcons name="filter-list" size={20} color={colors.primary} />
+          <Filter color={colors.primary} />
         </TouchableOpacity>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
@@ -180,8 +184,8 @@ const HospitalSelector = () => {
             style={styles.filterPill}
             onPress={() => setShowStateDropdown(!showStateDropdown)}
           >
-            <Text style={styles.filterPillText}>{selectedState}</Text>
-            <Icon name="chevron-down" size={16} color="#666" />
+            <Text style={styles.filterPillText}>{selectedState}</Text>            
+            <ArrowDown width='10' color='#666' />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -189,7 +193,7 @@ const HospitalSelector = () => {
             onPress={() => setShowCityDropdown(!showCityDropdown)}
           >
             <Text style={styles.filterPillText}>{selectedCity}</Text>
-            <Icon name="chevron-down" size={16} color="#666" />
+            <ArrowDown width='10' color='#666' />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -197,7 +201,7 @@ const HospitalSelector = () => {
             onPress={() => setShowContractDropdown(!showContractDropdown)}
           >
             <Text style={styles.filterPillText}>{selectedContract}</Text>
-            <Icon name="chevron-down" size={16} color="#666" />
+            <ArrowDown width='10' color='#666' />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -205,14 +209,14 @@ const HospitalSelector = () => {
             onPress={() => {}}
           >
             <Text style={styles.filterPillText}>Hospital/Clinic...</Text>
-            <Icon name="chevron-down" size={16} color="#666" />
+            <ArrowDown width='10' color='#666' />
           </TouchableOpacity>
         </ScrollView>
       </View>
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
+      <View style={styles.searchContainer}>        
+        <Search style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by hospital name/code"

@@ -1,0 +1,1 @@
+/home/sarkware/Workspace/SunPharma/frontend/pharmacy-app/android/app/build/intermediates/cxx/Debug/4f124b3x/obj/x86_64

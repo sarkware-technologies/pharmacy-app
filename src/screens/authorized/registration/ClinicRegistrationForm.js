@@ -24,6 +24,13 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors } from '../../../styles/colors';
 import CustomInput from '../../../components/CustomInput';
+import ChevronLeft from '../../../components/icons/ChevronLeft';
+import ChevronRight from '../../../components/icons/ChevronRight';
+import Upload from '../../../components/icons/Upload';
+import Calendar from '../../../components/icons/Calendar';
+import ArrowDown from '../../../components/icons/ArrowDown';
+import Search from '../../../components/icons/Search';
+import CloseCircle from '../../../components/icons/CloseCircle';
 
 const { width, height } = Dimensions.get('window');
 
@@ -413,8 +420,8 @@ const ClinicRegistrationForm = () => {
         style={styles.uploadButton}
         onPress={() => Alert.alert('Upload', 'Document upload will be available soon')}
         activeOpacity={0.7}
-      >
-        <Icon name="cloud-upload-outline" size={24} color={colors.primary} />
+      >        
+        <Upload />
         <Text style={styles.uploadButtonText}>
           {formData.licenseFileName || 'FilenameRegistrationcertifie.pdf'}
         </Text>
@@ -435,8 +442,8 @@ const ClinicRegistrationForm = () => {
       >
         <Text style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
           {formData.registrationDate || 'Registration Date'}
-        </Text>
-        <Icon name="calendar-outline" size={20} color="#999" />
+        </Text>        
+        <Calendar />
       </TouchableOpacity>
       {errors.registrationDate && (
         <Text style={styles.errorText}>{errors.registrationDate}</Text>
@@ -447,7 +454,7 @@ const ClinicRegistrationForm = () => {
         onPress={() => Alert.alert('Upload', 'Image upload will be available soon')}
         activeOpacity={0.7}
       >
-        <Icon name="image-outline" size={24} color={colors.primary} />
+        <Upload />
         <Text style={styles.uploadButtonText}>
           {formData.licenseImageName || 'courierimage.jpeg'}
         </Text>
@@ -531,8 +538,8 @@ const ClinicRegistrationForm = () => {
       >
         <Text style={formData.area ? styles.inputText : styles.placeholderText}>
           {formData.area || 'Area'}
-        </Text>
-        <Icon name="chevron-down" size={20} color="#999" />
+        </Text>        
+        <ArrowDown color='#999' />
       </TouchableOpacity>
       {showAreaDropdown && (
         <View style={styles.dropdown}>
@@ -560,7 +567,7 @@ const ClinicRegistrationForm = () => {
         <Text style={formData.city ? styles.inputText : styles.placeholderText}>
           {formData.city || 'City'}
         </Text>
-        <Icon name="chevron-down" size={20} color="#999" />
+        <ArrowDown color='#999' />
       </TouchableOpacity>
       {showCityDropdown && (
         <View style={styles.dropdown}>
@@ -588,7 +595,7 @@ const ClinicRegistrationForm = () => {
         <Text style={formData.state ? styles.inputText : styles.placeholderText}>
           {formData.state || 'State'}
         </Text>
-        <Icon name="chevron-down" size={20} color="#999" />
+        <ArrowDown color='#999' />
       </TouchableOpacity>
       {showStateDropdown && (
         <View style={styles.dropdown}>
@@ -673,8 +680,8 @@ const ClinicRegistrationForm = () => {
         style={styles.uploadButton}
         onPress={() => Alert.alert('Upload', 'PAN upload will be available soon')}
         activeOpacity={0.7}
-      >
-        <Icon name="image-outline" size={24} color={colors.primary} />
+      >        
+        <Upload />
         <Text style={styles.uploadButtonText}>
           {formData.panImageName || 'Upload PAN'}
         </Text>
@@ -722,8 +729,8 @@ const ClinicRegistrationForm = () => {
         style={styles.uploadButton}
         onPress={() => Alert.alert('Upload', 'GST upload will be available soon')}
         activeOpacity={0.7}
-      >
-        <Icon name="document-outline" size={24} color={colors.primary} />
+      >        
+        <Upload />
         <Text style={styles.uploadButtonText}>
           {formData.gstFileName || 'Upload GST'}
         </Text>
@@ -738,7 +745,7 @@ const ClinicRegistrationForm = () => {
         <Text style={formData.gstNumber ? styles.inputText : styles.placeholderText}>
           {formData.gstNumber || 'GST Number'}
         </Text>
-        <Icon name="chevron-down" size={20} color="#999" />
+        <ArrowDown color='#999' />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -846,14 +853,14 @@ const ClinicRegistrationForm = () => {
                     e.stopPropagation();
                     setFormData(prev => ({ ...prev, selectedHospital: null }));
                   }}
-                >
-                  <Icon name="close-circle" size={20} color="#999" />
+                >                  
+                  <CloseCircle color="#999" />
                 </TouchableOpacity>
               </View>
             ) : (
               <>
-                <Text style={styles.selectorPlaceholder}>Search hospital name/code</Text>
-                <Icon name="search" size={20} color="#999" />
+                <Text style={styles.selectorPlaceholder}>Search hospital name/code</Text>                
+                <Search />
               </>
             )}
           </TouchableOpacity>
@@ -861,9 +868,8 @@ const ClinicRegistrationForm = () => {
           <TouchableOpacity 
             style={styles.addNewLink}
             onPress={() => Alert.alert('Add Hospital', 'Navigate to add new group hospital')}
-          >
-            <Icon name="add" size={20} color={colors.primary} />
-            <Text style={styles.addNewLinkText}>Add New Group Hospital</Text>
+          >            
+            <Text style={styles.addNewLinkText}>+ Add New Group Hospital</Text>
           </TouchableOpacity>
         </>
       )}
@@ -884,7 +890,7 @@ const ClinicRegistrationForm = () => {
             activeOpacity={0.7}
           >
             <Text style={styles.selectorPlaceholder}>Search pharmacy name/code</Text>
-            <Icon name="search" size={20} color="#999" />
+            <Search />
           </TouchableOpacity>
           
           {/* Selected Pharmacies List */}
@@ -901,8 +907,8 @@ const ClinicRegistrationForm = () => {
                     selectedPharmacies: prev.selectedPharmacies.filter(p => p.id !== pharmacy.id)
                   }));
                 }}
-              >
-                <Icon name="close-circle" size={20} color="#FF3B30" />
+              >                
+                <CloseCircle color="#FF3B30" />
               </TouchableOpacity>
             </View>
           ))}
@@ -911,8 +917,7 @@ const ClinicRegistrationForm = () => {
             style={styles.addNewLink}
             onPress={() => Alert.alert('Add Pharmacy', 'Navigate to add new pharmacy')}
           >
-            <Icon name="add" size={20} color={colors.primary} />
-            <Text style={styles.addNewLinkText}>Add New Pharmacy</Text>
+            <Text style={styles.addNewLinkText}>+ Add New Pharmacy</Text>
           </TouchableOpacity>
         </>
       )}
@@ -966,9 +971,8 @@ const ClinicRegistrationForm = () => {
         style={styles.addStockistButton}
         onPress={() => Alert.alert('Add Stockist', 'Stockist addition will be available soon')}
         activeOpacity={0.7}
-      >
-        <Icon name="add" size={20} color={colors.primary} />
-        <Text style={styles.addStockistButtonText}>Add New Stockist</Text>
+      >        
+        <Text style={styles.addStockistButtonText}>+ Add New Stockist</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -997,8 +1001,8 @@ const ClinicRegistrationForm = () => {
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
-        >
-          <Icon name="arrow-back" size={24} color="#333" />
+        >          
+          <ChevronLeft />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Registration</Text>
       </View>
@@ -1006,12 +1010,12 @@ const ClinicRegistrationForm = () => {
       <View style={styles.typeHeader}>
         <View style={styles.typeTag}>
           <Text style={styles.typeTagText}>Hospital</Text>
-        </View>
-        <Icon name="chevron-forward" size={16} color="#999" />
+        </View>        
+        <ChevronRight />
         <View style={styles.typeTag}>
           <Text style={styles.typeTagText}>Private</Text>
         </View>
-        <Icon name="chevron-forward" size={16} color="#999" />
+        <ChevronRight />
         <View style={[styles.typeTag, styles.typeTagActive]}>
           <Text style={[styles.typeTagText, styles.typeTagTextActive]}>Clinic</Text>
         </View>

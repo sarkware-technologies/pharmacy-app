@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
+import ChevronLeft from '../../../components/icons/ChevronLeft';
 
 const { width } = Dimensions.get('window');
 
@@ -217,8 +218,8 @@ const RegistrationType = () => {
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
-        >
-          <Icon name="arrow-back" size={24} color="#333" />
+        >          
+          <ChevronLeft />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Registration</Text>
       </View>
