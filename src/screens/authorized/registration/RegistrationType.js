@@ -10,20 +10,40 @@ import {
   Animated,
   Dimensions,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
+import {
+  fetchCustomerTypes,
+  selectCustomerTypes,
+} from '../../../redux/slices/customerSlice';
 
 const { width } = Dimensions.get('window');
 
 const RegistrationType = () => {
   const navigation = useNavigation();
-  const [selectedType, setSelectedType] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedSubCategory, setSelectedSubCategory] = useState('');
+  const dispatch = useDispatch();
+  
+  // Redux state
+  const customerTypes = useSelector(selectCustomerTypes);
+  const { typesLoading, typesError } = useSelector((state) => ({
+    typesLoading: state.customer.typesLoading,
+    typesError: state.customer.typesError,
+  }));
+  
+  // Debug log
+  console.log('Customer Types:', customerTypes);
+  console.log('Loading:', typesLoading);
+  
+  // Local state - store the actual objects instead of just strings
+  const [selectedType, setSelectedType] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -37,6 +57,9 @@ const RegistrationType = () => {
   const subCategorySlideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
+    // Fetch customer types when component mounts
+    dispatch(fetchCustomerTypes());
+    
     // Entry animation
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -56,7 +79,7 @@ const RegistrationType = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     if (selectedType) {
@@ -98,8 +121,8 @@ const RegistrationType = () => {
 
   const handleTypeSelect = (type) => {
     setSelectedType(type);
-    setSelectedCategory('');
-    setSelectedSubCategory('');
+    setSelectedCategory(null);
+    setSelectedSubCategory(null);
     
     // Reset animations for category and subcategory
     categoryFadeAnim.setValue(0);
@@ -110,7 +133,7 @@ const RegistrationType = () => {
 
   const handleCategorySelect = (category) => {
     setSelectedCategory(category);
-    setSelectedSubCategory('');
+    setSelectedSubCategory(null);
     
     // Reset subcategory animation
     subCategoryFadeAnim.setValue(0);
@@ -123,51 +146,57 @@ const RegistrationType = () => {
 
   const handleContinue = () => {
     if (selectedType && (!needsCategory() || (selectedCategory && (!needsSubCategory() || selectedSubCategory)))) {
+      // Navigate with the selected data
+      const navigationParams = {
+        type: selectedType.code,
+        typeName: selectedType.name,
+        typeId: selectedType.id,
+      };
+
+      if (selectedCategory) {
+        navigationParams.category = selectedCategory.code;
+        navigationParams.categoryName = selectedCategory.name;
+        navigationParams.categoryId = selectedCategory.id;
+      }
+
+      if (selectedSubCategory) {
+        navigationParams.subCategory = selectedSubCategory.code;
+        navigationParams.subCategoryName = selectedSubCategory.name;
+        navigationParams.subCategoryId = selectedSubCategory.id;
+      }
+
       // Navigate to appropriate form based on selection
-      if (selectedType === 'Hospital' && selectedCategory === 'Private' && selectedSubCategory === 'Clinic') {
-        navigation.navigate('ClinicRegistrationForm');
-      } else if (selectedType === 'Hospital') {
-        navigation.navigate('ClinicRegistrationForm', {
-          category: selectedCategory,
-          subCategory: selectedSubCategory,
-        });
-      } else if (selectedType === 'Pharmacy') {
-        navigation.navigate('ClinicRegistrationForm', {
-          type: 'Pharmacy',
-          subCategory: selectedSubCategory,
-        });
-      } else if (selectedType === 'Doctor') {
-        navigation.navigate('ClinicRegistrationForm', {
-          type: 'Doctor',
-        });
+      if (selectedType.code === 'HOSP' && selectedCategory?.code === 'PRI' && selectedSubCategory?.code === 'PCL') {
+        navigation.navigate('ClinicRegistrationForm', navigationParams);
+      } else if (selectedType.code === 'HOSP' && selectedCategory?.code === 'PRI' && selectedSubCategory?.code === 'PGH') {
+        navigation.navigate('GroupHospitalRegistrationForm', navigationParams);
+      } else if (selectedType.code === 'HOSP') {
+        navigation.navigate('ClinicRegistrationForm', navigationParams);
+      } else if (selectedType.code === 'PCM') {
+        navigation.navigate('ClinicRegistrationForm', navigationParams);
+      } else if (selectedType.code === 'DOCT') {
+        navigation.navigate('DoctorRegistrationForm', navigationParams);
       }
     }
   };
 
   const needsCategory = () => {
-    return selectedType === 'Hospital';
+    return selectedType?.customerCategories?.length > 0;
   };
 
   const needsSubCategory = () => {
-    if (selectedType === 'Hospital') return true;
-    if (selectedType === 'Pharmacy') return true;
-    return false;
+    return selectedCategory?.customerSubcategories?.length > 0;
+  };
+
+  const getCategories = () => {
+    return selectedType?.customerCategories || [];
   };
 
   const getSubCategories = () => {
-    if (selectedType === 'Hospital') {
-      if (selectedCategory === 'Private') {
-        return ['Clinic', 'Individual Hospital', 'Group Hospital/CBU'];
-      } else if (selectedCategory === 'Govt') {
-        return ['District Hospital', 'Medical College', 'PHC'];
-      }
-    } else if (selectedType === 'Pharmacy') {
-      return ['Only Retail', 'Only Wholesaler', 'Retail Cum Wholesaler'];
-    }
-    return [];
+    return selectedCategory?.customerSubcategories || [];
   };
 
-  const TypeButton = ({ type, label, isSelected }) => {
+  const TypeButton = ({ type, isSelected }) => {
     const buttonScale = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -202,12 +231,58 @@ const RegistrationType = () => {
             styles.typeButtonText,
             isSelected && styles.selectedTypeButtonText,
           ]}>
-            {label}
+            {type.name}
           </Text>
         </TouchableOpacity>
       </Animated.View>
     );
   };
+
+  if (typesLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <ChevronLeft />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Registration</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (typesError) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <ChevronLeft />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Registration</Text>
+        </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Error loading customer types</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => dispatch(fetchCustomerTypes())}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -244,26 +319,22 @@ const RegistrationType = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Type <Text style={styles.subtitle}>(Select Any One)</Text></Text>
             <View style={styles.typeContainer}>
-              <TypeButton
-                type="Pharmacy"
-                label="Pharmacy/Chemist/Medical store"
-                isSelected={selectedType === 'Pharmacy'}
-              />
-              <TypeButton
-                type="Hospital"
-                label="Hospital"
-                isSelected={selectedType === 'Hospital'}
-              />
-              <TypeButton
-                type="Doctor"
-                label="Doctors"
-                isSelected={selectedType === 'Doctor'}
-              />
+              {customerTypes && customerTypes.length > 0 ? (
+                customerTypes.map((type) => (
+                  <TypeButton
+                    key={type.id}
+                    type={type}
+                    isSelected={selectedType?.id === type.id}
+                  />
+                ))
+              ) : (
+                <Text style={styles.noDataText}>No customer types available</Text>
+              )}
             </View>
           </View>
 
-          {/* Category Selection - Only for Hospital */}
-          {selectedType === 'Hospital' && (
+          {/* Category Selection */}
+          {needsCategory() && (
             <Animated.View
               style={[
                 styles.section,
@@ -277,42 +348,30 @@ const RegistrationType = () => {
                 Category <Text style={styles.subtitle}>(Select Any One)</Text>
               </Text>
               <View style={styles.categoryContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.categoryButton,
-                    selectedCategory === 'Private' && styles.selectedCategoryButton,
-                  ]}
-                  onPress={() => handleCategorySelect('Private')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.categoryButtonText,
-                    selectedCategory === 'Private' && styles.selectedCategoryButtonText,
-                  ]}>
-                    Private
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.categoryButton,
-                    selectedCategory === 'Govt' && styles.selectedCategoryButton,
-                  ]}
-                  onPress={() => handleCategorySelect('Govt')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.categoryButtonText,
-                    selectedCategory === 'Govt' && styles.selectedCategoryButtonText,
-                  ]}>
-                    Govt
-                  </Text>
-                </TouchableOpacity>
+                {getCategories().map((category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.categoryButton,
+                      selectedCategory?.id === category.id && styles.selectedCategoryButton,
+                    ]}
+                    onPress={() => handleCategorySelect(category)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.categoryButtonText,
+                      selectedCategory?.id === category.id && styles.selectedCategoryButtonText,
+                    ]}>
+                      {category.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </Animated.View>
           )}
 
           {/* SubCategory Selection */}
-          {((selectedType === 'Hospital' && selectedCategory) || selectedType === 'Pharmacy') && (
+          {needsSubCategory() && (
             <Animated.View
               style={[
                 styles.section,
@@ -324,21 +383,21 @@ const RegistrationType = () => {
             >
               <Text style={styles.sectionTitle}>Sub Category</Text>
               <View style={styles.subCategoryContainer}>
-                {getSubCategories().map((subCat, index) => (
+                {getSubCategories().map((subCat) => (
                   <TouchableOpacity
-                    key={index}
+                    key={subCat.id}
                     style={[
                       styles.subCategoryButton,
-                      selectedSubCategory === subCat && styles.selectedSubCategoryButton,
+                      selectedSubCategory?.id === subCat.id && styles.selectedSubCategoryButton,
                     ]}
                     onPress={() => handleSubCategorySelect(subCat)}
                     activeOpacity={0.7}
                   >
                     <Text style={[
                       styles.subCategoryButtonText,
-                      selectedSubCategory === subCat && styles.selectedSubCategoryButtonText,
+                      selectedSubCategory?.id === subCat.id && styles.selectedSubCategoryButtonText,
                     ]}>
-                      {subCat}
+                      {subCat.name}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -351,8 +410,7 @@ const RegistrationType = () => {
       {/* Continue Button */}
       {selectedType && (
         (!needsCategory() || selectedCategory) && 
-        (!needsSubCategory() || selectedSubCategory) ||
-        selectedType === 'Doctor'
+        (!needsSubCategory() || selectedSubCategory)
       ) && (
         <Animated.View
           style={[
@@ -519,6 +577,39 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 20,
+  },
+  retryButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  noDataText: {
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });
 

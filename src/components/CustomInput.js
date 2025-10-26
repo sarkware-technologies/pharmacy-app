@@ -22,6 +22,11 @@ const CustomInput = ({
     keyboardType,
     autoCapitalize,
     editable = true,
+    mandatory = false,
+    error = null,
+    maxLength,
+    style,
+    ...props
 }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -47,6 +52,17 @@ const CustomInput = ({
         ]).start();
     }, []);
 
+    useEffect(() => {
+        // Update floating label when value changes
+        if (value) {
+            Animated.timing(floatingLabelAnim, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: false,
+            }).start();
+        }
+    }, [value]);
+
     // Handle focus/blur for floating label
     const handleFocus = () => {
         setIsFocused(true);
@@ -68,7 +84,10 @@ const CustomInput = ({
         }
     };
 
-    // Animated styles for floating label
+    // Create placeholder text with asterisk if mandatory
+    const placeholderText = mandatory ? `${placeholder}*` : placeholder;
+
+    // Animated styles for floating label (with asterisk if mandatory)
     const labelStyle = {
         position: 'absolute',
         left: icon ? 44 : 16,
@@ -97,14 +116,19 @@ const CustomInput = ({
                     opacity: fadeAnim,
                     transform: [{ scale: scaleAnim }],
                 },
+                style,
             ]}>
             <View style={[
                 styles.inputContainer,
-                isFocused && styles.inputContainerFocused
+                isFocused && styles.inputContainerFocused,
+                error && styles.inputContainerError,
             ]}>
-                <Animated.Text style={labelStyle}>
-                    {placeholder}
-                </Animated.Text>
+                <Animated.View style={labelStyle}>
+                    <Text>
+                        {placeholder}
+                        {mandatory && <Text style={styles.asterisk}>*</Text>}
+                    </Text>
+                </Animated.View>
                 
                 {icon && (<View style={styles.icon}>{icon}</View>)}
                 
@@ -120,6 +144,8 @@ const CustomInput = ({
                     editable={editable}
                     onFocus={handleFocus}
                     onBlur={handleBlur}
+                    maxLength={maxLength}
+                    {...props}
                 />
                 
                 {secureTextEntry && (
@@ -130,13 +156,16 @@ const CustomInput = ({
                     </TouchableOpacity>
                 )}
             </View>
+            {error && (
+                <Text style={styles.errorText}>{error}</Text>
+            )}
         </Animated.View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: 20,
+        marginBottom: 16,
     },
     inputContainer: {
         flexDirection: 'row',
@@ -153,6 +182,9 @@ const styles = StyleSheet.create({
         borderColor: colors.primary,
         borderWidth: 1.5,
     },
+    inputContainerError: {
+        borderColor: colors.error,
+    },
     icon: {
         marginRight: 12,
     },
@@ -166,6 +198,16 @@ const styles = StyleSheet.create({
     },
     eyeIcon: {
         padding: 8        
+    },
+    asterisk: {
+        color: 'red',
+        fontSize: 12,
+    },
+    errorText: {
+        color: colors.error,
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 4,
     },
 });
 

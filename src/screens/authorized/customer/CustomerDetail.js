@@ -10,11 +10,17 @@ import {
   Image,
   Modal,
   StatusBar,
+  Alert,
+  Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchCustomerDetails } from '../../../redux/slices/customerSlice';
+import { customerAPI } from '../../../api/customer';
 
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import Details from '../../../components/icons/Details';
@@ -23,40 +29,103 @@ import EyeOpen from '../../../components/icons/EyeOpen';
 import Download from '../../../components/icons/Download';
 
 import { Link } from '@react-navigation/native';
+import CloseCircle from '../../../components/icons/CloseCircle';
 
 const { width } = Dimensions.get('window');
 
 const CustomerDetail = ({ navigation, route }) => {
+  const dispatch = useDispatch();
+  const { customer } = route.params;
+  
   const [activeTab, setActiveTab] = useState('details');
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
+  
+  // Get customer data from Redux
+  const { selectedCustomer, detailsLoading, detailsError } = useSelector(
+    (state) => state.customer
+  );
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
-  // Mock customer data
-  const customerData = {
-    code: '2536',
-    mobileNumber: '9993365310',
-    email: 'Sudhakarjoshi123@gmail.com',
-    address: 'Mohalla darwar, E kalan, Ho, No00, near Muradabadi gate',
-    pincode: '244221',
-    city: 'Pune',
-    state: 'Maharashtra',
-    registrationNumber: 'CLNC12345678',
-    registrationExpiry: '25-10-2035',
-    practiceNumber: 'PRACT12345678',
-    practiceExpiry: '25-10-2035',
-    pan: 'CGOPP3203KJL',
-    gst: 'GST123203KJ',
+  // Fetch customer details on mount
+  useEffect(() => {
+    if (customer?.customerId) {
+      dispatch(fetchCustomerDetails(customer.customerId));
+    }
+  }, [customer?.customerId, dispatch]);
+
+  // Format customer data from API response to match the UI structure
+  const customerData = selectedCustomer ? {
+    code: selectedCustomer.customerCode || selectedCustomer.id || '',
+    mobileNumber: selectedCustomer.securityDetails?.mobile || '',
+    email: selectedCustomer.securityDetails?.email || '',
+    address: [
+      selectedCustomer.generalDetails?.address1,
+      selectedCustomer.generalDetails?.address2,
+      selectedCustomer.generalDetails?.address3,
+      selectedCustomer.generalDetails?.address4
+    ].filter(Boolean).join(', ') || '',
+    pincode: selectedCustomer.generalDetails?.pincode || '',
+    city: selectedCustomer.generalDetails?.cityName || '',
+    state: selectedCustomer.generalDetails?.stateName || '',
+    registrationNumber: selectedCustomer.licenceDetails?.licence?.[0]?.licenceNo || '',
+    registrationExpiry: selectedCustomer.licenceDetails?.licence?.[0]?.licenceValidUpto 
+      ? new Date(selectedCustomer.licenceDetails.licence[0].licenceValidUpto).toLocaleDateString('en-GB').replace(/\//g, '-')
+      : '',
+    practiceNumber: selectedCustomer.licenceDetails?.licence?.[1]?.licenceNo || '',
+    practiceExpiry: selectedCustomer.licenceDetails?.licence?.[1]?.licenceValidUpto
+      ? new Date(selectedCustomer.licenceDetails.licence[1].licenceValidUpto).toLocaleDateString('en-GB').replace(/\//g, '-')
+      : '',
+    pan: selectedCustomer.securityDetails?.panNumber || '',
+    gst: selectedCustomer.securityDetails?.gstNumber || '',
+    // Store actual document objects with s3Path
     documents: {
-      electricityBill: 'Electricitybillfilename.pdf',
-      registrationCertificate: 'filenamecertificate.pdf',
-      practiceCertificate: 'filenamecertificate.pdf',
-      image: 'Camerawhasappfrontimage.jpeg',
+      electricityBill: selectedCustomer.docType?.find(d => d.doctypeName === 'ELECTRICITY BILL') || null,
+      registrationCertificate: selectedCustomer.docType?.find(d => d.doctypeName === 'REGISTRATION') || null,
+      practiceCertificate: selectedCustomer.docType?.find(d => d.doctypeName === 'PRACTICE') || null,
+      panDoc: selectedCustomer.docType?.find(d => d.doctypeName === 'PAN CARD') || null,
+      gstDoc: selectedCustomer.docType?.find(d => d.doctypeName === 'GSTIN') || null,
+      image: selectedCustomer.docType?.[0] || null,
     },
+  } : {
+    // Empty data if no API response
+    code: '',
+    mobileNumber: '',
+    email: '',
+    address: '',
+    pincode: '',
+    city: '',
+    state: '',
+    registrationNumber: '',
+    registrationExpiry: '',
+    practiceNumber: '',
+    practiceExpiry: '',
+    pan: '',
+    gst: '',
+    documents: {
+      electricityBill: null,
+      registrationCertificate: null,
+      practiceCertificate: null,
+      panDoc: null,
+      gstDoc: null,
+      image: null,
+    },
+  };
+
+  // Get customer name for header
+  const getCustomerName = () => {
+    if (selectedCustomer?.generalDetails?.ownerName) {
+      return `Dr. ${selectedCustomer.generalDetails.ownerName}`;
+    } else if (selectedCustomer?.generalDetails?.customerName) {
+      return selectedCustomer.generalDetails.customerName;
+    } else if (customer?.customerName) {
+      return customer.customerName;
+    }
+    return 'Customer Details';
   };
 
   useEffect(() => {
@@ -111,37 +180,79 @@ const CustomerDetail = ({ navigation, route }) => {
     );
   };
 
-  const DocumentModal = () => (
-    <Modal
-      visible={showDocumentModal}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setShowDocumentModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.documentModalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>DUMMY IMAGE</Text>
-            <TouchableOpacity onPress={() => setShowDocumentModal(false)}>
-              <Icon name="close-circle" size={30} color="#666" />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.documentImageContainer}>
-            <View style={styles.dummyDocument}>
-              <Icon name="document-text" size={100} color="#999" />
-              <Text style={styles.documentName}>{selectedDocument}</Text>
+  const DocumentModal = () => {
+    const [loadingDoc, setLoadingDoc] = useState(false);
+    const [signedUrl, setSignedUrl] = useState(null);
+
+    useEffect(() => {
+      if (showDocumentModal && selectedDocument?.s3Path) {
+        fetchSignedUrl();
+      }
+    }, [showDocumentModal, selectedDocument]);
+
+    const fetchSignedUrl = async () => {
+      if (!selectedDocument?.s3Path) return;
+      
+      setLoadingDoc(true);
+      try {
+        const response = await customerAPI.getDocumentSignedUrl(selectedDocument.s3Path);
+        if (response?.data?.signedUrl) {
+          setSignedUrl(response.data.signedUrl);
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Failed to load document');
+      } finally {
+        setLoadingDoc(false);
+      }
+    };
+
+    const closeModal = () => {
+      setShowDocumentModal(false);
+      setSignedUrl(null);
+      setSelectedDocument(null);
+    };
+
+    return (
+      <Modal
+        visible={showDocumentModal}
+        transparent
+        animationType="fade"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.documentModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedDocument?.doctypeName || selectedDocument?.fileName || 'DOCUMENT'}
+              </Text>
+              <TouchableOpacity onPress={closeModal}>
+                <CloseCircle />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.documentImageContainer}>
+              {loadingDoc ? (
+                <ActivityIndicator size="large" color={colors.primary} />
+              ) : signedUrl && (selectedDocument?.fileName?.toLowerCase().endsWith('.jpg') || 
+                                selectedDocument?.fileName?.toLowerCase().endsWith('.jpeg') || 
+                                selectedDocument?.fileName?.toLowerCase().endsWith('.png')) ? (
+                <Image 
+                  source={{ uri: signedUrl }} 
+                  style={{ width: '100%', height: 300 }}
+                  resizeMode="contain"
+                />
+              ) : (
+                <View style={styles.dummyDocument}>
+                  <Icon name="document-text" size={100} color="#999" />
+                  <Text style={styles.documentName}>{selectedDocument?.fileName}</Text>
+                </View>
+              )}
             </View>
           </View>
-          
-          <TouchableOpacity style={styles.downloadButton}>
-            <Icon name="download-outline" size={24} color="#fff" />
-            <Text style={styles.downloadButtonText}>Download</Text>
-          </TouchableOpacity>
         </View>
-      </View>
-    </Modal>
-  );
+      </Modal>
+    );
+  };
 
   const InfoRow = ({ label, value, icon, onPress }) => (
     <TouchableOpacity 
@@ -162,9 +273,31 @@ const CustomerDetail = ({ navigation, route }) => {
     </TouchableOpacity>
   );
 
-  const openDocument = (docName) => {
-    setSelectedDocument(docName);
-    setShowDocumentModal(true);
+  const openDocument = (docInfo) => { console.log("openDocument is called"); console.log(docInfo);
+    if (typeof docInfo !== 'string') {
+      // For actual document object from API
+      setSelectedDocument(docInfo);
+      setShowDocumentModal(true);
+    } else {
+      Alert.alert("Info", "No document available");
+    }    
+  };
+
+  const downloadDocument = async (docInfo) => {
+    if (!docInfo || typeof docInfo === 'string') {
+      Alert.alert('Info', 'Document not available for download');
+      return;
+    }
+
+    try {
+      const response = await customerAPI.getDocumentSignedUrl(docInfo.s3Path);
+      if (response?.data?.signedUrl) {
+        await Linking.openURL(response.data.signedUrl);
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      Alert.alert('Error', 'Failed to download document');
+    }
   };
 
   return (
@@ -176,7 +309,7 @@ const CustomerDetail = ({ navigation, route }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Dr. Sudhakar Joshi</Text>
+        <Text style={styles.headerTitle}>{getCustomerName()}</Text>
       </View>
 
       {/* Tabs */}
@@ -229,20 +362,22 @@ const CustomerDetail = ({ navigation, route }) => {
           <AnimatedSection delay={200}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Address Details</Text>
-              <View style={{...styles.fileLinkGroup, marginTop: 4}}>
-                <Text style={styles.linkText}>{customerData.documents.electricityBill}</Text>
-                <View style={{...styles.iconGroup, width: 60, justifyContent: 'space-around'}}>
-                  <TouchableOpacity
-                    onPress={() => openDocument(customerData.documents.electricityBill)}
-                    style={styles.linkButton}
-                  ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                  <Text style={{ color: '#777' }}>|</Text>
-                  <TouchableOpacity
-                    onPress={() => openDocument(customerData.documents.electricityBill)}
-                    style={styles.linkButton}
-                  ><Download width={16} color={colors.primary} /></TouchableOpacity>
+              {customerData.documents.electricityBill && (
+                <View style={{...styles.fileLinkGroup, marginTop: 4}}>
+                  <Text style={styles.linkText}>{customerData.documents.electricityBill?.fileName || customerData.documents.electricityBill}</Text>
+                  <View style={{...styles.iconGroup, width: 60, justifyContent: 'space-around'}}>
+                    <TouchableOpacity
+                      onPress={() => openDocument(customerData.documents.electricityBill)}
+                      style={styles.linkButton}
+                    ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                    <Text style={{ color: '#777' }}>|</Text>
+                    <TouchableOpacity
+                      onPress={() => downloadDocument(customerData.documents.electricityBill)}
+                      style={styles.linkButton}
+                    ><Download width={16} color={colors.primary} /></TouchableOpacity>
                   </View>
-              </View>
+                </View>
+              )}
               
             </View>
             <View style={styles.card}>
@@ -279,21 +414,25 @@ const CustomerDetail = ({ navigation, route }) => {
                 </View>
               </View>
               
-                <Text style={styles.uploadedFileLabel}>Uploaded file</Text>
-                <View style={styles.fileRow}>
-                  <Text style={styles.fileName}>{customerData.documents.registrationCertificate}</Text>
-                  <View style={styles.iconGroup}>
-                    <TouchableOpacity 
-                      style={styles.uploadedFile}
-                      onPress={() => openDocument(customerData.documents.registrationCertificate)}
-                    ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                    <Text style={{ color: '#777' }}>|</Text>
-                    <TouchableOpacity 
-                      style={styles.uploadedFile}
-                      onPress={() => openDocument(customerData.documents.registrationCertificate)}
-                    ><Download width={16} color={colors.primary} /></TouchableOpacity>
+              {customerData.documents.registrationCertificate && (
+                <>
+                  <Text style={styles.uploadedFileLabel}>Uploaded file</Text>
+                  <View style={styles.fileRow}>
+                    <Text style={styles.fileName}>{customerData.documents.registrationCertificate?.fileName || customerData.documents.registrationCertificate}</Text>
+                    <View style={styles.iconGroup}>
+                      <TouchableOpacity 
+                        style={styles.uploadedFile}
+                        onPress={() => openDocument(customerData.documents.registrationCertificate)}
+                      ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                      <Text style={{ color: '#777' }}>|</Text>
+                      <TouchableOpacity 
+                        style={styles.uploadedFile}
+                        onPress={() => downloadDocument(customerData.documents.registrationCertificate)}
+                      ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                    </View>
                   </View>
-                </View>
+                </>
+              )}
               
               <View style={[styles.licenseRow, { marginTop: 10 }]}>
                 <View style={styles.licenseInfo}>
@@ -306,21 +445,25 @@ const CustomerDetail = ({ navigation, route }) => {
                 </View>
               </View>
               
-                <Text style={styles.uploadedFileLabel}>Uploaded file</Text>
-                <View style={{...styles.fileRow, marginBottom: 8}}>
-                  <Text style={styles.fileName}>{customerData.documents.practiceCertificate}</Text>
-                  <View style={styles.iconGroup}>
-                    <TouchableOpacity 
-                      style={styles.uploadedFile}
-                      onPress={() => openDocument(customerData.documents.practiceCertificate)}
-                    ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                    <Text style={{ color: '#777' }}>|</Text>
-                    <TouchableOpacity 
-                      style={styles.uploadedFile}
-                      onPress={() => openDocument(customerData.documents.practiceCertificate)}
-                    ><Download width={16} color={colors.primary} /></TouchableOpacity>
+              {customerData.documents.practiceCertificate && (
+                <>
+                  <Text style={styles.uploadedFileLabel}>Uploaded file</Text>
+                  <View style={{...styles.fileRow, marginBottom: 8}}>
+                    <Text style={styles.fileName}>{customerData.documents.practiceCertificate?.fileName || customerData.documents.practiceCertificate}</Text>
+                    <View style={styles.iconGroup}>
+                      <TouchableOpacity 
+                        style={styles.uploadedFile}
+                        onPress={() => openDocument(customerData.documents.practiceCertificate)}
+                      ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                      <Text style={{ color: '#777' }}>|</Text>
+                      <TouchableOpacity 
+                        style={styles.uploadedFile}
+                        onPress={() => downloadDocument(customerData.documents.practiceCertificate)}
+                      ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                    </View>
                   </View>
-                </View>
+                </>
+              )}
             </View>
           </AnimatedSection>
 
@@ -333,54 +476,66 @@ const CustomerDetail = ({ navigation, route }) => {
                   <Text style={styles.infoLabel}>PAN</Text>
                   <View style={styles.valueWithIcons}>
                     <Text style={styles.infoValue}>{customerData.pan}</Text>
-                    <View style={styles.iconGroup}>
-                      <TouchableOpacity 
-                        style={styles.uploadedFile}
-                      ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                      <Text style={{ color: '#777' }}>|</Text>
-                      <TouchableOpacity 
-                        style={styles.uploadedFile}                        
-                      ><Download width={16} color={colors.primary} /></TouchableOpacity>
-                    </View>
+                    {customerData.documents.panDoc && (
+                      <View style={styles.iconGroup}>
+                        <TouchableOpacity 
+                          style={styles.uploadedFile}
+                          onPress={() => openDocument(customerData.documents.panDoc)}
+                        ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                        <Text style={{ color: '#777' }}>|</Text>
+                        <TouchableOpacity 
+                          style={styles.uploadedFile}
+                          onPress={() => downloadDocument(customerData.documents.panDoc)}                        
+                        ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 </View>
                 <View style={[styles.otherDetailItem, { marginLeft: 16 }]}>
                   <Text style={styles.infoLabel}>GST</Text>
                   <View style={styles.valueWithIcons}>
                     <Text style={styles.infoValue}>{customerData.gst}</Text>
-                    <View style={styles.iconGroup}>
-                      <TouchableOpacity 
-                        style={styles.uploadedFile}
-                      ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                      <Text style={{ color: '#777' }}>|</Text>
-                      <TouchableOpacity 
-                        style={styles.uploadedFile}                        
-                      ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                    {customerData.documents.gstDoc && (
+                      <View style={styles.iconGroup}>
+                        <TouchableOpacity 
+                          style={styles.uploadedFile}
+                          onPress={() => openDocument(customerData.documents.gstDoc)}
+                        ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                        <Text style={{ color: '#777' }}>|</Text>
+                        <TouchableOpacity 
+                          style={styles.uploadedFile}
+                          onPress={() => downloadDocument(customerData.documents.gstDoc)}                        
+                        ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                      </View>
+                    )}
                     </View>
                   </View>
                 </View>
-              </View>
-            </View>
+              </View>            
           </AnimatedSection>
 
           {/* Image */}
-          <AnimatedSection delay={500}>
-            <Text style={styles.sectionTitle}>Image</Text>
-            <View style={{...styles.card, borderBottomWidth: 0, paddingBottom: 20}}>
-              <View style={styles.valueWithIcons}>
-                <Text style={styles.imageName}>{customerData.documents.image}</Text>
-                <View style={{...styles.iconGroup}}>
-                  <TouchableOpacity 
-                    style={styles.uploadedFile}
-                  ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                  <Text style={{ color: '#777' }}>|</Text>              
-                  <TouchableOpacity 
-                        style={{...styles.uploadedFile}}                        
-                      ><Download width={16} color={colors.primary} /></TouchableOpacity>
-                      </View>
+          {customerData.documents.image && (
+            <AnimatedSection delay={500}>
+              <Text style={styles.sectionTitle}>Image</Text>
+              <View style={{...styles.card, borderBottomWidth: 0, paddingBottom: 20}}>
+                <View style={styles.valueWithIcons}>
+                  <Text style={styles.imageName}>{customerData.documents.image?.fileName || customerData.documents.image}</Text>
+                  <View style={{...styles.iconGroup}}>
+                    <TouchableOpacity 
+                      style={styles.uploadedFile}
+                      onPress={() => openDocument(customerData.documents.image)}
+                    ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                    <Text style={{ color: '#777' }}>|</Text>              
+                    <TouchableOpacity 
+                          style={{...styles.uploadedFile}}
+                          onPress={() => downloadDocument(customerData.documents.image)}                        
+                        ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                        </View>
+                </View>
               </View>
-            </View>
-          </AnimatedSection>
+            </AnimatedSection>
+          )}
         </Animated.View>
         </ScrollView>
 

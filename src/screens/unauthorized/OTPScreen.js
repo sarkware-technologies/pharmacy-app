@@ -19,7 +19,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import OTPInput from '../../components/OTPInput';
 import CustomButton from '../../components/CustomButton';
 import { colors } from '../../styles/colors';
-import { verifyOTP, resendOTP, clearError } from '../../redux/slices/authSlice';
+import { verifyOTP, resendOTP, clearError, clearDevelopmentOtp } from '../../redux/slices/authSlice';
 import SunLogo from '../../components/icons/SunLogo';
 import Back from '../../components/icons/Back';
 import Error from '../../components/icons/Error';
@@ -40,6 +40,7 @@ const OTPScreen = () => {
   const { 
     sessionId, 
     phoneOrEmail, // Get phoneOrEmail from Redux state
+    developmentOtp, // Get development OTP from Redux state
     isAuthenticated, 
     otpVerificationLoading, 
     otpVerificationError 
@@ -51,6 +52,26 @@ const OTPScreen = () => {
   const formTranslateAnim = useRef(new Animated.Value(0)).current;
   const initialFadeAnim = useRef(new Animated.Value(0)).current;
   const errorShakeAnim = useRef(new Animated.Value(0)).current;
+
+  // Auto-fill OTP in development mode
+  useEffect(() => {
+    if (developmentOtp) {
+      // Convert to string and auto-fill the OTP
+      const otpString = developmentOtp.toString();
+      setOtp(otpString);
+      
+      // Show a subtle notification that OTP was auto-filled
+      if (__DEV__) {
+        console.log('Development OTP auto-filled:', otpString);
+      }
+      
+      // Clear the development OTP from Redux after using it
+      // This prevents it from being auto-filled again if user navigates back
+      setTimeout(() => {
+        dispatch(clearDevelopmentOtp());
+      }, 1000);
+    }
+  }, [developmentOtp, dispatch]);
 
   // Format phone number for display
   const formatPhoneOrEmail = (value) => {
@@ -280,6 +301,13 @@ const OTPScreen = () => {
                 <Text style={styles.phoneNumber}>{formatPhoneOrEmail(phoneOrEmail)}</Text>
               </Text>
 
+              {/* Development Mode Indicator - Show when OTP is auto-filled */}
+              {__DEV__ && developmentOtp && (
+                <View style={styles.devModeIndicator}>
+                  <Text style={styles.devModeText}>📱 Dev Mode: OTP auto-filled</Text>
+                </View>
+              )}
+
               <OTPInput value={otp} onChange={setOtp} length={4} />
 
               {/* Error Message */}
@@ -416,6 +444,18 @@ const styles = StyleSheet.create({
   phoneNumber: {
     fontWeight: 'bold',
     color: colors.text,
+  },
+  devModeIndicator: {
+    backgroundColor: '#FFF3E0',
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 15,
+    alignSelf: 'center',
+  },
+  devModeText: {
+    fontSize: 12,
+    color: '#F57C00',
+    fontWeight: '500',
   },
   errorContainer: {
     flexDirection: 'row',

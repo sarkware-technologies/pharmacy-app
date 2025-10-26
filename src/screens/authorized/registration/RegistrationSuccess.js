@@ -18,7 +18,7 @@ const { width } = Dimensions.get('window');
 const RegistrationSuccess = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { customerCode } = route.params || { customerCode: 'HSP12345' };
+  const { customerCode, codeType } = route.params || { customerCode: 'HSP12345', codeType: 'Customer' };
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -245,7 +245,7 @@ const RegistrationSuccess = () => {
             It will take upto 24 hours to approved, if we found{'\n'}
             any issue our team will get back to you
           </Text>
-          <Text style={styles.customerCode}>Customer Code: {customerCode}</Text>
+          <Text style={styles.customerCode}>{codeType || 'Customer'} Code: {customerCode}</Text>
         </Animated.View>
         
         {/* Spacer */}

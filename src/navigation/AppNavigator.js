@@ -16,6 +16,8 @@ import PasswordSuccessScreen from '../screens/unauthorized/PasswordSuccessScreen
 // Registration Screens
 import RegistrationType from '../screens/authorized/registration/RegistrationType';
 import ClinicRegistrationForm from '../screens/authorized/registration/ClinicRegistrationForm';
+import DoctorRegistrationForm from '../screens/authorized/registration/DoctorRegistrationForm';
+import GroupHospitalRegistrationForm from '../screens/authorized/registration/GroupHospitalRegistrationForm';
 import RegistrationSuccess from '../screens/authorized/registration/RegistrationSuccess';
 import HospitalSelector from '../screens/authorized/registration/HospitalSelector';
 import PharmacySelector from '../screens/authorized/registration/PharmacySelector';
@@ -94,13 +96,14 @@ const MainStack = () => (
     <Stack.Screen name="DrawerMain" component={DrawerNavigator} />
     <Stack.Screen name="RegistrationType" component={RegistrationType} />
     <Stack.Screen name="ClinicRegistrationForm" component={ClinicRegistrationForm} />
+    <Stack.Screen name="DoctorRegistrationForm" component={DoctorRegistrationForm} />
+    <Stack.Screen name="GroupHospitalRegistrationForm" component={GroupHospitalRegistrationForm} />
     <Stack.Screen name="RegistrationSuccess" component={RegistrationSuccess} />
     <Stack.Screen name="HospitalSelector" component={HospitalSelector} />
     <Stack.Screen name="PharmacySelector" component={PharmacySelector} />
     {/* Add other registration forms here as you create them */}
     {/* <Stack.Screen name="PharmacyRegistrationForm" component={PharmacyRegistrationForm} /> */}
     {/* <Stack.Screen name="HospitalRegistrationForm" component={HospitalRegistrationForm} /> */}
-    {/* <Stack.Screen name="DoctorRegistrationForm" component={DoctorRegistrationForm} /> */}
   </Stack.Navigator>
 );
 

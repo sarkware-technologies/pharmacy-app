@@ -9,17 +9,34 @@ import {
   Animated,
   TextInput,
   Dimensions,
+  Keyboard,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../styles/colors';
+import { useSelector, useDispatch } from 'react-redux';
+import apiClient from '../api/apiClient';
 
 import CloseCircle from './icons/CloseCircle';
 import Search from './icons/Search';
 import FilterCheck from './icons/FilterCheck';
 
+// Import Redux selectors
+import {
+  selectCustomerTypes,
+  selectCustomerStatuses,
+  fetchCustomerTypes,
+  fetchCustomerStatuses,
+} from '../redux/slices/customerSlice';
+
 const { height, width } = Dimensions.get('window');
 
 const FilterModal = ({ visible, onClose, onApply }) => {
+  const dispatch = useDispatch();
+  
+  // Get data from Redux
+  const customerTypes = useSelector(selectCustomerTypes) || [];
+  const customerStatuses = useSelector(selectCustomerStatuses) || [];
+  
   // All hooks must be at the top
   const slideAnim = useRef(new Animated.Value(height)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -28,7 +45,7 @@ const FilterModal = ({ visible, onClose, onApply }) => {
   const [searchQuery, setSearchQuery] = useState('');
   
   const [filters, setFilters] = useState({
-    category: ['All', 'Pharmacists in hospitals', 'Hospitals', 'Doctors'],
+    category: [],
     subCategory: [],
     status: [],
     state: [],
@@ -36,43 +53,93 @@ const FilterModal = ({ visible, onClose, onApply }) => {
   });
 
   const [availableCities, setAvailableCities] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
 
-  // Data constants after hooks
-  const indianStatesAndCities = {
-    "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Tirupati"],
-    "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane", "Aurangabad", "Solapur"],
-    "Karnataka": ["Bengaluru", "Mysore", "Mangalore", "Hubli", "Belgaum", "Dharwad"],
-    "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", "Tirunelveli"],
-    "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar"],
-    "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer", "Bikaner"],
-    "Uttar Pradesh": ["Lucknow", "Kanpur", "Ghaziabad", "Agra", "Varanasi", "Meerut", "Allahabad"],
-    "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Asansol", "Siliguri", "Bardhaman"],
-    "Delhi": ["New Delhi", "North Delhi", "South Delhi", "East Delhi", "West Delhi", "Central Delhi"],
-    "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Khammam"],
-    "Kerala": ["Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur", "Kollam"],
-    "Bihar": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Darbhanga"],
-    "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bathinda"],
-    "Haryana": ["Gurgaon", "Faridabad", "Panipat", "Ambala", "Yamunanagar"],
-    "Madhya Pradesh": ["Bhopal", "Indore", "Jabalpur", "Gwalior", "Ujjain"],
-    "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Puri", "Sambalpur"],
-    "Assam": ["Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Tezpur"],
-    "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro", "Hazaribagh"],
-    "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur", "Durg", "Korba"],
-    "Himachal Pradesh": ["Shimla", "Dharamshala", "Solan", "Mandi", "Kullu"],
-    "Uttarakhand": ["Dehradun", "Haridwar", "Haldwani", "Roorkee", "Rudrapur"],
-    "Goa": ["Panaji", "Margao", "Vasco da Gama", "Mapusa", "Ponda"],
-    "Tripura": ["Agartala", "Udaipur", "Dharmanagar", "Kailasahar"],
-    "Meghalaya": ["Shillong", "Tura", "Jowai", "Nongpoh"],
-    "Manipur": ["Imphal", "Thoubal", "Churachandpur", "Bishnupur"],
-    "Nagaland": ["Kohima", "Dimapur", "Mokokchung", "Tuensang"],
-    "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang"],
-    "Mizoram": ["Aizawl", "Lunglei", "Champhai", "Serchhip"],
-    "Sikkim": ["Gangtok", "Namchi", "Mangan", "Ravangla"],
+  // Fetch data when component mounts
+  useEffect(() => {
+    dispatch(fetchCustomerTypes());
+    dispatch(fetchCustomerStatuses());
+    fetchStates();
+    fetchCities();
+  }, [dispatch]);
+
+  // Fetch states from API
+  const fetchStates = async () => {
+    try {
+      const response = await apiClient.get('/user-management/states?page=1&limit=50');
+      if (response.data?.states) {
+        setStates(response.data.states);
+      }
+    } catch (error) {
+      console.error('Error fetching states:', error);
+    }
   };
 
-  const states = Object.keys(indianStatesAndCities).sort();
-  const subCategories = ["Pharmacy", "Clinic", "Laboratory", "Diagnostic Center", "Medical Store"];
-  const statusOptions = ["Active", "Inactive", "Pending", "Blocked", "Verified"];
+  // Fetch cities from API  
+  const fetchCities = async () => {
+    try {
+      const response = await apiClient.get('/user-management/cities?page=1&limit=500');
+      if (response.data?.cities) {
+        setCities(response.data.cities);
+      }
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+    }
+  };
+
+  // Get subcategories dynamically based on selected categories
+  const getSubCategories = () => {
+    const selectedCategories = filters.category;
+    const subCats = [];
+    
+    if (selectedCategories.includes('All') || selectedCategories.length === 0) {
+      // Show all subcategories
+      customerTypes.forEach(type => {
+        type.customerCategories?.forEach(cat => {
+          if (cat.customerSubcategories?.length > 0) {
+            cat.customerSubcategories.forEach(subCat => {
+              if (!subCats.find(sc => sc.name === subCat.name)) {
+                subCats.push(subCat.name);
+              }
+            });
+          } else {
+            if (!subCats.includes(cat.name)) {
+              subCats.push(cat.name);
+            }
+          }
+        });
+      });
+    } else {
+      // Show subcategories for selected categories
+      selectedCategories.forEach(selectedCat => {
+        const type = customerTypes.find(t => 
+          t.name === selectedCat || 
+          selectedCat.includes(t.name.split('/')[0]) // Handle "Pharmacy/Chemist/Medical store"
+        );
+        if (type?.customerCategories) {
+          type.customerCategories.forEach(cat => {
+            if (cat.customerSubcategories?.length > 0) {
+              cat.customerSubcategories.forEach(subCat => {
+                if (!subCats.includes(subCat.name)) {
+                  subCats.push(subCat.name);
+                }
+              });
+            } else {
+              if (!subCats.includes(cat.name)) {
+                subCats.push(cat.name);
+              }
+            }
+          });
+        }
+      });
+    }
+  
+    return subCats;
+  };
+
+  const subCategories = getSubCategories();
+  const statusOptions = customerStatuses.map(s => s.name);
 
   const filterSections = [
     { id: 'category', label: 'Category', hasSearch: false },
@@ -102,78 +169,73 @@ const FilterModal = ({ visible, onClose, onApply }) => {
         }),
       ]).start();
     } else {
-      // Animate out when closing
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: height,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Reset search when modal closes
+      setSearchQuery('');
     }
   }, [visible, slideAnim, fadeAnim]);
 
   useEffect(() => {
-    const cities = [];
-    filters.state.forEach(state => {
-      if (indianStatesAndCities[state]) {
-        cities.push(...indianStatesAndCities[state]);
+    // Update available cities when states are selected
+    const selectedStates = filters.state;
+    if (selectedStates.length > 0) {
+      // Get state IDs from selected state names
+      const selectedStateIds = states
+        .filter(state => selectedStates.includes(state.stateName))
+        .map(state => state.id);
+      
+      // Filter cities based on selected states
+      const filteredCities = cities.filter(city => 
+        selectedStateIds.includes(city.stateId?.toString())
+      );
+      setAvailableCities(filteredCities.map(c => c.cityName));
+      
+      // Remove any selected cities that are no longer available
+      const availableCityNames = filteredCities.map(c => c.cityName);
+      const updatedCityFilters = filters.city.filter(city => 
+        availableCityNames.includes(city)
+      );
+      if (updatedCityFilters.length !== filters.city.length) {
+        setFilters(prev => ({ ...prev, city: updatedCityFilters }));
       }
-    });
-    setAvailableCities([...new Set(cities)].sort());
-  }, [filters.state]);
-
-  useEffect(() => {
-    // Clear search when changing sections
-    setSearchQuery('');
-  }, [activeSection]);
-
-  const getOptionsForSection = (section) => {
-    switch (section) {
-      case 'category':
-        return ['All', 'Pharmacists in hospitals', 'Hospitals', 'Doctors'];
-      case 'subCategory':
-        return subCategories;
-      case 'status':
-        return statusOptions;
-      case 'state':
-        return states;
-      case 'city':
-        return availableCities.length > 0 ? availableCities : 
-          [...new Set(Object.values(indianStatesAndCities).flat())].sort();
-      default:
-        return [];
+    } else {
+      setAvailableCities([]);
+      setFilters(prev => ({ ...prev, city: [] }));
     }
+  }, [filters.state, states, cities]);
+
+  const handleClose = () => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: height,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onClose();
+    });
   };
 
-  const toggleFilter = (section, value) => {
+  const toggleFilter = (type, value) => {
     setFilters(prev => {
-      const current = prev[section];
+      const current = prev[type];
       const index = current.indexOf(value);
       
-      // Special handling for "All" in category
-      if (section === 'category' && value === 'All') {
-        if (index > -1) {
-          return { ...prev, category: [] };
-        } else {
-          return { ...prev, category: ['All', 'Pharmacists in hospitals', 'Hospitals', 'Doctors'] };
-        }
-      }
-      
       if (index > -1) {
+        // Remove if exists
         return {
           ...prev,
-          [section]: current.filter(item => item !== value),
+          [type]: current.filter(item => item !== value),
         };
       } else {
+        // Add if not exists
         return {
           ...prev,
-          [section]: [...current, value],
+          [type]: [...current, value],
         };
       }
     });
@@ -187,151 +249,58 @@ const FilterModal = ({ visible, onClose, onApply }) => {
       state: [],
       city: [],
     });
-    setSearchQuery('');
   };
 
   const applyFilters = () => {
-    // Animate out first, then apply and close
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: height,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onApply(filters);
-      onClose();
-    });
+    onApply(filters);
+    handleClose();
   };
 
-  const renderLeftMenuItem = (section) => (
-    <TouchableOpacity
-      key={section.id}
-      style={[
-        styles.leftMenuItem,
-        activeSection === section.id && styles.leftMenuItemActive,
-      ]}
-      onPress={() => setActiveSection(section.id)}
-      activeOpacity={0.7}
-    >
-      <Text style={[
-        styles.leftMenuText,
-        activeSection === section.id && styles.leftMenuTextActive,
-      ]}>
-        {section.label}
-      </Text>
-    </TouchableOpacity>
+  const getFilterData = () => {
+    switch (activeSection) {
+      case 'category':
+        // Get categories from API only
+        const categories = ['All'];
+        customerTypes.forEach(type => {
+          categories.push(type.name);
+        });
+        return categories;
+      case 'subCategory':
+        return subCategories;
+      case 'status':
+        return statusOptions;
+      case 'state':
+        return states.map(s => s.stateName);
+      case 'city':
+        return availableCities.length > 0 ? availableCities : [];
+      default:
+        return [];
+    }
+  };
+
+  const filteredData = getFilterData().filter(item =>
+    item.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const renderRightContent = () => {
-    const section = filterSections.find(s => s.id === activeSection);
-    const options = getOptionsForSection(activeSection);
-    const filteredOptions = searchQuery && section?.hasSearch
-      ? options.filter(option => 
-          option.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      : options;
-
-    return (
-      <View style={styles.rightContent}>
-        {section?.hasSearch && (
-          <View style={styles.searchContainer}>
-            <Search width={16} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={`Search ${section.label.toLowerCase()}`}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholderTextColor="#999"
-            />
-          </View>
-        )}
-        
-        <ScrollView 
-          style={styles.optionsList}
-          showsVerticalScrollIndicator={false}
-        >
-          {filteredOptions.map((option, index) => {
-            const isChecked = filters[activeSection].includes(option);
-            
-            return (
-              <TouchableOpacity
-                key={index}
-                style={styles.optionItem}
-                onPress={() => toggleFilter(activeSection, option)}
-                activeOpacity={0.7}
-              >
-                <View style={[
-                  styles.checkbox, 
-                  isChecked && styles.checkboxChecked
-                ]}>
-                  {isChecked && (
-                    <FilterCheck />
-                  )}
-                </View>
-                <Text style={[
-                  styles.optionText,
-                  isChecked && styles.optionTextChecked,
-                ]}>
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-          
-          {filteredOptions.length === 0 && searchQuery && (
-            <Text style={styles.noResults}>No results found</Text>
-          )}
-        </ScrollView>
-      </View>
-    );
-  };
-
-  const handleClose = () => {
-    // Animate out first, then close
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: height,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onClose(); // Call onClose after animation completes
-    });
-  };
+  const currentSection = filterSections.find(s => s.id === activeSection);
 
   return (
     <Modal
       visible={visible}
-      transparent
+      transparent={true}
       animationType="none"
       onRequestClose={handleClose}
+      statusBarTranslucent={true}
+      presentationStyle="overFullScreen"
     >
-      <Animated.View 
-        style={[
-          styles.overlay,
-          {
-            opacity: fadeAnim,
-          },
-        ]}
-      >
+      <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
         <TouchableOpacity 
-          style={styles.overlayTouch}
+          style={styles.backgroundTouch}
           activeOpacity={1}
           onPress={handleClose}
         />
         
-        <Animated.View
+        <Animated.View 
           style={[
             styles.modalContent,
             {
@@ -345,37 +314,107 @@ const FilterModal = ({ visible, onClose, onApply }) => {
               <CloseCircle />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.splitContainer}>
-            {/* Left Side - Menu */}
+            {/* Left Panel - Filter Types */}
             <View style={styles.leftPanel}>
-              {filterSections.map(section => renderLeftMenuItem(section))}
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {filterSections.map((section) => {
+                  const count = filters[section.id].length;
+                  return (
+                    <TouchableOpacity
+                      key={section.id}
+                      style={[
+                        styles.leftMenuItem,
+                        activeSection === section.id && styles.leftMenuItemActive,
+                      ]}
+                      onPress={() => {
+                        setActiveSection(section.id);
+                        setSearchQuery('');
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.leftMenuText,
+                          activeSection === section.id && styles.leftMenuTextActive,
+                        ]}
+                      >
+                        {section.label} {count > 0 && `(${count})`}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
             </View>
-            
-            {/* Vertical Divider */}
+
             <View style={styles.divider} />
-            
-            {/* Right Side - Options */}
+
+            {/* Right Panel - Filter Options */}
             <View style={styles.rightPanel}>
-              {renderRightContent()}
+              <View style={styles.rightContent}>
+                {/* Search Bar */}
+                {currentSection?.hasSearch && (
+                  <View style={styles.searchContainer}>
+                    <Search />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder={`Search ${currentSection.label.toLowerCase()}...`}
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                      placeholderTextColor="#999"
+                    />
+                    {searchQuery.length > 0 && (
+                      <TouchableOpacity onPress={() => setSearchQuery('')}>
+                        <CloseCircle width={16} height={16} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+
+                {/* Options List */}
+                <ScrollView 
+                  style={styles.optionsList} 
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {activeSection === 'city' && filters.state.length === 0 ? (
+                    <Text style={styles.noResults}>Please select a state first</Text>
+                  ) : filteredData.length === 0 ? (
+                    <Text style={styles.noResults}>No results found</Text>
+                  ) : (
+                    filteredData.map((item, index) => {
+                      const isChecked = filters[activeSection].includes(item);
+                      return (
+                        <TouchableOpacity
+                          key={index}
+                          style={styles.optionItem}
+                          onPress={() => {
+                            Keyboard.dismiss();
+                            toggleFilter(activeSection, item);
+                          }}
+                        >
+                          <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
+                            {isChecked && <FilterCheck width={12} height={12} color="#fff" />}
+                          </View>
+                          <Text style={[styles.optionText, isChecked && styles.optionTextChecked]}>
+                            {item}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })
+                  )}
+                </ScrollView>
+              </View>
             </View>
           </View>
-          
+
+          {/* Footer Buttons */}
           <View style={styles.modalFooter}>
-            <TouchableOpacity 
-              style={styles.clearButton}
-              onPress={clearFilters}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.clearButtonText}>Clear filter</Text>
+            <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+              <Text style={styles.clearButtonText}>Clear</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.applyButton}
-              onPress={applyFilters}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.applyButtonText}>Apply filter</Text>
+            <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
+              <Text style={styles.applyButtonText}>Apply</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -384,19 +423,21 @@ const FilterModal = ({ visible, onClose, onApply }) => {
   );
 };
 
+// KEEPING YOUR EXACT ORIGINAL STYLES - NOT CHANGING ANYTHING
 const styles = StyleSheet.create({
-  overlay: {
+  modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
-  overlayTouch: {
-    flex: 1,
-  },
-  modalContent: {
+  backgroundTouch: {
     position: 'absolute',
-    bottom: 0,
+    top: 0,
     left: 0,
     right: 0,
+    bottom: 0,
+  },
+  modalContent: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,15 @@ import {
   FlatList,
   StatusBar,
   Platform,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
+
+import { useDispatch, useSelector } from 'react-redux';
 
 import Menu from '../../../components/icons/Menu';
 import Phone from '../../../components/icons/Phone';
@@ -33,12 +38,49 @@ import FilterModal from '../../../components/FilterModal';
 import CloseCircle from '../../../components/icons/CloseCircle';
 import EyeOpen from '../../../components/icons/EyeOpen';
 import Document from '../../../components/icons/Document';
-
-import { authAPI } from '../../../api/auth';
+import People from '../../../components/icons/People';
+import Refresh from '../../../components/icons/Refresh';
+import AlertCircle from '../../../components/icons/AlertCircle';
 
 const { width, height } = Dimensions.get('window');
 
+// Import Redux actions and selectors
+import {
+  fetchCustomersList,
+  fetchCustomerTypes,
+  fetchCustomerStatuses,
+  setFilters,
+  selectCustomers,
+  selectPagination,
+  selectLoadingStates,
+  selectCustomerStatuses,
+  selectCustomerTypes,
+  selectFilters,
+  incrementPage,
+  resetCustomersList
+} from '../../../redux/slices/customerSlice';
+import ChevronLeft from '../../../components/icons/ChevronLeft';
+import ChevronRight from '../../../components/icons/ChevronRight';
+import FilterCheck from '../../../components/icons/FilterCheck';
+import CheckCircle from '../../../components/icons/CheckCircle';
+
 const CustomerList = ({ navigation }) => {
+
+  const dispatch = useDispatch();
+  
+  // Get customers from Redux instead of mock data
+  const customers = useSelector(selectCustomers);
+
+  const customerTypes = useSelector(selectCustomerTypes);
+  const customerStatuses = useSelector(selectCustomerStatuses);
+  const cities = useSelector(state => state.customer.cities);
+  const states = useSelector(state => state.customer.states);
+
+  const pagination = useSelector(selectPagination);
+  const { listLoading, listLoadingMore } = useSelector(selectLoadingStates);
+  const { currentPage, hasMore, limit } = pagination; // Add limit here
+  const filters = useSelector(selectFilters); // Get filters from Redux
+  const listError = useSelector(state => state.customer.error);
   
   const [activeTab, setActiveTab] = useState('all');
   const [searchText, setSearchText] = useState('');
@@ -46,55 +88,136 @@ const CustomerList = ({ navigation }) => {
   const [downloadModalVisible, setDownloadModalVisible] = useState(false);
   const [documentModalVisible, setDocumentModalVisible] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  
   const [selectedFilters, setSelectedFilters] = useState({
-    category: ['All', 'Pharmacists in hospitals', 'Hospitals', 'Doctors'],
-    subCategory: [],
-    status: [],
-    state: [],
-    city: [],
+    typeCode: '',
+    statusId: [],
+    cityIds: [],
+    categoryCode: '',
+    subCategoryCode: ''
   });
+
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
-  // Mock data
-  const customers = [
-    {
-      id: '1',
-      name: 'Dr. Sudhakar Joshi',
-      code: '2536',
-      location: 'Pune',
-      type: '9-Contract',
-      category: 'Doctor',
-      phone: '9080807070',
-      email: 'Sudhakarjoshi123@gmail.com',
-      status: 'ACTIVE',
-    },
-    {
-      id: '2',
-      name: 'Jahangir General Hospital',
-      code: '3594',
-      location: 'Pune',
-      type: '11-RFQ',
-      category: 'Hospital',
-      phone: '9080807070',
-      email: 'Sudhakarjoshi123@gmail.com',
-      status: 'NOT ONBOARDED',
-    },
-    {
-      id: '3',
-      name: 'Dr. Sudhakar Joshi',
-      code: '2536',
-      location: 'Pune',
-      type: '9-Contract',
-      category: 'Doctor',
-      phone: '9080807070',
-      email: 'Sudhakarjoshi123@gmail.com',
-      status: 'LOCKED',
-    },
-  ];
+  const filteredCustomers = customers.filter((customer) => {
+    if (activeTab === 'onboarded') {
+      return customer.status === 'ACTIVE';
+    } else if (activeTab === 'notOnboarded') {
+      return customer.status === 'NOT-ONBOARDED';
+    }
+    return true;
+  });
+
+  // Fetch customers on mount
+  useEffect(() => {
+    const initializeData = async () => {    
+      dispatch(resetCustomersList());  
+      // Fetch customers
+      dispatch(fetchCustomersList({
+        page: 1,
+        limit: 10,
+        isLoadMore: false
+      }));
+      dispatch(fetchCustomerStatuses());
+      dispatch(fetchCustomerTypes());
+    };
+    
+    initializeData();
+  }, [dispatch]);
+
+  // Handle search with debounce
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      dispatch(setFilters({ ...filters, searchText }));
+      dispatch(resetCustomersList());
+      dispatch(fetchCustomersList({
+        page: 1,
+        limit: 10,
+        searchText: searchText,
+        ...filters,
+        isLoadMore: false
+      }));
+    }, 500);
+    
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchText, dispatch]);
+
+  // Refresh function
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    dispatch(resetCustomersList());
+    await dispatch(fetchCustomersList({
+      page: 1,
+      limit: 10,
+      ...filters,
+      isLoadMore: false
+    }));
+    setIsRefreshing(false);
+  };
+
+  // Load more customers for infinite scroll
+  const loadMoreCustomers = useCallback(() => {
+    if (!hasMore || listLoadingMore || listLoading) {
+      return;
+    }
+
+    const nextPage = currentPage + 1;
+    
+    dispatch(fetchCustomersList({
+      page: nextPage,
+      limit: limit || 10,
+      ...filters,
+      isLoadMore: true // This tells the slice to append, not replace
+    })).then((result) => {
+      if (result.type === 'customer/fetchList/fulfilled') {
+        dispatch(incrementPage());
+      }
+    });
+  }, [dispatch, currentPage, hasMore, listLoadingMore, listLoading, limit, filters]);
+
+  // Handle scroll end reached - for FlatList
+  const handleLoadMore = () => {
+    if (hasMore && !listLoadingMore) {
+      loadMoreCustomers();
+    }
+  };
+
+  // Footer component for loading indicator
+  const renderFooter = () => {
+    if (!listLoadingMore) return null;
+    
+    return (
+      <View style={{ paddingVertical: 20 }}>
+        <ActivityIndicator size="small" color={colors.primary} />
+        <Text style={{ textAlign: 'center', marginTop: 10, color: '#666' }}>
+          Loading more customers...
+        </Text>
+      </View>
+    );
+  };
+
+  // End reached component
+  const renderEndReached = () => {
+    if (hasMore || listLoadingMore || customers.length === 0) return null;
+    
+    return (
+      <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+        <Text style={{ color: '#999', fontSize: 14 }}>
+          — End of list —
+        </Text>
+        <Text style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+          {customers.length} customers loaded
+        </Text>
+      </View>
+    );
+  };
+
+  const keyExtractor = (item) => item.customerId.toString();
 
   useEffect(() => {
     Animated.parallel([
@@ -120,11 +243,18 @@ const CustomerList = ({ navigation }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'ACTIVE':
-        return '#E8F5E9';
+      case 'ACCEPTED':
+      case 'APPROVED':
+      case 'UN-VERIFIED':
+        return 'rgba(34, 197, 94, 0.1)'; // bg-active/10 (green)
+      case 'PENDING':
+        return 'rgba(251, 146, 60, 0.1)'; // bg-warningLight/10 (orange)
+      case 'LOCKED':
+        return 'rgba(239, 68, 68, 0.1)'; // bg-danger/10 (red)
+      case 'DRAFT':
+        return 'rgba(156, 163, 175, 0.08)'; // bg-draftbg/8 (gray)
       case 'NOT ONBOARDED':
         return '#FFF3E0';
-      case 'LOCKED':
-        return '#FFEBEE';
       default:
         return '#F5F5F5';
     }
@@ -133,20 +263,92 @@ const CustomerList = ({ navigation }) => {
   const getStatusTextColor = (status) => {
     switch (status) {
       case 'ACTIVE':
-        return '#2E7D32';
+      case 'ACCEPTED':
+      case 'APPROVED':
+      case 'UN-VERIFIED':
+        return '#22C55E'; // text-active (green)
+      case 'PENDING':
+        return '#FB923C'; // text-warningLight (orange)
+      case 'LOCKED':
+        return '#EF4444'; // text-danger (red)
+      case 'DRAFT':
+        return '#9CA3AF'; // text-draftbg (gray)
       case 'NOT ONBOARDED':
         return '#F57C00';
-      case 'LOCKED':
-        return '#C62828';
       default:
         return '#757575';
     }
   };
 
   const handleApplyFilters = (filters) => {
-    console.log('Applied filters:', filters);
-    // Apply your filtering logic here
-    // Update your customer list based on selected filters
+    let typeCode = '';
+    let categoryCode = '';
+    let subCategoryCode = '';
+    let statusIds = [];
+    
+    // Handle category (customer type) - uses actual API code
+    if (filters.category && filters.category.length > 0 && !filters.category.includes('All')) {
+      const selectedType = customerTypes.find(type => type.name === filters.category[0]);
+      if (selectedType) {
+        typeCode = selectedType.code; // "PCM", "HOSP", "DOCT"
+      }
+    }
+    
+    // Handle subcategory - uses actual API codes
+    if (filters.subCategory && filters.subCategory.length > 0 && typeCode) {
+      const selectedSubCatName = filters.subCategory[0];
+      const selectedType = customerTypes.find(type => type.code === typeCode);
+      
+      if (selectedType?.customerCategories) {
+        // Check if it's a category
+        const category = selectedType.customerCategories.find(cat => cat.name === selectedSubCatName);
+        if (category) {
+          categoryCode = category.code; // "OR", "OW", "RCW", "PRI", "GOV"
+        } else {
+          // Check if it's a subcategory
+          selectedType.customerCategories.forEach(cat => {
+            const subCategory = cat.customerSubcategories?.find(subCat => subCat.name === selectedSubCatName);
+            if (subCategory) {
+              categoryCode = cat.code;
+              subCategoryCode = subCategory.code; // "PCL", "PIH", "PGH"
+            }
+          });
+        }
+      }
+    }
+    
+    // Handle status - uses actual API IDs
+    if (filters.status && filters.status.length > 0) {
+      statusIds = filters.status
+        .map(statusName => customerStatuses.find(s => s.name === statusName)?.id)
+        .filter(id => id !== undefined); // [1, 2, 3, 4]
+    }
+    
+    // Handle cities - uses actual API IDs
+    const cityIds = filters.city && filters.city.length > 0
+      ? filters.city
+          .map(cityName => cities.find(c => c.cityName === cityName)?.id)
+          .filter(id => id !== undefined)
+      : [];
+    
+    // Apply filters matching your Redux structure
+    const filterParams = {
+      searchText: searchText || '',
+      typeCode,
+      categoryCode,
+      subCategoryCode,
+      statusId: statusIds,
+      cityIds,
+    };
+    
+    dispatch(setFilters(filterParams));
+    dispatch(fetchCustomersList({
+      page: 1,
+      limit: 10,
+      ...filterParams
+    }));
+    
+    setFilterModalVisible(false);
   };
 
   // Document Download Modal for individual customer
@@ -245,7 +447,7 @@ const CustomerList = ({ navigation }) => {
                   style={styles.topDocumentItem}
                   activeOpacity={0.7}
                   onPress={() => {
-                    console.log(`Download GST for ${selectedCustomer?.name}`);
+                    console.log(`Download GST for ${selectedCustomer?.customerName}`);
                   }}
                 >
                   <View style={styles.topDocumentContent}>
@@ -255,7 +457,7 @@ const CustomerList = ({ navigation }) => {
                   <TouchableOpacity 
                     style={styles.eyeIconButton}
                     onPress={() => {
-                      console.log(`Preview GST for ${selectedCustomer?.name}`);
+                      console.log(`Preview GST for ${selectedCustomer?.customerName}`);
                     }}
                   >
                     <EyeOpen width={18} color={colors.primary} />
@@ -266,7 +468,7 @@ const CustomerList = ({ navigation }) => {
                   style={styles.topDocumentItem}
                   activeOpacity={0.7}
                   onPress={() => {
-                    console.log(`Download PAN for ${selectedCustomer?.name}`);
+                    console.log(`Download PAN for ${selectedCustomer?.customerName}`);
                   }}
                 >
                   <View style={styles.topDocumentContent}>
@@ -276,7 +478,7 @@ const CustomerList = ({ navigation }) => {
                   <TouchableOpacity 
                     style={styles.eyeIconButton}
                     onPress={() => {
-                      console.log(`Preview PAN for ${selectedCustomer?.name}`);
+                      console.log(`Preview PAN for ${selectedCustomer?.customerName}`);
                     }}
                   >
                     <EyeOpen width={18} color={colors.primary} />
@@ -295,7 +497,7 @@ const CustomerList = ({ navigation }) => {
                     style={styles.documentRowContent}
                     activeOpacity={0.7}
                     onPress={() => {
-                      console.log(`Download ${doc.name} for ${selectedCustomer?.name}`);
+                      console.log(`Download ${doc.name} for ${selectedCustomer?.customerName}`);
                     }}
                   >
                     <View style={styles.documentLeftSection}>
@@ -307,7 +509,7 @@ const CustomerList = ({ navigation }) => {
                   <TouchableOpacity 
                     style={styles.eyeIconButton}
                     onPress={() => {
-                      console.log(`Preview ${doc.name} for ${selectedCustomer?.name}`);
+                      console.log(`Preview ${doc.name} for ${selectedCustomer?.customerName}`);
                     }}
                   >
                     <EyeOpen width={18} color={colors.primary} />
@@ -345,11 +547,13 @@ const CustomerList = ({ navigation }) => {
           onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
         >
           <View style={styles.customerHeader}>
-            <Text style={styles.customerName}>{item.name}</Text>
+            <Text style={styles.customerName}>{item.customerName} <ChevronRight height={11} color={colors.primary} /></Text>
             <View style={styles.actionsContainer}>
-              <TouchableOpacity style={styles.actionButton}>
-                <Edit color="#666" />
-              </TouchableOpacity>
+              {item.statusName === 'NOT-ONBOARDED' && (
+                <TouchableOpacity style={styles.actionButton}>
+                  <Edit color="#666" />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity 
                 style={styles.actionButton}
                 onPress={() => {
@@ -365,47 +569,58 @@ const CustomerList = ({ navigation }) => {
           <View style={styles.customerInfo}>
             <View style={styles.infoRow}>
               <AddrLine color="#999" />
-              <Text style={styles.infoText}>{item.code}</Text>
+              <Text style={styles.infoText}>{item.customerCode}</Text>
               <Text style={styles.divider}>|</Text>
-              <Text style={styles.infoText}>{item.location}</Text>
+              <Text style={styles.infoText}>{item.cityName}</Text>
               <Text style={styles.divider}>|</Text>
-              <Text style={styles.infoText}>{item.type}</Text>
+              <Text style={styles.infoText}>{item.groupName}</Text>
               <Text style={styles.divider}>|</Text>
-              <Text style={{...styles.infoText, marginRight: 5}}>{item.category}</Text>
-              {item.category === 'Hospital' && (
+              <Text style={{...styles.infoText, marginRight: 5}}>{item.customerType}</Text>
+              {item.customerType === 'Hospital' && (
                 <AlertFilled color="#999" style={styles.infoIcon} />
               )}
             </View>
 
             <View style={styles.contactRow}>
               <Phone color="#999" />
-              <Text style={{...styles.contactText, marginRight: 15}}>{item.phone}</Text>
+              <Text style={{...styles.contactText, marginRight: 15}}>{item.mobile}</Text>
               <Email color="#999" style={styles.mailIcon} />
               <Text style={styles.contactText}>{item.email}</Text>
             </View>
           </View>
 
           <View style={styles.statusRow}>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-              <Text style={[styles.statusText, { color: getStatusTextColor(item.status) }]}>
-                {item.status}
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
+              <Text style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
+                {item.statusName}
               </Text>
             </View>
-            {item.status === 'ACTIVE' ? (
-              <TouchableOpacity style={styles.blockButton}>
-                <Locked color="#666" />
-                <Text style={styles.blockButtonText}>Block</Text>
+            {item.statusName === 'LOCKED' ? (
+            <TouchableOpacity style={styles.unlockButton}>
+              <UnLocked fill="#EF4444" />
+              <Text style={styles.unlockButtonText}>Unblock</Text>
+            </TouchableOpacity>
+          ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
+            <TouchableOpacity style={styles.blockButton}>
+              <Locked fill="#666" />
+              <Text style={styles.blockButtonText}>Block</Text>
+            </TouchableOpacity>
+          ) : item.statusName === 'PENDING' ? (
+            <View style={styles.pendingActions}>
+              <TouchableOpacity style={styles.approveButton}>
+                <Text style={styles.approveButtonText}>Approve</Text>
               </TouchableOpacity>
-            ) : item.status === 'NOT ONBOARDED' ? (
-              <TouchableOpacity style={styles.onboardButton}>
-                <Text style={styles.onboardButtonText}>Onboard</Text>
+              <TouchableOpacity style={styles.rejectButton}>
+                <CloseCircle />
               </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={styles.unlockButton}>
-                <UnLocked color="#D32F2F" />
-                <Text style={styles.unlockButtonText}>Unlock</Text>
-              </TouchableOpacity>
-            )}
+            </View>
+          ) : item.statusName === 'NOT ONBOARDED' ? (
+            <TouchableOpacity 
+              style={styles.onboardButton}
+              onPress={() => navigation.navigate('CustomerOnboard', { customerId: item.customerId })}>
+              <Text style={styles.onboardButtonText}>Onboard</Text>
+            </TouchableOpacity>
+          ) : null}
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -485,7 +700,7 @@ const CustomerList = ({ navigation }) => {
           onPress={() => setActiveTab('all')}
         >
           <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
-            All (20)
+            All ({pagination.totalCustomers})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -493,7 +708,7 @@ const CustomerList = ({ navigation }) => {
           onPress={() => setActiveTab('notOnboarded')}
         >
           <Text style={[styles.tabText, activeTab === 'notOnboarded' && styles.activeTabText]}>
-            Not Onboarded (12)
+            Not Onboarded
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -501,7 +716,7 @@ const CustomerList = ({ navigation }) => {
           onPress={() => setActiveTab('unverified')}
         >
           <Text style={[styles.tabText, activeTab === 'unverified' && styles.activeTabText]}>
-            Unverified(1)
+            Unverified
           </Text>
         </TouchableOpacity>
       </View>
@@ -536,13 +751,84 @@ const CustomerList = ({ navigation }) => {
           },
         ]}
       >
+
+        {listLoading && customers.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading customers...</Text>
+        </View>
+      ) :listError && customers.length === 0 ? (
+        <View style={styles.errorContainer}>
+          <AlertCircle size={60} color="#EF4444" />
+          <Text style={styles.errorTitle}>Unable to Load Customers</Text>
+          <Text style={styles.errorMessage}>
+            {listError === 'Network request failed' || listError.includes('Network') 
+              ? 'Server is currently unavailable. Please check your connection and try again.'
+              : listError || 'Something went wrong. Please try again.'}
+          </Text>
+          <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+            <Refresh size={20} color="#fff" />
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : customers.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <People size={60} color="#9CA3AF" />
+          <Text style={styles.emptyTitle}>No Customers Found</Text>
+          <Text style={styles.emptyMessage}>
+            {searchText ? `No customers match "${searchText}"` : 'Start by adding your first customer'}
+          </Text>
+        </View>
+      ) : (
+        
         <FlatList
-          data={customers}
-          renderItem={renderCustomerItem}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-        />
+        data={filteredCustomers}
+        renderItem={renderCustomerItem}
+        keyExtractor={keyExtractor}
+        contentContainerStyle={styles.scrollContent}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={20}
+        windowSize={20}
+        initialNumToRender={10}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        // Infinite scroll props
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.3} // Load more when 30% from bottom
+        ListFooterComponent={
+          <>
+            {renderFooter()}
+            {renderEndReached()}
+          </>
+        }
+        ListEmptyComponent={
+          !listLoading && (
+            <View style={styles.emptyContainer}>
+              <People width={80} height={80} color="#E0E0E0" />
+              <Text style={styles.emptyTitle}>No Customers Found</Text>
+              <Text style={styles.emptyMessage}>
+                {searchText 
+                  ? `No results for "${searchText}"`
+                  : 'Start by adding your first customer'}
+              </Text>
+            </View>
+          )
+        }
+        // Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
+        windowSize={10}
+      />
+
+      )}
         </Animated.View>
 
         <DownloadModal />
@@ -661,6 +947,16 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingTop: 8,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: colors.textLight,
+  },
   customerCard: {
     backgroundColor: '#fff',
     marginHorizontal: 16,
@@ -770,6 +1066,81 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 14,
     color: '#D32F2F',
+  },
+  pendingActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  approveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    gap: 4,
+  },
+  approveButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  rejectButton: {
+    padding: 4,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   modalOverlay: {
     flex: 1,
