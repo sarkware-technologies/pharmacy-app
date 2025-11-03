@@ -6,9 +6,9 @@ export const fetchCustomerTypes = createAsyncThunk(
   'customer/fetchTypes',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await customerAPI.getCustomerTypes();
+      const response = await customerAPI.getCustomerTypes();           
       return response.data;
-    } catch (error) {
+    } catch (error) {      
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -19,9 +19,6 @@ export const fetchCustomerStatuses = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await customerAPI.getCustomerStatuses();
-
-      console.log("CustomerStatus Response ", response);
-
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -235,9 +232,10 @@ const customerSlice = createSlice({
         state.typesLoading = true;
         state.typesError = null;
       })
-      .addCase(fetchCustomerTypes.fulfilled, (state, action) => {
+      .addCase(fetchCustomerTypes.fulfilled, (state, action) => {        
         state.typesLoading = false;
-        state.customerTypes = action.payload.customerType || [];
+        state.typesError = null;
+        state.customerTypes = action.payload.customerType || [];        
       })
       .addCase(fetchCustomerTypes.rejected, (state, action) => {
         state.typesLoading = false;

@@ -15,7 +15,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import {
@@ -166,16 +165,19 @@ const RegistrationType = () => {
       }
 
       // Navigate to appropriate form based on selection
-      if (selectedType.code === 'HOSP' && selectedCategory?.code === 'PRI' && selectedSubCategory?.code === 'PCL') {
+      if (selectedType.code === 'HOSP' && selectedCategory?.code === 'PRI' && 
+        (selectedSubCategory?.code === 'PCL' || selectedSubCategory?.code === 'PIH' || selectedSubCategory?.code === 'PGH')) {
         navigation.navigate('ClinicRegistrationForm', navigationParams);
       } else if (selectedType.code === 'HOSP' && selectedCategory?.code === 'PRI' && selectedSubCategory?.code === 'PGH') {
-        navigation.navigate('GroupHospitalRegistrationForm', navigationParams);
-      } else if (selectedType.code === 'HOSP') {
-        navigation.navigate('ClinicRegistrationForm', navigationParams);
-      } else if (selectedType.code === 'PCM') {
-        navigation.navigate('ClinicRegistrationForm', navigationParams);
+        //navigation.navigate('GroupHospitalRegistrationForm', navigationParams);
       } else if (selectedType.code === 'DOCT') {
         navigation.navigate('DoctorRegistrationForm', navigationParams);
+      } else if (selectedType.code === 'PCM' && selectedCategory?.code === 'OR') {
+        navigation.navigate('PharmacyRetailerForm', navigationParams);
+      } else if (selectedType.code === 'PCM' && selectedCategory?.code === 'OW') {
+        navigation.navigate('PharmacyWholesalerForm', navigationParams);
+      } else if (selectedType.code === 'PCM' && selectedCategory?.code === 'RCW') {
+        navigation.navigate('PharmacyWholesalerRetailerForm', navigationParams);
       }
     }
   };
@@ -238,7 +240,7 @@ const RegistrationType = () => {
     );
   };
 
-  if (typesLoading) {
+  if (typesLoading && (!customerTypes || customerTypes.length === 0)) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <StatusBar backgroundColor="#fff" barStyle="dark-content" />
@@ -482,20 +484,20 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   typeButton: {
-    paddingVertical: 18,
+    paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: '#E0E0E0',
     backgroundColor: '#FAFAFA',
-    marginBottom: 12,
+    marginBottom: 12,    
   },
   selectedTypeButton: {
     borderColor: colors.primary,
     backgroundColor: '#FFF5ED',
   },
   typeButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
     textAlign: 'center',
   },
@@ -509,21 +511,25 @@ const styles = StyleSheet.create({
   },
   categoryButton: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 12,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#E0E0E0',
     backgroundColor: '#FAFAFA',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   selectedCategoryButton: {
     borderColor: colors.primary,
     backgroundColor: '#FFF5ED',
+    
   },
   categoryButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
     textAlign: 'center',
+    verticalAlign: 'middle'    
   },
   selectedCategoryButtonText: {
     color: colors.primary,
@@ -533,7 +539,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   subCategoryButton: {
-    paddingVertical: 16,
+    paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 1.5,
@@ -545,7 +551,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF5ED',
   },
   subCategoryButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
   },
   selectedSubCategoryButtonText: {
@@ -590,7 +596,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
     marginBottom: 20,
   },
@@ -602,11 +608,11 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
   },
   noDataText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#999',
     textAlign: 'center',
     marginTop: 20,

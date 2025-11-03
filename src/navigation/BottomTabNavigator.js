@@ -4,8 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import OrdersStack from '../navigation/OrdersStack';
 import { colors } from '../styles/colors';
 
 import Home from '../components/icons/menu/Home';
@@ -18,6 +17,20 @@ import More from '../components/icons/menu/More';
 import CustomerList from '../screens/authorized/customer/CustomerList';
 import CustomerDetail from '../screens/authorized/customer/CustomerDetail';
 import CustomerSearch from '../screens/authorized/customer/CustomerSearch';
+
+// Import Pricing screens
+import RateContractList from '../screens/authorized/pricing/RateContractList';
+import CreateRateContract from '../screens/authorized/pricing/CreateRateContract';
+import RateContractDetail from '../screens/authorized/pricing/RateContractDetail';
+
+// Import Product screens - only ProductList for the tab
+import ProductList from '../screens/authorized/product/ProductList';
+
+// Import Distributor screens - only DistributorList for the tab
+import DistributorList from '../screens/authorized/distributor/DistributorList';
+
+// Import Division screens - only DivisionList for the tab
+import DivisionList from '../screens/authorized/division/DivisionList';
 
 // Placeholder screens for other tabs
 const HomeScreen = () => (
@@ -33,15 +46,6 @@ const OrdersScreen = () => (
     <Text style={styles.placeholderSubtext}>Coming Soon</Text>
   </View>
 );
-
-const PricingScreen = () => (
-  <View style={styles.placeholder}>
-    <Text style={styles.placeholderText}>Pricing & Approvals</Text>
-    <Text style={styles.placeholderSubtext}>Coming Soon</Text>
-  </View>
-);
-
-// No separate MoreScreen needed - it opens the drawer
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -77,17 +81,68 @@ const CustomerStack = () => (
   </Stack.Navigator>
 );
 
+// Pricing Stack Navigator
+const PricingStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+      cardStyleInterpolator: ({ current, next, layouts }) => {
+        return {
+          cardStyle: {
+            transform: [
+              {
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              },
+            ],
+            opacity: current.progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 1],
+            }),
+          },
+        };
+      },
+    }}
+  >
+    <Stack.Screen name="RateContractList" component={RateContractList} />
+    <Stack.Screen name="CreateRateContract" component={CreateRateContract} />
+    <Stack.Screen name="RateContractDetail" component={RateContractDetail} />
+  </Stack.Navigator>
+);
+
+// Dynamic screen component based on route state
+// This allows us to show ProductList, DistributorList, DivisionList, etc. with bottom tabs
+const DynamicScreen = ({ route }) => {
+  const screenName = route.params?.screen || 'Home';
+  
+  switch (screenName) {
+    case 'ProductList':
+      return <ProductList />;
+    case 'DistributorList':
+      return <DistributorList />;
+    case 'DivisionList':
+      return <DivisionList />;
+    default:
+      return <HomeScreen />;
+  }
+};
+
 // Custom Tab Bar Component
 const CustomTabBar = ({ state, descriptors, navigation }) => {
   const insets = useSafeAreaInsets();
   const parentNavigation = useNavigation();
+  
+  // Check if we're on a dynamic screen (Product, Distributor, Division, etc.)
+  const isDynamicScreen = state.routes[state.index]?.name === 'DynamicTab';
   
   return (
     <View style={[
       styles.tabBar,
       { paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }
     ]}>
-      {state.routes.map((route, index) => {
+      {state.routes.filter(route => route.name !== 'DynamicTab').map((route, index) => {
         const { options } = descriptors[route.key];
         const label = options.tabBarLabel !== undefined
           ? options.tabBarLabel
@@ -96,7 +151,9 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
           : route.name;
 
         // Don't highlight More tab as focused
-        const isFocused = route.name === 'More' ? false : state.index === index;
+        const isFocused = route.name === 'More' ? false : 
+                         isDynamicScreen ? false :
+                         state.index === state.routes.findIndex(r => r.name === route.name);
 
         const onPress = () => {
           // Special handling for More tab
@@ -184,7 +241,7 @@ const BottomTabNavigator = () => {
       />
       <Tab.Screen 
         name="Orders" 
-        component={OrdersScreen}
+        component={OrdersStack}
         options={{
           tabBarLabel: 'Orders',
           tabBarIcon: ({ focused, color }) => (
@@ -194,7 +251,7 @@ const BottomTabNavigator = () => {
       />
       <Tab.Screen 
         name="Pricing" 
-        component={PricingScreen}
+        component={PricingStack}
         options={{
           tabBarLabel: 'Pricing',
           tabBarIcon: ({ focused, color }) => (
@@ -210,6 +267,14 @@ const BottomTabNavigator = () => {
           tabBarIcon: ({ focused, color }) => (
             <More color={color} />
           ),
+        }}
+      />
+      {/* Hidden tab for dynamic screens */}
+      <Tab.Screen 
+        name="DynamicTab" 
+        component={DynamicScreen}
+        options={{
+          tabBarButton: () => null, // Hide this tab from the tab bar
         }}
       />
     </Tab.Navigator>

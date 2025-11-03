@@ -677,7 +677,6 @@ const CustomerList = ({ navigation }) => {
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.openDrawer()}>
           <Menu />
-
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Customers</Text>
         <View style={styles.headerActions}>
@@ -790,6 +789,7 @@ const CustomerList = ({ navigation }) => {
         maxToRenderPerBatch={20}
         windowSize={20}
         initialNumToRender={10}
+        updateCellsBatchingPeriod={50}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -819,13 +819,7 @@ const CustomerList = ({ navigation }) => {
               </Text>
             </View>
           )
-        }
-        // Performance optimizations
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        updateCellsBatchingPeriod={50}
-        initialNumToRender={10}
-        windowSize={10}
+        }                
       />
 
       )}

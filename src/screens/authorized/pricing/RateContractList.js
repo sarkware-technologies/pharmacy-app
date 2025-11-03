@@ -1,0 +1,893 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  FlatList,
+  StatusBar,
+  Modal,
+  Alert,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { colors } from '../../../styles/colors';
+import Menu from '../../../components/icons/Menu';
+import Bell from '../../../components/icons/Bell';
+import ArrowDown from '../../../components/icons/ArrowDown';
+import Search from '../../../components/icons/Search';
+import Filter from '../../../components/icons/Filter';
+import Calendar from '../../../components/icons/Calendar';
+import AddCircle from '../../../components/icons/AddCircle';
+import EyeOpen from '../../../components/icons/EyeOpen';
+import ChevronRight from '../../../components/icons/ChevronRight';
+import Business from '../../../components/icons/Business';
+import AddrLine from '../../../components/icons/AddrLine';
+import PauseCircle from '../../../components/icons/PauseCircle';
+
+const RateContractList = () => {
+  const navigation = useNavigation();
+  const [activeTab, setActiveTab] = useState('Draft');
+  const [searchText, setSearchText] = useState('');
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [selectedFilters, setSelectedFilters] = useState({
+    status: ['Active', 'Draft', 'Expired RC', 'Inactive RC', 'Pending Approval', 'Approved', 'Rejected', 'Cancelled', 'Reassigned', 'Expiring Soon'],
+    customerGroup: [],
+    category: [],
+    state: [],
+    city: [],
+  });
+
+  // Mock data for rate contracts
+  const [rateContracts] = useState([
+    {
+      id: 'SUNRC_1',
+      customer: 'Columbia Asia',
+      location: 'Pune',
+      productCount: 500,
+      status: 'DRAFT',
+      distributorCount: 4,
+      stockist: 10,
+      rfqDate: 'April 2028',
+      isMultiple: true,
+      count: 2,
+      code: '2536',
+    },
+    {
+      id: 'SUNRC_2',
+      customer: 'Agarwal Maternity General Hospital',
+      location: 'Pune',
+      productCount: 500,
+      status: 'ACTIVE',
+      distributorCount: 4,
+      stockist: 10,
+      vqDate: 'April 2028',
+      code: '2536',
+    },
+    {
+      id: 'SUNRC_3',
+      customer: 'Apollo Hospitals',
+      location: 'Mumbai',
+      productCount: 350,
+      status: 'PENDING APPROVAL',
+      distributorCount: 6,
+      stockist: 15,
+      rfqDate: 'March 2028',
+      code: '2537',
+    },
+    {
+      id: 'SUNRC_4',
+      customer: 'Fortis Healthcare',
+      location: 'Delhi',
+      productCount: 420,
+      status: 'EXPIRING SOON',
+      distributorCount: 5,
+      stockist: 12,
+      vqDate: 'February 2025',
+      code: '2538',
+    },
+    {
+      id: 'SUNRC_5',
+      customer: 'Max Healthcare',
+      location: 'Noida',
+      productCount: 280,
+      status: 'EXPIRED RC',
+      distributorCount: 3,
+      stockist: 8,
+      vqDate: 'January 2025',
+      code: '2539',
+    },
+    {
+      id: 'SUNRC_6',
+      customer: 'Ruby Hall Clinic',
+      location: 'Pune',
+      productCount: 320,
+      status: 'REJECTED',
+      distributorCount: 4,
+      stockist: 9,
+      rfqDate: 'March 2025',
+      code: '2540',
+    },
+    {
+      id: 'SUNRC_7',
+      customer: 'Narayana Health',
+      location: 'Bengaluru',
+      productCount: 450,
+      status: 'APPROVED',
+      distributorCount: 7,
+      stockist: 14,
+      vqDate: 'May 2028',
+      code: '2541',
+    },
+    {
+      id: 'SUNRC_8',
+      customer: 'AIIMS',
+      location: 'Delhi',
+      productCount: 600,
+      status: 'REASSIGNED',
+      distributorCount: 8,
+      stockist: 20,
+      rfqDate: 'April 2028',
+      code: '2542',
+    },
+  ]);
+
+  const statusCounts = {
+    Active: 20,
+    Draft: 10,
+    'Expired RC': 5,
+    'Inactive RC': 3,
+    'Pending Approval': 8,
+    Approved: 15,
+    Rejected: 2,
+    Cancelled: 1,
+    Reassigned: 4,
+    'Expiring Soon': 5,
+  };
+
+  const tabs = ['All', 'Draft', 'Pending Approval', 'Expiring Soon', 'Expired RC', 'Reassigned'];
+
+  const filteredContracts = rateContracts.filter(contract => {
+    if (activeTab !== 'All' && contract.status !== activeTab.toUpperCase()) {
+      return false;
+    }
+    if (searchText && !contract.customer.toLowerCase().includes(searchText.toLowerCase()) &&
+        !contract.id.toLowerCase().includes(searchText.toLowerCase())) {
+      return false;
+    }
+    return true;
+  });
+
+  const renderStatusBadge = (status) => {
+    const statusBackgroundColors = {
+      ACTIVE: '#E8F4EF',
+      DRAFT: '#F7F1E8',
+      'EXPIRED RC': '#FBEAEA',
+      EXPIRED: '#FBEAEA',
+      'INACTIVE RC': '#F7F9F9',
+      INACTIVE: '#F7F9F9',
+      'PENDING APPROVAL': '#FEF7ED',
+      PENDING: colors.primaryLight,
+      APPROVED: '#E8F4EF',
+      REJECTED: '#FBEAEA',
+      CANCELLED: colors.textSecondary,
+      REASSIGNED: '#FEF7ED',
+      'EXPIRING SOON': '#F4F4F4',
+    };
+
+    const statusTextColors = {
+      ACTIVE: '#169560',
+      DRAFT: '#AE7017',
+      'EXPIRED RC': colors.error,
+      EXPIRED: colors.error,
+      'INACTIVE RC': colors.gray,
+      INACTIVE: colors.gray,
+      'PENDING APPROVAL': '#F4AD48',
+      PENDING: colors.primaryLight,
+      APPROVED: '#169560',
+      REJECTED: colors.error,
+      CANCELLED: colors.textSecondary,
+      REASSIGNED: '#F4AD48',
+      'EXPIRING SOON': '#959491',
+    };
+
+    return (
+      <View style={[styles.statusBadge, { backgroundColor: statusBackgroundColors[status] || colors.gray }]}>
+        <Text style={[ styles.statusText, { color : statusTextColors[status]} ]}>{status.replace('_', ' ')}</Text>
+      </View>
+    );
+  };
+
+  const renderFilterModal = () => (
+    <Modal
+      visible={filterVisible}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setFilterVisible(false)}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Filters</Text>
+            <TouchableOpacity onPress={() => setFilterVisible(false)}>
+              <Icon name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.filterScroll}>
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Status</Text>
+              {selectedFilters.status.map((status) => (
+                <TouchableOpacity key={status} style={styles.filterOption}>
+                  <Icon name="check-box" size={24} color={colors.primary} />
+                  <Text style={styles.filterOptionText}>{status}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Customer Group</Text>
+              <TextInput
+                style={styles.filterInput}
+                placeholder="Enter customer group"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </View>
+
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Category</Text>
+              <TextInput
+                style={styles.filterInput}
+                placeholder="Enter category"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </View>
+
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>State</Text>
+              <TextInput
+                style={styles.filterInput}
+                placeholder="Enter state"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </View>
+
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>City</Text>
+              <TextInput
+                style={styles.filterInput}
+                placeholder="Enter city"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity style={styles.clearButton}>
+              <Text style={styles.clearButtonText}>Clear filter</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.applyButton}>
+              <Text style={styles.applyButtonText}>Apply filter</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const renderRateContract = ({ item }) => (
+    <View style={styles.contractCard}>
+      <TouchableOpacity 
+        style={styles.contractHeader}
+        onPress={() => navigation.navigate('RateContractDetail', { contract: item })}
+      >
+        <View style={styles.contractIdContainer}>
+          <Text style={styles.contractId}>{item.id} <ChevronRight color={colors.primary} height={11} /></Text>          
+        </View>
+        <View style={styles.contractBadges}>
+          {item.rfqDate && (
+            <View style={styles.dateBadge}>
+              <Text style={styles.dateBadgeText}>RFQ</Text>
+            </View>
+          )}
+          {item.vqDate && (
+            <View style={styles.dateBadge}>
+              <Text style={styles.dateBadgeText}>VQ</Text>
+            </View>
+          )}
+          <Text style={styles.dateText}>
+            {item.rfqDate || item.vqDate}
+          </Text>
+          {item.isMultiple && (
+            <View style={styles.countBadge}>
+              <Text style={styles.countText}>{item.count} <ArrowDown color={colors.primary} width={8} /></Text>                            
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+
+      <View style={styles.contractBody}>
+        <Text style={styles.customerName}>{item.customer}</Text>
+        <View style={styles.contractInfo}>          
+          <AddrLine />
+          <Text style={styles.infoText}>
+            {item.code} | {item.location} | Product Count: {item.productCount}
+          </Text>
+        </View>
+
+        <View style={styles.distributorStockistRow}>
+          <TouchableOpacity style={styles.distributorInfo}>
+            <Business />
+            <Text style={{...styles.infoText, color: '#202020' }}>Configure Distribution <ChevronRight height={8} /></Text>                      
+          </TouchableOpacity>
+
+          <View style={styles.stockistInfo}>
+            <Text style={styles.stockistText}>Stockist:<Text style={{ color: '#202020', fontSize: 14, fontWeight: 'bold' }}>{item.stockist}</Text></Text>          
+            <EyeOpen color={colors.primary} width={16} />
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.contractFooter}>
+        {renderStatusBadge(item.status)}
+        {item.status === 'DRAFT' ? (
+          <TouchableOpacity style={styles.createButton}>            
+            <AddCircle />
+            <Text style={styles.createButtonText}>Create</Text>  
+            <ChevronRight height={11} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.suspendButton}>
+            <PauseCircle />
+            <Text style={styles.suspendButtonText}>Suspend</Text>
+            <ChevronRight height={11} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.openDrawer()}>
+          <Menu />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Pricing</Text>
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.groupUpdateButton}>
+            <Text style={styles.groupUpdateText}>GROUP UPDATE</Text>
+            <ArrowDown color={colors.primary} width={10} />
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Bell />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.statsContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Active</Text>
+              <Text style={[styles.statValue, { color: colors.success }]}>
+                {statusCounts.Active}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Draft</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>
+                {statusCounts.Draft}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Expired RC</Text>
+              <Text style={[styles.statValue, { color: colors.error }]}>
+                {statusCounts['Expired RC']}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Inactive RC</Text>
+              <Text style={[styles.statValue, { color: colors.gray }]}>
+                {statusCounts['Inactive RC']}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Pending Approval</Text>
+              <Text style={[styles.statValue, { color: colors.primaryLight }]}>
+                {statusCounts['Pending Approval']}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Approved</Text>
+              <Text style={[styles.statValue, { color: colors.success }]}>
+                {statusCounts.Approved}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Rejected</Text>
+              <Text style={[styles.statValue, { color: colors.error }]}>
+                {statusCounts.Rejected}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Cancelled</Text>
+              <Text style={[styles.statValue, { color: colors.textSecondary }]}>
+                {statusCounts.Cancelled}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Reassigned</Text>
+              <Text style={[styles.statValue, { color: colors.primaryLight }]}>
+                {statusCounts.Reassigned}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Expiring Soon</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>
+                {statusCounts['Expiring Soon']}
+              </Text>
+            </View>
+          </ScrollView>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer}>
+          {tabs.map(tab => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tab, activeTab === tab && styles.activeTab]}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <View style={styles.filterContainer}>
+          <TouchableOpacity style={styles.filterButton}>
+            <Text style={styles.filterButtonText}>New Pricing(30)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.filterButton, styles.activeFilterButton]}>
+            <Text style={styles.activeFilterButtonText}>Multiple RC Found(50)</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+            <Search color="#999" />
+            <TextInput
+                style={styles.searchInput}
+                placeholder="Search RC, customer name/code..."
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholderTextColor="#999"
+            />
+            </View>
+            <TouchableOpacity 
+                style={styles.searchFilterButton}
+                onPress={() => setFilterVisible(true)}
+                >                
+                <Filter color="#666" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.searchFilterButton}>
+                <Calendar />
+            </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={filteredContracts}
+          renderItem={renderRateContract}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
+          scrollEnabled={false}
+        />
+      </ScrollView>
+
+      {renderFilterModal()}
+
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff' 
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 'auto',
+    marginLeft: 10
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  groupUpdateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  groupUpdateText: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '600',
+    marginRight: 8
+  },
+  content: {
+    flex: 1,
+    padding: 15,
+    backgroundColor: '#F6F6F6'
+  },
+  statsContainer: {
+    margin: -15,
+    marginBottom: 0,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    backgroundColor: colors.white,
+  },
+  statCard: {
+    alignItems: 'start',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#EDEDED',
+    borderRadius: 12,
+    backgroundColor: colors.white,
+    minWidth: 100,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#202020',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginTop: 4,
+  },
+  tabContainer: {
+    margin: -15,
+    marginTop: 0,
+    marginBottom: 15,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tab: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primary,
+  },
+  tabText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  activeTabText: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    padding: 0,
+    gap: 12,
+    marginBottom: 15    
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  activeFilterButton: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  activeFilterButtonText: {
+    fontSize: 14,
+    color: colors.white,
+  },
+
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#333'
+  },
+  searchContainer: {
+    flexDirection: 'row',    
+    paddingBottom: 0,
+    marginBottom: 15,
+    backgroundColor: '#F8F9FA',
+    alignItems: 'center',
+    gap: 12,
+  },
+  searchFilterButton: {
+    padding: 16,
+    borderRadius: 10,
+    backgroundColor: '#fff'
+  },
+  listContent: {
+    paddingBottom: 80,
+  },
+  contractCard: {
+    backgroundColor: colors.white,
+    marginBottom: 15,    
+    borderRadius: 12
+  },
+  contractHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  contractIdContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  contractId: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  contractBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dateBadge: {
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  dateBadgeText: {
+    fontSize: 11,
+    color: colors.white,
+    fontWeight: '600',
+  },
+  dateText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  countBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',    
+    paddingHorizontal: 8,
+    paddingVertical: 4,    
+  },
+  countText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  contractBody: {
+    padding: 16,
+  },
+  customerName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  contractInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,   
+    marginBottom: 5 
+  },
+  infoText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  distributorStockistRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',        
+  },
+  distributorInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  stockistInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  stockistText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  contractFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 15,    
+  },
+  statusBadge: {
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  statusText: {
+    fontSize: 12,    
+    fontWeight: '600',
+  },
+  createButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2B2B2B',
+  },
+  createButtonText: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: 'bold'
+  },
+  suspendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2B2B2B',
+  },
+  suspendButtonText: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: 'bold'
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  filterScroll: {
+    padding: 16,
+  },
+  filterSection: {
+    marginBottom: 24,
+  },
+  filterSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+    marginBottom: 12,
+  },
+  filterOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  filterOptionText: {
+    fontSize: 14,
+    color: colors.text,
+  },
+  filterInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: colors.text,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  clearButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  applyButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    fontSize: 16,
+    color: colors.white,
+    fontWeight: '600',
+  },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 80,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+  },
+});
+
+export default RateContractList;

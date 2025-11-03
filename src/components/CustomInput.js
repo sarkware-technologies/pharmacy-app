@@ -123,7 +123,7 @@ const CustomInput = ({
                 isFocused && styles.inputContainerFocused,
                 error && styles.inputContainerError,
             ]}>
-                <Animated.View style={labelStyle}>
+                <Animated.View style={labelStyle} pointerEvents="none">
                     <Text>
                         {placeholder}
                         {mandatory && <Text style={styles.asterisk}>*</Text>}

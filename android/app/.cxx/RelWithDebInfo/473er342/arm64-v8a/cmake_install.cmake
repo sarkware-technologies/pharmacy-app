@@ -46,6 +46,7 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("/home/sarkware/Workspace/SunPharma/frontend/pharmacy-app/android/app/.cxx/RelWithDebInfo/473er342/arm64-v8a/rnasyncstorage_autolinked_build/cmake_install.cmake")
   include("/home/sarkware/Workspace/SunPharma/frontend/pharmacy-app/android/app/.cxx/RelWithDebInfo/473er342/arm64-v8a/RNDateTimePickerCGen_autolinked_build/cmake_install.cmake")
+  include("/home/sarkware/Workspace/SunPharma/frontend/pharmacy-app/android/app/.cxx/RelWithDebInfo/473er342/arm64-v8a/rndocumentpickerCGen_autolinked_build/cmake_install.cmake")
   include("/home/sarkware/Workspace/SunPharma/frontend/pharmacy-app/android/app/.cxx/RelWithDebInfo/473er342/arm64-v8a/rngesturehandler_codegen_autolinked_build/cmake_install.cmake")
   include("/home/sarkware/Workspace/SunPharma/frontend/pharmacy-app/android/app/.cxx/RelWithDebInfo/473er342/arm64-v8a/RNImagePickerSpec_autolinked_build/cmake_install.cmake")
   include("/home/sarkware/Workspace/SunPharma/frontend/pharmacy-app/android/app/.cxx/RelWithDebInfo/473er342/arm64-v8a/rnreanimated_autolinked_build/cmake_install.cmake")

@@ -21,6 +21,32 @@ import GroupHospitalRegistrationForm from '../screens/authorized/registration/Gr
 import RegistrationSuccess from '../screens/authorized/registration/RegistrationSuccess';
 import HospitalSelector from '../screens/authorized/registration/HospitalSelector';
 import PharmacySelector from '../screens/authorized/registration/PharmacySelector';
+import PharmacyRetailerForm from '../screens/authorized/registration/PharmacyRetailer';
+import PharmacyWholesalerForm from '../screens/authorized/registration/PharmacyWholesaler';
+import PharmacyWholesalerRetailerForm from '../screens/authorized/registration/PharmacyWholesalerRetailer';
+
+// Pricing Screens
+import RateContractList from '../screens/authorized/pricing/RateContractList';
+import CreateRateContract from '../screens/authorized/pricing/CreateRateContract';
+import RateContractDetail from '../screens/authorized/pricing/RateContractDetail';
+
+// Distributor Screens
+import DistributorList from '../screens/authorized/distributor/DistributorList';
+import DistributorDetail from '../screens/authorized/distributor/DistributorDetail';
+import DistributorSearch from '../screens/authorized/distributor/DistributorSearch';
+import DistributorGroupUpdate from '../screens/authorized/distributor/DistributorGroupUpdate';
+
+import DivisionList from '../screens/authorized/division/DivisionList';
+import DivisionDetail from '../screens/authorized/division/DivisionDetail';
+import DivisionSearch from '../screens/authorized/division/DivisionSearch';
+import DivisionGroupUpdate from '../screens/authorized/division/DivisionGroupUpdate';
+import UpdateMaxDiscount from '../screens/authorized/division/UpdateMaxDiscount';
+import CEOThresholdUpdate from '../screens/authorized/division/CEOThresholdUpdate';
+
+import ProductList from '../screens/authorized/product/ProductList';
+import ProductDetail from '../screens/authorized/product/ProductDetail';
+import ProductSearch from '../screens/authorized/product/ProductSearch';
+import ProductBulkEdit from '../screens/authorized/product/ProductBulkEdit';
 
 // Main Navigation
 import BottomTabNavigator from './BottomTabNavigator';
@@ -68,7 +94,105 @@ const AuthStack = () => (
   </Stack.Navigator>
 );
 
-// Main Stack (includes drawer and registration flows)
+// Product Stack - WITHOUT bottom tabs (for sub-screens)
+const ProductStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+      cardStyleInterpolator: ({ current, layouts }) => {
+        return {
+          cardStyle: {
+            transform: [
+              {
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              },
+            ],
+            opacity: current.progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 1],
+            }),
+          },
+        };
+      },
+    }}
+  >
+    <Stack.Screen name="ProductListMain" component={ProductList} />
+    <Stack.Screen name="ProductDetail" component={ProductDetail} />
+    <Stack.Screen name="ProductSearch" component={ProductSearch} />
+    <Stack.Screen name="ProductBulkEdit" component={ProductBulkEdit} />
+  </Stack.Navigator>
+);
+
+// Distributor Stack - WITHOUT bottom tabs (for sub-screens)
+const DistributorStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+      cardStyleInterpolator: ({ current, layouts }) => {
+        return {
+          cardStyle: {
+            transform: [
+              {
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              },
+            ],
+            opacity: current.progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 1],
+            }),
+          },
+        };
+      },
+    }}
+  >
+    <Stack.Screen name="DistributorListMain" component={DistributorList} />
+    <Stack.Screen name="DistributorDetail" component={DistributorDetail} />
+    <Stack.Screen name="DistributorSearch" component={DistributorSearch} />
+    <Stack.Screen name="DistributorGroupUpdate" component={DistributorGroupUpdate} />
+  </Stack.Navigator>
+);
+
+// Division Stack - WITHOUT bottom tabs (for sub-screens)
+const DivisionStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+      cardStyleInterpolator: ({ current, layouts }) => {
+        return {
+          cardStyle: {
+            transform: [
+              {
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              },
+            ],
+            opacity: current.progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 1],
+            }),
+          },
+        };
+      },
+    }}
+  >
+    <Stack.Screen name="DivisionListMain" component={DivisionList} />
+    <Stack.Screen name="DivisionDetail" component={DivisionDetail} />
+    <Stack.Screen name="DivisionSearch" component={DivisionSearch} />
+    <Stack.Screen name="DivisionGroupUpdate" component={DivisionGroupUpdate} />
+    <Stack.Screen name="UpdateMaxDiscount" component={UpdateMaxDiscount} />
+    <Stack.Screen name="CEOThresholdUpdate" component={CEOThresholdUpdate} />
+  </Stack.Navigator>
+);
+
+// Main Stack (includes drawer and all navigation flows)
 const MainStack = () => (
   <Stack.Navigator
     screenOptions={{
@@ -93,17 +217,34 @@ const MainStack = () => (
       },
     }}
   >
+    {/* Main app with drawer and bottom tabs */}
     <Stack.Screen name="DrawerMain" component={DrawerNavigator} />
+    
+    {/* Registration Screens (no bottom tabs) */}
     <Stack.Screen name="RegistrationType" component={RegistrationType} />
     <Stack.Screen name="ClinicRegistrationForm" component={ClinicRegistrationForm} />
     <Stack.Screen name="DoctorRegistrationForm" component={DoctorRegistrationForm} />
     <Stack.Screen name="GroupHospitalRegistrationForm" component={GroupHospitalRegistrationForm} />
+    <Stack.Screen name="PharmacyRetailerForm" component={PharmacyRetailerForm} />   
+    <Stack.Screen name="PharmacyWholesalerForm" component={PharmacyWholesalerForm} />   
+    <Stack.Screen name="PharmacyWholesalerRetailerForm" component={PharmacyWholesalerRetailerForm} />
     <Stack.Screen name="RegistrationSuccess" component={RegistrationSuccess} />
     <Stack.Screen name="HospitalSelector" component={HospitalSelector} />
     <Stack.Screen name="PharmacySelector" component={PharmacySelector} />
-    {/* Add other registration forms here as you create them */}
-    {/* <Stack.Screen name="PharmacyRegistrationForm" component={PharmacyRegistrationForm} /> */}
-    {/* <Stack.Screen name="HospitalRegistrationForm" component={HospitalRegistrationForm} /> */}
+    
+    {/* These are for the tab stacks - handled in BottomTabNavigator */}
+    <Stack.Screen name="RateContractList" component={RateContractList} />
+    <Stack.Screen name="CreateRateContract" component={CreateRateContract} />
+    <Stack.Screen name="RateContractDetail" component={RateContractDetail} />
+    
+    {/* Product Stack - opens without bottom tabs */}
+    <Stack.Screen name="ProductStack" component={ProductStack} />
+    
+    {/* Distributor Stack - opens without bottom tabs */}
+    <Stack.Screen name="DistributorStack" component={DistributorStack} />
+    
+    {/* Division Stack - opens without bottom tabs */}
+    <Stack.Screen name="DivisionStack" component={DivisionStack} />
   </Stack.Navigator>
 );
 

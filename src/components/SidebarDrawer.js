@@ -69,11 +69,11 @@ const menuConfig = [
     label: "Principals",
     icon: "principals",
     secondary: [
-      { id: "products", label: "Products", icon: "products", route: "Products" },
-      { id: "distributors", label: "Distributors", icon: "distributors", route: "Distributors" },
+      { id: "products", label: "Products", icon: "products", route: "ProductList" },
+      { id: "distributors", label: "Distributors", icon: "distributors", route: "DistributorList" },
       { id: "chargeback", label: "Chargeback", icon: "chargeback", route: "Chargeback" },
       { id: "netrate", label: "Net Rate", icon: "netrate", route: "NetRate" },
-      { id: "divisions", label: "Divisions", icon: "divisions", route: "Divisions" },
+      { id: "divisions", label: "Divisions", icon: "divisions", route: "DivisionList" },
       { id: "field", label: "Field", icon: "field", route: "Field" },
       { id: "invoices", label: "Invoices", icon: "invoices", route: "Invoices" }      
     ],
@@ -140,47 +140,111 @@ const SidebarDrawer = ({ navigation }) => {
   }, []);
 
   const handleMenuPress = (item, isSubmenu = false) => {
-    const bounceAnim = new Animated.Value(1);
-    
-    Animated.sequence([
-      Animated.timing(bounceAnim, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.spring(bounceAnim, {
-        toValue: 1,
-        friction: 3,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      if (item.isLogout) {
-        // Handle logout
-        dispatch(logout());
-        navigation.navigate('Auth');
-      } else if (item.secondary && item.secondary.length > 0 && !isSubmenu) {
-        // Parent item with submenu - only expand/collapse
-        setExpandedMenus(prev => {
-          const newState = {};
-          // If current submenu is open, close it; otherwise open it
-          if (!prev[item.id]) {
-            newState[item.id] = true;
-          }
-          return newState;
-        });
-      } else if (item.route) {
-        // Item with route (either top-level without submenu or submenu item)
-        setActiveItem(item.id);
-        if (!isSubmenu) {
-          // If it's a top-level item, close all submenus
-          setExpandedMenus({});
+  const bounceAnim = new Animated.Value(1);
+  
+  Animated.sequence([
+    Animated.timing(bounceAnim, {
+      toValue: 0.95,
+      duration: 100,
+      useNativeDriver: true,
+    }),
+    Animated.spring(bounceAnim, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true,
+    }),
+  ]).start(() => {
+    if (item.isLogout) {
+      // Handle logout
+      dispatch(logout());
+      navigation.navigate('Auth');
+    } else if (item.secondary && item.secondary.length > 0 && !isSubmenu) {
+      // Parent item with submenu - only expand/collapse
+      setExpandedMenus(prev => {
+        const newState = {};
+        // If current submenu is open, close it; otherwise open it
+        if (!prev[item.id]) {
+          newState[item.id] = true;
         }
-        navigation.navigate(item.route);
-        navigation.closeDrawer();
+        return newState;
+      });
+    } else if (item.route) {
+      // Item with route (either top-level without submenu or submenu item)
+      setActiveItem(item.id);
+      if (!isSubmenu) {
+        // If it's a top-level item, close all submenus
+        setExpandedMenus({});
       }
-    });
-  };
+      
+      // Close drawer first
+      navigation.closeDrawer();
+      
+      // Navigate after a small delay to ensure drawer closes smoothly
+      setTimeout(() => {
+        // Check the route and navigate accordingly
+        switch (item.route) {
+          // Tab routes - navigate to the tab
+          case 'Home':
+            navigation.navigate('Home');
+            break;
+          case 'Customers':
+            navigation.navigate('Customers');
+            break;
+          case 'Orders':
+            navigation.navigate('Orders');
+            break;
+          case 'Pricing':
+            navigation.navigate('Pricing');
+            break;
+            
+          // Product routes - navigate to ProductStack
+          case 'ProductList':
+            // First navigate to DynamicTab with params
+            navigation.navigate('MainTabs', {
+              screen: 'DynamicTab',
+              params: { screen: 'ProductList' }
+            });
+            break;
+            
+          // Distributor routes - navigate to DistributorStack  
+          case 'DistributorList':
+            // First navigate to DynamicTab with params
+            navigation.navigate('MainTabs', {
+              screen: 'DynamicTab',
+              params: { screen: 'DistributorList' }
+            });
+            break;
+            
+          // Division routes - navigate to DivisionStack
+          case 'DivisionList':
+            // First navigate to DynamicTab with params
+            navigation.navigate('MainTabs', {
+              screen: 'DynamicTab',
+              params: { screen: 'DivisionList' }
+            });
+            break;
+            
+          // Other routes without bottom tabs
+          case 'RegistrationType':
+          case 'Sales':
+          case 'Reports':
+          case 'Settings':
+          case 'Chargeback':
+          case 'NetRate':
+          case 'Field':
+          case 'Invoices':
+            navigation.navigate(item.route);
+            break;
+            
+          default:
+            navigation.navigate(item.route);
+            break;
+        }
+      }, 300);
+    }
+  });
+};
 
   const renderSubmenu = (submenuItems, parentId) => {
     const isExpanded = expandedMenus[parentId];

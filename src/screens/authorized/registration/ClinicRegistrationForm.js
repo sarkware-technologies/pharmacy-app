@@ -1,5 +1,3 @@
-// src/screens/authorized/registration/ClinicRegistrationForm.js
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -17,13 +15,14 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors } from '../../../styles/colors';
 import CustomInput from '../../../components/CustomInput';
+import FileUploadComponent from '../../../components/FileUploadComponent';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import ChevronRight from '../../../components/icons/ChevronRight';
 import Upload from '../../../components/icons/Upload';
@@ -39,19 +38,32 @@ const MOCK_AREAS = ['Vadgaonsheri', 'Kharadi', 'Viman Nagar', 'Kalyani Nagar', '
 const MOCK_CITIES = ['Pune', 'Mumbai', 'Delhi', 'Bangalore', 'Chennai'];
 const MOCK_STATES = ['Maharashtra', 'Karnataka', 'Tamil Nadu', 'Delhi', 'Gujarat'];
 
+const DOC_TYPES = {
+  CLINIC_IMAGE: 1,
+  LICENSE_CERTIFICATE: 1,
+  LICENSE_IMAGE: 2,
+  ADDRESS_PROOF: 11,
+  PAN: 7,
+  GST: 2,
+};
+
 const ClinicRegistrationForm = () => {
+
   const navigation = useNavigation();
+  const route = useRoute();
   const dispatch = useDispatch();
   const scrollViewRef = useRef(null);
   const otpRefs = useRef({});
+
+  const { type, typeName, category, subCategoryName } = route.params || {};  console.log( route.params);
   
   // Form state
   const [formData, setFormData] = useState({
     // License Details
-    licenseFileName: '',
+    licenseFileName: null,
     registrationNumber: '',
     registrationDate: '',
-    licenseImageName: '',
+    licenseImageName: null,
     
     // General Details
     clinicName: '',
@@ -72,6 +84,11 @@ const ClinicRegistrationForm = () => {
     panImageName: '',
     gstNumber: '',
     gstFileName: '',
+
+    licenseFile: null, // { fileName: '', s3Path: '' }
+    licenseImage: null,
+    panFile: null,
+    gstFile: null,
     
     // Mapping
     markAsBuyingEntity: false,
@@ -88,7 +105,6 @@ const ClinicRegistrationForm = () => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
   const [showDatePicker, setShowDatePicker] = useState(false);
   
   // Dropdowns
@@ -119,7 +135,6 @@ const ClinicRegistrationForm = () => {
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
-  const progressAnim = useRef(new Animated.Value(0.25)).current;
   const otpSlideAnim = useRef(new Animated.Value(-50)).current;
 
   useEffect(() => {
@@ -137,15 +152,6 @@ const ClinicRegistrationForm = () => {
       }),
     ]).start();
   }, []);
-
-  useEffect(() => {
-    // Animate progress bar
-    Animated.timing(progressAnim, {
-      toValue: currentStep / 4,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  }, [currentStep]);
 
   // OTP Timer Effect
   useEffect(() => {
@@ -219,74 +225,64 @@ const ClinicRegistrationForm = () => {
     Alert.alert('OTP Sent', `New OTP sent for ${field} verification.`);
   };
 
-  const validateStep = () => {
+  const validateForm = () => {
     const newErrors = {};
     
-    switch (currentStep) {
-      case 1: // License Details
-        if (!formData.registrationNumber) {
-          newErrors.registrationNumber = 'Registration number is required';
-        }
-        if (!formData.registrationDate) {
-          newErrors.registrationDate = 'Registration date is required';
-        }
-        break;
-      
-      case 2: // General Details
-        if (!formData.clinicName) {
-          newErrors.clinicName = 'Clinic name is required';
-        }
-        if (!formData.address1) {
-          newErrors.address1 = 'Address is required';
-        }
-        if (!formData.pincode || formData.pincode.length !== 6) {
-          newErrors.pincode = 'Valid 6-digit pincode is required';
-        }
-        if (!formData.city) {
-          newErrors.city = 'City is required';
-        }
-        if (!formData.state) {
-          newErrors.state = 'State is required';
-        }
-        break;
-      
-      case 3: // Security Details
-        if (!formData.mobileNumber || formData.mobileNumber.length !== 10) {
-          newErrors.mobileNumber = 'Valid 10-digit mobile number is required';
-        }
-        if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
-          newErrors.emailAddress = 'Valid email address is required';
-        }
-        break;
-      
-      case 4: // Mapping
-        // Optional validations
-        break;
+    // License Details validation
+    if (!formData.registrationNumber) {
+      newErrors.registrationNumber = 'Registration number is required';
+    }
+    if (!formData.registrationDate) {
+      newErrors.registrationDate = 'Registration date is required';
+    }
+    
+    // General Details validation
+    if (!formData.clinicName) {
+      newErrors.clinicName = 'Clinic name is required';
+    }
+    if (!formData.address1) {
+      newErrors.address1 = 'Address is required';
+    }
+    if (!formData.pincode || formData.pincode.length !== 6) {
+      newErrors.pincode = 'Valid 6-digit pincode is required';
+    }
+    if (!formData.city) {
+      newErrors.city = 'City is required';
+    }
+    if (!formData.state) {
+      newErrors.state = 'State is required';
+    }
+    
+    // Security Details validation
+    if (!formData.mobileNumber || formData.mobileNumber.length !== 10) {
+      newErrors.mobileNumber = 'Valid 10-digit mobile number is required';
+    }
+    if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
+      newErrors.emailAddress = 'Valid email address is required';
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNextStep = () => {
-    if (validateStep()) {
-      if (currentStep < 4) {
-        setCurrentStep(currentStep + 1);
-        scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: true });
-      } else {
-        handleSubmit();
-      }
-    }
-  };
-
-  const handlePreviousStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-      scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: true });
-    }
+  const handleCancel = () => {
+    Alert.alert(
+      'Cancel Registration',
+      'Are you sure you want to cancel? All entered data will be lost.',
+      [
+        { text: 'No', style: 'cancel' },
+        { text: 'Yes', onPress: () => navigation.goBack() },
+      ]
+    );
   };
 
   const handleSubmit = async () => {
+    if (!validateForm()) {
+      Alert.alert('Error', 'Please fill all required fields');
+      scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: true });
+      return;
+    }
+
     setLoading(true);
     
     try {
@@ -311,56 +307,6 @@ const ClinicRegistrationForm = () => {
       const formattedDate = selectedDate.toLocaleDateString('en-IN');
       setFormData(prev => ({ ...prev, registrationDate: formattedDate }));
     }
-  };
-
-  const renderStepIndicator = () => {
-    const steps = ['License', 'General', 'Security', 'Mapping'];
-    
-    return (
-      <View style={styles.stepIndicatorContainer}>
-        <View style={styles.stepIndicatorBar}>
-          <Animated.View
-            style={[
-              styles.stepIndicatorProgress,
-              {
-                width: progressAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '100%'],
-                }),
-              },
-            ]}
-          />
-        </View>
-        <View style={styles.stepLabelsContainer}>
-          {steps.map((step, index) => (
-            <View key={index} style={styles.stepLabelWrapper}>
-              <View style={[
-                styles.stepDot,
-                currentStep > index + 1 && styles.stepDotCompleted,
-                currentStep === index + 1 && styles.stepDotActive,
-              ]}>
-                {currentStep > index + 1 ? (
-                  <Icon name="checkmark" size={12} color="#fff" />
-                ) : (
-                  <Text style={[
-                    styles.stepDotText,
-                    currentStep === index + 1 && styles.stepDotTextActive,
-                  ]}>
-                    {index + 1}
-                  </Text>
-                )}
-              </View>
-              <Text style={[
-                styles.stepLabel,
-                currentStep === index + 1 && styles.stepLabelActive,
-              ]}>
-                {step}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    );
   };
 
   const renderOTPInput = (field) => {
@@ -404,594 +350,6 @@ const ClinicRegistrationForm = () => {
     );
   };
 
-  const renderLicenseDetails = () => (
-    <Animated.View
-      style={[
-        styles.stepContent,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        },
-      ]}
-    >
-      <Text style={styles.stepTitle}>License Details*</Text>
-      
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => Alert.alert('Upload', 'Document upload will be available soon')}
-        activeOpacity={0.7}
-      >        
-        <Upload />
-        <Text style={styles.uploadButtonText}>
-          {formData.licenseFileName || 'FilenameRegistrationcertifie.pdf'}
-        </Text>
-      </TouchableOpacity>
-
-      <CustomInput
-        placeholder="Hospital Registration Number"
-        value={formData.registrationNumber}
-        onChangeText={(text) => setFormData(prev => ({ ...prev, registrationNumber: text }))}
-        error={errors.registrationNumber}
-        autoCapitalize="characters"
-      />
-
-      <TouchableOpacity
-        style={[styles.input, errors.registrationDate && styles.inputError]}
-        onPress={() => setShowDatePicker(true)}
-        activeOpacity={0.7}
-      >
-        <Text style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
-          {formData.registrationDate || 'Registration Date'}
-        </Text>        
-        <Calendar />
-      </TouchableOpacity>
-      {errors.registrationDate && (
-        <Text style={styles.errorText}>{errors.registrationDate}</Text>
-      )}
-
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => Alert.alert('Upload', 'Image upload will be available soon')}
-        activeOpacity={0.7}
-      >
-        <Upload />
-        <Text style={styles.uploadButtonText}>
-          {formData.licenseImageName || 'courierimage.jpeg'}
-        </Text>
-      </TouchableOpacity>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={new Date()}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-        />
-      )}
-    </Animated.View>
-  );
-
-  const renderGeneralDetails = () => (
-    <Animated.View
-      style={[
-        styles.stepContent,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        },
-      ]}
-    >
-      <Text style={styles.stepTitle}>General Details*</Text>
-      
-      <CustomInput
-        placeholder="Hospital/Clinic Name"
-        value={formData.clinicName}
-        onChangeText={(text) => setFormData(prev => ({ ...prev, clinicName: text }))}
-        error={errors.clinicName}
-      />
-
-      <CustomInput
-        placeholder="Short Name"
-        value={formData.shortName}
-        onChangeText={(text) => setFormData(prev => ({ ...prev, shortName: text }))}
-      />
-
-      <CustomInput
-        placeholder="Address 1"
-        value={formData.address1}
-        onChangeText={(text) => setFormData(prev => ({ ...prev, address1: text }))}
-        error={errors.address1}
-      />
-
-      <CustomInput
-        placeholder="Address 2"
-        value={formData.address2}
-        onChangeText={(text) => setFormData(prev => ({ ...prev, address2: text }))}
-      />
-
-      <CustomInput
-        placeholder="Address 3"
-        value={formData.address3}
-        onChangeText={(text) => setFormData(prev => ({ ...prev, address3: text }))}
-      />
-
-      <CustomInput
-        placeholder="Address 4"
-        value={formData.address4}
-        onChangeText={(text) => setFormData(prev => ({ ...prev, address4: text }))}
-      />
-
-      <CustomInput
-        placeholder="Pincode"
-        value={formData.pincode}
-        onChangeText={(text) => setFormData(prev => ({ ...prev, pincode: text }))}
-        keyboardType="numeric"
-        maxLength={6}
-        error={errors.pincode}
-      />
-
-      {/* Area Dropdown */}
-      <TouchableOpacity
-        style={[styles.input]}
-        onPress={() => setShowAreaDropdown(!showAreaDropdown)}
-        activeOpacity={0.7}
-      >
-        <Text style={formData.area ? styles.inputText : styles.placeholderText}>
-          {formData.area || 'Area'}
-        </Text>        
-        <ArrowDown color='#999' />
-      </TouchableOpacity>
-      {showAreaDropdown && (
-        <View style={styles.dropdown}>
-          {MOCK_AREAS.map((area, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.dropdownItem}
-              onPress={() => {
-                setFormData(prev => ({ ...prev, area }));
-                setShowAreaDropdown(false);
-              }}
-            >
-              <Text style={styles.dropdownItemText}>{area}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      {/* City Dropdown */}
-      <TouchableOpacity
-        style={[styles.input, errors.city && styles.inputError]}
-        onPress={() => setShowCityDropdown(!showCityDropdown)}
-        activeOpacity={0.7}
-      >
-        <Text style={formData.city ? styles.inputText : styles.placeholderText}>
-          {formData.city || 'City'}
-        </Text>
-        <ArrowDown color='#999' />
-      </TouchableOpacity>
-      {showCityDropdown && (
-        <View style={styles.dropdown}>
-          {MOCK_CITIES.map((city, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.dropdownItem}
-              onPress={() => {
-                setFormData(prev => ({ ...prev, city }));
-                setShowCityDropdown(false);
-              }}
-            >
-              <Text style={styles.dropdownItemText}>{city}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      {/* State Dropdown */}
-      <TouchableOpacity
-        style={[styles.input, errors.state && styles.inputError]}
-        onPress={() => setShowStateDropdown(!showStateDropdown)}
-        activeOpacity={0.7}
-      >
-        <Text style={formData.state ? styles.inputText : styles.placeholderText}>
-          {formData.state || 'State'}
-        </Text>
-        <ArrowDown color='#999' />
-      </TouchableOpacity>
-      {showStateDropdown && (
-        <View style={styles.dropdown}>
-          {MOCK_STATES.map((state, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.dropdownItem}
-              onPress={() => {
-                setFormData(prev => ({ ...prev, state }));
-                setShowStateDropdown(false);
-              }}
-            >
-              <Text style={styles.dropdownItemText}>{state}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-    </Animated.View>
-  );
-
-  const renderSecurityDetails = () => (
-    <Animated.View
-      style={[
-        styles.stepContent,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        },
-      ]}
-    >
-      <Text style={styles.stepTitle}>Security Details*</Text>
-      
-      {/* Mobile Number with Verify */}
-      <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-        <Text style={styles.countryCode}>+91</Text>
-        <TextInput
-          style={styles.inputField}
-          placeholder="Mobile Number"
-          value={formData.mobileNumber}
-          onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
-          keyboardType="phone-pad"
-          maxLength={10}
-          placeholderTextColor="#999"
-        />
-        <TouchableOpacity
-          style={styles.inlineVerifyButton}
-          onPress={() => handleVerify('mobile')}
-        >
-          <Text style={styles.inlineVerifyText}>Verify</Text>
-        </TouchableOpacity>
-      </View>
-      {errors.mobileNumber && (
-        <Text style={styles.errorText}>{errors.mobileNumber}</Text>
-      )}
-      {renderOTPInput('mobile')}
-
-      {/* Email Address with Verify */}
-      <View style={[styles.inputWithButton, errors.emailAddress && styles.inputError]}>
-        <TextInput
-          style={[styles.inputField, { flex: 1 }]}
-          placeholder="Email Address"
-          value={formData.emailAddress}
-          onChangeText={(text) => setFormData(prev => ({ ...prev, emailAddress: text }))}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          placeholderTextColor="#999"
-        />
-        <TouchableOpacity
-          style={styles.inlineVerifyButton}
-          onPress={() => handleVerify('email')}
-        >
-          <Text style={styles.inlineVerifyText}>Verify</Text>
-        </TouchableOpacity>
-      </View>
-      {errors.emailAddress && (
-        <Text style={styles.errorText}>{errors.emailAddress}</Text>
-      )}
-      {renderOTPInput('email')}
-
-      {/* PAN Upload */}
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => Alert.alert('Upload', 'PAN upload will be available soon')}
-        activeOpacity={0.7}
-      >        
-        <Upload />
-        <Text style={styles.uploadButtonText}>
-          {formData.panImageName || 'Upload PAN'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* PAN Number with Verify - No OTP, just API verification */}
-      <View style={styles.inputWithButton}>
-        <TextInput
-          style={[styles.inputField, { flex: 1 }]}
-          placeholder="PAN Number"
-          value={formData.panNumber}
-          onChangeText={(text) => setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }))}
-          autoCapitalize="characters"
-          maxLength={10}
-          placeholderTextColor="#999"
-        />
-        <TouchableOpacity
-          style={styles.inlineVerifyButton}
-          onPress={() => {
-            // Direct API verification, no OTP
-            Alert.alert('PAN Verification', 'PAN verified successfully!');
-          }}
-        >
-          <Text style={styles.inlineVerifyText}>Verify</Text>
-        </TouchableOpacity>
-      </View>
-      {errors.panNumber && (
-        <Text style={styles.errorText}>{errors.panNumber}</Text>
-      )}
-
-      {/* Fetch GST from PAN Link */}
-      <TouchableOpacity 
-        style={styles.linkButton}
-        onPress={() => {
-          Alert.alert('Fetch GST', 'Fetching GST details from PAN...');
-          // Here you would call API to fetch GST from PAN
-          // and populate the GST dropdown options
-        }}
-      >
-        <Text style={styles.linkText}>Fetch GST from PAN</Text>
-      </TouchableOpacity>
-
-      {/* GST Upload */}
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => Alert.alert('Upload', 'GST upload will be available soon')}
-        activeOpacity={0.7}
-      >        
-        <Upload />
-        <Text style={styles.uploadButtonText}>
-          {formData.gstFileName || 'Upload GST'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* GST Dropdown Selector - Select from fetched GST numbers */}
-      <TouchableOpacity
-        style={[styles.input]}
-        onPress={() => Alert.alert('GST Number', 'Select from GST numbers fetched from PAN')}
-        activeOpacity={0.7}
-      >
-        <Text style={formData.gstNumber ? styles.inputText : styles.placeholderText}>
-          {formData.gstNumber || 'GST Number'}
-        </Text>
-        <ArrowDown color='#999' />
-      </TouchableOpacity>
-    </Animated.View>
-  );
-
-  const renderMapping = () => (
-    <Animated.View
-      style={[
-        styles.stepContent,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        },
-      ]}
-    >
-      <Text style={styles.stepTitle}>Mapping</Text>
-      
-      <View style={styles.switchContainer}>
-        <Text style={styles.switchLabel}>Mark as buying entity</Text>
-        <TouchableOpacity
-          style={[
-            styles.switch,
-            formData.markAsBuyingEntity && styles.switchActive,
-          ]}
-          onPress={() => setFormData(prev => ({ 
-            ...prev, 
-            markAsBuyingEntity: !prev.markAsBuyingEntity 
-          }))}
-          activeOpacity={0.8}
-        >
-          <Animated.View
-            style={[
-              styles.switchThumb,
-              formData.markAsBuyingEntity && styles.switchThumbActive,
-            ]}
-          />
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.sectionLabel}>Select category <Text style={styles.optional}>(Optional)</Text></Text>
-      
-      <View style={styles.categoryOptions}>
-        <TouchableOpacity
-          style={[
-            styles.radioButton,
-            formData.selectedCategory === 'Group Corporate Hospital' && styles.radioButtonActive,
-          ]}
-          onPress={() => setFormData(prev => ({ 
-            ...prev, 
-            selectedCategory: 'Group Corporate Hospital' 
-          }))}
-          activeOpacity={0.7}
-        >
-          <View style={styles.radioOuter}>
-            {formData.selectedCategory === 'Group Corporate Hospital' && (
-              <View style={styles.radioInner} />
-            )}
-          </View>
-          <Text style={styles.radioLabel}>Group Corporate Hospital</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.radioButton,
-            formData.selectedCategory === 'Pharmacy' && styles.radioButtonActive,
-          ]}
-          onPress={() => setFormData(prev => ({ 
-            ...prev, 
-            selectedCategory: 'Pharmacy' 
-          }))}
-          activeOpacity={0.7}
-        >
-          <View style={styles.radioOuter}>
-            {formData.selectedCategory === 'Pharmacy' && (
-              <View style={styles.radioInner} />
-            )}
-          </View>
-          <Text style={styles.radioLabel}>Pharmacy</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Group Hospital Selector - Show when Group Corporate Hospital is selected */}
-      {formData.selectedCategory === 'Group Corporate Hospital' && (
-        <>
-          <TouchableOpacity
-            style={styles.selectorInput}
-            onPress={() => {
-              navigation.navigate('HospitalSelector', {
-                selectedHospitals: formData.selectedHospital ? [formData.selectedHospital] : [],
-                onSelect: (hospitals) => {
-                  // For single selection, take the first hospital
-                  setFormData(prev => ({ ...prev, selectedHospital: hospitals[0] || null }));
-                }
-              });
-            }}
-            activeOpacity={0.7}
-          >
-            {formData.selectedHospital ? (
-              <View style={styles.selectedItem}>
-                <View>
-                  <Text style={styles.selectedItemName}>{formData.selectedHospital.name}</Text>
-                  <Text style={styles.selectedItemCode}>{formData.selectedHospital.code}</Text>
-                </View>
-                <TouchableOpacity
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    setFormData(prev => ({ ...prev, selectedHospital: null }));
-                  }}
-                >                  
-                  <CloseCircle color="#999" />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <>
-                <Text style={styles.selectorPlaceholder}>Search hospital name/code</Text>                
-                <Search />
-              </>
-            )}
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.addNewLink}
-            onPress={() => Alert.alert('Add Hospital', 'Navigate to add new group hospital')}
-          >            
-            <Text style={styles.addNewLinkText}>+ Add New Group Hospital</Text>
-          </TouchableOpacity>
-        </>
-      )}
-
-      {/* Pharmacy Selector - Show when Pharmacy is selected */}
-      {formData.selectedCategory === 'Pharmacy' && (
-        <>
-          <TouchableOpacity
-            style={styles.selectorInput}
-            onPress={() => {
-              navigation.navigate('PharmacySelector', {
-                selectedPharmacies: formData.selectedPharmacies,
-                onSelect: (pharmacies) => {
-                  setFormData(prev => ({ ...prev, selectedPharmacies: pharmacies }));
-                }
-              });
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.selectorPlaceholder}>Search pharmacy name/code</Text>
-            <Search />
-          </TouchableOpacity>
-          
-          {/* Selected Pharmacies List */}
-          {formData.selectedPharmacies.map((pharmacy) => (
-            <View key={pharmacy.id} style={styles.selectedPharmacyItem}>
-              <View style={styles.pharmacyInfo}>
-                <Text style={styles.pharmacyName}>{pharmacy.name}</Text>
-                <Text style={styles.pharmacyCode}>{pharmacy.code}</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => {
-                  setFormData(prev => ({
-                    ...prev,
-                    selectedPharmacies: prev.selectedPharmacies.filter(p => p.id !== pharmacy.id)
-                  }));
-                }}
-              >                
-                <CloseCircle color="#FF3B30" />
-              </TouchableOpacity>
-            </View>
-          ))}
-          
-          <TouchableOpacity 
-            style={styles.addNewLink}
-            onPress={() => Alert.alert('Add Pharmacy', 'Navigate to add new pharmacy')}
-          >
-            <Text style={styles.addNewLinkText}>+ Add New Pharmacy</Text>
-          </TouchableOpacity>
-        </>
-      )}
-
-      <View style={styles.divider} />
-
-      <Text style={styles.sectionLabel}>Customer group</Text>
-      
-      <View style={styles.customerGroupContainer}>
-        {['X', 'Y', 'Doctor Supply', '10+50', '12+60'].map((group) => (
-          <TouchableOpacity
-            key={group}
-            style={[
-              styles.customerGroupButton,
-              formData.customerGroup === group && styles.customerGroupButtonActive,
-            ]}
-            onPress={() => setFormData(prev => ({ ...prev, customerGroup: group }))}
-            activeOpacity={0.7}
-          >
-            <Text style={[
-              styles.customerGroupButtonText,
-              formData.customerGroup === group && styles.customerGroupButtonTextActive,
-            ]}>
-              {group}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={styles.sectionLabel}>Stockist Suggestions <Text style={styles.optional}>(Optional)</Text></Text>
-      
-      <CustomInput
-        placeholder="Name of the Stockist"
-        value={formData.stockistSuggestion}
-        onChangeText={(text) => setFormData(prev => ({ ...prev, stockistSuggestion: text }))}
-      />
-
-      <CustomInput
-        placeholder="Distributor Code"
-        value={formData.distributorCode}
-        onChangeText={(text) => setFormData(prev => ({ ...prev, distributorCode: text }))}
-      />
-
-      <CustomInput
-        placeholder="City"
-        value={formData.stockistCity}
-        onChangeText={(text) => setFormData(prev => ({ ...prev, stockistCity: text }))}
-      />
-
-      <TouchableOpacity
-        style={styles.addStockistButton}
-        onPress={() => Alert.alert('Add Stockist', 'Stockist addition will be available soon')}
-        activeOpacity={0.7}
-      >        
-        <Text style={styles.addStockistButtonText}>+ Add New Stockist</Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-
-  const renderCurrentStep = () => {
-    switch (currentStep) {
-      case 1:
-        return renderLicenseDetails();
-      case 2:
-        return renderGeneralDetails();
-      case 3:
-        return renderSecurityDetails();
-      case 4:
-        return renderMapping();
-      default:
-        return null;
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
@@ -1017,11 +375,9 @@ const ClinicRegistrationForm = () => {
         </View>
         <ChevronRight />
         <View style={[styles.typeTag, styles.typeTagActive]}>
-          <Text style={[styles.typeTagText, styles.typeTagTextActive]}>Clinic</Text>
+          <Text style={[styles.typeTagText, styles.typeTagTextActive]}>{subCategoryName}</Text>
         </View>
       </View>
-
-      {renderStepIndicator()}
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -1033,40 +389,596 @@ const ClinicRegistrationForm = () => {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          {renderCurrentStep()}
+          <Animated.View
+            style={[
+              styles.content,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            {/* License Details Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>License Details*</Text>
+              
+              {/* Registration Certificate Upload */}
+              <FileUploadComponent
+                placeholder="Upload registration certificate"
+                accept={['pdf']}
+                maxSize={10 * 1024 * 1024} // 10MB
+                docType={DOC_TYPES.LICENSE_CERTIFICATE}        
+                initialFile={formData.licenseFile}
+                onFileUpload={(file) => {
+                  setFormData(prev => ({ ...prev, licenseFile: file }));
+                  setErrors(prev => ({ ...prev, licenseFile: null }));
+                }}
+                onFileDelete={() => {
+                  setFormData(prev => ({ ...prev, licenseFile: null }));
+                }}
+                errorMessage={errors.licenseFile}
+              />
+
+              <CustomInput
+                placeholder="Hospital Registration Number"
+                value={formData.registrationNumber}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, registrationNumber: text }))}
+                error={errors.registrationNumber}
+                autoCapitalize="characters"
+              />
+
+              <TouchableOpacity
+                style={[styles.input, errors.registrationDate && styles.inputError]}
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
+                  {formData.registrationDate || 'Registration Date'}
+                </Text>        
+                <Calendar />
+              </TouchableOpacity>
+              {errors.registrationDate && (
+                <Text style={styles.errorText}>{errors.registrationDate}</Text>
+              )}
+
+              <FileUploadComponent
+                  placeholder="Upload"
+                  accept={['jpg', 'jpeg', 'png']}
+                  maxSize={5 * 1024 * 1024} // 5MB
+                  docType={DOC_TYPES.LICENSE_IMAGE}          
+                  initialFile={formData.licenseImage}
+                  onFileUpload={(file) => {
+                    setFormData(prev => ({ ...prev, licenseImage: file }));
+                    setErrors(prev => ({ ...prev, licenseImage: null }));
+                  }}
+                  onFileDelete={() => {
+                    setFormData(prev => ({ ...prev, licenseImage: null }));
+                  }}
+                  errorMessage={errors.licenseImage}
+                />
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                />
+              )}
+            </View>
+
+            {/* General Details Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>General Details*</Text>
+              
+              <CustomInput
+                placeholder="Hospital/Clinic Name"
+                value={formData.clinicName}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, clinicName: text }))}
+                error={errors.clinicName}
+              />
+
+              <CustomInput
+                placeholder="Short Name"
+                value={formData.shortName}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, shortName: text }))}
+              />
+
+              <CustomInput
+                placeholder="Address 1"
+                value={formData.address1}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, address1: text }))}
+                error={errors.address1}
+              />
+
+              <CustomInput
+                placeholder="Address 2"
+                value={formData.address2}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, address2: text }))}
+              />
+
+              <CustomInput
+                placeholder="Address 3"
+                value={formData.address3}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, address3: text }))}
+              />
+
+              <CustomInput
+                placeholder="Address 4"
+                value={formData.address4}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, address4: text }))}
+              />
+
+              <CustomInput
+                placeholder="Pincode"
+                value={formData.pincode}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, pincode: text }))}
+                keyboardType="numeric"
+                maxLength={6}
+                error={errors.pincode}
+              />
+
+              {/* Area Dropdown */}
+              <TouchableOpacity
+                style={[styles.input]}
+                onPress={() => setShowAreaDropdown(!showAreaDropdown)}
+                activeOpacity={0.7}
+              >
+                <Text style={formData.area ? styles.inputText : styles.placeholderText}>
+                  {formData.area || 'Area'}
+                </Text>        
+                <ArrowDown color='#999' />
+              </TouchableOpacity>
+              {showAreaDropdown && (
+                <View style={styles.dropdown}>
+                  {MOCK_AREAS.map((area, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setFormData(prev => ({ ...prev, area }));
+                        setShowAreaDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>{area}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {/* City Dropdown */}
+              <TouchableOpacity
+                style={[styles.input, errors.city && styles.inputError]}
+                onPress={() => setShowCityDropdown(!showCityDropdown)}
+                activeOpacity={0.7}
+              >
+                <Text style={formData.city ? styles.inputText : styles.placeholderText}>
+                  {formData.city || 'City'}
+                </Text>
+                <ArrowDown color='#999' />
+              </TouchableOpacity>
+              {showCityDropdown && (
+                <View style={styles.dropdown}>
+                  {MOCK_CITIES.map((city, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setFormData(prev => ({ ...prev, city }));
+                        setShowCityDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>{city}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {/* State Dropdown */}
+              <TouchableOpacity
+                style={[styles.input, errors.state && styles.inputError]}
+                onPress={() => setShowStateDropdown(!showStateDropdown)}
+                activeOpacity={0.7}
+              >
+                <Text style={formData.state ? styles.inputText : styles.placeholderText}>
+                  {formData.state || 'State'}
+                </Text>
+                <ArrowDown color='#999' />
+              </TouchableOpacity>
+              {showStateDropdown && (
+                <View style={styles.dropdown}>
+                  {MOCK_STATES.map((state, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setFormData(prev => ({ ...prev, state }));
+                        setShowStateDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>{state}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Security Details Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Security Details*</Text>
+              
+              {/* Mobile Number with Verify */}
+              <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
+                <Text style={styles.countryCode}>+91</Text>
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="Mobile Number"
+                  value={formData.mobileNumber}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  placeholderTextColor="#999"
+                />
+                <TouchableOpacity
+                  style={styles.inlineVerifyButton}
+                  onPress={() => handleVerify('mobile')}
+                >
+                  <Text style={styles.inlineVerifyText}>Verify</Text>
+                </TouchableOpacity>
+              </View>
+              {errors.mobileNumber && (
+                <Text style={styles.errorText}>{errors.mobileNumber}</Text>
+              )}
+              {renderOTPInput('mobile')}
+
+              {/* Email Address with Verify */}
+              <View style={[styles.inputWithButton, errors.emailAddress && styles.inputError]}>
+                <TextInput
+                  style={[styles.inputField, { flex: 1 }]}
+                  placeholder="Email Address"
+                  value={formData.emailAddress}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, emailAddress: text }))}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor="#999"
+                />
+                <TouchableOpacity
+                  style={styles.inlineVerifyButton}
+                  onPress={() => handleVerify('email')}
+                >
+                  <Text style={styles.inlineVerifyText}>Verify</Text>
+                </TouchableOpacity>
+              </View>
+              {errors.emailAddress && (
+                <Text style={styles.errorText}>{errors.emailAddress}</Text>
+              )}
+              {renderOTPInput('email')}
+
+              {/* PAN Upload */}
+              <FileUploadComponent
+                placeholder="Upload PAN"
+                accept={['pdf', 'jpg', 'jpeg', 'png']}
+                maxSize={5 * 1024 * 1024} // 5MB
+                docType={DOC_TYPES.PAN}        
+                initialFile={formData.panFile}
+                onFileUpload={(file) => {
+                  setFormData(prev => ({ ...prev, panFile: file }));
+                }}
+                onFileDelete={() => {
+                  setFormData(prev => ({ ...prev, panFile: null }));
+                }}
+              />
+
+              {/* PAN Number with Verify - No OTP, just API verification */}
+              <View style={styles.inputWithButton}>
+                <TextInput
+                  style={[styles.inputField, { flex: 1 }]}
+                  placeholder="PAN Number"
+                  value={formData.panNumber}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }))}
+                  autoCapitalize="characters"
+                  maxLength={10}
+                  placeholderTextColor="#999"
+                />
+                <TouchableOpacity
+                  style={styles.inlineVerifyButton}
+                  onPress={() => {
+                    // Direct API verification, no OTP
+                    Alert.alert('PAN Verification', 'PAN verified successfully!');
+                  }}
+                >
+                  <Text style={styles.inlineVerifyText}>Verify</Text>
+                </TouchableOpacity>
+              </View>
+              {errors.panNumber && (
+                <Text style={styles.errorText}>{errors.panNumber}</Text>
+              )}
+
+              {/* Fetch GST from PAN Link */}
+              <TouchableOpacity 
+                style={styles.linkButton}
+                onPress={() => {
+                  Alert.alert('Fetch GST', 'Fetching GST details from PAN...');
+                  // Here you would call API to fetch GST from PAN
+                  // and populate the GST dropdown options
+                }}
+              >
+                <Text style={styles.linkText}>Fetch GST from PAN</Text>
+              </TouchableOpacity>
+
+              {/* GST Upload */}
+              <FileUploadComponent
+                placeholder="Upload GST"
+                accept={['pdf', 'jpg', 'jpeg', 'png']}
+                maxSize={5 * 1024 * 1024} // 5MB
+                docType={DOC_TYPES.GST}        
+                initialFile={formData.gstFile}
+                onFileUpload={(file) => {
+                  setFormData(prev => ({ ...prev, gstFile: file }));
+                }}
+                onFileDelete={() => {
+                  setFormData(prev => ({ ...prev, gstFile: null }));
+                }}
+              />
+
+              {/* GST Dropdown Selector - Select from fetched GST numbers */}
+              <TouchableOpacity
+                style={[styles.input]}
+                onPress={() => Alert.alert('GST Number', 'Select from GST numbers fetched from PAN')}
+                activeOpacity={0.7}
+              >
+                <Text style={formData.gstNumber ? styles.inputText : styles.placeholderText}>
+                  {formData.gstNumber || 'GST Number'}
+                </Text>
+                <ArrowDown color='#999' />
+              </TouchableOpacity>
+            </View>
+
+            {/* Mapping Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Mapping</Text>
+              
+              <View style={styles.switchContainer}>
+                <Text style={styles.switchLabel}>Mark as buying entity</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.switch,
+                    formData.markAsBuyingEntity && styles.switchActive,
+                  ]}
+                  onPress={() => setFormData(prev => ({ 
+                    ...prev, 
+                    markAsBuyingEntity: !prev.markAsBuyingEntity 
+                  }))}
+                  activeOpacity={0.8}
+                >
+                  <Animated.View
+                    style={[
+                      styles.switchThumb,
+                      formData.markAsBuyingEntity && styles.switchThumbActive,
+                    ]}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.sectionLabel}>Select category <Text style={styles.optional}>(Optional)</Text></Text>
+              
+              <View style={styles.categoryOptions}>
+                <TouchableOpacity
+                  style={[
+                    styles.radioButton,
+                    formData.selectedCategory === 'Group Corporate Hospital' && styles.radioButtonActive,
+                  ]}
+                  onPress={() => setFormData(prev => ({ 
+                    ...prev, 
+                    selectedCategory: 'Group Corporate Hospital' 
+                  }))}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.radioOuter}>
+                    {formData.selectedCategory === 'Group Corporate Hospital' && (
+                      <View style={styles.radioInner} />
+                    )}
+                  </View>
+                  <Text style={styles.radioLabel}>Group Corporate Hospital</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.radioButton,
+                    formData.selectedCategory === 'Pharmacy' && styles.radioButtonActive,
+                  ]}
+                  onPress={() => setFormData(prev => ({ 
+                    ...prev, 
+                    selectedCategory: 'Pharmacy' 
+                  }))}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.radioOuter}>
+                    {formData.selectedCategory === 'Pharmacy' && (
+                      <View style={styles.radioInner} />
+                    )}
+                  </View>
+                  <Text style={styles.radioLabel}>Pharmacy</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Group Hospital Selector - Show when Group Corporate Hospital is selected */}
+              {formData.selectedCategory === 'Group Corporate Hospital' && (
+                <>
+                  <TouchableOpacity
+                    style={styles.selectorInput}
+                    onPress={() => {
+                      navigation.navigate('HospitalSelector', {
+                        selectedHospitals: formData.selectedHospital ? [formData.selectedHospital] : [],
+                        onSelect: (hospitals) => {
+                          // For single selection, take the first hospital
+                          setFormData(prev => ({ ...prev, selectedHospital: hospitals[0] || null }));
+                        }
+                      });
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    {formData.selectedHospital ? (
+                      <View style={styles.selectedItem}>
+                        <View>
+                          <Text style={styles.selectedItemName}>{formData.selectedHospital.name}</Text>
+                          <Text style={styles.selectedItemCode}>{formData.selectedHospital.code}</Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            setFormData(prev => ({ ...prev, selectedHospital: null }));
+                          }}
+                        >                  
+                          <CloseCircle color="#999" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <>
+                        <Text style={styles.selectorPlaceholder}>Search hospital name/code</Text>                
+                        <Search />
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.addNewLink}
+                    onPress={() => Alert.alert('Add Hospital', 'Navigate to add new group hospital')}
+                  >            
+                    <Text style={styles.addNewLinkText}>+ Add New Group Hospital</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {/* Pharmacy Selector - Show when Pharmacy is selected */}
+              {formData.selectedCategory === 'Pharmacy' && (
+                <>
+                  <TouchableOpacity
+                    style={styles.selectorInput}
+                    onPress={() => {
+                      navigation.navigate('PharmacySelector', {
+                        selectedPharmacies: formData.selectedPharmacies,
+                        onSelect: (pharmacies) => {
+                          setFormData(prev => ({ ...prev, selectedPharmacies: pharmacies }));
+                        }
+                      });
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.selectorPlaceholder}>Search pharmacy name/code</Text>
+                    <Search />
+                  </TouchableOpacity>
+                  
+                  {/* Selected Pharmacies List */}
+                  {formData.selectedPharmacies.map((pharmacy) => (
+                    <View key={pharmacy.id} style={styles.selectedPharmacyItem}>
+                      <View style={styles.pharmacyInfo}>
+                        <Text style={styles.pharmacyName}>{pharmacy.name}</Text>
+                        <Text style={styles.pharmacyCode}>{pharmacy.code}</Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            selectedPharmacies: prev.selectedPharmacies.filter(p => p.id !== pharmacy.id)
+                          }));
+                        }}
+                      >                
+                        <CloseCircle color="#FF3B30" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  
+                  <TouchableOpacity 
+                    style={styles.addNewLink}
+                    onPress={() => Alert.alert('Add Pharmacy', 'Navigate to add new pharmacy')}
+                  >
+                    <Text style={styles.addNewLinkText}>+ Add New Pharmacy</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              <View style={styles.divider} />
+
+              <Text style={styles.sectionLabel}>Customer group</Text>
+              
+              <View style={styles.customerGroupContainer}>
+                {['X', 'Y', 'Doctor Supply', '10+50', '12+60'].map((group) => (
+                  <TouchableOpacity
+                    key={group}
+                    style={[
+                      styles.customerGroupButton,
+                      formData.customerGroup === group && styles.customerGroupButtonActive,
+                    ]}
+                    onPress={() => setFormData(prev => ({ ...prev, customerGroup: group }))}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.customerGroupButtonText,
+                      formData.customerGroup === group && styles.customerGroupButtonTextActive,
+                    ]}>
+                      {group}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.sectionLabel}>Stockist Suggestions <Text style={styles.optional}>(Optional)</Text></Text>
+              
+              <CustomInput
+                placeholder="Name of the Stockist"
+                value={formData.stockistSuggestion}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, stockistSuggestion: text }))}
+              />
+
+              <CustomInput
+                placeholder="Distributor Code"
+                value={formData.distributorCode}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, distributorCode: text }))}
+              />
+
+              <CustomInput
+                placeholder="City"
+                value={formData.stockistCity}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, stockistCity: text }))}
+              />
+
+              <TouchableOpacity
+                style={styles.addStockistButton}
+                onPress={() => Alert.alert('Add Stockist', 'Stockist addition will be available soon')}
+                activeOpacity={0.7}
+              >        
+                <Text style={styles.addStockistButtonText}>+ Add New Stockist</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleCancel}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.registerButton}
+                onPress={handleSubmit}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.registerButtonText}>Register</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNavigation}>
-        {currentStep > 1 && (
-          <TouchableOpacity
-            style={styles.backStepButton}
-            onPress={handlePreviousStep}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.backStepButtonText}>Previous</Text>
-          </TouchableOpacity>
-        )}
-        
-        <TouchableOpacity
-          style={[
-            styles.nextStepButton,
-            currentStep === 1 && { flex: 1 },
-          ]}
-          onPress={handleNextStep}
-          activeOpacity={0.8}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.nextStepButtonText}>
-              {currentStep === 4 ? 'Register' : 'Next'}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
@@ -1120,69 +1032,17 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '500',
   },
-  stepIndicatorContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  stepIndicatorBar: {
-    height: 4,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  stepIndicatorProgress: {
-    height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-  },
-  stepLabelsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-  },
-  stepLabelWrapper: {
-    alignItems: 'center',
-  },
-  stepDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#F0F0F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  stepDotActive: {
-    backgroundColor: colors.primary,
-  },
-  stepDotCompleted: {
-    backgroundColor: '#4CAF50',
-  },
-  stepDotText: {
-    fontSize: 12,
-    color: '#999',
-    fontWeight: '500',
-  },
-  stepDotTextActive: {
-    color: '#fff',
-  },
-  stepLabel: {
-    fontSize: 11,
-    color: '#999',
-  },
-  stepLabelActive: {
-    color: colors.primary,
-    fontWeight: '500',
-  },
   scrollContent: {
-    paddingHorizontal: 20,
     paddingBottom: 100,
   },
-  stepContent: {
+  content: {
+    paddingHorizontal: 20,
     paddingTop: 20,
   },
-  stepTitle: {
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
@@ -1217,23 +1077,6 @@ const styles = StyleSheet.create({
     marginTop: -12,
     marginBottom: 12,
     marginLeft: 4,
-  },
-  uploadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    borderStyle: 'dashed',
-    borderRadius: 8,
-    paddingVertical: 16,
-    marginBottom: 16,
-    backgroundColor: '#FFF5ED',
-  },
-  uploadButtonText: {
-    fontSize: 14,
-    color: colors.primary,
-    marginLeft: 8,
   },
   dropdown: {
     position: 'relative',
@@ -1524,36 +1367,38 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textDecorationLine: 'underline',
   },
-  bottomNavigation: {
+  actionButtons: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    marginTop: 24,
+    marginBottom: 32,
     gap: 12,
   },
-  backStepButton: {
+  cancelButton: {
     flex: 1,
     paddingVertical: 16,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.primary,
     alignItems: 'center',
   },
-  backStepButtonText: {
+  cancelButtonText: {
     fontSize: 16,
     color: colors.primary,
     fontWeight: '600',
   },
-  nextStepButton: {
+  registerButton: {
     flex: 1,
     paddingVertical: 16,
     borderRadius: 12,
     backgroundColor: colors.primary,
     alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  nextStepButtonText: {
+  registerButtonText: {
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',
