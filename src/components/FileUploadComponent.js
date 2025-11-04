@@ -120,9 +120,9 @@ const FileUploadComponent = ({
     launchCamera(options, handleImageResponse);
   };
 
-  const handleDocumentPicker = async () => {
+  const handleDocumentPicker = async () => {  console.log("handleDocumentPicker is called");
     try {
-    const [file] = await pick({ type: [ types.allFiles ] });
+    const [file] = await pick({ type: [ types.allFiles ] });  console.log(file);
 
     // Validate size
     if (file.size > maxSize) {
@@ -229,7 +229,7 @@ const FileUploadComponent = ({
       // Make the API call with proper headers for multipart/form-data
       const token = await apiClient.getToken();
       
-      const response = await fetch('https://pharmsupply-dev-api.pharmconnect.com/user-management/customer/upload-docs', {
+      const response = await fetch('https://pharmsupply-dev-api.pharmconnect.com/user-management/customer/upload-docs?isStaging=true', {
         method: 'POST',
         headers: {
           'Accept': 'application/json',

@@ -1,5 +1,3 @@
-// src/screens/authorized/registration/DoctorRegistrationForm.js
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -895,7 +893,7 @@ const DoctorRegistrationForm = () => {
                 }}
               />
 
-              {/* GST Number */}
+              {/*
               <View style={styles.inputWithButton}>
                 <TextInput
                   style={[styles.inputField, { flex: 1 }]}
@@ -914,7 +912,14 @@ const DoctorRegistrationForm = () => {
                 >
                   <Text style={styles.inlineVerifyText}>Verify</Text>
                 </TouchableOpacity>
-              </View>
+              </View> */}
+
+                  <CustomInput
+                  placeholder="GST number"
+                  value={formData.gstNumber}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, gstNumber: text }))}
+                />
+
             </View>
 
             {/* Mapping Section */}
@@ -1190,7 +1195,7 @@ const styles = StyleSheet.create({
   typeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 5,
     paddingVertical: 12,
     backgroundColor: '#FAFAFA',
     borderBottomWidth: 1,
@@ -1198,13 +1203,11 @@ const styles = StyleSheet.create({
   },
   typeTag: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 16,
+    paddingVertical: 6,    
     marginHorizontal: 4,
   },
   typeTagActive: {
-    backgroundColor: '#FFF5ED',
+    
   },
   typeTagText: {
     fontSize: 12,

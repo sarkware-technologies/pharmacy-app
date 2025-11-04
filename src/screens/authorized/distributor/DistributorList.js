@@ -32,6 +32,7 @@ import Filter from '../../../components/icons/Filter';
 import ChevronRight from '../../../components/icons/ChevronRight';
 import Phone from '../../../components/icons/Phone';
 import AddrLine from '../../../components/icons/AddrLine';
+import FilterModal from '../../../components/FilterModal';
 
 const DistributorList = () => {
   const navigation = useNavigation();
@@ -244,6 +245,10 @@ const DistributorList = () => {
     );
   };
 
+  const handleApplyFilters = (filters) => {
+
+  };
+
   const renderEndReached = () => {
     if (hasMoreData || loadingMore || allDistributors.length === 0) return null;
     
@@ -361,6 +366,9 @@ const DistributorList = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+
+      <View style={{backgroundColor: '#F8F9FA', flex: 1}}>
+
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
       
       <View style={styles.header}>
@@ -470,6 +478,14 @@ const DistributorList = () => {
       </Animated.View>
 
       {renderInviteModal()}
+
+      <FilterModal 
+          visible={showFilterModal}
+          onClose={() => setShowFilterModal(false)}
+          onApply={handleApplyFilters}
+        />
+
+      </View>
     </SafeAreaView>
   );
 };
@@ -477,7 +493,7 @@ const DistributorList = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F6F6',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',

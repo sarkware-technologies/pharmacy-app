@@ -19,8 +19,13 @@ import { colors } from '../../../styles/colors';
 import { getOrders } from '../../../api/orders';
 import { setOrders, setLoading } from '../../../redux/slices/orderSlice';
 import Menu from '../../../components/icons/Menu';
+import AddrLine from '../../../components/icons/AddrLine';
+import Filter from '../../../components/icons/Filter';
+import Calendar from '../../../components/icons/Calendar';
+import FilterModal from '../../../components/FilterModal';
 
 const OrderList = () => {
+
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const { orders = [], loading = false } = useSelector(state => state.orders || {});
@@ -28,7 +33,7 @@ const OrderList = () => {
   const [activeTab, setActiveTab] = useState('All');
   const [searchText, setSearchText] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
+  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);  
   
   const tabs = ['All', 'Waiting for Confirmation', 'Hold', 'Track PO'];
 
@@ -78,6 +83,10 @@ const OrderList = () => {
     }
   };
 
+  const handleApplyFilters = (filters) => {
+
+  };
+
   const renderOrder = ({ item }) => {
     const statusColors = getStatusColor(item.status);
     
@@ -93,18 +102,18 @@ const OrderList = () => {
         
         <View style={styles.orderMeta}>
           <Text style={styles.orderDate}>{item.date} {item.time} | {item.rateType}</Text>
-          <Text style={styles.skuCount}>SKU : {item.skuCount}</Text>
+          <Text style={styles.skuCount}>SKU : <Text style={{color: '#222'}}>{item.skuCount}</Text></Text>
         </View>
 
         <View style={styles.customerSection}>
           <View style={styles.customerInfo}>
-            <View style={styles.avatarContainer}>
+            {/*<View style={styles.avatarContainer}>
               <Text style={styles.avatarText}>AA</Text>
-            </View>
+            </View> */}
             <View style={styles.customerDetails}>
               <Text style={styles.customerName}>{item.customerName}</Text>
               <View style={styles.customerMeta}>
-                <Icon name="business" size={14} color="#999" />
+                <AddrLine />
                 <Text style={styles.customerMetaText}>
                   {item.customerId} | {item.location} | Div: {item.division}
                 </Text>
@@ -113,7 +122,7 @@ const OrderList = () => {
                 )}
               </View>
               <Text style={styles.pendingAction}>
-                Pending Action by: {item.pendingActionBy.name} ({item.pendingActionBy.phone} | {item.pendingActionBy.role})
+                Pending Action by: <Text style={{ color: '#222' }}>{item.pendingActionBy.name}</Text> ({item.pendingActionBy.phone} | {item.pendingActionBy.role})
               </Text>
             </View>
             <TouchableOpacity>
@@ -184,6 +193,9 @@ const OrderList = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+
+      <View style={{backgroundColor: '#F6F6F6'}}>
+
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
       
       <View style={styles.header}>
@@ -238,13 +250,14 @@ const OrderList = () => {
           style={styles.filterButton}
           onPress={() => setShowFilterModal(true)}
         >
-          <Icon name="filter-list" size={22} color="#666" />
+          <Filter />
         </TouchableOpacity>
         <TouchableOpacity style={styles.filterButton}>
-          <Icon name="calendar-today" size={22} color="#666" />
+          <Calendar />
         </TouchableOpacity>
       </View>
 
+      
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -257,9 +270,18 @@ const OrderList = () => {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
-      )}
+      )}      
 
       {renderCreateOrderModal()}
+
+      </View>
+
+      <FilterModal 
+          visible={showFilterModal}
+          onClose={() => setShowFilterModal(false)}
+          onApply={handleApplyFilters}
+        />
+
     </SafeAreaView>
   );
 };
@@ -267,16 +289,14 @@ const OrderList = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F6F6',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingVertical: 12,    
   },
   headerTitle: {
     fontSize: 20,
@@ -375,26 +395,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 2,
   },
   orderIdRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   orderId: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#333',
   },
   orderAmount: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#333',
   },
   orderMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   orderDate: {
     fontSize: 12,
@@ -407,7 +427,7 @@ const styles = StyleSheet.create({
   customerSection: {
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
-    paddingTop: 12,
+    paddingTop: 8,
   },
   customerInfo: {
     flexDirection: 'row',

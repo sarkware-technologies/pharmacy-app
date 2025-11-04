@@ -61,7 +61,7 @@ export const customerAPI = {
     // Get customer details by ID - UPDATED ENDPOINT
     getCustomerDetails: async (customerId) => {
         try {
-            const response = await apiClient.get(`/user-management/customer/customer-by-id/${customerId}`);
+            const response = await apiClient.get(`/user-management/customer/customer-by-id/${customerId}?isStaging=false`);
             return response;
         } catch (error) {
             console.error('Error fetching customer details:', error);
@@ -147,5 +147,51 @@ export const customerAPI = {
             console.error('Error fetching document signed URL:', error);
             throw error;
         }
+    },
+
+    // Generate OTP for mobile or email verification (NEW)
+    generateOTP: async (data) => {
+        try {
+            const response = await apiClient.post('/user-management/verification/generate-otp', data);
+            return response;
+        } catch (error) {
+            console.error('Error generating OTP:', error);
+            throw error;
+        }
+    },
+
+    // Validate OTP (NEW)
+    validateOTP: async (otp, data) => {
+        try {
+            const response = await apiClient.post(`/user-management/verification/validate-otp/${otp}`, data);
+            return response;
+        } catch (error) {
+            console.error('Error validating OTP:', error);
+            throw error;
+        }
+    },
+
+    // Upload documents (NEW)
+    uploadDocument: async (formData) => {
+        try {
+            const token = await apiClient.getToken();
+            
+            const response = await fetch('https://pharmsupply-dev-api.pharmconnect.com/user-management/customer/upload-docs?isStaging=false', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    // Don't set Content-Type header - let fetch set it with boundary
+                },
+                body: formData,
+            });
+
+            const responseData = await response.json();
+            return responseData;
+        } catch (error) {
+            console.error('Error uploading document:', error);
+            throw error;
+        }
     }
+
 };

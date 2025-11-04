@@ -167,9 +167,9 @@ const RegistrationType = () => {
       // Navigate to appropriate form based on selection
       if (selectedType.code === 'HOSP' && selectedCategory?.code === 'PRI' && 
         (selectedSubCategory?.code === 'PCL' || selectedSubCategory?.code === 'PIH' || selectedSubCategory?.code === 'PGH')) {
-        navigation.navigate('ClinicRegistrationForm', navigationParams);
-      } else if (selectedType.code === 'HOSP' && selectedCategory?.code === 'PRI' && selectedSubCategory?.code === 'PGH') {
-        //navigation.navigate('GroupHospitalRegistrationForm', navigationParams);
+        navigation.navigate('PrivateRegistrationForm', navigationParams);
+      } else if (selectedType.code === 'HOSP' && selectedCategory?.code === 'GOV') {
+        navigation.navigate('PrivateRegistrationForm', navigationParams);
       } else if (selectedType.code === 'DOCT') {
         navigation.navigate('DoctorRegistrationForm', navigationParams);
       } else if (selectedType.code === 'PCM' && selectedCategory?.code === 'OR') {
@@ -487,8 +487,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderWidth: 1,
+    borderColor: '#E3E3E3',
     backgroundColor: '#FAFAFA',
     marginBottom: 12,    
   },
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#E3E3E3',
     backgroundColor: '#FAFAFA',
     alignItems: 'center',
     justifyContent: 'center'
@@ -542,8 +542,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderWidth: 1,
+    borderColor: '#E3E3E3',
     backgroundColor: '#FAFAFA',
   },
   selectedSubCategoryButton: {
@@ -564,9 +564,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 20,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    backgroundColor: '#fff',    
   },
   continueButton: {
     backgroundColor: colors.primary,

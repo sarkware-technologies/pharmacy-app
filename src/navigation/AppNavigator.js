@@ -15,7 +15,7 @@ import PasswordSuccessScreen from '../screens/unauthorized/PasswordSuccessScreen
 
 // Registration Screens
 import RegistrationType from '../screens/authorized/registration/RegistrationType';
-import ClinicRegistrationForm from '../screens/authorized/registration/ClinicRegistrationForm';
+import PrivateRegistrationForm from '../screens/authorized/registration/PrivateRegistration';
 import DoctorRegistrationForm from '../screens/authorized/registration/DoctorRegistrationForm';
 import GroupHospitalRegistrationForm from '../screens/authorized/registration/GroupHospitalRegistrationForm';
 import RegistrationSuccess from '../screens/authorized/registration/RegistrationSuccess';
@@ -222,7 +222,7 @@ const MainStack = () => (
     
     {/* Registration Screens (no bottom tabs) */}
     <Stack.Screen name="RegistrationType" component={RegistrationType} />
-    <Stack.Screen name="ClinicRegistrationForm" component={ClinicRegistrationForm} />
+    <Stack.Screen name="PrivateRegistrationForm" component={PrivateRegistrationForm} />
     <Stack.Screen name="DoctorRegistrationForm" component={DoctorRegistrationForm} />
     <Stack.Screen name="GroupHospitalRegistrationForm" component={GroupHospitalRegistrationForm} />
     <Stack.Screen name="PharmacyRetailerForm" component={PharmacyRetailerForm} />   

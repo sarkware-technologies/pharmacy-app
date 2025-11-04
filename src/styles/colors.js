@@ -5,7 +5,7 @@ export const colors = {
     text: '#2D3436',
     textSecondary: '#636E72',
     border: '#DFE6E9',
-    loginInputBorderColor: '#909090B2',
+    loginInputBorderColor: '#E3E3E3',
     loginButtonBackgroundColor: '#D3D4D6',
     inputBackground: '#F5F6FA',
     success: '#00B894',

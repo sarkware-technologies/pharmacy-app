@@ -11,7 +11,7 @@ import {
   Dimensions,
   Keyboard,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+
 import { colors } from '../styles/colors';
 import { useSelector, useDispatch } from 'react-redux';
 import apiClient from '../api/apiClient';

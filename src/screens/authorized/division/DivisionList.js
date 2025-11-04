@@ -265,6 +265,9 @@ const DivisionList = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+
+      <View style={{backgroundColor: '#F5F5F5', flex: 1}}>
+
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
       
       <View style={styles.header}>
@@ -360,7 +363,7 @@ const DivisionList = () => {
         onClose={() => setShowGroupUpdateModal(false)}
         onSelectOption={handleGroupUpdateOption}
       />
-
+      </View>
     </SafeAreaView>
   );
 };
@@ -368,7 +371,7 @@ const DivisionList = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F6F6',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',

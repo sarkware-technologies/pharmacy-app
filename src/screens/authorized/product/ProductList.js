@@ -36,6 +36,7 @@ import Menu from '../../../components/icons/Menu';
 import Bell from '../../../components/icons/Bell';
 import Search from '../../../components/icons/Search';
 import Filter from '../../../components/icons/Filter';
+import FilterModal from '../../../components/FilterModal';
 
 const ProductList = () => {
   const navigation = useNavigation();
@@ -216,6 +217,10 @@ const ProductList = () => {
     }
   };
 
+  const handleApplyFilters = (filters) => {
+
+  };
+
   const handleBulkEdit = () => {
     if (selectedProducts.length === 0) {
       Alert.alert('No Selection', 'Please select products to edit');
@@ -349,8 +354,11 @@ const ProductList = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']}>      
+      
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+
+      <View style={{flex: 1, backgroundColor: '#F8F9FA'}}>
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.openDrawer()}>
@@ -381,7 +389,7 @@ const ProductList = () => {
         >
           <Filter />
         </TouchableOpacity>
-      </View>
+      </View>      
 
       {bulkEditMode && (
         <View style={styles.bulkEditBar}>
@@ -462,7 +470,15 @@ const ProductList = () => {
           />
         )}
       </Animated.View>
-      
+
+      <FilterModal 
+          visible={showFilterModal}
+          onClose={() => setShowFilterModal(false)}
+          onApply={handleApplyFilters}
+        />
+
+      </View>
+
     </SafeAreaView>
   );
 };
@@ -470,7 +486,7 @@ const ProductList = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F6F6',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',

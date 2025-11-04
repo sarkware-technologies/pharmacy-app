@@ -301,6 +301,7 @@ const ProductDetail = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
       <View style={styles.header}>
@@ -351,7 +352,7 @@ const ProductDetail = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F6F6',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
