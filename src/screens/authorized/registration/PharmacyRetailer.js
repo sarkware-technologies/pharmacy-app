@@ -12,58 +12,80 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import Toast from 'react-native-toast-message';
 import { colors } from '../../../styles/colors';
 import CustomInput from '../../../components/CustomInput';
 import FileUploadComponent from '../../../components/FileUploadComponent';
 import Calendar from '../../../components/icons/Calendar';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import ChevronRight from '../../../components/icons/ChevronRight';
+import { customerAPI } from '../../../api/customer';
 
-// Document types for file uploads
+// Default document types for file uploads (will be updated from API for licenses)
 const DOC_TYPES = {
-  LICENSE_20: 'LICENSE_20',
-  LICENSE_21: 'LICENSE_21',
-  PHARMACY_IMAGE: 'PHARMACY_IMAGE',
-  PAN_CARD: 'PAN_CARD',
-  GST_CERTIFICATE: 'GST_CERTIFICATE',
+  PHARMACY_IMAGE: 1,
+  PAN_CARD: 7,
+  GST_CERTIFICATE: 2,
 };
 
 const PharmacyRegistrationForm = () => {
+
   const navigation = useNavigation();
   const route = useRoute();
   const scrollViewRef = useRef(null);
   const otpRefs = useRef({});
 
   // Get registration type data from route params
-  const { type, typeName, category, categoryName } = route.params || {};
+  const { 
+    type, 
+    typeName, 
+    typeId, 
+    category, 
+    categoryName, 
+    categoryId,
+    subCategory,
+    subCategoryName,
+    subCategoryId 
+  } = route.params || {};
+
+  // State for license types fetched from API
+  const [licenseTypes, setLicenseTypes] = useState({
+    LICENSE_20: { id: 1, docTypeId: 3, name: '20', code: 'LIC20' },
+    LICENSE_21: { id: 3, docTypeId: 5, name: '21', code: 'LIC21' },
+  });
 
   // Form state
   const [formData, setFormData] = useState({
     // License Details
     license20: '',
     license20File: null,
-    license20ExpiryDate: '',
+    license20ExpiryDate: null,
     license21: '',
     license21File: null,
-    license21ExpiryDate: '',
+    license21ExpiryDate: null,
     pharmacyImageFile: null,
     
     // General Details
     pharmacyName: '',
-    enterGSTOrCathLabEtc: '',
+    shortName: '',
     address1: '',
     address2: '',
     address3: '',
     address4: '',
     pincode: '',
     area: '',
+    areaId: '',
     city: '',
+    cityId: '',
     state: '',
+    stateId: '',
     
     // Security Details
     mobileNumber: '',
@@ -78,19 +100,28 @@ const PharmacyRegistrationForm = () => {
     hospitalName: '',
     
     // Customer group
-    customerGroup: '9 Doctor badge',
+    customerGroupId: 1,
     isIPD: false,
     isGOVT: false,
+    isBuyer: false,
     
     // Stockist Suggestions
-    stockist1Name: '',
-    distributor1Code: '',
-    stockist1City: '',
+    suggestedDistributors: [],
+  });
+
+  // Document IDs for API submission
+  const [documentIds, setDocumentIds] = useState({
+    license20: null,
+    license21: null,
+    pharmacyImage: null,
+    pan: null,
+    gst: null,
   });
 
   // Error state
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [registering, setRegistering] = useState(false);
 
   // Date picker states
   const [showDatePicker, setShowDatePicker] = useState({
@@ -112,6 +143,10 @@ const PharmacyRegistrationForm = () => {
     mobile: 30,
     email: 30,
   });
+  const [generatedOTP, setGeneratedOTP] = useState({
+    mobile: null,
+    email: null,
+  });
 
   // Verification status
   const [verificationStatus, setVerificationStatus] = useState({
@@ -125,6 +160,18 @@ const PharmacyRegistrationForm = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const otpSlideAnim = useRef(new Animated.Value(-50)).current;
+
+  // States and cities data
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingAreas, setLoadingAreas] = useState(false);
+
+  // Dropdown modal states
+  const [showStateModal, setShowStateModal] = useState(false);
+  const [showCityModal, setShowCityModal] = useState(false);
+  const [showAreaModal, setShowAreaModal] = useState(false);
 
   useEffect(() => {
     // Entry animation
@@ -140,7 +187,68 @@ const PharmacyRegistrationForm = () => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Load initial data
+    loadInitialData();
   }, []);
+
+  const loadInitialData = async () => {
+    // Fetch license types from API
+    await fetchLicenseTypes();
+    // Load states on mount
+    await loadStates();
+  };
+
+  const fetchLicenseTypes = async () => {
+    try {
+      const response = await customerAPI.getLicenseTypes(typeId || 1, categoryId || 2);
+      if (response.success && response.data) {
+        const licenseData = {};
+        response.data.forEach(license => {
+          // Map the license codes to match what we expect
+          // Note: The API might return different codes, so we map them appropriately
+          if (license.code === 'LIC20' || license.name === '20') {
+            licenseData.LICENSE_20 = {
+              id: license.id,
+              docTypeId: license.docTypeId,
+              name: license.name,
+              code: license.code,
+            };
+          } else if (license.code === 'LIC21' || license.name === '21') {
+            licenseData.LICENSE_21 = {
+              id: license.id,
+              docTypeId: license.docTypeId,
+              name: license.name,
+              code: license.code,
+            };
+          } else if (license.code === 'LIC20B' || license.name === '20B') {
+            // If API returns 20B instead of 20, map it
+            licenseData.LICENSE_20 = {
+              id: license.id,
+              docTypeId: license.docTypeId,
+              name: '20', // Keep the display name as 20
+              code: license.code,
+            };
+          } else if (license.code === 'LIC21B' || license.name === '21B') {
+            // If API returns 21B instead of 21, map it
+            licenseData.LICENSE_21 = {
+              id: license.id,
+              docTypeId: license.docTypeId,
+              name: '21', // Keep the display name as 21
+              code: license.code,
+            };
+          }
+        });
+        
+        if (Object.keys(licenseData).length > 0) {
+          setLicenseTypes(prev => ({ ...prev, ...licenseData }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch license types:', error);
+      // Keep default values if API fails
+    }
+  };
 
   // OTP Timer Effect
   useEffect(() => {
@@ -162,7 +270,96 @@ const PharmacyRegistrationForm = () => {
     };
   }, [otpTimers, showOTP]);
 
-  const handleVerify = (field) => {
+  // Load cities when state changes
+  useEffect(() => {
+    if (formData.stateId) {
+      loadCities(formData.stateId);
+      // Reset city and area when state changes
+      setFormData(prev => ({ ...prev, cityId: '', city: '', areaId: '', area: '' }));
+      setAreas([]);
+    }
+  }, [formData.stateId]);
+
+  // Load areas when city changes
+  useEffect(() => {
+    if (formData.cityId) {
+      loadAreas(formData.cityId);
+      // Reset area when city changes
+      setFormData(prev => ({ ...prev, areaId: '', area: '' }));
+    }
+  }, [formData.cityId]);
+
+  const loadStates = async () => {
+    try {
+      const response = await customerAPI.getStates();
+      if (response.success && response.data) {
+        const _states = [];
+        for (let i = 0; i < response.data.states.length; i++) {
+          _states.push({ id: response.data.states[i].id, name: response.data.states[i].stateName });
+        }
+        setStates(_states || []);
+        //setStates(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load states:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to load states',
+      });
+    }
+  };
+
+  const loadCities = async (stateId) => {
+    setLoadingCities(true);
+    try {
+      const response = await customerAPI.getCities(stateId);
+      if (response.success && response.data) {
+        const _cities = [];
+        for (let i = 0; i < response.data.cities.length; i++) {
+          _cities.push({ id: response.data.cities[i].id, name: response.data.cities[i].cityName });
+        }
+        setCities(_cities || []);
+        //setCities(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load cities:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to load cities',
+      });
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  const loadAreas = async (cityId) => {
+    setLoadingAreas(true);
+    try {
+      // Assuming there's an API endpoint for areas based on city
+      // For now, using mock data
+      const mockAreas = [
+        { id: 0, name: 'Vadgaonsheri'}, 
+        { id: 1, name: 'Kharadi'}, 
+        { id: 2, name: 'Viman Nagar'}, 
+        { id: 3, name: 'Kalyani Nagar'}, 
+        { id: 4, name: 'Koregaon Park'}
+      ];
+      setAreas(mockAreas);
+    } catch (error) {
+      console.error('Failed to load areas:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to load areas',
+      });
+    } finally {
+      setLoadingAreas(false);
+    }
+  };
+
+  const handleVerify = async (field) => {
     // Validate the field before showing OTP
     if (field === 'mobile' && (!formData.mobileNumber || formData.mobileNumber.length !== 10)) {
       setErrors(prev => ({ ...prev, mobileNumber: 'Please enter valid 10-digit mobile number' }));
@@ -173,16 +370,73 @@ const PharmacyRegistrationForm = () => {
       return;
     }
 
-    setShowOTP(prev => ({ ...prev, [field]: true }));
-    setOtpTimers(prev => ({ ...prev, [field]: 30 }));
-    
-    // Animate OTP container
-    Animated.spring(otpSlideAnim, {
-      toValue: 0,
-      friction: 8,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
+    setLoading(true);
+    try {
+      const requestData = {
+        customerId: 1, // Using default customerId for now
+        [field === 'mobile' ? 'mobile' : 'email']: 
+          field === 'mobile' ? formData.mobileNumber : formData.emailAddress
+      };
+
+      const response = await customerAPI.generateOTP(requestData);
+
+      if (response.success) {
+        setShowOTP(prev => ({ ...prev, [field]: true }));
+        setOtpTimers(prev => ({ ...prev, [field]: 30 }));
+        
+        // If OTP is returned in response (for testing), auto-fill it
+        if (response.data && response.data.otp) {
+          const otpString = response.data.otp.toString();
+          const otpArray = otpString.split('').slice(0, 4);
+          setOtpValues(prev => ({
+            ...prev,
+            [field]: [...otpArray, ...Array(4 - otpArray.length).fill('')]
+          }));
+          setGeneratedOTP(prev => ({ ...prev, [field]: response.data.otp }));
+        }
+
+        Toast.show({
+          type: 'success',
+          text1: 'OTP Sent',
+          text2: response.message || 'OTP has been sent successfully',
+        });
+
+        // Animate OTP container
+        Animated.spring(otpSlideAnim, {
+          toValue: 0,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }).start();
+      } else {
+        // Check if customer already exists
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+          const existingCustomer = response.data[0];
+          Alert.alert(
+            'Customer Already Exists',
+            `A customer with this ${field} already exists.\nCustomer Code: ${existingCustomer.code || 'N/A'}\nName: ${existingCustomer.name}`,
+            [
+              { text: 'OK', style: 'default' }
+            ]
+          );
+        } else {
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: response.message || 'Failed to generate OTP',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('OTP generation error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to generate OTP. Please try again.',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOtpChange = (field, index, value) => {
@@ -204,34 +458,65 @@ const PharmacyRegistrationForm = () => {
     }
   };
 
-  const handleOtpVerification = (field) => {
+  const handleOtpVerification = async (field) => {
     const otp = otpValues[field].join('');
-    if (otp === '1234') { // Mock verification
-      Alert.alert('Success', `${field} verified successfully!`);
-      setShowOTP(prev => ({ ...prev, [field]: false }));
-      setVerificationStatus(prev => ({ ...prev, [field]: true }));
-      // Reset OTP values for this field
-      setOtpValues(prev => ({
-        ...prev,
-        [field]: ['', '', '', '']
-      }));
-    } else {
-      Alert.alert('Error', 'Invalid OTP. Please try again.');
+    
+    setLoading(true);
+    try {
+      const requestData = {
+        customerId: 1,
+        [field === 'mobile' ? 'mobile' : 'email']: 
+          field === 'mobile' ? formData.mobileNumber : formData.emailAddress
+      };
+
+      const response = await customerAPI.validateOTP(otp, requestData);
+
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
+        });
+        
+        setShowOTP(prev => ({ ...prev, [field]: false }));
+        setVerificationStatus(prev => ({ ...prev, [field]: true }));
+        
+        // Reset OTP values for this field
+        setOtpValues(prev => ({
+          ...prev,
+          [field]: ['', '', '', '']
+        }));
+        setGeneratedOTP(prev => ({ ...prev, [field]: null }));
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Invalid OTP',
+          text2: 'Please enter the correct OTP',
+        });
+      }
+    } catch (error) {
+      console.error('OTP validation error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to validate OTP. Please try again.',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleResendOTP = (field) => {
+  const handleResendOTP = async (field) => {
     setOtpTimers(prev => ({ ...prev, [field]: 30 }));
-    Alert.alert('OTP Sent', `New OTP sent for ${field} verification.`);
+    await handleVerify(field);
   };
 
   const handleDateChange = (event, selectedDate) => {
     setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
     if (selectedDate && selectedDateField) {
-      const formattedDate = selectedDate.toLocaleDateString('en-IN');
       setFormData(prev => ({ 
         ...prev, 
-        [`${selectedDateField}ExpiryDate`]: formattedDate 
+        [`${selectedDateField}ExpiryDate`]: selectedDate 
       }));
       setErrors(prev => ({ ...prev, [`${selectedDateField}ExpiryDate`]: null }));
     }
@@ -267,6 +552,7 @@ const PharmacyRegistrationForm = () => {
               onChangeText={(value) => handleOtpChange(field, index, value)}
               keyboardType="numeric"
               maxLength={1}
+              editable={!loading}
             />
           ))}
         </View>
@@ -275,7 +561,7 @@ const PharmacyRegistrationForm = () => {
             {otpTimers[field] > 0 ? `Resend in ${otpTimers[field]}s` : ''}
           </Text>
           {otpTimers[field] === 0 && (
-            <TouchableOpacity onPress={() => handleResendOTP(field)}>
+            <TouchableOpacity onPress={() => handleResendOTP(field)} disabled={loading}>
               <Text style={styles.resendText}>Resend OTP</Text>
             </TouchableOpacity>
           )}
@@ -289,22 +575,26 @@ const PharmacyRegistrationForm = () => {
     
     // Validate required fields
     if (!formData.license20) newErrors.license20 = 'License 20 number is required';
-    if (!formData.license20File) newErrors.license20File = 'License 20 upload is required';
+    if (!documentIds.license20) newErrors.license20File = 'License 20 upload is required';
     if (!formData.license20ExpiryDate) newErrors.license20ExpiryDate = 'License 20 expiry date is required';
     if (!formData.license21) newErrors.license21 = 'License 21 number is required';
-    if (!formData.license21File) newErrors.license21File = 'License 21 upload is required';
+    if (!documentIds.license21) newErrors.license21File = 'License 21 upload is required';
     if (!formData.license21ExpiryDate) newErrors.license21ExpiryDate = 'License 21 expiry date is required';
-    if (!formData.pharmacyImageFile) newErrors.pharmacyImageFile = 'Pharmacy image is required';
+    if (!documentIds.pharmacyImage) newErrors.pharmacyImageFile = 'Pharmacy image is required';
     if (!formData.pharmacyName) newErrors.pharmacyName = 'Pharmacy name is required';
     if (!formData.address1) newErrors.address1 = 'Address is required';
-    if (!formData.pincode) newErrors.pincode = 'Pincode is required';
+    if (!formData.pincode || formData.pincode.length !== 6) newErrors.pincode = 'Valid 6-digit pincode is required';
     if (!formData.area) newErrors.area = 'Area is required';
-    if (!formData.city) newErrors.city = 'City is required';
-    if (!formData.state) newErrors.state = 'State is required';
-    if (!formData.mobileNumber) newErrors.mobileNumber = 'Mobile number is required';
+    if (!formData.cityId) newErrors.cityId = 'City is required';
+    if (!formData.stateId) newErrors.stateId = 'State is required';
+    if (!formData.mobileNumber || formData.mobileNumber.length !== 10) newErrors.mobileNumber = 'Valid 10-digit mobile number is required';
     if (!verificationStatus.mobile) newErrors.mobileVerification = 'Mobile number verification is required';
-    if (!formData.panNumber) newErrors.panNumber = 'PAN number is required';
-    if (!formData.gstNumber) newErrors.gstNumber = 'GST number is required';
+    if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+      newErrors.panNumber = 'Valid PAN number is required (e.g., ABCDE1234F)';
+    }
+    if (!formData.gstNumber || !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9]{1}[A-Z]{1}[0-9]{1}$/.test(formData.gstNumber)) {
+      newErrors.gstNumber = 'Valid GST number is required (e.g., 27ABCDE1234F1Z5)';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -321,33 +611,198 @@ const PharmacyRegistrationForm = () => {
     );
   };
 
+  const formatDateForAPI = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    // Add time component to avoid timezone issues
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
+  };
+
   const handleRegister = async () => {
-    if (validateForm()) {
-      setLoading(true);
-      
-      try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Navigate to success screen
-        navigation.navigate('RegistrationSuccess', {
-          type: 'pharmacy',
-          registrationCode: 'HSP12345', // This will come from API
-        });
-      } catch (error) {
-        Alert.alert('Error', 'Failed to register pharmacy. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      Alert.alert('Error', 'Please fill all required fields and complete verifications');
+    if (!validateForm()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please fill all required fields and complete verifications',
+      });
       // Scroll to first error
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      return;
+    }
+
+    setRegistering(true);
+    
+    try {
+      // Prepare the registration data according to API format
+      const registrationData = {
+        typeId: typeId || 1,
+        categoryId: categoryId || 2,
+        subCategoryId: subCategoryId || 0,
+        isMobileVerified: verificationStatus.mobile,
+        isEmailVerified: verificationStatus.email,
+        isExisting: false,
+        licenceDetails: {
+          registrationDate: new Date().toISOString(),
+          licence: [
+            {
+              licenceTypeId: licenseTypes.LICENSE_20?.id || 1,
+              licenceNo: formData.license20,
+              licenceValidUpto: formatDateForAPI(formData.license20ExpiryDate),
+            },
+            {
+              licenceTypeId: licenseTypes.LICENSE_21?.id || 3,
+              licenceNo: formData.license21,
+              licenceValidUpto: formatDateForAPI(formData.license21ExpiryDate),
+            }
+          ]
+        },
+        customerDocIds: [
+          documentIds.license20,
+          documentIds.license21,
+          documentIds.pharmacyImage,
+          documentIds.pan,
+          documentIds.gst,
+        ].filter(id => id !== null),
+        isBuyer: formData.isBuyer,
+        customerGroupId: formData.customerGroupId,
+        generalDetails: {
+          name: formData.pharmacyName,
+          shortName: formData.shortName || '',
+          address1: formData.address1,
+          address2: formData.address2 || '',
+          address3: formData.address3 || '',
+          address4: formData.address4 || '',
+          pincode: parseInt(formData.pincode),
+          area: formData.area,
+          cityId: parseInt(formData.cityId),
+          stateId: parseInt(formData.stateId),
+        },
+        securityDetails: {
+          mobile: formData.mobileNumber,
+          email: formData.emailAddress || '',
+          panNumber: formData.panNumber,
+          gstNumber: formData.gstNumber,
+        },
+        suggestedDistributors: formData.suggestedDistributors
+      };
+
+      console.log('Registration data:', registrationData);
+
+      const response = await customerAPI.createCustomer(registrationData);
+      
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Registration Successful',
+          text2: response.message || 'Customer registered successfully',
+        });
+        
+        // Navigate to success screen with registration details
+        navigation.navigate('RegistrationSuccess', {
+          type: 'pharmacy',
+          registrationCode: response.data?.code || response.data?.id || 'SUCCESS',
+          customerId: response.data?.id,
+        });
+      } else {
+        // Handle specific validation errors
+        if (response.message && Array.isArray(response.message)) {
+          const errorMessage = response.message.join('\n');
+          Alert.alert('Validation Error', errorMessage);
+        } else {
+          Toast.show({
+            type: 'error',
+            text1: 'Registration Failed',
+            text2: response.message || 'Failed to register. Please try again.',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to register. Please check your connection and try again.',
+      });
+    } finally {
+      setRegistering(false);
     }
   };
 
   const handleAddNewHospital = () => {
     navigation.navigate('HospitalSelector');
+  };
+
+  // DropdownModal Component
+  const DropdownModal = ({ visible, onClose, title, data, selectedId, onSelect, loading }) => {
+    return (
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={onClose}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={onClose}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{title}</Text>
+              <TouchableOpacity onPress={onClose}>
+                <Icon name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            {loading ? (
+              <ActivityIndicator size="large" color={colors.primary} style={styles.modalLoader} />
+            ) : (
+              <FlatList
+                data={data}
+                keyExtractor={(item) => item.id?.toString() || item.value}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.modalItem,
+                      selectedId == item.id && styles.modalItemSelected
+                    ]}
+                    onPress={() => {
+                      onSelect(item);
+                      onClose();
+                    }}
+                  >
+                    <Text style={[
+                      styles.modalItemText,
+                      selectedId == item.id && styles.modalItemTextSelected
+                    ]}>
+                      {item.name}
+                    </Text>
+                    {selectedId == item.id && (
+                      <Icon name="check" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                )}
+                style={styles.modalList}
+              />
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
+  };
+
+  const handleFileUpload = (field, file) => {
+    if (file && file.id) {
+      setDocumentIds(prev => ({ ...prev, [field]: file.id }));
+    }
+    setFormData(prev => ({ ...prev, [`${field}File`]: file }));
+    setErrors(prev => ({ ...prev, [`${field}File`]: null }));
+  };
+
+  const handleFileDelete = (field) => {
+    setDocumentIds(prev => ({ ...prev, [field]: null }));
+    setFormData(prev => ({ ...prev, [`${field}File`]: null }));
   };
 
   return (
@@ -399,7 +854,7 @@ const PharmacyRegistrationForm = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>License Details <Text style={{color: 'red'}}>*</Text></Text>
               
-              {/* 20* License */}
+              {/* 20 License */}
               <View style={styles.licenseRow}>
                 <Text style={styles.licenseNumber}>20  <Text style={{color: 'red'}}>*</Text></Text>
                 <Icon name="info-outline" size={16} color={colors.textSecondary} />
@@ -409,15 +864,10 @@ const PharmacyRegistrationForm = () => {
                 placeholder="Upload 20 license"
                 accept={['pdf', 'jpg', 'png']}
                 maxSize={10 * 1024 * 1024} // 10MB
-                docType={DOC_TYPES.LICENSE_20}
+                docType={licenseTypes.LICENSE_20?.docTypeId || 3}
                 initialFile={formData.license20File}
-                onFileUpload={(file) => {
-                  setFormData(prev => ({ ...prev, license20File: file }));
-                  setErrors(prev => ({ ...prev, license20File: null }));
-                }}
-                onFileDelete={() => {
-                  setFormData(prev => ({ ...prev, license20File: null }));
-                }}
+                onFileUpload={(file) => handleFileUpload('license20', file)}
+                onFileDelete={() => handleFileDelete('license20')}
                 errorMessage={errors.license20File}
               />
               
@@ -438,7 +888,9 @@ const PharmacyRegistrationForm = () => {
                 activeOpacity={0.7}
               >
                 <Text style={formData.license20ExpiryDate ? styles.dateText : styles.placeholderText}>
-                  {formData.license20ExpiryDate || 'Expiry Date*'}
+                  {formData.license20ExpiryDate 
+                    ? new Date(formData.license20ExpiryDate).toLocaleDateString('en-IN')
+                    : 'Expiry Date*'}
                 </Text>
                 <Calendar />
               </TouchableOpacity>
@@ -446,7 +898,7 @@ const PharmacyRegistrationForm = () => {
                 <Text style={styles.errorText}>{errors.license20ExpiryDate}</Text>
               )}
 
-              {/* 21* License */}
+              {/* 21 License */}
               <View style={styles.licenseRow}>
                 <Text style={styles.licenseNumber}>21  <Text style={{color: 'red'}}>*</Text></Text>
                 <Icon name="info-outline" size={16} color={colors.textSecondary} />
@@ -456,15 +908,10 @@ const PharmacyRegistrationForm = () => {
                 placeholder="Upload 21 license"
                 accept={['pdf', 'jpg', 'png']}
                 maxSize={10 * 1024 * 1024} // 10MB
-                docType={DOC_TYPES.LICENSE_21}
+                docType={licenseTypes.LICENSE_21?.docTypeId || 5}
                 initialFile={formData.license21File}
-                onFileUpload={(file) => {
-                  setFormData(prev => ({ ...prev, license21File: file }));
-                  setErrors(prev => ({ ...prev, license21File: null }));
-                }}
-                onFileDelete={() => {
-                  setFormData(prev => ({ ...prev, license21File: null }));
-                }}
+                onFileUpload={(file) => handleFileUpload('license21', file)}
+                onFileDelete={() => handleFileDelete('license21')}
                 errorMessage={errors.license21File}
               />
               
@@ -485,7 +932,9 @@ const PharmacyRegistrationForm = () => {
                 activeOpacity={0.7}
               >
                 <Text style={formData.license21ExpiryDate ? styles.dateText : styles.placeholderText}>
-                  {formData.license21ExpiryDate || 'Expiry Date*'}
+                  {formData.license21ExpiryDate 
+                    ? new Date(formData.license21ExpiryDate).toLocaleDateString('en-IN')
+                    : 'Expiry Date*'}
                 </Text>
                 <Calendar />
               </TouchableOpacity>
@@ -500,13 +949,8 @@ const PharmacyRegistrationForm = () => {
                 maxSize={10 * 1024 * 1024} // 10MB
                 docType={DOC_TYPES.PHARMACY_IMAGE}
                 initialFile={formData.pharmacyImageFile}
-                onFileUpload={(file) => {
-                  setFormData(prev => ({ ...prev, pharmacyImageFile: file }));
-                  setErrors(prev => ({ ...prev, pharmacyImageFile: null }));
-                }}
-                onFileDelete={() => {
-                  setFormData(prev => ({ ...prev, pharmacyImageFile: null }));
-                }}
+                onFileUpload={(file) => handleFileUpload('pharmacyImage', file)}
+                onFileDelete={() => handleFileDelete('pharmacyImage')}
                 errorMessage={errors.pharmacyImageFile}
               />
             </View>
@@ -527,9 +971,9 @@ const PharmacyRegistrationForm = () => {
               />
               
               <CustomInput
-                placeholder="Enter GST, R, Cathlab etc"
-                value={formData.enterGSTOrCathLabEtc}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, enterGSTOrCathLabEtc: text }))}
+                placeholder="Short Name"
+                value={formData.shortName}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, shortName: text }))}
               />
               
               <CustomInput
@@ -565,8 +1009,10 @@ const PharmacyRegistrationForm = () => {
                 placeholder="Pincode"
                 value={formData.pincode}
                 onChangeText={(text) => {
-                  setFormData(prev => ({ ...prev, pincode: text }));
-                  setErrors(prev => ({ ...prev, pincode: null }));
+                  if (/^\d*$/.test(text) && text.length <= 6) {
+                    setFormData(prev => ({ ...prev, pincode: text }));
+                    setErrors(prev => ({ ...prev, pincode: null }));
+                  }
                 }}
                 keyboardType="numeric"
                 maxLength={6}
@@ -575,36 +1021,47 @@ const PharmacyRegistrationForm = () => {
               />
               
               <View style={styles.dropdownContainer}>
-                <Text style={styles.inputLabel}>Area*</Text>
-                <TouchableOpacity style={[styles.dropdown, errors.area && styles.inputError]}>
-                  <Text style={[styles.dropdownText, !formData.area && styles.dropdownPlaceholder]}>
-                    {formData.area || 'Select Area'}
-                  </Text>
-                  <Icon name="arrow-drop-down" size={24} color="#666" />
-                </TouchableOpacity>
-                {errors.area && <Text style={styles.errorText}>{errors.area}</Text>}
-              </View>
-              
-              <View style={styles.dropdownContainer}>
-                <Text style={styles.inputLabel}>City*</Text>
-                <TouchableOpacity style={[styles.dropdown, errors.city && styles.inputError]}>
-                  <Text style={[styles.dropdownText, !formData.city && styles.dropdownPlaceholder]}>
-                    {formData.city || 'Select City'}
-                  </Text>
-                  <Icon name="arrow-drop-down" size={24} color="#666" />
-                </TouchableOpacity>
-                {errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
-              </View>
-              
-              <View style={styles.dropdownContainer}>
-                <Text style={styles.inputLabel}>State*</Text>
-                <TouchableOpacity style={[styles.dropdown, errors.state && styles.inputError]}>
+                {/*<Text style={styles.inputLabel}>State*</Text>*/}
+                <TouchableOpacity 
+                  style={[styles.dropdown, errors.stateId && styles.inputError]}
+                  onPress={() => setShowStateModal(true)}
+                >
                   <Text style={[styles.dropdownText, !formData.state && styles.dropdownPlaceholder]}>
                     {formData.state || 'Select State'}
                   </Text>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
-                {errors.state && <Text style={styles.errorText}>{errors.state}</Text>}
+                {errors.stateId && <Text style={styles.errorText}>{errors.stateId}</Text>}
+              </View>
+              
+              <View style={styles.dropdownContainer}>
+                {/*<Text style={styles.inputLabel}>City*</Text>*/}
+                <TouchableOpacity 
+                  style={[styles.dropdown, errors.cityId && styles.inputError]}
+                  onPress={() => setShowCityModal(true)}
+                  //disabled={!formData.stateId}
+                >
+                  <Text style={[styles.dropdownText, !formData.city && styles.dropdownPlaceholder]}>
+                    {formData.city || 'Select City'}
+                  </Text>
+                  <Icon name="arrow-drop-down" size={24} color={formData.stateId ? "#666" : "#ccc"} />
+                </TouchableOpacity>
+                {errors.cityId && <Text style={styles.errorText}>{errors.cityId}</Text>}
+              </View>
+              
+              <View style={styles.dropdownContainer}>
+                {/*<Text style={styles.inputLabel}>Area*</Text>*/}
+                <TouchableOpacity 
+                  style={[styles.dropdown, errors.area && styles.inputError]}
+                  onPress={() => setShowAreaModal(true)}
+                  //disabled={!formData.cityId}
+                >
+                  <Text style={[styles.dropdownText, !formData.area && styles.dropdownPlaceholder]}>
+                    {formData.area || 'Select Area'}
+                  </Text>
+                  <Icon name="arrow-drop-down" size={24} color={formData.cityId ? "#666" : "#ccc"} />
+                </TouchableOpacity>
+                {errors.area && <Text style={styles.errorText}>{errors.area}</Text>}
               </View>
             </View>
 
@@ -620,8 +1077,13 @@ const PharmacyRegistrationForm = () => {
                   placeholder="Mobile Number"
                   value={formData.mobileNumber}
                   onChangeText={(text) => {
-                    setFormData(prev => ({ ...prev, mobileNumber: text }));
-                    setErrors(prev => ({ ...prev, mobileNumber: null }));
+                    if (/^\d*$/.test(text) && text.length <= 10) {
+                      setFormData(prev => ({ ...prev, mobileNumber: text }));
+                      setErrors(prev => ({ ...prev, mobileNumber: null }));
+                      if (verificationStatus.mobile) {
+                        setVerificationStatus(prev => ({ ...prev, mobile: false }));
+                      }
+                    }
                   }}
                   keyboardType="phone-pad"
                   maxLength={10}
@@ -634,14 +1096,18 @@ const PharmacyRegistrationForm = () => {
                     verificationStatus.mobile && styles.verifiedButton
                   ]}
                   onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
-                  disabled={verificationStatus.mobile}
+                  disabled={verificationStatus.mobile || loading}
                 >
-                  <Text style={[
-                    styles.inlineVerifyText,
-                    verificationStatus.mobile && styles.verifiedText
-                  ]}>
-                    {verificationStatus.mobile ? 'Verified' : 'Verify'}
-                  </Text>
+                  {loading && !verificationStatus.mobile ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Text style={[
+                      styles.inlineVerifyText,
+                      verificationStatus.mobile && styles.verifiedText
+                    ]}>
+                      {verificationStatus.mobile ? 'Verified' : 'Verify'}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </View>
               {errors.mobileNumber && (
@@ -659,8 +1125,11 @@ const PharmacyRegistrationForm = () => {
                   placeholder="Email Address"
                   value={formData.emailAddress}
                   onChangeText={(text) => {
-                    setFormData(prev => ({ ...prev, emailAddress: text }));
+                    setFormData(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
                     setErrors(prev => ({ ...prev, emailAddress: null }));
+                    if (verificationStatus.email) {
+                      setVerificationStatus(prev => ({ ...prev, email: false }));
+                    }
                   }}
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -673,14 +1142,18 @@ const PharmacyRegistrationForm = () => {
                     verificationStatus.email && styles.verifiedButton
                   ]}
                   onPress={() => !verificationStatus.email && handleVerify('email')}
-                  disabled={verificationStatus.email}
+                  disabled={verificationStatus.email || loading}
                 >
-                  <Text style={[
-                    styles.inlineVerifyText,
-                    verificationStatus.email && styles.verifiedText
-                  ]}>
-                    {verificationStatus.email ? 'Verified' : 'Verify'}
-                  </Text>
+                  {loading && !verificationStatus.email ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Text style={[
+                      styles.inlineVerifyText,
+                      verificationStatus.email && styles.verifiedText
+                    ]}>
+                      {verificationStatus.email ? 'Verified' : 'Verify'}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </View>
               {errors.emailAddress && (
@@ -694,50 +1167,22 @@ const PharmacyRegistrationForm = () => {
                 maxSize={10 * 1024 * 1024} // 10MB
                 docType={DOC_TYPES.PAN_CARD}
                 initialFile={formData.panFile}
-                onFileUpload={(file) => {
-                  setFormData(prev => ({ ...prev, panFile: file }));
-                }}
-                onFileDelete={() => {
-                  setFormData(prev => ({ ...prev, panFile: null }));
-                }}
+                onFileUpload={(file) => handleFileUpload('pan', file)}
+                onFileDelete={() => handleFileDelete('pan')}
               />
               
-              <View style={styles.inputWithButton}>
-                <TextInput
-                  style={[styles.inputField, { flex: 1 }]}
-                  placeholder="PAN Number"
-                  value={formData.panNumber}
-                  onChangeText={(text) => {
-                    setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }));
-                    setErrors(prev => ({ ...prev, panNumber: null }));
-                  }}
-                  autoCapitalize="characters"
-                  maxLength={10}
-                  placeholderTextColor="#999"
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.inlineVerifyButton,
-                    verificationStatus.pan && styles.verifiedButton
-                  ]}
-                  onPress={() => {
-                    // Direct API verification, no OTP
-                    Alert.alert('PAN Verification', 'PAN verified successfully!');
-                    setVerificationStatus(prev => ({ ...prev, pan: true }));
-                  }}
-                  disabled={verificationStatus.pan}
-                >
-                  <Text style={[
-                    styles.inlineVerifyText,
-                    verificationStatus.pan && styles.verifiedText
-                  ]}>
-                    {verificationStatus.pan ? 'Verified' : 'Verify'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              {errors.panNumber && (
-                <Text style={styles.errorText}>{errors.panNumber}</Text>
-              )}
+              <CustomInput
+                placeholder="PAN Number (e.g., ABCDE1234F)"
+                value={formData.panNumber}
+                onChangeText={(text) => {
+                  setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }));
+                  setErrors(prev => ({ ...prev, panNumber: null }));
+                }}
+                autoCapitalize="characters"
+                maxLength={10}
+                mandatory={true}
+                error={errors.panNumber}
+              />
               
               <FileUploadComponent
                 placeholder="Upload GST"
@@ -745,24 +1190,22 @@ const PharmacyRegistrationForm = () => {
                 maxSize={10 * 1024 * 1024} // 10MB
                 docType={DOC_TYPES.GST_CERTIFICATE}
                 initialFile={formData.gstFile}
-                onFileUpload={(file) => {
-                  setFormData(prev => ({ ...prev, gstFile: file }));
-                }}
-                onFileDelete={() => {
-                  setFormData(prev => ({ ...prev, gstFile: null }));
-                }}
+                onFileUpload={(file) => handleFileUpload('gst', file)}
+                onFileDelete={() => handleFileDelete('gst')}
               />
               
-              <View style={styles.dropdownContainer}>
-                <Text style={styles.inputLabel}>GST number*</Text>
-                <TouchableOpacity style={[styles.dropdown, errors.gstNumber && styles.inputError]}>
-                  <Text style={[styles.dropdownText, !formData.gstNumber && styles.dropdownPlaceholder]}>
-                    {formData.gstNumber || 'Select GST number'}
-                  </Text>
-                  <Icon name="arrow-drop-down" size={24} color="#666" />
-                </TouchableOpacity>
-                {errors.gstNumber && <Text style={styles.errorText}>{errors.gstNumber}</Text>}
-              </View>
+              <CustomInput
+                placeholder="GST Number (e.g., 27ABCDE1234F1Z5)"
+                value={formData.gstNumber}
+                onChangeText={(text) => {
+                  setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
+                  setErrors(prev => ({ ...prev, gstNumber: null }));
+                }}
+                autoCapitalize="characters"
+                maxLength={15}
+                mandatory={true}
+                error={errors.gstNumber}
+              />
             </View>
 
             {/* Mapping Section */}
@@ -792,10 +1235,10 @@ const PharmacyRegistrationForm = () => {
               <View style={styles.radioGroup}>
                 <TouchableOpacity 
                   style={styles.radioOption}
-                  onPress={() => setFormData(prev => ({ ...prev, customerGroup: '9 Doctor badge' }))}
+                  onPress={() => setFormData(prev => ({ ...prev, customerGroupId: 1 }))}
                 >
                   <View style={styles.radioCircle}>
-                    {formData.customerGroup === '9 Doctor badge' && (
+                    {formData.customerGroupId === 1 && (
                       <View style={styles.radioSelected} />
                     )}
                   </View>
@@ -804,10 +1247,10 @@ const PharmacyRegistrationForm = () => {
                 
                 <TouchableOpacity 
                   style={styles.radioOption}
-                  onPress={() => setFormData(prev => ({ ...prev, customerGroup: '10 VVI' }))}
+                  onPress={() => setFormData(prev => ({ ...prev, customerGroupId: 2 }))}
                 >
                   <View style={styles.radioCircle}>
-                    {formData.customerGroup === '10 VVI' && (
+                    {formData.customerGroupId === 2 && (
                       <View style={styles.radioSelected} />
                     )}
                   </View>
@@ -849,26 +1292,12 @@ const PharmacyRegistrationForm = () => {
                 <Text style={styles.optionalText}> (Optional)</Text>
               </Text>
               
-              <CustomInput
-                placeholder="Name of the Stockist 1"
-                value={formData.stockist1Name}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, stockist1Name: text }))}
-              />
-              
-              <CustomInput
-                placeholder="Distributor Code"
-                value={formData.distributor1Code}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, distributor1Code: text }))}
-              />
-              
-              <CustomInput
-                placeholder="City"
-                value={formData.stockist1City}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, stockist1City: text }))}
-              />
+              <Text style={styles.helperText}>
+                Add suggested stockists for this pharmacy
+              </Text>
               
               <TouchableOpacity style={styles.addMoreButton}>
-                <Text style={styles.addMoreButtonText}>+ Add More Stockist</Text>
+                <Text style={styles.addMoreButtonText}>+ Add Stockist</Text>
               </TouchableOpacity>
             </View>
 
@@ -877,17 +1306,17 @@ const PharmacyRegistrationForm = () => {
               <TouchableOpacity 
                 style={styles.cancelButton}
                 onPress={handleCancel}
-                disabled={loading}
+                disabled={registering}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={styles.registerButton}
+                style={[styles.registerButton, registering && styles.disabledButton]}
                 onPress={handleRegister}
-                disabled={loading}
+                disabled={registering}
               >
-                {loading ? (
+                {registering ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={styles.registerButtonText}>Register</Text>
@@ -901,20 +1330,82 @@ const PharmacyRegistrationForm = () => {
       {/* Date Pickers */}
       {showDatePicker.license20 && (
         <DateTimePicker
-          value={new Date()}
+          value={formData.license20ExpiryDate || new Date()}
           mode="date"
           display="default"
+          minimumDate={new Date()}
           onChange={handleDateChange}
         />
       )}
       {showDatePicker.license21 && (
         <DateTimePicker
-          value={new Date()}
+          value={formData.license21ExpiryDate || new Date()}
           mode="date"
           display="default"
+          minimumDate={new Date()}
           onChange={handleDateChange}
         />
       )}
+
+      {/* Dropdown Modals */}
+      <DropdownModal
+        visible={showStateModal}
+        onClose={() => setShowStateModal(false)}
+        title="Select State"
+        data={states}
+        selectedId={formData.stateId}
+        onSelect={(item) => {
+          setFormData(prev => ({ 
+            ...prev, 
+            stateId: item.id, 
+            state: item.name,
+            cityId: '',
+            city: '',
+            areaId: '',
+            area: ''
+          }));
+          setErrors(prev => ({ ...prev, stateId: null }));
+        }}
+        loading={false}
+      />
+
+      <DropdownModal
+        visible={showCityModal}
+        onClose={() => setShowCityModal(false)}
+        title="Select City"
+        data={cities}
+        selectedId={formData.cityId}
+        onSelect={(item) => {
+          setFormData(prev => ({ 
+            ...prev, 
+            cityId: item.id, 
+            city: item.name,
+            areaId: '',
+            area: ''
+          }));
+          setErrors(prev => ({ ...prev, cityId: null }));
+        }}
+        loading={loadingCities}
+      />
+
+      <DropdownModal
+        visible={showAreaModal}
+        onClose={() => setShowAreaModal(false)}
+        title="Select Area"
+        data={areas}
+        selectedId={formData.areaId}
+        onSelect={(item) => {
+          setFormData(prev => ({ 
+            ...prev, 
+            areaId: item.id, 
+            area: item.name 
+          }));
+          setErrors(prev => ({ ...prev, area: null }));
+        }}
+        loading={loadingAreas}
+      />
+
+      <Toast />
     </SafeAreaView>
   );
 };
@@ -972,90 +1463,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingTop: 16,
-  },
-  typeInfoContainer: {
-    marginBottom: 24,
-  },
-  typeLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 4,
-  },
-  typeSubLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#999',
-  },
-  typeTagsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 8,
-  },
-  selectedTypeTag: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    backgroundColor: '#FFF5ED',
-  },
-  selectedTypeText: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  unselectedTypeTag: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    backgroundColor: '#FAFAFA',
-  },
-  unselectedTypeText: {
-    fontSize: 13,
-    color: '#666',
-  },
-  categoryInfoContainer: {
-    marginBottom: 24,
-  },
-  categoryTagsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 8,
-    flexWrap: 'wrap',
-  },
-  selectedCategoryTag: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    backgroundColor: '#FFF5ED',
-  },
-  selectedCategoryText: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  unselectedCategoryTag: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    backgroundColor: '#FAFAFA',
-    marginBottom: 8,
-  },
-  unselectedCategoryText: {
-    fontSize: 13,
-    color: '#666',
   },
   section: {
     marginBottom: 32,
@@ -1155,6 +1562,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: '#FFF5ED',
     borderRadius: 16,
+    minWidth: 70,
+    alignItems: 'center',
   },
   verifiedButton: {
     backgroundColor: '#E8F5E9',
@@ -1315,6 +1724,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
+  helperText: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 12,
+  },
   addMoreButton: {
     paddingVertical: 8,
   },
@@ -1358,6 +1772,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalList: {
+    paddingHorizontal: 16,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalItemSelected: {
+    backgroundColor: '#FFF5ED',
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  modalItemTextSelected: {
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  modalLoader: {
+    paddingVertical: 50,
   },
 });
 

@@ -14,11 +14,10 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
-import Icon from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import { colors } from '../../../styles/colors';
@@ -26,7 +25,6 @@ import CustomInput from '../../../components/CustomInput';
 import FileUploadComponent from '../../../components/FileUploadComponent';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import ChevronRight from '../../../components/icons/ChevronRight';
-import Upload from '../../../components/icons/Upload';
 import Calendar from '../../../components/icons/Calendar';
 import ArrowDown from '../../../components/icons/ArrowDown';
 import Search from '../../../components/icons/Search';
@@ -35,21 +33,17 @@ import { customerAPI } from '../../../api/customer';
 
 const { width, height } = Dimensions.get('window');
 
-// Mock data
+// Mock data for areas only (as there's no API for areas)
 const MOCK_AREAS = ['Vadgaonsheri', 'Kharadi', 'Viman Nagar', 'Kalyani Nagar', 'Koregaon Park'];
-const MOCK_CITIES = ['Pune', 'Mumbai', 'Delhi', 'Bangalore', 'Chennai'];
-const MOCK_STATES = ['Maharashtra', 'Karnataka', 'Tamil Nadu', 'Delhi', 'Gujarat'];
 
 const DOC_TYPES = {
   CLINIC_IMAGE: 1,
-  LICENSE_CERTIFICATE: 1,
-  LICENSE_IMAGE: 2,
-  ADDRESS_PROOF: 11,
+  LICENSE_CERTIFICATE: 8,    
   PAN: 7,
   GST: 2,
 };
 
-const ClinicRegistrationForm = () => {
+const PrivateRegistrationForm = () => {
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -58,8 +52,7 @@ const ClinicRegistrationForm = () => {
   const otpRefs = useRef({});
 
   const { type, typeName, typeId, category, categoryName, categoryId, subCategory, subCategoryName, subCategoryId } = route.params || {};
-  console.log(route.params);
-  
+    
   // Form state
   const [formData, setFormData] = useState({
     // License Details
@@ -77,8 +70,11 @@ const ClinicRegistrationForm = () => {
     address4: '',
     pincode: '',
     area: '',
+    areaId: null,
     city: '',
+    cityId: null,
     state: '',
+    stateId: null,
     
     // Security Details
     mobileNumber: '',
@@ -109,6 +105,12 @@ const ClinicRegistrationForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  
+  // Location data from APIs
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
   
   // Dropdowns
   const [showAreaDropdown, setShowAreaDropdown] = useState(false);
@@ -163,7 +165,89 @@ const ClinicRegistrationForm = () => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Load states on mount
+    fetchStates();
   }, []);
+
+  // Fetch states from API
+  const fetchStates = async () => {
+    setLoadingStates(true);
+    try {
+      const response = await customerAPI.getStates();
+      if (response.success && response.data && response.data.states) {
+        setStates(response.data.states);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to load states',
+          text2: 'Please try again later',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching states:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error loading states',
+        text2: 'Please check your connection',
+      });
+    } finally {
+      setLoadingStates(false);
+    }
+  };
+
+  // Fetch cities based on selected state
+  const fetchCities = async (stateId) => {
+    setLoadingCities(true);
+    try {
+      const response = await customerAPI.getCities(stateId);  console.log(response);
+      if (response.success && response.data) {
+        // Handle both array response and object with cities array
+        const citiesData = Array.isArray(response.data) ? response.data : 
+                          (response.data.cities || response.data);
+        setCities(citiesData);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to load cities',
+          text2: 'Please try again later',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error loading cities',
+        text2: 'Please check your connection',
+      });
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  // Handle state selection
+  const handleStateSelect = (state) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      state: state.stateName,
+      stateId: state.id,
+      city: '', // Reset city when state changes
+      cityId: null 
+    }));
+    setShowStateDropdown(false);
+    setCities([]); // Clear cities
+    fetchCities(state.id); // Fetch cities for selected state
+  };
+
+  // Handle city selection
+  const handleCitySelect = (city) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      city: city.cityName || city.name, // Handle both cityName and name fields
+      cityId: city.id 
+    }));
+    setShowCityDropdown(false);
+  };
 
   // OTP Timer Effect
   useEffect(() => {
@@ -382,10 +466,10 @@ const ClinicRegistrationForm = () => {
     if (!formData.pincode || formData.pincode.length !== 6) {
       newErrors.pincode = 'Valid 6-digit pincode is required';
     }
-    if (!formData.city) {
+    if (!formData.cityId) {
       newErrors.city = 'City is required';
     }
-    if (!formData.state) {
+    if (!formData.stateId) {
       newErrors.state = 'State is required';
     }
     
@@ -418,30 +502,6 @@ const ClinicRegistrationForm = () => {
         { text: 'Yes', onPress: () => navigation.goBack() },
       ]
     );
-  };
-
-  const getCityId = (cityName) => {
-    // Map city names to IDs (you should get these from a proper API)
-    const cityMap = {
-      'Pune': 6,
-      'Mumbai': 1,
-      'Delhi': 2,
-      'Bangalore': 3,
-      'Chennai': 4,
-    };
-    return cityMap[cityName] || 1;
-  };
-
-  const getStateId = (stateName) => {
-    // Map state names to IDs (you should get these from a proper API)
-    const stateMap = {
-      'Maharashtra': 5,
-      'Karnataka': 2,
-      'Tamil Nadu': 3,
-      'Delhi': 4,
-      'Gujarat': 1,
-    };
-    return stateMap[stateName] || 1;
   };
 
   const getCustomerGroupId = (groupName) => {
@@ -510,8 +570,8 @@ const ClinicRegistrationForm = () => {
           address4: formData.address4 || '',
           pincode: parseInt(formData.pincode),
           area: formData.area || 'Default',
-          cityId: getCityId(formData.city),
-          stateId: getStateId(formData.state),
+          cityId: formData.cityId, // Use actual cityId from API
+          stateId: formData.stateId, // Use actual stateId from API
         },
         securityDetails: {
           mobile: formData.mobileNumber,
@@ -716,7 +776,7 @@ const ClinicRegistrationForm = () => {
                   placeholder="Upload"
                   accept={['jpg', 'jpeg', 'png']}
                   maxSize={5 * 1024 * 1024} // 5MB
-                  docType={DOC_TYPES.LICENSE_IMAGE}          
+                  docType={DOC_TYPES.CLINIC_IMAGE}          
                   initialFile={formData.licenseImage}
                   onFileUpload={(file) => {
                     setFormData(prev => ({ ...prev, licenseImage: file }));
@@ -789,6 +849,43 @@ const ClinicRegistrationForm = () => {
                 error={errors.pincode}
               />
 
+              {/* State Dropdown - Load this first */}
+              <TouchableOpacity
+                style={[styles.input, errors.state && styles.inputError]}
+                onPress={() => !loadingStates && setShowStateDropdown(!showStateDropdown)}
+                activeOpacity={0.7}
+                disabled={loadingStates}
+              >
+                {loadingStates ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <Text style={formData.state ? styles.inputText : styles.placeholderText}>
+                      {formData.state || 'State'}
+                    </Text>
+                    <ArrowDown color='#999' />
+                  </>
+                )}
+              </TouchableOpacity>
+              {showStateDropdown && (
+                <View style={styles.dropdown}>
+                  <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
+                    {states.map((state) => (
+                      <TouchableOpacity
+                        key={state.id}
+                        style={styles.dropdownItem}
+                        onPress={() => handleStateSelect(state)}
+                      >
+                        <Text style={styles.dropdownItemText}>{state.stateName}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+              {errors.state && (
+                <Text style={styles.errorText}>{errors.state}</Text>
+              )}
+
               {/* Area Dropdown */}
               <TouchableOpacity
                 style={[styles.input]}
@@ -815,62 +912,58 @@ const ClinicRegistrationForm = () => {
                     </TouchableOpacity>
                   ))}
                 </View>
-              )}
+              )}              
 
-              {/* City Dropdown */}
+              {/* City Dropdown - Only show after state is selected */}
               <TouchableOpacity
                 style={[styles.input, errors.city && styles.inputError]}
-                onPress={() => setShowCityDropdown(!showCityDropdown)}
+                onPress={() => {
+                  if (!formData.stateId) {
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Select State First',
+                      text2: 'Please select a state to load cities',
+                    });
+                  } else if (!loadingCities) {
+                    setShowCityDropdown(!showCityDropdown);
+                  }
+                }}
                 activeOpacity={0.7}
+                disabled={!formData.stateId || loadingCities}
               >
-                <Text style={formData.city ? styles.inputText : styles.placeholderText}>
-                  {formData.city || 'City'}
-                </Text>
-                <ArrowDown color='#999' />
+                {loadingCities ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <Text style={[
+                      formData.city ? styles.inputText : styles.placeholderText,
+                      !formData.stateId && styles.disabledText
+                    ]}>
+                      {formData.city || (formData.stateId ? 'City' : 'Select state first')}
+                    </Text>
+                    <ArrowDown color={formData.stateId ? '#999' : '#DDD'} />
+                  </>
+                )}
               </TouchableOpacity>
-              {showCityDropdown && (
+              {showCityDropdown && cities.length > 0 && (
                 <View style={styles.dropdown}>
-                  {MOCK_CITIES.map((city, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setFormData(prev => ({ ...prev, city }));
-                        setShowCityDropdown(false);
-                      }}
-                    >
-                      <Text style={styles.dropdownItemText}>{city}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
+                    {cities.map((city) => (
+                      <TouchableOpacity
+                        key={city.id}
+                        style={styles.dropdownItem}
+                        onPress={() => handleCitySelect(city)}
+                      >
+                        <Text style={styles.dropdownItemText}>
+                          {city.cityName || city.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 </View>
               )}
-
-              {/* State Dropdown */}
-              <TouchableOpacity
-                style={[styles.input, errors.state && styles.inputError]}
-                onPress={() => setShowStateDropdown(!showStateDropdown)}
-                activeOpacity={0.7}
-              >
-                <Text style={formData.state ? styles.inputText : styles.placeholderText}>
-                  {formData.state || 'State'}
-                </Text>
-                <ArrowDown color='#999' />
-              </TouchableOpacity>
-              {showStateDropdown && (
-                <View style={styles.dropdown}>
-                  {MOCK_STATES.map((state, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setFormData(prev => ({ ...prev, state }));
-                        setShowStateDropdown(false);
-                      }}
-                    >
-                      <Text style={styles.dropdownItemText}>{state}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+              {errors.city && (
+                <Text style={styles.errorText}>{errors.city}</Text>
               )}
             </View>
 
@@ -1384,6 +1477,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
   },
+  disabledText: {
+    color: '#DDD',
+  },
   errorText: {
     color: colors.error,
     fontSize: 12,
@@ -1724,4 +1820,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ClinicRegistrationForm;
+export default PrivateRegistrationForm;

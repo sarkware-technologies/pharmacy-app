@@ -106,9 +106,9 @@ export const customerAPI = {
     getCities: async (stateId) => {
         try {
             const endpoint = stateId 
-                ? `/user-management/location/cities?stateId=${stateId}`
-                : '/user-management/location/cities';
-            const response = await apiClient.get(endpoint);
+                ? `/user-management/cities?stateId=${stateId}`
+                : '/user-management/cities';
+            const response = await apiClient.get('/user-management/cities');
             return response;
         } catch (error) {
             console.error('Error fetching cities:', error);
@@ -119,7 +119,7 @@ export const customerAPI = {
     // Get states (for filters)
     getStates: async () => {
         try {
-            const response = await apiClient.get('/user-management/location/states');
+            const response = await apiClient.get('/user-management/states');
             return response;
         } catch (error) {
             console.error('Error fetching states:', error);
@@ -130,7 +130,7 @@ export const customerAPI = {
     // Get customer groups (if needed)
     getCustomerGroups: async () => {
         try {
-            const response = await apiClient.get('/user-management/customer/groups');
+            const response = await apiClient.get('/user-management/customer/group');
             return response;
         } catch (error) {
             console.error('Error fetching customer groups:', error);
@@ -190,6 +190,17 @@ export const customerAPI = {
             return responseData;
         } catch (error) {
             console.error('Error uploading document:', error);
+            throw error;
+        }
+    },
+
+    // Get license types based on type and category
+    getLicenseTypes: async (typeId, categoryId) => {
+        try {
+            const response = await apiClient.get(`/user-management/customer/licence-type?typeId=${typeId}&categoryId=${categoryId}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching license types:', error);
             throw error;
         }
     }
