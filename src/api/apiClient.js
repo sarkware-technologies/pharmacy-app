@@ -53,6 +53,8 @@ class ApiClient {
                 Accept: '*/*',
                 ...options.headers,
             },
+
+            
         };
 
         if (token) {
