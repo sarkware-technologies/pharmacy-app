@@ -20,7 +20,7 @@ const UploadOrder = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const { selectedDistributor } = useSelector(state => state.orders || {});
-  
+
   const [originalFile, setOriginalFile] = useState(null);
   const [templateFile, setTemplateFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -44,7 +44,7 @@ const UploadOrder = () => {
         console.log('User cancelled file picker');
         return;
       }
-      
+
       if (response.errorMessage) {
         Alert.alert('Error', response.errorMessage);
         return;
@@ -52,7 +52,7 @@ const UploadOrder = () => {
 
       if (response.assets && response.assets[0]) {
         const asset = response.assets[0];
-        
+
         // Create file object from response
         const file = {
           name: asset.fileName || `file_${Date.now()}.pdf`,
@@ -100,7 +100,7 @@ const UploadOrder = () => {
   const processOCR = () => {
     setIsProcessing(true);
     setOcrComplete(false);
-    
+
     // Simulate OCR processing
     setTimeout(() => {
       setIsProcessing(false);
@@ -124,10 +124,10 @@ const UploadOrder = () => {
       Alert.alert('Error', 'Please upload order file and select distributor');
       return;
     }
-    navigation.navigate('ProductMapping', { 
-      originalFile, 
+    navigation.navigate('ProductMapping', {
+      originalFile,
       templateFile,
-      distributor: selectedDistributor 
+      distributor: selectedDistributor
     });
   };
 
@@ -168,7 +168,7 @@ const UploadOrder = () => {
 
         <View style={styles.distributorContainer}>
           <Text style={styles.fieldLabel}>Distributor</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.distributorDropdown}
             onPress={() => navigation.navigate('SelectDistributor', { fromUpload: true })}
           >
@@ -180,7 +180,7 @@ const UploadOrder = () => {
         </View>
 
         {/* Original Order File Upload */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.uploadBox}
           onPress={() => !originalFile && handleFileUpload('original')}
           activeOpacity={originalFile ? 1 : 0.7}
@@ -208,7 +208,7 @@ const UploadOrder = () => {
         </TouchableOpacity>
 
         {/* Template File Upload */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.uploadBox}
           onPress={() => !templateFile && handleFileUpload('template')}
           activeOpacity={templateFile ? 1 : 0.7}
@@ -254,7 +254,7 @@ const UploadOrder = () => {
           </View>
         )}
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.downloadTemplate}
           onPress={handleDownloadTemplate}
         >
@@ -263,7 +263,7 @@ const UploadOrder = () => {
         </TouchableOpacity>
       </ScrollView>
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[
           styles.continueButton,
           (!originalFile || !selectedDistributor) && styles.disabledButton

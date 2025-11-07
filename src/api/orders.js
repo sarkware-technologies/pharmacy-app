@@ -1,4 +1,8 @@
 // Mock data and API functions for Orders
+
+import apiClient from './apiClient';
+
+
 export const mockOrders = [
   {
     id: 'SUNPH-10286',
@@ -102,32 +106,74 @@ export const mockProducts = [
 ];
 
 // API functions (will be replaced with actual API calls)
-export const getOrders = async (filter = 'All') => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      if (filter === 'All') {
-        resolve(mockOrders);
-      } else {
-        resolve(mockOrders.filter(order => order.status === filter.toUpperCase()));
+export const getOrders = async ({ page = 1, limit = 10, search = '', status = 'All' } = {}) => {
+  try {
+    const data = {
+      pageNo: page,
+      limit
+    };
+    if (search) {
+      data.searchText = search;
+    }
+    if (status && status !== "All") {
+      switch (status) {
+        case "Waiting for Confirmation":
+          data.status = "PROCCESINGx";
+          break;
+        case "Hold":
+          data.status = "HOLD";
+          break;
+        case "Track PO":
+          data.status = "TRACKPO";
+          break;
+        default:
+          break;
       }
-    }, 500);
-  });
+    }
+
+    const response = await apiClient.get('/orders/order/order-list', data);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const getDistributors = async () => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(mockDistributors);
-    }, 300);
-  });
+
+export const getDistributors = async (customerId) => {
+  try {
+
+    const response = await apiClient.get(`/user-management/customer/linked-distributor-division/${customerId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
 };
 
-export const getProducts = async (distributorId, division = 'All Divisions') => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(mockProducts);
-    }, 300);
-  });
+// Product APIs
+export const getProducts = async ({ page = 1, limit = 20, search = '', customerIds, distributorIds }) => {
+  try {
+    const data = {
+      pageNo: page,
+      pageSize: limit
+    };
+
+    if (search) {
+      data.search = search;
+    }
+    if (customerIds) {
+      data.customerIds = customerIds;
+    }
+    if (distributorIds) {
+      data.distributorIds = distributorIds;
+    }
+
+    const response = await apiClient.post('/rate-contract/rc/products-by-distributor-and-customer', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
 };
 
 export const createOrder = async (orderData) => {

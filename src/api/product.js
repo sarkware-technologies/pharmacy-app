@@ -7,11 +7,11 @@ export const getProducts = async (page = 1, limit = 20, search = '') => {
             page,
             limit
         };
-        
+
         if (search) {
             data.search = search;
         }
-        
+
         const response = await apiClient.post('/catalog/products/search', data);
         return response.data;
     } catch (error) {

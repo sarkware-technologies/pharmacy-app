@@ -1,7 +1,7 @@
 import apiClient from './apiClient';
 
 export const customerAPI = {
-    
+
     // Get customer types (for filters)
     getCustomerTypes: async () => {
         try {
@@ -25,6 +25,7 @@ export const customerAPI = {
     },
 
     // Get customers list with pagination and filters
+    // Get customers list with pagination and filters
     getCustomersList: async ({
         page = 1,
         limit = 10,
@@ -33,7 +34,8 @@ export const customerAPI = {
         statusCode = '',
         cityIds = [],
         categoryCode = '',
-        subCategoryCode = ''
+        subCategoryCode = '',
+        statusIds = [],
     } = {}) => {
         try {
             // Build request body dynamically
@@ -49,6 +51,8 @@ export const customerAPI = {
             if (cityIds && cityIds.length > 0) requestBody.cityIds = cityIds;
             if (categoryCode) requestBody.categoryCode = categoryCode;
             if (subCategoryCode) requestBody.subCategoryCode = subCategoryCode;
+            if (statusIds && statusIds.length) requestBody.statusIds = statusIds;
+            if (typeCode) requestBody.typeCode = typeCode;
 
             const response = await apiClient.post('/user-management/customer/customers-list', requestBody);
             return response;
@@ -57,6 +61,7 @@ export const customerAPI = {
             throw error;
         }
     },
+
 
     // Get customer details by ID - UPDATED ENDPOINT
     getCustomerDetails: async (customerId) => {
@@ -105,7 +110,7 @@ export const customerAPI = {
     // Get cities (for filters)
     getCities: async (stateId) => {
         try {
-            const endpoint = stateId 
+            const endpoint = stateId
                 ? `/user-management/cities?stateId=${stateId}`
                 : '/user-management/cities';
             const response = await apiClient.get('/user-management/cities');
@@ -141,7 +146,7 @@ export const customerAPI = {
     // Get signed URL for document download/view
     getDocumentSignedUrl: async (s3Path) => {
         try {
-            const response = await apiClient.get('/user-management/customer/download-doc?s3Path='+ s3Path);
+            const response = await apiClient.get('/user-management/customer/download-doc?s3Path=' + s3Path);
             return response;
         } catch (error) {
             console.error('Error fetching document signed URL:', error);
@@ -175,7 +180,7 @@ export const customerAPI = {
     uploadDocument: async (formData) => {
         try {
             const token = await apiClient.getToken();
-            
+
             const response = await fetch('https://pharmsupply-dev-api.pharmconnect.com/user-management/customer/upload-docs?isStaging=false', {
                 method: 'POST',
                 headers: {

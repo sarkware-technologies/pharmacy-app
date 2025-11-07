@@ -37,7 +37,7 @@ const OrdersStack = () => (
     }}
   >
     <Stack.Screen name="OrderList" component={OrderList} />
-    <Stack.Screen name="SelectDistributor" component={SelectDistributor} />
+    {/* <Stack.Screen name="SelectDistributor" component={SelectDistributor} /> */}
     <Stack.Screen name="SearchAddProducts" component={SearchAddProducts} />
     <Stack.Screen name="Cart" component={Cart} />
     <Stack.Screen name="UploadOrder" component={UploadOrder} />

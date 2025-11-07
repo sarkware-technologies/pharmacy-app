@@ -16,25 +16,23 @@ import { colors } from '../../../styles/colors';
 import { getDistributors } from '../../../api/orders';
 import { setSelectedDistributor } from '../../../redux/slices/orderSlice';
 
-const SelectDistributor = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const dispatch = useDispatch();
+const SelectDistributor = ({ visible, onClose, onSelect, customerId }) => {
   const [distributors, setDistributors] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(true);
-  
-  // Determine if coming from Upload Order flow
-  const isUploadFlow = route.params?.fromUpload || false;
-
   useEffect(() => {
-    loadDistributors();
-  }, []);
+    if (visible) {
+      loadDistributors();
+    }
+  }, [visible]);
 
   const loadDistributors = async () => {
     try {
-      const data = await getDistributors();
-      setDistributors(data);
+      const data = await getDistributors(4);
+      console.log(data,8987)
+      // setDistributors(data);
+      if(data?.customer){
+        setDistributors(data.customer?.distributorDetails);
+      }
     } catch (error) {
       console.error('Error loading distributors:', error);
     } finally {
@@ -43,42 +41,33 @@ const SelectDistributor = () => {
   };
 
   const handleSelectDistributor = (distributor) => {
-    dispatch(setSelectedDistributor(distributor));
-    setShowModal(false);
-    
-    // Navigate based on flow type
-    if (isUploadFlow) {
-      navigation.goBack(); // Return to UploadOrder screen
-    } else {
-      navigation.navigate('SearchAddProducts'); // Continue to manual order flow
-    }
+    onSelect?.(distributor);
   };
 
   const handleClose = () => {
-    setShowModal(false);
-    navigation.goBack();
+    onClose?.();
   };
 
   const renderDistributor = ({ item }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.distributorItem}
       onPress={() => handleSelectDistributor(item)}
     >
       <View style={styles.distributorInfo}>
         <Text style={styles.distributorName}>{item.name}</Text>
-        <Text style={styles.distributorMeta}>{item.code} | {item.location}</Text>
+        <Text style={styles.distributorMeta}>{item.code} | {item.cityName}</Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
     <Modal
-      visible={showModal}
+      visible={visible}  // ✅ controlled by parent
       transparent
       animationType="slide"
       onRequestClose={handleClose}
     >
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.modalOverlay}
         activeOpacity={1}
         onPress={handleClose}
@@ -99,7 +88,7 @@ const SelectDistributor = () => {
             <FlatList
               data={distributors}
               renderItem={renderDistributor}
-              keyExtractor={item => item.id}
+              keyExtractor={item => item.id.toString()}
               contentContainerStyle={styles.listContent}
             />
           )}
