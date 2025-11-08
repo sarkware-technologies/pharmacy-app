@@ -25,7 +25,7 @@ export const customerAPI = {
     },
 
     // Get customers list with pagination and filters
-    // Get customers list with pagination and filters
+    // Modified to support both regular and staging endpoints
     getCustomersList: async ({
         page = 1,
         limit = 10,
@@ -36,6 +36,7 @@ export const customerAPI = {
         categoryCode = '',
         subCategoryCode = '',
         statusIds = [],
+        isStaging = false, // NEW: Flag to determine which endpoint to use
     } = {}) => {
         try {
             // Build request body dynamically
@@ -54,7 +55,12 @@ export const customerAPI = {
             if (statusIds && statusIds.length) requestBody.statusIds = statusIds;
             if (typeCode) requestBody.typeCode = typeCode;
 
-            const response = await apiClient.post('/user-management/customer/customers-list', requestBody);
+            // Use different endpoint based on isStaging flag
+            const endpoint = isStaging 
+                ? '/user-management/customer/customers-list/staging'
+                : '/user-management/customer/customers-list';
+
+            const response = await apiClient.post(endpoint, requestBody);
             return response;
         } catch (error) {
             console.error('Error fetching customers list:', error);

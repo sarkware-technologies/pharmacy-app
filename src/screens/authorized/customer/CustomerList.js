@@ -97,7 +97,7 @@ const CustomerList = ({ navigation }) => {
     subCategoryCode: ''
   });
 
-    const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -113,22 +113,29 @@ const CustomerList = ({ navigation }) => {
     return true;
   });
 
-  // Fetch customers on mount
+  console.log(filteredCustomers);
+
+  // Fetch customers on mount and when tab changes
   useEffect(() => {
     const initializeData = async () => {    
       dispatch(resetCustomersList());  
-      // Fetch customers
+      // Fetch customers based on active tab
       dispatch(fetchCustomersList({
         page: 1,
         limit: 10,
-        isLoadMore: false
+        isLoadMore: false,
+        isStaging: activeTab === 'notOnboarded' // Use staging endpoint for Not Onboarded tab
       }));
-      dispatch(fetchCustomerStatuses());
-      dispatch(fetchCustomerTypes());
+      
+      // Only fetch these on initial mount
+      if (activeTab === 'all') {
+        dispatch(fetchCustomerStatuses());
+        dispatch(fetchCustomerTypes());
+      }
     };
     
     initializeData();
-  }, [dispatch]);
+  }, [dispatch, activeTab]); // Added activeTab as dependency
 
   // Handle search with debounce
   useEffect(() => {
@@ -140,12 +147,13 @@ const CustomerList = ({ navigation }) => {
         limit: 10,
         searchText: searchText,
         ...filters,
-        isLoadMore: false
+        isLoadMore: false,
+        isStaging: activeTab === 'notOnboarded' // Pass isStaging based on active tab
       }));
     }, 500);
     
     return () => clearTimeout(delayDebounceFn);
-  }, [searchText, dispatch]);
+  }, [searchText, dispatch, activeTab]); // Added activeTab as dependency
 
   // Refresh function
   const onRefresh = async () => {
@@ -155,7 +163,8 @@ const CustomerList = ({ navigation }) => {
       page: 1,
       limit: 10,
       ...filters,
-      isLoadMore: false
+      isLoadMore: false,
+      isStaging: activeTab === 'notOnboarded' // Pass isStaging based on active tab
     }));
     setIsRefreshing(false);
   };
@@ -172,13 +181,14 @@ const CustomerList = ({ navigation }) => {
       page: nextPage,
       limit: limit || 10,
       ...filters,
-      isLoadMore: true // This tells the slice to append, not replace
+      isLoadMore: true, // This tells the slice to append, not replace
+      isStaging: activeTab === 'notOnboarded' // Pass isStaging based on active tab
     })).then((result) => {
       if (result.type === 'customer/fetchList/fulfilled') {
         dispatch(incrementPage());
       }
     });
-  }, [dispatch, currentPage, hasMore, listLoadingMore, listLoading, limit, filters]);
+  }, [dispatch, currentPage, hasMore, listLoadingMore, listLoading, limit, filters, activeTab]);
 
   // Handle scroll end reached - for FlatList
   const handleLoadMore = () => {
@@ -217,7 +227,7 @@ const CustomerList = ({ navigation }) => {
     );
   };
 
-  const keyExtractor = (item) => item.customerId.toString();
+  const keyExtractor = (item) => (item.customerId ? item.customerId.toString() : "");
 
   useEffect(() => {
     Animated.parallel([
@@ -345,10 +355,23 @@ const CustomerList = ({ navigation }) => {
     dispatch(fetchCustomersList({
       page: 1,
       limit: 10,
-      ...filterParams
+      ...filterParams,
+      isStaging: activeTab === 'notOnboarded' // Pass isStaging based on active tab
     }));
     
     setFilterModalVisible(false);
+  };
+
+  // Add onRetry function
+  const onRetry = () => {
+    dispatch(resetCustomersList());
+    dispatch(fetchCustomersList({
+      page: 1,
+      limit: 10,
+      ...filters,
+      isLoadMore: false,
+      isStaging: activeTab === 'notOnboarded'
+    }));
   };
 
   // Document Download Modal for individual customer

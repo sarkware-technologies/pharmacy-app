@@ -21,6 +21,7 @@ import { colors } from '../../../styles/colors';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCustomerDetails } from '../../../redux/slices/customerSlice';
 import { customerAPI } from '../../../api/customer';
+import LinkagedTab from './LinkagedTab';
 
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import Details from '../../../components/icons/Details';
@@ -57,6 +58,8 @@ const CustomerDetail = ({ navigation, route }) => {
       dispatch(fetchCustomerDetails(customer.customerId));
     }
   }, [customer?.customerId, dispatch]);
+
+  console.log(selectedCustomer);
 
   // Format customer data from API response to match the UI structure
   const customerData = selectedCustomer ? {
@@ -335,7 +338,8 @@ const CustomerDetail = ({ navigation, route }) => {
       </View>
 
       {/* Content */}
-      <ScrollView 
+      { activeTab === 'details' &&
+      (<ScrollView 
         style={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -537,7 +541,9 @@ const CustomerDetail = ({ navigation, route }) => {
             </AnimatedSection>
           )}
         </Animated.View>
-        </ScrollView>
+        </ScrollView>)}
+
+        { activeTab === 'linkaged' && (<LinkagedTab customerType={customerData.customerType} />) }
 
         <DocumentModal />
       </View>

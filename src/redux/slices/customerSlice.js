@@ -30,7 +30,11 @@ export const fetchCustomersList = createAsyncThunk(
   'customer/fetchList',
   async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await customerAPI.getCustomersList(params);
+      // Pass isStaging flag to the API
+      const response = await customerAPI.getCustomersList({
+        ...params,
+        isStaging: params.isStaging || false // Add isStaging support
+      });
       return {
         data: response.data,
         isLoadMore: params.isLoadMore || false
