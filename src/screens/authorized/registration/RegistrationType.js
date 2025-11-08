@@ -33,11 +33,7 @@ const RegistrationType = () => {
   const { typesLoading, typesError } = useSelector((state) => ({
     typesLoading: state.customer.typesLoading,
     typesError: state.customer.typesError,
-  }));
-  
-  // Debug log
-  console.log('Customer Types:', customerTypes);
-  console.log('Loading:', typesLoading);
+  }));  
   
   // Local state - store the actual objects instead of just strings
   const [selectedType, setSelectedType] = useState(null);
