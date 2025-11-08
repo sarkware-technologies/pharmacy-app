@@ -13,11 +13,14 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
+  Modal,
+  FlatList,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
+import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import { colors } from '../../../styles/colors';
@@ -30,6 +33,8 @@ import ArrowDown from '../../../components/icons/ArrowDown';
 import Search from '../../../components/icons/Search';
 import CloseCircle from '../../../components/icons/CloseCircle';
 import { customerAPI } from '../../../api/customer';
+import AddNewPharmacyModal from './AddNewPharmacyModal';
+import AddNewHospitalModal from './AddNewHospitalModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -91,8 +96,13 @@ const PrivateRegistrationForm = () => {
     
     // Mapping
     markAsBuyingEntity: false,
-    selectedCategory: '',
-    selectedHospital: null,
+    selectedCategory: {
+      isManufacturer: false,
+      isDistributor: false,
+      groupCorporateHospital: false,
+      pharmacy: false,
+    },
+    selectedHospitals: [],
     selectedPharmacies: [],
     
     // Customer Group
@@ -105,6 +115,7 @@ const PrivateRegistrationForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   
   // Location data from APIs
   const [states, setStates] = useState([]);
@@ -112,10 +123,10 @@ const PrivateRegistrationForm = () => {
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   
-  // Dropdowns
-  const [showAreaDropdown, setShowAreaDropdown] = useState(false);
-  const [showCityDropdown, setShowCityDropdown] = useState(false);
-  const [showStateDropdown, setShowStateDropdown] = useState(false);
+  // Dropdown Modals
+  const [showAreaModal, setShowAreaModal] = useState(false);
+  const [showCityModal, setShowCityModal] = useState(false);
+  const [showStateModal, setShowStateModal] = useState(false);
   
   // OTP states
   const [showOTP, setShowOTP] = useState({
@@ -136,12 +147,22 @@ const PrivateRegistrationForm = () => {
     pan: 30,
     gst: 30,
   });
+  const [loadingOtp, setLoadingOtp] = useState({
+    mobile: false,
+    email: false,
+    pan: false,
+    gst: false,
+  });
   
   // Verification states
   const [verificationStatus, setVerificationStatus] = useState({
     mobile: false,
     email: false,
   });
+
+  // Modal states for separate components
+  const [showHospitalModal, setShowHospitalModal] = useState(false);
+  const [showPharmacyModal, setShowPharmacyModal] = useState(false);
 
   // Document IDs for API
   const [documentIds, setDocumentIds] = useState([]);
@@ -234,7 +255,7 @@ const PrivateRegistrationForm = () => {
       city: '', // Reset city when state changes
       cityId: null 
     }));
-    setShowStateDropdown(false);
+    setShowStateModal(false);
     setCities([]); // Clear cities
     fetchCities(state.id); // Fetch cities for selected state
   };
@@ -246,7 +267,7 @@ const PrivateRegistrationForm = () => {
       city: city.cityName || city.name, // Handle both cityName and name fields
       cityId: city.id 
     }));
-    setShowCityDropdown(false);
+    setShowCityModal(false);
   };
 
   // OTP Timer Effect
@@ -494,14 +515,7 @@ const PrivateRegistrationForm = () => {
   };
 
   const handleCancel = () => {
-    Alert.alert(
-      'Cancel Registration',
-      'Are you sure you want to cancel? All entered data will be lost.',
-      [
-        { text: 'No', style: 'cancel' },
-        { text: 'Yes', onPress: () => navigation.goBack() },
-      ]
-    );
+    setShowCancelModal(true);
   };
 
   const getCustomerGroupId = (groupName) => {
@@ -669,15 +683,73 @@ const PrivateRegistrationForm = () => {
         </View>
         <View style={styles.otpFooter}>
           <Text style={styles.otpTimer}>
-            {otpTimers[field] > 0 ? `Resend in ${otpTimers[field]}s` : ''}
+            {otpTimers[field] > 0 ? `Resend OTP in ${otpTimers[field]}s` : (
+              <TouchableOpacity onPress={() => handleResendOTP(field)}>
+                <Text style={styles.resendText}>Resend OTP</Text>
+              </TouchableOpacity>
+            )}
           </Text>
-          {otpTimers[field] === 0 && (
-            <TouchableOpacity onPress={() => handleResendOTP(field)}>
-              <Text style={styles.resendText}>Resend OTP</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </Animated.View>
+    );
+  };
+
+  // DropdownModal Component
+  const DropdownModal = ({ visible, onClose, title, data, selectedId, onSelect, loading }) => {
+    return (
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={onClose}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={onClose}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{title}</Text>
+              <TouchableOpacity onPress={onClose}>
+                <Icon name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            {loading ? (
+              <ActivityIndicator size="large" color={colors.primary} style={styles.modalLoader} />
+            ) : (
+              <FlatList
+                data={data}
+                keyExtractor={(item) => item.id?.toString() || item.value}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.modalItem,
+                      selectedId == item.id && styles.modalItemSelected
+                    ]}
+                    onPress={() => {
+                      onSelect(item);
+                      onClose();
+                    }}
+                  >
+                    <Text style={[
+                      styles.modalItemText,
+                      selectedId == item.id && styles.modalItemTextSelected
+                    ]}>
+                      {item.name || item.stateName || item.cityName}
+                    </Text>
+                    {selectedId == item.id && (
+                      <Icon name="check" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                )}
+                style={styles.modalList}
+              />
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     );
   };
 
@@ -852,7 +924,7 @@ const PrivateRegistrationForm = () => {
               {/* State Dropdown - Load this first */}
               <TouchableOpacity
                 style={[styles.input, errors.state && styles.inputError]}
-                onPress={() => !loadingStates && setShowStateDropdown(!showStateDropdown)}
+                onPress={() => !loadingStates && setShowStateModal(true)}
                 activeOpacity={0.7}
                 disabled={loadingStates}
               >
@@ -867,21 +939,6 @@ const PrivateRegistrationForm = () => {
                   </>
                 )}
               </TouchableOpacity>
-              {showStateDropdown && (
-                <View style={styles.dropdown}>
-                  <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
-                    {states.map((state) => (
-                      <TouchableOpacity
-                        key={state.id}
-                        style={styles.dropdownItem}
-                        onPress={() => handleStateSelect(state)}
-                      >
-                        <Text style={styles.dropdownItemText}>{state.stateName}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
               {errors.state && (
                 <Text style={styles.errorText}>{errors.state}</Text>
               )}
@@ -889,30 +946,14 @@ const PrivateRegistrationForm = () => {
               {/* Area Dropdown */}
               <TouchableOpacity
                 style={[styles.input]}
-                onPress={() => setShowAreaDropdown(!showAreaDropdown)}
+                onPress={() => setShowAreaModal(true)}
                 activeOpacity={0.7}
               >
                 <Text style={formData.area ? styles.inputText : styles.placeholderText}>
                   {formData.area || 'Area'}
                 </Text>        
                 <ArrowDown color='#999' />
-              </TouchableOpacity>
-              {showAreaDropdown && (
-                <View style={styles.dropdown}>
-                  {MOCK_AREAS.map((area, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setFormData(prev => ({ ...prev, area }));
-                        setShowAreaDropdown(false);
-                      }}
-                    >
-                      <Text style={styles.dropdownItemText}>{area}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}              
+              </TouchableOpacity>              
 
               {/* City Dropdown - Only show after state is selected */}
               <TouchableOpacity
@@ -925,7 +966,7 @@ const PrivateRegistrationForm = () => {
                       text2: 'Please select a state to load cities',
                     });
                   } else if (!loadingCities) {
-                    setShowCityDropdown(!showCityDropdown);
+                    setShowCityModal(true);
                   }
                 }}
                 activeOpacity={0.7}
@@ -945,23 +986,6 @@ const PrivateRegistrationForm = () => {
                   </>
                 )}
               </TouchableOpacity>
-              {showCityDropdown && cities.length > 0 && (
-                <View style={styles.dropdown}>
-                  <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
-                    {cities.map((city) => (
-                      <TouchableOpacity
-                        key={city.id}
-                        style={styles.dropdownItem}
-                        onPress={() => handleCitySelect(city)}
-                      >
-                        <Text style={styles.dropdownItemText}>
-                          {city.cityName || city.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
               {errors.city && (
                 <Text style={styles.errorText}>{errors.city}</Text>
               )}
@@ -1170,73 +1194,64 @@ const PrivateRegistrationForm = () => {
               <View style={styles.categoryOptions}>
                 <TouchableOpacity
                   style={[
-                    styles.radioButton,
-                    formData.selectedCategory === 'Group Corporate Hospital' && styles.radioButtonActive,
+                    styles.checkboxButton,
+                    formData.selectedCategory.groupCorporateHospital && styles.checkboxButtonActive,
                   ]}
                   onPress={() => setFormData(prev => ({ 
                     ...prev, 
-                    selectedCategory: 'Group Corporate Hospital' 
+                    selectedCategory: {
+                      ...prev.selectedCategory,
+                      groupCorporateHospital: !prev.selectedCategory.groupCorporateHospital
+                    }
                   }))}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.radioOuter}>
-                    {formData.selectedCategory === 'Group Corporate Hospital' && (
-                      <View style={styles.radioInner} />
+                  <View style={[
+                    styles.checkbox,
+                    formData.selectedCategory.groupCorporateHospital && styles.checkboxSelected
+                  ]}>
+                    {formData.selectedCategory.groupCorporateHospital && (
+                      <Text style={styles.checkboxTick}>✓</Text>
                     )}
                   </View>
-                  <Text style={styles.radioLabel}>Group Corporate Hospital</Text>
+                  <Text style={styles.checkboxLabel}>Group Corporate Hospital</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[
-                    styles.radioButton,
-                    formData.selectedCategory === 'Pharmacy' && styles.radioButtonActive,
-                  ]}
-                  onPress={() => setFormData(prev => ({ 
-                    ...prev, 
-                    selectedCategory: 'Pharmacy' 
-                  }))}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.radioOuter}>
-                    {formData.selectedCategory === 'Pharmacy' && (
-                      <View style={styles.radioInner} />
-                    )}
-                  </View>
-                  <Text style={styles.radioLabel}>Pharmacy</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Group Hospital Selector - Show when Group Corporate Hospital is selected */}
-              {formData.selectedCategory === 'Group Corporate Hospital' && (
+                 {/* Group Hospital Selector - Show when Group Corporate Hospital is selected */}
+              {formData.selectedCategory.groupCorporateHospital && (
                 <>
                   <TouchableOpacity
                     style={styles.selectorInput}
                     onPress={() => {
                       navigation.navigate('HospitalSelector', {
-                        selectedHospitals: formData.selectedHospital ? [formData.selectedHospital] : [],
+                        selectedHospitals: formData.selectedHospitals,
                         onSelect: (hospitals) => {
-                          // For single selection, take the first hospital
-                          setFormData(prev => ({ ...prev, selectedHospital: hospitals[0] || null }));
+                          // Allow multiple hospital selections
+                          setFormData(prev => ({ ...prev, selectedHospitals: hospitals }));
                         }
                       });
                     }}
                     activeOpacity={0.7}
                   >
-                    {formData.selectedHospital ? (
-                      <View style={styles.selectedItem}>
-                        <View>
-                          <Text style={styles.selectedItemName}>{formData.selectedHospital.name}</Text>
-                          <Text style={styles.selectedItemCode}>{formData.selectedHospital.code}</Text>
-                        </View>
-                        <TouchableOpacity
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            setFormData(prev => ({ ...prev, selectedHospital: null }));
-                          }}
-                        >                  
-                          <CloseCircle color="#999" />
-                        </TouchableOpacity>
+                    {formData.selectedHospitals && formData.selectedHospitals.length > 0 ? (
+                      <View style={styles.selectedItemsContainer}>
+                        {formData.selectedHospitals.map((hospital, index) => (
+                          <View key={hospital.id} style={styles.selectedItemTag}>
+                            <Text style={styles.selectedItemTagText}>{hospital.name}</Text>
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                setFormData(prev => ({
+                                  ...prev,
+                                  selectedHospitals: prev.selectedHospitals.filter(h => h.id !== hospital.id)
+                                }));
+                              }}
+                              style={styles.removeTagButton}
+                            >
+                              <Text style={styles.removeTagText}>×</Text>
+                            </TouchableOpacity>
+                          </View>
+                        ))}
                       </View>
                     ) : (
                       <>
@@ -1248,15 +1263,43 @@ const PrivateRegistrationForm = () => {
                   
                   <TouchableOpacity 
                     style={styles.addNewLink}
-                    onPress={() => Alert.alert('Add Hospital', 'Navigate to add new group hospital')}
+                    onPress={() => setShowHospitalModal(true)}
                   >            
                     <Text style={styles.addNewLinkText}>+ Add New Group Hospital</Text>
                   </TouchableOpacity>
                 </>
               )}
 
+                <TouchableOpacity
+                  style={[
+                    styles.checkboxButton,
+                    formData.selectedCategory.pharmacy && styles.checkboxButtonActive,
+                  ]}
+                  onPress={() => setFormData(prev => ({ 
+                    ...prev, 
+                    selectedCategory: {
+                      ...prev.selectedCategory,
+                      pharmacy: !prev.selectedCategory.pharmacy
+                    }
+                  }))}
+                  activeOpacity={0.7}
+                >
+                  <View style={[
+                    styles.checkbox,
+                    formData.selectedCategory.pharmacy && styles.checkboxSelected
+                  ]}>
+                    {formData.selectedCategory.pharmacy && (
+                      <Text style={styles.checkboxTick}>✓</Text>
+                    )}
+                  </View>
+                  <Text style={styles.checkboxLabel}>Pharmacy</Text>
+                </TouchableOpacity>
+              </View>
+
+             
+
               {/* Pharmacy Selector - Show when Pharmacy is selected */}
-              {formData.selectedCategory === 'Pharmacy' && (
+              {formData.selectedCategory.pharmacy && (
                 <>
                   <TouchableOpacity
                     style={styles.selectorInput}
@@ -1296,7 +1339,7 @@ const PrivateRegistrationForm = () => {
                   
                   <TouchableOpacity 
                     style={styles.addNewLink}
-                    onPress={() => Alert.alert('Add Pharmacy', 'Navigate to add new pharmacy')}
+                    onPress={() => setShowPharmacyModal(true)}
                   >
                     <Text style={styles.addNewLinkText}>+ Add New Pharmacy</Text>
                   </TouchableOpacity>
@@ -1387,6 +1430,103 @@ const PrivateRegistrationForm = () => {
       
       {/* Toast Component */}
       <Toast />
+
+      {/* Add New Hospital Modal */}
+      <AddNewHospitalModal
+        visible={showHospitalModal}
+        onClose={() => setShowHospitalModal(false)}
+        onSubmit={(hospital) => {
+          setFormData(prev => ({
+            ...prev,
+            selectedHospitals: [...prev.selectedHospitals, hospital]
+          }));
+          setShowHospitalModal(false);
+        }}
+      />
+
+      {/* Add New Pharmacy Modal */}
+      <AddNewPharmacyModal
+        visible={showPharmacyModal}
+        onClose={() => setShowPharmacyModal(false)}
+        onSubmit={(pharmacy) => {
+          setFormData(prev => ({
+            ...prev,
+            selectedPharmacies: [...prev.selectedPharmacies, pharmacy]
+          }));
+          setShowPharmacyModal(false);
+        }}
+      />
+
+      {/* Dropdown Modals */}
+      <DropdownModal
+        visible={showStateModal}
+        onClose={() => setShowStateModal(false)}
+        title="Select State"
+        data={states}
+        selectedId={formData.stateId}
+        onSelect={(item) => {
+          handleStateSelect(item);
+        }}
+        loading={loadingStates}
+      />
+
+      <DropdownModal
+        visible={showCityModal}
+        onClose={() => setShowCityModal(false)}
+        title="Select City"
+        data={cities}
+        selectedId={formData.cityId}
+        onSelect={(item) => {
+          handleCitySelect(item);
+        }}
+        loading={loadingCities}
+      />
+
+      <DropdownModal
+        visible={showAreaModal}
+        onClose={() => setShowAreaModal(false)}
+        title="Select Area"
+        data={MOCK_AREAS.map((area, index) => ({ id: index, name: area }))}
+        selectedId={MOCK_AREAS.indexOf(formData.area)}
+        onSelect={(item) => {
+          setFormData(prev => ({ ...prev, area: item.name }));
+        }}
+        loading={false}
+      />
+
+      {/* Cancel Confirmation Modal */}
+      <Modal
+        visible={showCancelModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCancelModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIconContainer}>
+              <Text style={styles.modalIcon}>!</Text>
+            </View>
+            <Text style={styles.modalTitle}>Are you sure you want to Cancel the Onboarding?</Text>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={styles.modalYesButton}
+                onPress={() => {
+                  setShowCancelModal(false);
+                  navigation.goBack();
+                }}
+              >
+                <Text style={styles.modalYesButtonText}>Yes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalNoButton}
+                onPress={() => setShowCancelModal(false)}
+              >
+                <Text style={styles.modalNoButtonText}>No</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1640,6 +1780,73 @@ const styles = StyleSheet.create({
   categoryOptions: {
     marginBottom: 20,
   },
+  checkboxButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  checkboxButtonActive: {
+    opacity: 0.8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    backgroundColor: '#fff',
+  },
+  checkboxSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  checkboxTick: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  checkboxInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedItemsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    flex: 1,
+  },
+  selectedItemTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5ED',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  selectedItemTagText: {
+    fontSize: 14,
+    color: '#333',
+    marginRight: 6,
+  },
+  removeTagButton: {
+    padding: 2,
+  },
+  removeTagText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
   radioButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1817,6 +2024,287 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 32,
+    alignItems: 'center',
+  },
+  modalIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FFE5E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalIcon: {
+    fontSize: 32,
+    color: '#FF6B6B',
+    fontWeight: 'bold',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalYesButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    alignItems: 'center',
+  },
+  modalYesButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  modalNoButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    backgroundColor: '#FF6B6B',
+    alignItems: 'center',
+  },
+  modalNoButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  // Hospital and Pharmacy Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  modalContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalCloseButton: {
+    fontSize: 24,
+    color: '#999',
+    fontWeight: '300',
+  },
+  modalSectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 10,
+  },
+  modalFieldLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#333',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  mandatory: {
+    color: colors.error,
+  },
+  radioGroup: {
+    marginBottom: 12,
+  },
+  radioOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  radioCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    marginRight: 12,
+  },
+  radioCircleSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  radioLabel: {
+    fontSize: 14,
+    color: '#333',
+  },
+  fileUploadRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 10,
+  },
+  fileUploadButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: '#FFF5ED',
+    alignItems: 'center',
+  },
+  fileUploadButtonText: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  modalInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.loginInputBorderColor,
+    backgroundColor: '#FAFAFA',
+    fontSize: 13,
+    color: '#333',
+  },
+  dropdownInput: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.loginInputBorderColor,
+    backgroundColor: '#FAFAFA',
+    marginBottom: 10,
+    justifyContent: 'center',
+  },
+  dropdownPlaceholder: {
+    fontSize: 13,
+    color: '#999',
+  },
+  verifyButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifyButtonText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  otpNote: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 4,
+    marginBottom: 12,
+    fontStyle: 'italic',
+  },
+  modalActionButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 20,
+    marginBottom: 30,
+  },
+  submitButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  // Modal styles for dropdown
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalList: {
+    paddingHorizontal: 16,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalItemSelected: {
+    backgroundColor: '#FFF5ED',
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+    textAlign: 'left',
+  },
+  modalItemTextSelected: {
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  modalLoader: {
+    paddingVertical: 50,
   },
 });
 

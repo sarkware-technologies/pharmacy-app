@@ -15,6 +15,8 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -23,6 +25,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors } from '../../../styles/colors';
 import CustomInput from '../../../components/CustomInput';
+import FileUploadComponent from '../../../components/FileUploadComponent';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import ChevronRight from '../../../components/icons/ChevronRight';
 import Upload from '../../../components/icons/Upload';
@@ -30,18 +33,25 @@ import Calendar from '../../../components/icons/Calendar';
 import ArrowDown from '../../../components/icons/ArrowDown';
 import Search from '../../../components/icons/Search';
 import CloseCircle from '../../../components/icons/CloseCircle';
+import { customerAPI } from '../../../api/customer';
 
 const { width, height } = Dimensions.get('window');
 
 // Mock data
 const MOCK_AREAS = ['Vadgaonsheri', 'Kharadi', 'Viman Nagar', 'Kalyani Nagar', 'Koregaon Park'];
-const MOCK_CITIES = ['Pune', 'Mumbai', 'Delhi', 'Bangalore', 'Chennai'];
-const MOCK_STATES = ['Maharashtra', 'Karnataka', 'Tamil Nadu', 'Delhi', 'Gujarat'];
 const MOCK_HOSPITALS = [
   { id: '1', name: 'Columbia Asia', code: '10106555', city: 'Pune' },
   { id: '2', name: 'Command', code: '10006565', city: 'Bengaluru' },
   { id: '3', name: 'Tata Memorial Hospital', code: '10106555', city: 'Jaipur' },
 ];
+
+// Document types for file uploads
+const DOC_TYPES = {
+  REGISTRATION_CERTIFICATE: 8,
+  HOSPITAL_IMAGE: 1,
+  PAN: 7,
+  GST: 8,
+};
 
 const GroupHospitalRegistrationForm = () => {
   const navigation = useNavigation();
@@ -91,12 +101,27 @@ const GroupHospitalRegistrationForm = () => {
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   
-  // Dropdowns
-  const [showAreaDropdown, setShowAreaDropdown] = useState(false);
-  const [showCityDropdown, setShowCityDropdown] = useState(false);
-  const [showStateDropdown, setShowStateDropdown] = useState(false);
-  const [showGstDropdown, setShowGstDropdown] = useState(false);
+  // Document IDs for API submission
+  const [documentIds, setDocumentIds] = useState({
+    registrationCertificate: null,
+    hospitalImage: null,
+    pan: null,
+    gst: null,
+  });
+  
+  // API Data
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
+  
+  // Dropdown Modals
+  const [showAreaModal, setShowAreaModal] = useState(false);
+  const [showCityModal, setShowCityModal] = useState(false);
+  const [showStateModal, setShowStateModal] = useState(false);
+  const [showGstModal, setShowGstModal] = useState(false);
   
   // OTP states
   const [showOTP, setShowOTP] = useState({
@@ -110,6 +135,10 @@ const GroupHospitalRegistrationForm = () => {
   const [otpTimers, setOtpTimers] = useState({
     mobile: 30,
     email: 30,
+  });
+  const [loadingOtp, setLoadingOtp] = useState({
+    mobile: false,
+    email: false,
   });
   
   // Animation values
@@ -134,7 +163,59 @@ const GroupHospitalRegistrationForm = () => {
         useNativeDriver: true,
       }),
     ]).start();
+    
+    // Load states on mount
+    loadStates();
   }, []);
+
+  const loadStates = async () => {
+    setLoadingStates(true);
+    try {
+      const response = await customerAPI.getStates();
+      if (response.success && response.data) {
+        const _states = [];
+        for (let i = 0; i < response.data.states.length; i++) {
+          _states.push({ 
+            id: response.data.states[i].id, 
+            name: response.data.states[i].stateName 
+          });
+        }
+        setStates(_states || []);
+      }
+    } catch (error) {
+      console.error('Error loading states:', error);
+      Alert.alert('Error', 'Failed to load states. Please try again.');
+    } finally {
+      setLoadingStates(false);
+    }
+  };
+
+  const loadCities = async (stateId) => {
+    if (!stateId) return;
+    
+    setLoadingCities(true);
+    setCities([]);
+    setFormData(prev => ({ ...prev, city: '', cityId: null }));
+    
+    try {
+      const response = await customerAPI.getCities(stateId);
+      if (response.success && response.data) {
+        const _cities = [];
+        for (let i = 0; i < response.data.cities.length; i++) {
+          _cities.push({ 
+            id: response.data.cities[i].id, 
+            name: response.data.cities[i].cityName 
+          });
+        }
+        setCities(_cities || []);
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error);
+      Alert.alert('Error', 'Failed to load cities. Please try again.');
+    } finally {
+      setLoadingCities(false);
+    }
+  };
 
   useEffect(() => {
     // Animate progress bar
@@ -178,6 +259,19 @@ const GroupHospitalRegistrationForm = () => {
     }).start();
   };
 
+  const handleFileUpload = (field, file) => {
+    if (file && file.id) {
+      setDocumentIds(prev => ({ ...prev, [field]: file.id }));
+    }
+    setFormData(prev => ({ ...prev, [`${field}File`]: file }));
+    setErrors(prev => ({ ...prev, [`${field}File`]: null }));
+  };
+
+  const handleFileDelete = (field) => {
+    setDocumentIds(prev => ({ ...prev, [field]: null }));
+    setFormData(prev => ({ ...prev, [`${field}File`]: null }));
+  };
+
   const handleOtpChange = (field, index, value) => {
     if (value.length <= 1 && /^\d*$/.test(value)) {
       const newOtpValues = { ...otpValues };
@@ -214,6 +308,65 @@ const GroupHospitalRegistrationForm = () => {
   const handleResendOTP = (field) => {
     setOtpTimers(prev => ({ ...prev, [field]: 30 }));
     Alert.alert('OTP Sent', `New OTP sent for ${field} verification.`);
+  };
+
+  // DropdownModal Component
+  const DropdownModal = ({ visible, onClose, title, data, selectedId, onSelect, loading }) => {
+    return (
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={onClose}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={onClose}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{title}</Text>
+              <TouchableOpacity onPress={onClose}>
+                <Icon name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            {loading ? (
+              <ActivityIndicator size="large" color={colors.primary} style={styles.modalLoader} />
+            ) : (
+              <FlatList
+                data={data}
+                keyExtractor={(item) => item.id?.toString() || item.value}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.modalItem,
+                      selectedId == item.id && styles.modalItemSelected
+                    ]}
+                    onPress={() => {
+                      onSelect(item);
+                      onClose();
+                    }}
+                  >
+                    <Text style={[
+                      styles.modalItemText,
+                      selectedId == item.id && styles.modalItemTextSelected
+                    ]}>
+                      {item.name}
+                    </Text>
+                    {selectedId == item.id && (
+                      <Icon name="check" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                )}
+                style={styles.modalList}
+              />
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
   };
 
   const validateStep = () => {
@@ -334,6 +487,10 @@ const GroupHospitalRegistrationForm = () => {
     }, 1000);
   };
 
+  const handleCancel = () => {
+    setShowCancelModal(true);
+  };
+
   const renderStepIndicator = () => {
     const steps = ['License', 'General', 'Security', 'Mapping'];
     
@@ -437,16 +594,16 @@ const GroupHospitalRegistrationForm = () => {
     >
       <Text style={styles.stepTitle}>License Details*</Text>
       
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => Alert.alert('Upload', 'Registration certificate upload will be available soon')}
-        activeOpacity={0.7}
-      >
-        <Upload />
-        <Text style={styles.uploadButtonText}>
-          {formData.registrationCertificate || 'Upload registration certificate'}
-        </Text>
-      </TouchableOpacity>
+      <FileUploadComponent
+        placeholder="Upload registration certificate"
+        accept={['pdf', 'jpg', 'png']}
+        maxSize={10 * 1024 * 1024}
+        docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
+        initialFile={formData.registrationCertificateFile}
+        onFileUpload={(file) => handleFileUpload('registrationCertificate', file)}
+        onFileDelete={() => handleFileDelete('registrationCertificate')}
+        errorMessage={errors.registrationCertificateFile}
+      />
 
       <CustomInput
         placeholder="Hospital Registration Number"
@@ -471,16 +628,16 @@ const GroupHospitalRegistrationForm = () => {
         <Text style={styles.errorText}>{errors.registrationDate}</Text>
       )}
 
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => Alert.alert('Upload', 'Image upload will be available soon')}
-        activeOpacity={0.7}
-      >
-        <Upload />
-        <Text style={styles.uploadButtonText}>
-          {formData.licenseImage || 'Upload image'}
-        </Text>
-      </TouchableOpacity>
+      <FileUploadComponent
+        placeholder="Upload hospital image"
+        accept={['jpg', 'png', 'jpeg']}
+        maxSize={10 * 1024 * 1024}
+        docType={DOC_TYPES.HOSPITAL_IMAGE}
+        initialFile={formData.hospitalImageFile}
+        onFileUpload={(file) => handleFileUpload('hospitalImage', file)}
+        onFileDelete={() => handleFileDelete('hospitalImage')}
+        errorMessage={errors.hospitalImageFile}
+      />
 
       {showDatePicker && (
         <DateTimePicker
@@ -559,7 +716,7 @@ const GroupHospitalRegistrationForm = () => {
       {/* Area Dropdown */}
       <TouchableOpacity
         style={[styles.input]}
-        onPress={() => setShowAreaDropdown(!showAreaDropdown)}
+        onPress={() => setShowAreaModal(true)}
         activeOpacity={0.7}
       >
         <Text style={formData.area ? styles.inputText : styles.placeholderText}>
@@ -567,27 +724,11 @@ const GroupHospitalRegistrationForm = () => {
         </Text>
         <ArrowDown color='#999' />
       </TouchableOpacity>
-      {showAreaDropdown && (
-        <View style={styles.dropdown}>
-          {MOCK_AREAS.map((area, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.dropdownItem}
-              onPress={() => {
-                setFormData(prev => ({ ...prev, area }));
-                setShowAreaDropdown(false);
-              }}
-            >
-              <Text style={styles.dropdownItemText}>{area}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
 
       {/* City Dropdown */}
       <TouchableOpacity
         style={[styles.input, errors.city && styles.inputError]}
-        onPress={() => setShowCityDropdown(!showCityDropdown)}
+        onPress={() => setShowCityModal(true)}
         activeOpacity={0.7}
       >
         <View style={styles.inputTextContainer}>
@@ -598,27 +739,14 @@ const GroupHospitalRegistrationForm = () => {
         </View>
         <ArrowDown color='#999' />
       </TouchableOpacity>
-      {showCityDropdown && (
-        <View style={styles.dropdown}>
-          {MOCK_CITIES.map((city, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.dropdownItem}
-              onPress={() => {
-                setFormData(prev => ({ ...prev, city }));
-                setShowCityDropdown(false);
-              }}
-            >
-              <Text style={styles.dropdownItemText}>{city}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      {errors.city && (
+        <Text style={styles.errorText}>{errors.city}</Text>
       )}
 
       {/* State Dropdown */}
       <TouchableOpacity
         style={[styles.input, errors.state && styles.inputError]}
-        onPress={() => setShowStateDropdown(!showStateDropdown)}
+        onPress={() => setShowStateModal(true)}
         activeOpacity={0.7}
       >
         <View style={styles.inputTextContainer}>
@@ -629,21 +757,8 @@ const GroupHospitalRegistrationForm = () => {
         </View>
         <ArrowDown color='#999' />
       </TouchableOpacity>
-      {showStateDropdown && (
-        <View style={styles.dropdown}>
-          {MOCK_STATES.map((state, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.dropdownItem}
-              onPress={() => {
-                setFormData(prev => ({ ...prev, state }));
-                setShowStateDropdown(false);
-              }}
-            >
-              <Text style={styles.dropdownItemText}>{state}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      {errors.state && (
+        <Text style={styles.errorText}>{errors.state}</Text>
       )}
     </Animated.View>
   );
@@ -710,22 +825,22 @@ const GroupHospitalRegistrationForm = () => {
       {renderOTPInput('email')}
 
       {/* Upload PAN */}
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => Alert.alert('Upload', 'PAN upload will be available soon')}
-        activeOpacity={0.7}
-      >
-        <Upload />
-        <Text style={styles.uploadButtonText}>
-          {formData.panFile || 'Upload PAN'}
-        </Text>
-      </TouchableOpacity>
+      <FileUploadComponent
+        placeholder="Upload PAN (e.g., ASDSD12345G)"
+        accept={['pdf', 'jpg', 'png']}
+        maxSize={10 * 1024 * 1024}
+        docType={DOC_TYPES.PAN}
+        initialFile={formData.panFile}
+        onFileUpload={(file) => handleFileUpload('pan', file)}
+        onFileDelete={() => handleFileDelete('pan')}
+        errorMessage={errors.panFile}
+      />
 
-      {/* PAN Number with Verify */}
+      {/* PAN Number */}
       <View style={styles.inputWithButton}>
         <TextInput
           style={[styles.inputField, { flex: 1 }]}
-          placeholder="PAN number"
+          placeholder="PAN Number (e.g., ASDSD12345G)"
           value={formData.panNumber}
           onChangeText={(text) => setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }))}
           autoCapitalize="characters"
@@ -751,16 +866,16 @@ const GroupHospitalRegistrationForm = () => {
       </TouchableOpacity>
 
       {/* Upload GST */}
-      <TouchableOpacity
-        style={styles.uploadButton}
-        onPress={() => Alert.alert('Upload', 'GST upload will be available soon')}
-        activeOpacity={0.7}
-      >
-        <Upload />
-        <Text style={styles.uploadButtonText}>
-          {formData.gstFile || 'Upload GST'}
-        </Text>
-      </TouchableOpacity>
+      <FileUploadComponent
+        placeholder="Upload GST (e.g., 27ASDSD1234F1Z5)"
+        accept={['pdf', 'jpg', 'png']}
+        maxSize={10 * 1024 * 1024}
+        docType={DOC_TYPES.GST}
+        initialFile={formData.gstFile}
+        onFileUpload={(file) => handleFileUpload('gst', file)}
+        onFileDelete={() => handleFileDelete('gst')}
+        errorMessage={errors.gstFile}
+      />
 
       {/* GST Number Dropdown */}
       <TouchableOpacity
@@ -769,7 +884,7 @@ const GroupHospitalRegistrationForm = () => {
         activeOpacity={0.7}
       >
         <Text style={formData.gstNumber ? styles.inputText : styles.placeholderText}>
-          {formData.gstNumber || 'GST number'}
+          {formData.gstNumber || 'GST Number (e.g., 27ASDSD1234F1Z5)'}
         </Text>
         <ArrowDown color='#999' />
       </TouchableOpacity>
@@ -1050,6 +1165,89 @@ const GroupHospitalRegistrationForm = () => {
           </TouchableOpacity>
         </Animated.View>
       </View>
+
+      {/* Cancel Confirmation Modal */}
+      {/* Dropdown Modals */}
+      <DropdownModal
+        visible={showStateModal}
+        onClose={() => setShowStateModal(false)}
+        title="Select State"
+        data={MOCK_STATES.map((state, index) => ({ id: index, name: state }))}
+        selectedId={MOCK_STATES.indexOf(formData.state)}
+        onSelect={(item) => {
+          setFormData(prev => ({ 
+            ...prev, 
+            state: item.name,
+            city: ''
+          }));
+          setErrors(prev => ({ ...prev, state: null }));
+        }}
+        loading={false}
+      />
+
+      <DropdownModal
+        visible={showCityModal}
+        onClose={() => setShowCityModal(false)}
+        title="Select City"
+        data={MOCK_CITIES.map((city, index) => ({ id: index, name: city }))}
+        selectedId={MOCK_CITIES.indexOf(formData.city)}
+        onSelect={(item) => {
+          setFormData(prev => ({ 
+            ...prev, 
+            city: item.name
+          }));
+          setErrors(prev => ({ ...prev, city: null }));
+        }}
+        loading={false}
+      />
+
+      <DropdownModal
+        visible={showAreaModal}
+        onClose={() => setShowAreaModal(false)}
+        title="Select Area"
+        data={MOCK_AREAS.map((area, index) => ({ id: index, name: area }))}
+        selectedId={MOCK_AREAS.indexOf(formData.area)}
+        onSelect={(item) => {
+          setFormData(prev => ({ 
+            ...prev, 
+            area: item.name
+          }));
+        }}
+        loading={false}
+      />
+
+      <Modal
+        visible={showCancelModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCancelModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIconContainer}>
+              <Text style={styles.modalIcon}>!</Text>
+            </View>
+            <Text style={styles.modalTitle}>Are you sure you want to Cancel the Onboarding?</Text>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={styles.modalYesButton}
+                onPress={() => {
+                  setShowCancelModal(false);
+                  navigation.goBack();
+                }}
+              >
+                <Text style={styles.modalYesButtonText}>Yes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalNoButton}
+                onPress={() => setShowCancelModal(false)}
+              >
+                <Text style={styles.modalNoButtonText}>No</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1526,6 +1724,124 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 32,
+    alignItems: 'center',
+  },
+  modalIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FFE5E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalIcon: {
+    fontSize: 32,
+    color: '#FF6B6B',
+    fontWeight: 'bold',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalYesButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    alignItems: 'center',
+  },
+  modalYesButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  modalNoButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    backgroundColor: '#FF6B6B',
+    alignItems: 'center',
+  },
+  modalNoButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalList: {
+    paddingHorizontal: 16,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalItemSelected: {
+    backgroundColor: '#FFF5ED',
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+    textAlign: 'left',
+  },
+  modalItemTextSelected: {
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  modalLoader: {
+    paddingVertical: 50,
   },
 });
 

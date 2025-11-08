@@ -41,6 +41,7 @@ const PharmacyRegistrationForm = () => {
   const route = useRoute();
   const scrollViewRef = useRef(null);
   const otpRefs = useRef({});
+  const isMounted = useRef(true);
 
   // Get registration type data from route params
   const { 
@@ -107,6 +108,7 @@ const PharmacyRegistrationForm = () => {
     
     // Stockist Suggestions
     suggestedDistributors: [],
+    stockists: [],
   });
 
   // Document IDs for API submission
@@ -129,6 +131,7 @@ const PharmacyRegistrationForm = () => {
     license21: false,
   });
   const [selectedDateField, setSelectedDateField] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // OTP states
   const [showOTP, setShowOTP] = useState({
@@ -144,6 +147,14 @@ const PharmacyRegistrationForm = () => {
     email: 30,
   });
   const [generatedOTP, setGeneratedOTP] = useState({
+    mobile: null,
+    email: null,
+  });
+  const [loadingOtp, setLoadingOtp] = useState({
+    mobile: false,
+    email: false,
+  });
+  const [otpId, setOtpId] = useState({
     mobile: null,
     email: null,
   });
@@ -190,6 +201,11 @@ const PharmacyRegistrationForm = () => {
 
     // Load initial data
     loadInitialData();
+
+    return () => {
+      // Mark component as unmounted
+      isMounted.current = false;
+    };
   }, []);
 
   const loadInitialData = async () => {
@@ -359,6 +375,20 @@ const PharmacyRegistrationForm = () => {
     }
   };
 
+   const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
+    if (selectedDate && selectedDateField) {
+      const formattedDate = selectedDate.toISOString();
+      setFormData(prev => ({ 
+        ...prev, 
+        [`${selectedDateField}ExpiryDate`]: formattedDate 
+      }));
+      setErrors(prev => ({ ...prev, [`${selectedDateField}ExpiryDate`]: null }));
+    }
+    setSelectedDateField(null);
+  };
+
+  
   const handleVerify = async (field) => {
     // Validate the field before showing OTP
     if (field === 'mobile' && (!formData.mobileNumber || formData.mobileNumber.length !== 10)) {
@@ -370,8 +400,13 @@ const PharmacyRegistrationForm = () => {
       return;
     }
 
-    setLoading(true);
+    setLoadingOtp(prev => ({ ...prev, [field]: true }));
     try {
+      // Reset OTP state before generating new OTP
+      setOtpValues(prev => ({ ...prev, [field]: ['', '', '', ''] }));
+      setOtpTimers(prev => ({ ...prev, [field]: 30 }));
+      setGeneratedOTP(prev => ({ ...prev, [field]: null }));
+
       const requestData = {
         customerId: 1, // Using default customerId for now
         [field === 'mobile' ? 'mobile' : 'email']: 
@@ -382,7 +417,6 @@ const PharmacyRegistrationForm = () => {
 
       if (response.success) {
         setShowOTP(prev => ({ ...prev, [field]: true }));
-        setOtpTimers(prev => ({ ...prev, [field]: 30 }));
         
         // If OTP is returned in response (for testing), auto-fill it
         if (response.data && response.data.otp) {
@@ -393,12 +427,17 @@ const PharmacyRegistrationForm = () => {
             [field]: [...otpArray, ...Array(4 - otpArray.length).fill('')]
           }));
           setGeneratedOTP(prev => ({ ...prev, [field]: response.data.otp }));
+          
+          // Auto-submit OTP after a delay
+          setTimeout(() => {
+            handleOtpVerification(field, response.data.otp.toString());
+          }, 500);
         }
 
         Toast.show({
           type: 'success',
-          text1: 'OTP Sent',
-          text2: response.message || 'OTP has been sent successfully',
+          text1: 'Success',
+          text2: `OTP sent to ${field}`,
         });
 
         // Animate OTP container
@@ -409,16 +448,22 @@ const PharmacyRegistrationForm = () => {
           useNativeDriver: true,
         }).start();
       } else {
-        // Check if customer already exists
-        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        // Check for existing customer
+        if (!response.success && response.data && Array.isArray(response.data)) {
           const existingCustomer = response.data[0];
-          Alert.alert(
-            'Customer Already Exists',
-            `A customer with this ${field} already exists.\nCustomer Code: ${existingCustomer.code || 'N/A'}\nName: ${existingCustomer.name}`,
-            [
-              { text: 'OK', style: 'default' }
-            ]
-          );
+          Toast.show({
+            type: 'error',
+            text1: 'Customer Exists',
+            text2: `Customer already exists with this ${field}`,
+          });
+          
+          // Check if already verified
+          if (field === 'mobile' && existingCustomer.isMobileVerified) {
+            setVerificationStatus(prev => ({ ...prev, mobile: true }));
+          }
+          if (field === 'email' && existingCustomer.isEmailVerified) {
+            setVerificationStatus(prev => ({ ...prev, email: true }));
+          }
         } else {
           Toast.show({
             type: 'error',
@@ -428,14 +473,16 @@ const PharmacyRegistrationForm = () => {
         }
       }
     } catch (error) {
-      console.error('OTP generation error:', error);
+      console.error('Error generating OTP:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to generate OTP. Please try again.',
+        text2: 'Failed to send OTP. Please try again.',
       });
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoadingOtp(prev => ({ ...prev, [field]: false }));
+      }
     }
   };
 
@@ -451,17 +498,21 @@ const PharmacyRegistrationForm = () => {
         if (nextInput) nextInput.focus();
       }
       
-      // Check if OTP is complete
-      if (newOtpValues[field].every(v => v)) {
-        handleOtpVerification(field);
+      // Check if OTP is complete (all 4 digits filled)
+      if (newOtpValues[field].every(v => v !== '')) {
+        const otp = newOtpValues[field].join('');
+        // Add a small delay to ensure state is updated
+        setTimeout(() => {
+          handleOtpVerification(field, otp);
+        }, 100);
       }
     }
   };
 
-  const handleOtpVerification = async (field) => {
-    const otp = otpValues[field].join('');
+  const handleOtpVerification = async (field, otp) => {
+    const otpValue = otp || otpValues[field].join('');
     
-    setLoading(true);
+    setLoadingOtp(prev => ({ ...prev, [field]: true }));
     try {
       const requestData = {
         customerId: 1,
@@ -469,7 +520,7 @@ const PharmacyRegistrationForm = () => {
           field === 'mobile' ? formData.mobileNumber : formData.emailAddress
       };
 
-      const response = await customerAPI.validateOTP(otp, requestData);
+      const response = await customerAPI.validateOTP(otpValue, requestData);
 
       if (response.success) {
         Toast.show({
@@ -480,6 +531,7 @@ const PharmacyRegistrationForm = () => {
         
         setShowOTP(prev => ({ ...prev, [field]: false }));
         setVerificationStatus(prev => ({ ...prev, [field]: true }));
+        setOtpTimers(prev => ({ ...prev, [field]: 0 })); // Reset OTP timer
         
         // Reset OTP values for this field
         setOtpValues(prev => ({
@@ -502,7 +554,9 @@ const PharmacyRegistrationForm = () => {
         text2: 'Failed to validate OTP. Please try again.',
       });
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoadingOtp(prev => ({ ...prev, [field]: false }));
+      }
     }
   };
 
@@ -511,16 +565,30 @@ const PharmacyRegistrationForm = () => {
     await handleVerify(field);
   };
 
-  const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
-    if (selectedDate && selectedDateField) {
-      setFormData(prev => ({ 
-        ...prev, 
-        [`${selectedDateField}ExpiryDate`]: selectedDate 
-      }));
-      setErrors(prev => ({ ...prev, [`${selectedDateField}ExpiryDate`]: null }));
-    }
-    setSelectedDateField(null);
+  const handleAddStockist = () => {
+    setFormData(prev => ({
+      ...prev,
+      stockists: [
+        ...prev.stockists,
+        { name: '', code: '', city: '' }
+      ]
+    }));
+  };
+
+  const handleRemoveStockist = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      stockists: prev.stockists.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleStockistChange = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      stockists: prev.stockists.map((stockist, i) => 
+        i === index ? { ...stockist, [field]: value } : stockist
+      )
+    }));
   };
 
   const openDatePicker = (field) => {
@@ -552,7 +620,7 @@ const PharmacyRegistrationForm = () => {
               onChangeText={(value) => handleOtpChange(field, index, value)}
               keyboardType="numeric"
               maxLength={1}
-              editable={!loading}
+              editable={!loadingOtp[field]}
             />
           ))}
         </View>
@@ -561,7 +629,7 @@ const PharmacyRegistrationForm = () => {
             {otpTimers[field] > 0 ? `Resend in ${otpTimers[field]}s` : ''}
           </Text>
           {otpTimers[field] === 0 && (
-            <TouchableOpacity onPress={() => handleResendOTP(field)} disabled={loading}>
+            <TouchableOpacity onPress={() => handleResendOTP(field)} disabled={loadingOtp[field]}>
               <Text style={styles.resendText}>Resend OTP</Text>
             </TouchableOpacity>
           )}
@@ -601,14 +669,7 @@ const PharmacyRegistrationForm = () => {
   };
 
   const handleCancel = () => {
-    Alert.alert(
-      'Cancel Registration',
-      'Are you sure you want to cancel? All entered data will be lost.',
-      [
-        { text: 'No', style: 'cancel' },
-        { text: 'Yes', onPress: () => navigation.goBack() },
-      ]
-    );
+    setShowCancelModal(true);
   };
 
   const formatDateForAPI = (date) => {
@@ -742,11 +803,12 @@ const PharmacyRegistrationForm = () => {
         animationType="slide"
         onRequestClose={onClose}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
-          onPress={onClose}
-        >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={{flex: 1}} 
+            activeOpacity={1} 
+            onPress={onClose}
+          />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{title}</Text>
@@ -787,7 +849,7 @@ const PharmacyRegistrationForm = () => {
               />
             )}
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     );
   };
@@ -1021,7 +1083,7 @@ const PharmacyRegistrationForm = () => {
               />
               
               <View style={styles.dropdownContainer}>
-                {/*<Text style={styles.inputLabel}>State*</Text>*/}
+                <Text style={styles.inputLabel}>State<Text style={{color: 'red'}}>*</Text></Text>
                 <TouchableOpacity 
                   style={[styles.dropdown, errors.stateId && styles.inputError]}
                   onPress={() => setShowStateModal(true)}
@@ -1035,7 +1097,7 @@ const PharmacyRegistrationForm = () => {
               </View>
               
               <View style={styles.dropdownContainer}>
-                {/*<Text style={styles.inputLabel}>City*</Text>*/}
+                <Text style={styles.inputLabel}>City<Text style={{color: 'red'}}>*</Text></Text>
                 <TouchableOpacity 
                   style={[styles.dropdown, errors.cityId && styles.inputError]}
                   onPress={() => setShowCityModal(true)}
@@ -1050,7 +1112,7 @@ const PharmacyRegistrationForm = () => {
               </View>
               
               <View style={styles.dropdownContainer}>
-                {/*<Text style={styles.inputLabel}>Area*</Text>*/}
+                <Text style={styles.inputLabel}>Area<Text style={{color: 'red'}}>*</Text></Text>
                 <TouchableOpacity 
                   style={[styles.dropdown, errors.area && styles.inputError]}
                   onPress={() => setShowAreaModal(true)}
@@ -1096,9 +1158,9 @@ const PharmacyRegistrationForm = () => {
                     verificationStatus.mobile && styles.verifiedButton
                   ]}
                   onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
-                  disabled={verificationStatus.mobile || loading}
+                  disabled={verificationStatus.mobile || loadingOtp.mobile}
                 >
-                  {loading && !verificationStatus.mobile ? (
+                  {loadingOtp.mobile && !verificationStatus.mobile ? (
                     <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
                     <Text style={[
@@ -1142,9 +1204,9 @@ const PharmacyRegistrationForm = () => {
                     verificationStatus.email && styles.verifiedButton
                   ]}
                   onPress={() => !verificationStatus.email && handleVerify('email')}
-                  disabled={verificationStatus.email || loading}
+                  disabled={verificationStatus.email || loadingOtp.email}
                 >
-                  {loading && !verificationStatus.email ? (
+                  {loadingOtp.email && !verificationStatus.email ? (
                     <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
                     <Text style={[
@@ -1172,7 +1234,7 @@ const PharmacyRegistrationForm = () => {
               />
               
               <CustomInput
-                placeholder="PAN Number (e.g., ABCDE1234F)"
+                placeholder="PAN Number (e.g., ASDSD12345G)"
                 value={formData.panNumber}
                 onChangeText={(text) => {
                   setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }));
@@ -1195,7 +1257,7 @@ const PharmacyRegistrationForm = () => {
               />
               
               <CustomInput
-                placeholder="GST Number (e.g., 27ABCDE1234F1Z5)"
+                placeholder="GST Number (e.g., 27ASDSD1234F1Z5)"
                 value={formData.gstNumber}
                 onChangeText={(text) => {
                   setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
@@ -1296,8 +1358,37 @@ const PharmacyRegistrationForm = () => {
                 Add suggested stockists for this pharmacy
               </Text>
               
-              <TouchableOpacity style={styles.addMoreButton}>
-                <Text style={styles.addMoreButtonText}>+ Add Stockist</Text>
+              {formData.stockists.map((stockist, index) => (
+                <View key={index} style={styles.stockistContainer}>
+                  <View style={styles.stockistHeader}>
+                    <Text style={styles.stockistTitle}>Stockist {index + 1}</Text>
+                    <TouchableOpacity onPress={() => handleRemoveStockist(index)}>
+                      <Icon name="delete" size={20} color={colors.error} />
+                    </TouchableOpacity>
+                  </View>
+                  <CustomInput
+                    placeholder="Name of the Stockist"
+                    value={stockist.name}
+                    onChangeText={(text) => handleStockistChange(index, 'name', text)}
+                  />
+                  <CustomInput
+                    placeholder="Distributor Code"
+                    value={stockist.code}
+                    onChangeText={(text) => handleStockistChange(index, 'code', text)}
+                  />
+                  <CustomInput
+                    placeholder="City"
+                    value={stockist.city}
+                    onChangeText={(text) => handleStockistChange(index, 'city', text)}
+                  />
+                </View>
+              ))}
+              
+              <TouchableOpacity 
+                style={styles.addMoreButton}
+                onPress={handleAddStockist}
+              >
+                <Text style={styles.addMoreButtonText}>+ Add New Stockist</Text>
               </TouchableOpacity>
             </View>
 
@@ -1406,6 +1497,40 @@ const PharmacyRegistrationForm = () => {
       />
 
       <Toast />
+
+      {/* Cancel Confirmation Modal */}
+      <Modal
+        visible={showCancelModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCancelModal(false)}
+      >
+        <View style={styles.cancelModalOverlay}>
+          <View style={styles.cancelModalContent}>
+            <View style={styles.modalIconContainer}>
+              <Text style={styles.modalIcon}>!</Text>
+            </View>
+            <Text style={styles.modalTitle}>Are you sure you want to Cancel the Onboarding?</Text>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={styles.modalYesButton}
+                onPress={() => {
+                  setShowCancelModal(false);
+                  navigation.goBack();
+                }}
+              >
+                <Text style={styles.modalYesButtonText}>Yes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalNoButton}
+                onPress={() => setShowCancelModal(false)}
+              >
+                <Text style={styles.modalNoButtonText}>No</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1819,6 +1944,8 @@ const styles = StyleSheet.create({
   modalItemText: {
     fontSize: 16,
     color: '#333',
+    flex: 1,
+    textAlign: 'left',
   },
   modalItemTextSelected: {
     color: colors.primary,
@@ -1826,6 +1953,81 @@ const styles = StyleSheet.create({
   },
   modalLoader: {
     paddingVertical: 50,
+  },
+  cancelModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  cancelModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 32,
+    alignItems: 'center',
+  },
+  modalIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FFE5E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalIcon: {
+    fontSize: 32,
+    color: '#FF6B6B',
+    fontWeight: 'bold',
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalYesButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    alignItems: 'center',
+  },
+  modalYesButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  modalNoButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    backgroundColor: '#FF6B6B',
+    alignItems: 'center',
+  },
+  modalNoButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  stockistContainer: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  stockistHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  stockistTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
   },
 });
 

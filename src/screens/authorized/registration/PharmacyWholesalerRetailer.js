@@ -114,6 +114,7 @@ const PharmacyWholesalerRetailerForm = () => {
     
     // Stockist Suggestions
     suggestedDistributors: [],
+    stockists: [],
   });
 
   // Document IDs for API submission
@@ -140,6 +141,7 @@ const PharmacyWholesalerRetailerForm = () => {
     license21b: false,
   });
   const [selectedDateField, setSelectedDateField] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // OTP states
   const [showOTP, setShowOTP] = useState({
@@ -157,6 +159,10 @@ const PharmacyWholesalerRetailerForm = () => {
   const [generatedOTP, setGeneratedOTP] = useState({
     mobile: null,
     email: null,
+  });
+  const [loadingOtp, setLoadingOtp] = useState({
+    mobile: false,
+    email: false,
   });
 
   // Verification status
@@ -199,6 +205,98 @@ const PharmacyWholesalerRetailerForm = () => {
       }),
     ]).start();
 
+    // Load initial data
+    loadInitialData();
+
+    return () => {
+      // Cleanup function to reset all states
+      setShowOTP({ mobile: false, email: false });
+      setOtpValues({ mobile: ['', '', '', ''], email: ['', '', '', ''] });
+      setOtpTimers({ mobile: 30, email: 30 });
+      setGeneratedOTP({ mobile: null, email: null });
+      setLoading(false);
+      setRegistering(false);
+      setVerificationStatus({ mobile: false, email: false, pan: false, gst: false });
+      setErrors({});
+      setFormData({
+        // License Details
+        license20: '',
+        license20File: null,
+        license20ExpiryDate: null,
+        license20b: '',
+        license20bFile: null,
+        license20bExpiryDate: null,
+        license21: '',
+        license21File: null,
+        license21ExpiryDate: null,
+        license21b: '',
+        license21bFile: null,
+        license21bExpiryDate: null,
+        pharmacyImageFile: null,
+        
+        // General Details
+        pharmacyName: '',
+        shortName: '',
+        address1: '',
+        address2: '',
+        address3: '',
+        address4: '',
+        pincode: '',
+        area: '',
+        areaId: '',
+        city: '',
+        cityId: '',
+        state: '',
+        stateId: '',
+        
+        // Security Details
+        mobileNumber: '',
+        emailAddress: '',
+        panFile: null,
+        panNumber: '',
+        gstFile: null,
+        gstNumber: '',
+        
+        // Mapping
+        hospitalCode: '',
+        hospitalName: '',
+        
+        // Customer group
+        customerGroupId: 1,
+        isIPD: false,
+        isGOVT: false,
+        isBuyer: false,
+        
+        // Stockist Suggestions
+        suggestedDistributors: [],
+      });
+      setDocumentIds({
+        license20: null,
+        license21: null,
+        license20b: null,
+        license21b: null,
+        pharmacyImage: null,
+        pan: null,
+        gst: null,
+      });
+      setLicenseTypes({
+        LICENSE_20: { id: 1, docTypeId: 3, name: '20', code: 'LIC20' },
+        LICENSE_21: { id: 3, docTypeId: 5, name: '21', code: 'LIC21' },
+        LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
+        LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
+      });
+      setStates([]);
+      setCities([]);
+      setAreas([]);
+      setLoadingCities(false);
+      setLoadingAreas(false);
+      setShowStateModal(false);
+      setShowCityModal(false);
+      setShowAreaModal(false);
+    };
+  }, []);
+
+  useEffect(() => {
     // Load initial data
     loadInitialData();
   }, []);
@@ -378,7 +476,7 @@ const PharmacyWholesalerRetailerForm = () => {
       return;
     }
 
-    setLoading(true);
+    setLoadingOtp(prev => ({ ...prev, [field]: true }));
     try {
       const requestData = {
         customerId: 1, // Using default customerId for now
@@ -401,6 +499,11 @@ const PharmacyWholesalerRetailerForm = () => {
             [field]: [...otpArray, ...Array(4 - otpArray.length).fill('')]
           }));
           setGeneratedOTP(prev => ({ ...prev, [field]: response.data.otp }));
+          
+          // Auto-submit OTP after a delay
+          setTimeout(() => {
+            handleOtpVerification(field, response.data.otp.toString());
+          }, 500);
         }
 
         Toast.show({
@@ -443,7 +546,7 @@ const PharmacyWholesalerRetailerForm = () => {
         text2: 'Failed to generate OTP. Please try again.',
       });
     } finally {
-      setLoading(false);
+      setLoadingOtp(prev => ({ ...prev, [field]: false }));
     }
   };
 
@@ -461,15 +564,16 @@ const PharmacyWholesalerRetailerForm = () => {
       
       // Check if OTP is complete
       if (newOtpValues[field].every(v => v)) {
-        handleOtpVerification(field);
+        const otp = newOtpValues[field].join('');
+        handleOtpVerification(field, otp);
       }
     }
   };
 
-  const handleOtpVerification = async (field) => {
-    const otp = otpValues[field].join('');
+  const handleOtpVerification = async (field, otp) => {
+    const otpValue = otp || otpValues[field].join('');
     
-    setLoading(true);
+    setLoadingOtp(prev => ({ ...prev, [field]: true }));
     try {
       const requestData = {
         customerId: 1,
@@ -477,7 +581,7 @@ const PharmacyWholesalerRetailerForm = () => {
           field === 'mobile' ? formData.mobileNumber : formData.emailAddress
       };
 
-      const response = await customerAPI.validateOTP(otp, requestData);
+      const response = await customerAPI.validateOTP(otpValue, requestData);
 
       if (response.success) {
         Toast.show({
@@ -510,7 +614,7 @@ const PharmacyWholesalerRetailerForm = () => {
         text2: 'Failed to validate OTP. Please try again.',
       });
     } finally {
-      setLoading(false);
+      setLoadingOtp(prev => ({ ...prev, [field]: false }));
     }
   };
 
@@ -615,14 +719,7 @@ const PharmacyWholesalerRetailerForm = () => {
   };
 
   const handleCancel = () => {
-    Alert.alert(
-      'Cancel Registration',
-      'Are you sure you want to cancel? All entered data will be lost.',
-      [
-        { text: 'No', style: 'cancel' },
-        { text: 'Yes', onPress: () => navigation.goBack() },
-      ]
-    );
+    setShowCancelModal(true);
   };
 
   const formatDateForAPI = (date) => {
@@ -768,11 +865,12 @@ const PharmacyWholesalerRetailerForm = () => {
         animationType="slide"
         onRequestClose={onClose}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
-          onPress={onClose}
-        >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={{flex: 1}} 
+            activeOpacity={1} 
+            onPress={onClose}
+          />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{title}</Text>
@@ -813,7 +911,7 @@ const PharmacyWholesalerRetailerForm = () => {
               />
             )}
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     );
   };
@@ -829,6 +927,32 @@ const PharmacyWholesalerRetailerForm = () => {
   const handleFileDelete = (field) => {
     setDocumentIds(prev => ({ ...prev, [field]: null }));
     setFormData(prev => ({ ...prev, [`${field}File`]: null }));
+  };
+
+  const handleAddStockist = () => {
+    setFormData(prev => ({
+      ...prev,
+      stockists: [
+        ...prev.stockists,
+        { name: '', code: '', city: '' }
+      ]
+    }));
+  };
+
+  const handleRemoveStockist = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      stockists: prev.stockists.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleStockistChange = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      stockists: prev.stockists.map((stockist, i) => 
+        i === index ? { ...stockist, [field]: value } : stockist
+      )
+    }));
   };
 
   return (
@@ -1210,9 +1334,9 @@ const PharmacyWholesalerRetailerForm = () => {
                     verificationStatus.mobile && styles.verifiedButton
                   ]}
                   onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
-                  disabled={verificationStatus.mobile || loading}
+                  disabled={verificationStatus.mobile || loadingOtp.mobile}
                 >
-                  {loading && !verificationStatus.mobile ? (
+                  {loadingOtp.mobile && !verificationStatus.mobile ? (
                     <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
                     <Text style={[
@@ -1256,9 +1380,9 @@ const PharmacyWholesalerRetailerForm = () => {
                     verificationStatus.email && styles.verifiedButton
                   ]}
                   onPress={() => !verificationStatus.email && handleVerify('email')}
-                  disabled={verificationStatus.email || loading}
+                  disabled={verificationStatus.email || loadingOtp.email}
                 >
-                  {loading && !verificationStatus.email ? (
+                  {loadingOtp.email && !verificationStatus.email ? (
                     <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
                     <Text style={[
@@ -1286,7 +1410,7 @@ const PharmacyWholesalerRetailerForm = () => {
               />
               
               <CustomInput
-                placeholder="PAN Number (e.g., ABCDE1234F)"
+                placeholder="PAN Number (e.g., ASDSD12345G)"
                 value={formData.panNumber}
                 onChangeText={(text) => {
                   setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }));
@@ -1309,7 +1433,7 @@ const PharmacyWholesalerRetailerForm = () => {
               />
               
               <CustomInput
-                placeholder="GST Number (e.g., 27ABCDE1234F1Z5)"
+                placeholder="GST Number (e.g., 27ASDSD1234F1Z5)"
                 value={formData.gstNumber}
                 onChangeText={(text) => {
                   setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
@@ -1400,7 +1524,7 @@ const PharmacyWholesalerRetailerForm = () => {
             </View>
 
             {/* Stockist Suggestions Section */}
-            <View style={styles.section}>
+              <View style={styles.section}>
               <Text style={styles.sectionTitle}>
                 Stockist Suggestions
                 <Text style={styles.optionalText}> (Optional)</Text>
@@ -1410,8 +1534,37 @@ const PharmacyWholesalerRetailerForm = () => {
                 Add suggested stockists for this pharmacy
               </Text>
               
-              <TouchableOpacity style={styles.addMoreButton}>
-                <Text style={styles.addMoreButtonText}>+ Add More Stockist</Text>
+              {formData.stockists.map((stockist, index) => (
+                <View key={index} style={styles.stockistContainer}>
+                  <View style={styles.stockistHeader}>
+                    <Text style={styles.stockistTitle}>Stockist {index + 1}</Text>
+                    <TouchableOpacity onPress={() => handleRemoveStockist(index)}>
+                      <Icon name="delete" size={20} color={colors.error} />
+                    </TouchableOpacity>
+                  </View>
+                  <CustomInput
+                    placeholder="Name of the Stockist"
+                    value={stockist.name}
+                    onChangeText={(text) => handleStockistChange(index, 'name', text)}
+                  />
+                  <CustomInput
+                    placeholder="Distributor Code"
+                    value={stockist.code}
+                    onChangeText={(text) => handleStockistChange(index, 'code', text)}
+                  />
+                  <CustomInput
+                    placeholder="City"
+                    value={stockist.city}
+                    onChangeText={(text) => handleStockistChange(index, 'city', text)}
+                  />
+                </View>
+              ))}
+              
+              <TouchableOpacity 
+                style={styles.addMoreButton}
+                onPress={handleAddStockist}
+              >
+                <Text style={styles.addMoreButtonText}>+ Add New Stockist</Text>
               </TouchableOpacity>
             </View>
 
@@ -1538,6 +1691,40 @@ const PharmacyWholesalerRetailerForm = () => {
       />
 
       <Toast />
+
+      {/* Cancel Confirmation Modal */}
+      <Modal
+        visible={showCancelModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCancelModal(false)}
+      >
+        <View style={styles.cancelModalOverlay}>
+          <View style={styles.cancelModalContent}>
+            <View style={styles.modalIconContainer}>
+              <Text style={styles.modalIcon}>!</Text>
+            </View>
+            <Text style={styles.modalTitle}>Are you sure you want to Cancel the Onboarding?</Text>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={styles.modalYesButton}
+                onPress={() => {
+                  setShowCancelModal(false);
+                  navigation.goBack();
+                }}
+              >
+                <Text style={styles.modalYesButtonText}>Yes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalNoButton}
+                onPress={() => setShowCancelModal(false)}
+              >
+                <Text style={styles.modalNoButtonText}>No</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1951,6 +2138,8 @@ const styles = StyleSheet.create({
   modalItemText: {
     fontSize: 16,
     color: '#333',
+    flex: 1,
+    textAlign: 'left',
   },
   modalItemTextSelected: {
     color: colors.primary,
@@ -1958,6 +2147,64 @@ const styles = StyleSheet.create({
   },
   modalLoader: {
     paddingVertical: 50,
+  },
+  cancelModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  cancelModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 32,
+    alignItems: 'center',
+  },
+  modalIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FFE5E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalIcon: {
+    fontSize: 32,
+    color: '#FF6B6B',
+    fontWeight: 'bold',
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalYesButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    alignItems: 'center',
+  },
+  modalYesButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  modalNoButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    backgroundColor: '#FF6B6B',
+    alignItems: 'center',
+  },
+  modalNoButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
   },
 });
 

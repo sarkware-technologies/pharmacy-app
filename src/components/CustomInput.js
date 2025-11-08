@@ -88,13 +88,19 @@ const CustomInput = ({
     const placeholderText = mandatory ? `${placeholder}*` : placeholder;
 
     // Animated styles for floating label (with asterisk if mandatory)
-    const labelStyle = {
+    const labelContainerStyle = {
         position: 'absolute',
         left: icon ? 44 : 16,
         top: floatingLabelAnim.interpolate({
             inputRange: [0, 1],
             outputRange: [18, -10],
         }),
+        backgroundColor: colors.white,
+        paddingHorizontal: 4,
+        zIndex: 1,
+    };
+
+    const labelTextStyle = {
         fontSize: floatingLabelAnim.interpolate({
             inputRange: [0, 1],
             outputRange: [16, 12],
@@ -103,9 +109,6 @@ const CustomInput = ({
             inputRange: [0, 1],
             outputRange: [colors.gray, colors.primary],
         }),
-        backgroundColor: colors.white,
-        paddingHorizontal: 4,
-        zIndex: 1,
     };
 
     return (
@@ -123,11 +126,11 @@ const CustomInput = ({
                 isFocused && styles.inputContainerFocused,
                 error && styles.inputContainerError,
             ]}>
-                <Animated.View style={labelStyle} pointerEvents="none">
-                    <Text>
+                <Animated.View style={labelContainerStyle} pointerEvents="none">
+                    <Animated.Text style={labelTextStyle}>
                         {placeholder}
                         {mandatory && <Text style={styles.asterisk}>*</Text>}
-                    </Text>
+                    </Animated.Text>
                 </Animated.View>
                 
                 {icon && (<View style={styles.icon}>{icon}</View>)}
