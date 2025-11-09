@@ -225,7 +225,7 @@ const SidebarDrawer = ({ navigation }) => {
             });
             break;
 
-          // Division routes - navigate to DivisionStack
+          // Chargeback routes - navigate to ChargebackStack
           case 'Chargeback':
             // First navigate to DynamicTab with params
             navigation.navigate('MainTabs', {
@@ -233,13 +233,21 @@ const SidebarDrawer = ({ navigation }) => {
               params: { screen: 'ChargebackListing' }
             });
             break;
+
+          // Chargeback routes - navigate to ChargebackStack
+          case 'NetRate':
+            // First navigate to DynamicTab with params
+            navigation.navigate('MainTabs', {
+              screen: 'DynamicTab',
+              params: { screen: 'NetRateListing' }
+            });
+            break;
             
           // Other routes without bottom tabs
           case 'RegistrationType':
           case 'Sales':
           case 'Reports':
-          case 'Settings':          
-          case 'NetRate':
+          case 'Settings':                    
           case 'Field':
           case 'Invoices':
             navigation.navigate(item.route);

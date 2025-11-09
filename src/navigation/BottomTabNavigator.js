@@ -34,6 +34,8 @@ import DivisionList from '../screens/authorized/division/DivisionList';
 
 import ChargebackListing from '../screens/authorized/chargeback/ChargebackListing';
 
+import NetRateListing from '../screens/authorized/netrate/NetRateListing';
+
 // Placeholder screens for other tabs
 const HomeScreen = () => (
   <View style={styles.placeholder}>
@@ -128,7 +130,9 @@ const DynamicScreen = ({ route }) => {
       return <DivisionList />;
     case 'ChargebackListing':
       return <ChargebackListing />;
-    default:
+    case 'NetRateListing':
+      return <NetRateListing />
+    default:    
       return <HomeScreen />;
   }
 };
