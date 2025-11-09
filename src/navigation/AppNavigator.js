@@ -48,6 +48,10 @@ import ProductDetail from '../screens/authorized/product/ProductDetail';
 import ProductSearch from '../screens/authorized/product/ProductSearch';
 import ProductBulkEdit from '../screens/authorized/product/ProductBulkEdit';
 
+// Chargeback Screens
+import ChargebackListing from '../screens/authorized/chargeback/ChargebackListing';
+import ClaimDetails from '../screens/authorized/chargeback/ClaimDetails';
+
 // Main Navigation
 import BottomTabNavigator from './BottomTabNavigator';
 
@@ -192,6 +196,36 @@ const DivisionStack = () => (
   </Stack.Navigator>
 );
 
+// Chargeback Stack - WITHOUT bottom tabs (for sub-screens)
+const ChargebackStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+      cardStyleInterpolator: ({ current, layouts }) => {
+        return {
+          cardStyle: {
+            transform: [
+              {
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              },
+            ],
+            opacity: current.progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 1],
+            }),
+          },
+        };
+      },
+    }}
+  >
+    <Stack.Screen name="ChargebackListing" component={ChargebackListing} />
+    <Stack.Screen name="ClaimDetails" component={ClaimDetails} />
+  </Stack.Navigator>
+);
+
 // Main Stack (includes drawer and all navigation flows)
 const MainStack = () => (
   <Stack.Navigator
@@ -230,21 +264,19 @@ const MainStack = () => (
     <Stack.Screen name="PharmacyWholesalerRetailerForm" component={PharmacyWholesalerRetailerForm} />
     <Stack.Screen name="RegistrationSuccess" component={RegistrationSuccess} />
     <Stack.Screen name="HospitalSelector" component={HospitalSelector} />
-    <Stack.Screen name="PharmacySelector" component={PharmacySelector} />
-    
+    <Stack.Screen name="PharmacySelector" component={PharmacySelector} />    
     {/* These are for the tab stacks - handled in BottomTabNavigator */}
     <Stack.Screen name="RateContractList" component={RateContractList} />
     <Stack.Screen name="CreateRateContract" component={CreateRateContract} />
-    <Stack.Screen name="RateContractDetail" component={RateContractDetail} />
-    
+    <Stack.Screen name="RateContractDetail" component={RateContractDetail} />    
     {/* Product Stack - opens without bottom tabs */}
-    <Stack.Screen name="ProductStack" component={ProductStack} />
-    
+    <Stack.Screen name="ProductStack" component={ProductStack} />    
     {/* Distributor Stack - opens without bottom tabs */}
-    <Stack.Screen name="DistributorStack" component={DistributorStack} />
-    
+    <Stack.Screen name="DistributorStack" component={DistributorStack} />    
     {/* Division Stack - opens without bottom tabs */}
     <Stack.Screen name="DivisionStack" component={DivisionStack} />
+    {/* Chargeback Stack - opens without bottom tabs */}
+    <Stack.Screen name="ChargebackStack" component={ChargebackStack} />
   </Stack.Navigator>
 );
 

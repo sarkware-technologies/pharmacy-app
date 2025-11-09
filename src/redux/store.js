@@ -5,6 +5,7 @@ import orderReducer from './slices/orderSlice';
 import distributorReducer from './slices/distributorSlice';
 import divisionReducer from './slices/divisionSlice';
 import productReducer from './slices/productSlice';
+import chargebackReducer from './slices/chargebackSlice';
 
 export const store = configureStore({
   reducer: {
@@ -13,7 +14,8 @@ export const store = configureStore({
     orders: orderReducer,
     distributor: distributorReducer,
     division: divisionReducer,
-    product: productReducer
+    product: productReducer,
+    chargeback: chargebackReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

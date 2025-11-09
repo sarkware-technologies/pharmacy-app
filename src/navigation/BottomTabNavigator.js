@@ -32,6 +32,8 @@ import DistributorList from '../screens/authorized/distributor/DistributorList';
 // Import Division screens - only DivisionList for the tab
 import DivisionList from '../screens/authorized/division/DivisionList';
 
+import ChargebackListing from '../screens/authorized/chargeback/ChargebackListing';
+
 // Placeholder screens for other tabs
 const HomeScreen = () => (
   <View style={styles.placeholder}>
@@ -124,6 +126,8 @@ const DynamicScreen = ({ route }) => {
       return <DistributorList />;
     case 'DivisionList':
       return <DivisionList />;
+    case 'ChargebackListing':
+      return <ChargebackListing />;
     default:
       return <HomeScreen />;
   }

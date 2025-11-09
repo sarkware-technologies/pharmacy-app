@@ -224,13 +224,21 @@ const SidebarDrawer = ({ navigation }) => {
               params: { screen: 'DivisionList' }
             });
             break;
+
+          // Division routes - navigate to DivisionStack
+          case 'Chargeback':
+            // First navigate to DynamicTab with params
+            navigation.navigate('MainTabs', {
+              screen: 'DynamicTab',
+              params: { screen: 'ChargebackListing' }
+            });
+            break;
             
           // Other routes without bottom tabs
           case 'RegistrationType':
           case 'Sales':
           case 'Reports':
-          case 'Settings':
-          case 'Chargeback':
+          case 'Settings':          
           case 'NetRate':
           case 'Field':
           case 'Invoices':
