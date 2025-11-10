@@ -1,1 +1,0 @@
-/home/sarkware/Workspace/SunPharma/frontend/pharmacy-app/android/app/build/intermediates/cxx/Debug/4f124b3x/obj/armeabi-v7a

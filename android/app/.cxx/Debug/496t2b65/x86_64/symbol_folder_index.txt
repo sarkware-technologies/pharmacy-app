@@ -1,1 +1,0 @@
-/Users/saravanakumar/Workspace/pharmacy-app/android/app/build/intermediates/cxx/Debug/496t2b65/obj/x86_64
