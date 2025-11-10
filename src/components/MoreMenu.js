@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 1000,
     height: '100%',
-    bottom: 70,
+    bottom: 73,
   },
   menuContainer: {
     backgroundColor: '#fff',
@@ -120,6 +120,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
+    paddingTop:35
   },
   item: {
     width: '25%',

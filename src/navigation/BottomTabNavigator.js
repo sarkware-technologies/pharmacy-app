@@ -194,6 +194,9 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                 style={styles.tabItem}
                 activeOpacity={0.7}
               >
+                {isFocused && (
+                  <View style={{ borderBottomColor: "#F7941E", borderBottomWidth: 4, width: "100%", position: "absolute", top: 0, borderBottomLeftRadius: 10, borderBottomRightRadius: 10 }}></View>
+                )}
                 {iconName}
                 <Text
                   style={[
@@ -303,7 +306,6 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    paddingTop: 8,
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -314,7 +316,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: 13,
     paddingVertical: 4,
+    position: "relative",
   },
   tabLabel: {
     fontSize: 11,
