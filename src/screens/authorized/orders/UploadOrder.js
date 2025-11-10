@@ -145,7 +145,13 @@ const UploadOrder = () => {
       // Alert.alert('Error', 'Please upload order file and select distributor');
       return;
     }
-    navigation.replace('ProductMapping', {
+    // navigation.replace('ProductMapping', {
+    //   originalFile,
+    //   templateFile,
+    //   distributor: selectedDistributor,
+    //   customer: selectedCustomer
+    // });
+    navigation.push('ProductMapping', {
       originalFile,
       templateFile,
       distributor: selectedDistributor,

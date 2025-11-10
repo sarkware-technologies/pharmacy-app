@@ -62,8 +62,8 @@ const SearchAddProducts = () => {
       if (cartDetails.length > 0) {
         dispatch(setCartDetails(cartDetails));
 
-        const productCount = cartDetails[0]?.products?.length ?? 0;
-        setCartCount(productCount);
+        const count = cartDetails.reduce((acc, item) => acc + (item.products?.length ?? 0), 0);
+        setCartCount(count);
       } else {
         dispatch(setCartDetails([]));
         setCartCount(0);

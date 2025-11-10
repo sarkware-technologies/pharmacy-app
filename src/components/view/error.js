@@ -25,7 +25,7 @@ export const ErrorMessage = (error) => {
     Toast.show({
       type: 'error',
       text1: 'Error',
-      text2: 'Failed to load orders. Please try again.',
+      text2: error?.message,
     });
   }
 };

@@ -17,12 +17,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { addToCart, clearCart } from '../../../redux/slices/orderSlice';
 import Svg, { Path } from 'react-native-svg';
-import { UploadProductMapping, UploadTemplateOrder } from '../../../api/orders';
+import { AddtoCart, UploadProductMapping, UploadTemplateOrder } from '../../../api/orders';
 import UnMapped from "../../../components/icons/Unmapping"
 import SearchProductModal from "./SearchProductModal"
 import CancelOrderModal from "./CancelOrderModal"
 import Modals from './uploadConfirmationModals';
 import { ErrorMessage } from '../../../components/view/error';
+import Toast from 'react-native-toast-message';
 
 
 const { UnmappedProductsModal } = Modals;
@@ -83,14 +84,23 @@ const ProductMapping = () => {
 
       }
       else if (!originalFile && templateFile) {
-        const fileUpload = await UploadTemplateOrder(templateFile, parseInt(selectedCustomer?.customerId), '101', "UPLOAD");
+        console.log(templateFile, parseInt(selectedCustomer?.customerId), selectedDistributor?.id, "UPLOAD", 999999)
+        const fileUpload = await UploadTemplateOrder(templateFile, parseInt(selectedCustomer?.customerId), selectedDistributor?.id, "UPLOAD");
+        console.log(fileUpload, "Upload file response")
         if (fileUpload?.poFileProducts) {
-          setProducts(fileUpload?.poFileProducts);
+          const updatedProducts = fileUpload.poFileProducts.map(element => ({
+            ...element,
+            isMapped: !!element.mappingData?.[0]?.mappedProductId ? 1 : 0,
+            ...element.mappingData?.[0]
+          }));
+
+          setProducts(updatedProducts);
         }
 
       }
     }
     catch (e) {
+      console.log(e)
       ErrorMessage(e);
     }
     finally {
@@ -126,12 +136,59 @@ const ProductMapping = () => {
 
 
   const handleProceedToCart = () => {
-    setShowConfirmModal(true)
+    const nonmapped = getFilteredProducts("Non-Mapped");
+
+    if (nonmapped && nonmapped.length > 0) {
+      setShowConfirmModal(true)
+    }
+    else {
+      ProceedToCart();
+    }
   };
 
-  const handleConfirmOrder = (comment) => {
+  const ProceedToCart = async () => {
+    try {
+      const nonmapped = getFilteredProducts("Mapped");
+      const mappedProduct = nonmapped.map((product) => {
+        return {
+          cfaId: product?.cfaId ?? 0,
+          customerId: selectedCustomer ? parseInt(selectedCustomer?.customerId) : undefined,
+          distributorId: selectedCustomer ? selectedDistributor?.id : undefined,
+          divisionId: product?.divisionId ?? 0,
+          modifiedBy: product?.modifiedBy,
+          createdBy: product?.createdBy,
+          principalId: 1,
+          productId: product?.productId,
+          qty: product?.uploadedQty ? parseInt(product?.uploadedQty) : 1
+        }
+      })
 
-  };
+      console.log(mappedProduct, 777777)
+
+      const addtocart = await AddtoCart(mappedProduct);
+      console.log(addtocart, 8888)
+      if (addtocart && addtocart.message != "Invalid product code") {
+        setShowExitModal(true);
+        setTimeout(() => {
+          navigation.removeListener('beforeRemove');
+          navigation.replace('Cart');
+        }, 100);
+      }
+      else {
+        setShowConfirmModal(false);
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to add',
+          text2: addtocart.message,
+        });
+      }
+    }
+    catch (e) {
+      setShowConfirmModal(false);
+      // ErrorMessage(e);
+    }
+
+  }
 
 
   const getFilteredProducts = (tab) => {
@@ -166,7 +223,6 @@ const ProductMapping = () => {
           uploadedProductName: mappingProduct.uploadedProductName,
           packing: product.packing,
         })
-        console.log(response, 87987987879)
         const list = products.map((e) => {
           const findItem = e.id === mappingProduct?.id;
           return findItem
@@ -402,12 +458,8 @@ const ProductMapping = () => {
           setShowConfirmModal(false);
           console.log('Map Products clicked');
         }}
-        onCheckout={() => {
-          setShowExitModal(true);
-          setTimeout(() => {
-            navigation.removeListener('beforeRemove');
-            navigation.replace('Cart');
-          }, 100);
+        onCheckout={async () => {
+          ProceedToCart();
         }}
       />
       <CancelOrderModal

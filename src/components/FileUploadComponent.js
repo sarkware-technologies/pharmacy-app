@@ -21,7 +21,7 @@ import { colors } from '../styles/colors';
 import Upload from './icons/Upload';
 import CloseCircle from './icons/CloseCircle';
 import EyeOpen from './icons/EyeOpen';
-import apiClient from '../api/apiClient';
+import apiClient, { BASE_URL } from '../api/apiClient';
 
 const { width } = Dimensions.get('window');
 
@@ -45,7 +45,7 @@ const FileUploadComponent = ({
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [loadingDoc, setLoadingDoc] = useState(false);
   const [signedUrl, setSignedUrl] = useState(null);
-  
+
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -81,7 +81,7 @@ const FileUploadComponent = ({
 
     // For images, use image picker
     const isImageOnly = accept.every(ext => ['jpg', 'jpeg', 'png', 'gif'].includes(ext));
-    
+
     if (isImageOnly) {
       // Show options for camera or gallery
       Alert.alert(
@@ -120,39 +120,40 @@ const FileUploadComponent = ({
     launchCamera(options, handleImageResponse);
   };
 
-  const handleDocumentPicker = async () => {  console.log("handleDocumentPicker is called");
+  const handleDocumentPicker = async () => {
+    console.log("handleDocumentPicker is called");
     try {
-    const [file] = await pick({ type: [ types.allFiles ] });  console.log(file);
+      const [file] = await pick({ type: [types.allFiles] }); console.log(file);
 
-    // Validate size
-    if (file.size > maxSize) {
-      const maxSizeMB = maxSize / (1024 * 1024);
-      setError(`File size must be less than ${maxSizeMB}MB`);
-      return;
-    }
+      // Validate size
+      if (file.size > maxSize) {
+        const maxSizeMB = maxSize / (1024 * 1024);
+        setError(`File size must be less than ${maxSizeMB}MB`);
+        return;
+      }
 
-    // Validate extension
-    const fileName = file.name;
-    const fileExtension = fileName.split('.').pop().toLowerCase();
-    if (!accept.includes(fileExtension)) {
-      setError(`Only ${accept.join(', ')} files are allowed`);
-      return;
-    }
+      // Validate extension
+      const fileName = file.name;
+      const fileExtension = fileName.split('.').pop().toLowerCase();
+      if (!accept.includes(fileExtension)) {
+        setError(`Only ${accept.join(', ')} files are allowed`);
+        return;
+      }
 
-    setError('');
-    uploadFile({
-      uri: file.uri,
-      type: file.type || 'application/pdf',
-      name: fileName,
-      fileSize: file.size,
-    });
-  } catch (err) {
-    if (!DocumentPicker.isCancel(err)) {
-      console.error('DocumentPicker Error:', err);
-      setError('Failed to pick document');
+      setError('');
+      uploadFile({
+        uri: file.uri,
+        type: file.type || 'application/pdf',
+        name: fileName,
+        fileSize: file.size,
+      });
+    } catch (err) {
+      if (!DocumentPicker.isCancel(err)) {
+        console.error('DocumentPicker Error:', err);
+        setError('Failed to pick document');
+      }
     }
-  }
-};
+  };
 
 
   const handleGallery = () => {
@@ -175,7 +176,7 @@ const FileUploadComponent = ({
 
     if (response.assets && response.assets[0]) {
       const asset = response.assets[0];
-      
+
       // Validate file size
       if (asset.fileSize && asset.fileSize > maxSize) {
         const maxSizeMB = maxSize / (1024 * 1024);
@@ -186,7 +187,7 @@ const FileUploadComponent = ({
       // Get file extension from URI or type
       const fileName = asset.fileName || `image_${Date.now()}.jpg`;
       const fileExtension = fileName.split('.').pop().toLowerCase();
-      
+
       // Validate file extension
       if (!accept.includes(fileExtension)) {
         setError(`Only ${accept.join(', ')} files are allowed`);
@@ -203,10 +204,11 @@ const FileUploadComponent = ({
     }
   };
 
-  const uploadFile = async (selectedFile) => {  console.log("uploadFile is called");  console.log(selectedFile);
+  const uploadFile = async (selectedFile) => {
+    console.log("uploadFile is called"); console.log(selectedFile);
 
     setLoading(true);
-    
+
     try {
       // Create FormData
       const formData = new FormData();
@@ -228,8 +230,8 @@ const FileUploadComponent = ({
 
       // Make the API call with proper headers for multipart/form-data
       const token = await apiClient.getToken();
-      
-      const response = await fetch('https://pharmsupply-dev-api.pharmconnect.com/user-management/customer/upload-docs?isStaging=true', {
+
+      const response = await fetch(`${BASE_URL}/user-management/customer/upload-docs?isStaging=true`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -250,14 +252,14 @@ const FileUploadComponent = ({
           s3Path: uploadedFile.s3Path,
           id: uploadedFile.id,
         };
-        
+
         setFile(fileData);
-        
+
         // Callback to parent
         if (onFileUpload) {
           onFileUpload(fileData);
         }
-        
+
         // Success animation
         Animated.sequence([
           Animated.timing(fadeAnim, {
@@ -271,7 +273,7 @@ const FileUploadComponent = ({
             useNativeDriver: true,
           }),
         ]).start();
-        
+
       } else {
         throw new Error(responseData.message || 'Failed to upload file');
       }
@@ -287,10 +289,10 @@ const FileUploadComponent = ({
 
   const handlePreview = async () => {
     if (!file || !file.s3Path || loading) return;
-    
+
     setShowDocumentModal(true);
     setLoadingDoc(true);
-    
+
     try {
       // Get signed URL for preview
       const response = await apiClient.get(
@@ -328,12 +330,12 @@ const FileUploadComponent = ({
             // Simple state reset without fade animation
             setFile(null);
             setError('');
-            
+
             // Callback to parent
             if (onFileDelete) {
               onFileDelete();
             }
-            
+
             // Optional: Add a subtle animation for the transition
             Animated.sequence([
               Animated.timing(scaleAnim, {
@@ -378,15 +380,15 @@ const FileUploadComponent = ({
                 <CloseCircle />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.documentImageContainer}>
               {loadingDoc ? (
                 <ActivityIndicator size="large" color={colors.primary} />
-              ) : signedUrl && (file?.fileName?.toLowerCase().endsWith('.jpg') || 
-                                file?.fileName?.toLowerCase().endsWith('.jpeg') || 
-                                file?.fileName?.toLowerCase().endsWith('.png')) ? (
-                <Image 
-                  source={{ uri: signedUrl }} 
+              ) : signedUrl && (file?.fileName?.toLowerCase().endsWith('.jpg') ||
+                file?.fileName?.toLowerCase().endsWith('.jpeg') ||
+                file?.fileName?.toLowerCase().endsWith('.png')) ? (
+                <Image
+                  source={{ uri: signedUrl }}
                   style={{ width: '100%', height: 300 }}
                   resizeMode="contain"
                 />
@@ -394,7 +396,7 @@ const FileUploadComponent = ({
                 <View style={styles.dummyDocument}>
                   <Icon name="document-text" size={100} color="#999" />
                   <Text style={styles.documentName}>{file?.fileName}</Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.downloadButton}
                     onPress={() => {
                       // Open the signed URL in browser for download
@@ -475,9 +477,9 @@ const FileUploadComponent = ({
           </>
         )}
       </Animated.View>
-      
+
       {error ? (
-        <Animated.Text 
+        <Animated.Text
           style={[
             styles.errorText,
             {
@@ -488,7 +490,7 @@ const FileUploadComponent = ({
           {error}
         </Animated.Text>
       ) : null}
-      
+
       {/* Document Preview Modal */}
       <DocumentModal />
     </View>
@@ -566,7 +568,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4,
   },
-  
+
   // Modal Styles
   modalOverlay: {
     flex: 1,

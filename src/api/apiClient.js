@@ -1,4 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ErrorMessage } from '../components/view/error';
+import { DevSettings } from 'react-native';
 
 export const BASE_URL = 'https://pharmsupply-dev-api.pharmconnect.com';
 
@@ -38,8 +40,20 @@ class ApiClient {
         else await AsyncStorage.removeItem('authToken');
     }
 
-    clearCachedToken() {
+    async clearCachedToken() {
         this.token = null;
+        await AsyncStorage.removeItem('authToken');
+
+        Toast.show({
+            type: 'error',
+            text1: 'Session Expired',
+            text2: 'Please log in again.',
+        });
+
+        setTimeout(() => {
+            DevSettings.reload();
+        }, 1500);
+
     }
 
     async request(endpoint, options = {}) {
@@ -120,6 +134,7 @@ class ApiClient {
                         'API request failed',
                 };
 
+
                 // console.error('%c❌ API ERROR', 'color:#f44336; font-weight:bold;', errorInfo);
 
                 if (response.status === 401) {
@@ -131,6 +146,9 @@ class ApiClient {
                 error.url = url;
                 error.endpoint = endpoint;
                 error.response = data;
+                if (![401, 200, 201, 400].includes(error.status)) {
+                    ErrorMessage(error);
+                }
                 throw error;
             }
 
