@@ -75,7 +75,7 @@ const menuConfig = [
       { id: "netrate", label: "Net Rate", icon: "netrate", route: "NetRate" },
       { id: "divisions", label: "Divisions", icon: "divisions", route: "DivisionList" },
       { id: "field", label: "Field", icon: "field", route: "Field" },
-      { id: "invoices", label: "Invoices", icon: "invoices", route: "Invoices" }      
+      { id: "invoices", label: "Invoices", icon: "invoices", route: "Invoices" }
     ],
   },
   {
@@ -113,7 +113,7 @@ const SidebarDrawer = ({ navigation }) => {
   const slideAnim = useRef(new Animated.Value(-width * 0.75)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  
+
   const [expandedMenus, setExpandedMenus] = useState({});
   const [activeItem, setActiveItem] = useState('home'); // Default active item should be home
 
@@ -140,21 +140,22 @@ const SidebarDrawer = ({ navigation }) => {
   }, []);
 
   const handleMenuPress = (item, isSubmenu = false) => {
-  const bounceAnim = new Animated.Value(1);
-  
-  Animated.sequence([
-    Animated.timing(bounceAnim, {
-      toValue: 0.95,
-      duration: 100,
-      useNativeDriver: true,
-    }),
-    Animated.spring(bounceAnim, {
-      toValue: 1,
-      friction: 3,
-      tension: 40,
-      useNativeDriver: true,
-    }),
-  ]).start(() => {
+    console.log(8927398243)
+    // const bounceAnim = new Animated.Value(1);
+
+    // Animated.sequence([
+    //   Animated.timing(bounceAnim, {
+    //     toValue: 0.95,
+    //     duration: 100,
+    //     useNativeDriver: true,
+    //   }),
+    //   Animated.spring(bounceAnim, {
+    //     toValue: 1,
+    //     friction: 3,
+    //     tension: 40,
+    //     useNativeDriver: true,
+    //   }),
+    // ]).start(() => {
     if (item.isLogout) {
       // Handle logout
       dispatch(logout());
@@ -176,12 +177,14 @@ const SidebarDrawer = ({ navigation }) => {
         // If it's a top-level item, close all submenus
         setExpandedMenus({});
       }
-      
+
       // Close drawer first
       navigation.closeDrawer();
-      
+
       // Navigate after a small delay to ensure drawer closes smoothly
       setTimeout(() => {
+        console.log(8888888)
+
         // Check the route and navigate accordingly
         switch (item.route) {
           // Tab routes - navigate to the tab
@@ -197,7 +200,7 @@ const SidebarDrawer = ({ navigation }) => {
           case 'Pricing':
             navigation.navigate('Pricing');
             break;
-            
+
           // Product routes - navigate to ProductStack
           case 'ProductList':
             // First navigate to DynamicTab with params
@@ -206,7 +209,7 @@ const SidebarDrawer = ({ navigation }) => {
               params: { screen: 'ProductList' }
             });
             break;
-            
+
           // Distributor routes - navigate to DistributorStack  
           case 'DistributorList':
             // First navigate to DynamicTab with params
@@ -215,7 +218,7 @@ const SidebarDrawer = ({ navigation }) => {
               params: { screen: 'DistributorList' }
             });
             break;
-            
+
           // Division routes - navigate to DivisionStack
           case 'DivisionList':
             // First navigate to DynamicTab with params
@@ -242,25 +245,25 @@ const SidebarDrawer = ({ navigation }) => {
               params: { screen: 'NetRateListing' }
             });
             break;
-            
+
           // Other routes without bottom tabs
           case 'RegistrationType':
           case 'Sales':
           case 'Reports':
-          case 'Settings':                    
+          case 'Settings':
           case 'Field':
           case 'Invoices':
             navigation.navigate(item.route);
             break;
-            
+
           default:
             navigation.navigate(item.route);
             break;
         }
       }, 300);
     }
-  });
-};
+    // });
+  };
 
   const renderSubmenu = (submenuItems, parentId) => {
     const isExpanded = expandedMenus[parentId];
@@ -321,11 +324,11 @@ const SidebarDrawer = ({ navigation }) => {
     const itemAnim = useRef(new Animated.Value(0)).current;
     const hasSubmenu = item.secondary && item.secondary.length > 0;
     const isExpanded = expandedMenus[item.id];
-    
+
     // Determine if this item or any of its children are active
     let isActive = false;
     let isParentOfActive = false;
-    
+
     if (hasSubmenu) {
       // For parent items, check if any child is active
       isParentOfActive = item.secondary.some(sub => sub.id === activeItem);
@@ -333,7 +336,7 @@ const SidebarDrawer = ({ navigation }) => {
       // For leaf items, check if this item is active
       isActive = activeItem === item.id;
     }
-    
+
     useEffect(() => {
       Animated.timing(itemAnim, {
         toValue: 1,
@@ -414,7 +417,7 @@ const SidebarDrawer = ({ navigation }) => {
             </Animated.View>
           )}
         </TouchableOpacity>
-        
+
         {hasSubmenu && renderSubmenu(item.secondary, item.id)}
       </Animated.View>
     );
@@ -435,17 +438,17 @@ const SidebarDrawer = ({ navigation }) => {
         ]}
       >
         <StatusBar backgroundColor="#F5E6D3" barStyle="dark-content" />
-        
+
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.closeButton}
             onPress={() => navigation.closeDrawer()}
           >
             <CloseCircle color='#fff' />
           </TouchableOpacity>
-          
-          <Animated.View 
+
+          <Animated.View
             style={[
               styles.logoContainer,
               {
@@ -464,7 +467,7 @@ const SidebarDrawer = ({ navigation }) => {
               <SunLogo width={36} />
             </View>
           </Animated.View>
-          
+
           <Text style={styles.companyName}>Mahalxmi Distributors</Text>
           <View style={styles.phoneContainer}>
             <Phone color='#fff' />
@@ -473,7 +476,7 @@ const SidebarDrawer = ({ navigation }) => {
         </View>
 
         {/* Menu Items */}
-        <ScrollView 
+        <ScrollView
           style={styles.menuContainer}
           showsVerticalScrollIndicator={false}
         >
