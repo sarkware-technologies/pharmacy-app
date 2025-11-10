@@ -80,6 +80,7 @@ const Cart = () => {
       if (response?.success) {
         setPlacedOrders(cartItem.length)
         setShowConfirm(true);
+        getCartdetails();
 
       }
     }
