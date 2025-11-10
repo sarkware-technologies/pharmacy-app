@@ -10,12 +10,13 @@ import {
   Modal,
   StatusBar,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
-import { getOrders } from '../../../api/orders';
+import { getCartDetails, getOrders } from '../../../api/orders';
 import Menu from '../../../components/icons/Menu';
 import AddrLine from '../../../components/icons/AddrLine';
 import Filter from '../../../components/icons/Filter';
@@ -23,9 +24,15 @@ import Calendar from '../../../components/icons/Calendar';
 import FilterModal from '../../../components/FilterModal';
 import SelectDistributor from './SelectDistributor';
 import CustomerSelectionModal from "./CustomerSelector"
+import { setCartDetails } from '../../../redux/slices/orderSlice';
+import { useDispatch } from 'react-redux';
+import Downarrow from '../../../components/icons/downArrow';
+import Toast from 'react-native-toast-message';
+import ErrorMessage from "../../../components/view/error"
 
 const OrderList = () => {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState([]);
@@ -37,12 +44,12 @@ const OrderList = () => {
   const [showDistributorModal, setShowDistributorModal] = useState(false);
 
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [selectedType, setSelectedType] = useState("");
 
   const [selectedDistributor, setSelectedDistributor] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-
-
+  const [cartCount, setCartCount] = useState(0);
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -55,7 +62,31 @@ const OrderList = () => {
     setPage(1);
     setHasMore(true);
     loadOrders(false, 1);
+    getCartdetails();
   }, [activeTab, searchText]);
+
+  const getCartdetails = async () => {
+    try {
+      const response = await getCartDetails();
+      console.log(response);
+
+      const cartDetails = response?.cartDetails ?? [];
+
+      if (cartDetails.length > 0) {
+        dispatch(setCartDetails(cartDetails));
+
+        const productCount = cartDetails[0]?.products?.length ?? 0;
+        setCartCount(productCount);
+      } else {
+        dispatch(setCartDetails([]));
+        setCartCount(0);
+      }
+    } catch (error) {
+      console.error("Error fetching cart details:", error);
+      setCartCount(0);
+      ErrorMessage()
+    }
+  };
 
 
   // ✅ Main API function
@@ -73,13 +104,32 @@ const OrderList = () => {
         setHasMore(false);
       }
     } catch (error) {
-      if (error.message === 'No data found with linked customer Ids') {
-        if (pageNo == 1) {
-          setOrders([]);
-        }
+      const statusCode = error?.response?.status;
+      if ([500, 502, 504].includes(statusCode)) {
+        setOrders([])
+        setLoading(false);
+        setHasMore(false);
+        Toast.show({
+          type: 'error',
+          text1: 'Server Error',
+          text2: `Server temporarily unavailable (Error ${statusCode}). Please try again later.`,
+        });
+      }
+      // ✅ Handle known empty data case
+      else if (error.message === 'No data found with linked customer Ids') {
+        if (pageNo === 1) setOrders([]);
         setHasMore(false);
       }
-      console.log('Error fetching orders:', error);
+      else {
+        setOrders([])
+        setHasMore(false);
+        setLoading(false);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to load orders. Please try again.',
+        });
+      }
     } finally {
       if (isPaginating) setLoadingMore(false);
       else setLoading(false);
@@ -114,22 +164,29 @@ const OrderList = () => {
   const handleCreateOrder = (type) => {
     setSelectedDistributor(null);
     setSelectedCustomer(null);
-
+    setSelectedType(type);
     setShowCreateOrderModal(false);
     if (type === 'manual') {
-      // navigation.navigate('SelectDistributor');
-      // setShowDistributorModal(true); // open modal here
       setShowCustomerModal(true);
 
     } else {
-      navigation.navigate('UploadOrder');
+      setShowCustomerModal(true);
     }
   };
 
   const handleDistributorSelect = (distributor) => {
     setShowDistributorModal(false);
     setSelectedDistributor(distributor);
-    navigation.navigate('SearchAddProducts', { distributor: distributor, customer: selectedCustomer });
+    if (selectedType === "manual") {
+      navigation.navigate('SearchAddProducts', { distributor: distributor, customer: selectedCustomer });
+    }
+    else {
+      navigation.navigate('UploadOrder', { distributor: distributor, customer: selectedCustomer });
+      //   navigation.getParent()?.navigate('OrdersStack', {
+      //     screen: 'UploadOrder',
+      //     params: { distributor: distributor, customer: selectedCustomer },
+      //   });
+    }
   };
 
   const handleCustomerSelect = (customer) => {
@@ -258,9 +315,9 @@ const OrderList = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+
       <View style={{ backgroundColor: '#F6F6F6' }}>
         <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.openDrawer()}>
@@ -274,9 +331,16 @@ const OrderList = () => {
             >
               <Text style={styles.createOrderText}>CREATE ORDER</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cartButton}>
+            <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate('Cart')}>
               <Icon name="shopping-cart" size={18} color="#fff" />
-              <Icon name="arrow-drop-down" size={20} color="#fff" />
+              {cartCount < 0 && (
+                <Downarrow color='#fff' />
+              )}
+              {cartCount > 0 && (
+                <View style={styles.cartBadge}>
+                  <Text style={styles.cartBadgeText}>{cartCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -371,6 +435,7 @@ const OrderList = () => {
         onClose={() => setShowFilterModal(false)}
         onApply={() => { }}
       />
+      {/* <Toast /> */}
     </SafeAreaView>
   );
 };
@@ -503,7 +568,24 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  cartBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
+  },
 });
 
 export default OrderList;

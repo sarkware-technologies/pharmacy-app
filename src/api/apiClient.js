@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'https://pharmsupply-dev-api.pharmconnect.com';
+export const BASE_URL = 'https://pharmsupply-dev-api.pharmconnect.com';
 
 // Enable or disable logging globally
 const ENABLE_API_LOGS = true;
@@ -54,7 +54,7 @@ class ApiClient {
                 ...options.headers,
             },
 
-            
+
         };
 
         if (token) {
@@ -96,7 +96,7 @@ class ApiClient {
             try {
                 data = text ? JSON.parse(text) : {};
             } catch {
-                data = { message: 'Invalid JSON response', raw: text };
+                data = { message: 'Invalid JSON response', raw: text, status: response?.status };
             }
 
             // --- Log response ---
@@ -160,10 +160,11 @@ class ApiClient {
         return this.request(urlWithParams, { method: 'GET' });
     }
 
-    post(endpoint, data) {
+    post(endpoint, data, isFormData = false) {
         return this.request(endpoint, {
             method: 'POST',
-            body: JSON.stringify(data),
+            body: isFormData ? data : JSON.stringify(data),
+
         });
     }
 
@@ -174,8 +175,8 @@ class ApiClient {
         });
     }
 
-    delete(endpoint) {
-        return this.request(endpoint, { method: 'DELETE' });
+    delete(endpoint, data) {
+        return this.request(endpoint, { method: 'DELETE', body: JSON.stringify(data), });
     }
 }
 

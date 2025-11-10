@@ -9,17 +9,25 @@ import {
   Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { setSelectedDistributor } from '../../../redux/slices/orderSlice';
+import Downarrow from '../../../components/icons/downArrow';
+import Download from '../../../components/icons/Download';
+import CustomCheckbox from '../../../components/view/checkbox';
+import Note from "../../../components/icons/note"
+import Upload from "../../../components/icons/Upload"
+import { pick, types } from '@react-native-documents/picker';
+import CustomerSelectionModal from './CustomerSelector';
+import SelectDistributor from './SelectDistributor';
 
 const UploadOrder = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const { selectedDistributor } = useSelector(state => state.orders || {});
+  const route = useRoute();
 
   const [originalFile, setOriginalFile] = useState(null);
   const [templateFile, setTemplateFile] = useState(null);
@@ -27,56 +35,69 @@ const UploadOrder = () => {
   const [ocrComplete, setOcrComplete] = useState(false);
   const [ocrTime, setOcrTime] = useState('');
 
+
+  const { distributor, customer } = route.params || {};
+  const [selectedDistributor, setSelectedDistributor] = useState(distributor);
+  const [selectedCustomer, setSelectedCustomer] = useState(customer);
+
+
+  const [showDistributorselection, setShowSelectdistributor] = useState(false);
+  const [showCustomerselection, setShowCustomerselection] = useState(false);
+
+
   const handleFileUpload = async (type) => {
-    const options = {
-      title: `Select ${type === 'original' ? 'Order' : 'Template'} File`,
-      mediaType: 'mixed', // This allows selecting from Files app on iOS
-      includeBase64: true,
-      quality: 1,
-      selectionLimit: 1,
-      // For Android, you might need to add custom options
-      // to allow document selection through file managers
-      presentationStyle: 'fullScreen',
-    };
+    try {
+      console.log('handleFileUpload called');
 
-    launchImageLibrary(options, (response) => {
-      if (response.didCancel) {
-        console.log('User cancelled file picker');
+      // ✅ use @react-native-documents/picker
+      const [file] = await pick({ type: [types.allFiles] });
+      console.log('Selected file:', file);
+
+      if (!file) return;
+
+      // Validate file extension
+      const allowedExtensions = ['xls', 'xlsx', 'csv', 'txt', 'xlsb', 'pdf'];
+      const ext = file.name?.split('.').pop()?.toLowerCase();
+
+      if (!allowedExtensions.includes(ext)) {
+        Alert.alert('Invalid file type', 'Only xls, xlsx, csv, txt, xlsb & pdf files are allowed.');
         return;
       }
 
-      if (response.errorMessage) {
-        Alert.alert('Error', response.errorMessage);
+      // Validate file size (5MB)
+      if (file.size && file.size > 5 * 1024 * 1024) {
+        Alert.alert('Error', 'File size exceeds 5MB limit');
         return;
       }
 
-      if (response.assets && response.assets[0]) {
-        const asset = response.assets[0];
+      // Format file size
+      const formatFileSize = (bytes) => {
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        else return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+      };
 
-        // Create file object from response
-        const file = {
-          name: asset.fileName || `file_${Date.now()}.pdf`,
-          size: asset.fileSize ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB` : '4.1 MB',
-          uri: asset.uri,
-          type: asset.type || 'application/pdf',
-        };
+      const formattedFile = {
+        name: file.name,
+        size: formatFileSize(file.size),
+        uri: file.uri,
+        type: file.type || 'application/octet-stream',
+      };
 
-        // Validate file size (5MB limit)
-        if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-          Alert.alert('Error', 'File size exceeds 5MB limit');
-          return;
-        }
-
-        if (type === 'original') {
-          setOriginalFile(file);
-          // Simulate OCR processing
-          processOCR();
-        } else {
-          setTemplateFile(file);
-        }
+      // ✅ Keep your original logic unchanged
+      if (type === 'original') {
+        setOriginalFile(formattedFile);
+        processOCR();
+      } else {
+        setTemplateFile(formattedFile);
       }
-    });
+
+    } catch (err) {
+      console.error('File picker error:', err);
+      Alert.alert('Error', 'Failed to pick the file');
+    }
   };
+
+
 
   // Alternative method using a file path if you have one
   const handleFileFromPath = (type, filePath) => {
@@ -120,16 +141,150 @@ const UploadOrder = () => {
   };
 
   const handleContinue = () => {
-    if (!originalFile || !selectedDistributor) {
-      Alert.alert('Error', 'Please upload order file and select distributor');
+    if (!originalFile && !templateFile || !templateFile) {
+      // Alert.alert('Error', 'Please upload order file and select distributor');
       return;
     }
-    navigation.navigate('ProductMapping', {
+    navigation.replace('ProductMapping', {
       originalFile,
       templateFile,
-      distributor: selectedDistributor
+      distributor: selectedDistributor,
+      customer: selectedCustomer
     });
   };
+
+
+  const renderUploadfile = () => {
+    return (
+      <View style={styles.content}>
+        <View style={styles.scrollcontent}>
+          <ScrollView style={{ marginBottom: 20 }} showsVerticalScrollIndicator={false}>
+            <Text style={styles.instructionText}>
+              To create an order, please upload the order file that you downloaded from the ERP system.
+            </Text>
+            <View style={styles.filtersContainer}>
+              <View style={styles.wrapper}>
+                <View style={styles.row}>
+
+                  <TouchableOpacity style={styles.box} onPress={() => setShowCustomerselection(true)}>
+                    <Text style={styles.label}>Customer</Text>
+                    <View style={styles.valueRow}>
+                      <Text style={styles.valueText} numberOfLines={1}>
+                        {selectedCustomer?.customerName}
+                      </Text>
+                      <Downarrow />
+                    </View>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.box} onPress={() => setShowSelectdistributor(true)}>
+                    <Text style={styles.label}>Distributor</Text>
+                    <View style={styles.valueRow}>
+                      <Text style={styles.valueText} numberOfLines={1}>
+                        {selectedDistributor?.name}
+                      </Text>
+                      <Downarrow />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+            {/* Original Order File Upload */}
+            <TouchableOpacity
+              style={styles.uploadBox}
+              onPress={() => !originalFile && handleFileUpload('original')}
+              activeOpacity={originalFile ? 1 : 0.7}
+            >
+              <>
+                {originalFile ? <Note /> : <Upload color='#2B2B2B' width={20} height={20} />}
+                <Text style={styles.uploadTitle}>{originalFile ? originalFile?.name : 'Upload Original Order File*'}</Text>
+                {!originalFile ? (
+                  <Text style={styles.uploadSubtext}>
+                    xls, xlsx, csv, txt, xlsb & pdf file of maximum{'\n'}5 mb size is supported.
+                  </Text>
+                ) : (
+                  <Text style={styles.fileSize}>Uploaded {originalFile.size}</Text>
+                )}
+
+                {originalFile && (
+                  <TouchableOpacity style={{ marginTop: 6 }} onPress={() => handleCancelUpload('original')}>
+                    <Text style={styles.cancelUpload}>Cancel Upload</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            </TouchableOpacity>
+
+            {/* Template File Upload */}
+            <TouchableOpacity
+              style={styles.uploadBox}
+              onPress={() => !templateFile && handleFileUpload('template')}
+              activeOpacity={templateFile ? 1 : 0.7}
+            >
+              <>
+                {templateFile ? <Note /> : <Upload color='#2B2B2B' width={20} height={20} />}
+                <Text style={styles.uploadTitle}>{templateFile ? templateFile?.name : 'Upload Template File'}</Text>
+                {!templateFile ? (
+                  <Text style={styles.uploadSubtext}>
+                    xls, xlsx, csv, txt, xlsb & pdf file of maximum{'\n'}5 mb size is supported.
+                  </Text>
+                ) : (
+                  <Text style={styles.fileSize}>Uploaded {templateFile.size}</Text>
+                )}
+
+                {templateFile && (
+                  <TouchableOpacity style={{ marginTop: 6 }} onPress={() => handleCancelUpload('template')}>
+                    <Text style={styles.cancelUpload}>Cancel Upload</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            </TouchableOpacity>
+
+            {/* OCR Status */}
+            {/* {(isProcessing || ocrComplete) && ( */}
+            {originalFile && (
+              <View style={styles.ocrStatus}>
+                {isProcessing ? (
+                  <>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={styles.ocrText}>Reading file with OCR...</Text>
+                  </>
+                ) : (
+                  <>
+                    <CustomCheckbox activeColor="#F7941E" size={15} title={<Text style={styles.ocrText}>
+                      Read the file with OCR  |  02:15 Sec
+                    </Text>} />
+
+                  </>
+                )}
+              </View>
+            )}
+            {!originalFile && (
+              <View style={{ height: 25 }}></View>
+            )}
+
+            {/* )} */}
+
+            <TouchableOpacity
+              style={styles.downloadTemplate}
+              onPress={handleDownloadTemplate}
+            >
+              <Download width={13} height={13} color='#F7941E' />
+              <Text style={styles.downloadText}>Download Template</Text>
+            </TouchableOpacity>
+          </ScrollView>
+          <TouchableOpacity
+            style={[
+              styles.continueButton,
+              (!originalFile && !templateFile || !templateFile) && styles.disabledButton
+            ]}
+            onPress={handleContinue}
+            disabled={!originalFile && !templateFile || !templateFile}
+          >
+            <Text style={styles.continueText}>Continue</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
+  }
 
   const handleDownloadTemplate = () => {
     // Handle template download
@@ -144,7 +299,6 @@ const UploadOrder = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create Order</Text>
       </View>
-
       <View style={styles.progressContainer}>
         <View style={styles.progressStep}>
           <View style={[styles.stepCircle, styles.activeStep]}>
@@ -160,119 +314,17 @@ const UploadOrder = () => {
           <Text style={[styles.stepLabel, styles.inactiveStepLabel]}>Products Mapping</Text>
         </View>
       </View>
+      {renderUploadfile()}
+      <CustomerSelectionModal onSelectCustomer={(e) => {
+        setSelectedCustomer(e)
+        setShowCustomerselection(false)
+      }} visible={showCustomerselection} onClose={() => setShowCustomerselection(false)} />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.instructionText}>
-          To create an order, please upload the order file that you downloaded from the ERP system.
-        </Text>
 
-        <View style={styles.distributorContainer}>
-          <Text style={styles.fieldLabel}>Distributor</Text>
-          <TouchableOpacity
-            style={styles.distributorDropdown}
-            onPress={() => navigation.navigate('SelectDistributor', { fromUpload: true })}
-          >
-            <Text style={styles.distributorText}>
-              {selectedDistributor?.name || 'Select Distributor'}
-            </Text>
-            <Icon name="arrow-drop-down" size={24} color="#333" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Original Order File Upload */}
-        <TouchableOpacity
-          style={styles.uploadBox}
-          onPress={() => !originalFile && handleFileUpload('original')}
-          activeOpacity={originalFile ? 1 : 0.7}
-        >
-          {!originalFile ? (
-            <>
-              <Icon name="upload-file" size={48} color="#999" />
-              <Text style={styles.uploadTitle}>Upload Original Order File*</Text>
-              <Text style={styles.uploadSubtext}>
-                xls, xlsx, csv, txt, xlsb & pdf file of maximum{'\n'}5 mb size is supported.
-              </Text>
-            </>
-          ) : (
-            <View style={styles.uploadedFileContainer}>
-              <Icon name="insert-drive-file" size={40} color="#666" />
-              <View style={styles.fileInfo}>
-                <Text style={styles.fileName}>{originalFile.name}</Text>
-                <Text style={styles.fileSize}>Uploaded {originalFile.size}</Text>
-              </View>
-              <TouchableOpacity onPress={() => handleCancelUpload('original')}>
-                <Text style={styles.cancelUpload}>Cancel Upload</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* Template File Upload */}
-        <TouchableOpacity
-          style={styles.uploadBox}
-          onPress={() => !templateFile && handleFileUpload('template')}
-          activeOpacity={templateFile ? 1 : 0.7}
-        >
-          {!templateFile ? (
-            <>
-              <Icon name="upload-file" size={48} color="#999" />
-              <Text style={styles.uploadTitle}>Upload Template File</Text>
-              <Text style={styles.uploadSubtext}>
-                xls, xlsx, csv, txt, xlsb & pdf file of maximum{'\n'}5 mb size is supported.
-              </Text>
-            </>
-          ) : (
-            <View style={styles.uploadedFileContainer}>
-              <Icon name="insert-drive-file" size={40} color="#666" />
-              <View style={styles.fileInfo}>
-                <Text style={styles.fileName}>{templateFile.name}</Text>
-                <Text style={styles.fileSize}>Uploaded {templateFile.size}</Text>
-              </View>
-              <TouchableOpacity onPress={() => handleCancelUpload('template')}>
-                <Text style={styles.cancelUpload}>Cancel Upload</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* OCR Status */}
-        {(isProcessing || ocrComplete) && (
-          <View style={styles.ocrStatus}>
-            {isProcessing ? (
-              <>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={styles.ocrText}>Reading file with OCR...</Text>
-              </>
-            ) : (
-              <>
-                <Icon name="check-circle" size={20} color={colors.primary} />
-                <Text style={styles.ocrText}>
-                  Read the file with OCR | {ocrTime}
-                </Text>
-              </>
-            )}
-          </View>
-        )}
-
-        <TouchableOpacity
-          style={styles.downloadTemplate}
-          onPress={handleDownloadTemplate}
-        >
-          <Icon name="download" size={20} color={colors.primary} />
-          <Text style={styles.downloadText}>Download Template</Text>
-        </TouchableOpacity>
-      </ScrollView>
-
-      <TouchableOpacity
-        style={[
-          styles.continueButton,
-          (!originalFile || !selectedDistributor) && styles.disabledButton
-        ]}
-        onPress={handleContinue}
-        disabled={!originalFile || !selectedDistributor}
-      >
-        <Text style={styles.continueText}>Continue</Text>
-      </TouchableOpacity>
+      <SelectDistributor onSelect={(e) => {
+        setSelectedDistributor(e)
+        setShowSelectdistributor(false)
+      }} visible={showDistributorselection} onClose={() => setShowSelectdistributor(false)} />
     </SafeAreaView>
   );
 };
@@ -286,15 +338,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingTop: 12,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
     marginLeft: 16,
+    textAlign: "center",
+    width: "80%"
   },
   progressContainer: {
     flexDirection: 'row',
@@ -302,26 +354,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
     backgroundColor: '#fff',
+    justifyContent: "space-between"
   },
   progressStep: {
-    alignItems: 'center',
+    alignItems: "center",
+    flexDirection: 'row',
+    display: "flex",
+    gap: 5
   },
   stepCircle: {
-    width: 32,
-    height: 32,
+    width: 25,
+    height: 25,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
   },
   activeStep: {
     backgroundColor: colors.primary,
+    borderRadius: 16,
   },
   inactiveStep: {
     backgroundColor: '#E0E0E0',
   },
   stepNumber: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#fff',
   },
@@ -329,7 +385,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   stepLabel: {
-    fontSize: 12,
+    fontSize: 16,
     color: '#333',
   },
   activeStepLabel: {
@@ -340,21 +396,30 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   progressLine: {
-    flex: 1,
+    // flex: 1,
     height: 2,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#909090',
     marginHorizontal: 12,
-    marginBottom: 24,
+    width: 50
+    // marginBottom: 24,
   },
   content: {
     flex: 1,
     padding: 16,
+    backgroundColor: "#F6F6F6",
+    paddingBottom: 50
+  },
+  scrollcontent: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 16
   },
   instructionText: {
     fontSize: 14,
-    color: '#666',
+    color: '#909090',
     lineHeight: 20,
-    marginBottom: 24,
+    marginBottom: 20,
+    fontWeight: 400
   },
   distributorContainer: {
     marginBottom: 24,
@@ -380,11 +445,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   uploadBox: {
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.border,
     borderStyle: 'dashed',
     borderRadius: 12,
-    padding: 32,
+    paddingHorizontal: 25,
+    paddingVertical: 25,
     alignItems: 'center',
     marginBottom: 20,
     backgroundColor: '#FAFAFA',
@@ -393,8 +459,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 10,
+    marginBottom: 5,
   },
   uploadSubtext: {
     fontSize: 12,
@@ -429,8 +495,9 @@ const styles = StyleSheet.create({
   ocrStatus: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    marginBottom: 20,
+    marginTop: 10,
+    // paddingVertical: 12,
+    justifyContent: "center"
   },
   ocrText: {
     fontSize: 14,
@@ -442,7 +509,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    marginTop: 20,
+    marginTop: 10,
   },
   downloadText: {
     fontSize: 14,
@@ -453,8 +520,7 @@ const styles = StyleSheet.create({
   continueButton: {
     backgroundColor: colors.primary,
     marginHorizontal: 16,
-    marginBottom: 16,
-    paddingVertical: 16,
+    paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
@@ -465,6 +531,55 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  filtersContainer: {
+    flexDirection: 'row',
+    paddingVertical: 6,
+    gap: 12,
+  },
+  wrapper: {
+    backgroundColor: "#FFFFFF",
+    flex: 1,
+    justifyContent: "center",
+    paddingBottom: 20,
+    borderRadius: 12
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  box: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#aaa",
+    borderRadius: 10,
+    backgroundColor: "#fff",
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 10,
+    position: "relative",
+  },
+  label: {
+    position: "absolute",
+    top: -10,
+    left: 14,
+    backgroundColor: "#fff",
+    paddingHorizontal: 6,
+    fontSize: 13,
+    color: "#777",
+  },
+  valueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  valueText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#2B2B2B",
+    fontWeight: 500
   },
 });
 

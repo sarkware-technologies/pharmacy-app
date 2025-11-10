@@ -1,109 +1,7 @@
 // Mock data and API functions for Orders
 
-import apiClient from './apiClient';
+import apiClient, { BASE_URL } from './apiClient';
 
-
-export const mockOrders = [
-  {
-    id: 'SUNPH-10286',
-    customerId: '0001003682',
-    customerName: 'A. A Pharma',
-    location: 'Bengaluru',
-    division: 'In CNS',
-    additionalCount: 2,
-    date: '27/04/2023',
-    time: '16:05:52',
-    rateType: 'Net Rate',
-    totalAmount: 5967.06,
-    skuCount: 42,
-    status: 'SUBMITTED',
-    pendingActionBy: {
-      name: 'Abhishek Purane',
-      phone: '9090908070',
-      role: 'MR'
-    }
-  },
-  {
-    id: 'SUNPH-10285',
-    customerId: '0001003682',
-    customerName: 'A A PHARMACEUTICALS',
-    location: 'Bengaluru',
-    division: 'In CNS',
-    additionalCount: 2,
-    date: '27/04/2023',
-    time: '16:05:52',
-    rateType: 'Net Rate',
-    totalAmount: 5967.06,
-    skuCount: 42,
-    status: 'APPROVED',
-    pendingActionBy: {
-      name: 'Columbia Asia',
-      phone: '9090908070',
-      role: 'Hospital'
-    }
-  }
-];
-
-export const mockDistributors = [
-  {
-    id: '1',
-    name: 'Mahalaxmi Distributors',
-    code: '10106555',
-    location: 'Pune'
-  },
-  {
-    id: '2',
-    name: 'Tapadiya Distributors',
-    code: '10018019',
-    location: 'Pimpri'
-  },
-  {
-    id: '3',
-    name: 'Modern Drug Stores and Distributors',
-    code: '10106555',
-    location: 'Pune'
-  },
-  {
-    id: '4',
-    name: 'Shree Sai Medico Stores',
-    code: '0001004320',
-    location: 'Vimannagar'
-  }
-];
-
-export const mockProducts = [
-  {
-    id: 'INF30R0552',
-    name: 'TELMIKIND-TRIO 12.5 TABLETS',
-    customerProduct: 'TELMIKIND-TRIO',
-    ptr: 46.34,
-    margin: 10.34,
-    discount: 10.34,
-    pth: 56.34,
-    taxGST: '4.6 (10%)',
-    exhaustedQty: 100,
-    maxQty: 200,
-    moq: 50,
-    orderValue: 2548.7,
-    quantity: 50
-  },
-  {
-    id: 'INF30R0553',
-    name: 'WILLGO CR Tablet',
-    customerProduct: 'WILLGO CR Tablet',
-    ptr: 0,
-    margin: 0,
-    discount: 0,
-    pth: 0,
-    taxGST: 0,
-    exhaustedQty: 0,
-    maxQty: 0,
-    moq: 50,
-    orderValue: 0,
-    quantity: 50,
-    isMappingRequired: true
-  }
-];
 
 // API functions (will be replaced with actual API calls)
 export const getOrders = async ({ page = 1, limit = 10, search = '', status = 'All' } = {}) => {
@@ -176,14 +74,117 @@ export const getProducts = async ({ page = 1, limit = 20, search = '', customerI
   }
 };
 
-export const createOrder = async (orderData) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        orderId: `SUNPH-${Math.floor(10000 + Math.random() * 90000)}`,
-        message: 'Order created successfully'
-      });
-    }, 1000);
-  });
+
+
+export const IncreaseQTY = async (id, productId, qty) => {
+  try {
+    const response = await apiClient.put(`/orders/cart/product-qty`, { id, productId, qty });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
+}
+
+
+
+export const AddtoCart = async (cartItem) => {
+  try {
+    const cartProducts = cartItem;
+    const response = await apiClient.post(`/orders/cart/add/product`, { cartProducts });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
+}
+
+export const DeleteCart = async (cartId) => {
+  try {
+    const response = await apiClient.delete(`/orders/cart/product`, { cartIds: cartId });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
+}
+
+
+export const getCartDetails = async (cartId) => {
+  try {
+    const response = await apiClient.get(`/orders/cart/products`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
+}
+
+export const PlaceOrder = async (order) => {
+  try {
+    const response = await apiClient.post('/orders/order/create', order);
+    return response.data;
+  } catch (error) {
+    console.error('Error placing order:', error);
+    throw error;
+  }
 };
+
+
+export const UploadTemplateOrder = async (file, customerId, distributorId, orderType) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
+      type: file.type || 'application/octet-stream',
+      name: file.name || 'upload.xlsx',
+    });
+    formData.append('customerId', String(customerId));
+    formData.append('distributorId', String(distributorId));
+    formData.append('orderType', String(orderType));
+
+    const token = await apiClient.getToken();
+
+    const response = await fetch(`${BASE_URL}/orders/upload-order`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+
+    const text = await response.text();
+
+
+    let json;
+    try {
+      json = text ? JSON.parse(text) : {};
+    } catch (err) {
+      json = { raw: text };
+    }
+
+    if (!response.ok) {
+      return json?.data; // Return to see what server sent
+    }
+    return json?.data;
+  } catch (error) {
+    console.error('🔥 CATCH ERROR:', error);
+    throw error;
+  }
+};
+
+export const UploadProductMapping = async (payload) => {
+  try {
+    const response = await apiClient.put(`/orders/upload-order/map-product`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
+}
+
+
+
+
+

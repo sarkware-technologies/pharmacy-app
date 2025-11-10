@@ -14,12 +14,17 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
-import { getProducts } from '../../../api/orders';
+import { AddtoCart, DeleteCart, getCartDetails, getProducts, IncreaseQTY } from '../../../api/orders';
 import { addToCart, updateCartItem } from '../../../redux/slices/orderSlice';
 import Downarrow from '../../../components/icons/downArrow';
 import Carticon from '../../../components/icons/Cart';
 import Svg, { Path } from 'react-native-svg';
 import CustomCheckbox from '../../../components/view/checkbox';
+import Delete from '../../../components/icons/Delete';
+import { setCartDetails } from "../../../redux/slices/orderSlice"
+import CustomerSelectionModal from './CustomerSelector';
+import SelectDistributor from './SelectDistributor';
+
 const SearchAddProducts = () => {
   const route = useRoute();
   const navigation = useNavigation();
@@ -36,9 +41,43 @@ const SearchAddProducts = () => {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [quantities, setQuantities] = useState({});
+  const [showDistributorselection, setShowSelectdistributor] = useState(false);
+  const [showCustomerselection, setShowCustomerselection] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
 
   // Debounce timer for search
   const [searchTimer, setSearchTimer] = useState(null);
+
+  useEffect(() => {
+    getCartdetails();
+
+  }, [selectedDistributor, selectedCustomer])
+
+  const getCartdetails = async () => {
+    try {
+      const response = await getCartDetails();
+
+      const cartDetails = response?.cartDetails ?? [];
+
+      if (cartDetails.length > 0) {
+        dispatch(setCartDetails(cartDetails));
+
+        const productCount = cartDetails[0]?.products?.length ?? 0;
+        setCartCount(productCount);
+      } else {
+        dispatch(setCartDetails([]));
+        setCartCount(0);
+      }
+    } catch (error) {
+      console.error("Error fetching cart details:", error);
+      setCartCount(0);
+    }
+  };
+
+
+  // useEffect(() => {
+  //   console.log(cart, 87987987897)
+  // }, [cart])
 
   useEffect(() => {
     // Initialize quantities from cart
@@ -111,38 +150,109 @@ const SearchAddProducts = () => {
     }
   };
 
-  const handleQuantityChange = (productId, change) => {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
-
-    const currentQty = quantities[productId] || 0;
-    const newQty = Math.max(0, currentQty + change);
-
-    if (newQty >= product.moq && newQty <= product.maxQty) {
-      setQuantities({ ...quantities, [productId]: newQty });
-      if (newQty > 0) {
-        dispatch(updateCartItem({ id: productId, quantity: newQty }));
+  const handleQuantityChange = async (product, event) => {
+    console.log(product, 98989998)
+    try {
+      const minQTY = product?.productDetails.packing ? parseInt(product?.productDetails.packing) : 1
+      const updateQTY = product?.quantity + (event === 'plus' ? +minQTY : -minQTY);
+      if (updateQTY > 0) {
+        const increasesQTY = await IncreaseQTY(
+          product?.cartIds,
+          product?.productDetails?.productId,
+          product?.quantity + (event === 'plus' ? +minQTY : -minQTY)
+        );
+        if (increasesQTY?.qty) {
+          const list = products.map(item => {
+            return {
+              ...item,
+              quantity: item.id === product.id ? increasesQTY?.qty : item?.quantity,
+            };
+          })
+          setProducts(list);
+        }
       }
+      else {
+        await handleDelete(product);
+      }
+
+
+    } catch (error) {
+
     }
+    finally {
+      getCartdetails();
+    }
+
   };
 
-  const handleAddToCart = (product) => {
-    const quantity = quantities[product.id] || product.moq;
-    dispatch(addToCart({
-      ...product,
-      quantity,
-      orderValue: quantity * product.pth
-    }));
-    setQuantities({ ...quantities, [product.id]: quantity });
+  const handleAddToCart = async (product) => {
+
+    try {
+      const payload = {
+        cfaId: product?.productDetails?.cfaId,
+        customerId: product?.customerDetails?.customerId ? parseInt(product?.customerDetails?.customerId) : selectedCustomer?.customerId,
+        distributorId: 4,
+        divisionId: product?.productDetails?.divisionId,
+        modifiedBy: 4,
+        createdBy: 4,
+        principalId: 1,
+        productId: product?.productDetails?.productId,
+        qty: product?.productDetails.packing ? parseInt(product?.productDetails.packing) : 1
+      }
+      const addtocart = await AddtoCart([payload]);
+
+      if (addtocart) {
+        console.log(addtocart?.[0]?.id, 89876)
+        const list = products.map(item => {
+          return {
+            ...item,
+            isInCart: item.id === product.id ? true : item.isInCart ?? false,
+            quantity: item.id === product.id ? payload.qty : item?.quantity,
+            cartIds: item.id === product.id ? addtocart?.[0]?.id ?? item.cartIds : item.cartIds,
+          };
+        })
+        setProducts(list);
+      }
+    }
+    catch (error) {
+
+    }
+    finally {
+      getCartdetails();
+    }
   };
 
   const handleCheckout = () => {
     navigation.navigate('Cart');
   };
 
+  const handleDelete = async (product) => {
+    try {
+
+      const deleteCart = await DeleteCart([product.cartIds]);
+      if (deleteCart?.message == "Product deleted successfully.") {
+        const list = products.map(item => {
+          return {
+            ...item,
+            isInCart: item.id === product.id ? false : item?.isInCart,
+            quantity: item.id === product.id ? null : item?.quantity,
+            cartIds: item.id === product.id ? null : item.cartIds,
+          };
+        })
+        setProducts(list);
+      }
+
+    }
+    catch (error) {
+    }
+    finally {
+      getCartdetails();
+    }
+
+  }
+
   const renderProduct = ({ item, index }) => {
-    const isInCart = cart.some(cartItem => cartItem.id === item.id);
-    const quantity = quantities[item.id] || 0;
+    const quantity = item?.quantity || 0;
 
     return (
       <View style={styles.productCard}>
@@ -155,12 +265,8 @@ const SearchAddProducts = () => {
           </View>
         )}
 
-        <TouchableOpacity style={styles.productCheckbox}>
-          {isInCart && <Icon name="check-box-outline-blank" size={24} color="#999" />}
-        </TouchableOpacity>
-
         <View style={styles.productContent}>
-          <CustomCheckbox containerStyle={{ alignItems: "flex-start" }} size={20} title={<Text style={styles.productName}>{item?.productDetails?.productName.toUpperCase()}</Text>} checkboxStyle={{ marginTop: 2 }} />
+          <CustomCheckbox containerStyle={{ alignItems: "flex-start" }} size={20} title={<Text style={styles.productName}>{item?.productDetails?.productName ? item?.productDetails?.productName.toUpperCase() : ''}</Text>} checkboxStyle={{ marginTop: 2 }} />
           <View style={{ marginLeft: 29, marginTop: 0 }}>
             <Text style={styles.productId}>{item.id}</Text>
           </View>
@@ -199,36 +305,42 @@ const SearchAddProducts = () => {
             <View style={styles.statusBadge}>
               <Text style={styles.staus}>ACTIVE</Text>
             </View>
-            {quantity > 0 ? (
-              <View style={styles.quantityControls}>
+            <View style={{ height: 45 }}>
+              {item.isInCart ? (
+                <View style={styles.quantityControls}>
+                  <View style={styles.quantityBox}>
+                    {/* border: 1px solid #F7941E1A */}
+                    <TouchableOpacity
+                      style={styles.quantityButton}
+                      onPress={() => handleQuantityChange(item, 'minus')}
+                    >
+                      <Icon name="remove" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                    <Text style={styles.quantityText}>{quantity}</Text>
+                    <TouchableOpacity
+                      style={styles.quantityButton}
+                      onPress={() => handleQuantityChange(item, 'plus')}
+                    >
+                      <Icon name="add" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                  </View>
+
+                  <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item)}>
+                    <Delete />
+                  </TouchableOpacity>
+                </View>
+              ) : (
                 <TouchableOpacity
-                  style={styles.quantityButton}
-                  onPress={() => handleQuantityChange(item.id, -item.moq)}
+                  style={styles.addToCartButton}
+                  onPress={() => handleAddToCart(item)}
                 >
-                  <Icon name="remove" size={20} color={colors.primary} />
+                  <Text style={styles.addToCartText}>Add to cart</Text>
+                  <Svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <Path fill-rule="evenodd" clip-rule="evenodd" d="M6.66667 13.3333C10.3487 13.3333 13.3333 10.3487 13.3333 6.66667C13.3333 2.98467 10.3487 0 6.66667 0C2.98467 0 0 2.98467 0 6.66667C0 10.3487 2.98467 13.3333 6.66667 13.3333ZM6.98 4.31333C7.07375 4.2197 7.20083 4.16711 7.33333 4.16711C7.46583 4.16711 7.59292 4.2197 7.68667 4.31333L9.68667 6.31333C9.7803 6.40708 9.83289 6.53417 9.83289 6.66667C9.83289 6.79917 9.7803 6.92625 9.68667 7.02L7.68667 9.02C7.64089 9.06912 7.58569 9.10853 7.52436 9.13585C7.46303 9.16318 7.39682 9.17788 7.32968 9.17906C7.26255 9.18025 7.19586 9.1679 7.1336 9.14275C7.07134 9.1176 7.01479 9.08017 6.96731 9.03269C6.91983 8.98521 6.8824 8.92866 6.85725 8.8664C6.8321 8.80414 6.81975 8.73745 6.82094 8.67032C6.82212 8.60318 6.83682 8.53697 6.86415 8.47564C6.89147 8.41431 6.93088 8.35911 6.98 8.31333L8.12667 7.16667H4C3.86739 7.16667 3.74021 7.11399 3.64645 7.02022C3.55268 6.92645 3.5 6.79927 3.5 6.66667C3.5 6.53406 3.55268 6.40688 3.64645 6.31311C3.74021 6.21935 3.86739 6.16667 4 6.16667H8.12667L6.98 5.02C6.88637 4.92625 6.83377 4.79917 6.83377 4.66667C6.83377 4.53417 6.88637 4.40708 6.98 4.31333Z" fill="white" />
+                  </Svg>
                 </TouchableOpacity>
-                <Text style={styles.quantityText}>{quantity}</Text>
-                <TouchableOpacity
-                  style={styles.quantityButton}
-                  onPress={() => handleQuantityChange(item.id, item.moq)}
-                >
-                  <Icon name="add" size={20} color={colors.primary} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.deleteButton}>
-                  <Icon name="delete-outline" size={20} color="#999" />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.addToCartButton}
-                onPress={() => handleAddToCart(item)}
-              >
-                <Text style={styles.addToCartText}>Add to cart</Text>
-                <Svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <Path fill-rule="evenodd" clip-rule="evenodd" d="M6.66667 13.3333C10.3487 13.3333 13.3333 10.3487 13.3333 6.66667C13.3333 2.98467 10.3487 0 6.66667 0C2.98467 0 0 2.98467 0 6.66667C0 10.3487 2.98467 13.3333 6.66667 13.3333ZM6.98 4.31333C7.07375 4.2197 7.20083 4.16711 7.33333 4.16711C7.46583 4.16711 7.59292 4.2197 7.68667 4.31333L9.68667 6.31333C9.7803 6.40708 9.83289 6.53417 9.83289 6.66667C9.83289 6.79917 9.7803 6.92625 9.68667 7.02L7.68667 9.02C7.64089 9.06912 7.58569 9.10853 7.52436 9.13585C7.46303 9.16318 7.39682 9.17788 7.32968 9.17906C7.26255 9.18025 7.19586 9.1679 7.1336 9.14275C7.07134 9.1176 7.01479 9.08017 6.96731 9.03269C6.91983 8.98521 6.8824 8.92866 6.85725 8.8664C6.8321 8.80414 6.81975 8.73745 6.82094 8.67032C6.82212 8.60318 6.83682 8.53697 6.86415 8.47564C6.89147 8.41431 6.93088 8.35911 6.98 8.31333L8.12667 7.16667H4C3.86739 7.16667 3.74021 7.11399 3.64645 7.02022C3.55268 6.92645 3.5 6.79927 3.5 6.66667C3.5 6.53406 3.55268 6.40688 3.64645 6.31311C3.74021 6.21935 3.86739 6.16667 4 6.16667H8.12667L6.98 5.02C6.88637 4.92625 6.83377 4.79917 6.83377 4.66667C6.83377 4.53417 6.88637 4.40708 6.98 4.31333Z" fill="white" />
-                </Svg>
-              </TouchableOpacity>
-            )}
+              )}
+            </View>
           </View>
         </View>
       </View>
@@ -244,14 +356,16 @@ const SearchAddProducts = () => {
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Search & Add Products to Cart</Text>
-        <TouchableOpacity style={styles.cartIcon}>
+        <TouchableOpacity style={styles.cartIcon} onPress={handleCheckout}>
           <Carticon />
-          <Downarrow color='#fff' />
-          {/* {cartItemsCount > 0 && (
+          {cartCount < 0 && (
+            <Downarrow color='#fff' />
+          )}
+          {cartCount > 0 && (
             <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{cartItemsCount}</Text>
+              <Text style={styles.cartBadgeText}>{cartCount}</Text>
             </View>
-          )} */}
+          )}
         </TouchableOpacity>
       </View>
 
@@ -264,7 +378,7 @@ const SearchAddProducts = () => {
         <View style={styles.wrapper}>
           {/* Row for both boxes */}
           <View style={styles.row}>
-            <View style={styles.box}>
+            <TouchableOpacity style={styles.box} onPress={() => setShowCustomerselection(true)}>
               <Text style={styles.label}>Customer</Text>
               <View style={styles.valueRow}>
                 <Text style={styles.valueText} numberOfLines={1}>
@@ -272,9 +386,9 @@ const SearchAddProducts = () => {
                 </Text>
                 <Downarrow />
               </View>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.box}>
+            <TouchableOpacity style={styles.box} onPress={() => setShowSelectdistributor(true)}>
               <Text style={styles.label}>Distributor</Text>
               <View style={styles.valueRow}>
                 <Text style={styles.valueText} numberOfLines={1}>
@@ -282,9 +396,11 @@ const SearchAddProducts = () => {
                 </Text>
                 <Downarrow />
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
+
+
       </View>
 
       <View style={styles.searchContainer}>
@@ -317,6 +433,16 @@ const SearchAddProducts = () => {
 
         </View>
       </View>
+      <CustomerSelectionModal onSelectCustomer={(e) => {
+        setSelectedCustomer(e)
+        setShowCustomerselection(false)
+      }} visible={showCustomerselection} onClose={() => setShowCustomerselection(false)} />
+
+
+      <SelectDistributor onSelect={(e) => {
+        setSelectedDistributor(e)
+        setShowSelectdistributor(false)
+      }} visible={showDistributorselection} onClose={() => setShowSelectdistributor(false)} />
     </SafeAreaView>
   );
 };
@@ -507,7 +633,7 @@ const styles = StyleSheet.create({
   },
   productCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fcfa',
+    backgroundColor: '#FFFF',
     // marginBottom: 12,
     borderRadius: 8,
     padding: 16,
@@ -617,7 +743,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 6,
     gap: 6,
-    alignItems: "center"
+    alignItems: "center",
   },
   addToCartText: {
     color: '#fff',
@@ -629,14 +755,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  quantityButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 4,
+  quantityBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: '#F7941E1A',
+    padding: 3,
+    borderRadius: 5
+  },
+  quantityButton: {
+    width: 35,
+    height: 35,
+    borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: "#feefdd"
   },
   quantityText: {
     fontSize: 16,

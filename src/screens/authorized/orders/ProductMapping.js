@@ -7,7 +7,8 @@ import {
   ScrollView,
   FlatList,
   TextInput,
-  Modal
+  Modal,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -15,340 +16,419 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { addToCart, clearCart } from '../../../redux/slices/orderSlice';
+import Svg, { Path } from 'react-native-svg';
+import { UploadProductMapping, UploadTemplateOrder } from '../../../api/orders';
+import UnMapped from "../../../components/icons/Unmapping"
+import SearchProductModal from "./SearchProductModal"
+import CancelOrderModal from "./CancelOrderModal"
+import Modals from './uploadConfirmationModals';
+import { ErrorMessage } from '../../../components/view/error';
+
+
+const { UnmappedProductsModal } = Modals;
 
 const ProductMapping = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const dispatch = useDispatch();
-  const { selectedDistributor } = useSelector(state => state.orders || {});
-  
-  const [activeTab, setActiveTab] = useState('Mapped');
+
+  const [activeTab, setActiveTab] = useState('All');
   const [searchText, setSearchText] = useState('');
   const [products, setProducts] = useState([]);
-  const [mappedProducts, setMappedProducts] = useState([]);
-  const [nonMappedProducts, setNonMappedProducts] = useState([]);
-  const [quantities, setQuantities] = useState({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const [productMapping, setProductMapping] = useState(false);
+  const [mappingProduct, setMappingProduct] = useState();
+  const [isLoading, setIsLoading] = useState(false);
+
+
+  const hanldeMappingclicked = (item) => {
+    setMappingProduct(item);
+    setProductMapping(true)
+  }
+
+
+  const [showExitModal, setShowExitModal] = useState(false);
+
+  useEffect(() => {
+    const beforeRemove = (e) => {
+      if (!showExitModal) {
+        e.preventDefault();
+        setShowExitModal(true);
+      }
+    };
+
+    const unsubscribe = navigation.addListener('beforeRemove', beforeRemove);
+    return unsubscribe;
+  }, [navigation, showExitModal]);
+
+
+
+
+
+  const { originalFile, templateFile, distributor, customer, } = route.params || {};
+  const [selectedDistributor, setSelectedDistributor] = useState(distributor);
+  const [selectedCustomer, setSelectedCustomer] = useState(customer);
 
   useEffect(() => {
     // Simulate product mapping process
     loadMappedProducts();
+    setShowExitModal(false);
   }, []);
 
-  const loadMappedProducts = () => {
-    // Mock data for mapped and non-mapped products
-    const mockMappedProducts = [
-      {
-        id: 'INF30R0552',
-        name: 'CALDIKIND PLUS CAPSULES 150 MG',
-        customerProduct: 'CALDIKIND PLUS CAPSULES',
-        pth: 46.34,
-        moq: 50,
-        exhaustedQty: 100,
-        maxQty: 200,
-        isMapped: true,
-        quantity: 50,
-      },
-      {
-        id: 'INF30R0553',
-        name: 'CALDIKIND PLUS CAPSULES 150 MG',
-        customerProduct: 'CALDIKIND PLUS CAPSULES',
-        pth: 46.34,
-        moq: 50,
-        exhaustedQty: 100,
-        maxQty: 200,
-        isMapped: true,
-        quantity: 50,
-      },
-    ];
+  const loadMappedProducts = async () => {
 
-    const mockNonMappedProducts = [
-      {
-        id: 'INF30R0554',
-        name: 'PRODUCT NOT MAPPED',
-        customerProduct: 'UNKNOWN PRODUCT',
-        pth: 0,
-        moq: 50,
-        exhaustedQty: 0,
-        maxQty: 0,
-        isMapped: false,
-        quantity: 50,
-      },
-    ];
+    try {
+      setIsLoading(true);
+      if (originalFile && templateFile) {
 
-    setMappedProducts(mockMappedProducts);
-    setNonMappedProducts(mockNonMappedProducts);
-    
-    // Initialize quantities
-    const initialQuantities = {};
-    [...mockMappedProducts, ...mockNonMappedProducts].forEach(product => {
-      initialQuantities[product.id] = product.quantity;
-    });
-    setQuantities(initialQuantities);
+      }
+      else if (!originalFile && templateFile) {
+        const fileUpload = await UploadTemplateOrder(templateFile, parseInt(selectedCustomer?.customerId), '101', "UPLOAD");
+        if (fileUpload?.poFileProducts) {
+          setProducts(fileUpload?.poFileProducts);
+        }
 
-    // Set all products
-    setProducts([...mockMappedProducts, ...mockNonMappedProducts]);
+      }
+    }
+    catch (e) {
+      ErrorMessage(e);
+    }
+    finally {
+      setIsLoading(false);
+    }
+
   };
 
-  const handleQuantityChange = (productId, change) => {
-    const newQuantities = { ...quantities };
-    const currentQty = newQuantities[productId] || 0;
-    const newQty = Math.max(0, currentQty + change);
-    newQuantities[productId] = newQty;
-    setQuantities(newQuantities);
+  const handleQuantityChange = (item, type) => {
+    if (item) {
+      const list = products.map((e) => {
+        const findItem = e.id === item.id;
+
+        if (!findItem) return e;
+
+        let newQty = e.uploadedQty;
+
+        if (type === 'plus') {
+          newQty = e.uploadedQty + 1;
+        } else if (type === 'minus') {
+          newQty = e.uploadedQty > 1 ? e.uploadedQty - 1 : 1;
+        }
+
+        return {
+          ...e,
+          uploadedQty: newQty,
+        };
+      });
+
+      setProducts(list);
+    }
   };
+
 
   const handleProceedToCart = () => {
-    // Clear existing cart and add mapped products with quantities
-    dispatch(clearCart());
-    
-    mappedProducts.forEach(product => {
-      if (quantities[product.id] > 0) {
-        dispatch(addToCart({
-          ...product,
-          quantity: quantities[product.id],
-          orderValue: quantities[product.id] * product.pth
-        }));
-      }
-    });
-
-    setShowConfirmModal(true);
+    setShowConfirmModal(true)
   };
 
   const handleConfirmOrder = (comment) => {
-    setShowConfirmModal(false);
-    navigation.navigate('Cart');
+
   };
 
-  const getFilteredProducts = () => {
-    let filteredList = [];
-    
-    if (activeTab === 'All') {
+
+  const getFilteredProducts = (tab) => {
+    let filteredList = products;
+    if (tab === 'All') {
       filteredList = products;
-    } else if (activeTab === 'Mapped') {
-      filteredList = mappedProducts;
-    } else if (activeTab === 'Non-Mapped') {
-      filteredList = nonMappedProducts;
+    } else if (tab === 'Mapped') {
+      filteredList = products.filter((e) => e?.isMapped == 1);
+    } else if (tab === 'Non-Mapped') {
+      filteredList = products.filter((e) => e?.isMapped == 0 || e?.isMapped == null);
     }
+    if (searchText && tab == activeTab) {
+      return filteredList.filter(product => {
+        const search = (searchText || '').toLowerCase();
+        const uploadedName = product?.uploadedProductName?.toLowerCase() || '';
+        const productName = product?.productName?.toLowerCase() || '';
 
-    if (searchText) {
-      return filteredList.filter(product => 
-        product.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        product.id.toLowerCase().includes(searchText.toLowerCase())
-      );
+        return uploadedName.includes(search) || productName.includes(search);
+      });
     }
-
     return filteredList;
   };
 
+  const hanldeMapping = async (product) => {
+    try {
+      if (product) {
+        const response = await UploadProductMapping({
+          customerId: selectedCustomer?.customerId,
+          lineId: mappingProduct.id,
+          productId: product.productId,
+          productCode: product.productCode,
+          uploadedProductName: mappingProduct.uploadedProductName,
+          packing: product.packing,
+        })
+        console.log(response, 87987987879)
+        const list = products.map((e) => {
+          const findItem = e.id === mappingProduct?.id;
+          return findItem
+            ? {
+              ...e,
+              productName: product?.productName,
+              productCode: product?.productCode,
+              isMapped: 1,
+              mrp: product?.mrp,
+              productId: product?.productId,
+              ptr: product?.ptr,
+              pts: product?.pts,
+              packingType: product?.packingType,
+              packing: product?.packing,
+              hosptialMargin: product?.hosptialMargin,
+              hospitalMargin: product?.hospitalMargin,
+              doctorMargin: product?.doctorMargin,
+              cfaId: product?.cfaId,
+              divisionId: product?.divisionId,
+            }
+            : e;
+        });
+        setProducts(list);
+        setProductMapping(false)
+        setMappingProduct(null)
+      }
+    }
+    catch (e) {
+      ErrorMessage(e);
+    }
+  }
+
   const renderProduct = ({ item }) => {
-    const quantity = quantities[item.id] || 0;
-    
+    const quantity = item?.uploadedQty || 0;
+
     return (
       <View style={styles.productCard}>
         <View style={styles.productHeader}>
-          <Text style={styles.productName}>{item.name}</Text>
+          <Text style={styles.productName}>{item?.productName ?? '-'}</Text>
         </View>
-        <Text style={styles.productId}>{item.id}</Text>
+        <Text style={styles.productId}>{item?.productCode ?? '-'}</Text>
 
         <View style={styles.productInfo}>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Customer Product Title</Text>
-            <Text style={styles.infoLabel}>Mapping</Text>
+            {item.isMapped == 1 && (
+              <Text style={{ fontSize: 11, color: '#999', }}>Mapping</Text>
+            )}
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoValue}>{item.customerProduct}</Text>
-            <TouchableOpacity>
-              <Text style={styles.changeLink}>Change ›</Text>
-            </TouchableOpacity>
+            <Text style={styles.infoValue}>{item.uploadedProductName}</Text>
+            {item.isMapped == 1 && (
+              <TouchableOpacity onPress={() => hanldeMappingclicked(item)}>
+                <Text style={styles.changeLink}>Change ›</Text>
+              </TouchableOpacity>
+            )}
+
           </View>
         </View>
 
         <View style={styles.productMetrics}>
           <View style={styles.metricItem}>
             <Text style={styles.metricLabel}>PTH</Text>
-            <Text style={styles.metricValue}>₹ {item.pth.toFixed(2)}</Text>
+            <Text style={styles.metricValue}>{item?.pth ? `₹ ${item?.pth}` : '-'}</Text>
           </View>
           <View style={styles.metricItem}>
             <Text style={styles.metricLabel}>MOQ</Text>
-            <Text style={styles.metricValue}>{item.moq}</Text>
+            <Text style={styles.metricValue}>{item.moq ?? '-'}</Text>
           </View>
           <View style={styles.metricItem}>
             <Text style={styles.metricLabel}>Exausted /Max Qty</Text>
-            <Text style={styles.metricValue}>{item.exhaustedQty}/{item.maxQty}</Text>
+            <Text style={[styles.metricValue, { textAlign: "right" }]}>{item.uploadedQty ?? 0}/{item.uploadedQty ?? 0}</Text>
           </View>
         </View>
 
         <View style={styles.mappingStatus}>
-          {item.isMapped ? (
+          {item.isMapped == 1 ? (
             <>
               <Icon name="check-circle" size={20} color="#169560" />
               <Text style={styles.mappedText}>Mapped</Text>
             </>
           ) : (
-            <>
-              <Icon name="error" size={20} color={colors.error} />
-              <Text style={styles.notMappedText}>Not Mapped</Text>
-            </>
+            <View style={{ display: "flex", flexDirection: "column" }}>
+              <TouchableOpacity onPress={() => hanldeMappingclicked(item)}>
+                <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 }}>
+                  <Text style={{ color: "#F7941E", fontWeight: 700, fontSize: 14 }}>Find Product</Text>
+                  <Svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <Path fillRule="evenodd" clipRule="evenodd" d="M5.83333 11.6667C9.05508 11.6667 11.6667 9.05508 11.6667 5.83333C11.6667 2.61158 9.05508 0 5.83333 0C2.61158 0 0 2.61158 0 5.83333C0 9.05508 2.61158 11.6667 5.83333 11.6667ZM6.1075 3.77417C6.18953 3.69224 6.30073 3.64622 6.41667 3.64622C6.5326 3.64622 6.6438 3.69224 6.72583 3.77417L8.47583 5.52417C8.55776 5.6062 8.60378 5.7174 8.60378 5.83333C8.60378 5.94927 8.55776 6.06047 8.47583 6.1425L6.72583 7.8925C6.68578 7.93548 6.63748 7.96996 6.58381 7.99387C6.53015 8.01778 6.47221 8.03064 6.41347 8.03168C6.35473 8.03271 6.29638 8.02191 6.2419 7.9999C6.18742 7.9779 6.13794 7.94515 6.09639 7.9036C6.05485 7.86206 6.0221 7.81257 6.00009 7.7581C5.97809 7.70362 5.96728 7.64527 5.96832 7.58653C5.96936 7.52779 5.98222 7.46985 6.00613 7.41619C6.03004 7.36252 6.06452 7.31422 6.1075 7.27417L7.11083 6.27083H3.5C3.38397 6.27083 3.27269 6.22474 3.19064 6.14269C3.10859 6.06065 3.0625 5.94937 3.0625 5.83333C3.0625 5.7173 3.10859 5.60602 3.19064 5.52397C3.27269 5.44193 3.38397 5.39583 3.5 5.39583H7.11083L6.1075 4.3925C6.02557 4.31047 5.97955 4.19927 5.97955 4.08333C5.97955 3.9674 6.02557 3.8562 6.1075 3.77417Z" fill="#F7941E" />
+                  </Svg>
+                </View>
+              </TouchableOpacity>
+              <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <UnMapped />
+                <Text style={{ color: "#E85B49", fontSize: 10, fontWeight: 700 }}>Mapping Required</Text>
+              </View>
+            </View>
           )}
-          
+
           <View style={styles.quantityControls}>
-            <TouchableOpacity 
-              style={styles.quantityButton}
-              onPress={() => handleQuantityChange(item.id, -item.moq)}
-            >
-              <Icon name="remove" size={20} color={colors.primary} />
-            </TouchableOpacity>
-            <Text style={styles.quantityText}>{quantity}</Text>
-            <TouchableOpacity 
-              style={styles.quantityButton}
-              onPress={() => handleQuantityChange(item.id, item.moq)}
-            >
-              <Icon name="add" size={20} color={colors.primary} />
-            </TouchableOpacity>
+            <View style={styles.quantityBox}>
+              <TouchableOpacity
+                style={styles.quantityButton}
+                onPress={() => handleQuantityChange(item, 'minus')}
+              >
+                <Icon name="remove" size={20} color={colors.primary} />
+              </TouchableOpacity>
+              <Text style={styles.quantityText}>{quantity}</Text>
+              <TouchableOpacity
+                style={styles.quantityButton}
+                onPress={() => handleQuantityChange(item, 'plus')}
+              >
+                <Icon name="add" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
     );
   };
 
-  const renderConfirmModal = () => (
-    <Modal
-      visible={showConfirmModal}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setShowConfirmModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalIcon}>
-            <Text style={styles.modalIconText}>!</Text>
-          </View>
-          
-          <Text style={styles.modalTitle}>Confirmation</Text>
-          <Text style={styles.modalMessage}>
-            Selected {mappedProducts.filter(p => quantities[p.id] > 0).length} Upload order PO will{'\n'}be checked out
-          </Text>
-
-          <View style={styles.commentContainer}>
-            <Text style={styles.commentLabel}>Write your comment*</Text>
-            <TextInput
-              style={styles.commentInput}
-              multiline
-              numberOfLines={4}
-              placeholder="Enter your comment here..."
-              placeholderTextColor="#999"
-            />
-          </View>
-
-          <View style={styles.modalActions}>
-            <TouchableOpacity 
-              style={styles.cancelButton}
-              onPress={() => setShowConfirmModal(false)}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.confirmButton}
-              onPress={() => handleConfirmOrder('')}
-            >
-              <Icon name="check" size={20} color="#fff" />
-              <Text style={styles.confirmButtonText}>Confirm</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create Order/Product Mapping</Text>
       </View>
-
       <View style={styles.progressContainer}>
         <View style={styles.progressStep}>
-          <View style={[styles.stepCircle, styles.completedStep]}>
-            <Icon name="check" size={16} color="#fff" />
+          <View style={[styles.stepCircle, styles.activeStep]}>
+            <Text style={styles.stepNumber}>
+              <Svg width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <Path d="M10.0833 0.75L3.66667 7.16667L0.75 4.25" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+            </Text>
           </View>
-          <Text style={[styles.stepLabel, styles.completedStepLabel]}>Upload Order</Text>
+          <Text style={[styles.stepLabel, styles.activeStepLabel]}>Upload Order</Text>
         </View>
         <View style={styles.progressLine} />
         <View style={styles.progressStep}>
-          <View style={[styles.stepCircle, styles.activeStep]}>
-            <Text style={styles.stepNumber}>2</Text>
+          <View style={[styles.stepCircle, styles.inactiveStep]}>
+            <Text style={[styles.stepNumber, styles.inactiveStepNumber]}>2</Text>
           </View>
-          <Text style={[styles.stepLabel, styles.activeStepLabel]}>Product Mapping</Text>
+          <Text style={[styles.stepLabel, styles.inactiveStepLabel]}>Products Mapping</Text>
         </View>
       </View>
-
       <View style={styles.mappingComplete}>
         <Icon name="check-circle" size={16} color="#169560" />
         <Text style={styles.mappingCompleteText}>Mapping Complete</Text>
       </View>
 
-      <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'All' && styles.activeTab]}
-          onPress={() => setActiveTab('All')}
-        >
-          <Text style={[styles.tabText, activeTab === 'All' && styles.activeTabText]}>
-            All(100)
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'Mapped' && styles.activeTab]}
-          onPress={() => setActiveTab('Mapped')}
-        >
-          <Text style={[styles.tabText, activeTab === 'Mapped' && styles.activeTabText]}>
-            Mapped(88)
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'Non-Mapped' && styles.activeTab]}
-          onPress={() => setActiveTab('Non-Mapped')}
-        >
-          <Text style={[styles.tabText, activeTab === 'Non-Mapped' && styles.activeTabText]}>
-            Non-Mapped(12)
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <View style={{ flex: 1, padding: 15, backgroundColor: "#F6F6F6" }}>
+        <View style={{ backgroundColor: "#FFF", borderRadius: 12, flex: 1, overflow: "hidden" }}>
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'All' && styles.activeTab]}
+              onPress={() => setActiveTab('All')}
+            >
+              <Text style={[styles.tabText, activeTab === 'All' && styles.activeTabText]}>
+                All({getFilteredProducts("All")?.length})
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'Mapped' && styles.activeTab]}
+              onPress={() => setActiveTab('Mapped')}
+            >
+              <Text style={[styles.tabText, activeTab === 'Mapped' && styles.activeTabText]}>
+                Mapped({getFilteredProducts("Mapped")?.length})
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'Non-Mapped' && styles.activeTab]}
+              onPress={() => setActiveTab('Non-Mapped')}
+            >
+              <Text style={[styles.tabText, activeTab === 'Non-Mapped' && styles.activeTabText]}>
+                Non-Mapped({getFilteredProducts("Non-Mapped")?.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Icon name="search" size={20} color="#999" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search product name/code"
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholderTextColor="#999"
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Icon name="search" size={20} color="#999" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search product name/code"
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholderTextColor="#999"
+              />
+            </View>
+            <TouchableOpacity style={styles.menuButton}>
+              <Icon name="more-vert" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={getFilteredProducts(activeTab)}
+            renderItem={renderProduct}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={() => (
+              !isLoading ? (
+                <View style={styles.emptyContainer}>
+                  <Icon name="inventory" size={60} color="#ccc" />
+                  <Text style={styles.emptyTitle}>No Products Found</Text>
+                  <Text style={styles.emptySubtitle}>
+                    Try adjusting your filters or check back later.
+                  </Text>
+                </View>
+              ) : <View style={{ paddingVertical: 20 }}>
+                <ActivityIndicator size="small" color="#FF6B00" />
+              </View>
+            )}
           />
+          <View style={styles.proceedButtonContainer}>
+            <TouchableOpacity
+              style={styles.proceedButton}
+              onPress={handleProceedToCart}
+            >
+              <Text style={styles.proceedText}>Proceed to Cart</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <TouchableOpacity style={styles.menuButton}>
-          <Icon name="more-vert" size={24} color="#666" />
-        </TouchableOpacity>
       </View>
-
-      <FlatList
-        data={getFilteredProducts()}
-        renderItem={renderProduct}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
+      <UnmappedProductsModal
+        visible={showConfirmModal}
+        message={`${getFilteredProducts("Non-Mapped")?.length} Products are Unmapped.\nStill would you like to Proceed?`}
+        onClose={() => setShowConfirmModal(false)}
+        onMapProducts={() => {
+          setShowConfirmModal(false);
+          console.log('Map Products clicked');
+        }}
+        onCheckout={() => {
+          setShowExitModal(true);
+          setTimeout(() => {
+            navigation.removeListener('beforeRemove');
+            navigation.replace('Cart');
+          }, 100);
+        }}
+      />
+      <CancelOrderModal
+        visible={showExitModal && !showConfirmModal}
+        onCancel={() => {
+          setShowExitModal(false);
+        }}
+        onClose={() => {
+          setTimeout(() => {
+            navigation.removeListener('beforeRemove');
+            navigation.goBack();
+          }, 100);
+        }}
       />
 
-      <TouchableOpacity 
-        style={styles.proceedButton}
-        onPress={handleProceedToCart}
-      >
-        <Text style={styles.proceedText}>Proceed to Cart</Text>
-      </TouchableOpacity>
-
-      {renderConfirmModal()}
+      <SearchProductModal
+        onSelectProduct={hanldeMapping}
+        visible={productMapping} onClose={() => {
+          setProductMapping(false)
+          setMappingProduct(null)
+        }} />
     </SafeAreaView>
   );
 };
@@ -356,46 +436,86 @@ const ProductMapping = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F6F6',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingTop: 12,
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#333',
     marginLeft: 16,
+    textAlign: "center",
+    width: "80%"
   },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 20,
+    paddingBottom: 6,
     backgroundColor: '#fff',
+    justifyContent: "space-between"
   },
   progressStep: {
-    alignItems: 'center',
+    alignItems: "center",
+    flexDirection: 'row',
+    display: "flex",
+    gap: 5
   },
   stepCircle: {
-    width: 32,
-    height: 32,
+    width: 25,
+    height: 25,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+  },
+  activeStep: {
+    backgroundColor: "#169560",
+    borderRadius: 16,
+  },
+  inactiveStep: {
+    backgroundColor: '#F7941E',
+  },
+  stepNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  inactiveStepNumber: {
+    color: '#FFF',
+  },
+  stepLabel: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: 900
+  },
+  activeStepLabel: {
+    fontWeight: '600',
+    color: '#169560',
+    fontWeight: 700,
+    fontSize: 16
+  },
+  inactiveStepLabel: {
+    color: '#2B2B2B',
+    fontWeight: 700,
+    fontSize: 16
+
+  },
+  progressLine: {
+    // flex: 1,
+    height: 2,
+    backgroundColor: '#909090',
+    marginHorizontal: 12,
+    width: 50
+    // marginBottom: 24,
   },
   completedStep: {
     backgroundColor: '#169560',
-  },
-  activeStep: {
-    backgroundColor: colors.primary,
   },
   stepNumber: {
     fontSize: 16,
@@ -410,23 +530,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#169560',
   },
-  activeStepLabel: {
-    fontWeight: '600',
-    color: '#333',
-  },
-  progressLine: {
-    flex: 1,
-    height: 2,
-    backgroundColor: '#E0E0E0',
-    marginHorizontal: 12,
-    marginBottom: 24,
-  },
   mappingComplete: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    backgroundColor: '#E8F4EF',
+    marginBottom: 5
+    // backgroundColor: '#E8F4EF',
   },
   mappingCompleteText: {
     fontSize: 14,
@@ -459,8 +569,9 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#F6F6F6',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    // backgroundColor: '#F6F6F6',
     gap: 12,
   },
   searchBar: {
@@ -470,7 +581,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 8,
     paddingHorizontal: 12,
-    height: 44,
+    height: 45,
+    borderWidth: 1,
+    borderColor: '#EDEDED'
   },
   searchInput: {
     flex: 1,
@@ -479,22 +592,28 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   menuButton: {
-    width: 44,
-    height: 44,
+    width: 45,
+    height: 45,
     backgroundColor: '#fff',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EDEDED'
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 100,
+    paddingBottom: 70,
   },
   productCard: {
     backgroundColor: '#fff',
     borderRadius: 8,
-    padding: 16,
     marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EDEDED",
+    paddingHorizontal: 4,
+    paddingVertical: 15
+
   },
   productHeader: {
     marginBottom: 4,
@@ -536,18 +655,20 @@ const styles = StyleSheet.create({
   productMetrics: {
     flexDirection: 'row',
     marginBottom: 12,
+    justifyContent: "space-between",
+    display: "flex"
   },
   metricItem: {
-    flex: 1,
+    // flex: 1,
   },
   metricLabel: {
     fontSize: 11,
-    color: '#999',
+    color: '#777777',
     marginBottom: 2,
   },
   metricValue: {
     fontSize: 13,
-    color: '#333',
+    color: '#777777',
     fontWeight: '500',
   },
   mappingStatus: {
@@ -590,20 +711,27 @@ const styles = StyleSheet.create({
     minWidth: 40,
     textAlign: 'center',
   },
-  proceedButton: {
+  proceedButtonContainer: {
     position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#FFF",
+    paddingHorizontal: 16,
+  },
+  proceedButton: {
     bottom: 20,
-    left: 16,
-    right: 16,
     backgroundColor: colors.primary,
     paddingVertical: 16,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    alignItems: 'center',
+    // alignItems: 'center',
   },
   proceedText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+    textAlign: "center"
   },
   modalOverlay: {
     flex: 1,
@@ -697,6 +825,48 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     marginLeft: 4,
+  },
+  quantityBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F7941E1A',
+    padding: 3,
+    borderRadius: 5
+  },
+  quantityButton: {
+    width: 35,
+    height: 35,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: "#feefdd"
+  },
+  quantityText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 50,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#555',
+    marginTop: 10,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 5,
+    textAlign: 'center',
+    paddingHorizontal: 30,
   },
 });
 

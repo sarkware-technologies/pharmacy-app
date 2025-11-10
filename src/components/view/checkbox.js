@@ -23,7 +23,7 @@ export default function CustomCheckbox({
 
   return (
     <TouchableOpacity
-      style={[styles.container, containerStyle]}
+      style={[styles.container,containerStyle]}
       onPress={handlePress}
       activeOpacity={0.8}
     >
@@ -40,7 +40,7 @@ export default function CustomCheckbox({
           checkboxStyle,
         ]}
       >
-        {checked && <Text style={[styles.checkMark, { fontSize: size - 8 }]}>✓</Text>}
+        {checked && <Text style={[styles.checkMark,{fontSize:size-8}]}>✓</Text>}
       </View>
 
       {title ? <Text style={[styles.label, textStyle]}>{title}</Text> : null}
