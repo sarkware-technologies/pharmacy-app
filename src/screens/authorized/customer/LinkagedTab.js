@@ -20,6 +20,8 @@ import {
   RejectCustomerModal,
   TagHospitalModal 
 } from '../../../components/OnboardConfirmModel';
+import { customerAPI } from '../../../api/customer';
+import { useSelector } from 'react-redux';
 
 const { width } = Dimensions.get('window');
 
@@ -130,6 +132,9 @@ export const LinkagedTab = ({ customerType = 'Hospital' }) => {
   const [allDivisionsSelected, setAllDivisionsSelected] = useState(mockDivisions.allDivisions.filter(d => d.selected));
   const [searchText, setSearchText] = useState('');
   
+  // Get logged-in user data
+  const loggedInUser = useSelector(state => state.auth.user);
+  
   // Modal states
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showLinkDivisionsModal, setShowLinkDivisionsModal] = useState(false);
@@ -139,6 +144,22 @@ export const LinkagedTab = ({ customerType = 'Hospital' }) => {
 
   // Customer Hierarchy states
   const [activeHierarchyTab, setActiveHierarchyTab] = useState('pharmacies');
+  
+  // Toast states
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
+
+  // Show toast notification
+  const showToast = (message, type = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+    
+    setTimeout(() => {
+      setToastVisible(false);
+    }, 3000);
+  };
 
   const handleApprove = (item) => {
     setSelectedItem(item);
@@ -148,6 +169,84 @@ export const LinkagedTab = ({ customerType = 'Hospital' }) => {
   const handleReject = (item) => {
     setSelectedItem(item);
     setShowRejectModal(true);
+  };
+  
+  const handleApproveConfirm = async (comment) => {
+    try {
+      const workflowId = selectedItem?.workflowId || selectedItem?.id;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      
+      const actionData = {
+        stepOrder: 3,
+        parallelGroup: 1,
+        actorId: actorId,
+        action: "APPROVE",
+        comments: comment || "Approved",
+        actionData: {}
+      };
+
+      console.log('Approving item:', selectedItem?.name);
+      console.log('Workflow ID:', workflowId);
+      console.log('Logged-in User ID (actorId):', actorId);
+      console.log('Action Data:', actionData);
+
+      const response = await customerAPI.workflowAction(workflowId, actionData);
+      
+      setShowApproveModal(false);
+      showToast(`${selectedItem?.name} approved successfully!`, 'success');
+      setSelectedItem(null);
+    } catch (error) {
+      console.error('Error approving:', error);
+      setShowApproveModal(false);
+      showToast(`Failed to approve: ${error.message}`, 'error');
+      setSelectedItem(null);
+    }
+  };
+  
+  const handleRejectConfirm = async () => {
+    try {
+      const workflowId = selectedItem?.workflowId || selectedItem?.id;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      
+      const actionData = {
+        stepOrder: 3,
+        parallelGroup: 1,
+        actorId: actorId,
+        action: "REJECT",
+        comments: "Rejected",
+        actionData: {}
+      };
+
+      console.log('Rejecting item:', selectedItem?.name);
+      console.log('Workflow ID:', workflowId);
+      console.log('Logged-in User ID (actorId):', actorId);
+      console.log('Action Data:', actionData);
+
+      const response = await customerAPI.workflowAction(workflowId, actionData);
+      
+      setShowRejectModal(false);
+      showToast(`${selectedItem?.name} rejected!`, 'error');
+      setSelectedItem(null);
+    } catch (error) {
+      console.error('Error rejecting:', error);
+      setShowRejectModal(false);
+      showToast(`Failed to reject: ${error.message}`, 'error');
+      setSelectedItem(null);
+    }
+  };
+  
+  const handleLinkDivisionsConfirm = (comment) => {
+    // TODO: API integration
+    console.log('Link Divisions with comment:', comment);
+    setShowLinkDivisionsModal(false);
+    showToast('Divisions linked successfully!', 'success');
+  };
+  
+  const handleTagConfirm = () => {
+    // TODO: API integration
+    console.log('Tagged');
+    setShowTagModal(false);
+    showToast('Hospital tagged successfully!', 'success');
   };
 
   const toggleDivisionSelection = (division, isAllDivisions = false) => {
@@ -721,43 +820,49 @@ export const LinkagedTab = ({ customerType = 'Hospital' }) => {
       
       <ApproveConfirmModal
         visible={showApproveModal}
-        onClose={() => setShowApproveModal(false)}
-        onConfirm={(comment) => {
-          console.log('Approved with comment:', comment);
+        onClose={() => {
           setShowApproveModal(false);
+          setSelectedItem(null);
         }}
+        onConfirm={handleApproveConfirm}
         customerName={selectedItem?.name || 'customer'}
       />
 
       <LinkDivisionsModal
         visible={showLinkDivisionsModal}
         onClose={() => setShowLinkDivisionsModal(false)}
-        onConfirm={(comment) => {
-          console.log('Link Divisions with comment:', comment);
-          setShowLinkDivisionsModal(false);
-        }}
+        onConfirm={handleLinkDivisionsConfirm}
       />
 
       <RejectCustomerModal
         visible={showRejectModal}
-        onClose={() => setShowRejectModal(false)}
-        onConfirm={() => {
-          console.log('Rejected');
+        onClose={() => {
           setShowRejectModal(false);
+          setSelectedItem(null);
         }}
+        onConfirm={handleRejectConfirm}
         message="Are you sure you want to reject?"
       />
 
       <TagHospitalModal
         visible={showTagModal}
         onClose={() => setShowTagModal(false)}
-        onConfirm={() => {
-          console.log('Tagged');
-          setShowTagModal(false);
-        }}
+        onConfirm={handleTagConfirm}
         hospitalName="this hospital"
         teamName="Instra Team"
       />
+      
+      {/* Toast Notification */}
+      {toastVisible && (
+        <View style={styles.toastContainer}>
+          <View style={[
+            styles.toast,
+            toastType === 'success' ? styles.toastSuccess : styles.toastError
+          ]}>
+            <Text style={styles.toastText}>{toastMessage}</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -1417,6 +1522,42 @@ const styles = StyleSheet.create({
   divisionModalCode: {
     fontSize: 14,
     color: '#666',
+  },
+  // Toast styles
+  toastContainer: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  toast: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 200,
+    maxWidth: '90%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  toastSuccess: {
+    backgroundColor: '#10B981',
+  },
+  toastError: {
+    backgroundColor: '#EF4444',
+  },
+  toastText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });
 

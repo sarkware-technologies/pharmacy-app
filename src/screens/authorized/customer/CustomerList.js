@@ -14,6 +14,9 @@ import {
   Platform,
   RefreshControl,
   ActivityIndicator,
+  Alert,
+  Linking,
+  Image,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,6 +44,11 @@ import Document from '../../../components/icons/Document';
 import People from '../../../components/icons/People';
 import Refresh from '../../../components/icons/Refresh';
 import AlertCircle from '../../../components/icons/AlertCircle';
+import EditCustomer from '../../../components/icons/EditCustomer';
+import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModal';
+import RejectCustomerModal from '../../../components/modals/RejectCustomerModal';
+import { customerAPI } from '../../../api/customer';
+import { SkeletonList } from '../../../components/SkeletonLoader';
 
 const { width, height } = Dimensions.get('window');
 
@@ -74,6 +82,9 @@ const CustomerList = ({ navigation }) => {
   const customerTypes = useSelector(selectCustomerTypes);
   const customerStatuses = useSelector(selectCustomerStatuses);
   const cities = useSelector(state => state.customer.cities);
+  
+  // Get logged-in user data
+  const loggedInUser = useSelector(state => state.auth.user);
   const states = useSelector(state => state.customer.states);
 
   const pagination = useSelector(selectPagination);
@@ -98,6 +109,22 @@ const CustomerList = ({ navigation }) => {
   });
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const [approveModalVisible, setApproveModalVisible] = useState(false);
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [selectedCustomerForAction, setSelectedCustomerForAction] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
+  
+  // Documents modal state
+  const [showDocumentsModal, setShowDocumentsModal] = useState(false);
+  const [customerDocuments, setCustomerDocuments] = useState(null);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [selectedDocumentForPreview, setSelectedDocumentForPreview] = useState(null);
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewSignedUrl, setPreviewSignedUrl] = useState(null);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -106,14 +133,14 @@ const CustomerList = ({ navigation }) => {
 
   const filteredCustomers = customers.filter((customer) => {
     if (activeTab === 'onboarded') {
-      return customer.status === 'ACTIVE';
+      return customer.statusName === 'ACTIVE';
+    } else if (activeTab === 'waitingForApproval') {
+      return customer.statusName === 'PENDING';
     } else if (activeTab === 'notOnboarded') {
-      return customer.status === 'NOT-ONBOARDED';
+      return customer.statusName === 'NOT-ONBOARDED';
     }
     return true;
   });
-
-  console.log(filteredCustomers);
 
   // Fetch customers on mount and when tab changes
   useEffect(() => {
@@ -124,7 +151,7 @@ const CustomerList = ({ navigation }) => {
         page: 1,
         limit: 10,
         isLoadMore: false,
-        isStaging: activeTab === 'notOnboarded' // Use staging endpoint for Not Onboarded tab
+        isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval' // Use staging endpoint for Not Onboarded and Waiting for Approval tabs
       }));
       
       // Only fetch these on initial mount
@@ -135,10 +162,12 @@ const CustomerList = ({ navigation }) => {
     };
     
     initializeData();
-  }, [dispatch, activeTab]); // Added activeTab as dependency
+  }, [activeTab, dispatch]); // Only trigger on tab change
 
   // Handle search with debounce
   useEffect(() => {
+    if (!searchText) return; // Don't search if searchText is empty
+    
     const delayDebounceFn = setTimeout(() => {
       dispatch(setFilters({ ...filters, searchText }));
       dispatch(resetCustomersList());
@@ -148,12 +177,12 @@ const CustomerList = ({ navigation }) => {
         searchText: searchText,
         ...filters,
         isLoadMore: false,
-        isStaging: activeTab === 'notOnboarded' // Pass isStaging based on active tab
+        isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval' // Pass isStaging based on active tab
       }));
     }, 500);
     
     return () => clearTimeout(delayDebounceFn);
-  }, [searchText, dispatch, activeTab]); // Added activeTab as dependency
+  }, [searchText, activeTab, filters, dispatch]); // Include all dependencies
 
   // Refresh function
   const onRefresh = async () => {
@@ -164,7 +193,7 @@ const CustomerList = ({ navigation }) => {
       limit: 10,
       ...filters,
       isLoadMore: false,
-      isStaging: activeTab === 'notOnboarded' // Pass isStaging based on active tab
+      isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval' // Pass isStaging based on active tab
     }));
     setIsRefreshing(false);
   };
@@ -182,7 +211,7 @@ const CustomerList = ({ navigation }) => {
       limit: limit || 10,
       ...filters,
       isLoadMore: true, // This tells the slice to append, not replace
-      isStaging: activeTab === 'notOnboarded' // Pass isStaging based on active tab
+      isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval' // Pass isStaging based on active tab
     })).then((result) => {
       if (result.type === 'customer/fetchList/fulfilled') {
         dispatch(incrementPage());
@@ -227,7 +256,189 @@ const CustomerList = ({ navigation }) => {
     );
   };
 
-  const keyExtractor = (item) => (item.customerId ? item.customerId.toString() : "");
+  // Show toast notification
+  const showToast = (message, type = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+    
+    setTimeout(() => {
+      setToastVisible(false);
+    }, 3000);
+  };
+
+  // Fetch customer documents
+  const fetchCustomerDocuments = async (customer) => {
+    setLoadingDocuments(true);
+    try {
+      const customerId = customer?.stgCustomerId || customer?.customerId;
+      const isStaging = customer?.statusName === 'PENDING' || customer?.statusName === 'NOT-ONBOARDED';
+      
+      const response = await customerAPI.getCustomerDetails(customerId, isStaging);
+      
+      if (response?.data) {
+        const details = response.data;
+        const docs = {
+          gst: details.securityDetails?.gstNumber || null,
+          gstDoc: details.docType?.find(d => d.doctypeName === 'GSTIN') || null,
+          pan: details.securityDetails?.panNumber || null,
+          panDoc: details.docType?.find(d => d.doctypeName === 'PAN CARD') || null,
+          registrationCertificate: details.docType?.find(d => d.doctypeName === 'REGISTRATION') || null,
+          practiceCertificate: details.docType?.find(d => d.doctypeName === 'PRACTICE') || null,
+          electricityBill: details.docType?.find(d => d.doctypeName === 'ELECTRICITY BILL') || null,
+          image: details.docType?.find(d => d.doctypeName === 'IMAGE') || null,
+          allDocuments: details.docType || []
+        };
+        setCustomerDocuments(docs);
+        setShowDocumentsModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching customer documents:', error);
+      Alert.alert('Error', 'Failed to load customer documents');
+    } finally {
+      setLoadingDocuments(false);
+    }
+  };
+
+  // Preview document
+  const previewDocument = async (doc) => {
+    if (!doc || !doc.s3Path) {
+      Alert.alert('Info', 'Document not available');
+      return;
+    }
+    
+    setSelectedDocumentForPreview(doc);
+    setPreviewModalVisible(true);
+    setPreviewLoading(true);
+    
+    try {
+      const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
+      if (response?.data?.signedUrl) {
+        setPreviewSignedUrl(response.data.signedUrl);
+      }
+    } catch (error) {
+      console.error('Error fetching document URL:', error);
+      Alert.alert('Error', 'Failed to load document');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  // Download document
+  const downloadDocument = async (doc) => {
+    if (!doc || !doc.s3Path) {
+      Alert.alert('Info', 'Document not available for download');
+      return;
+    }
+    
+    try {
+      const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
+      if (response?.data?.signedUrl) {
+        await Linking.openURL(response.data.signedUrl);
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      Alert.alert('Error', 'Failed to download document');
+    }
+  };
+
+  // Handle approve customer
+  const handleApprovePress = (customer) => {
+    setSelectedCustomerForAction(customer);
+    setApproveModalVisible(true);
+  };
+
+  const handleApproveConfirm = async (comment) => {
+    console.log(selectedCustomerForAction, 'selectedCustomerForAction')
+    try {
+      const workflowId = selectedCustomerForAction?.workflowId || selectedCustomerForAction?.stgCustomerId;
+      const instanceId = selectedCustomerForAction?.instaceId || selectedCustomerForAction?.instaceId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      
+      const actionData = {
+        stepOrder: 3,
+        parallelGroup: 1,
+        actorId: actorId,
+        action: "APPROVE",
+        comments: comment || "Approved",
+        instanceId: instanceId,
+        actionData: {}
+      };
+
+      const response = await customerAPI.workflowAction(instanceId, actionData);
+      
+      setApproveModalVisible(false);
+      showToast(`Customer ${selectedCustomerForAction?.customerName} approved successfully!`, 'success');
+      setSelectedCustomerForAction(null);
+      
+      // Refresh the customer list after approval
+      dispatch(fetchCustomersList({
+        page: 1,
+        limit: pagination.limit,
+        searchText: filters.searchText,
+        isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval'
+      }));
+    } catch (error) {
+      console.error('Error approving customer:', error);
+      setApproveModalVisible(false);
+      showToast(`Failed to approve customer: ${error.message}`, 'error');
+      setSelectedCustomerForAction(null);
+    }
+  };
+
+  // Handle reject customer
+  const handleRejectPress = (customer) => {
+    setSelectedCustomerForAction(customer);
+    setRejectModalVisible(true);
+  };
+
+  const handleRejectConfirm = async (comment) => {
+    try {
+      const workflowId = selectedCustomerForAction?.workflowId || selectedCustomerForAction?.stgCustomerId;
+      const instanceId = selectedCustomerForAction?.customerId || selectedCustomerForAction?.stgCustomerId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      
+      const actionData = {
+        stepOrder: 3,
+        parallelGroup: 1,
+        actorId: actorId,
+        action: "REJECT",
+        comments: comment || "Rejected",
+        instanceId: instanceId,
+        actionData: {}
+      };
+
+      console.log('Rejecting customer:', selectedCustomerForAction?.customerName);
+      console.log('Workflow ID:', workflowId);
+      console.log('Instance ID:', instanceId);
+      console.log('Logged-in User ID (actorId):', actorId);
+      console.log('Action Data:', actionData);
+
+      const response = await customerAPI.workflowAction(workflowId, actionData);
+      
+      setRejectModalVisible(false);
+      showToast(`Customer ${selectedCustomerForAction?.customerName} rejected!`, 'error');
+      setSelectedCustomerForAction(null);
+      
+      // Refresh the customer list after rejection
+      dispatch(fetchCustomersList({
+        page: 1,
+        limit: pagination.limit,
+        searchText: filters.searchText,
+        isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval'
+      }));
+    } catch (error) {
+      console.error('Error rejecting customer:', error);
+      setRejectModalVisible(false);
+      showToast(`Failed to reject customer: ${error.message}`, 'error');
+      setSelectedCustomerForAction(null);
+    }
+  };
+
+  const keyExtractor = (item) => {
+    const id = item.stgCustomerId || item.customerId;
+    return id ? id.toString() : "";
+  };
 
   useEffect(() => {
     Animated.parallel([
@@ -356,7 +567,7 @@ const CustomerList = ({ navigation }) => {
       page: 1,
       limit: 10,
       ...filterParams,
-      isStaging: activeTab === 'notOnboarded' // Pass isStaging based on active tab
+      isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval' // Pass isStaging based on active tab
     }));
     
     setFilterModalVisible(false);
@@ -370,7 +581,7 @@ const CustomerList = ({ navigation }) => {
       limit: 10,
       ...filters,
       isLoadMore: false,
-      isStaging: activeTab === 'notOnboarded'
+      isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval'
     }));
   };
 
@@ -577,12 +788,16 @@ const CustomerList = ({ navigation }) => {
                   <Edit color="#666" />
                 </TouchableOpacity>
               )}
+
+              {item.statusName === 'APPROVED' && (
+                <TouchableOpacity style={styles.actionButton}>
+                  <Edit color="#666" />
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity 
                 style={styles.actionButton}
-                onPress={() => {
-                  setSelectedCustomer(item);
-                  setDocumentModalVisible(true);
-                }}
+                onPress={() => fetchCustomerDocuments(item)}
               >
                 <Download color="#666" />
               </TouchableOpacity>
@@ -590,7 +805,7 @@ const CustomerList = ({ navigation }) => {
           </View>
 
           <View style={styles.customerInfo}>
-            <View style={styles.infoRow}>
+           <View style={styles.infoRow}>
               <AddrLine color="#999" />
               <Text style={styles.infoText}>{item.customerCode}</Text>
               <Text style={styles.divider}>|</Text>
@@ -598,17 +813,23 @@ const CustomerList = ({ navigation }) => {
               <Text style={styles.divider}>|</Text>
               <Text style={styles.infoText}>{item.groupName}</Text>
               <Text style={styles.divider}>|</Text>
-              <Text style={{...styles.infoText, marginRight: 5}}>{item.customerType}</Text>
+              <Text
+                style={[styles.infoText, { marginRight: 5, maxWidth: 100 }]} // limit width
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.customerType}
+              </Text>
+
               {item.customerType === 'Hospital' && (
                 <AlertFilled color="#999" style={styles.infoIcon} />
               )}
             </View>
-
             <View style={styles.contactRow}>
               <Phone color="#999" />
               <Text style={{...styles.contactText, marginRight: 15}}>{item.mobile}</Text>
               <Email color="#999" style={styles.mailIcon} />
-              <Text style={styles.contactText}>{item.email}</Text>
+              <Text style={styles.contactText}   ellipsizeMode="tail" numberOfLines={1}  >{item.email}</Text>
             </View>
           </View>
 
@@ -628,16 +849,22 @@ const CustomerList = ({ navigation }) => {
               <Locked fill="#666" />
               <Text style={styles.blockButtonText}>Block</Text>
             </TouchableOpacity>
-          ) : item.statusName === 'PENDING' ? (
+          ) :  item.statusName === 'PENDING' && item.action == 'APPROVE' ? (
             <View style={styles.pendingActions}>
-              <TouchableOpacity style={styles.approveButton}>
+              <TouchableOpacity 
+                style={styles.approveButton}
+                onPress={() => handleApprovePress(item)}
+              >
                 <Text style={styles.approveButtonText}>Approve</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.rejectButton}>
+              <TouchableOpacity 
+                style={styles.rejectButton}
+                onPress={() => handleRejectPress(item)}
+              >
                 <CloseCircle />
               </TouchableOpacity>
             </View>
-          ) : item.statusName === 'NOT ONBOARDED' ? (
+          ) : item.statusName === 'NOT-ONBOARDED' ? (
             <TouchableOpacity 
               style={styles.onboardButton}
               onPress={() => navigation.navigate('CustomerOnboard', { customerId: item.customerId })}>
@@ -649,6 +876,187 @@ const CustomerList = ({ navigation }) => {
       </Animated.View>
     );
   };
+
+  // Documents Modal - Shows all documents for a customer
+  const DocumentsModal = () => (
+    <Modal
+      visible={showDocumentsModal}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowDocumentsModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.documentsModalContent}>
+          {/* Header */}
+          <View style={styles.documentsModalHeader}>
+            <Text style={styles.documentsModalTitle}>All Documents</Text>
+            <TouchableOpacity onPress={() => setShowDocumentsModal(false)}>
+              <CloseCircle />
+            </TouchableOpacity>
+          </View>
+
+          {loadingDocuments ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loadingText}>Loading documents...</Text>
+            </View>
+          ) : customerDocuments && customerDocuments.allDocuments && customerDocuments.allDocuments.length > 0 ? (
+            <ScrollView style={styles.documentsListContainer} showsVerticalScrollIndicator={false}>
+              {/* Top Row: GST and PAN side by side */}
+              <View style={styles.documentsTopRow}>
+                {customerDocuments.gstDoc && (
+                  <View style={styles.documentCardSmall}>
+                    <View style={styles.documentCardContentSmall}>
+                      <View style={styles.documentCardLeftSmall}>
+                        <Icon name="document-outline" size={20} color={colors.primary} />
+                        <View style={styles.documentInfoSmall}>
+                          <Text style={styles.documentFileNameSmall} numberOfLines={1}>
+                            {customerDocuments.gstDoc.fileName || 'GST'}
+                          </Text>
+                          <Text style={styles.documentTypeSmall}>{customerDocuments.gstDoc.doctypeName}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.documentActionsSmall}>
+                        <TouchableOpacity 
+                          style={styles.documentActionButtonSmall}
+                          onPress={() => previewDocument(customerDocuments.gstDoc)}
+                        >
+                          <EyeOpen width={16} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.documentActionButtonSmall}
+                          onPress={() => downloadDocument(customerDocuments.gstDoc)}
+                        >
+                          <Download width={16} color={colors.primary} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                )}
+                {customerDocuments.panDoc && (
+                  <View style={styles.documentCardSmall}>
+                    <View style={styles.documentCardContentSmall}>
+                      <View style={styles.documentCardLeftSmall}>
+                        <Icon name="document-outline" size={20} color={colors.primary} />
+                        <View style={styles.documentInfoSmall}>
+                          <Text style={styles.documentFileNameSmall} numberOfLines={1}>
+                            {customerDocuments.panDoc.fileName || 'PAN'}
+                          </Text>
+                          <Text style={styles.documentTypeSmall}>{customerDocuments.panDoc.doctypeName}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.documentActionsSmall}>
+                        <TouchableOpacity 
+                          style={styles.documentActionButtonSmall}
+                          onPress={() => previewDocument(customerDocuments.panDoc)}
+                        >
+                          <EyeOpen width={16} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.documentActionButtonSmall}
+                          onPress={() => downloadDocument(customerDocuments.panDoc)}
+                        >
+                          <Download width={16} color={colors.primary} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {/* Other Documents Below */}
+              {customerDocuments.allDocuments
+                .filter(doc => doc.doctypeName !== 'GSTIN' && doc.doctypeName !== 'PAN CARD')
+                .map((doc, index) => (
+                  <View key={index} style={styles.documentCard}>
+                    <View style={styles.documentCardContent}>
+                      <View style={styles.documentCardLeft}>
+                        <Icon name="document-outline" size={24} color={colors.primary} />
+                        <View style={styles.documentInfo}>
+                          <Text style={styles.documentFileName} numberOfLines={1}>
+                            {doc.fileName || doc.doctypeName}
+                          </Text>
+                          <Text style={styles.documentType}>{doc.doctypeName}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.documentActions}>
+                        <TouchableOpacity 
+                          style={styles.documentActionButton}
+                          onPress={() => previewDocument(doc)}
+                        >
+                          <EyeOpen width={18} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.documentActionButton}
+                          onPress={() => downloadDocument(doc)}
+                        >
+                          <Download width={18} color={colors.primary} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.noDocumentsContainer}>
+              <Icon name="document-outline" size={48} color="#ccc" />
+              <Text style={styles.noDocumentsText}>No documents available</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // Document Preview Modal
+  const DocumentPreviewModal = () => (
+    <Modal
+      visible={previewModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setPreviewModalVisible(false)}
+    >
+      <View style={styles.previewModalOverlay}>
+        <View style={styles.previewModalContent}>
+          <View style={styles.previewModalHeader}>
+            <Text style={styles.previewModalTitle} numberOfLines={1}>
+              {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
+            </Text>
+            <TouchableOpacity onPress={() => setPreviewModalVisible(false)}>
+              <CloseCircle />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.previewContainer}>
+            {previewLoading ? (
+              <ActivityIndicator size="large" color={colors.primary} />
+            ) : previewSignedUrl && (selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpg') || 
+                                     selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpeg') || 
+                                     selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.png')) ? (
+              <Image 
+                source={{ uri: previewSignedUrl }} 
+                style={styles.previewImage}
+                resizeMode="contain"
+              />
+            ) : (
+              <View style={styles.documentPreviewPlaceholder}>
+                <Icon name="document-text-outline" size={64} color="#999" />
+                <Text style={styles.documentPreviewText}>{selectedDocumentForPreview?.fileName}</Text>
+              </View>
+            )}
+          </View>
+
+          <TouchableOpacity 
+            style={styles.downloadButtonInPreview}
+            onPress={() => downloadDocument(selectedDocumentForPreview)}
+          >
+            <Download width={20} color="#fff" />
+            <Text style={styles.downloadButtonText}>Download</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
 
   const DownloadModal = () => (
     <Modal
@@ -726,6 +1134,14 @@ const CustomerList = ({ navigation }) => {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          style={[styles.tab, activeTab === 'waitingForApproval' && styles.activeTab]}
+          onPress={() => setActiveTab('waitingForApproval')}
+        >
+          <Text style={[styles.tabText, activeTab === 'waitingForApproval' && styles.activeTabText]}>
+            Waiting for Approval
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'notOnboarded' && styles.activeTab]}
           onPress={() => setActiveTab('notOnboarded')}
         >
@@ -775,10 +1191,7 @@ const CustomerList = ({ navigation }) => {
       >
 
         {listLoading && customers.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading customers...</Text>
-        </View>
+        <SkeletonList items={5} />
       ) :listError && customers.length === 0 ? (
         <View style={styles.errorContainer}>
           <AlertCircle size={60} color="#EF4444" />
@@ -849,13 +1262,46 @@ const CustomerList = ({ navigation }) => {
         </Animated.View>
 
         <DownloadModal />
-        <DocumentModal />
+        <DocumentsModal />
+        <DocumentPreviewModal />
 
         <FilterModal 
           visible={filterModalVisible}
           onClose={() => setFilterModalVisible(false)}
           onApply={handleApplyFilters}
         />
+
+        <ApproveCustomerModal
+          visible={approveModalVisible}
+          onClose={() => {
+            setApproveModalVisible(false);
+            setSelectedCustomerForAction(null);
+          }}
+          onConfirm={handleApproveConfirm}
+          customerName={selectedCustomerForAction?.customerName}
+        />
+
+        <RejectCustomerModal
+          visible={rejectModalVisible}
+          onClose={() => {
+            setRejectModalVisible(false);
+            setSelectedCustomerForAction(null);
+          }}
+          onConfirm={handleRejectConfirm}
+          customerName={selectedCustomerForAction?.customerName}
+        />
+
+        {/* Toast Notification */}
+        {toastVisible && (
+          <View style={styles.toastContainer}>
+            <View style={[
+              styles.toast,
+              toastType === 'success' ? styles.toastSuccess : styles.toastError
+            ]}>
+              <Text style={styles.toastText}>{toastMessage}</Text>
+            </View>
+          </View>
+        )}
 
       </View>
     </SafeAreaView>
@@ -998,6 +1444,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 4,
+    marginTop: 2,
   },
   customerInfo: {
     marginBottom: 12,
@@ -1312,6 +1759,248 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
     fontWeight: '500',
+  },
+  // Toast styles
+  toastContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  toast: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 200,
+    maxWidth: '90%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  toastSuccess: {
+    backgroundColor: '#10B981',
+  },
+  toastError: {
+    backgroundColor: '#EF4444',
+  },
+  toastText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  // Documents Modal Styles
+  documentsModalContent: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '90%',
+  },
+  documentsModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  documentsModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  documentsListContainer: {
+    flex: 1,
+    marginVertical: 12,
+  },
+  documentsTopRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  documentCardSmall: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+  },
+  documentCardContentSmall: {
+    flexDirection: 'column',
+    padding: 10,
+  },
+  documentCardLeftSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  documentInfoSmall: {
+    marginLeft: 8,
+    flex: 1,
+  },
+  documentFileNameSmall: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 2,
+  },
+  documentTypeSmall: {
+    fontSize: 11,
+    color: '#999',
+  },
+  documentActionsSmall: {
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'flex-end',
+  },
+  documentActionButtonSmall: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: '#F0F9FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  documentCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  documentCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+  },
+  documentCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  documentInfo: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  documentFileName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 4,
+  },
+  documentType: {
+    fontSize: 12,
+    color: '#999',
+  },
+  documentActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  documentActionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#F0F9FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+  },
+  noDocumentsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  noDocumentsText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#999',
+  },
+  previewModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewModalContent: {
+    width: width * 0.95,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  previewModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  previewModalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    flex: 1,
+  },
+  previewContainer: {
+    height: 300,
+    backgroundColor: '#F9FAFB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  documentPreviewPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  documentPreviewText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  downloadButtonInPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    margin: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  downloadButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 

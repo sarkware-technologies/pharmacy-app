@@ -19,9 +19,10 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchCustomerDetails } from '../../../redux/slices/customerSlice';
+import { fetchCustomerDetails, clearSelectedCustomer } from '../../../redux/slices/customerSlice';
 import { customerAPI } from '../../../api/customer';
 import LinkagedTab from './LinkagedTab';
+import { SkeletonDetailPage } from '../../../components/SkeletonLoader';
 
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import Details from '../../../components/icons/Details';
@@ -52,14 +53,29 @@ const CustomerDetail = ({ navigation, route }) => {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
-  // Fetch customer details on mount
+  // Fetch customer details on mount - FIXED to prevent double API calls
   useEffect(() => {
-    if (customer?.customerId) {
-      dispatch(fetchCustomerDetails(customer.customerId));
+    // For staging customers (PENDING, NOT-ONBOARDED), use stgCustomerId, otherwise use customerId
+    const customerId = customer?.stgCustomerId || customer?.customerId;
+    const isStaging = customer?.statusName === 'PENDING' || customer?.statusName === 'NOT-ONBOARDED';
+    
+    if (customerId) {
+      console.log('Fetching customer details for:', { customerId, isStaging });
+      dispatch(fetchCustomerDetails({
+        customerId,
+        isStaging
+      }));
     }
-  }, [customer?.customerId, dispatch]);
+    
+    // Cleanup: clear selected customer when component unmounts or customer changes
+    return () => {
+      dispatch(clearSelectedCustomer());
+    };
+  }, [customer?.stgCustomerId, customer?.customerId, dispatch]);
 
-  console.log(selectedCustomer);
+  console.log('CustomerDetail - selectedCustomer:', selectedCustomer);
+  console.log('CustomerDetail - detailsLoading:', detailsLoading);
+  console.log('CustomerDetail - detailsError:', detailsError);
 
   // Format customer data from API response to match the UI structure
   const customerData = selectedCustomer ? {
@@ -338,17 +354,24 @@ const CustomerDetail = ({ navigation, route }) => {
       </View>
 
       {/* Content */}
-      { activeTab === 'details' &&
-      (<ScrollView 
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View
-          style={{
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-          }}
+      {activeTab === 'details' && (
+        <ScrollView 
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
         >
+          {detailsLoading ? (
+            <SkeletonDetailPage />
+          ) : !selectedCustomer ? (
+            <View style={{ padding: 20 }}>
+              <Text>No customer data available</Text>
+            </View>
+          ) : (
+            <Animated.View
+              style={{
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+              }}
+            >
           {/* Details Section */}
           <AnimatedSection delay={100}>
             <Text style={styles.sectionTitle}>Details</Text>
@@ -515,7 +538,7 @@ const CustomerDetail = ({ navigation, route }) => {
                     </View>
                   </View>
                 </View>
-              </View>            
+              </View>
           </AnimatedSection>
 
           {/* Image */}
@@ -540,12 +563,14 @@ const CustomerDetail = ({ navigation, route }) => {
               </View>
             </AnimatedSection>
           )}
-        </Animated.View>
-        </ScrollView>)}
+            </Animated.View>
+          )}
+        </ScrollView>
+      )}
 
-        { activeTab === 'linkaged' && (<LinkagedTab customerType={customerData.customerType} />) }
+      {activeTab === 'linkaged' && <LinkagedTab customerType={customerData.customerType} />}
 
-        <DocumentModal />
+      <DocumentModal />
       </View>
     </SafeAreaView>
   );

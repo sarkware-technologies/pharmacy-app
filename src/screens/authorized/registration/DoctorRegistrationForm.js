@@ -235,7 +235,7 @@ const DoctorRegistrationForm = () => {
   const loadInitialData = async () => {
     try {
       // Load license types first (for doctors, typeId=3, categoryId=0)
-      const licenseResponse = await customerAPI.getLicenseTypes(typeId || 3, categoryId || 0);
+      const licenseResponse = await customerAPI.getLicenseTypes(typeId || 3, categoryId || 0, subCategoryId  || 0);
       if (licenseResponse.success && licenseResponse.data) {
         const licenseData = {};
         licenseResponse.data.forEach(license => {
@@ -292,24 +292,6 @@ const DoctorRegistrationForm = () => {
       console.error('Error loading customer groups:', error);
     }
 
-    // Load hospitals and pharmacies for mapping section
-    try {
-      const hospitalsResponse = await customerAPI.getHospitals();
-      if (hospitalsResponse.success) {
-        setHospitals(hospitalsResponse.data || []);
-      }
-    } catch (error) {
-      console.error('Error loading hospitals:', error);
-    }
-
-    try {
-      const pharmaciesResponse = await customerAPI.getPharmacies();
-      if (pharmaciesResponse.success) {
-        setPharmacies(pharmaciesResponse.data || []);
-      }
-    } catch (error) {
-      console.error('Error loading pharmacies:', error);
-    }
   };
 
   const loadCities = async (stateId=null) => {
@@ -755,7 +737,7 @@ const DoctorRegistrationForm = () => {
           ],
         },
         customerDocs: uploadedDocIds.map(id => ({ id })),
-        isBuyer: false,
+        isBuyer: formData.isBuyer || true,
         customerGroupId: formData.customerGroupId,
         generalDetails: {
           name: formData.doctorName,

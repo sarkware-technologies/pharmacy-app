@@ -390,7 +390,7 @@ const PrivateRegistrationForm = () => {
   const loadInitialData = async () => {
     try {
       // Load license types first
-      const licenseResponse = await customerAPI.getLicenseTypes(typeId || 2, categoryId || 4);
+      const licenseResponse = await customerAPI.getLicenseTypes(typeId || 2, categoryId || 4, subCategoryId || 1);
       if (licenseResponse.success && licenseResponse.data) {
         const licenseData = {};
         licenseResponse.data.forEach(license => {
@@ -480,12 +480,20 @@ const PrivateRegistrationForm = () => {
   const fetchCities = async (stateId) => {
     setLoadingCities(true);
     try {
-      const response = await customerAPI.getCities(stateId);  console.log(response);
+      const response = await customerAPI.getCities(stateId);
       if (response.success && response.data) {
-        // Handle both array response and object with cities array
-        const citiesData = Array.isArray(response.data) ? response.data : 
-                          (response.data.cities || response.data);
-        setCities(citiesData);
+        // Transform API response to match DropdownModal format
+        const _cities = [];
+        if (response.data.cities && Array.isArray(response.data.cities)) {
+          for (let i = 0; i < response.data.cities.length; i++) {
+            _cities.push({ 
+              id: response.data.cities[i].id, 
+              name: response.data.cities[i].cityName 
+            });
+          }
+        }
+        console.log(_cities, 'cities')
+        setCities(_cities || []);
       } else {
         Toast.show({
           type: 'error',
@@ -509,12 +517,14 @@ const PrivateRegistrationForm = () => {
   const handleStateSelect = (state) => {
     setFormData(prev => ({ 
       ...prev, 
-      state: state.stateName,
       stateId: state.id,
-      city: '', // Reset city when state changes
-      cityId: null 
+      state: state.name,
+      cityId: null,
+      city: '',
+      areaId: null,
+      area: ''
     }));
-    setShowStateModal(false);
+    setErrors(prev => ({ ...prev, state: null }));
     setCities([]); // Clear cities
     fetchCities(state.id); // Fetch cities for selected state
   };
@@ -523,10 +533,12 @@ const PrivateRegistrationForm = () => {
   const handleCitySelect = (city) => {
     setFormData(prev => ({ 
       ...prev, 
-      city: city.cityName || city.name, // Handle both cityName and name fields
-      cityId: city.id 
+      cityId: city.id,
+      city: city.name,
+      areaId: null,
+      area: ''
     }));
-    setShowCityModal(false);
+    setErrors(prev => ({ ...prev, city: null }));
   };
 
   // OTP Timer Effect

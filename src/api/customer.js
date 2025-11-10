@@ -70,9 +70,17 @@ export const customerAPI = {
 
 
     // Get customer details by ID - UPDATED ENDPOINT
-    getCustomerDetails: async (customerId) => {
+    getCustomerDetails: async (customerId, isStaging = false) => {
         try {
-            const response = await apiClient.get(`/user-management/customer/customer-by-id/${customerId}?isStaging=false`);
+            // Use different endpoint based on isStaging flag
+             const requestBody = {
+                isStaging
+            };
+            const endpoint = isStaging
+                ? `/user-management/customer/customer-by-id/${customerId}`
+                : `/user-management/customer/customer-by-id/${customerId}`;
+
+            const response = await apiClient.get(endpoint, requestBody);
             return response;
         } catch (error) {
             console.error('Error fetching customer details:', error);
@@ -205,13 +213,46 @@ export const customerAPI = {
         }
     },
 
-    // Get license types based on type and category
-    getLicenseTypes: async (typeId, categoryId) => {
+    // Get license types based on type, category and subcategory
+    getLicenseTypes: async (typeId, categoryId, subCategoryId) => {
         try {
-            const response = await apiClient.get(`/user-management/customer/licence-type?typeId=${typeId}&categoryId=${categoryId}`);
+            const response = await apiClient.get(`/user-management/customer/licence-type?typeId=${typeId}&categoryId=${categoryId}&subCategoryId=${subCategoryId || 1}`);
             return response;
         } catch (error) {
             console.error('Error fetching license types:', error);
+            throw error;
+        }
+    },
+
+    // Workflow approval action (Approve/Reject customer)
+    workflowAction: async (workflowId, actionData) => {
+        try {
+            const response = await apiClient.post(`/workflow-approval/workflow-actions/${Number(workflowId)}`, actionData);
+            return response;
+        } catch (error) {
+            console.error('Error performing workflow action:', error);
+            throw error;
+        }
+    },
+
+    // Get hospitals list
+    getHospitals: async () => {
+        try {
+            const response = await apiClient.get('/user-management/customer/hospitals');
+            return response;
+        } catch (error) {
+            console.error('Error fetching hospitals:', error);
+            throw error;
+        }
+    },
+
+    // Get pharmacies list
+    getPharmacies: async () => {
+        try {
+            const response = await apiClient.get('/user-management/customer/pharmacies');
+            return response;
+        } catch (error) {
+            console.error('Error fetching pharmacies:', error);
             throw error;
         }
     }

@@ -180,6 +180,7 @@ const GroupHospitalRegistrationForm = () => {
             name: response.data.states[i].stateName 
           });
         }
+        
         setStates(_states || []);
       }
     } catch (error) {
@@ -1172,25 +1173,26 @@ const GroupHospitalRegistrationForm = () => {
         visible={showStateModal}
         onClose={() => setShowStateModal(false)}
         title="Select State"
-        data={MOCK_STATES.map((state, index) => ({ id: index, name: state }))}
-        selectedId={MOCK_STATES.indexOf(formData.state)}
+        data={states}
+        selectedId={states.find(s => s.name === formData.stateName)?.id}
         onSelect={(item) => {
           setFormData(prev => ({ 
             ...prev, 
-            state: item.name,
+            stateName: item.stateName,
             city: ''
           }));
           setErrors(prev => ({ ...prev, state: null }));
+          loadCities(item.id);
         }}
-        loading={false}
+        loading={loadingStates}
       />
 
       <DropdownModal
         visible={showCityModal}
         onClose={() => setShowCityModal(false)}
         title="Select City"
-        data={MOCK_CITIES.map((city, index) => ({ id: index, name: city }))}
-        selectedId={MOCK_CITIES.indexOf(formData.city)}
+        data={cities}
+        selectedId={cities.find(c => c.name === formData.city)?.id}
         onSelect={(item) => {
           setFormData(prev => ({ 
             ...prev, 
@@ -1198,7 +1200,7 @@ const GroupHospitalRegistrationForm = () => {
           }));
           setErrors(prev => ({ ...prev, city: null }));
         }}
-        loading={false}
+        loading={loadingCities}
       />
 
       <DropdownModal

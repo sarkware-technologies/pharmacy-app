@@ -47,11 +47,18 @@ export const fetchCustomersList = createAsyncThunk(
 
 export const fetchCustomerDetails = createAsyncThunk(
   'customer/fetchDetails',
-  async (customerId, { rejectWithValue }) => {
+  async (params, { rejectWithValue }) => {
     try {
-      const response = await customerAPI.getCustomerDetails(customerId);
+      // Support both old format (string) and new format (object with customerId and isStaging)
+      const customerId = typeof params === 'string' ? params : params?.customerId;
+      const isStaging = typeof params === 'object' ? params?.isStaging || false : false;
+      
+      console.log('fetchCustomerDetails called with:', { customerId, isStaging });
+      const response = await customerAPI.getCustomerDetails(customerId, isStaging);
+      console.log('fetchCustomerDetails response:', response);
       return response.data;
     } catch (error) {
+      console.error('fetchCustomerDetails error:', error);
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -297,7 +304,11 @@ const customerSlice = createSlice({
         state.totalPages = Math.ceil(state.totalCustomers / state.limit);
         
         // Check if there are more pages to load
-        state.hasMore = state.currentPage < state.totalPages;
+        // hasMore is true if: we got a full page AND there are more records beyond what we've loaded
+        const totalLoadedSoFar = isLoadMore 
+          ? state.customers.length 
+          : newCustomers.length;
+        state.hasMore = newCustomers.length === state.limit && totalLoadedSoFar < state.totalCustomers;
       })
       .addCase(fetchCustomersList.rejected, (state, action) => {
         state.listLoading = false;
