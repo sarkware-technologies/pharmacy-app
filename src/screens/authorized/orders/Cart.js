@@ -77,9 +77,8 @@ const Cart = () => {
         return;
       }
       const response = await PlaceOrder(payload);
-      console.log(response, 897654)
-      if (response && response.length) {
-        setPlacedOrders(response.length)
+      if (response?.success) {
+        setPlacedOrders(cartItem.length)
         setShowConfirm(true);
 
       }

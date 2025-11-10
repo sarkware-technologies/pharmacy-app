@@ -123,7 +123,7 @@ export const getCartDetails = async (cartId) => {
 export const PlaceOrder = async (order) => {
   try {
     const response = await apiClient.post('/orders/order/create', order);
-    return response.data;
+    return response;
   } catch (error) {
     console.error('Error placing order:', error);
     throw error;
