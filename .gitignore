@@ -29,7 +29,7 @@ android/app/build/
 android/.gradle/
 android/.idea/
 android/local.properties
-android/.cxx/
+android/app/.cxx
 android/build/
 
 ios/build/
@@ -96,4 +96,4 @@ fastlane/test_output
 # Misc
 .env
 .env.local
-.env.*.local
+.env.*.localandroid/app/.cxx/
