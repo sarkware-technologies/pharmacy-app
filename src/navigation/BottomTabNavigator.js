@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -35,6 +35,7 @@ import DivisionList from '../screens/authorized/division/DivisionList';
 import ChargebackListing from '../screens/authorized/chargeback/ChargebackListing';
 
 import NetRateListing from '../screens/authorized/netrate/NetRateListing';
+import MoreMenu from "../components/MoreMenu"
 
 // Placeholder screens for other tabs
 const HomeScreen = () => (
@@ -55,8 +56,8 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 // Customer Stack Navigator
-const CustomerStack = () => (
-  <Stack.Navigator
+const CustomerStack = () => {
+  return <Stack.Navigator
     screenOptions={{
       headerShown: false,
       cardStyleInterpolator: ({ current, next, layouts }) => {
@@ -83,7 +84,7 @@ const CustomerStack = () => (
     <Stack.Screen name="CustomerDetail" component={CustomerDetail} />
     <Stack.Screen name="CustomerSearch" component={CustomerSearch} />
   </Stack.Navigator>
-);
+};
 
 // Pricing Stack Navigator
 const PricingStack = () => (
@@ -120,7 +121,7 @@ const PricingStack = () => (
 // This allows us to show ProductList, DistributorList, DivisionList, etc. with bottom tabs
 const DynamicScreen = ({ route }) => {
   const screenName = route.params?.screen || 'Home';
-  
+
   switch (screenName) {
     case 'ProductList':
       return <ProductList />;
@@ -132,89 +133,97 @@ const DynamicScreen = ({ route }) => {
       return <ChargebackListing />;
     case 'NetRateListing':
       return <NetRateListing />
-    default:    
+    default:
       return <HomeScreen />;
   }
 };
 
 // Custom Tab Bar Component
 const CustomTabBar = ({ state, descriptors, navigation }) => {
+  const [showMore, setShowMore] = useState(false);
   const insets = useSafeAreaInsets();
-  const parentNavigation = useNavigation();
-  
-  // Check if we're on a dynamic screen (Product, Distributor, Division, etc.)
-  const isDynamicScreen = state.routes[state.index]?.name === 'DynamicTab';
-  
+
   return (
-    <View style={[
-      styles.tabBar,
-      { paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }
-    ]}>
-      {state.routes.filter(route => route.name !== 'DynamicTab').map((route, index) => {
-        const { options } = descriptors[route.key];
-        const label = options.tabBarLabel !== undefined
-          ? options.tabBarLabel
-          : options.title !== undefined
-          ? options.title
-          : route.name;
+    <>
+      <View
+        style={[
+          styles.tabBar,
+          { paddingBottom: insets.bottom > 0 ? insets.bottom : 8 },
+        ]}
+      >
+        {state.routes
+          .filter((route) => route.name !== 'DynamicTab')
+          .map((route, index) => {
+            const { options } = descriptors[route.key];
+            const label = options.tabBarLabel ?? route.name;
 
-        // Don't highlight More tab as focused
-        const isFocused = route.name === 'More' ? false : 
-                         isDynamicScreen ? false :
-                         state.index === state.routes.findIndex(r => r.name === route.name);
+            const isFocused =
+              route.name === 'More'
+                ? showMore // ✅ highlight More tab when modal is open
+                : state.index === state.routes.findIndex(
+                  (r) => r.name === route.name
+                );
 
-        const onPress = () => {
-          // Special handling for More tab
-          if (route.name === 'More') {
-            // Use DrawerActions to open drawer
-            parentNavigation.dispatch(DrawerActions.openDrawer());
-            return;
-          }
+            const onPress = () => {
+              if (route.name === 'More') {
+                setShowMore(true); // ✅ open modal
+                return;
+              }
+              setShowMore(false);
 
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
+              const event = navigation.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
 
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
+              if (!isFocused && !event.defaultPrevented) {
+                navigation.navigate(route.name);
+              }
+            };
 
-        const onLongPress = () => {
-          navigation.emit({
-            type: 'tabLongPress',
-            target: route.key,
-          });
-        };
+            const iconName = options.tabBarIcon({
+              focused: isFocused,
+              color: isFocused ? colors.primary : '#999',
+            });
 
-        const iconName = options.tabBarIcon({ focused: isFocused, color: isFocused ? colors.primary : '#999' });
+            return (
+              <TouchableOpacity
+                key={index}
+                onPress={onPress}
+                style={styles.tabItem}
+                activeOpacity={0.7}
+              >
+                {iconName}
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    { color: isFocused ? colors.primary : '#999' },
+                    isFocused && styles.activeTabLabel,
+                  ]}
+                >
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+      </View>
 
-        return (
-          <TouchableOpacity
-            key={index}
-            accessibilityRole="button"
-            accessibilityState={isFocused ? { selected: true } : {}}
-            accessibilityLabel={options.tabBarAccessibilityLabel}
-            testID={options.tabBarTestID}
-            onPress={onPress}
-            onLongPress={onLongPress}
-            style={styles.tabItem}
-            activeOpacity={0.7}
-          >
-            {iconName}
-            <Text style={[
-              styles.tabLabel,
-              { color: isFocused ? colors.primary : '#999' },
-              isFocused && styles.activeTabLabel
-            ]}>
-              {label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
+      {/* ✅ Add modal here */}
+      <MoreMenu
+        visible={showMore}
+        onClose={() => setShowMore(false)}
+        onSelect={(screenName) => {
+          setShowMore(false);
+          navigation.navigate('DynamicTab', { screen: screenName });
+        }}
+        activeScreen={
+          state.routes[state.index]?.name === 'DynamicTab'
+            ? state.routes[state.index]?.params?.screen
+            : state.routes[state.index]?.name
+        }
+      />
+    </>
   );
 };
 
@@ -227,8 +236,8 @@ const BottomTabNavigator = () => {
         headerShown: false,
       }}
     >
-      <Tab.Screen 
-        name="Home" 
+      <Tab.Screen
+        name="Home"
         component={HomeScreen}
         options={{
           tabBarLabel: 'Home',
@@ -237,8 +246,8 @@ const BottomTabNavigator = () => {
           ),
         }}
       />
-      <Tab.Screen 
-        name="Customers" 
+      <Tab.Screen
+        name="Customers"
         component={CustomerStack}
         options={{
           tabBarLabel: 'Customers',
@@ -247,8 +256,8 @@ const BottomTabNavigator = () => {
           ),
         }}
       />
-      <Tab.Screen 
-        name="Orders" 
+      <Tab.Screen
+        name="Orders"
         component={OrdersStack}
         options={{
           tabBarLabel: 'Orders',
@@ -257,18 +266,19 @@ const BottomTabNavigator = () => {
           ),
         }}
       />
-      <Tab.Screen 
-        name="Pricing" 
+      <Tab.Screen
+        name="Pricing"
         component={PricingStack}
         options={{
           tabBarLabel: 'Pricing',
           tabBarIcon: ({ focused, color }) => (
+
             <Pricing color={color} />
           ),
         }}
       />
-      <Tab.Screen 
-        name="More" 
+      <Tab.Screen
+        name="More"
         component={CustomerStack} // Use CustomerStack as placeholder - drawer will open instead
         options={{
           tabBarLabel: 'More',
@@ -278,8 +288,8 @@ const BottomTabNavigator = () => {
         }}
       />
       {/* Hidden tab for dynamic screens */}
-      <Tab.Screen 
-        name="DynamicTab" 
+      <Tab.Screen
+        name="DynamicTab"
         component={DynamicScreen}
         options={{
           tabBarButton: () => null, // Hide this tab from the tab bar

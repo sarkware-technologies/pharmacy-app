@@ -287,26 +287,26 @@ const MainStack = () => (
   >
     {/* Main app with drawer and bottom tabs */}
     <Stack.Screen name="DrawerMain" component={DrawerNavigator} />
-    
+
     {/* Registration Screens (no bottom tabs) */}
     <Stack.Screen name="RegistrationType" component={RegistrationType} />
     <Stack.Screen name="PrivateRegistrationForm" component={PrivateRegistrationForm} />
     <Stack.Screen name="DoctorRegistrationForm" component={DoctorRegistrationForm} />
     <Stack.Screen name="GroupHospitalRegistrationForm" component={GroupHospitalRegistrationForm} />
-    <Stack.Screen name="PharmacyRetailerForm" component={PharmacyRetailerForm} />   
-    <Stack.Screen name="PharmacyWholesalerForm" component={PharmacyWholesalerForm} />   
+    <Stack.Screen name="PharmacyRetailerForm" component={PharmacyRetailerForm} />
+    <Stack.Screen name="PharmacyWholesalerForm" component={PharmacyWholesalerForm} />
     <Stack.Screen name="PharmacyWholesalerRetailerForm" component={PharmacyWholesalerRetailerForm} />
     <Stack.Screen name="RegistrationSuccess" component={RegistrationSuccess} />
     <Stack.Screen name="HospitalSelector" component={HospitalSelector} />
-    <Stack.Screen name="PharmacySelector" component={PharmacySelector} />    
+    <Stack.Screen name="PharmacySelector" component={PharmacySelector} />
     {/* These are for the tab stacks - handled in BottomTabNavigator */}
     <Stack.Screen name="RateContractList" component={RateContractList} />
     <Stack.Screen name="CreateRateContract" component={CreateRateContract} />
-    <Stack.Screen name="RateContractDetail" component={RateContractDetail} />    
+    <Stack.Screen name="RateContractDetail" component={RateContractDetail} />
     {/* Product Stack - opens without bottom tabs */}
-    <Stack.Screen name="ProductStack" component={ProductStack} />    
+    <Stack.Screen name="ProductStack" component={ProductStack} />
     {/* Distributor Stack - opens without bottom tabs */}
-    <Stack.Screen name="DistributorStack" component={DistributorStack} />    
+    <Stack.Screen name="DistributorStack" component={DistributorStack} />
     {/* Division Stack - opens without bottom tabs */}
     <Stack.Screen name="DivisionStack" component={DivisionStack} />
     {/* Chargeback Stack - opens without bottom tabs */}
@@ -346,20 +346,20 @@ const LoadingScreen = () => (
 // Root Navigator
 const AppNavigator = () => {
   const dispatch = useDispatch();
-  
+
   // Get auth state from Redux
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
-  
+
   // Check auth status when app starts
   useEffect(() => {
     dispatch(checkAuthStatus());
   }, [dispatch]);
-  
+
   // Show loading screen while checking auth status
   if (loading) {
     return <LoadingScreen />;
   }
-  
+
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
