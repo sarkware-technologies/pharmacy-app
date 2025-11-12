@@ -554,8 +554,9 @@ const Cart = () => {
           setPlacedOrders(0);
         }}
         onGoToOrders={() => {
+          console.log(8779878)
           setShowConfirm(false)
-          // navigation.goBack()
+          navigation.goBack()
           navigation.navigate('Orders');
           setPlacedOrders(0);
         }} />

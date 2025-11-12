@@ -232,7 +232,7 @@ const SearchAddProducts = () => {
   };
 
   const handleCheckout = () => {
-    navigation.navigate('Cart');
+    navigation.replace('Cart');
   };
 
   const handleDelete = async (product) => {
