@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   orders: [],
   cart: [],
+  cartTotal: 0,
   selectedDistributor: null,
   loading: false,
   error: null
@@ -21,6 +22,9 @@ const orderSlice = createSlice({
     setCartDetails: (state, action) => {
       state.cart = action.payload;
     },
+    setCartTotal: (state, action) => {
+      state.cartTotal = action.payload;
+    },
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
@@ -36,7 +40,8 @@ export const {
   setSelectedDistributor,
   setCartDetails,
   setLoading,
-  setError
+  setError,
+  setCartTotal
 } = orderSlice.actions;
 
 export default orderSlice.reducer;

@@ -120,8 +120,8 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
         page: currentPage,
         limit: 20,
         searchText: query,
-        statusIds: [2],
-        typeCode: "DOCT"
+        // statusIds: [2],
+        // typeCode: "DOCT"
         // filters: selectedFilters, // if API supports filters
       });
 

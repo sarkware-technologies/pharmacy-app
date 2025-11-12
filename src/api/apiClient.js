@@ -59,12 +59,13 @@ class ApiClient {
     async request(endpoint, options = {}) {
         const url = `${BASE_URL}${endpoint}`;
         const token = await this.getToken();
+        const isFormData = options.body instanceof FormData;
 
         const config = {
             ...options,
             headers: {
-                'Content-Type': 'application/json',
                 Accept: '*/*',
+                ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
                 ...options.headers,
             },
 
@@ -179,6 +180,7 @@ class ApiClient {
     }
 
     post(endpoint, data, isFormData = false) {
+        console.log(isFormData ? data : JSON.stringify(data), 9989898)
         return this.request(endpoint, {
             method: 'POST',
             body: isFormData ? data : JSON.stringify(data),

@@ -24,8 +24,8 @@ import Calendar from '../../../components/icons/Calendar';
 import FilterModal from '../../../components/FilterModal';
 import SelectDistributor from './SelectDistributor';
 import CustomerSelectionModal from "./CustomerSelector"
-import { setCartDetails } from '../../../redux/slices/orderSlice';
-import { useDispatch } from 'react-redux';
+import { setCartDetails, setCartTotal } from '../../../redux/slices/orderSlice';
+import { useDispatch, useSelector } from 'react-redux';
 import Downarrow from '../../../components/icons/downArrow';
 import Toast from 'react-native-toast-message';
 import ErrorMessage from "../../../components/view/error"
@@ -48,6 +48,7 @@ const OrderList = () => {
 
   const [selectedDistributor, setSelectedDistributor] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const { cartTotal } = useSelector(state => state.orders);
 
   const [cartCount, setCartCount] = useState(0);
 
@@ -71,21 +72,26 @@ const OrderList = () => {
       console.log(response);
 
       const cartDetails = response?.cartDetails ?? [];
-
       if (cartDetails.length > 0) {
-        dispatch(setCartDetails(cartDetails));
         const count = cartDetails.reduce((acc, item) => acc + (item.products?.length ?? 0), 0);
-        setCartCount(count);
+        dispatch(setCartDetails(cartDetails));
+        dispatch(setCartTotal(count));
       } else {
         dispatch(setCartDetails([]));
+        dispatch(setCartTotal(0));
         setCartCount(0);
       }
     } catch (error) {
       console.error("Error fetching cart details:", error);
-      setCartCount(0);
+      dispatch(setCartTotal(0));
       ErrorMessage()
     }
   };
+
+  useEffect(() => {
+    console.log(cartTotal, 89798789778)
+    setCartCount(cartTotal);
+  }, [cartTotal])
 
 
   // ✅ Main API function
@@ -217,8 +223,8 @@ const OrderList = () => {
     })}`;
 
     return (
-      <TouchableOpacity style={styles.orderCard} activeOpacity={0.7}>
-        <TouchableOpacity >
+      <TouchableOpacity style={styles.orderCard} activeOpacity={0.7} onPress={() => navigation.push("OrderDetails")}>
+        <TouchableOpacity onPress={() => navigation.push("OrderDetails")}>
           <View style={styles.orderHeader}>
             <View style={styles.orderIdRow}>
               <Text style={styles.orderId}>{item.orderNo}</Text>

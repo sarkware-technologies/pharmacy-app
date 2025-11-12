@@ -34,6 +34,7 @@ import { OrderPlaceSuccessModal } from "./orderConfirm";
 import CustomerSelectionModal from './CustomerSelector';
 import SelectDistributor from './SelectDistributor';
 import Toast from 'react-native-toast-message';
+import { setCartTotal } from '../../../redux/slices/orderSlice';
 const Cart = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('manual'); // 'manual' or 'upload'
@@ -97,6 +98,7 @@ const Cart = () => {
     getCartdetails();
   }, [])
 
+
   const getCartdetails = async (load = true) => {
     try {
       const response = await getCartDetails();
@@ -105,16 +107,19 @@ const Cart = () => {
       setOrderSummery(response?.summary)
       if (cartDetails.length > 0) {
         if (load) {
+          const count = cartDetails.reduce((acc, item) => acc + (item.products?.length ?? 0), 0);
           setCartDetails(cartDetails);
+          dispatch(setCartTotal(count));
         }
       } else {
         if (load) {
+          dispatch(setCartTotal(0));
           setCartDetails([]);
         }
       }
     } catch (error) {
+      dispatch(setCartTotal(0));
       ErrorMessage(error);
-      console.error("Error fetching cart details:", error);
     }
   };
 
@@ -129,7 +134,7 @@ const Cart = () => {
         }))
         console.log(list, 78908765)
         setCartDetails(list);
-        // getCartdetails(false)
+        getCartdetails()
       }
 
     }
@@ -520,7 +525,7 @@ const Cart = () => {
         }}
         onGoToOrders={() => {
           setShowConfirm(false)
-          navigation.goBack()
+          // navigation.goBack()
           navigation.navigate('Orders');
           setPlacedOrders(0);
         }} />

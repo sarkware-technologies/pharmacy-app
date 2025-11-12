@@ -27,7 +27,7 @@ const SelectDistributor = ({ visible, onClose, onSelect, customerId }) => {
 
   const loadDistributors = async () => {
     try {
-      const data = await getDistributors(4);
+      const data = await getDistributors(customerId);
       console.log(data,8987)
       // setDistributors(data);
       if(data?.customer){

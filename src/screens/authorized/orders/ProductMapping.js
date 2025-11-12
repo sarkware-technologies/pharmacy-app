@@ -17,7 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { addToCart, clearCart } from '../../../redux/slices/orderSlice';
 import Svg, { Path } from 'react-native-svg';
-import { AddtoCart, UploadProductMapping, UploadTemplateOrder } from '../../../api/orders';
+import { AddtoCart, IncreaseQTY, UploadProductMapping, UploadTemplateOrder } from '../../../api/orders';
 import UnMapped from "../../../components/icons/Unmapping"
 import SearchProductModal from "./SearchProductModal"
 import CancelOrderModal from "./CancelOrderModal"
@@ -40,6 +40,7 @@ const ProductMapping = () => {
   const [productMapping, setProductMapping] = useState(false);
   const [mappingProduct, setMappingProduct] = useState();
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingProductId, setLoadingProductId] = useState(null);
 
 
   const hanldeMappingclicked = (item) => {
@@ -109,31 +110,50 @@ const ProductMapping = () => {
 
   };
 
-  const handleQuantityChange = (item, type) => {
-    if (item) {
-      const list = products.map((e) => {
-        const findItem = e.id === item.id;
+  const handleQuantityChange = async (item, type) => {
+    if (!item) return;
 
-        if (!findItem) return e;
+    const updatedList = products.map((e) => {
+      if (e.id !== item.id) return e;
+      setLoadingProductId(item.id);
 
-        let newQty = e.uploadedQty;
+      let newQty = e.uploadedQty;
 
-        if (type === 'plus') {
-          newQty = e.uploadedQty + 1;
-        } else if (type === 'minus') {
-          newQty = e.uploadedQty > 1 ? e.uploadedQty - 1 : 1;
-        }
+      if (type === 'plus') {
+        newQty = e.uploadedQty + 1;
+      } else if (type === 'minus') {
+        newQty = e.uploadedQty > 1 ? e.uploadedQty - 1 : 1;
+      }
 
-        return {
-          ...e,
-          uploadedQty: newQty,
-        };
-      });
 
-      setProducts(list);
+      return {
+        ...e,
+        uploadedQty: newQty,
+      };
+    });
+
+    setProducts(updatedList);
+    try {
+      const updatedItem = updatedList.find((p) => p.id === item.id);
+      await IncreaseQTY(item?.cartId, item?.productId, updatedItem.uploadedQty);
+    } catch (e) {
+      console.log(e);
+      ErrorMessage(e);
+    } finally {
+      setLoadingProductId(null); // Hide loader
     }
   };
 
+
+  const increaseQTY = async (cartId, productId, newQty) => {
+    const increasesQTY = await IncreaseQTY(
+      cartId,
+      productId,
+      newQty
+    );
+
+    console.log(increasesQTY, 89898979)
+  }
 
   const handleProceedToCart = () => {
     const nonmapped = getFilteredProducts("Non-Mapped");
@@ -148,40 +168,46 @@ const ProductMapping = () => {
 
   const ProceedToCart = async () => {
     try {
-      const nonmapped = getFilteredProducts("Mapped");
-      const mappedProduct = nonmapped.map((product) => {
-        return {
-          cfaId: product?.cfaId ?? 0,
-          customerId: selectedCustomer ? parseInt(selectedCustomer?.customerId) : undefined,
-          distributorId: selectedCustomer ? selectedDistributor?.id : undefined,
-          divisionId: product?.divisionId ?? 0,
-          modifiedBy: product?.modifiedBy,
-          createdBy: product?.createdBy,
-          principalId: 1,
-          productId: product?.productId,
-          qty: product?.uploadedQty ? parseInt(product?.uploadedQty) : 1
-        }
-      })
 
-      console.log(mappedProduct, 777777)
+      setShowExitModal(true);
+      setTimeout(() => {
+        navigation.removeListener('beforeRemove');
+        navigation.replace('Cart');
+      }, 100);
 
-      const addtocart = await AddtoCart(mappedProduct);
-      console.log(addtocart, 8888)
-      if (addtocart && addtocart.message != "Invalid product code") {
-        setShowExitModal(true);
-        setTimeout(() => {
-          navigation.removeListener('beforeRemove');
-          navigation.replace('Cart');
-        }, 100);
-      }
-      else {
-        setShowConfirmModal(false);
-        Toast.show({
-          type: 'error',
-          text1: 'Failed to add',
-          text2: addtocart.message,
-        });
-      }
+
+      // const nonmapped = getFilteredProducts("Mapped");
+      // const mappedProduct = nonmapped.map((product) => {
+      //   return {
+      //     cfaId: product?.cfaId ?? 0,
+      //     customerId: selectedCustomer ? parseInt(selectedCustomer?.customerId) : undefined,
+      //     distributorId: selectedCustomer ? selectedDistributor?.id : undefined,
+      //     divisionId: product?.divisionId ?? 0,
+      //     modifiedBy: product?.modifiedBy,
+      //     createdBy: product?.createdBy,
+      //     principalId: 1,
+      //     productId: product?.productId,
+      //     qty: product?.uploadedQty ? parseInt(product?.uploadedQty) : 1
+      //   }
+      // })
+
+      // const addtocart = await AddtoCart(mappedProduct);
+
+      // if (addtocart && addtocart.message != "Invalid product code") {
+      //   setShowExitModal(true);
+      //   setTimeout(() => {
+      //     navigation.removeListener('beforeRemove');
+      //     navigation.replace('Cart');
+      //   }, 100);
+      // }
+      // else {
+      //   setShowConfirmModal(false);
+      //   Toast.show({
+      //     type: 'error',
+      //     text1: 'Failed to add',
+      //     text2: addtocart.message,
+      //   });
+      // }
     }
     catch (e) {
       setShowConfirmModal(false);
@@ -223,31 +249,41 @@ const ProductMapping = () => {
           uploadedProductName: mappingProduct.uploadedProductName,
           packing: product.packing,
         })
-        const list = products.map((e) => {
-          const findItem = e.id === mappingProduct?.id;
-          return findItem
-            ? {
-              ...e,
-              productName: product?.productName,
-              productCode: product?.productCode,
-              isMapped: 1,
-              mrp: product?.mrp,
-              productId: product?.productId,
-              ptr: product?.ptr,
-              pts: product?.pts,
-              packingType: product?.packingType,
-              packing: product?.packing,
-              hosptialMargin: product?.hosptialMargin,
-              hospitalMargin: product?.hospitalMargin,
-              doctorMargin: product?.doctorMargin,
-              cfaId: product?.cfaId,
-              divisionId: product?.divisionId,
-            }
-            : e;
-        });
-        setProducts(list);
-        setProductMapping(false)
-        setMappingProduct(null)
+        console.log(response,98768)
+        if (response && response.length >0) {
+          console.log(response[0])
+          const list = products.map((e) => {
+            const findItem = e.id === mappingProduct?.id;
+            return findItem
+              ? {
+                ...e,
+                productName: product?.productName,
+                productCode: product?.productCode,
+                isMapped: 1,
+                mrp: product?.mrp,
+                productId: product?.productId,
+                ptr: product?.ptr,
+                pts: product?.pts,
+                packingType: product?.packingType,
+                packing: product?.packing,
+                hosptialMargin: product?.hosptialMargin,
+                hospitalMargin: product?.hospitalMargin,
+                doctorMargin: product?.doctorMargin,
+                cfaId: product?.cfaId,
+                divisionId: product?.divisionId,
+                cartId: response[0]?.cartId ? parseInt(response[0]?.cartId) : null
+              }
+              : e;
+          });
+          console.log(list,8678909876,product)
+          setProducts(list);
+          setProductMapping(false)
+          setMappingProduct(null)
+        }
+        else {
+
+        }
+
       }
     }
     catch (e) {
@@ -322,21 +358,29 @@ const ProductMapping = () => {
           )}
 
           <View style={styles.quantityControls}>
-            <View style={styles.quantityBox}>
+
+            <>
               <TouchableOpacity
                 style={styles.quantityButton}
-                onPress={() => handleQuantityChange(item, 'minus')}
+                onPress={() => loadingProductId !== item.id ? handleQuantityChange(item, 'minus') : null}
               >
                 <Icon name="remove" size={20} color={colors.primary} />
               </TouchableOpacity>
-              <Text style={styles.quantityText}>{quantity}</Text>
+              <Text style={styles.quantityText}>
+                {loadingProductId === item.id ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  quantity
+                )}
+
+              </Text>
               <TouchableOpacity
                 style={styles.quantityButton}
-                onPress={() => handleQuantityChange(item, 'plus')}
+                onPress={() => loadingProductId !== item.id ? handleQuantityChange(item, 'plus') : null}
               >
                 <Icon name="add" size={20} color={colors.primary} />
               </TouchableOpacity>
-            </View>
+            </>
           </View>
         </View>
       </View>

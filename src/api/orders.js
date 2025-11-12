@@ -143,31 +143,8 @@ export const UploadTemplateOrder = async (file, customerId, distributorId, order
     formData.append('distributorId', String(distributorId));
     formData.append('orderType', String(orderType));
 
-    const token = await apiClient.getToken();
-
-    const response = await fetch(`${BASE_URL}/orders/upload-order`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        Authorization: token ? `Bearer ${token}` : '',
-      },
-      body: formData,
-    });
-
-    const text = await response.text();
-
-
-    let json;
-    try {
-      json = text ? JSON.parse(text) : {};
-    } catch (err) {
-      json = { raw: text };
-    }
-
-    if (!response.ok) {
-      return json?.data; // Return to see what server sent
-    }
-    return json?.data;
+    const response = await apiClient.post('/orders/upload-order', formData, true);
+    return response.data;
   } catch (error) {
     console.error('🔥 CATCH ERROR:', error);
     throw error;

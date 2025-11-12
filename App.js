@@ -9,6 +9,9 @@ import AppNavigator from './src/navigation/AppNavigator';
 import NoInternetScreen from './src/components/NoInternetscreen';
 import SplashScreen from './src/components/SplashScreen';
 
+// Apply global font to entire application
+import './GlobalFont';
+
 
 const App = () => {
     const [isConnected, setIsConnected] = useState(true);

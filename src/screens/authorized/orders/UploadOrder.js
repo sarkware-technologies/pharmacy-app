@@ -145,18 +145,18 @@ const UploadOrder = () => {
       // Alert.alert('Error', 'Please upload order file and select distributor');
       return;
     }
-    // navigation.replace('ProductMapping', {
-    //   originalFile,
-    //   templateFile,
-    //   distributor: selectedDistributor,
-    //   customer: selectedCustomer
-    // });
-    navigation.push('ProductMapping', {
+    navigation.replace('ProductMapping', {
       originalFile,
       templateFile,
       distributor: selectedDistributor,
       customer: selectedCustomer
     });
+    // navigation.push('ProductMapping', {
+    //   originalFile,
+    //   templateFile,
+    //   distributor: selectedDistributor,
+    //   customer: selectedCustomer
+    // });
   };
 
 
@@ -176,7 +176,7 @@ const UploadOrder = () => {
                     <Text style={styles.label}>Customer</Text>
                     <View style={styles.valueRow}>
                       <Text style={styles.valueText} numberOfLines={1}>
-                        {selectedCustomer?.customerName}
+                        {selectedCustomer?.customerName ?? 'Select Customer'}
                       </Text>
                       <Downarrow />
                     </View>
@@ -186,7 +186,7 @@ const UploadOrder = () => {
                     <Text style={styles.label}>Distributor</Text>
                     <View style={styles.valueRow}>
                       <Text style={styles.valueText} numberOfLines={1}>
-                        {selectedDistributor?.name}
+                        {selectedDistributor?.name ?? 'Select Distributor'}
                       </Text>
                       <Downarrow />
                     </View>
@@ -323,11 +323,12 @@ const UploadOrder = () => {
       {renderUploadfile()}
       <CustomerSelectionModal onSelectCustomer={(e) => {
         setSelectedCustomer(e)
+        setSelectedDistributor(null)
         setShowCustomerselection(false)
       }} visible={showCustomerselection} onClose={() => setShowCustomerselection(false)} />
 
 
-      <SelectDistributor onSelect={(e) => {
+      <SelectDistributor customerId={selectedCustomer?.customerId} onSelect={(e) => {
         setSelectedDistributor(e)
         setShowSelectdistributor(false)
       }} visible={showDistributorselection} onClose={() => setShowSelectdistributor(false)} />

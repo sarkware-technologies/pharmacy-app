@@ -15,7 +15,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { AddtoCart, DeleteCart, getCartDetails, getProducts, IncreaseQTY } from '../../../api/orders';
-import { addToCart, updateCartItem } from '../../../redux/slices/orderSlice';
+import { addToCart, setCartTotal, updateCartItem } from '../../../redux/slices/orderSlice';
 import Downarrow from '../../../components/icons/downArrow';
 import Carticon from '../../../components/icons/Cart';
 import Svg, { Path } from 'react-native-svg';
@@ -29,7 +29,7 @@ const SearchAddProducts = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const { cart } = useSelector(state => state.orders);
+  const { cart, cartTotal } = useSelector(state => state.orders);
 
   const { distributor, customer } = route.params || {};
   const [selectedDistributor, setSelectedDistributor] = useState(distributor);
@@ -56,23 +56,26 @@ const SearchAddProducts = () => {
   const getCartdetails = async () => {
     try {
       const response = await getCartDetails();
-
       const cartDetails = response?.cartDetails ?? [];
-
       if (cartDetails.length > 0) {
-        dispatch(setCartDetails(cartDetails));
-
         const count = cartDetails.reduce((acc, item) => acc + (item.products?.length ?? 0), 0);
-        setCartCount(count);
+        dispatch(setCartDetails(cartDetails));
+        dispatch(setCartTotal(count));
       } else {
         dispatch(setCartDetails([]));
+        dispatch(setCartTotal(0));
         setCartCount(0);
       }
     } catch (error) {
       console.error("Error fetching cart details:", error);
-      setCartCount(0);
+      dispatch(setCartTotal(0));
+      ErrorMessage()
     }
   };
+
+  useEffect(() => {
+    setCartCount(cartTotal);
+  }, [cartTotal])
 
 
   // useEffect(() => {
@@ -186,7 +189,6 @@ const SearchAddProducts = () => {
   };
 
   const handleAddToCart = async (product) => {
-
     try {
       const payload = {
         cfaId: product?.productDetails?.cfaId,
@@ -382,7 +384,7 @@ const SearchAddProducts = () => {
               <Text style={styles.label}>Customer</Text>
               <View style={styles.valueRow}>
                 <Text style={styles.valueText} numberOfLines={1}>
-                  {selectedCustomer?.customerName}
+                  {selectedCustomer?.customerName ?? 'Select Customer'}
                 </Text>
                 <Downarrow />
               </View>
@@ -392,7 +394,7 @@ const SearchAddProducts = () => {
               <Text style={styles.label}>Distributor</Text>
               <View style={styles.valueRow}>
                 <Text style={styles.valueText} numberOfLines={1}>
-                  {selectedDistributor?.name}
+                  {selectedDistributor?.name ?? 'Select Distributor'}
                 </Text>
                 <Downarrow />
               </View>
@@ -435,11 +437,12 @@ const SearchAddProducts = () => {
       </View>
       <CustomerSelectionModal onSelectCustomer={(e) => {
         setSelectedCustomer(e)
+        setSelectedDistributor(null)
         setShowCustomerselection(false)
       }} visible={showCustomerselection} onClose={() => setShowCustomerselection(false)} />
 
 
-      <SelectDistributor onSelect={(e) => {
+      <SelectDistributor customerId={selectedCustomer?.customerId} onSelect={(e) => {
         setSelectedDistributor(e)
         setShowSelectdistributor(false)
       }} visible={showDistributorselection} onClose={() => setShowSelectdistributor(false)} />

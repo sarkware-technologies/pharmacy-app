@@ -8,6 +8,8 @@ import SearchAddProducts from '../screens/authorized/orders/SearchAddProducts';
 import Cart from '../screens/authorized/orders/Cart';
 import UploadOrder from '../screens/authorized/orders/UploadOrder';
 import ProductMapping from '../screens/authorized/orders/ProductMapping';
+import OrderDetailsScreen from '../screens/authorized/orders/OrderDetails';
+
 
 const Stack = createStackNavigator();
 
@@ -37,6 +39,8 @@ const OrdersStack = () => (
     }}
   >
     <Stack.Screen name="OrderList" component={OrderList} />
+    <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
+
     {/* <Stack.Screen name="SelectDistributor" component={SelectDistributor} /> */}
     <Stack.Screen name="SearchAddProducts" component={SearchAddProducts} />
     <Stack.Screen name="Cart" component={Cart} />
