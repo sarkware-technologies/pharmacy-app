@@ -7,7 +7,8 @@ import {
   TextInput,
   StatusBar,
   StyleSheet,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import IconFeather from 'react-native-vector-icons/Feather';
@@ -56,6 +57,9 @@ const Cart = () => {
 
   const [selectedDistributor, setSelectedDistributor] = useState();
   const [selectedCustomer, setSelectedCustomer] = useState();
+  const [loadingProductId, setLoadingProductId] = useState(null);
+  const [loading, setLoading] = useState(false);
+
 
   const handleCheckout = async () => {
     try {
@@ -101,16 +105,17 @@ const Cart = () => {
 
   const getCartdetails = async (load = true) => {
     try {
+      if (load) {
+        setLoading(true);
+      }
       const response = await getCartDetails();
 
       const cartDetails = response?.cartDetails ?? [];
       setOrderSummery(response?.summary)
       if (cartDetails.length > 0) {
-        if (load) {
           const count = cartDetails.reduce((acc, item) => acc + (item.products?.length ?? 0), 0);
           setCartDetails(cartDetails);
           dispatch(setCartTotal(count));
-        }
       } else {
         if (load) {
           dispatch(setCartTotal(0));
@@ -121,11 +126,16 @@ const Cart = () => {
       dispatch(setCartTotal(0));
       ErrorMessage(error);
     }
+    finally {
+      setTimeout(() => {
+        setLoading(false);
+      }, 300)
+    }
   };
 
   const handleDelete = async (product) => {
     try {
-
+      setLoading(true);
       const deleteCart = await DeleteCart([parseInt(product.id)]);
       if (deleteCart?.message == "Product deleted successfully.") {
         const list = cartDetails.map(item => ({
@@ -134,7 +144,7 @@ const Cart = () => {
         }))
         console.log(list, 78908765)
         setCartDetails(list);
-        getCartdetails()
+        getCartdetails(false)
       }
 
     }
@@ -142,6 +152,9 @@ const Cart = () => {
       ErrorMessage(error);
     }
     finally {
+      setTimeout(() => {
+        setLoading(false);
+      }, 300)
       // getCartdetails();
     }
 
@@ -153,6 +166,10 @@ const Cart = () => {
       const minQTY = product?.packing ? parseInt(product?.packing) : 1
       const updateQTY = product?.qty + (event === 'plus' ? +minQTY : -minQTY);
       if (updateQTY > 0) {
+        setLoadingProductId(product?.id)
+        console.log( parseInt(product?.id),
+          product?.productId,
+          updateQTY,987978)
         const increasesQTY = await IncreaseQTY(
           parseInt(product?.id),
           product?.productId,
@@ -168,7 +185,8 @@ const Cart = () => {
       ErrorMessage(error);
     }
     finally {
-      getCartdetails();
+      getCartdetails(false);
+      setLoadingProductId(null)
     }
 
   };
@@ -306,14 +324,21 @@ const Cart = () => {
             {/* border: 1px solid #F7941E1A */}
             <TouchableOpacity
               style={styles.quantityButton}
-              onPress={() => handleQuantityChange(product, 'minus')}
+              onPress={() => loadingProductId !== product.id ? handleQuantityChange(product, 'minus') : null}
             >
               <Icon name="remove" size={20} color={colors.primary} />
             </TouchableOpacity>
-            <Text style={styles.quantityText}>{product.qty}</Text>
+            <Text style={styles.quantityText}>
+              {loadingProductId === product.id ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                product.qty
+              )}
+
+            </Text>
             <TouchableOpacity
               style={styles.quantityButton}
-              onPress={() => handleQuantityChange(product, 'plus')}
+              onPress={() => loadingProductId !== product.id ? handleQuantityChange(product, 'plus') : null}
             >
               <Icon name="add" size={20} color={colors.primary} />
             </TouchableOpacity>
@@ -331,6 +356,11 @@ const Cart = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      {loading && (
+        <View style={styles.loaderOverlay}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      )}
 
       {/* Header */}
       <View style={styles.header}>
@@ -539,6 +569,18 @@ const Cart = () => {
 };
 
 const styles = StyleSheet.create({
+  loaderOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',

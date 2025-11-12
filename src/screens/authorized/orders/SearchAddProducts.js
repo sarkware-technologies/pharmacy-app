@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
-  StatusBar
+  StatusBar,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -44,6 +45,7 @@ const SearchAddProducts = () => {
   const [showDistributorselection, setShowSelectdistributor] = useState(false);
   const [showCustomerselection, setShowCustomerselection] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [loadingProductId, setLoadingProductId] = useState(null);
 
   // Debounce timer for search
   const [searchTimer, setSearchTimer] = useState(null);
@@ -158,6 +160,7 @@ const SearchAddProducts = () => {
     try {
       const minQTY = product?.productDetails.packing ? parseInt(product?.productDetails.packing) : 1
       const updateQTY = product?.quantity + (event === 'plus' ? +minQTY : -minQTY);
+      setLoadingProductId(product?.productDetails?.productId);
       if (updateQTY > 0) {
         const increasesQTY = await IncreaseQTY(
           product?.cartIds,
@@ -184,6 +187,10 @@ const SearchAddProducts = () => {
     }
     finally {
       getCartdetails();
+      setTimeout(()=>{
+      setLoadingProductId(null);
+      },300)
+
     }
 
   };
@@ -318,7 +325,14 @@ const SearchAddProducts = () => {
                     >
                       <Icon name="remove" size={20} color={colors.primary} />
                     </TouchableOpacity>
-                    <Text style={styles.quantityText}>{quantity}</Text>
+                    <Text style={styles.quantityText}>
+                      {loadingProductId === item?.productDetails?.productId ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      ) : (
+                        quantity
+                      )}
+
+                    </Text>
                     <TouchableOpacity
                       style={styles.quantityButton}
                       onPress={() => handleQuantityChange(item, 'plus')}

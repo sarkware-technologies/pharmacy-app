@@ -145,16 +145,6 @@ const ProductMapping = () => {
   };
 
 
-  const increaseQTY = async (cartId, productId, newQty) => {
-    const increasesQTY = await IncreaseQTY(
-      cartId,
-      productId,
-      newQty
-    );
-
-    console.log(increasesQTY, 89898979)
-  }
-
   const handleProceedToCart = () => {
     const nonmapped = getFilteredProducts("Non-Mapped");
 
