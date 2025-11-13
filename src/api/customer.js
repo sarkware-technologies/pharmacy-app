@@ -227,7 +227,7 @@ export const customerAPI = {
     // Workflow approval action (Approve/Reject customer)
     workflowAction: async (workflowId, actionData) => {
         try {
-            const response = await apiClient.post(`/workflow-approval/workflow-actions/${Number(workflowId)}`, actionData);
+            const response = await apiClient.post(`/approval/workflow-actions/${Number(workflowId)}`, actionData);
             return response;
         } catch (error) {
             console.error('Error performing workflow action:', error);
@@ -253,6 +253,54 @@ export const customerAPI = {
             return response;
         } catch (error) {
             console.error('Error fetching pharmacies:', error);
+            throw error;
+        }
+    },
+
+    // Block/Unblock customer
+    blockUnblockCustomer: async (customerIds, distributorId, isActive) => {
+        try {
+            const response = await apiClient.patch('/user-management/customer/block-unblock', {
+                customerIds,
+                distributorId,
+                isActive
+            });
+            return response;
+        } catch (error) {
+            console.error('Error blocking/unblocking customer:', error);
+            throw error;
+        }
+    },
+
+    // Get company users (field team members)
+    getCompanyUsers: async (page = 1, limit = 20) => {
+        try {
+            const response = await apiClient.get(`/user-management/company-user/list?page=${page}&limit=${limit}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching company users:', error);
+            throw error;
+        }
+    },
+
+    // Get distributors list
+    getDistributors: async (page = 1, limit = 20) => {
+        try {
+            const response = await apiClient.get(`/user-management/distributor/list?page=${page}&limit=${limit}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching distributors:', error);
+            throw error;
+        }
+    },
+
+    // Get customer divisions
+    getCustomerDivisions: async (customerId) => {
+        try {
+            const response = await apiClient.get(`/user-management/customer/divisions?customerId=${customerId}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching customer divisions:', error);
             throw error;
         }
     }

@@ -568,7 +568,7 @@ const CustomerDetail = ({ navigation, route }) => {
         </ScrollView>
       )}
 
-      {activeTab === 'linkaged' && <LinkagedTab customerType={customerData.customerType} />}
+      {activeTab === 'linkaged' && <LinkagedTab customerType={customerData.customerType} customerId={customerData.customerId} />}
 
       <DocumentModal />
       </View>

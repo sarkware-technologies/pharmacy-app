@@ -292,8 +292,9 @@ const customerSlice = createSlice({
         
         if (isLoadMore) {
           // Append to existing customers for infinite scroll
-          const existingIds = new Set(state.customers.map(c => c.customerId));
-          const uniqueNewCustomers = newCustomers.filter(c => !existingIds.has(c.customerId));
+          // Check for both customerId and stgCustomerId to handle staging customers
+          const existingIds = new Set(state.customers.map(c => c.customerId || c.stgCustomerId));
+          const uniqueNewCustomers = newCustomers.filter(c => !existingIds.has(c.customerId || c.stgCustomerId));
           state.customers = [...state.customers, ...uniqueNewCustomers];
         } else {
           // Replace customers for fresh fetch
@@ -303,11 +304,14 @@ const customerSlice = createSlice({
         state.totalCustomers = data.total || 0;
         state.totalPages = Math.ceil(state.totalCustomers / state.limit);
         
+        // Update currentPage for load more - increment after successful fetch
+        if (isLoadMore) {
+          state.currentPage = state.currentPage + 1;
+        }
+        
         // Check if there are more pages to load
         // hasMore is true if: we got a full page AND there are more records beyond what we've loaded
-        const totalLoadedSoFar = isLoadMore 
-          ? state.customers.length 
-          : newCustomers.length;
+        const totalLoadedSoFar = state.customers.length;
         state.hasMore = newCustomers.length === state.limit && totalLoadedSoFar < state.totalCustomers;
       })
       .addCase(fetchCustomersList.rejected, (state, action) => {

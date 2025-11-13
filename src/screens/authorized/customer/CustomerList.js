@@ -64,7 +64,6 @@ import {
   selectCustomerStatuses,
   selectCustomerTypes,
   selectFilters,
-  incrementPage,
   resetCustomersList
 } from '../../../redux/slices/customerSlice';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
@@ -126,6 +125,9 @@ const CustomerList = ({ navigation }) => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewSignedUrl, setPreviewSignedUrl] = useState(null);
 
+  // Block/Unblock state
+  const [blockUnblockLoading, setBlockUnblockLoading] = useState(false);
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -147,11 +149,13 @@ const CustomerList = ({ navigation }) => {
     const initializeData = async () => {    
       dispatch(resetCustomersList());  
       // Fetch customers based on active tab
+      const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
       dispatch(fetchCustomersList({
         page: 1,
         limit: 10,
         isLoadMore: false,
-        isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval' // Use staging endpoint for Not Onboarded and Waiting for Approval tabs
+        isStaging: isStaging,
+        ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
       }));
       
       // Only fetch these on initial mount
@@ -166,34 +170,39 @@ const CustomerList = ({ navigation }) => {
 
   // Handle search with debounce
   useEffect(() => {
-    if (!searchText) return; // Don't search if searchText is empty
-    
     const delayDebounceFn = setTimeout(() => {
-      dispatch(setFilters({ ...filters, searchText }));
       dispatch(resetCustomersList());
+      const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
       dispatch(fetchCustomersList({
         page: 1,
         limit: 10,
         searchText: searchText,
-        ...filters,
+        typeCode: selectedFilters.typeCode,
+        categoryCode: selectedFilters.categoryCode,
+        subCategoryCode: selectedFilters.subCategoryCode,
+        statusId: selectedFilters.statusId,
+        cityIds: selectedFilters.cityIds,
         isLoadMore: false,
-        isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval' // Pass isStaging based on active tab
+        isStaging: isStaging,
+        ...(isStaging && { statusIds: [5] }) 
       }));
     }, 500);
     
     return () => clearTimeout(delayDebounceFn);
-  }, [searchText, activeTab, filters, dispatch]); // Include all dependencies
+  }, [searchText, activeTab, dispatch]); // Removed filters dependency to prevent infinite loop
 
   // Refresh function
   const onRefresh = async () => {
     setIsRefreshing(true);
     dispatch(resetCustomersList());
+    const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
     await dispatch(fetchCustomersList({
       page: 1,
       limit: 10,
       ...filters,
       isLoadMore: false,
-      isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval' // Pass isStaging based on active tab
+      isStaging: isStaging,
+      ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
     }));
     setIsRefreshing(false);
   };
@@ -205,18 +214,18 @@ const CustomerList = ({ navigation }) => {
     }
 
     const nextPage = currentPage + 1;
+    const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
     
-    dispatch(fetchCustomersList({
+    const requestParams = {
       page: nextPage,
       limit: limit || 10,
       ...filters,
       isLoadMore: true, // This tells the slice to append, not replace
-      isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval' // Pass isStaging based on active tab
-    })).then((result) => {
-      if (result.type === 'customer/fetchList/fulfilled') {
-        dispatch(incrementPage());
-      }
-    });
+      isStaging: isStaging,
+      ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
+    };
+    
+    dispatch(fetchCustomersList(requestParams));
   }, [dispatch, currentPage, hasMore, listLoadingMore, listLoading, limit, filters, activeTab]);
 
   // Handle scroll end reached - for FlatList
@@ -354,15 +363,24 @@ const CustomerList = ({ navigation }) => {
       const workflowId = selectedCustomerForAction?.workflowId || selectedCustomerForAction?.stgCustomerId;
       const instanceId = selectedCustomerForAction?.instaceId || selectedCustomerForAction?.instaceId;
       const actorId = loggedInUser?.userId || loggedInUser?.id;
+      const parellGroupId = selectedCustomerForAction?.instance?.stepInstances[0]?.parallelGroup
+      const stepOrderId = selectedCustomerForAction?.instance?.stepInstances[0]?.stepOrder
       
       const actionData = {
-        stepOrder: 3,
-        parallelGroup: 1,
+        stepOrder: stepOrderId,
+        parallelGroup: parellGroupId,
         actorId: actorId,
         action: "APPROVE",
         comments: comment || "Approved",
         instanceId: instanceId,
-        actionData: {}
+        actionData: {
+          field: "status",
+          newValue: "Approved"
+        },
+        dataChanges: {
+          previousStatus: "Pending",
+          newStatus: "Approved"
+        }
       };
 
       const response = await customerAPI.workflowAction(instanceId, actionData);
@@ -372,11 +390,13 @@ const CustomerList = ({ navigation }) => {
       setSelectedCustomerForAction(null);
       
       // Refresh the customer list after approval
+      const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
       dispatch(fetchCustomersList({
         page: 1,
         limit: pagination.limit,
         searchText: filters.searchText,
-        isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval'
+        isStaging: isStaging,
+        ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
       }));
     } catch (error) {
       console.error('Error approving customer:', error);
@@ -393,45 +413,118 @@ const CustomerList = ({ navigation }) => {
   };
 
   const handleRejectConfirm = async (comment) => {
+
+    console.log(selectedCustomerForAction?.instaceId, 'selectedCustomerForAction?.instaceId')
+
     try {
       const workflowId = selectedCustomerForAction?.workflowId || selectedCustomerForAction?.stgCustomerId;
-      const instanceId = selectedCustomerForAction?.customerId || selectedCustomerForAction?.stgCustomerId;
+      const instanceId = selectedCustomerForAction?.instaceId || selectedCustomerForAction?.stgCustomerId;
       const actorId = loggedInUser?.userId || loggedInUser?.id;
+      const parellGroupId = selectedCustomerForAction?.instance?.stepInstances[0]?.parallelGroup
+      const stepOrderId = selectedCustomerForAction?.instance?.stepInstances[0]?.stepOrder
       
       const actionData = {
-        stepOrder: 3,
-        parallelGroup: 1,
+        stepOrder: stepOrderId,
+        parallelGroup: parellGroupId,
         actorId: actorId,
         action: "REJECT",
         comments: comment || "Rejected",
         instanceId: instanceId,
-        actionData: {}
+        actionData: {
+          field: "status",
+          newValue: "Rejected"
+        },
+        dataChanges: {
+          previousStatus: "Pending",
+          newStatus: "Rejected"
+        }
       };
 
-      console.log('Rejecting customer:', selectedCustomerForAction?.customerName);
-      console.log('Workflow ID:', workflowId);
-      console.log('Instance ID:', instanceId);
-      console.log('Logged-in User ID (actorId):', actorId);
-      console.log('Action Data:', actionData);
-
-      const response = await customerAPI.workflowAction(workflowId, actionData);
+      const response = await customerAPI.workflowAction(instanceId, actionData);
       
       setRejectModalVisible(false);
       showToast(`Customer ${selectedCustomerForAction?.customerName} rejected!`, 'error');
       setSelectedCustomerForAction(null);
       
       // Refresh the customer list after rejection
+      const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
       dispatch(fetchCustomersList({
         page: 1,
         limit: pagination.limit,
         searchText: filters.searchText,
-        isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval'
+        isStaging: isStaging,
+        ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
       }));
     } catch (error) {
       console.error('Error rejecting customer:', error);
       setRejectModalVisible(false);
       showToast(`Failed to reject customer: ${error.message}`, 'error');
       setSelectedCustomerForAction(null);
+    }
+  };
+
+  // Handle block customer
+  const handleBlockCustomer = async (customer) => {
+    try {
+      setBlockUnblockLoading(true);
+      const customerId = customer?.stgCustomerId || customer?.customerId;
+      const distributorId = loggedInUser?.distributorId || 1;
+      
+      const response = await customerAPI.blockUnblockCustomer(
+        [customerId],
+        distributorId,
+        false // isActive = false for blocking
+      );
+      
+      showToast(`Customer ${customer?.customerName} blocked successfully!`, 'success');
+      
+      // Refresh the customer list
+      const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
+      dispatch(fetchCustomersList({
+        page: 1,
+        limit: pagination.limit,
+        searchText: filters.searchText,
+        isStaging: isStaging,
+        ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
+      }));
+    } catch (error) {
+      console.error('Error blocking customer:', error);
+      showToast(`Failed to block customer: ${error.message}`, 'error');
+    } finally {
+      setBlockUnblockLoading(false);
+    }
+  };
+
+  // Handle unblock customer
+  const handleUnblockCustomer = async (customer) => {
+    console.log(loggedInUser)
+    try {
+      setBlockUnblockLoading(true);
+      const customerId = customer?.stgCustomerId || customer?.customerId;
+      const distributorId = loggedInUser?.distributorId || 1;
+      
+      const response = await customerAPI.blockUnblockCustomer(
+        [customerId],
+        distributorId,
+        true // isActive = true for unblocking
+      );
+      
+      showToast(`Customer ${customer?.customerName} unblocked successfully!`, 'success');
+      
+      // Refresh the customer list
+      const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
+      dispatch(fetchCustomersList({
+        page: 1,
+        limit: pagination.limit,
+        searchText: filters.searchText,
+        isStaging: isStaging,
+        ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
+      }));
+    } catch (error) {
+      console.error('Error unblocking customer:', error);
+      showToast(`Failed to unblock customer: ${error.message}`, 'error');
+    } finally {
+      setBlockUnblockLoading(false);
     }
   };
 
@@ -563,11 +656,13 @@ const CustomerList = ({ navigation }) => {
     };
     
     dispatch(setFilters(filterParams));
+    const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
     dispatch(fetchCustomersList({
       page: 1,
       limit: 10,
       ...filterParams,
-      isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval' // Pass isStaging based on active tab
+      isStaging: isStaging,
+      ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
     }));
     
     setFilterModalVisible(false);
@@ -576,12 +671,14 @@ const CustomerList = ({ navigation }) => {
   // Add onRetry function
   const onRetry = () => {
     dispatch(resetCustomersList());
+    const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
     dispatch(fetchCustomersList({
       page: 1,
       limit: 10,
       ...filters,
       isLoadMore: false,
-      isStaging: activeTab === 'notOnboarded' || activeTab === 'waitingForApproval'
+      isStaging: isStaging,
+      ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
     }));
   };
 
@@ -784,13 +881,19 @@ const CustomerList = ({ navigation }) => {
             <Text style={styles.customerName}>{item.customerName} <ChevronRight height={11} color={colors.primary} /></Text>
             <View style={styles.actionsContainer}>
               {item.statusName === 'NOT-ONBOARDED' && (
-                <TouchableOpacity style={styles.actionButton}>
+                <TouchableOpacity 
+                  style={styles.actionButton}
+                  onPress={() => navigation.navigate('PrivateRegistrationForm', { customerId: item.customerId || item.stgCustomerId })}
+                >
                   <Edit color="#666" />
                 </TouchableOpacity>
               )}
 
               {item.statusName === 'APPROVED' && (
-                <TouchableOpacity style={styles.actionButton}>
+                <TouchableOpacity 
+                  style={styles.actionButton}
+                  onPress={() => navigation.navigate('PrivateRegistrationForm', { customerId: item.customerId || item.stgCustomerId })}
+                >
                   <Edit color="#666" />
                 </TouchableOpacity>
               )}
@@ -840,12 +943,20 @@ const CustomerList = ({ navigation }) => {
               </Text>
             </View>
             {item.statusName === 'LOCKED' ? (
-            <TouchableOpacity style={styles.unlockButton}>
+            <TouchableOpacity 
+              style={styles.unlockButton}
+              onPress={() => handleUnblockCustomer(item)}
+              disabled={blockUnblockLoading}
+            >
               <UnLocked fill="#EF4444" />
               <Text style={styles.unlockButtonText}>Unblock</Text>
             </TouchableOpacity>
           ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
-            <TouchableOpacity style={styles.blockButton}>
+            <TouchableOpacity 
+              style={styles.blockButton}
+              onPress={() => handleUnblockCustomer(item)}
+              disabled={blockUnblockLoading}
+            >
               <Locked fill="#666" />
               <Text style={styles.blockButtonText}>Block</Text>
             </TouchableOpacity>
@@ -867,7 +978,7 @@ const CustomerList = ({ navigation }) => {
           ) : item.statusName === 'NOT-ONBOARDED' ? (
             <TouchableOpacity 
               style={styles.onboardButton}
-              onPress={() => navigation.navigate('CustomerOnboard', { customerId: item.customerId })}>
+              onPress={() => navigation.navigate('PrivateRegistrationForm', { customerId: item.customerId || item.stgCustomerId })}>
               <Text style={styles.onboardButtonText}>Onboard</Text>
             </TouchableOpacity>
           ) : null}

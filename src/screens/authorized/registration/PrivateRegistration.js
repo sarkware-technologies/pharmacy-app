@@ -866,7 +866,7 @@ const PrivateRegistrationForm = () => {
             licenceValidUpto: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(), // 1 year validity
           }]
         },
-        customerDocIds: docIds,
+        // customerDocIds: docIds,
         isBuyer: formData.markAsBuyingEntity,
         customerGroupId: getCustomerGroupId(formData.customerGroup),
         generalDetails: {

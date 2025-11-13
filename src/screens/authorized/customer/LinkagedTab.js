@@ -124,7 +124,7 @@ const mockFieldData = [
   { id: 7, name: 'Vrushal Shinde', code: 'SUN12345', designation: 'Customer executive' },
 ];
 
-export const LinkagedTab = ({ customerType = 'Hospital' }) => {
+export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) => {
   const [activeSubTab, setActiveSubTab] = useState('distributors');
   const [activeDistributorTab, setActiveDistributorTab] = useState('preferred');
   const [showDivisionModal, setShowDivisionModal] = useState(false);
@@ -150,6 +150,29 @@ export const LinkagedTab = ({ customerType = 'Hospital' }) => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
 
+  // Field team states
+  const [fieldTeamData, setFieldTeamData] = useState([]);
+  const [fieldTeamLoading, setFieldTeamLoading] = useState(false);
+  const [fieldTeamError, setFieldTeamError] = useState(null);
+
+  // Distributors states
+  const [allDistributorsData, setAllDistributorsData] = useState([]);
+  const [preferredDistributorsData, setPreferredDistributorsData] = useState([]);
+  const [distributorsLoading, setDistributorsLoading] = useState(false);
+  const [distributorsError, setDistributorsError] = useState(null);
+
+  // Distributor dropdown states
+  const [distributorRateType, setDistributorRateType] = useState({});
+  const [distributorDivision, setDistributorDivision] = useState({});
+  const [showRateTypeDropdown, setShowRateTypeDropdown] = useState({});
+  const [showDivisionDropdown, setShowDivisionDropdown] = useState({});
+
+  // Divisions states
+  const [openedDivisionsData, setOpenedDivisionsData] = useState([]);
+  const [otherDivisionsData, setOtherDivisionsData] = useState([]);
+  const [divisionsLoading, setDivisionsLoading] = useState(false);
+  const [divisionsError, setDivisionsError] = useState(null);
+
   // Show toast notification
   const showToast = (message, type = 'success') => {
     setToastMessage(message);
@@ -160,6 +183,92 @@ export const LinkagedTab = ({ customerType = 'Hospital' }) => {
       setToastVisible(false);
     }, 3000);
   };
+
+  // Fetch field team data on component mount
+  useEffect(() => {
+    const fetchFieldTeamData = async () => {
+      try {
+        setFieldTeamLoading(true);
+        setFieldTeamError(null);
+        const response = await customerAPI.getCompanyUsers(1, 20);
+        
+        if (response?.data?.companyUsers) {
+          setFieldTeamData(response.data.companyUsers);
+        } else {
+          setFieldTeamData([]);
+        }
+      } catch (error) {
+        console.error('Error fetching field team data:', error);
+        setFieldTeamError(error.message);
+        setFieldTeamData([]);
+      } finally {
+        setFieldTeamLoading(false);
+      }
+    };
+
+    fetchFieldTeamData();
+  }, []);
+
+  // Fetch distributors data on component mount
+  useEffect(() => {
+    const fetchDistributorsData = async () => {
+      try {
+        setDistributorsLoading(true);
+        setDistributorsError(null);
+        const response = await customerAPI.getDistributors(1, 20);
+        
+        if (response?.data?.distributors) {
+          setAllDistributorsData(response.data.distributors);
+          // Initially, preferred distributors are empty (user will add from all)
+          setPreferredDistributorsData([]);
+        } else {
+          setAllDistributorsData([]);
+          setPreferredDistributorsData([]);
+        }
+      } catch (error) {
+        console.error('Error fetching distributors data:', error);
+        setDistributorsError(error.message);
+        setAllDistributorsData([]);
+        setPreferredDistributorsData([]);
+      } finally {
+        setDistributorsLoading(false);
+      }
+    };
+
+    fetchDistributorsData();
+  }, []);
+
+  // Fetch divisions data on component mount
+  useEffect(() => {
+    const fetchDivisionsData = async () => {
+      if (!customerId) return;
+      
+      try {
+        setDivisionsLoading(true);
+        setDivisionsError(null);
+        const response = await customerAPI.getCustomerDivisions(customerId);
+        
+        if (response?.data && Array.isArray(response.data)) {
+          // All divisions from API go to "Other Division" initially
+          setOtherDivisionsData(response.data);
+          // Opened divisions start empty (user will move from other)
+          setOpenedDivisionsData([]);
+        } else {
+          setOtherDivisionsData([]);
+          setOpenedDivisionsData([]);
+        }
+      } catch (error) {
+        console.error('Error fetching divisions data:', error);
+        setDivisionsError(error.message);
+        setOtherDivisionsData([]);
+        setOpenedDivisionsData([]);
+      } finally {
+        setDivisionsLoading(false);
+      }
+    };
+
+    fetchDivisionsData();
+  }, [customerId]);
 
   const handleApprove = (item) => {
     setSelectedItem(item);
@@ -235,7 +344,7 @@ export const LinkagedTab = ({ customerType = 'Hospital' }) => {
     }
   };
   
-  const handleLinkDivisionsConfirm = (comment) => {
+  const handleLinkDivisionsConfirmModal = (comment) => {
     // TODO: API integration
     console.log('Link Divisions with comment:', comment);
     setShowLinkDivisionsModal(false);
@@ -282,6 +391,109 @@ export const LinkagedTab = ({ customerType = 'Hospital' }) => {
     }
   };
 
+  // Add distributor from "All" to "Preferred"
+  const handleAddDistributor = (distributor) => {
+    const alreadyExists = preferredDistributorsData.find(d => d.id === distributor.id);
+    if (!alreadyExists) {
+      setPreferredDistributorsData(prev => [...prev, distributor]);
+      showToast(`${distributor.name} added to preferred distributors!`, 'success');
+    } else {
+      showToast(`${distributor.name} is already in preferred distributors!`, 'error');
+    }
+  };
+
+  // Remove distributor from "Preferred"
+  const handleRemoveDistributor = (distributorId) => {
+    setPreferredDistributorsData(prev => prev.filter(d => d.id !== distributorId));
+    // Clean up dropdown states for removed distributor
+    setDistributorRateType(prev => {
+      const updated = { ...prev };
+      delete updated[distributorId];
+      return updated;
+    });
+    setDistributorDivision(prev => {
+      const updated = { ...prev };
+      delete updated[distributorId];
+      return updated;
+    });
+    showToast('Distributor removed from preferred!', 'success');
+  };
+
+  // Handle rate type selection
+  const handleRateTypeSelect = (distributorId, rateType) => {
+    setDistributorRateType(prev => ({
+      ...prev,
+      [distributorId]: rateType
+    }));
+    setShowRateTypeDropdown(prev => ({
+      ...prev,
+      [distributorId]: false
+    }));
+  };
+
+  // Handle division selection
+  const handleDivisionSelect = (distributorId, division) => {
+    setDistributorDivision(prev => ({
+      ...prev,
+      [distributorId]: division
+    }));
+    setShowDivisionDropdown(prev => ({
+      ...prev,
+      [distributorId]: false
+    }));
+  };
+
+  // Toggle rate type dropdown
+  const toggleRateTypeDropdown = (distributorId) => {
+    setShowRateTypeDropdown(prev => ({
+      ...prev,
+      [distributorId]: !prev[distributorId]
+    }));
+  };
+
+  // Toggle division dropdown
+  const toggleDivisionDropdown = (distributorId) => {
+    setShowDivisionDropdown(prev => ({
+      ...prev,
+      [distributorId]: !prev[distributorId]
+    }));
+  };
+
+  // Toggle division selection in "Other Division"
+  const toggleOtherDivisionSelection = (division) => {
+    setSelectedDivisions(prev => {
+      const exists = prev.find(d => d.divisionId === division.divisionId);
+      if (exists) {
+        return prev.filter(d => d.divisionId !== division.divisionId);
+      } else {
+        return [...prev, division];
+      }
+    });
+  };
+
+  // Move selected divisions from "Other" to "Opened"
+  const handleLinkDivisionsConfirm = (comment) => {
+    if (selectedDivisions.length === 0) {
+      showToast('Please select at least one division', 'error');
+      return;
+    }
+
+    // Move selected divisions to opened
+    setOpenedDivisionsData(prev => [...prev, ...selectedDivisions]);
+    
+    // Remove from other divisions
+    const selectedIds = selectedDivisions.map(d => d.divisionId);
+    setOtherDivisionsData(prev => prev.filter(d => !selectedIds.includes(d.divisionId)));
+    
+    // Clear selection
+    setSelectedDivisions([]);
+    
+    // Close modal
+    setShowDivisionModal(false);
+    
+    showToast('Divisions linked successfully!', 'success');
+  };
+
   const renderDistributorsTab = () => (
     <View style={styles.tabContent}>
       {/* Sub tabs for Preferred and All Distributors */}
@@ -314,66 +526,133 @@ export const LinkagedTab = ({ customerType = 'Hospital' }) => {
             </TouchableOpacity>
           </View>
 
-          {mockDistributors.preferred.map((distributor) => (
-            <View key={distributor.id} style={styles.distributorCard}>
-              <View style={styles.distributorHeader}>
-                <Text style={styles.distributorName}>{distributor.name}</Text>
-                <View style={styles.marginContainer}>
-                  <Text style={styles.marginLabel}>Margin</Text>
-                  <View style={styles.marginInputContainer}>
-                    <TextInput
-                      style={styles.marginInput}
-                      value={distributor.margin.toString()}
-                      keyboardType="numeric"
-                    />
-                    <Text style={styles.marginPercent}>%</Text>
-                  </View>
-                </View>
-              </View>
-              
-              <Text style={styles.distributorInfo}>
-                {distributor.code} | {distributor.location} | {distributor.city}
-              </Text>
-
-              <View style={styles.distributorActions}>
-                <View style={styles.dropdownsRow}>
-                  <TouchableOpacity style={styles.dropdown}>
-                    <Text style={styles.dropdownText}>{distributor.division}</Text>
-                    <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity style={styles.dropdown}>
-                    <Text style={styles.dropdownText}>All Divisions</Text>
-                    <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity style={styles.removeButton}>
-                  <Text style={styles.removeText}>Remove</Text>
-                  <IconFeather name="trash-2" size={16} color="#FF6B00" />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.rateTypeRow}>
-                <TouchableOpacity style={styles.radioButton}>
-                  <View style={[styles.radioOuter, distributor.rateType === 'Net Rate' && styles.radioSelected]}>
-                    {distributor.rateType === 'Net Rate' && <View style={styles.radioInner} />}
-                  </View>
-                  <Text style={styles.radioText}>Net Rate</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.radioButton}>
-                  <View style={[styles.radioOuter, distributor.rateType === 'Chargeback' && styles.radioSelected]}>
-                    {distributor.rateType === 'Chargeback' && <View style={styles.radioInner} />}
-                  </View>
-                  <Text style={styles.radioText}>Chargeback</Text>
-                </TouchableOpacity>
-              </View>
+          {preferredDistributorsData.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Icon name="package-variant-closed" size={40} color="#999" />
+              <Text style={styles.emptyText}>No preferred distributors added yet</Text>
+              <Text style={styles.emptySubText}>Add distributors from "All Distributors" tab</Text>
             </View>
-          ))}
+          ) : (
+            preferredDistributorsData.map((distributor) => (
+              <View key={distributor.id} style={styles.distributorCard}>
+                <View style={styles.distributorHeader}>
+                  <Text style={styles.distributorName}>{distributor.name}</Text>
+                  <View style={styles.marginContainer}>
+                    <Text style={styles.marginLabel}>Margin</Text>
+                    <View style={styles.marginInputContainer}>
+                      <TextInput
+                        style={styles.marginInput}
+                        placeholder="0"
+                        keyboardType="numeric"
+                      />
+                      <Text style={styles.marginPercent}>%</Text>
+                    </View>
+                  </View>
+                </View>
+                
+                <Text style={styles.distributorInfo}>
+                  {distributor.code} | {distributor.cityName || 'N/A'} | {distributor.stateName || 'N/A'}
+                </Text>
 
-          <TouchableOpacity style={styles.addMoreButton}>
-            <Text style={styles.addMoreText}>+ Add More Stockist Preference</Text>
-          </TouchableOpacity>
+                <View style={styles.distributorActions}>
+                  <View style={styles.dropdownsRow}>
+                    {/* Organization Dropdown */}
+                    <View style={styles.dropdownWrapper}>
+                      <TouchableOpacity 
+                        style={styles.dropdown}
+                        onPress={() => toggleDivisionDropdown(distributor.id)}
+                      >
+                        <Text style={styles.dropdownText}>
+                          {distributorDivision[distributor.id] || 'SPILL'}
+                        </Text>
+                        <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
+                      </TouchableOpacity>
+                      {showDivisionDropdown[distributor.id] && (
+                        <View style={styles.dropdownMenu}>
+                          <TouchableOpacity 
+                            style={styles.dropdownMenuItem}
+                            onPress={() => handleDivisionSelect(distributor.id, 'SPILL')}
+                          >
+                            <Text style={styles.dropdownMenuText}>SPILL</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={styles.dropdownMenuItem}
+                            onPress={() => handleDivisionSelect(distributor.id, 'BOTH')}
+                          >
+                            <Text style={styles.dropdownMenuText}>BOTH</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                    
+                    {/* All Divisions Dropdown */}
+                    <View style={styles.dropdownWrapper}>
+                      <TouchableOpacity 
+                        style={styles.dropdown}
+                        onPress={() => toggleRateTypeDropdown(distributor.id)}
+                      >
+                        <Text style={styles.dropdownText}>
+                          {distributorRateType[distributor.id] || 'All Divisions'}
+                        </Text>
+                        <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
+                      </TouchableOpacity>
+                      {showRateTypeDropdown[distributor.id] && (
+                        <View style={styles.dropdownMenu}>
+                          <TouchableOpacity 
+                            style={styles.dropdownMenuItem}
+                            onPress={() => handleRateTypeSelect(distributor.id, 'All Divisions')}
+                          >
+                            <Text style={styles.dropdownMenuText}>All Divisions</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={styles.dropdownMenuItem}
+                            onPress={() => handleRateTypeSelect(distributor.id, 't4')}
+                          >
+                            <Text style={styles.dropdownMenuText}>t4</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={styles.dropdownMenuItem}
+                            onPress={() => handleRateTypeSelect(distributor.id, 'test35')}
+                          >
+                            <Text style={styles.dropdownMenuText}>test35</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  <TouchableOpacity 
+                    style={styles.removeButton}
+                    onPress={() => handleRemoveDistributor(distributor.id)}
+                  >
+                    <Text style={styles.removeText}>Remove</Text>
+                    <IconFeather name="trash-2" size={16} color="#FF6B00" />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.rateTypeRow}>
+                  <TouchableOpacity 
+                    style={styles.radioButton}
+                    onPress={() => handleRateTypeSelect(distributor.id, 'Net Rate')}
+                  >
+                    <View style={[styles.radioOuter, distributorRateType[distributor.id] === 'Net Rate' && styles.radioSelected]}>
+                      {distributorRateType[distributor.id] === 'Net Rate' && <View style={styles.radioInner} />}
+                    </View>
+                    <Text style={styles.radioText}>Net Rate</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.radioButton}
+                    onPress={() => handleRateTypeSelect(distributor.id, 'Chargeback')}
+                  >
+                    <View style={[styles.radioOuter, distributorRateType[distributor.id] === 'Chargeback' && styles.radioSelected]}>
+                      {distributorRateType[distributor.id] === 'Chargeback' && <View style={styles.radioInner} />}
+                    </View>
+                    <Text style={styles.radioText}>Chargeback</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
 
           <TouchableOpacity style={styles.linkButton}>
             <Text style={styles.linkButtonText}>Link Distributors</Text>
@@ -381,56 +660,81 @@ export const LinkagedTab = ({ customerType = 'Hospital' }) => {
         </ScrollView>
       ) : (
         <ScrollView style={styles.scrollContent}>
-          {/* Filters */}
-          <View style={styles.filterRow}>
-            <TouchableOpacity style={styles.filterIcon}>
-              <Icon name="tune" size={20} color="#666" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filterDropdown}>
-              <Text style={styles.filterText}>State</Text>
-              <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filterDropdown}>
-              <Text style={styles.filterText}>City</Text>
-              <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Search */}
-          <View style={styles.searchContainer}>
-            <IconFeather name="search" size={20} color="#999" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search by distributor name & code"
-              placeholderTextColor="#999"
-              value={searchText}
-              onChangeText={setSearchText}
-            />
-          </View>
-
-          {/* Table Header */}
-          <View style={styles.tableHeader}>
-            <Text style={styles.tableHeaderText}>Name, Code & City</Text>
-            <Text style={styles.tableHeaderText}>Supply type</Text>
-            <Text style={styles.tableHeaderText}>Action</Text>
-          </View>
-
-          {/* Distributor List */}
-          {mockDistributors.all.map((distributor) => (
-            <View key={`${distributor.id}-${distributor.name}`} style={styles.distributorRow}>
-              <View style={styles.distributorInfo}>
-                <Text style={styles.distributorRowName}>{distributor.name}</Text>
-                <Text style={styles.distributorRowCode}>{distributor.code} | {distributor.city}</Text>
-              </View>
-              <TouchableOpacity style={styles.supplyTypeDropdown}>
-                <Text style={styles.supplyTypeText}>{distributor.supplyType}</Text>
-                <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.addButton}>
-                <Text style={styles.addButtonText}>+ Add</Text>
-              </TouchableOpacity>
+          {distributorsLoading ? (
+            <View style={styles.loadingContainer}>
+              <Icon name="loading" size={40} color="#FF6B00" />
+              <Text style={styles.loadingText}>Loading distributors...</Text>
             </View>
-          ))}
+          ) : distributorsError ? (
+            <View style={styles.errorContainer}>
+              <Icon name="alert-circle" size={40} color="#EF4444" />
+              <Text style={styles.errorText}>Error loading distributors</Text>
+              <Text style={styles.errorSubText}>{distributorsError}</Text>
+            </View>
+          ) : (
+            <>
+              {/* Filters */}
+              <View style={styles.filterRow}>
+                <TouchableOpacity style={styles.filterIcon}>
+                  <Icon name="tune" size={20} color="#666" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.filterDropdown}>
+                  <Text style={styles.filterText}>State</Text>
+                  <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.filterDropdown}>
+                  <Text style={styles.filterText}>City</Text>
+                  <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Search */}
+              <View style={styles.searchContainer}>
+                <IconFeather name="search" size={20} color="#999" />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search by distributor name & code"
+                  placeholderTextColor="#999"
+                  value={searchText}
+                  onChangeText={setSearchText}
+                />
+              </View>
+
+              {/* Table Header */}
+              <View style={styles.tableHeader}>
+                <Text style={styles.tableHeaderText}>Name, Code & City</Text>
+                <Text style={styles.tableHeaderText}>Status</Text>
+                <Text style={styles.tableHeaderText}>Action</Text>
+              </View>
+
+              {/* Distributor List */}
+              {allDistributorsData.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Icon name="package-variant-closed" size={40} color="#999" />
+                  <Text style={styles.emptyText}>No distributors available</Text>
+                </View>
+              ) : (
+                allDistributorsData.map((distributor) => (
+                  <View key={`${distributor.id}-${distributor.name}`} style={styles.distributorRow}>
+                    <View style={styles.distributorInfo}>
+                      <Text style={styles.distributorRowName}>{distributor.name}</Text>
+                      <Text style={styles.distributorRowCode}>{distributor.code} | {distributor.cityName || 'N/A'}</Text>
+                    </View>
+                    <TouchableOpacity style={styles.supplyTypeDropdown}>
+                      <Text style={styles.supplyTypeText}>{distributor.inviteStatusName}</Text>
+                      <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.addButton}
+                      onPress={() => handleAddDistributor(distributor)}
+                    >
+                      <Text style={styles.addButtonText}>+ Add</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </>
+          )}
         </ScrollView>
       )}
     </View>
@@ -438,94 +742,135 @@ export const LinkagedTab = ({ customerType = 'Hospital' }) => {
 
   const renderDivisionsTab = () => (
     <View style={styles.tabContent}>
-      <ScrollView style={styles.scrollContent}>
-        <View style={styles.divisionsContainer}>
-          <View style={styles.divisionColumn}>
-            <Text style={styles.columnTitle}>Opened Division</Text>
-            <Text style={styles.columnSubtitle}>Name & Code</Text>
-            
-            {mockDivisions.opened.map((division) => (
-              <View key={division.id} style={styles.divisionItem}>
-                <View>
-                  <Text style={styles.divisionName}>{division.name}</Text>
-                  <Text style={styles.divisionCode}>{division.code}</Text>
+      {divisionsLoading ? (
+        <View style={styles.loadingContainer}>
+          <Icon name="loading" size={40} color="#FF6B00" />
+          <Text style={styles.loadingText}>Loading divisions...</Text>
+        </View>
+      ) : divisionsError ? (
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle" size={40} color="#EF4444" />
+          <Text style={styles.errorText}>Error loading divisions</Text>
+          <Text style={styles.errorSubText}>{divisionsError}</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.scrollContent}>
+          <View style={styles.divisionsContainer}>
+            <View style={styles.divisionColumn}>
+              <Text style={styles.columnTitle}>Opened Division</Text>
+              <Text style={styles.columnSubtitle}>Name & Code</Text>
+              
+              {openedDivisionsData.length === 0 ? (
+                <View style={styles.emptyDivisionContainer}>
+                  <Text style={styles.emptyDivisionText}>No divisions opened yet</Text>
                 </View>
-                <TouchableOpacity 
-                  style={[styles.blockButton, !division.blocked && styles.unblockButton]}
-                >
-                  <Icon name="lock" size={16} color={division.blocked ? '#666' : '#FF6B00'} />
-                  <Text style={[styles.blockText, !division.blocked && styles.unblockText]}>
-                    {division.blocked ? 'Block' : 'Unblock'}
-                  </Text>
+              ) : (
+                openedDivisionsData.map((division) => (
+                  <View key={division.divisionId} style={styles.divisionItem}>
+                    <View>
+                      <Text style={styles.divisionName}>{division.divisionName}</Text>
+                      <Text style={styles.divisionCode}>{division.divisionCode}</Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={[styles.blockButton, styles.unblockButton]}
+                    >
+                      <Icon name="lock" size={16} color="#FF6B00" />
+                      <Text style={styles.unblockText}>Unblock</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </View>
+
+            <View style={styles.divisionColumn}>
+              <View style={styles.columnHeader}>
+                <Text style={styles.columnTitle}>Other Division</Text>
+                <TouchableOpacity>
+                  <Text style={styles.assignText}>Assign to Instra</Text>
                 </TouchableOpacity>
               </View>
-            ))}
-          </View>
-
-          <View style={styles.divisionColumn}>
-            <View style={styles.columnHeader}>
-              <Text style={styles.columnTitle}>Other Division</Text>
-              <TouchableOpacity>
-                <Text style={styles.assignText}>Assign to Instra</Text>
-              </TouchableOpacity>
+              <Text style={styles.columnSubtitle}>Name & Code</Text>
+              
+              {otherDivisionsData.length === 0 ? (
+                <View style={styles.emptyDivisionContainer}>
+                  <Text style={styles.emptyDivisionText}>No other divisions available</Text>
+                </View>
+              ) : (
+                otherDivisionsData.map((division) => (
+                  <TouchableOpacity 
+                    key={`other-${division.divisionId}`} 
+                    style={styles.checkboxItem}
+                    onPress={() => toggleOtherDivisionSelection(division)}
+                  >
+                    <View style={[styles.checkbox, selectedDivisions.find(d => d.divisionId === division.divisionId) && styles.checkboxSelected]}>
+                      {selectedDivisions.find(d => d.divisionId === division.divisionId) && (
+                        <Icon name="check" size={16} color="#fff" />
+                      )}
+                    </View>
+                    <View>
+                      <Text style={styles.divisionName}>{division.divisionName}</Text>
+                      <Text style={styles.divisionCode}>{division.divisionCode}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
             </View>
-            <Text style={styles.columnSubtitle}>Name & Code</Text>
-            
-            {mockDivisions.other.map((division) => (
-              <TouchableOpacity 
-                key={`other-${division.id}`} 
-                style={styles.checkboxItem}
-                onPress={() => toggleDivisionSelection(division)}
-              >
-                <View style={[styles.checkbox, selectedDivisions.find(d => d.id === division.id) && styles.checkboxSelected]}>
-                  {selectedDivisions.find(d => d.id === division.id) && (
-                    <Icon name="check" size={16} color="#fff" />
-                  )}
-                </View>
-                <View>
-                  <Text style={styles.divisionName}>{division.name}</Text>
-                  <Text style={styles.divisionCode}>{division.code}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
           </View>
-        </View>
 
-        <TouchableOpacity 
-          style={styles.linkDivisionsButton}
-          onPress={() => setShowLinkDivisionsModal(true)}
-        >
-          <Text style={styles.linkButtonText}>Link Divisions</Text>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.linkDivisionsButton}
+            onPress={() => setShowDivisionModal(true)}
+          >
+            <Text style={styles.linkButtonText}>Link Divisions</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.continueButton}
-          onPress={() => console.log('Continue')}
-        >
-          <Text style={styles.linkButtonText}>Continue</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <TouchableOpacity 
+            style={styles.continueButton}
+            onPress={() => console.log('Continue')}
+          >
+            <Text style={styles.linkButtonText}>Continue</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
     </View>
   );
 
   const renderFieldTab = () => (
     <View style={styles.tabContent}>
-      <ScrollView style={styles.scrollContent}>
-        <View style={styles.fieldHeader}>
-          <Text style={styles.fieldHeaderText}>Employee Name & Code</Text>
-          <Text style={styles.fieldHeaderText}>Designation</Text>
+      {fieldTeamLoading ? (
+        <View style={styles.loadingContainer}>
+          <Icon name="loading" size={40} color="#FF6B00" />
+          <Text style={styles.loadingText}>Loading field team...</Text>
         </View>
-
-        {mockFieldData.map((employee) => (
-          <View key={employee.id} style={styles.fieldRow}>
-            <View style={styles.employeeInfo}>
-              <Text style={styles.employeeName}>{employee.name}</Text>
-              <Text style={styles.employeeCode}>{employee.code}</Text>
-            </View>
-            <Text style={styles.employeeDesignation}>{employee.designation}</Text>
+      ) : fieldTeamError ? (
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle" size={40} color="#EF4444" />
+          <Text style={styles.errorText}>Error loading field team</Text>
+          <Text style={styles.errorSubText}>{fieldTeamError}</Text>
+        </View>
+      ) : fieldTeamData.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Icon name="account-multiple-outline" size={40} color="#999" />
+          <Text style={styles.emptyText}>No field team members found</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.scrollContent}>
+          <View style={styles.fieldHeader}>
+            <Text style={styles.fieldHeaderText}>Employee Name & Code</Text>
+            <Text style={styles.fieldHeaderText}>Designation</Text>
           </View>
-        ))}
-      </ScrollView>
+
+          {fieldTeamData.map((employee) => (
+            <View key={employee.id} style={styles.fieldRow}>
+              <View style={styles.employeeInfo}>
+                <Text style={styles.employeeName}>{employee.userName}</Text>
+                <Text style={styles.employeeCode}>{employee.userCode}</Text>
+              </View>
+              <Text style={styles.employeeDesignation}>{employee.designation}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 
@@ -1523,6 +1868,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  // Dropdown menu styles
+  dropdownWrapper: {
+    position: 'relative',
+    flex: 1,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginTop: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  dropdownMenuItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  dropdownMenuText: {
+    fontSize: 14,
+    color: '#333',
+  },
   // Toast styles
   toastContainer: {
     position: 'absolute',
@@ -1558,6 +1936,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  // Loading, error, and empty states
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#EF4444',
+  },
+  errorSubText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#999',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#999',
+  },
+  emptySubText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#999',
+  },
+  emptyDivisionContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  emptyDivisionText: {
+    fontSize: 14,
+    color: '#999',
   },
 });
 

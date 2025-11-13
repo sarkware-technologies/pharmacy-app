@@ -105,11 +105,12 @@ const PharmacyWholesalerRetailerForm = () => {
     // Mapping
     hospitalCode: '',
     hospitalName: '',
+    selectedCategory: '', // 'groupCorporateHospital', 'pharmacy', or ''
+    selectedHospitals: [],
+    selectedPharmacies: [],
     
     // Customer group
     customerGroupId: 1,
-    isIPD: false,
-    isGOVT: false,
     isBuyer: false,
     
     // Stockist Suggestions
@@ -189,6 +190,10 @@ const PharmacyWholesalerRetailerForm = () => {
   const [showStateModal, setShowStateModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showAreaModal, setShowAreaModal] = useState(false);
+
+  // Modal states for hospital and pharmacy selectors
+  const [showHospitalModal, setShowHospitalModal] = useState(false);
+  const [showPharmacyModal, setShowPharmacyModal] = useState(false);
 
   useEffect(() => {
     // Entry animation
@@ -778,15 +783,15 @@ const PharmacyWholesalerRetailerForm = () => {
             }
           ]
         },
-        customerDocIds: [
-          documentIds.license20,
-          documentIds.license21,
-          documentIds.license20b,
-          documentIds.license21b,
-          documentIds.pharmacyImage,
-          documentIds.pan,
-          documentIds.gst,
-        ].filter(id => id !== null),
+        // customerDocIds: [
+        //   documentIds.license20,
+        //   documentIds.license21,
+        //   documentIds.license20b,
+        //   documentIds.license21b,
+        //   documentIds.pharmacyImage,
+        //   documentIds.pan,
+        //   documentIds.gst,
+        // ].filter(id => id !== null),
         isBuyer: formData.isBuyer,
         customerGroupId: formData.customerGroupId,
         generalDetails: {
@@ -1450,76 +1455,196 @@ const PharmacyWholesalerRetailerForm = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Mapping</Text>
               
-              <View style={styles.mappingRow}>
-                <Icon name="local-hospital" size={20} color={colors.primary} />
-                <Text style={styles.mappingLabel}>Hospital</Text>
-                <Icon name="circle" size={8} color={colors.primary} style={styles.dot} />
-                <Text style={styles.mappingType}>Doctor</Text>
+              <Text style={styles.sectionLabel}>Select category <Text style={styles.optional}>(Optional)</Text></Text>
+              
+              <View style={styles.categoryOptions}>
+                {/* Group Corporate Hospital Radio Button */}
+                <TouchableOpacity
+                  style={styles.radioOption}
+                  onPress={() => {
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      selectedCategory: formData.selectedCategory === 'groupCorporateHospital' ? '' : 'groupCorporateHospital',
+                      selectedHospitals: formData.selectedCategory === 'groupCorporateHospital' ? [] : prev.selectedHospitals
+                    }));
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.radioCircle}>
+                    {formData.selectedCategory === 'groupCorporateHospital' && (
+                      <View style={styles.radioSelected} />
+                    )}
+                  </View>
+                  <Text style={styles.radioLabel}>Group Corporate Hospital</Text>
+                </TouchableOpacity>
+
+                {/* Group Hospital Selector - Show when Group Corporate Hospital is selected */}
+                {formData.selectedCategory === 'groupCorporateHospital' && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.selectorInput}
+                      onPress={() => {
+                        navigation.navigate('HospitalSelector', {
+                          selectedHospitals: formData.selectedHospitals,
+                          onSelect: (hospitals) => {
+                            setFormData(prev => ({ ...prev, selectedHospitals: hospitals }));
+                          }
+                        });
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      {formData.selectedHospitals && formData.selectedHospitals.length > 0 ? (
+                        <View style={styles.selectedItemsContainer}>
+                          {formData.selectedHospitals.map((hospital, index) => (
+                            <View key={hospital.id} style={styles.selectedItemTag}>
+                              <Text style={styles.selectedItemTagText}>{hospital.name}</Text>
+                              <TouchableOpacity
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    selectedHospitals: prev.selectedHospitals.filter(h => h.id !== hospital.id)
+                                  }));
+                                }}
+                                style={styles.removeTagButton}
+                              >
+                                <Text style={styles.removeTagText}>×</Text>
+                              </TouchableOpacity>
+                            </View>
+                          ))}
+                        </View>
+                      ) : (
+                        <>
+                          <Text style={styles.selectorPlaceholder}>Search hospital name/code</Text>                
+                          <Icon name="search" size={20} color="#999" />
+                        </>
+                      )}
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.addNewLink}
+                      onPress={() => setShowHospitalModal(true)}
+                    >            
+                      <Text style={styles.addNewLinkText}>+ Add New Group Hospital</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* Pharmacy Radio Button */}
+                <TouchableOpacity
+                  style={styles.radioOption}
+                  onPress={() => {
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      selectedCategory: formData.selectedCategory === 'pharmacy' ? '' : 'pharmacy',
+                      selectedPharmacies: formData.selectedCategory === 'pharmacy' ? [] : prev.selectedPharmacies
+                    }));
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.radioCircle}>
+                    {formData.selectedCategory === 'pharmacy' && (
+                      <View style={styles.radioSelected} />
+                    )}
+                  </View>
+                  <Text style={styles.radioLabel}>Pharmacy</Text>
+                </TouchableOpacity>
               </View>
-              
-              <TouchableOpacity style={styles.searchDropdown}>
-                <Text style={styles.searchDropdownText}>Search hospital name/code</Text>
-                <Icon name="arrow-drop-down" size={24} color="#666" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.addNewButton}
-                onPress={handleAddNewHospital}
-              >
-                <Text style={styles.addNewButtonText}>+ Add New Hospital</Text>
-              </TouchableOpacity>
+
+              {/* Pharmacy Selector - Show when Pharmacy is selected */}
+              {formData.selectedCategory === 'pharmacy' && (
+                <>
+                  <TouchableOpacity
+                    style={styles.selectorInput}
+                    onPress={() => {
+                      navigation.navigate('PharmacySelector', {
+                        selectedPharmacies: formData.selectedPharmacies,
+                        onSelect: (pharmacies) => {
+                          setFormData(prev => ({ ...prev, selectedPharmacies: pharmacies }));
+                        }
+                      });
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.selectorPlaceholder}>Search pharmacy name/code</Text>
+                    <Icon name="search" size={20} color="#999" />
+                  </TouchableOpacity>
+                  
+                  {/* Selected Pharmacies List */}
+                  {formData.selectedPharmacies.map((pharmacy) => (
+                    <View key={pharmacy.id} style={styles.selectedPharmacyItem}>
+                      <View style={styles.pharmacyInfo}>
+                        <Text style={styles.pharmacyName}>{pharmacy.name}</Text>
+                        <Text style={styles.pharmacyCode}>{pharmacy.code}</Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            selectedPharmacies: prev.selectedPharmacies.filter(p => p.id !== pharmacy.id)
+                          }));
+                        }}
+                      >                
+                        <Icon name="close" size={20} color={colors.error} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  
+                  <TouchableOpacity 
+                    style={styles.addNewLink}
+                    onPress={() => setShowPharmacyModal(true)}
+                  >
+                    <Text style={styles.addNewLinkText}>+ Add New Pharmacy</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              <View style={styles.divider} />
               
               <Text style={styles.customerGroupLabel}>Customer group</Text>
-              <View style={styles.radioGroup}>
-                <TouchableOpacity 
-                  style={styles.radioOption}
-                  onPress={() => setFormData(prev => ({ ...prev, customerGroupId: 1 }))}
-                >
-                  <View style={styles.radioCircle}>
-                    {formData.customerGroupId === 1 && (
-                      <View style={styles.radioSelected} />
-                    )}
-                  </View>
-                  <Text style={styles.radioText}>9 Doctor badge</Text>
-                </TouchableOpacity>
+              <View style={styles.radioGroupContainer}>
+                <View style={styles.radioRow}>
+                  <TouchableOpacity 
+                    style={[styles.radioOption, styles.radioOptionFlex]}
+                    onPress={() => setFormData(prev => ({ ...prev, customerGroupId: 1 }))}
+                  >
+                    <View style={styles.radioCircle}>
+                      {formData.customerGroupId === 1 && (
+                        <View style={styles.radioSelected} />
+                      )}
+                    </View>
+                    <Text style={styles.radioText}>9 Doctor Supply</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.radioOption, styles.radioOptionFlex, styles.disabledOption]}
+                    disabled={true}
+                  >
+                    <View style={[styles.radioCircle, styles.disabledRadio]}>
+                    </View>
+                    <Text style={[styles.radioText, styles.disabledText]}>10 VQ</Text>
+                  </TouchableOpacity>
+                </View>
                 
-                <TouchableOpacity 
-                  style={styles.radioOption}
-                  onPress={() => setFormData(prev => ({ ...prev, customerGroupId: 2 }))}
-                >
-                  <View style={styles.radioCircle}>
-                    {formData.customerGroupId === 2 && (
-                      <View style={styles.radioSelected} />
-                    )}
-                  </View>
-                  <Text style={styles.radioText}>10 VVI</Text>
-                </TouchableOpacity>
-              </View>
-              
-              <View style={styles.checkboxGroup}>
-                <TouchableOpacity 
-                  style={styles.checkboxOption}
-                  onPress={() => setFormData(prev => ({ ...prev, isIPD: !prev.isIPD }))}
-                >
-                  <View style={styles.checkbox}>
-                    {formData.isIPD && (
-                      <Icon name="check" size={16} color={colors.primary} />
-                    )}
-                  </View>
-                  <Text style={styles.checkboxText}>13 IPD</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.checkboxOption}
-                  onPress={() => setFormData(prev => ({ ...prev, isGOVT: !prev.isGOVT }))}
-                >
-                  <View style={styles.checkbox}>
-                    {formData.isGOVT && (
-                      <Icon name="check" size={16} color={colors.primary} />
-                    )}
-                  </View>
-                  <Text style={styles.checkboxText}>12 GOVT</Text>
-                </TouchableOpacity>
+                <View style={styles.radioRow}>
+                  <TouchableOpacity 
+                    style={[styles.radioOption, styles.radioOptionFlex, styles.disabledOption]}
+                    disabled={true}
+                  >
+                    <View style={[styles.radioCircle, styles.disabledRadio]}>
+                    </View>
+                    <Text style={[styles.radioText, styles.disabledText]}>11 RFQ</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.radioOption, styles.radioOptionFlex, styles.disabledOption]}
+                    disabled={true}
+                  >
+                    <View style={[styles.radioCircle, styles.disabledRadio]}>
+                    </View>
+                    <Text style={[styles.radioText, styles.disabledText]}>12 GOVT</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
 
@@ -2205,6 +2330,155 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',
+  },
+  // New styles for category selection
+  sectionLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 12,
+  },
+  optional: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#999',
+  },
+  categoryOptions: {
+    marginBottom: 20,
+  },
+  radioOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  radioCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioSelected: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  },
+  radioLabel: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedItemsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    flex: 1,
+  },
+  selectedItemTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5ED',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  selectedItemTagText: {
+    fontSize: 14,
+    color: '#333',
+    marginRight: 6,
+  },
+  removeTagButton: {
+    padding: 2,
+  },
+  removeTagText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
+  selectorInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.loginInputBorderColor,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 16,
+    backgroundColor: '#FAFAFA',
+  },
+  selectorPlaceholder: {
+    fontSize: 16,
+    color: '#999',
+    flex: 1,
+  },
+  selectedPharmacyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  pharmacyInfo: {
+    flex: 1,
+  },
+  pharmacyName: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  pharmacyCode: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  addNewLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginBottom: 20,
+  },
+  addNewLinkText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginVertical: 20,
+  },
+  radioGroupContainer: {
+    marginVertical: 12,
+  },
+  radioRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  radioOptionFlex: {
+    flex: 1,
+    marginRight: 16,
+  },
+  disabledOption: {
+    opacity: 0.5,
+  },
+  disabledRadio: {
+    backgroundColor: '#E8E8E8',
+    borderColor: '#CCCCCC',
+  },
+  disabledText: {
+    color: '#999999',
   },
 });
 
