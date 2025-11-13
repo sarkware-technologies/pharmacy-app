@@ -33,7 +33,7 @@ import ChevronRight from '../../../components/icons/ChevronRight';
 import Phone from '../../../components/icons/Phone';
 import AddrLine from '../../../components/icons/AddrLine';
 import FilterModal from '../../../components/FilterModal';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const DistributorList = () => {
   const navigation = useNavigation();
@@ -394,7 +394,7 @@ const DistributorList = () => {
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Icon name="search" size={20} color="#999" />
-          <TextInput
+          <AppInput
             style={styles.searchInput}
             placeholder="Search by distributor name/code"
             value={searchText}

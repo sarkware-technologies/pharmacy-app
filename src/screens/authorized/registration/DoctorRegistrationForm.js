@@ -31,7 +31,7 @@ import ArrowDown from '../../../components/icons/ArrowDown';
 import Search from '../../../components/icons/Search';
 import CloseCircle from '../../../components/icons/CloseCircle';
 import { customerAPI } from '../../../api/customer';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const { width, height } = Dimensions.get('window');
 
@@ -580,7 +580,7 @@ const DoctorRegistrationForm = () => {
         <AppText style={styles.otpTitle}>Enter 4-digit OTP</AppText>
         <View style={styles.otpInputContainer}>
           {[0, 1, 2, 3].map(index => (
-            <TextInput
+            <AppInput
               key={index}
               ref={ref => otpRefs.current[`otp-${field}-${index}`] = ref}
               style={styles.otpInput}
@@ -1230,7 +1230,7 @@ const DoctorRegistrationForm = () => {
               {/* Mobile Number with Verify */}
               <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
                 <AppText style={styles.countryCode}>+91</AppText>
-                <TextInput
+                <AppInput
                   style={styles.inputField}
                   placeholder="Mobile Number"
                   value={formData.mobileNumber}
@@ -1277,7 +1277,7 @@ const DoctorRegistrationForm = () => {
 
               {/* Email Address with Verify */}
               <View style={[styles.inputWithButton, errors.emailAddress && styles.inputError]}>
-                <TextInput
+                <AppInput
                   style={[styles.inputField, { flex: 1 }]}
                   placeholder="Email Address"
                   value={formData.emailAddress}

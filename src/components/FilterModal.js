@@ -15,7 +15,7 @@ import {
 import { colors } from '../styles/colors';
 import { useSelector, useDispatch } from 'react-redux';
 import apiClient from '../api/apiClient';
-import AppText from "./AppText"
+import {AppText,AppInput} from "."
 
 import CloseCircle from './icons/CloseCircle';
 import Search from './icons/Search';
@@ -357,7 +357,7 @@ const FilterModal = ({ visible, onClose, onApply }) => {
                 {currentSection?.hasSearch && (
                   <View style={styles.searchContainer}>
                     <Search />
-                    <TextInput
+                    <AppInput
                       style={styles.searchInput}
                       placeholder={`Search ${currentSection.label.toLowerCase()}...`}
                       value={searchQuery}

@@ -19,7 +19,7 @@ import { useDispatch } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { bulkUpdateProductDiscounts } from '../../../api/product';
 import { setProducts, setBulkEditMode, deselectAllProducts } from '../../../redux/slices/productSlice';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const ProductBulkEdit = () => {
   const navigation = useNavigation();
@@ -148,7 +148,7 @@ const ProductBulkEdit = () => {
               <View style={styles.inputGroup}>
                 <AppText style={styles.inputLabel}>Doctor Discount (%)</AppText>
                 <View style={styles.inputWrapper}>
-                  <TextInput
+                  <AppInput
                     style={styles.input}
                     value={doctorDiscount}
                     onChangeText={setDoctorDiscount}
@@ -166,7 +166,7 @@ const ProductBulkEdit = () => {
               <View style={styles.inputGroup}>
                 <AppText style={styles.inputLabel}>Hospital Discount (%)</AppText>
                 <View style={styles.inputWrapper}>
-                  <TextInput
+                  <AppInput
                     style={styles.input}
                     value={hospitalDiscount}
                     onChangeText={setHospitalDiscount}

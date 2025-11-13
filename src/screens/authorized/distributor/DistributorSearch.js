@@ -12,7 +12,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../styles/colors';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const DistributorSearch = ({ onSelect }) => {
   const navigation = useNavigation();
@@ -81,7 +81,7 @@ const DistributorSearch = ({ onSelect }) => {
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Icon name="search" size={20} color="#999" />
-          <TextInput
+          <AppInput
             style={styles.searchInput}
             placeholder="Search by name or code..."
             value={searchText}

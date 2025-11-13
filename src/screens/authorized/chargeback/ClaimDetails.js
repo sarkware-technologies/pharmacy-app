@@ -18,7 +18,7 @@ import PrimaryInvoiceDetailsModal from '../../../components/chargeback/PrimaryIn
 import ConfirmSubmitModal from '../../../components/chargeback/ConfirmSubmitModal';
 import ClaimSuccessModal from '../../../components/chargeback/ClaimSuccessModal';
 import CommentModal from '../../../components/chargeback/CommentModal';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const ClaimDetails = () => {
 
@@ -113,7 +113,7 @@ const ClaimDetails = () => {
 
           <View style={styles.detailRow}>
             <AppText style={styles.detailLabel}>Current Claimed Qty</AppText>
-            <TextInput
+            <AppInput
               style={styles.quantityInput}
               value={productQuantities[product.id] || product.currentClaimedQty.toString()}
               onChangeText={(value) => handleQuantityChange(product.id, value)}
@@ -130,7 +130,7 @@ const ClaimDetails = () => {
 
           <View style={styles.detailRow}>
             <AppText style={styles.detailLabel}>Stockist Supply Rate</AppText>
-            <TextInput
+            <AppInput
               style={styles.rateInput}
               value={`₹ ${product.stockistSupplyRate}`}
               editable={true}
@@ -209,7 +209,7 @@ const ClaimDetails = () => {
             </View>
 
             <AppText style={styles.claimDetailsTitle}>Claim Details</AppText>
-            <TextInput
+            <AppInput
               style={styles.searchInput}
               placeholder="Search product name/code..."
               placeholderTextColor="#999"

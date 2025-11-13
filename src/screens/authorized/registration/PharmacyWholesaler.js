@@ -27,7 +27,7 @@ import Calendar from '../../../components/icons/Calendar';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import ChevronRight from '../../../components/icons/ChevronRight';
 import { customerAPI } from '../../../api/customer';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 // Document types for file uploads
 const DOC_TYPES = {
@@ -580,7 +580,7 @@ const PharmacyWholesalerForm = () => {
         <AppText style={styles.otpTitle}>Enter 4-digit OTP</AppText>
         <View style={styles.otpInputContainer}>
           {[0, 1, 2, 3].map(index => (
-            <TextInput
+            <AppInput
               key={index}
               ref={ref => otpRefs.current[`otp-${field}-${index}`] = ref}
               style={styles.otpInput}
@@ -1120,7 +1120,7 @@ const PharmacyWholesalerForm = () => {
               {/* Mobile Number with OTP Verification */}
               <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
                 <AppText style={styles.countryCode}>+91</AppText>
-                <TextInput
+                <AppInput
                   style={styles.inputField}
                   placeholder="Mobile Number"
                   value={formData.mobileNumber}
@@ -1166,7 +1166,7 @@ const PharmacyWholesalerForm = () => {
 
               {/* Email Address with OTP Verification */}
               <View style={[styles.inputWithButton, errors.emailAddress && styles.inputError]}>
-                <TextInput
+                <AppInput
                   style={[styles.inputField, { flex: 1 }]}
                   placeholder="Email Address"
                   value={formData.emailAddress}

@@ -22,7 +22,7 @@ import {
 } from '../../../components/OnboardConfirmModel';
 import { customerAPI } from '../../../api/customer';
 import { useSelector } from 'react-redux';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const { width } = Dimensions.get('window');
 
@@ -541,7 +541,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                   <View style={styles.marginContainer}>
                     <AppText style={styles.marginLabel}>Margin</AppText>
                     <View style={styles.marginInputContainer}>
-                      <TextInput
+                      <AppInput
                         style={styles.marginInput}
                         placeholder="0"
                         keyboardType="numeric"
@@ -692,7 +692,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
               {/* Search */}
               <View style={styles.searchContainer}>
                 <IconFeather name="search" size={20} color="#999" />
-                <TextInput
+                <AppInput
                   style={styles.searchInput}
                   placeholder="Search by distributor name & code"
                   placeholderTextColor="#999"

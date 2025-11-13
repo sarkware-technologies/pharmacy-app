@@ -18,7 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { getProducts } from '../../../api/product';
 import { setSelectedProduct } from '../../../redux/slices/productSlice';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const ProductSearch = () => {
   const navigation = useNavigation();
@@ -208,7 +208,7 @@ const ProductSearch = () => {
             <View style={styles.filterSection}>
               <AppText style={styles.filterLabel}>Price Range (PTR)</AppText>
               <View style={styles.priceInputs}>
-                <TextInput
+                <AppInput
                   style={styles.priceInput}
                   placeholder="Min"
                   value={minPrice}
@@ -217,7 +217,7 @@ const ProductSearch = () => {
                   placeholderTextColor="#999"
                 />
                 <AppText style={styles.priceSeparator}>-</AppText>
-                <TextInput
+                <AppInput
                   style={styles.priceInput}
                   placeholder="Max"
                   value={maxPrice}
@@ -230,7 +230,7 @@ const ProductSearch = () => {
             
             <View style={styles.filterSection}>
               <AppText style={styles.filterLabel}>Division</AppText>
-              <TextInput
+              <AppInput
                 style={styles.divisionInput}
                 placeholder="Enter division name"
                 value={selectedDivision}
@@ -276,7 +276,7 @@ const ProductSearch = () => {
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Icon name="search" size={20} color="#999" />
-          <TextInput
+          <AppInput
             ref={searchInputRef}
             style={styles.searchInput}
             placeholder="Search by product name, code, or brand"

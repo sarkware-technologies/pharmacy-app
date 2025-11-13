@@ -10,7 +10,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { colors } from '../../styles/colors';
-import AppText from "../AppText"
+import {AppText,AppInput} from "../"
 
 const { width, height } = Dimensions.get('window');
 
@@ -52,7 +52,7 @@ const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName }) => 
 
           {/* Comment Input */}
           <View style={styles.inputContainer}>
-            <TextInput
+            <AppInput
               style={styles.input}
               placeholder="Write your comment*"
               placeholderTextColor="#999"

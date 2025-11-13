@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import AppText from "./AppText"
+import {AppText,AppInput} from "."
 
 const { width } = Dimensions.get('window');
 
@@ -58,7 +58,7 @@ export const ApproveConfirmModal = ({ visible, onClose, onConfirm, customerName 
 
                 {/* Comment Input */}
                 <View style={styles.inputContainer}>
-                  <TextInput
+                  <AppInput
                     style={styles.commentInput}
                     placeholder="Write your comment"
                     placeholderTextColor="#999"
@@ -140,7 +140,7 @@ export const LinkDivisionsModal = ({ visible, onClose, onConfirm }) => {
 
                 {/* Comment Input */}
                 <View style={styles.inputContainer}>
-                  <TextInput
+                  <AppInput
                     style={styles.commentInput}
                     placeholder="Write your comment"
                     placeholderTextColor="#999"

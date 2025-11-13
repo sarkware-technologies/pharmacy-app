@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors } from '../../../styles/colors';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const CreateRateContract = () => {
   const navigation = useNavigation();
@@ -194,7 +194,7 @@ const CreateRateContract = () => {
 
             <View style={styles.searchBar}>
               <Icon name="search" size={20} color={colors.textSecondary} />
-              <TextInput
+              <AppInput
                 style={styles.searchInput}
                 placeholder="Search by customer name/code"
                 placeholderTextColor={colors.textSecondary}
@@ -269,7 +269,7 @@ const CreateRateContract = () => {
                   </TouchableOpacity>
                   
                   <View style={styles.marginInput}>
-                    <TextInput
+                    <AppInput
                       style={styles.marginInputText}
                       value={distributor.margin.toString()}
                       keyboardType="numeric"
@@ -322,7 +322,7 @@ const CreateRateContract = () => {
           </View>
 
           <View style={styles.searchContainer}>
-            <TextInput
+            <AppInput
               style={styles.productSearchInput}
               placeholder="Type to search..."
               placeholderTextColor={colors.textSecondary}
@@ -384,7 +384,7 @@ const CreateRateContract = () => {
           </View>
 
           <View style={styles.discountContent}>
-            <TextInput
+            <AppInput
               style={styles.customDiscountInput}
               placeholder="Enter custom %"
               placeholderTextColor={colors.textSecondary}
@@ -699,7 +699,7 @@ const CreateRateContract = () => {
                 <View style={styles.productInputGroup}>
                   <AppText style={styles.inputLabel}>Discount (%)</AppText>
                   <View style={styles.discountInput}>
-                    <TextInput
+                    <AppInput
                       style={styles.discountInputText}
                       value={product.discount.toString()}
                       keyboardType="numeric"
@@ -714,7 +714,7 @@ const CreateRateContract = () => {
                   <AppText style={styles.inputLabel}>Special Price</AppText>
                   <View style={styles.priceInput}>
                     <AppText style={styles.rupeeSymbol}>₹</AppText>
-                    <TextInput
+                    <AppInput
                       style={styles.priceInputText}
                       value={product.specialPrice.toString()}
                       keyboardType="numeric"
@@ -724,7 +724,7 @@ const CreateRateContract = () => {
                 
                 <View style={styles.productInputGroup}>
                   <AppText style={styles.inputLabel}>MOQ(Monthly)</AppText>
-                  <TextInput
+                  <AppInput
                     style={styles.moqInput}
                     value={product.moq.toString()}
                     keyboardType="numeric"

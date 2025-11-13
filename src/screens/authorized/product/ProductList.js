@@ -37,7 +37,7 @@ import Bell from '../../../components/icons/Bell';
 import Search from '../../../components/icons/Search';
 import Filter from '../../../components/icons/Filter';
 import FilterModal from '../../../components/FilterModal';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const ProductList = () => {
   const navigation = useNavigation();
@@ -376,7 +376,7 @@ const ProductList = () => {
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Search />
-          <TextInput
+          <AppInput
             style={styles.searchInput}
             placeholder="Search by product name/code"
             value={searchText}

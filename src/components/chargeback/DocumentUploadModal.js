@@ -13,7 +13,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import CloseCircle from '../icons/CloseCircle';
 import { colors } from '../../styles/colors';
 import Upload from '../icons/Upload';
-import AppText from "../AppText"
+import {AppText,AppInput} from "../"
 
 const DocumentUploadModal = ({ visible, onClose, order }) => {
   const [claimForm, setClaimForm] = useState(null);
@@ -174,13 +174,13 @@ const DocumentUploadModal = ({ visible, onClose, order }) => {
                       )}
                       
                       <View style={styles.podInputs}>
-                        <TextInput
+                        <AppInput
                           style={styles.podInput}
                           placeholder="POD001"
                           value={pod.code}
                           onChangeText={(text) => updatePODDetail(index, 'code', text)}
                         />
-                        <TextInput
+                        <AppInput
                           style={styles.podInput}
                           placeholder="05/03/2025"
                           value={pod.date}

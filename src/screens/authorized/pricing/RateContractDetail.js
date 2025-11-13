@@ -15,7 +15,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
 import Filter from '../../../components/icons/Filter';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const RateContractDetail = () => {
   const navigation = useNavigation();
@@ -137,7 +137,7 @@ const RateContractDetail = () => {
         <View style={styles.inputGroupSmall}>
           <AppText style={styles.inputLabel}>Discount (%)</AppText>
           <View style={styles.discountInput}>
-            <TextInput
+            <AppInput
               style={styles.discountValue}
               value={product.discount.toString()}
               editable={false}
@@ -152,7 +152,7 @@ const RateContractDetail = () => {
           <AppText style={styles.inputLabel}>Special Price</AppText>
           <View style={styles.priceInputContainer}>
             <AppText style={styles.rupeeSign}>₹</AppText>
-            <TextInput
+            <AppInput
               style={styles.priceInput}
               value={product.specialPrice.toString()}
               editable={false}
@@ -382,7 +382,7 @@ const RateContractDetail = () => {
                       </TouchableOpacity>
                       
                       <View style={styles.marginInput}>
-                        <TextInput
+                        <AppInput
                           style={styles.marginInputText}
                           value={distributor.margin}
                           keyboardType="numeric"

@@ -49,7 +49,7 @@ import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModa
 import RejectCustomerModal from '../../../components/modals/RejectCustomerModal';
 import { customerAPI } from '../../../api/customer';
 import { SkeletonList } from '../../../components/SkeletonLoader';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const { width, height } = Dimensions.get('window');
 
@@ -1275,7 +1275,7 @@ const CustomerList = ({ navigation }) => {
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Search color="#999" />
-          <TextInput
+          <AppInput
             style={styles.searchInput}
             placeholder="Search by customer name/code"
             value={searchText}

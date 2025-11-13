@@ -27,7 +27,7 @@ import ChevronRight from '../../../components/icons/ChevronRight';
 import Business from '../../../components/icons/Business';
 import AddrLine from '../../../components/icons/AddrLine';
 import PauseCircle from '../../../components/icons/PauseCircle';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const RateContractList = () => {
   const navigation = useNavigation();
@@ -231,7 +231,7 @@ const RateContractList = () => {
 
             <View style={styles.filterSection}>
               <AppText style={styles.filterSectionTitle}>Customer Group</AppText>
-              <TextInput
+              <AppInput
                 style={styles.filterInput}
                 placeholder="Enter customer group"
                 placeholderTextColor={colors.textSecondary}
@@ -240,7 +240,7 @@ const RateContractList = () => {
 
             <View style={styles.filterSection}>
               <AppText style={styles.filterSectionTitle}>Category</AppText>
-              <TextInput
+              <AppInput
                 style={styles.filterInput}
                 placeholder="Enter category"
                 placeholderTextColor={colors.textSecondary}
@@ -249,7 +249,7 @@ const RateContractList = () => {
 
             <View style={styles.filterSection}>
               <AppText style={styles.filterSectionTitle}>State</AppText>
-              <TextInput
+              <AppInput
                 style={styles.filterInput}
                 placeholder="Enter state"
                 placeholderTextColor={colors.textSecondary}
@@ -258,7 +258,7 @@ const RateContractList = () => {
 
             <View style={styles.filterSection}>
               <AppText style={styles.filterSectionTitle}>City</AppText>
-              <TextInput
+              <AppInput
                 style={styles.filterInput}
                 placeholder="Enter city"
                 placeholderTextColor={colors.textSecondary}
@@ -462,7 +462,7 @@ const RateContractList = () => {
         <View style={styles.searchContainer}>
             <View style={styles.searchBar}>
             <Search color="#999" />
-            <TextInput
+            <AppInput
                 style={styles.searchInput}
                 placeholder="Search RC, customer name/code..."
                 value={searchText}

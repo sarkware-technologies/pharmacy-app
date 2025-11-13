@@ -25,7 +25,7 @@ import Delete from '../../../components/icons/Delete';
 import { setCartDetails } from "../../../redux/slices/orderSlice"
 import CustomerSelectionModal from './CustomerSelector';
 import SelectDistributor from './SelectDistributor';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const SearchAddProducts = () => {
   const route = useRoute();
@@ -423,7 +423,7 @@ const SearchAddProducts = () => {
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Icon name="search" size={20} color="#999" />
-          <TextInput
+          <AppInput
             style={styles.searchInput}
             placeholder="Search by product name"
             value={searchText}

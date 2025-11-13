@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import AppText from "../AppText"
+import {AppText,AppInput} from "../"
 
 const CommentModal = ({ visible, onClose }) => {
   const [comment, setComment] = useState('');
@@ -85,7 +85,7 @@ const CommentModal = ({ visible, onClose }) => {
           />
 
           <View style={styles.inputContainer}>
-            <TextInput
+            <AppInput
               style={styles.commentInput}
               placeholder="Add Comment"
               value={comment}

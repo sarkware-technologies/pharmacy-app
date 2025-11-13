@@ -17,7 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { getDivisions, updateDivisionMargins } from '../../../api/division';
 import { setLoading } from '../../../redux/slices/divisionSlice';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const CEOThresholdUpdate = () => {
   const navigation = useNavigation();
@@ -150,7 +150,7 @@ const CEOThresholdUpdate = () => {
       </View>
       
       <View style={styles.inputContainer}>
-        <TextInput
+        <AppInput
           style={styles.input}
           value={thresholdValues[division.divisionId]?.doctor?.toString() || ''}
           onChangeText={(value) => handleThresholdChange(division.divisionId, 'doctor', value)}
@@ -162,7 +162,7 @@ const CEOThresholdUpdate = () => {
       </View>
       
       <View style={styles.inputContainer}>
-        <TextInput
+        <AppInput
           style={styles.input}
           value={thresholdValues[division.divisionId]?.hospital?.toString() || ''}
           onChangeText={(value) => handleThresholdChange(division.divisionId, 'hospital', value)}
@@ -205,7 +205,7 @@ const CEOThresholdUpdate = () => {
         <View style={styles.globalInputRow}>
           <AppText style={styles.globalLabel}>For Doctor</AppText>
           <View style={styles.globalInputContainer}>
-            <TextInput
+            <AppInput
               style={styles.globalInput}
               value={globalValues.doctor}
               onChangeText={(value) => handleGlobalChange('doctor', value)}
@@ -218,7 +218,7 @@ const CEOThresholdUpdate = () => {
           
           <AppText style={styles.globalLabel}>For Hospital</AppText>
           <View style={styles.globalInputContainer}>
-            <TextInput
+            <AppInput
               style={styles.globalInput}
               value={globalValues.hospital}
               onChangeText={(value) => handleGlobalChange('hospital', value)}

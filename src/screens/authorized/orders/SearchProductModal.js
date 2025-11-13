@@ -14,7 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Svg, { Path } from 'react-native-svg';
 import { getProducts } from '../../../api/product';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const { height } = Dimensions.get('window');
 
@@ -172,7 +172,7 @@ export const SearchProductModal = ({
               />
             </Svg>
 
-            <TextInput
+            <AppInput
               style={styles.searchInput}
               placeholder="Search by product name/code"
               placeholderTextColor="#999"

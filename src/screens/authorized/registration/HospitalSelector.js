@@ -20,7 +20,7 @@ import Filter from '../../../components/icons/Filter';
 import ArrowDown from '../../../components/icons/ArrowDown';
 import Search from '../../../components/icons/Search';
 import FilterCheck from '../../../components/icons/FilterCheck';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 // Mock hospital data
 const MOCK_HOSPITALS = [
@@ -218,7 +218,7 @@ const HospitalSelector = () => {
       {/* Search Bar */}
       <View style={styles.searchContainer}>        
         <Search style={styles.searchIcon} />
-        <TextInput
+        <AppInput
           style={styles.searchInput}
           placeholder="Search by hospital name/code"
           value={searchQuery}

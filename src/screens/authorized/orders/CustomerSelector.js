@@ -14,7 +14,7 @@ import Svg, { Path, Circle } from 'react-native-svg';
 import FilterModal from '../../../components/FilterModal';
 import { customerAPI } from '../../../api/customer';
 import { FlatList } from 'react-native-gesture-handler';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 // Icon Components
 const CloseIcon = () => (
@@ -259,7 +259,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
               {/* Search input */}
               <View style={styles.searchContainer}>
                 <SearchIcon />
-                <TextInput
+                <AppInput
                   style={styles.searchInput}
                   placeholder="Search by customer name/code"
                   placeholderTextColor="#999"

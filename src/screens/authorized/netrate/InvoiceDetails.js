@@ -16,7 +16,7 @@ import { mockInvoiceDetails } from './Mockdata';
 import ConfirmSubmitModal from '../../../components/netrate/ConfirmSubmitModal';
 import SuccessModal from '../../../components/netrate/SuccessModal';
 import CommentModal from '../../../components/chargeback/CommentModal';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const InvoiceDetails = () => {
 
@@ -88,7 +88,7 @@ const InvoiceDetails = () => {
 
           <View style={styles.inputRow}>
             <AppText style={styles.inputLabel}>Stockist Supply Rate</AppText>
-            <TextInput
+            <AppInput
               style={styles.input}
               value={`₹ ${product.stockistSupplyRate}`}
               editable={true}
@@ -103,7 +103,7 @@ const InvoiceDetails = () => {
 
           <View style={styles.inputRow}>
             <AppText style={styles.inputLabel}>Supply Qty</AppText>
-            <TextInput
+            <AppInput
               style={styles.input}
               value={supplyQuantities[product.id] || product.supplyQty.toString()}
               onChangeText={(value) => handleQuantityChange(product.id, value)}
@@ -195,7 +195,7 @@ const InvoiceDetails = () => {
           
           <View style={styles.searchContainer}>
             <Icon name="search" size={20} color="#999" />
-            <TextInput
+            <AppInput
               style={styles.searchInput}
               placeholder="Search product name/code..."
               placeholderTextColor="#999"

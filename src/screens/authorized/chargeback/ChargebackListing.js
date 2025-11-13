@@ -23,7 +23,7 @@ import Filter from '../../../components/icons/Filter';
 import Calendar from '../../../components/icons/Calendar';
 import Download from '../../../components/icons/Download';
 import AddrLine from '../../../components/icons/AddrLine';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const ChargebackListing = () => {
 
@@ -277,7 +277,7 @@ const ChargebackListing = () => {
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
             <Icon name="search" size={20} color="#999" />
-            <TextInput
+            <AppInput
               style={styles.searchInput}
               placeholder="Search customer name/code..."
               value={searchText}

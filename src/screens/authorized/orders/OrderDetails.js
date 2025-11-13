@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 // Icon Components
 const BackIcon = () => (
@@ -253,7 +253,7 @@ const OrderDetailsScreen = () => {
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <SearchIcon />
-          <TextInput
+          <AppInput
             style={styles.searchInput}
             placeholder="Search & Add products to cart"
             placeholderTextColor="#999"

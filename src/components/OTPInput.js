@@ -6,6 +6,7 @@ import {
   Animated,
 } from 'react-native';
 import { colors } from '../styles/colors';
+import { AppInput } from '.';
 
 const OTPInput = ({ value, onChange, length = 4 }) => {
   const [otp, setOtp] = useState(new Array(length).fill(''));
@@ -61,7 +62,7 @@ const OTPInput = ({ value, onChange, length = 4 }) => {
               transform: [{ scale: animations[index] }],
             },
           ]}>
-          <TextInput
+          <AppInput
             ref={(ref) => (inputs.current[index] = ref)}
             style={[
               styles.input,

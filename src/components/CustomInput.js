@@ -11,7 +11,7 @@ import {
 import { colors } from '../styles/colors';
 import InputEyeClose from './icons/InputEyeClose';
 import InputEyeOpen from './icons/InputEyeOpen';
-import AppText from "./AppText"
+import {AppText,AppInput} from "."
 
 const CustomInput = ({
     label,
@@ -136,7 +136,7 @@ const CustomInput = ({
                 
                 {icon && (<View style={styles.icon}>{icon}</View>)}
                 
-                <TextInput
+                <AppInput
                     style={[styles.input, icon && styles.inputWithIcon]}
                     value={value}
                     onChangeText={onChangeText}

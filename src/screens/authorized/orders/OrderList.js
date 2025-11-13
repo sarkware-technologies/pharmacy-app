@@ -29,7 +29,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import Downarrow from '../../../components/icons/downArrow';
 import Toast from 'react-native-toast-message';
 import ErrorMessage from "../../../components/view/error"
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const OrderList = () => {
   const navigation = useNavigation();
@@ -370,7 +370,7 @@ const OrderList = () => {
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
             <Icon name="search" size={20} color="#999" />
-            <TextInput
+            <AppInput
               style={styles.searchInput}
               placeholder="Search customer name/code..."
               value={searchText}

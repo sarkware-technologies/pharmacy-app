@@ -13,7 +13,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../styles/colors';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const DistributorGroupUpdate = () => {
   const navigation = useNavigation();
@@ -135,7 +135,7 @@ const DistributorGroupUpdate = () => {
           
           <View style={styles.fieldRow}>
             <AppText style={styles.fieldLabel}>Doctor Supply Margin (%)</AppText>
-            <TextInput
+            <AppInput
               style={styles.input}
               placeholder="Enter percentage"
               value={updateFields.doctorMargin}
@@ -147,7 +147,7 @@ const DistributorGroupUpdate = () => {
 
           <View style={styles.fieldRow}>
             <AppText style={styles.fieldLabel}>Hospital Supply Margin (%)</AppText>
-            <TextInput
+            <AppInput
               style={styles.input}
               placeholder="Enter percentage"
               value={updateFields.hospitalMargin}

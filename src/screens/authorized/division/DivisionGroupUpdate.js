@@ -14,7 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../styles/colors';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const DivisionGroupUpdate = () => {
   const navigation = useNavigation();
@@ -195,7 +195,7 @@ const DivisionGroupUpdate = () => {
             <AppText style={styles.sectionTitle}>Margin Values</AppText>
             <View style={styles.inputGroup}>
               <AppText style={styles.inputLabel}>Doctor Margin (%)</AppText>
-              <TextInput
+              <AppInput
                 style={styles.input}
                 value={doctorMargin}
                 onChangeText={setDoctorMargin}
@@ -206,7 +206,7 @@ const DivisionGroupUpdate = () => {
             </View>
             <View style={styles.inputGroup}>
               <AppText style={styles.inputLabel}>Hospital Margin (%)</AppText>
-              <TextInput
+              <AppInput
                 style={styles.input}
                 value={hospitalMargin}
                 onChangeText={setHospitalMargin}
@@ -240,7 +240,7 @@ const DivisionGroupUpdate = () => {
             <AppText style={styles.sectionTitle}>Header Division</AppText>
             <View style={styles.inputGroup}>
               <AppText style={styles.inputLabel}>Header Division Code</AppText>
-              <TextInput
+              <AppInput
                 style={styles.input}
                 value={headerDivision}
                 onChangeText={setHeaderDivision}

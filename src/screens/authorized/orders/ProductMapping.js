@@ -24,7 +24,7 @@ import CancelOrderModal from "./CancelOrderModal"
 import Modals from './uploadConfirmationModals';
 import { ErrorMessage } from '../../../components/view/error';
 import Toast from 'react-native-toast-message';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 
 const { UnmappedProductsModal } = Modals;
@@ -443,7 +443,7 @@ const ProductMapping = () => {
           <View style={styles.searchContainer}>
             <View style={styles.searchBar}>
               <Icon name="search" size={20} color="#999" />
-              <TextInput
+              <AppInput
                 style={styles.searchInput}
                 placeholder="Search product name/code"
                 value={searchText}

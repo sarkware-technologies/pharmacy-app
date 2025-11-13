@@ -21,7 +21,7 @@ import { colors } from '../../../styles/colors';
 import { getProductById, updateProductDiscount } from '../../../api/product';
 import { updateProduct } from '../../../redux/slices/productSlice';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const ProductDetail = () => {
   const navigation = useNavigation();
@@ -223,7 +223,7 @@ const ProductDetail = () => {
                   <View style={styles.discountInputItem}>
                     <AppText style={styles.discountInputLabel}>For Doctor</AppText>
                     <View style={styles.inputWrapper}>
-                      <TextInput
+                      <AppInput
                         style={styles.discountInput}
                         value={doctorDiscount}
                         onChangeText={setDoctorDiscount}
@@ -238,7 +238,7 @@ const ProductDetail = () => {
                   <View style={styles.discountInputItem}>
                     <AppText style={styles.discountInputLabel}>For Hospital</AppText>
                     <View style={styles.inputWrapper}>
-                      <TextInput
+                      <AppInput
                         style={styles.discountInput}
                         value={hospitalDiscount}
                         onChangeText={setHospitalDiscount}

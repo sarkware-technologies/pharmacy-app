@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const CustomerSearch = ({ navigation }) => {
   const [searchText, setSearchText] = useState('');
@@ -246,7 +246,7 @@ const CustomerSearch = ({ navigation }) => {
         </TouchableOpacity>
         
         <View style={styles.searchBar}>
-          <TextInput
+          <AppInput
             ref={searchInputRef}
             style={styles.searchInput}
             placeholder="Search by name or code"

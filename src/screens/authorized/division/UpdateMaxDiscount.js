@@ -17,7 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { getDivisions, updateDivisionMargins } from '../../../api/division';
 import { setLoading } from '../../../redux/slices/divisionSlice';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const UpdateMaxDiscount = () => {
   const navigation = useNavigation();
@@ -126,7 +126,7 @@ const UpdateMaxDiscount = () => {
       </View>
       
       <View style={styles.inputContainer}>
-        <TextInput
+        <AppInput
           style={styles.input}
           value={discountValues[division.divisionId]?.doctor?.toString() || ''}
           onChangeText={(value) => handleDiscountChange(division.divisionId, 'doctor', value)}
@@ -138,7 +138,7 @@ const UpdateMaxDiscount = () => {
       </View>
       
       <View style={styles.inputContainer}>
-        <TextInput
+        <AppInput
           style={styles.input}
           value={discountValues[division.divisionId]?.hospital?.toString() || ''}
           onChangeText={(value) => handleDiscountChange(division.divisionId, 'hospital', value)}

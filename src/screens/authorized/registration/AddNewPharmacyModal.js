@@ -15,7 +15,7 @@ import { colors } from '../../../styles/colors';
 import Toast from 'react-native-toast-message';
 import { customerAPI } from '../../../api/customer';
 import FileUploadComponent from '../../../components/FileUploadComponent';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 const DOC_TYPES = {
   LICENSE_20B: 4,
@@ -250,7 +250,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             onFileDelete={() => handleFileDelete('license20b')}
             errorMessage={pharmacyErrors.license20bFile}
           />
-          <TextInput
+          <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Drug license number"
             placeholderTextColor="#999"
@@ -272,7 +272,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             onFileDelete={() => handleFileDelete('license21b')}
             errorMessage={pharmacyErrors.license21bFile}
           />
-          <TextInput
+          <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Drug license number"
             placeholderTextColor="#999"
@@ -297,7 +297,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
 
           {/* General Details */}
           <AppText style={styles.modalSectionLabel}>General Details <AppText style={styles.mandatory}>*</AppText></AppText>
-          <TextInput
+          <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Name of the Pharmacy"
             placeholderTextColor="#999"
@@ -305,7 +305,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, pharmacyName: text }))}
           />
 
-          <TextInput
+          <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Short Name (Optional)"
             placeholderTextColor="#999"
@@ -313,7 +313,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, shortName: text }))}
           />
 
-          <TextInput
+          <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Address 1 *"
             placeholderTextColor="#999"
@@ -321,7 +321,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address1: text }))}
           />
 
-          <TextInput
+          <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Address 2"
             placeholderTextColor="#999"
@@ -329,7 +329,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address2: text }))}
           />
 
-          <TextInput
+          <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Address 3"
             placeholderTextColor="#999"
@@ -337,7 +337,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address3: text }))}
           />
 
-          <TextInput
+          <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Address 4"
             placeholderTextColor="#999"
@@ -345,7 +345,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address4: text }))}
           />
 
-          <TextInput
+          <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Pincode *"
             placeholderTextColor="#999"
@@ -433,7 +433,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
           <AppText style={styles.modalSectionLabel}>Security Details <AppText style={styles.mandatory}>*</AppText></AppText>
           <AppText style={styles.modalFieldLabel}>Mobile number <AppText style={styles.mandatory}>*</AppText></AppText>
           <View style={styles.fileUploadRow}>
-            <TextInput
+            <AppInput
               style={styles.modalInput}
               placeholder="Mobile Number *"
               placeholderTextColor="#999"
@@ -449,7 +449,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
 
           <AppText style={styles.modalFieldLabel}>Email address <AppText style={styles.mandatory}>*</AppText></AppText>
           <View style={styles.fileUploadRow}>
-            <TextInput
+            <AppInput
               style={styles.modalInput}
               placeholder="Email Address *"
               placeholderTextColor="#999"
@@ -474,7 +474,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             onFileDelete={() => handleFileDelete('pan')}
             errorMessage={pharmacyErrors.panFile}
           />
-          <TextInput
+          <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="PAN Number (e.g., ASDSD12345G)"
             placeholderTextColor="#999"
@@ -493,7 +493,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             onFileDelete={() => handleFileDelete('gst')}
             errorMessage={pharmacyErrors.gstFile}
           />
-          <TextInput
+          <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="GST Number (e.g., 27ASDSD1234F1Z5)"
             placeholderTextColor="#999"

@@ -17,7 +17,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 // Mock pharmacy data
 const MOCK_PHARMACIES = [
@@ -176,7 +176,7 @@ const PharmacySelector = () => {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
-        <TextInput
+        <AppInput
           style={styles.searchInput}
           placeholder="Search by pharmacy name/code"
           value={searchQuery}

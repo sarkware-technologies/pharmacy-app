@@ -18,7 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import Menu from '../../../components/icons/Menu';
 import GroupUpdateModal from '../../../components/GroupUpdateModal';
-import AppText from "../../../components/AppText"
+import {AppText,AppInput} from "../../../components"
 
 import { getDivisions } from '../../../api/division';
 import {
@@ -293,7 +293,7 @@ const DivisionList = () => {
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Search />
-          <TextInput
+          <AppInput
             style={styles.searchInput}
             placeholder="Search by division name/code"
             value={searchText}

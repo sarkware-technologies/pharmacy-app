@@ -37,6 +37,7 @@ import CustomerSelectionModal from './CustomerSelector';
 import SelectDistributor from './SelectDistributor';
 import Toast from 'react-native-toast-message';
 import { setCartTotal } from '../../../redux/slices/orderSlice';
+import { AppInput } from '../../../components';
 const Cart = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('manual'); // 'manual' or 'upload'
@@ -380,7 +381,7 @@ const Cart = () => {
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <IconFeather name="search" size={20} color="#999" style={styles.searchIcon} />
-          <TextInput
+          <AppInput
             style={styles.searchInput}
             placeholder="Search by PO number, SKU, Product title"
             placeholderTextColor="#999"
