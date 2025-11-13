@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
+import AppText from "../../../components/AppText"
 
 // Icon Components
 const BackIcon = () => (
@@ -162,7 +163,7 @@ const OrderDetailsScreen = () => {
           <TouchableOpacity style={styles.backButton}>
             <BackIcon />
           </TouchableOpacity>
-          <Text style={styles.orderNumber}>SUNPH-10286</Text>
+          <AppText style={styles.orderNumber}>SUNPH-10286</AppText>
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.iconButton}>
               <ClockIcon />
@@ -173,7 +174,7 @@ const OrderDetailsScreen = () => {
           </View>
         </View>
         <View style={styles.statusBadge}>
-          <Text style={[styles.statusText]}>SUBMITTED</Text>
+          <AppText style={[styles.statusText]}>SUBMITTED</AppText>
         </View>
 
       </View>
@@ -183,25 +184,25 @@ const OrderDetailsScreen = () => {
         <View style={styles.orderSummary}>
           <View style={styles.summaryRow}>
             <View>
-              <Text style={styles.poNumber}>{orderData.poNumber}</Text>
-              <Text style={styles.dateText}>{orderData.date} | {orderData.type}</Text>
+              <AppText style={styles.poNumber}>{orderData.poNumber}</AppText>
+              <AppText style={styles.dateText}>{orderData.date} | {orderData.type}</AppText>
             </View>
             <View style={styles.amountSection}>
-              <Text style={styles.amount}>₹ {orderData.amount}</Text>
-              <Text style={styles.skuCount}>SKU's: {orderData.skus}</Text>
+              <AppText style={styles.amount}>₹ {orderData.amount}</AppText>
+              <AppText style={styles.skuCount}>SKU's: {orderData.skus}</AppText>
             </View>
           </View>
 
           <View style={styles.detailsRow}>
             <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Ordered by</Text>
-              <Text style={[styles.detailValue, styles.underlinedText]}>{orderData.orderedBy}</Text>
+              <AppText style={styles.detailLabel}>Ordered by</AppText>
+              <AppText style={[styles.detailValue, styles.underlinedText]}>{orderData.orderedBy}</AppText>
             </View>
             <View style={[styles.detailItem, styles.alignRight]}>
-              <Text style={styles.detailLabel}>CFA Name</Text>
+              <AppText style={styles.detailLabel}>CFA Name</AppText>
               <TouchableOpacity onPress={() => setHeaderExpanded(!headerExpanded)}>
                 <View style={styles.expandableValue}>
-                  <Text style={[styles.detailValue, styles.underlinedText]}>{orderData.cfaName}</Text>
+                  <AppText style={[styles.detailValue, styles.underlinedText]}>{orderData.cfaName}</AppText>
                   {headerExpanded ? <ChevronUp /> : <ChevronDown />}
                 </View>
               </TouchableOpacity>
@@ -212,38 +213,38 @@ const OrderDetailsScreen = () => {
             <View style={styles.expandedContent}>
               <View style={styles.expandedRow}>
                 <View style={styles.expandedItem}>
-                  <Text style={styles.expandedLabel}>(-) Savings</Text>
-                  <Text style={styles.expandedLabel}>Trade</Text>
+                  <AppText style={styles.expandedLabel}>(-) Savings</AppText>
+                  <AppText style={styles.expandedLabel}>Trade</AppText>
                 </View>
                 <View style={styles.expandedItem}>
-                  <Text style={styles.expandedLabel}>(=) Gross Order Value</Text>
-                  <Text style={styles.expandedValue}>₹ {orderData.grossOrderValue}</Text>
+                  <AppText style={styles.expandedLabel}>(=) Gross Order Value</AppText>
+                  <AppText style={styles.expandedValue}>₹ {orderData.grossOrderValue}</AppText>
                 </View>
                 <View style={styles.expandedItem}>
-                  <Text style={styles.expandedLabel}>(+) Tax</Text>
-                  <Text style={styles.expandedValue}>₹ {orderData.tax}</Text>
+                  <AppText style={styles.expandedLabel}>(+) Tax</AppText>
+                  <AppText style={styles.expandedValue}>₹ {orderData.tax}</AppText>
                 </View>
               </View>
 
               <View style={styles.expandedRow}>
                 <View style={styles.expandedItem}>
-                  <Text style={styles.expandedLabel}>Invoice Items</Text>
-                  <Text style={styles.expandedValue}>{orderData.invoiceItems}</Text>
+                  <AppText style={styles.expandedLabel}>Invoice Items</AppText>
+                  <AppText style={styles.expandedValue}>{orderData.invoiceItems}</AppText>
                 </View>
                 <View style={styles.expandedItem}>
-                  <Text style={styles.expandedLabel}>Invoice Value</Text>
-                  <Text style={styles.expandedValue}>₹ {orderData.invoiceValue}</Text>
+                  <AppText style={styles.expandedLabel}>Invoice Value</AppText>
+                  <AppText style={styles.expandedValue}>₹ {orderData.invoiceValue}</AppText>
                 </View>
                 <View style={styles.expandedItem}>
-                  <Text style={styles.expandedLabel}>Supply Type</Text>
-                  <Text style={styles.expandedValue}>{orderData.supplyType}</Text>
+                  <AppText style={styles.expandedLabel}>Supply Type</AppText>
+                  <AppText style={styles.expandedValue}>{orderData.supplyType}</AppText>
                 </View>
               </View>
 
               <View style={styles.contractHolder}>
-                <Text style={styles.expandedLabel}>Rate Contract Holder</Text>
-                <Text style={styles.contractName}>{orderData.rateContractHolder}</Text>
-                <Text style={styles.contractDetails}>{orderData.rateContractId} | {orderData.rateContractLocation}</Text>
+                <AppText style={styles.expandedLabel}>Rate Contract Holder</AppText>
+                <AppText style={styles.contractName}>{orderData.rateContractHolder}</AppText>
+                <AppText style={styles.contractDetails}>{orderData.rateContractId} | {orderData.rateContractLocation}</AppText>
               </View>
             </View>
           )}
@@ -265,11 +266,11 @@ const OrderDetailsScreen = () => {
         <View style={styles.tabContainer}>
           <View style={styles.tabs}>
             <TouchableOpacity onPress={() => setSelectedTab('all')} style={styles.tabButton}>
-              <Text style={[styles.tabText, selectedTab === 'all' && styles.activeTab]}>All</Text>
+              <AppText style={[styles.tabText, selectedTab === 'all' && styles.activeTab]}>All</AppText>
               {selectedTab === 'all' && <View style={styles.tabIndicator} />}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setSelectedTab('multi')} style={styles.tabButton}>
-              <Text style={[styles.tabText, selectedTab === 'multi' && styles.activeTab]}>Multi-Mapped</Text>
+              <AppText style={[styles.tabText, selectedTab === 'multi' && styles.activeTab]}>Multi-Mapped</AppText>
               {selectedTab === 'multi' && <View style={styles.tabIndicator} />}
             </TouchableOpacity>
           </View>
@@ -278,7 +279,7 @@ const OrderDetailsScreen = () => {
               <SearchIcon />
             </TouchableOpacity>
             <TouchableOpacity style={styles.divDropdown}>
-              <Text style={styles.divDropdownText}>All Div</Text>
+              <AppText style={styles.divDropdownText}>All Div</AppText>
               <Svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <Path d="M3 4.5L6 7.5L9 4.5" stroke="#333" strokeWidth="1.5" strokeLinecap="round" />
               </Svg>
@@ -293,14 +294,14 @@ const OrderDetailsScreen = () => {
         <View style={styles.selectRow}>
           <TouchableOpacity style={styles.selectAll}>
             <View style={styles.checkbox} />
-            <Text style={styles.selectAllText}>Select all</Text>
+            <AppText style={styles.selectAllText}>Select all</AppText>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.showDeleted}
             onPress={() => setShowDeletedProducts(!showDeletedProducts)}
           >
             <View style={[styles.checkbox, showDeletedProducts && styles.checkboxChecked]} />
-            <Text style={styles.selectAllText}>Show Deleted Products</Text>
+            <AppText style={styles.selectAllText}>Show Deleted Products</AppText>
           </TouchableOpacity>
         </View>
 
@@ -313,18 +314,18 @@ const OrderDetailsScreen = () => {
                   <View style={styles.checkbox} />
                 </View>
                 <View style={styles.productInfo}>
-                  <Text style={styles.productName}>{product.name}</Text>
-                  <Text style={styles.productCode}>{product.id}</Text>
+                  <AppText style={styles.productName}>{product.name}</AppText>
+                  <AppText style={styles.productCode}>{product.id}</AppText>
                 </View>
               </View>
 
               <View style={styles.productDetails}>
-                <Text style={styles.productLabel}>Customer Product</Text>
+                <AppText style={styles.productLabel}>Customer Product</AppText>
                 <View style={styles.productDetailRow}>
-                  <Text style={styles.productDetailText}>{product.customerProduct}</Text>
+                  <AppText style={styles.productDetailText}>{product.customerProduct}</AppText>
                   <View style={styles.priceContainer}>
-                    <Text style={styles.pthLabel}>{product.pth}</Text>
-                    <Text style={styles.productPrice}>₹ {product.price}</Text>
+                    <AppText style={styles.pthLabel}>{product.pth}</AppText>
+                    <AppText style={styles.productPrice}>₹ {product.price}</AppText>
                   </View>
                 </View>
               </View>
@@ -332,17 +333,17 @@ const OrderDetailsScreen = () => {
               <View style={styles.productActions}>
                 <View style={styles.actionTabs}>
                   <View style={styles.actionTab}>
-                    <Text style={styles.actionTabLabel}>Mapping</Text>
+                    <AppText style={styles.actionTabLabel}>Mapping</AppText>
                     <TouchableOpacity>
-                      <Text style={styles.changeText}>Change &gt;</Text>
+                      <AppText style={styles.changeText}>Change &gt;</AppText>
                     </TouchableOpacity>
                   </View>
                   <TouchableOpacity style={styles.actionTab}>
-                    <Text style={styles.actionTabLabel}>Comment</Text>
+                    <AppText style={styles.actionTabLabel}>Comment</AppText>
                     <CommentIcon />
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.actionTab}>
-                    <Text style={styles.actionTabLabel}>Activity</Text>
+                    <AppText style={styles.actionTabLabel}>Activity</AppText>
                     <HistoryIcon />
                   </TouchableOpacity>
                 </View>
@@ -350,7 +351,7 @@ const OrderDetailsScreen = () => {
                   <TouchableOpacity onPress={() => updateQuantity(`product${index + 1}`, -1)}>
                     <MinusIcon />
                   </TouchableOpacity>
-                  <Text style={styles.quantity}>{quantities[`product${index + 1}`]}</Text>
+                  <AppText style={styles.quantity}>{quantities[`product${index + 1}`]}</AppText>
                   <TouchableOpacity onPress={() => updateQuantity(`product${index + 1}`, 1)}>
                     <PlusIcon />
                   </TouchableOpacity>
@@ -368,19 +369,19 @@ const OrderDetailsScreen = () => {
       <View style={styles.bottomActions}>
         <TouchableOpacity style={styles.holdButton}>
           <HoldIcon />
-          <Text style={styles.holdButtonText}>Hold</Text>
+          <AppText style={styles.holdButtonText}>Hold</AppText>
         </TouchableOpacity>
         <TouchableOpacity style={styles.rejectButton}>
           <Svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <Path d="M15 5L5 15M5 5L15 15" stroke="#FF8C00" strokeWidth="2" strokeLinecap="round" />
           </Svg>
-          <Text style={styles.rejectButtonText}>Reject</Text>
+          <AppText style={styles.rejectButtonText}>Reject</AppText>
         </TouchableOpacity>
         <TouchableOpacity style={styles.approveButton}>
           <Svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <Path d="M4 10L8 14L16 6" stroke="#FFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </Svg>
-          <Text style={styles.approveButtonText}>Approve</Text>
+          <AppText style={styles.approveButtonText}>Approve</AppText>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

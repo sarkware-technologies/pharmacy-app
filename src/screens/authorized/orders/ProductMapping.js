@@ -24,6 +24,7 @@ import CancelOrderModal from "./CancelOrderModal"
 import Modals from './uploadConfirmationModals';
 import { ErrorMessage } from '../../../components/view/error';
 import Toast from 'react-native-toast-message';
+import AppText from "../../../components/AppText"
 
 
 const { UnmappedProductsModal } = Modals;
@@ -287,22 +288,22 @@ const ProductMapping = () => {
     return (
       <View style={styles.productCard}>
         <View style={styles.productHeader}>
-          <Text style={styles.productName}>{item?.productName ?? '-'}</Text>
+          <AppText style={styles.productName}>{item?.productName ?? '-'}</AppText>
         </View>
-        <Text style={styles.productId}>{item?.productCode ?? '-'}</Text>
+        <AppText style={styles.productId}>{item?.productCode ?? '-'}</AppText>
 
         <View style={styles.productInfo}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Customer Product Title</Text>
+            <AppText style={styles.infoLabel}>Customer Product Title</AppText>
             {item.isMapped == 1 && (
-              <Text style={{ fontSize: 11, color: '#999', }}>Mapping</Text>
+              <AppText style={{ fontSize: 11, color: '#999', }}>Mapping</AppText>
             )}
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoValue}>{item.uploadedProductName}</Text>
+            <AppText style={styles.infoValue}>{item.uploadedProductName}</AppText>
             {item.isMapped == 1 && (
               <TouchableOpacity onPress={() => hanldeMappingclicked(item)}>
-                <Text style={styles.changeLink}>Change ›</Text>
+                <AppText style={styles.changeLink}>Change ›</AppText>
               </TouchableOpacity>
             )}
 
@@ -311,16 +312,16 @@ const ProductMapping = () => {
 
         <View style={styles.productMetrics}>
           <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>PTH</Text>
-            <Text style={styles.metricValue}>{item?.pth ? `₹ ${item?.pth}` : '-'}</Text>
+            <AppText style={styles.metricLabel}>PTH</AppText>
+            <AppText style={styles.metricValue}>{item?.pth ? `₹ ${item?.pth}` : '-'}</AppText>
           </View>
           <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>MOQ</Text>
-            <Text style={styles.metricValue}>{item.moq ?? '-'}</Text>
+            <AppText style={styles.metricLabel}>MOQ</AppText>
+            <AppText style={styles.metricValue}>{item.moq ?? '-'}</AppText>
           </View>
           <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>Exausted /Max Qty</Text>
-            <Text style={[styles.metricValue, { textAlign: "right" }]}>{item.uploadedQty ?? 0}/{item.uploadedQty ?? 0}</Text>
+            <AppText style={styles.metricLabel}>Exausted /Max Qty</AppText>
+            <AppText style={[styles.metricValue, { textAlign: "right" }]}>{item.uploadedQty ?? 0}/{item.uploadedQty ?? 0}</AppText>
           </View>
         </View>
 
@@ -328,13 +329,13 @@ const ProductMapping = () => {
           {item.isMapped == 1 ? (
             <>
               <Icon name="check-circle" size={20} color="#169560" />
-              <Text style={styles.mappedText}>Mapped</Text>
+              <AppText style={styles.mappedText}>Mapped</AppText>
             </>
           ) : (
             <View style={{ display: "flex", flexDirection: "column" }}>
               <TouchableOpacity onPress={() => hanldeMappingclicked(item)}>
                 <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 }}>
-                  <Text style={{ color: "#F7941E", fontWeight: 700, fontSize: 14 }}>Find Product</Text>
+                  <AppText style={{ color: "#F7941E", fontWeight: 700, fontSize: 14 }}>Find Product</AppText>
                   <Svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <Path fillRule="evenodd" clipRule="evenodd" d="M5.83333 11.6667C9.05508 11.6667 11.6667 9.05508 11.6667 5.83333C11.6667 2.61158 9.05508 0 5.83333 0C2.61158 0 0 2.61158 0 5.83333C0 9.05508 2.61158 11.6667 5.83333 11.6667ZM6.1075 3.77417C6.18953 3.69224 6.30073 3.64622 6.41667 3.64622C6.5326 3.64622 6.6438 3.69224 6.72583 3.77417L8.47583 5.52417C8.55776 5.6062 8.60378 5.7174 8.60378 5.83333C8.60378 5.94927 8.55776 6.06047 8.47583 6.1425L6.72583 7.8925C6.68578 7.93548 6.63748 7.96996 6.58381 7.99387C6.53015 8.01778 6.47221 8.03064 6.41347 8.03168C6.35473 8.03271 6.29638 8.02191 6.2419 7.9999C6.18742 7.9779 6.13794 7.94515 6.09639 7.9036C6.05485 7.86206 6.0221 7.81257 6.00009 7.7581C5.97809 7.70362 5.96728 7.64527 5.96832 7.58653C5.96936 7.52779 5.98222 7.46985 6.00613 7.41619C6.03004 7.36252 6.06452 7.31422 6.1075 7.27417L7.11083 6.27083H3.5C3.38397 6.27083 3.27269 6.22474 3.19064 6.14269C3.10859 6.06065 3.0625 5.94937 3.0625 5.83333C3.0625 5.7173 3.10859 5.60602 3.19064 5.52397C3.27269 5.44193 3.38397 5.39583 3.5 5.39583H7.11083L6.1075 4.3925C6.02557 4.31047 5.97955 4.19927 5.97955 4.08333C5.97955 3.9674 6.02557 3.8562 6.1075 3.77417Z" fill="#F7941E" />
                   </Svg>
@@ -342,7 +343,7 @@ const ProductMapping = () => {
               </TouchableOpacity>
               <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
                 <UnMapped />
-                <Text style={{ color: "#E85B49", fontSize: 10, fontWeight: 700 }}>Mapping Required</Text>
+                <AppText style={{ color: "#E85B49", fontSize: 10, fontWeight: 700 }}>Mapping Required</AppText>
               </View>
             </View>
           )}
@@ -356,14 +357,14 @@ const ProductMapping = () => {
               >
                 <Icon name="remove" size={20} color={colors.primary} />
               </TouchableOpacity>
-              <Text style={styles.quantityText}>
+              <AppText style={styles.quantityText}>
                 {loadingProductId === item.id ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   quantity
                 )}
 
-              </Text>
+              </AppText>
               <TouchableOpacity
                 style={styles.quantityButton}
                 onPress={() => loadingProductId !== item.id ? handleQuantityChange(item, 'plus') : null}
@@ -384,30 +385,30 @@ const ProductMapping = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Order/Product Mapping</Text>
+        <AppText style={styles.headerTitle}>Create Order/Product Mapping</AppText>
       </View>
       <View style={styles.progressContainer}>
         <View style={styles.progressStep}>
           <View style={[styles.stepCircle, styles.activeStep]}>
-            <Text style={styles.stepNumber}>
+            <AppText style={styles.stepNumber}>
               <Svg width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <Path d="M10.0833 0.75L3.66667 7.16667L0.75 4.25" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </Svg>
-            </Text>
+            </AppText>
           </View>
-          <Text style={[styles.stepLabel, styles.activeStepLabel]}>Upload Order</Text>
+          <AppText style={[styles.stepLabel, styles.activeStepLabel]}>Upload Order</AppText>
         </View>
         <View style={styles.progressLine} />
         <View style={styles.progressStep}>
           <View style={[styles.stepCircle, styles.inactiveStep]}>
-            <Text style={[styles.stepNumber, styles.inactiveStepNumber]}>2</Text>
+            <AppText style={[styles.stepNumber, styles.inactiveStepNumber]}>2</AppText>
           </View>
-          <Text style={[styles.stepLabel, styles.inactiveStepLabel]}>Products Mapping</Text>
+          <AppText style={[styles.stepLabel, styles.inactiveStepLabel]}>Products Mapping</AppText>
         </View>
       </View>
       <View style={styles.mappingComplete}>
         <Icon name="check-circle" size={16} color="#169560" />
-        <Text style={styles.mappingCompleteText}>Mapping Complete</Text>
+        <AppText style={styles.mappingCompleteText}>Mapping Complete</AppText>
       </View>
 
       <View style={{ flex: 1, padding: 15, backgroundColor: "#F6F6F6" }}>
@@ -417,25 +418,25 @@ const ProductMapping = () => {
               style={[styles.tab, activeTab === 'All' && styles.activeTab]}
               onPress={() => setActiveTab('All')}
             >
-              <Text style={[styles.tabText, activeTab === 'All' && styles.activeTabText]}>
+              <AppText style={[styles.tabText, activeTab === 'All' && styles.activeTabText]}>
                 All({getFilteredProducts("All")?.length})
-              </Text>
+              </AppText>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tab, activeTab === 'Mapped' && styles.activeTab]}
               onPress={() => setActiveTab('Mapped')}
             >
-              <Text style={[styles.tabText, activeTab === 'Mapped' && styles.activeTabText]}>
+              <AppText style={[styles.tabText, activeTab === 'Mapped' && styles.activeTabText]}>
                 Mapped({getFilteredProducts("Mapped")?.length})
-              </Text>
+              </AppText>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tab, activeTab === 'Non-Mapped' && styles.activeTab]}
               onPress={() => setActiveTab('Non-Mapped')}
             >
-              <Text style={[styles.tabText, activeTab === 'Non-Mapped' && styles.activeTabText]}>
+              <AppText style={[styles.tabText, activeTab === 'Non-Mapped' && styles.activeTabText]}>
                 Non-Mapped({getFilteredProducts("Non-Mapped")?.length})
-              </Text>
+              </AppText>
             </TouchableOpacity>
           </View>
 
@@ -464,10 +465,10 @@ const ProductMapping = () => {
               !isLoading ? (
                 <View style={styles.emptyContainer}>
                   <Icon name="inventory" size={60} color="#ccc" />
-                  <Text style={styles.emptyTitle}>No Products Found</Text>
-                  <Text style={styles.emptySubtitle}>
+                  <AppText style={styles.emptyTitle}>No Products Found</AppText>
+                  <AppText style={styles.emptySubtitle}>
                     Try adjusting your filters or check back later.
-                  </Text>
+                  </AppText>
                 </View>
               ) : <View style={{ paddingVertical: 20 }}>
                 <ActivityIndicator size="small" color="#FF6B00" />
@@ -479,7 +480,7 @@ const ProductMapping = () => {
               style={styles.proceedButton}
               onPress={handleProceedToCart}
             >
-              <Text style={styles.proceedText}>Proceed to Cart</Text>
+              <AppText style={styles.proceedText}>Proceed to Cart</AppText>
             </TouchableOpacity>
           </View>
         </View>

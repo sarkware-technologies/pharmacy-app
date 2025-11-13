@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconFeather from 'react-native-vector-icons/Feather';
+import AppText from "../../../components/AppText"
 
 const { width } = Dimensions.get('window');
 
@@ -37,14 +38,14 @@ export const OrderCancelModal = ({ visible, onClose, onConfirm }) => {
                             {/* Alert Icon - Red/Pink */}
                             <View style={styles.iconContainer}>
                                 <View style={styles.alertCircleRed}>
-                                    <Text style={styles.exclamationMark}>!</Text>
+                                    <AppText style={styles.exclamationMark}>!</AppText>
                                 </View>
                             </View>
 
                             {/* Title */}
-                            <Text style={styles.modalTitle}>
+                            <AppText style={styles.modalTitle}>
                                 Are you sure you want to{'\n'}cancel the order?
-                            </Text>
+                            </AppText>
 
                             {/* Buttons */}
                             <View style={styles.buttonContainer}>
@@ -53,7 +54,7 @@ export const OrderCancelModal = ({ visible, onClose, onConfirm }) => {
                                     onPress={handleGoBack}
                                     activeOpacity={0.8}
                                 >
-                                    <Text style={styles.goBackButtonText}>No, Go Back</Text>
+                                    <AppText style={styles.goBackButtonText}>No, Go Back</AppText>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -62,7 +63,7 @@ export const OrderCancelModal = ({ visible, onClose, onConfirm }) => {
                                     activeOpacity={0.8}
                                 >
                                     <Icon name="close-circle-outline" size={20} color="#fff" />
-                                    <Text style={styles.cancelOrderButtonText}>Cancel</Text>
+                                    <AppText style={styles.cancelOrderButtonText}>Cancel</AppText>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -101,16 +102,16 @@ export const OrderPlaceSuccessModal = ({ visible, onClose, onGoToOrders,orderCou
                             </View>
 
                             {/* Title */}
-                            <Text style={styles.successTitle}>Congratulations!</Text>
+                            <AppText style={styles.successTitle}>Congratulations!</AppText>
 
                             {/* Message */}
-                            <Text style={[styles.successMessage,{color:"#1D1D22",fontWeight:400}]}>
+                            <AppText style={[styles.successMessage,{color:"#1D1D22",fontWeight:400}]}>
                                 Your order has been successfully{'\n'}placed.
-                            </Text>
+                            </AppText>
                             {/* Message */}
-                            <Text style={[styles.successMessage,{marginBottom:40,fontSize:14,color:"#1D1D22",fontWeight:700}]}>
+                            <AppText style={[styles.successMessage,{marginBottom:40,fontSize:14,color:"#1D1D22",fontWeight:700}]}>
                                 {orderCount} Orders Created
-                            </Text>
+                            </AppText>
 
                             {/* Go to Orders Button */}
                             <TouchableOpacity
@@ -118,7 +119,7 @@ export const OrderPlaceSuccessModal = ({ visible, onClose, onGoToOrders,orderCou
                                 onPress={handleGoToOrders}
                                 activeOpacity={0.8}
                             >
-                                <Text style={styles.goToOrdersButtonText}>Go to Orders</Text>
+                                <AppText style={styles.goToOrdersButtonText}>Go to Orders</AppText>
                             </TouchableOpacity>
                         </View>
                     </TouchableWithoutFeedback>

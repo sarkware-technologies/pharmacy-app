@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { colors } from '../styles/colors';
+import AppText from "./AppText"
 
 const CustomButton = ({
   title,
@@ -49,7 +50,7 @@ const CustomButton = ({
         {loading ? (
           <ActivityIndicator color={isPrimary ? colors.white : colors.primary} />
         ) : (
-          <Text style={[styles.text, textStyle]}>{title}</Text>
+          <AppText style={[styles.text, textStyle]}>{title}</AppText>
         )}
       </TouchableOpacity>
     </Animated.View>

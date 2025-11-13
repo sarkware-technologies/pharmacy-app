@@ -18,6 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { getProducts } from '../../../api/product';
 import { setSelectedProduct } from '../../../redux/slices/productSlice';
+import AppText from "../../../components/AppText"
 
 const ProductSearch = () => {
   const navigation = useNavigation();
@@ -148,16 +149,16 @@ const ProductSearch = () => {
       onPress={() => handleProductSelect(item)}
     >
       <View style={styles.resultContent}>
-        <Text style={styles.productName} numberOfLines={1}>
+        <AppText style={styles.productName} numberOfLines={1}>
           {item.productName}
-        </Text>
+        </AppText>
         <View style={styles.resultDetails}>
-          <Text style={styles.productCode}>{item.productCode}</Text>
+          <AppText style={styles.productCode}>{item.productCode}</AppText>
           <View style={[
             styles.statusIndicator,
             item.isActive ? styles.activeIndicator : styles.inactiveIndicator
           ]} />
-          <Text style={styles.priceText}>{formatPrice(item.ptr)}</Text>
+          <AppText style={styles.priceText}>{formatPrice(item.ptr)}</AppText>
         </View>
       </View>
       <Icon name="chevron-right" size={20} color="#999" />
@@ -174,7 +175,7 @@ const ProductSearch = () => {
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Filter Products</Text>
+            <AppText style={styles.modalTitle}>Filter Products</AppText>
             <TouchableOpacity onPress={() => setShowFilters(false)}>
               <Icon name="close" size={24} color="#333" />
             </TouchableOpacity>
@@ -182,7 +183,7 @@ const ProductSearch = () => {
           
           <ScrollView style={styles.filterContent}>
             <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Status</Text>
+              <AppText style={styles.filterLabel}>Status</AppText>
               <View style={styles.statusOptions}>
                 {['all', 'active', 'inactive'].map(status => (
                   <TouchableOpacity
@@ -193,19 +194,19 @@ const ProductSearch = () => {
                     ]}
                     onPress={() => setSelectedStatus(status)}
                   >
-                    <Text style={[
+                    <AppText style={[
                       styles.statusOptionText,
                       selectedStatus === status && styles.selectedStatusText
                     ]}>
                       {status === 'all' ? 'All' : status === 'active' ? 'Active' : 'Inactive'}
-                    </Text>
+                    </AppText>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
             
             <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Price Range (PTR)</Text>
+              <AppText style={styles.filterLabel}>Price Range (PTR)</AppText>
               <View style={styles.priceInputs}>
                 <TextInput
                   style={styles.priceInput}
@@ -215,7 +216,7 @@ const ProductSearch = () => {
                   keyboardType="numeric"
                   placeholderTextColor="#999"
                 />
-                <Text style={styles.priceSeparator}>-</Text>
+                <AppText style={styles.priceSeparator}>-</AppText>
                 <TextInput
                   style={styles.priceInput}
                   placeholder="Max"
@@ -228,7 +229,7 @@ const ProductSearch = () => {
             </View>
             
             <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Division</Text>
+              <AppText style={styles.filterLabel}>Division</AppText>
               <TextInput
                 style={styles.divisionInput}
                 placeholder="Enter division name"
@@ -244,13 +245,13 @@ const ProductSearch = () => {
               style={styles.resetButton}
               onPress={resetFilters}
             >
-              <Text style={styles.resetButtonText}>Reset</Text>
+              <AppText style={styles.resetButtonText}>Reset</AppText>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.applyButton}
               onPress={applyFilters}
             >
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
+              <AppText style={styles.applyButtonText}>Apply Filters</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -266,7 +267,7 @@ const ProductSearch = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Search Products</Text>
+        <AppText style={styles.headerTitle}>Search Products</AppText>
         <TouchableOpacity onPress={() => setShowFilters(true)}>
           <Icon name="tune" size={24} color="#333" />
         </TouchableOpacity>
@@ -294,7 +295,7 @@ const ProductSearch = () => {
       
       {searchText.length === 0 && recentSearches.length > 0 && (
         <View style={styles.recentSearchesContainer}>
-          <Text style={styles.recentSearchesTitle}>Recent Searches</Text>
+          <AppText style={styles.recentSearchesTitle}>Recent Searches</AppText>
           {recentSearches.map((term, index) => (
             <TouchableOpacity
               key={index}
@@ -302,7 +303,7 @@ const ProductSearch = () => {
               onPress={() => handleRecentSearch(term)}
             >
               <Icon name="history" size={18} color="#999" />
-              <Text style={styles.recentSearchText}>{term}</Text>
+              <AppText style={styles.recentSearchText}>{term}</AppText>
             </TouchableOpacity>
           ))}
         </View>
@@ -311,7 +312,7 @@ const ProductSearch = () => {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Searching products...</Text>
+          <AppText style={styles.loadingText}>Searching products...</AppText>
         </View>
       ) : searchResults.length > 0 ? (
         <FlatList
@@ -324,10 +325,10 @@ const ProductSearch = () => {
       ) : searchText.length > 0 ? (
         <View style={styles.emptyContainer}>
           <Icon name="search-off" size={60} color="#9CA3AF" />
-          <Text style={styles.emptyTitle}>No products found</Text>
-          <Text style={styles.emptyMessage}>
+          <AppText style={styles.emptyTitle}>No products found</AppText>
+          <AppText style={styles.emptyMessage}>
             Try adjusting your search or filters
-          </Text>
+          </AppText>
         </View>
       ) : null}
       

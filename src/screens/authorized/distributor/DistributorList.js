@@ -33,6 +33,7 @@ import ChevronRight from '../../../components/icons/ChevronRight';
 import Phone from '../../../components/icons/Phone';
 import AddrLine from '../../../components/icons/AddrLine';
 import FilterModal from '../../../components/FilterModal';
+import AppText from "../../../components/AppText"
 
 const DistributorList = () => {
   const navigation = useNavigation();
@@ -240,7 +241,7 @@ const DistributorList = () => {
     return (
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color={colors.primary} />
-        <Text style={styles.loadingMoreText}>Loading more distributors...</Text>
+        <AppText style={styles.loadingMoreText}>Loading more distributors...</AppText>
       </View>
     );
   };
@@ -254,7 +255,7 @@ const DistributorList = () => {
     
     return (
       <View style={styles.endReachedContainer}>
-        <Text style={styles.endReachedText}>You've reached the end</Text>
+        <AppText style={styles.endReachedText}>You've reached the end</AppText>
       </View>
     );
   };
@@ -276,16 +277,16 @@ const DistributorList = () => {
         activeOpacity={0.7}
       >
         <View style={styles.nameRow}>
-          <Text style={styles.distributorName}>{item.name} <ChevronRight color={colors.primary} height={12} /></Text>          
+          <AppText style={styles.distributorName}>{item.name} <ChevronRight color={colors.primary} height={12} /></AppText>          
           <View style={styles.statusBadge}>
           <Icon 
             name="check-circle" 
             size={16} 
             color={getStatusColor(item.inviteStatusName)}
           />
-          <Text style={[styles.statusText, { color: getStatusColor(item.inviteStatusName) }]}>
+          <AppText style={[styles.statusText, { color: getStatusColor(item.inviteStatusName) }]}>
             {item.inviteStatusName || 'Not Invited'}
-          </Text>
+          </AppText>
         </View>
         </View>        
       </TouchableOpacity>
@@ -293,15 +294,15 @@ const DistributorList = () => {
       <View style={styles.cardDetails}>
         <View style={styles.detailRow}>
           <AddrLine />
-          <Text style={styles.detailText}>
+          <AppText style={styles.detailText}>
             {item.code} | {item.distributorType || 'CFA-DT'} | {item.organizationCode || 'SPLL'}
-          </Text>
+          </AppText>
         </View>
         
         <View style={styles.detailRow}>
           <Phone />
-          <Text style={styles.detailText}>{item.mobile1}</Text>
-          <Text style={styles.divisionCount}>| Divisions : <Text style={{ color: '#222', fontWeight: '500' }}>{item.divisionCount || 0}</Text></Text>
+          <AppText style={styles.detailText}>{item.mobile1}</AppText>
+          <AppText style={styles.divisionCount}>| Divisions : <AppText style={{ color: '#222', fontWeight: '500' }}>{item.divisionCount || 0}</AppText></AppText>
           <TouchableOpacity onPress={() => handleDistributorPress(item)}>
             <Icon name="visibility" size={18} color={colors.primary} />
           </TouchableOpacity>
@@ -309,18 +310,18 @@ const DistributorList = () => {
       </View>
 
       <View style={styles.marginSection}>
-        <Text style={styles.marginTitle}>Supply Margin</Text>
+        <AppText style={styles.marginTitle}>Supply Margin</AppText>
         <View style={styles.marginRow}>
-          <Text style={styles.marginLabel}>Doctor : <Text style={{color: '#222', fontWeight: '500'}}>{item.doctorSupplyMargin}%</Text></Text>
-          <Text style={styles.marginLabel}>Hospital : <Text style={{color: '#222', fontWeight: '500'}}>{item.hospitalSupplyMargin}%</Text></Text>
+          <AppText style={styles.marginLabel}>Doctor : <AppText style={{color: '#222', fontWeight: '500'}}>{item.doctorSupplyMargin}%</AppText></AppText>
+          <AppText style={styles.marginLabel}>Hospital : <AppText style={{color: '#222', fontWeight: '500'}}>{item.hospitalSupplyMargin}%</AppText></AppText>
         </View>
       </View>
 
       <View style={styles.cardFooter}>
         <View style={styles.blockStatusBadge}>
-          <Text style={styles.blockStatusText}>
+          <AppText style={styles.blockStatusText}>
             {item.isActive ? 'UNBLOCKED' : 'BLOCKED'}
-          </Text>
+          </AppText>
         </View>
         <TouchableOpacity 
           style={styles.moreButton}
@@ -346,7 +347,7 @@ const DistributorList = () => {
       >
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>More</Text>
+            <AppText style={styles.modalTitle}>More</AppText>
             <TouchableOpacity onPress={() => setShowInviteModal(false)}>
               <Icon name="close" size={24} color="#333" />
             </TouchableOpacity>
@@ -357,7 +358,7 @@ const DistributorList = () => {
             onPress={sendInvite}
           >
             <Icon name="person-add" size={24} color="#666" />
-            <Text style={styles.inviteButtonText}>Invite</Text>
+            <AppText style={styles.inviteButtonText}>Invite</AppText>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -375,13 +376,13 @@ const DistributorList = () => {
         <TouchableOpacity onPress={() => navigation.openDrawer()}>
           <Menu />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Distributors</Text>
+        <AppText style={styles.headerTitle}>Distributors</AppText>
         <View style={styles.headerRight}>
           <TouchableOpacity 
             style={styles.groupUpdateButton}
             onPress={handleGroupUpdate}
           >
-            <Text style={styles.groupUpdateText}>GROUP UPDATE</Text>
+            <AppText style={styles.groupUpdateText}>GROUP UPDATE</AppText>
             <Icon name="arrow-drop-down" size={20} color={colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity>
@@ -421,29 +422,29 @@ const DistributorList = () => {
         {loading && allDistributors.length === 0 ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Loading distributors...</Text>
+            <AppText style={styles.loadingText}>Loading distributors...</AppText>
           </View>
         ) : listError && allDistributors.length === 0 ? (
           <View style={styles.errorContainer}>
             <Icon name="error-outline" size={60} color="#EF4444" />
-            <Text style={styles.errorTitle}>Unable to Load Distributors</Text>
-            <Text style={styles.errorMessage}>
+            <AppText style={styles.errorTitle}>Unable to Load Distributors</AppText>
+            <AppText style={styles.errorMessage}>
               {listError === 'Network request failed' || listError.includes('Network')
                 ? 'Server is currently unavailable. Please check your connection and try again.'
                 : listError || 'Something went wrong. Please try again.'}
-            </Text>
+            </AppText>
             <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
               <Icon name="refresh" size={20} color="#fff" />
-              <Text style={styles.retryButtonText}>Retry</Text>
+              <AppText style={styles.retryButtonText}>Retry</AppText>
             </TouchableOpacity>
           </View>
         ) : allDistributors.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Icon name="business" size={60} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>No Distributors Found</Text>
-            <Text style={styles.emptyMessage}>
+            <AppText style={styles.emptyTitle}>No Distributors Found</AppText>
+            <AppText style={styles.emptyMessage}>
               {searchText ? `No distributors match "${searchText}"` : 'No distributors available'}
-            </Text>
+            </AppText>
           </View>
         ) : (
           <FlatList

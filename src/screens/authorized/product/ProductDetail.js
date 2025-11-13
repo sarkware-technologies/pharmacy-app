@@ -21,6 +21,7 @@ import { colors } from '../../../styles/colors';
 import { getProductById, updateProductDiscount } from '../../../api/product';
 import { updateProduct } from '../../../redux/slices/productSlice';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
+import AppText from "../../../components/AppText"
 
 const ProductDetail = () => {
   const navigation = useNavigation();
@@ -101,93 +102,93 @@ const ProductDetail = () => {
   const renderDetailsTab = () => (
     <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
       <View style={{...styles.section}}>
-        <Text style={styles.sectionTitle}>Product Details</Text>
+        <AppText style={styles.sectionTitle}>Product Details</AppText>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Product Title</Text>
-          <Text style={styles.detailValue}>{productDetails.productName}</Text>
+          <AppText style={styles.detailLabel}>Product Title</AppText>
+          <AppText style={styles.detailValue}>{productDetails.productName}</AppText>
         </View>
 
         <View style={{...styles.detailRow, marginTop: 10}}>
-          <Text style={styles.detailLabel}>Description</Text>
-          <Text style={styles.detailValue}>
+          <AppText style={styles.detailLabel}>Description</AppText>
+          <AppText style={styles.detailValue}>
             {productDetails.composition || 'Bioever Presents The New Guards Against Sunburn Water Resistant Sunscreen Lotion. Bioever Sunscreen'}
-          </Text>
+          </AppText>
         </View>
 
         <View style={{...styles.tripleRow, marginTop: 10}}>
           <View style={styles.tripleItem}>
-            <Text style={styles.detailLabel}>UPC</Text>
-            <Text style={styles.detailValue}>{productDetails.upc || 'S001-M002'}</Text>
+            <AppText style={styles.detailLabel}>UPC</AppText>
+            <AppText style={styles.detailValue}>{productDetails.upc || 'S001-M002'}</AppText>
           </View>
           <View style={styles.tripleItem}>
-            <Text style={styles.detailLabel}>HSN Code</Text>
-            <Text style={styles.detailValue}>{productDetails.hsnCode || '202'}</Text>
+            <AppText style={styles.detailLabel}>HSN Code</AppText>
+            <AppText style={styles.detailValue}>{productDetails.hsnCode || '202'}</AppText>
           </View>
           <View style={styles.tripleItem}>
-            <Text style={styles.detailLabel}>Division</Text>
-            <Text style={styles.detailValue}>{productDetails.divisionName || 'Selecta'}</Text>
+            <AppText style={styles.detailLabel}>Division</AppText>
+            <AppText style={styles.detailValue}>{productDetails.divisionName || 'Selecta'}</AppText>
           </View>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Pricing & Tax</Text>
+        <AppText style={styles.sectionTitle}>Pricing & Tax</AppText>
         
         <View style={styles.priceGrid}>
           <View style={styles.priceItem}>
-            <Text style={styles.detailLabel}>PTS</Text>
-            <Text style={styles.priceValue}>{formatPrice(productDetails.pts)}</Text>
+            <AppText style={styles.detailLabel}>PTS</AppText>
+            <AppText style={styles.priceValue}>{formatPrice(productDetails.pts)}</AppText>
           </View>
           <View style={styles.priceItem}>
-            <Text style={styles.detailLabel}>PTR</Text>
-            <Text style={styles.priceValue}>{formatPrice(productDetails.ptr)}</Text>
+            <AppText style={styles.detailLabel}>PTR</AppText>
+            <AppText style={styles.priceValue}>{formatPrice(productDetails.ptr)}</AppText>
           </View>
           <View style={styles.priceItem}>
-            <Text style={styles.detailLabel}>MRP</Text>
-            <Text style={styles.priceValue}>{formatPrice(productDetails.mrp)}</Text>
+            <AppText style={styles.detailLabel}>MRP</AppText>
+            <AppText style={styles.priceValue}>{formatPrice(productDetails.mrp)}</AppText>
           </View>
         </View>
 
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Tax Category</Text>
-          <Text style={styles.detailValue}>
+          <AppText style={styles.detailLabel}>Tax Category</AppText>
+          <AppText style={styles.detailValue}>
             GST {productDetails.gstClassification || '18'}%
-          </Text>
+          </AppText>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Base Unit & Pack Size</Text>
+        <AppText style={styles.sectionTitle}>Base Unit & Pack Size</AppText>
         
         <View style={styles.tripleRow}>
           <View style={styles.tripleItem}>
-            <Text style={styles.detailLabel}>Base UoM</Text>
-            <Text style={styles.detailValue}>{productDetails.uom || 'CSE'}</Text>
+            <AppText style={styles.detailLabel}>Base UoM</AppText>
+            <AppText style={styles.detailValue}>{productDetails.uom || 'CSE'}</AppText>
           </View>
           <View style={styles.tripleItem}>
-            <Text style={styles.detailLabel}>Pack Size</Text>
-            <Text style={styles.detailValue}>{productDetails.packing || '10'}</Text>
+            <AppText style={styles.detailLabel}>Pack Size</AppText>
+            <AppText style={styles.detailValue}>{productDetails.packing || '10'}</AppText>
           </View>
           <View style={styles.tripleItem}>
-            <Text style={styles.detailLabel}>Box Qty</Text>
-            <Text style={styles.detailValue}>{productDetails.boxQty || '1'}</Text>
+            <AppText style={styles.detailLabel}>Box Qty</AppText>
+            <AppText style={styles.detailValue}>{productDetails.boxQty || '1'}</AppText>
           </View>
         </View>
       </View>
 
       <View style={{...styles.section, borderBottomWidth: 0}}>
-        <Text style={styles.sectionTitle}>Facets</Text>
+        <AppText style={styles.sectionTitle}>Facets</AppText>
         
         <View style={{ flexDirection: 'row', gap: 20 }}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Brand Name</Text>
-            <Text style={styles.detailValue}>{productDetails.brandName || 'AstraZeneca'}</Text>
+            <AppText style={styles.detailLabel}>Brand Name</AppText>
+            <AppText style={styles.detailValue}>{productDetails.brandName || 'AstraZeneca'}</AppText>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Brand Code</Text>
-            <Text style={styles.detailValue}>{productDetails.brandCode || 'RU60Y8SZTL'}</Text>
+            <AppText style={styles.detailLabel}>Brand Code</AppText>
+            <AppText style={styles.detailValue}>{productDetails.brandCode || 'RU60Y8SZTL'}</AppText>
           </View>
         </View>
       </View>
@@ -201,26 +202,26 @@ const ProductDetail = () => {
     >
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.discountSection}>
-          <Text style={styles.sectionTitle}>Product Name</Text>
+          <AppText style={styles.sectionTitle}>Product Name</AppText>
           
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Product Title</Text>
-            <Text style={styles.detailValue}>{productDetails.productName}</Text>
+            <AppText style={styles.detailLabel}>Product Title</AppText>
+            <AppText style={styles.detailValue}>{productDetails.productName}</AppText>
           </View>
 
           <View style={{...styles.detailRow, marginTop: 15}}>
-            <Text style={styles.detailLabel}>Division</Text>
-            <Text style={styles.detailValue}>{productDetails.divisionName || 'IN CNS'}</Text>
+            <AppText style={styles.detailLabel}>Division</AppText>
+            <AppText style={styles.detailValue}>{productDetails.divisionName || 'IN CNS'}</AppText>
           </View>
 
           <View style={styles.discountContainer}>
-            <Text style={styles.discountTitle}>Discount</Text>
+            <AppText style={styles.discountTitle}>Discount</AppText>
             
             {editMode ? (
               <View style={styles.editDiscountContainer}>
                 <View style={styles.discountInputRow}>
                   <View style={styles.discountInputItem}>
-                    <Text style={styles.discountInputLabel}>For Doctor</Text>
+                    <AppText style={styles.discountInputLabel}>For Doctor</AppText>
                     <View style={styles.inputWrapper}>
                       <TextInput
                         style={styles.discountInput}
@@ -230,12 +231,12 @@ const ProductDetail = () => {
                         placeholder="10"
                         placeholderTextColor="#999"
                       />
-                      <Text style={styles.percentSign}>%</Text>
+                      <AppText style={styles.percentSign}>%</AppText>
                     </View>
                   </View>
                   
                   <View style={styles.discountInputItem}>
-                    <Text style={styles.discountInputLabel}>For Hospital</Text>
+                    <AppText style={styles.discountInputLabel}>For Hospital</AppText>
                     <View style={styles.inputWrapper}>
                       <TextInput
                         style={styles.discountInput}
@@ -245,7 +246,7 @@ const ProductDetail = () => {
                         placeholder="15"
                         placeholderTextColor="#999"
                       />
-                      <Text style={styles.percentSign}>%</Text>
+                      <AppText style={styles.percentSign}>%</AppText>
                     </View>
                   </View>
                 </View>
@@ -258,7 +259,7 @@ const ProductDetail = () => {
                   {updating ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.updateButtonText}>Update</Text>
+                    <AppText style={styles.updateButtonText}>Update</AppText>
                   )}
                 </TouchableOpacity>
               </View>
@@ -266,12 +267,12 @@ const ProductDetail = () => {
               <>
                 <View style={styles.discountRow}>
                   <View style={styles.discountItem}>
-                    <Text style={styles.discountLabel}>For Doctor</Text>
-                    <Text style={styles.discountValue}>{doctorDiscount}%</Text>
+                    <AppText style={styles.discountLabel}>For Doctor</AppText>
+                    <AppText style={styles.discountValue}>{doctorDiscount}%</AppText>
                   </View>
                   <View style={styles.discountItem}>
-                    <Text style={styles.discountLabel}>For Hospital</Text>
-                    <Text style={styles.discountValue}>{hospitalDiscount}%</Text>
+                    <AppText style={styles.discountLabel}>For Hospital</AppText>
+                    <AppText style={styles.discountValue}>{hospitalDiscount}%</AppText>
                   </View>
                 </View>
                 
@@ -279,7 +280,7 @@ const ProductDetail = () => {
                   style={styles.editButton}
                   onPress={() => setEditMode(true)}
                 >
-                  <Text style={styles.editButtonText}>Edit Discount</Text>
+                  <AppText style={styles.editButtonText}>Edit Discount</AppText>
                 </TouchableOpacity>
               </>
             )}
@@ -308,9 +309,9 @@ const ProductDetail = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
+        <AppText style={styles.headerTitle}>
           SKU Code - {productDetails.productCode}
-        </Text>
+        </AppText>
         <View style={{ width: 24 }} />
       </View>
 
@@ -324,9 +325,9 @@ const ProductDetail = () => {
             size={20} 
             color={activeTab === 'details' ? colors.primary : '#999'} 
           />
-          <Text style={[styles.tabText, activeTab === 'details' && styles.activeTabText]}>
+          <AppText style={[styles.tabText, activeTab === 'details' && styles.activeTabText]}>
             Details
-          </Text>
+          </AppText>
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -338,9 +339,9 @@ const ProductDetail = () => {
             size={20} 
             color={activeTab === 'discount' ? colors.primary : '#999'} 
           />
-          <Text style={[styles.tabText, activeTab === 'discount' && styles.activeTabText]}>
+          <AppText style={[styles.tabText, activeTab === 'discount' && styles.activeTabText]}>
             Discount Configuration
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
 

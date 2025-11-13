@@ -16,6 +16,7 @@ import { mockInvoiceDetails } from './Mockdata';
 import ConfirmSubmitModal from '../../../components/netrate/ConfirmSubmitModal';
 import SuccessModal from '../../../components/netrate/SuccessModal';
 import CommentModal from '../../../components/chargeback/CommentModal';
+import AppText from "../../../components/AppText"
 
 const InvoiceDetails = () => {
 
@@ -59,34 +60,34 @@ const InvoiceDetails = () => {
       <View key={product.id} style={styles.productCard}>
         <View style={styles.productHeader}>
           <View>
-            <Text style={styles.productName}>{product.name}</Text>
-            <Text style={styles.productCode}>
+            <AppText style={styles.productName}>{product.name}</AppText>
+            <AppText style={styles.productCode}>
               {product.code} | In CNS {isInCNS ? '✅' : '🚫'}
-            </Text>
+            </AppText>
           </View>
           <View style={[styles.batchBadge, isInCNS && styles.batchBadgeGreen]}>
-            <Text style={styles.batchText}>{product.batch}</Text>
+            <AppText style={styles.batchText}>{product.batch}</AppText>
           </View>
         </View>
 
         <View style={styles.productDetails}>
           <View style={styles.detailRow}>
             <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>PTS</Text>
-              <Text style={styles.detailValue}>₹ {product.pts}</Text>
+              <AppText style={styles.detailLabel}>PTS</AppText>
+              <AppText style={styles.detailValue}>₹ {product.pts}</AppText>
             </View>
             <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Approved Rate</Text>
-              <Text style={styles.detailValue}>₹ {product.approvedRate}</Text>
+              <AppText style={styles.detailLabel}>Approved Rate</AppText>
+              <AppText style={styles.detailValue}>₹ {product.approvedRate}</AppText>
             </View>
             <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Tax</Text>
-              <Text style={styles.detailValue}>₹ {product.tax}</Text>
+              <AppText style={styles.detailLabel}>Tax</AppText>
+              <AppText style={styles.detailValue}>₹ {product.tax}</AppText>
             </View>
           </View>
 
           <View style={styles.inputRow}>
-            <Text style={styles.inputLabel}>Stockist Supply Rate</Text>
+            <AppText style={styles.inputLabel}>Stockist Supply Rate</AppText>
             <TextInput
               style={styles.input}
               value={`₹ ${product.stockistSupplyRate}`}
@@ -96,12 +97,12 @@ const InvoiceDetails = () => {
           </View>
 
           <View style={styles.inputRow}>
-            <Text style={styles.inputLabel}>Invoice Qty</Text>
-            <Text style={styles.staticValue}>{product.invoiceQty}</Text>
+            <AppText style={styles.inputLabel}>Invoice Qty</AppText>
+            <AppText style={styles.staticValue}>{product.invoiceQty}</AppText>
           </View>
 
           <View style={styles.inputRow}>
-            <Text style={styles.inputLabel}>Supply Qty</Text>
+            <AppText style={styles.inputLabel}>Supply Qty</AppText>
             <TextInput
               style={styles.input}
               value={supplyQuantities[product.id] || product.supplyQty.toString()}
@@ -112,12 +113,12 @@ const InvoiceDetails = () => {
 
           <View style={styles.bottomRow}>
             <View style={styles.bottomItem}>
-              <Text style={styles.bottomLabel}>Short Supply Qty</Text>
-              <Text style={styles.bottomValue}>{product.shortSupplyQty || '-'}</Text>
+              <AppText style={styles.bottomLabel}>Short Supply Qty</AppText>
+              <AppText style={styles.bottomValue}>{product.shortSupplyQty || '-'}</AppText>
             </View>
             <View style={styles.bottomItem}>
-              <Text style={styles.bottomLabel}>Debit Note Amount</Text>
-              <Text style={styles.bottomValue}>₹ {product.debitNoteAmount}</Text>
+              <AppText style={styles.bottomLabel}>Debit Note Amount</AppText>
+              <AppText style={styles.bottomValue}>₹ {product.debitNoteAmount}</AppText>
             </View>
           </View>
         </View>
@@ -133,56 +134,56 @@ const InvoiceDetails = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{invoiceDetails.invoiceId}</Text>
+        <AppText style={styles.headerTitle}>{invoiceDetails.invoiceId}</AppText>
         <TouchableOpacity onPress={() => setShowCommentModal(true)}>
           <Icon name="history" size={20} color="#666" />
-          <Text style={styles.logsText}>Logs</Text>
+          <AppText style={styles.logsText}>Logs</AppText>
         </TouchableOpacity>
       </View>
 
       <View style={styles.invoiceInfo}>
-        <Text style={styles.invoiceDate}>
+        <AppText style={styles.invoiceDate}>
           {invoiceDetails.date} | ₹ {invoiceDetails.totalAmount?.toLocaleString('en-IN')}
-        </Text>
+        </AppText>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.orderCard}>
           <View style={styles.orderHeader}>
-            <Text style={styles.orderId}>{invoiceDetails.orderInfo.orderId}</Text>
+            <AppText style={styles.orderId}>{invoiceDetails.orderInfo.orderId}</AppText>
             <TouchableOpacity>
-              <Text style={styles.viewDocsText}>
+              <AppText style={styles.viewDocsText}>
                 <Icon name="visibility" size={16} color="#FFA500" /> View Documents
-              </Text>
+              </AppText>
             </TouchableOpacity>
           </View>
 
           <View style={styles.orderDetails}>
             <View style={styles.orderRow}>
-              <Text style={styles.poNumber}>{invoiceDetails.orderInfo.poNumber}</Text>
-              <Text style={styles.podAmount}>POD: ₹ {invoiceDetails.orderInfo.podAmount}</Text>
+              <AppText style={styles.poNumber}>{invoiceDetails.orderInfo.poNumber}</AppText>
+              <AppText style={styles.podAmount}>POD: ₹ {invoiceDetails.orderInfo.podAmount}</AppText>
             </View>
             
-            <Text style={styles.orderDate}>
+            <AppText style={styles.orderDate}>
               {invoiceDetails.orderInfo.poDate} | {invoiceDetails.orderInfo.netRateType}
-            </Text>
-            <Text style={styles.batchCount}>Batch Count : {invoiceDetails.orderInfo.batchCount}</Text>
+            </AppText>
+            <AppText style={styles.batchCount}>Batch Count : {invoiceDetails.orderInfo.batchCount}</AppText>
             
             <View style={styles.partiesInfo}>
               <View>
-                <Text style={styles.partyLabel}>Supplied to</Text>
+                <AppText style={styles.partyLabel}>Supplied to</AppText>
                 <View style={styles.partyDetails}>
-                  <Text style={styles.partyName}>
+                  <AppText style={styles.partyName}>
                     {invoiceDetails.orderInfo.suppliedTo.name} {invoiceDetails.orderInfo.suppliedTo.icon}
-                  </Text>
-                  <Text style={styles.partyCode}>{invoiceDetails.orderInfo.suppliedTo.code}</Text>
+                  </AppText>
+                  <AppText style={styles.partyCode}>{invoiceDetails.orderInfo.suppliedTo.code}</AppText>
                 </View>
               </View>
               <View>
-                <Text style={styles.partyLabel}>Fulfilled by</Text>
+                <AppText style={styles.partyLabel}>Fulfilled by</AppText>
                 <View style={styles.partyDetails}>
-                  <Text style={styles.partyName}>{invoiceDetails.orderInfo.fulfilledBy.name}</Text>
-                  <Text style={styles.partyCode}>{invoiceDetails.orderInfo.fulfilledBy.code}</Text>
+                  <AppText style={styles.partyName}>{invoiceDetails.orderInfo.fulfilledBy.name}</AppText>
+                  <AppText style={styles.partyCode}>{invoiceDetails.orderInfo.fulfilledBy.code}</AppText>
                 </View>
               </View>
             </View>
@@ -190,7 +191,7 @@ const InvoiceDetails = () => {
         </View>
 
         <View style={styles.podDetailsSection}>
-          <Text style={styles.sectionTitle}>POD Details</Text>
+          <AppText style={styles.sectionTitle}>POD Details</AppText>
           
           <View style={styles.searchContainer}>
             <Icon name="search" size={20} color="#999" />
@@ -210,12 +211,12 @@ const InvoiceDetails = () => {
           {invoiceDetails.products.map(product => renderProductCard(product))}
         </View>
 
-        <Text style={styles.lastSavedText}>⏰ Last saved 05/04/2025</Text>
+        <AppText style={styles.lastSavedText}>⏰ Last saved 05/04/2025</AppText>
       </ScrollView>
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Submit</Text>
+          <AppText style={styles.submitButtonText}>Submit</AppText>
         </TouchableOpacity>
       </View>
 

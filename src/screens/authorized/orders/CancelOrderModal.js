@@ -9,6 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AppText from "../../../components/AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -44,18 +45,18 @@ const CancelOrderModal = ({ visible, onCancel, onClose }) => {
             <Icon name="alert-circle-outline" size={60} color="#E74C3C" />
           </View>
 
-          <Text style={styles.title}>
+          <AppText style={styles.title}>
             Are you sure you want to cancel the order?
-          </Text>
+          </AppText>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.backButton} onPress={onClose}>
-              <Text style={styles.backButtonText}>No, Go Back</Text>
+              <AppText style={styles.backButtonText}>No, Go Back</AppText>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
               <Icon name="close-circle-outline" size={18} color="#fff" />
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <AppText style={styles.cancelButtonText}>Cancel</AppText>
             </TouchableOpacity>
           </View>
         </Animated.View>

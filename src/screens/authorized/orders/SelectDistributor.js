@@ -15,6 +15,7 @@ import { useDispatch } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { getDistributors } from '../../../api/orders';
 import { setSelectedDistributor } from '../../../redux/slices/orderSlice';
+import AppText from "../../../components/AppText"
 
 const SelectDistributor = ({ visible, onClose, onSelect, customerId }) => {
   const [distributors, setDistributors] = useState([]);
@@ -54,8 +55,8 @@ const SelectDistributor = ({ visible, onClose, onSelect, customerId }) => {
       onPress={() => handleSelectDistributor(item)}
     >
       <View style={styles.distributorInfo}>
-        <Text style={styles.distributorName}>{item.name}</Text>
-        <Text style={styles.distributorMeta}>{item.code} | {item.cityName}</Text>
+        <AppText style={styles.distributorName}>{item.name}</AppText>
+        <AppText style={styles.distributorMeta}>{item.code} | {item.cityName}</AppText>
       </View>
     </TouchableOpacity>
   );
@@ -74,7 +75,7 @@ const SelectDistributor = ({ visible, onClose, onSelect, customerId }) => {
       >
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Distributor</Text>
+            <AppText style={styles.modalTitle}>Select Distributor</AppText>
             <TouchableOpacity onPress={handleClose}>
               <Icon name="close" size={24} color="#333" />
             </TouchableOpacity>

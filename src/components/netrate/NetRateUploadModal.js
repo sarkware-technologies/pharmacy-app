@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
+import AppText from "../AppText"
 
 const NetRateUploadModal = ({ visible, onClose, invoice }) => {
   const navigation = useNavigation();
@@ -56,7 +57,7 @@ const NetRateUploadModal = ({ visible, onClose, invoice }) => {
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.header}>
-            <Text style={styles.invoiceId}>{invoice?.id || 'INVC12345'}</Text>
+            <AppText style={styles.invoiceId}>{invoice?.id || 'INVC12345'}</AppText>
             <TouchableOpacity onPress={onClose}>
               <Icon name="close" size={24} color="#666" />
             </TouchableOpacity>
@@ -65,9 +66,9 @@ const NetRateUploadModal = ({ visible, onClose, invoice }) => {
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Original Hospital Order */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Original Hospital Order</Text>
+              <AppText style={styles.sectionTitle}>Original Hospital Order</AppText>
               <View style={styles.fileRow}>
-                <Text style={styles.fileName}>{hospitalOrderFile}</Text>
+                <AppText style={styles.fileName}>{hospitalOrderFile}</AppText>
                 <View style={styles.fileActions}>
                   <TouchableOpacity>
                     <Icon name="visibility" size={20} color="#FFA500" />
@@ -82,7 +83,7 @@ const NetRateUploadModal = ({ visible, onClose, invoice }) => {
             {/* Summary */}
             <View style={styles.section}>
               <View style={styles.summaryRow}>
-                <Text style={styles.sectionTitle}>Summary</Text>
+                <AppText style={styles.sectionTitle}>Summary</AppText>
                 <View style={styles.fileActions}>
                   <TouchableOpacity>
                     <Icon name="visibility" size={20} color="#FFA500" />
@@ -98,16 +99,16 @@ const NetRateUploadModal = ({ visible, onClose, invoice }) => {
 
             {/* Upload Documents */}
             <View style={styles.uploadSection}>
-              <Text style={styles.uploadTitle}>Upload Documents</Text>
-              <Text style={styles.uploadSubtext}>
+              <AppText style={styles.uploadTitle}>Upload Documents</AppText>
+              <AppText style={styles.uploadSubtext}>
                 Please ensure that template file format is in excel, PDF, XLS,XLSX and is within 5 mb.
-              </Text>
+              </AppText>
 
               {/* DT Generated Invoice */}
               <View style={styles.uploadItem}>
-                <Text style={styles.uploadLabel}>DT Generated Invoice*</Text>
+                <AppText style={styles.uploadLabel}>DT Generated Invoice*</AppText>
                 <View style={styles.fileRow}>
-                  <Text style={styles.fileName}>{invoiceFile}</Text>
+                  <AppText style={styles.fileName}>{invoiceFile}</AppText>
                   <View style={styles.fileActions}>
                     <TouchableOpacity>
                       <Icon name="visibility" size={20} color="#FFA500" />
@@ -117,25 +118,25 @@ const NetRateUploadModal = ({ visible, onClose, invoice }) => {
                     </TouchableOpacity>
                   </View>
                 </View>
-                <Text style={styles.invoiceInfo}>INVC001 | 05/03/2025</Text>
+                <AppText style={styles.invoiceInfo}>INVC001 | 05/03/2025</AppText>
               </View>
 
               {/* Proof Of Delivery */}
               <View style={styles.uploadItem}>
-                <Text style={styles.uploadLabel}>Proof Of Delivery</Text>
+                <AppText style={styles.uploadLabel}>Proof Of Delivery</AppText>
                 
                 {!uploadedPod ? (
                   <TouchableOpacity 
                     style={styles.uploadBox}
                     onPress={() => handleFileUpload('pod')}
                   >
-                    <Text style={styles.uploadText}>Upload</Text>
+                    <AppText style={styles.uploadText}>Upload</AppText>
                     <Icon name="upload" size={20} color="#FFA500" />
                   </TouchableOpacity>
                 ) : (
                   <>
                     <View style={styles.fileRow}>
-                      <Text style={styles.fileName}>PODfilename.pdf</Text>
+                      <AppText style={styles.fileName}>PODfilename.pdf</AppText>
                       <View style={styles.fileActions}>
                         <TouchableOpacity>
                           <Icon name="visibility" size={20} color="#FFA500" />
@@ -150,13 +151,13 @@ const NetRateUploadModal = ({ visible, onClose, invoice }) => {
                     </View>
                     <View style={styles.successMessage}>
                       <Icon name="check-circle" size={16} color="#4CAF50" />
-                      <Text style={styles.successText}>File successfully uploaded</Text>
+                      <AppText style={styles.successText}>File successfully uploaded</AppText>
                     </View>
                   </>
                 )}
                 
                 <TouchableOpacity style={styles.addMore} onPress={() => handleFileUpload('pod')}>
-                  <Text style={styles.addMoreText}>+Add More</Text>
+                  <AppText style={styles.addMoreText}>+Add More</AppText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -164,10 +165,10 @@ const NetRateUploadModal = ({ visible, onClose, invoice }) => {
 
           <View style={styles.footer}>
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <AppText style={styles.cancelText}>Cancel</AppText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.uploadButton} onPress={handleUpload}>
-              <Text style={styles.uploadButtonText}>Upload</Text>
+              <AppText style={styles.uploadButtonText}>Upload</AppText>
             </TouchableOpacity>
           </View>
         </View>

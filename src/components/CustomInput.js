@@ -11,6 +11,7 @@ import {
 import { colors } from '../styles/colors';
 import InputEyeClose from './icons/InputEyeClose';
 import InputEyeOpen from './icons/InputEyeOpen';
+import AppText from "./AppText"
 
 const CustomInput = ({
     label,
@@ -129,7 +130,7 @@ const CustomInput = ({
                 <Animated.View style={labelContainerStyle} pointerEvents="none">
                     <Animated.Text style={labelTextStyle}>
                         {placeholder}
-                        {mandatory && <Text style={styles.asterisk}>*</Text>}
+                        {mandatory && <AppText style={styles.asterisk}>*</AppText>}
                     </Animated.Text>
                 </Animated.View>
                 
@@ -160,7 +161,7 @@ const CustomInput = ({
                 )}
             </View>
             {error && (
-                <Text style={styles.errorText}>{error}</Text>
+                <AppText style={styles.errorText}>{error}</AppText>
             )}
         </Animated.View>
     );

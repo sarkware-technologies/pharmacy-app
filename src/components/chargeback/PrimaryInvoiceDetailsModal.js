@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import AppText from "../AppText"
 
 const PrimaryInvoiceDetailsModal = ({ visible, onClose, product }) => {
   const invoiceData = {
@@ -27,46 +28,46 @@ const PrimaryInvoiceDetailsModal = ({ visible, onClose, product }) => {
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Primary Invoice Details</Text>
+            <AppText style={styles.headerTitle}>Primary Invoice Details</AppText>
             <TouchableOpacity onPress={onClose}>
               <Icon name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
 
           <View style={styles.productInfo}>
-            <Text style={styles.productName}>
+            <AppText style={styles.productName}>
               {product?.name || 'BRUFFEN 100MG TABLETS'}
-            </Text>
+            </AppText>
           </View>
 
           <View style={styles.detailsContainer}>
             <View style={styles.detailRow}>
-              <Text style={styles.label}>Total Invoice Qty</Text>
-              <Text style={styles.value}>{invoiceData.totalInvoiceQty}</Text>
+              <AppText style={styles.label}>Total Invoice Qty</AppText>
+              <AppText style={styles.value}>{invoiceData.totalInvoiceQty}</AppText>
             </View>
 
             <View style={styles.breakdown}>
               <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>Confirm Claim Qty</Text>
-                <Text style={styles.breakdownValue}>{invoiceData.confirmClaimQty}</Text>
+                <AppText style={styles.breakdownLabel}>Confirm Claim Qty</AppText>
+                <AppText style={styles.breakdownValue}>{invoiceData.confirmClaimQty}</AppText>
               </View>
               
               <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>Claim In Process Qty</Text>
-                <Text style={styles.breakdownValue}>{invoiceData.claimInProcessQty}</Text>
+                <AppText style={styles.breakdownLabel}>Claim In Process Qty</AppText>
+                <AppText style={styles.breakdownValue}>{invoiceData.claimInProcessQty}</AppText>
               </View>
               
               <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>Return Qty</Text>
-                <Text style={styles.breakdownValue}>{invoiceData.returnQty}</Text>
+                <AppText style={styles.breakdownLabel}>Return Qty</AppText>
+                <AppText style={styles.breakdownValue}>{invoiceData.returnQty}</AppText>
               </View>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.claimableRow}>
-              <Text style={styles.claimableLabel}>Claimable Qty</Text>
-              <Text style={styles.claimableValue}>{invoiceData.claimableQty}</Text>
+              <AppText style={styles.claimableLabel}>Claimable Qty</AppText>
+              <AppText style={styles.claimableValue}>{invoiceData.claimableQty}</AppText>
             </View>
           </View>
         </View>

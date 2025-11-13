@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import AppText from "../AppText"
 
 const SuccessModal = ({ visible, onClose, invoiceId }) => {
   return (
@@ -26,11 +27,11 @@ const SuccessModal = ({ visible, onClose, invoiceId }) => {
             </View>
           </View>
 
-          <Text style={styles.title}>Claim Submitted Successfully!</Text>
-          <Text style={styles.claimIdText}>Claim Id: {invoiceId || 'INVC12349'}</Text>
+          <AppText style={styles.title}>Claim Submitted Successfully!</AppText>
+          <AppText style={styles.claimIdText}>Claim Id: {invoiceId || 'INVC12349'}</AppText>
 
           <TouchableOpacity style={styles.goToListingButton} onPress={onClose}>
-            <Text style={styles.buttonText}>Go to Listings</Text>
+            <AppText style={styles.buttonText}>Go to Listings</AppText>
           </TouchableOpacity>
         </View>
       </View>

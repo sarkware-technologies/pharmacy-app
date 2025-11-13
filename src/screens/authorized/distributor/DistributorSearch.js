@@ -12,6 +12,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../styles/colors';
+import AppText from "../../../components/AppText"
 
 const DistributorSearch = ({ onSelect }) => {
   const navigation = useNavigation();
@@ -59,10 +60,10 @@ const DistributorSearch = ({ onSelect }) => {
       }}
     >
       <View style={styles.distributorInfo}>
-        <Text style={styles.distributorName}>{item.name}</Text>
-        <Text style={styles.distributorDetails}>
+        <AppText style={styles.distributorName}>{item.name}</AppText>
+        <AppText style={styles.distributorDetails}>
           {item.code} | {item.type}
-        </Text>
+        </AppText>
       </View>
       <Icon name="chevron-right" size={20} color="#999" />
     </TouchableOpacity>
@@ -74,7 +75,7 @@ const DistributorSearch = ({ onSelect }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Search Distributor</Text>
+        <AppText style={styles.headerTitle}>Search Distributor</AppText>
       </View>
 
       <View style={styles.searchContainer}>
@@ -110,7 +111,7 @@ const DistributorSearch = ({ onSelect }) => {
             searchText.length > 1 && (
               <View style={styles.emptyContainer}>
                 <Icon name="search-off" size={48} color="#ccc" />
-                <Text style={styles.emptyText}>No distributors found</Text>
+                <AppText style={styles.emptyText}>No distributors found</AppText>
               </View>
             )
           }

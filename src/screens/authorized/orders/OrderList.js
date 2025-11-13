@@ -29,6 +29,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import Downarrow from '../../../components/icons/downArrow';
 import Toast from 'react-native-toast-message';
 import ErrorMessage from "../../../components/view/error"
+import AppText from "../../../components/AppText"
 
 const OrderList = () => {
   const navigation = useNavigation();
@@ -227,38 +228,38 @@ const OrderList = () => {
         <TouchableOpacity onPress={() => navigation.push("OrderDetails")}>
           <View style={styles.orderHeader}>
             <View style={styles.orderIdRow}>
-              <Text style={styles.orderId}>{item.orderNo}</Text>
+              <AppText style={styles.orderId}>{item.orderNo}</AppText>
               <Icon name="chevron-right" size={20} color={colors.primary} />
             </View>
-            <Text style={styles.orderAmount}>
+            <AppText style={styles.orderAmount}>
               ₹ {Number(item.netOrderValue || 0).toFixed(2)}
-            </Text>
+            </AppText>
           </View>
 
           <View style={styles.orderMeta}>
-            <Text style={styles.orderDate}>{formattedDate}</Text>
-            <Text style={styles.skuCount}>
-              SKU : <Text style={{ color: '#222' }}>{item.skwCount ?? 0}</Text>
-            </Text>
+            <AppText style={styles.orderDate}>{formattedDate}</AppText>
+            <AppText style={styles.skuCount}>
+              SKU : <AppText style={{ color: '#222' }}>{item.skwCount ?? 0}</AppText>
+            </AppText>
           </View>
         </TouchableOpacity>
         <View style={styles.customerSection}>
           <View style={styles.customerInfo}>
             <View style={styles.customerDetails}>
-              <Text style={styles.customerName}>{item.customerDetails?.customerName}</Text>
+              <AppText style={styles.customerName}>{item.customerDetails?.customerName}</AppText>
               <View style={styles.customerMeta}>
                 <AddrLine />
-                <Text style={styles.customerMetaText}>
+                <AppText style={styles.customerMetaText}>
                   {item.customerDetails?.customerId} | {item.customerDetails?.cityName} | Div:{' '}
                   {item.divisionDetails?.divisionName}
-                </Text>
+                </AppText>
               </View>
-              <Text style={styles.pendingAction}>
+              <AppText style={styles.pendingAction}>
                 Pending Action by:{' '}
-                <Text style={{ color: '#222' }}>
+                <AppText style={{ color: '#222' }}>
                   {item.pendingActionBy?.Username || 'N/A'}
-                </Text>
-              </Text>
+                </AppText>
+              </AppText>
             </View>
             <TouchableOpacity>
               <Icon name="download" size={20} color="#999" />
@@ -268,9 +269,9 @@ const OrderList = () => {
 
         <View style={styles.orderFooter}>
           <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
-            <Text style={[styles.statusText, { color: statusColors.text }]}>
+            <AppText style={[styles.statusText, { color: statusColors.text }]}>
               {item.statusName}
-            </Text>
+            </AppText>
           </View>
         </View>
       </TouchableOpacity>
@@ -292,7 +293,7 @@ const OrderList = () => {
       >
         <View style={styles.createOrderModalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Create New Order</Text>
+            <AppText style={styles.modalTitle}>Create New Order</AppText>
             <TouchableOpacity onPress={() => setShowCreateOrderModal(false)}>
               <Icon name="close" size={24} color="#333" />
             </TouchableOpacity>
@@ -303,7 +304,7 @@ const OrderList = () => {
             onPress={() => handleCreateOrder('manual')}
           >
             <Icon name="search" size={24} color="#666" />
-            <Text style={styles.orderTypeText}>Manual Order</Text>
+            <AppText style={styles.orderTypeText}>Manual Order</AppText>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -311,7 +312,7 @@ const OrderList = () => {
             onPress={() => handleCreateOrder('upload')}
           >
             <Icon name="upload" size={24} color="#666" />
-            <Text style={styles.orderTypeText}>Upload Order</Text>
+            <AppText style={styles.orderTypeText}>Upload Order</AppText>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -328,13 +329,13 @@ const OrderList = () => {
           <TouchableOpacity onPress={() => navigation.openDrawer()}>
             <Menu />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Orders</Text>
+          <AppText style={styles.headerTitle}>Orders</AppText>
           <View style={styles.headerRight}>
             <TouchableOpacity
               style={styles.createOrderButton}
               onPress={() => setShowCreateOrderModal(true)}
             >
-              <Text style={styles.createOrderText}>CREATE ORDER</Text>
+              <AppText style={styles.createOrderText}>CREATE ORDER</AppText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate('Cart')}>
               <Icon name="shopping-cart" size={18} color="#fff" />
@@ -343,7 +344,7 @@ const OrderList = () => {
               )}
               {cartCount > 0 && (
                 <View style={styles.cartBadge}>
-                  <Text style={styles.cartBadgeText}>{cartCount}</Text>
+                  <AppText style={styles.cartBadgeText}>{cartCount}</AppText>
                 </View>
               )}
             </TouchableOpacity>
@@ -358,9 +359,9 @@ const OrderList = () => {
               style={[styles.tab, activeTab === tab && styles.activeTab]}
               onPress={() => setActiveTab(tab)}
             >
-              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+              <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
                 {tab}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -414,7 +415,7 @@ const OrderList = () => {
             ListEmptyComponent={
               !loading && !refreshing ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No Orders Found</Text>
+                  <AppText style={styles.emptyText}>No Orders Found</AppText>
                 </View>
 
               ) : null

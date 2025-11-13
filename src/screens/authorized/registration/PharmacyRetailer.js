@@ -27,6 +27,7 @@ import Calendar from '../../../components/icons/Calendar';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import ChevronRight from '../../../components/icons/ChevronRight';
 import { customerAPI } from '../../../api/customer';
+import AppText from "../../../components/AppText"
 
 // Default document types for file uploads (will be updated from API for licenses)
 const DOC_TYPES = {
@@ -614,7 +615,7 @@ const PharmacyRegistrationForm = () => {
           },
         ]}
       >
-        <Text style={styles.otpTitle}>Enter 4-digit OTP</Text>
+        <AppText style={styles.otpTitle}>Enter 4-digit OTP</AppText>
         <View style={styles.otpInputContainer}>
           {[0, 1, 2, 3].map(index => (
             <TextInput
@@ -630,12 +631,12 @@ const PharmacyRegistrationForm = () => {
           ))}
         </View>
         <View style={styles.otpFooter}>
-          <Text style={styles.otpTimer}>
+          <AppText style={styles.otpTimer}>
             {otpTimers[field] > 0 ? `Resend in ${otpTimers[field]}s` : ''}
-          </Text>
+          </AppText>
           {otpTimers[field] === 0 && (
             <TouchableOpacity onPress={() => handleResendOTP(field)} disabled={loadingOtp[field]}>
-              <Text style={styles.resendText}>Resend OTP</Text>
+              <AppText style={styles.resendText}>Resend OTP</AppText>
             </TouchableOpacity>
           )}
         </View>
@@ -816,7 +817,7 @@ const PharmacyRegistrationForm = () => {
           />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{title}</Text>
+              <AppText style={styles.modalTitle}>{title}</AppText>
               <TouchableOpacity onPress={onClose}>
                 <Icon name="close" size={24} color="#666" />
               </TouchableOpacity>
@@ -839,12 +840,12 @@ const PharmacyRegistrationForm = () => {
                       onClose();
                     }}
                   >
-                    <Text style={[
+                    <AppText style={[
                       styles.modalItemText,
                       selectedId == item.id && styles.modalItemTextSelected
                     ]}>
                       {item.name}
-                    </Text>
+                    </AppText>
                     {selectedId == item.id && (
                       <Icon name="check" size={20} color={colors.primary} />
                     )}
@@ -884,16 +885,16 @@ const PharmacyRegistrationForm = () => {
         >
           <ChevronLeft />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Registration</Text>
+        <AppText style={styles.headerTitle}>Registration</AppText>
       </View>
 
       <View style={styles.typeHeader}>
         <View style={styles.typeTag}>
-        <Text style={styles.typeTagText}>Pharmacy</Text>
+        <AppText style={styles.typeTagText}>Pharmacy</AppText>
         </View>        
         <ChevronRight />        
         <View style={[styles.typeTag, styles.typeTagActive]}>
-        <Text style={[styles.typeTagText, styles.typeTagTextActive]}>{categoryName}</Text>
+        <AppText style={[styles.typeTagText, styles.typeTagTextActive]}>{categoryName}</AppText>
         </View>
     </View>
 
@@ -919,11 +920,11 @@ const PharmacyRegistrationForm = () => {
 
             {/* License Details Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>License Details <Text style={{color: 'red'}}>*</Text></Text>
+              <AppText style={styles.sectionTitle}>License Details <AppText style={{color: 'red'}}>*</AppText></AppText>
               
               {/* 20 License */}
               <View style={styles.licenseRow}>
-                <Text style={styles.licenseNumber}>20  <Text style={{color: 'red'}}>*</Text></Text>
+                <AppText style={styles.licenseNumber}>20  <AppText style={{color: 'red'}}>*</AppText></AppText>
                 <Icon name="info-outline" size={16} color={colors.textSecondary} />
               </View>
               
@@ -954,20 +955,20 @@ const PharmacyRegistrationForm = () => {
                 onPress={() => openDatePicker('license20')}
                 activeOpacity={0.7}
               >
-                <Text style={formData.license20ExpiryDate ? styles.dateText : styles.placeholderText}>
+                <AppText style={formData.license20ExpiryDate ? styles.dateText : styles.placeholderText}>
                   {formData.license20ExpiryDate 
                     ? new Date(formData.license20ExpiryDate).toLocaleDateString('en-IN')
                     : 'Expiry Date*'}
-                </Text>
+                </AppText>
                 <Calendar />
               </TouchableOpacity>
               {errors.license20ExpiryDate && (
-                <Text style={styles.errorText}>{errors.license20ExpiryDate}</Text>
+                <AppText style={styles.errorText}>{errors.license20ExpiryDate}</AppText>
               )}
 
               {/* 21 License */}
               <View style={styles.licenseRow}>
-                <Text style={styles.licenseNumber}>21  <Text style={{color: 'red'}}>*</Text></Text>
+                <AppText style={styles.licenseNumber}>21  <AppText style={{color: 'red'}}>*</AppText></AppText>
                 <Icon name="info-outline" size={16} color={colors.textSecondary} />
               </View>
               
@@ -998,15 +999,15 @@ const PharmacyRegistrationForm = () => {
                 onPress={() => openDatePicker('license21')}
                 activeOpacity={0.7}
               >
-                <Text style={formData.license21ExpiryDate ? styles.dateText : styles.placeholderText}>
+                <AppText style={formData.license21ExpiryDate ? styles.dateText : styles.placeholderText}>
                   {formData.license21ExpiryDate 
                     ? new Date(formData.license21ExpiryDate).toLocaleDateString('en-IN')
                     : 'Expiry Date*'}
-                </Text>
+                </AppText>
                 <Calendar />
               </TouchableOpacity>
               {errors.license21ExpiryDate && (
-                <Text style={styles.errorText}>{errors.license21ExpiryDate}</Text>
+                <AppText style={styles.errorText}>{errors.license21ExpiryDate}</AppText>
               )}
 
               {/* Pharmacy Image */}
@@ -1024,7 +1025,7 @@ const PharmacyRegistrationForm = () => {
 
             {/* General Details Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>General Details</Text>
+              <AppText style={styles.sectionTitle}>General Details</AppText>
               
               <CustomInput
                 placeholder="Name of the Pharmacy"
@@ -1088,57 +1089,57 @@ const PharmacyRegistrationForm = () => {
               />
               
               <View style={styles.dropdownContainer}>
-                <Text style={styles.inputLabel}>State<Text style={{color: 'red'}}>*</Text></Text>
+                <AppText style={styles.inputLabel}>State<AppText style={{color: 'red'}}>*</AppText></AppText>
                 <TouchableOpacity 
                   style={[styles.dropdown, errors.stateId && styles.inputError]}
                   onPress={() => setShowStateModal(true)}
                 >
-                  <Text style={[styles.dropdownText, !formData.state && styles.dropdownPlaceholder]}>
+                  <AppText style={[styles.dropdownText, !formData.state && styles.dropdownPlaceholder]}>
                     {formData.state || 'Select State'}
-                  </Text>
+                  </AppText>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
-                {errors.stateId && <Text style={styles.errorText}>{errors.stateId}</Text>}
+                {errors.stateId && <AppText style={styles.errorText}>{errors.stateId}</AppText>}
               </View>
               
               <View style={styles.dropdownContainer}>
-                <Text style={styles.inputLabel}>City<Text style={{color: 'red'}}>*</Text></Text>
+                <AppText style={styles.inputLabel}>City<AppText style={{color: 'red'}}>*</AppText></AppText>
                 <TouchableOpacity 
                   style={[styles.dropdown, errors.cityId && styles.inputError]}
                   onPress={() => setShowCityModal(true)}
                   //disabled={!formData.stateId}
                 >
-                  <Text style={[styles.dropdownText, !formData.city && styles.dropdownPlaceholder]}>
+                  <AppText style={[styles.dropdownText, !formData.city && styles.dropdownPlaceholder]}>
                     {formData.city || 'Select City'}
-                  </Text>
+                  </AppText>
                   <Icon name="arrow-drop-down" size={24} color={formData.stateId ? "#666" : "#ccc"} />
                 </TouchableOpacity>
-                {errors.cityId && <Text style={styles.errorText}>{errors.cityId}</Text>}
+                {errors.cityId && <AppText style={styles.errorText}>{errors.cityId}</AppText>}
               </View>
               
               <View style={styles.dropdownContainer}>
-                <Text style={styles.inputLabel}>Area<Text style={{color: 'red'}}>*</Text></Text>
+                <AppText style={styles.inputLabel}>Area<AppText style={{color: 'red'}}>*</AppText></AppText>
                 <TouchableOpacity 
                   style={[styles.dropdown, errors.area && styles.inputError]}
                   onPress={() => setShowAreaModal(true)}
                   //disabled={!formData.cityId}
                 >
-                  <Text style={[styles.dropdownText, !formData.area && styles.dropdownPlaceholder]}>
+                  <AppText style={[styles.dropdownText, !formData.area && styles.dropdownPlaceholder]}>
                     {formData.area || 'Select Area'}
-                  </Text>
+                  </AppText>
                   <Icon name="arrow-drop-down" size={24} color={formData.cityId ? "#666" : "#ccc"} />
                 </TouchableOpacity>
-                {errors.area && <Text style={styles.errorText}>{errors.area}</Text>}
+                {errors.area && <AppText style={styles.errorText}>{errors.area}</AppText>}
               </View>
             </View>
 
             {/* Security Details Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Security Details <Text style={{color: 'red'}}>*</Text></Text>
+              <AppText style={styles.sectionTitle}>Security Details <AppText style={{color: 'red'}}>*</AppText></AppText>
               
               {/* Mobile Number with OTP Verification */}
               <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-                <Text style={styles.countryCode}>+91</Text>
+                <AppText style={styles.countryCode}>+91</AppText>
                 <TextInput
                   style={styles.inputField}
                   placeholder="Mobile Number"
@@ -1168,20 +1169,20 @@ const PharmacyRegistrationForm = () => {
                   {loadingOtp.mobile && !verificationStatus.mobile ? (
                     <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
-                    <Text style={[
+                    <AppText style={[
                       styles.inlineVerifyText,
                       verificationStatus.mobile && styles.verifiedText
                     ]}>
                       {verificationStatus.mobile ? 'Verified' : 'Verify'}
-                    </Text>
+                    </AppText>
                   )}
                 </TouchableOpacity>
               </View>
               {errors.mobileNumber && (
-                <Text style={styles.errorText}>{errors.mobileNumber}</Text>
+                <AppText style={styles.errorText}>{errors.mobileNumber}</AppText>
               )}
               {errors.mobileVerification && (
-                <Text style={styles.errorText}>{errors.mobileVerification}</Text>
+                <AppText style={styles.errorText}>{errors.mobileVerification}</AppText>
               )}
               {renderOTPInput('mobile')}
 
@@ -1214,17 +1215,17 @@ const PharmacyRegistrationForm = () => {
                   {loadingOtp.email && !verificationStatus.email ? (
                     <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
-                    <Text style={[
+                    <AppText style={[
                       styles.inlineVerifyText,
                       verificationStatus.email && styles.verifiedText
                     ]}>
                       {verificationStatus.email ? 'Verified' : 'Verify'}
-                    </Text>
+                    </AppText>
                   )}
                 </TouchableOpacity>
               </View>
               {errors.emailAddress && (
-                <Text style={styles.errorText}>{errors.emailAddress}</Text>
+                <AppText style={styles.errorText}>{errors.emailAddress}</AppText>
               )}
               {renderOTPInput('email')}
               
@@ -1277,9 +1278,9 @@ const PharmacyRegistrationForm = () => {
 
             {/* Mapping Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Mapping</Text>
+              <AppText style={styles.sectionTitle}>Mapping</AppText>
               
-              <Text style={styles.sectionLabel}>Select category <Text style={styles.optional}>(Optional)</Text></Text>
+              <AppText style={styles.sectionLabel}>Select category <AppText style={styles.optional}>(Optional)</AppText></AppText>
               
               <View style={styles.categoryOptions}>
                 {/* Group Corporate Hospital Radio Button */}
@@ -1299,7 +1300,7 @@ const PharmacyRegistrationForm = () => {
                       <View style={styles.radioSelected} />
                     )}
                   </View>
-                  <Text style={styles.radioLabel}>Group Corporate Hospital</Text>
+                  <AppText style={styles.radioLabel}>Group Corporate Hospital</AppText>
                 </TouchableOpacity>
 
                 {/* Group Hospital Selector - Show when Group Corporate Hospital is selected */}
@@ -1321,7 +1322,7 @@ const PharmacyRegistrationForm = () => {
                         <View style={styles.selectedItemsContainer}>
                           {formData.selectedHospitals.map((hospital, index) => (
                             <View key={hospital.id} style={styles.selectedItemTag}>
-                              <Text style={styles.selectedItemTagText}>{hospital.name}</Text>
+                              <AppText style={styles.selectedItemTagText}>{hospital.name}</AppText>
                               <TouchableOpacity
                                 onPress={(e) => {
                                   e.stopPropagation();
@@ -1332,14 +1333,14 @@ const PharmacyRegistrationForm = () => {
                                 }}
                                 style={styles.removeTagButton}
                               >
-                                <Text style={styles.removeTagText}>×</Text>
+                                <AppText style={styles.removeTagText}>×</AppText>
                               </TouchableOpacity>
                             </View>
                           ))}
                         </View>
                       ) : (
                         <>
-                          <Text style={styles.selectorPlaceholder}>Search hospital name/code</Text>                
+                          <AppText style={styles.selectorPlaceholder}>Search hospital name/code</AppText>                
                           <Icon name="search" size={20} color="#999" />
                         </>
                       )}
@@ -1349,7 +1350,7 @@ const PharmacyRegistrationForm = () => {
                       style={styles.addNewLink}
                       onPress={() => setShowHospitalModal(true)}
                     >            
-                      <Text style={styles.addNewLinkText}>+ Add New Group Hospital</Text>
+                      <AppText style={styles.addNewLinkText}>+ Add New Group Hospital</AppText>
                     </TouchableOpacity>
                   </>
                 )}
@@ -1371,7 +1372,7 @@ const PharmacyRegistrationForm = () => {
                       <View style={styles.radioSelected} />
                     )}
                   </View>
-                  <Text style={styles.radioLabel}>Pharmacy</Text>
+                  <AppText style={styles.radioLabel}>Pharmacy</AppText>
                 </TouchableOpacity>
               </View>
 
@@ -1390,7 +1391,7 @@ const PharmacyRegistrationForm = () => {
                     }}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.selectorPlaceholder}>Search pharmacy name/code</Text>
+                    <AppText style={styles.selectorPlaceholder}>Search pharmacy name/code</AppText>
                     <Icon name="search" size={20} color="#999" />
                   </TouchableOpacity>
                   
@@ -1398,8 +1399,8 @@ const PharmacyRegistrationForm = () => {
                   {formData.selectedPharmacies.map((pharmacy) => (
                     <View key={pharmacy.id} style={styles.selectedPharmacyItem}>
                       <View style={styles.pharmacyInfo}>
-                        <Text style={styles.pharmacyName}>{pharmacy.name}</Text>
-                        <Text style={styles.pharmacyCode}>{pharmacy.code}</Text>
+                        <AppText style={styles.pharmacyName}>{pharmacy.name}</AppText>
+                        <AppText style={styles.pharmacyCode}>{pharmacy.code}</AppText>
                       </View>
                       <TouchableOpacity
                         onPress={() => {
@@ -1418,14 +1419,14 @@ const PharmacyRegistrationForm = () => {
                     style={styles.addNewLink}
                     onPress={() => setShowPharmacyModal(true)}
                   >
-                    <Text style={styles.addNewLinkText}>+ Add New Pharmacy</Text>
+                    <AppText style={styles.addNewLinkText}>+ Add New Pharmacy</AppText>
                   </TouchableOpacity>
                 </>
               )}
 
               <View style={styles.divider} />
               
-              <Text style={styles.customerGroupLabel}>Customer group</Text>
+              <AppText style={styles.customerGroupLabel}>Customer group</AppText>
               <View style={styles.radioGroupContainer}>
                 <View style={styles.radioRow}>
                   <TouchableOpacity 
@@ -1437,7 +1438,7 @@ const PharmacyRegistrationForm = () => {
                         <View style={styles.radioSelected} />
                       )}
                     </View>
-                    <Text style={styles.radioText}>9 Doctor Supply</Text>
+                    <AppText style={styles.radioText}>9 Doctor Supply</AppText>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
@@ -1446,7 +1447,7 @@ const PharmacyRegistrationForm = () => {
                   >
                     <View style={[styles.radioCircle, styles.disabledRadio]}>
                     </View>
-                    <Text style={[styles.radioText, styles.disabledText]}>10 VQ</Text>
+                    <AppText style={[styles.radioText, styles.disabledText]}>10 VQ</AppText>
                   </TouchableOpacity>
                 </View>
                 
@@ -1457,7 +1458,7 @@ const PharmacyRegistrationForm = () => {
                   >
                     <View style={[styles.radioCircle, styles.disabledRadio]}>
                     </View>
-                    <Text style={[styles.radioText, styles.disabledText]}>11 RFQ</Text>
+                    <AppText style={[styles.radioText, styles.disabledText]}>11 RFQ</AppText>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
@@ -1466,7 +1467,7 @@ const PharmacyRegistrationForm = () => {
                   >
                     <View style={[styles.radioCircle, styles.disabledRadio]}>
                     </View>
-                    <Text style={[styles.radioText, styles.disabledText]}>12 GOVT</Text>
+                    <AppText style={[styles.radioText, styles.disabledText]}>12 GOVT</AppText>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -1474,19 +1475,19 @@ const PharmacyRegistrationForm = () => {
 
             {/* Stockist Suggestions Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
+              <AppText style={styles.sectionTitle}>
                 Stockist Suggestions
-                <Text style={styles.optionalText}> (Optional)</Text>
-              </Text>
+                <AppText style={styles.optionalText}> (Optional)</AppText>
+              </AppText>
               
-              <Text style={styles.helperText}>
+              <AppText style={styles.helperText}>
                 Add suggested stockists for this pharmacy
-              </Text>
+              </AppText>
               
               {formData.stockists.map((stockist, index) => (
                 <View key={index} style={styles.stockistContainer}>
                   <View style={styles.stockistHeader}>
-                    <Text style={styles.stockistTitle}>Stockist {index + 1}</Text>
+                    <AppText style={styles.stockistTitle}>Stockist {index + 1}</AppText>
                     <TouchableOpacity onPress={() => handleRemoveStockist(index)}>
                       <Icon name="delete" size={20} color={colors.error} />
                     </TouchableOpacity>
@@ -1513,7 +1514,7 @@ const PharmacyRegistrationForm = () => {
                 style={styles.addMoreButton}
                 onPress={handleAddStockist}
               >
-                <Text style={styles.addMoreButtonText}>+ Add New Stockist</Text>
+                <AppText style={styles.addMoreButtonText}>+ Add New Stockist</AppText>
               </TouchableOpacity>
             </View>
 
@@ -1524,7 +1525,7 @@ const PharmacyRegistrationForm = () => {
                 onPress={handleCancel}
                 disabled={registering}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <AppText style={styles.cancelButtonText}>Cancel</AppText>
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -1535,7 +1536,7 @@ const PharmacyRegistrationForm = () => {
                 {registering ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.registerButtonText}>Register</Text>
+                  <AppText style={styles.registerButtonText}>Register</AppText>
                 )}
               </TouchableOpacity>
             </View>
@@ -1633,9 +1634,9 @@ const PharmacyRegistrationForm = () => {
         <View style={styles.cancelModalOverlay}>
           <View style={styles.cancelModalContent}>
             <View style={styles.modalIconContainer}>
-              <Text style={styles.modalIcon}>!</Text>
+              <AppText style={styles.modalIcon}>!</AppText>
             </View>
-            <Text style={styles.modalTitle}>Are you sure you want to Cancel the Onboarding?</Text>
+            <AppText style={styles.modalTitle}>Are you sure you want to Cancel the Onboarding?</AppText>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={styles.modalYesButton}
@@ -1644,13 +1645,13 @@ const PharmacyRegistrationForm = () => {
                   navigation.goBack();
                 }}
               >
-                <Text style={styles.modalYesButtonText}>Yes</Text>
+                <AppText style={styles.modalYesButtonText}>Yes</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalNoButton}
                 onPress={() => setShowCancelModal(false)}
               >
-                <Text style={styles.modalNoButtonText}>No</Text>
+                <AppText style={styles.modalNoButtonText}>No</AppText>
               </TouchableOpacity>
             </View>
           </View>

@@ -22,6 +22,7 @@ import EyeClosed from '../../components/icons/EyeClosed';
 import ArrowLeft from '../../components/icons/ArrowLeft';
 import CheckCircle from '../../components/icons/CheckCircle';
 import XCircle from '../../components/icons/XCircle';
+import AppText from "../../components/AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -195,12 +196,12 @@ const SetNewPasswordScreen = () => {
                     <XCircle width={20} height={20} />
                 )}
             </Animated.View>
-            <Text style={[
+            <AppText style={[
                 styles.validationText,
                 isValid && styles.validationTextValid
             ]}>
                 {text}
-            </Text>
+            </AppText>
         </View>
     );
     
@@ -242,7 +243,7 @@ const SetNewPasswordScreen = () => {
                     </View>
                     
                     {/* Title */}
-                    <Text style={styles.title}>Set New Password</Text>
+                    <AppText style={styles.title}>Set New Password</AppText>
                     
                     {/* Password Inputs */}
                     <View style={styles.inputsContainer}>
@@ -281,7 +282,7 @@ const SetNewPasswordScreen = () => {
                     
                     {/* Validation Checklist */}
                     <View style={styles.validationContainer}>
-                        <Text style={styles.validationTitle}>Your password must contain</Text>
+                        <AppText style={styles.validationTitle}>Your password must contain</AppText>
                         
                         <ValidationItem
                             isValid={validations.minLength}

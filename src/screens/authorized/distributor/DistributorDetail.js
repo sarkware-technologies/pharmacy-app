@@ -19,6 +19,7 @@ import { colors } from '../../../styles/colors';
 import { getDistributorCustomers, updateCustomerStatus } from '../../../api/distributor';
 import { setCustomers, setLoading } from '../../../redux/slices/distributorSlice';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
+import AppText from "../../../components/AppText"
 
 const DistributorDetail = () => {
   const navigation = useNavigation();
@@ -102,76 +103,76 @@ const DistributorDetail = () => {
   const renderDetailsTab = () => (
     <ScrollView style={styles.tabContent}>
       <View style={styles.detailSection}>
-        <Text style={styles.sectionTitle}>Basic Information</Text>
+        <AppText style={styles.sectionTitle}>Basic Information</AppText>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Name</Text>
-          <Text style={styles.detailValue}>{distributor.name}</Text>
+          <AppText style={styles.detailLabel}>Name</AppText>
+          <AppText style={styles.detailValue}>{distributor.name}</AppText>
         </View>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Code</Text>
-          <Text style={styles.detailValue}>{distributor.code}</Text>
+          <AppText style={styles.detailLabel}>Code</AppText>
+          <AppText style={styles.detailValue}>{distributor.code}</AppText>
         </View>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Type</Text>
-          <Text style={styles.detailValue}>{distributor.distributorType}</Text>
+          <AppText style={styles.detailLabel}>Type</AppText>
+          <AppText style={styles.detailValue}>{distributor.distributorType}</AppText>
         </View>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Email</Text>
-          <Text style={styles.detailValue}>{distributor.email}</Text>
+          <AppText style={styles.detailLabel}>Email</AppText>
+          <AppText style={styles.detailValue}>{distributor.email}</AppText>
         </View>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Mobile</Text>
-          <Text style={styles.detailValue}>{distributor.mobile1}</Text>
+          <AppText style={styles.detailLabel}>Mobile</AppText>
+          <AppText style={styles.detailValue}>{distributor.mobile1}</AppText>
         </View>
         
         {distributor.mobile2 && (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Alt Mobile</Text>
-            <Text style={styles.detailValue}>{distributor.mobile2}</Text>
+            <AppText style={styles.detailLabel}>Alt Mobile</AppText>
+            <AppText style={styles.detailValue}>{distributor.mobile2}</AppText>
           </View>
         )}
       </View>
 
       <View style={styles.detailSection}>
-        <Text style={styles.sectionTitle}>License Information</Text>
+        <AppText style={styles.sectionTitle}>License Information</AppText>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>License 20B No.</Text>
-          <Text style={styles.detailValue}>{distributor.licence20BNo || 'N/A'}</Text>
+          <AppText style={styles.detailLabel}>License 20B No.</AppText>
+          <AppText style={styles.detailValue}>{distributor.licence20BNo || 'N/A'}</AppText>
         </View>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>License 21B No.</Text>
-          <Text style={styles.detailValue}>{distributor.licence21BNo || 'N/A'}</Text>
+          <AppText style={styles.detailLabel}>License 21B No.</AppText>
+          <AppText style={styles.detailValue}>{distributor.licence21BNo || 'N/A'}</AppText>
         </View>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>GST Number</Text>
-          <Text style={styles.detailValue}>{distributor.gstNumber || 'N/A'}</Text>
+          <AppText style={styles.detailLabel}>GST Number</AppText>
+          <AppText style={styles.detailValue}>{distributor.gstNumber || 'N/A'}</AppText>
         </View>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>PAN Number</Text>
-          <Text style={styles.detailValue}>{distributor.panNumber || 'N/A'}</Text>
+          <AppText style={styles.detailLabel}>PAN Number</AppText>
+          <AppText style={styles.detailValue}>{distributor.panNumber || 'N/A'}</AppText>
         </View>
       </View>
 
       <View style={styles.detailSection}>
-        <Text style={styles.sectionTitle}>Supply Margin</Text>
+        <AppText style={styles.sectionTitle}>Supply Margin</AppText>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Doctor Supply Margin</Text>
-          <Text style={styles.detailValue}>{distributor.doctorSupplyMargin}%</Text>
+          <AppText style={styles.detailLabel}>Doctor Supply Margin</AppText>
+          <AppText style={styles.detailValue}>{distributor.doctorSupplyMargin}%</AppText>
         </View>
         
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Hospital Supply Margin</Text>
-          <Text style={styles.detailValue}>{distributor.hospitalSupplyMargin}%</Text>
+          <AppText style={styles.detailLabel}>Hospital Supply Margin</AppText>
+          <AppText style={styles.detailValue}>{distributor.hospitalSupplyMargin}%</AppText>
         </View>
       </View>
     </ScrollView>
@@ -192,17 +193,17 @@ const DistributorDetail = () => {
     return (
       <ScrollView style={styles.tabContent}>
         <View style={styles.fieldHeader}>
-          <Text style={styles.fieldHeaderText}>Employee Name & Code</Text>
-          <Text style={styles.fieldHeaderText}>Designation</Text>
+          <AppText style={styles.fieldHeaderText}>Employee Name & Code</AppText>
+          <AppText style={styles.fieldHeaderText}>Designation</AppText>
         </View>
         
         {fieldData.map((item, index) => (
           <View key={index} style={styles.fieldRow}>
             <View style={styles.fieldNameSection}>
-              <Text style={styles.fieldName}>{item.name}</Text>
-              <Text style={styles.fieldCode}>{item.code}</Text>
+              <AppText style={styles.fieldName}>{item.name}</AppText>
+              <AppText style={styles.fieldCode}>{item.code}</AppText>
             </View>
-            <Text style={styles.fieldDesignation}>{item.designation}</Text>
+            <AppText style={styles.fieldDesignation}>{item.designation}</AppText>
           </View>
         ))}
       </ScrollView>
@@ -212,14 +213,14 @@ const DistributorDetail = () => {
   const renderDivisionsTab = () => (
     <ScrollView style={styles.tabContent}>
       <View style={styles.divisionHeader}>
-        <Text style={styles.divisionHeaderText}>Division Name</Text>
-        <Text style={styles.divisionHeaderText}>Code</Text>
+        <AppText style={styles.divisionHeaderText}>Division Name</AppText>
+        <AppText style={styles.divisionHeaderText}>Code</AppText>
       </View>
       
       {distributor.divisions?.map((division, index) => (
         <View key={index} style={styles.divisionRow}>
-          <Text style={styles.divisionName}>{division.divisionName}</Text>
-          <Text style={styles.divisionCode}>{division.divisionCode}</Text>
+          <AppText style={styles.divisionName}>{division.divisionName}</AppText>
+          <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
         </View>
       ))}
     </ScrollView>
@@ -235,7 +236,7 @@ const DistributorDetail = () => {
           <View style={[styles.checkbox, selectAll && styles.checkboxSelected]}>
             {selectAll && <Icon name="check" size={14} color="#fff" />}
           </View>
-          <Text style={styles.selectAllText}>Select all</Text>
+          <AppText style={styles.selectAllText}>Select all</AppText>
         </TouchableOpacity>
       </View>
 
@@ -260,10 +261,10 @@ const DistributorDetail = () => {
                   </View>
                   
                   <View style={styles.customerInfo}>
-                    <Text style={styles.customerName}>{item.customerName}</Text>
-                    <Text style={styles.customerDetails}>
+                    <AppText style={styles.customerName}>{item.customerName}</AppText>
+                    <AppText style={styles.customerDetails}>
                       {item.customerCode || item.customerId} | {item.customerType}
-                    </Text>
+                    </AppText>
                   </View>
                 </TouchableOpacity>
 
@@ -282,9 +283,9 @@ const DistributorDetail = () => {
                     size={16} 
                     color={isBlocked ? colors.success : '#666'} 
                   />
-                  <Text style={[styles.blockButtonText, isBlocked && styles.unblockButtonText]}>
+                  <AppText style={[styles.blockButtonText, isBlocked && styles.unblockButtonText]}>
                     {isBlocked ? 'Unblock' : 'Block'}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               </View>
             );
@@ -301,14 +302,14 @@ const DistributorDetail = () => {
               setSelectAll(false);
             }}
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <AppText style={styles.cancelButtonText}>Cancel</AppText>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.bulkBlockButton}
             onPress={handleBulkBlock}
           >
-            <Text style={styles.bulkBlockButtonText}>Block</Text>
+            <AppText style={styles.bulkBlockButtonText}>Block</AppText>
           </TouchableOpacity>
         </View>
       )}
@@ -329,9 +330,9 @@ const DistributorDetail = () => {
               size={18} 
               color={activeLinkedTab === tab ? colors.primary : '#666'} 
             />
-            <Text style={[styles.linkedTabText, activeLinkedTab === tab && styles.activeLinkedTabText]}>
+            <AppText style={[styles.linkedTabText, activeLinkedTab === tab && styles.activeLinkedTabText]}>
               {tab}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         ))}
       </View>
@@ -350,10 +351,10 @@ const DistributorDetail = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{distributor.name}</Text>
+        <AppText style={styles.headerTitle}>{distributor.name}</AppText>
         {activeTab === 'Linkaged' && activeLinkedTab === 'Customer' && selectedCustomers.length > 0 && (
           <View style={styles.selectedCount}>
-            <Text style={styles.selectedCountText}>{selectedCustomers.length}</Text>
+            <AppText style={styles.selectedCountText}>{selectedCustomers.length}</AppText>
           </View>
         )}
       </View>
@@ -361,10 +362,10 @@ const DistributorDetail = () => {
       <View style={styles.statusBar}>
         <View style={styles.statusBadge}>
           <Icon name="check-circle" size={16} color={colors.success} />
-          <Text style={styles.statusText}>Accepted</Text>
+          <AppText style={styles.statusText}>Accepted</AppText>
         </View>
         <View style={styles.blockStatusBadge}>
-          <Text style={styles.blockStatusText}>UNBLOCKED</Text>
+          <AppText style={styles.blockStatusText}>UNBLOCKED</AppText>
         </View>
       </View>
 
@@ -381,9 +382,9 @@ const DistributorDetail = () => {
                 size={18} 
                 color={activeTab === tab ? colors.primary : '#666'} 
               />
-              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+              <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
                 {tab}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           ))}
         </View>

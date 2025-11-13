@@ -15,6 +15,7 @@ import CloseCircle from '../icons/CloseCircle';
 import { colors } from '../../styles/colors';
 import Upload from '../icons/Upload';
 import { RollInLeft } from 'react-native-reanimated';
+import AppText from "../AppText"
 
 // Custom CheckBox Component
 const CustomCheckBox = ({ value, onValueChange }) => {
@@ -83,9 +84,9 @@ const ClaimOrderListModal = ({ visible, onClose, claim }) => {
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
+            <AppText style={styles.modalTitle}>
               {claim?.customerName || 'Kokilaben Dhirubhai Ambani'}
-            </Text>
+            </AppText>
             <TouchableOpacity onPress={onClose}>
               <CloseCircle />
             </TouchableOpacity>
@@ -96,7 +97,7 @@ const ClaimOrderListModal = ({ visible, onClose, claim }) => {
               value={selectAll}
               onValueChange={handleSelectAll}
             />
-            <Text style={styles.selectAllText}>Select all orders</Text>
+            <AppText style={styles.selectAllText}>Select all orders</AppText>
           </View>
 
           <ScrollView style={styles.ordersList}>
@@ -109,28 +110,28 @@ const ClaimOrderListModal = ({ visible, onClose, claim }) => {
                 
                 <View style={styles.orderContent}>
                   <View style={styles.orderHeader}>
-                    <Text style={styles.orderId}>{order.id}</Text>                    
+                    <AppText style={styles.orderId}>{order.id}</AppText>                    
                   </View>
                   
                   <View style={styles.orderDetails}>
-                    <Text style={styles.poNumber}>
-                      {order.poNumber} | In CNS <Text style={styles.cnsCount}>+{order.inCNS}</Text>
-                    </Text>
+                    <AppText style={styles.poNumber}>
+                      {order.poNumber} | In CNS <AppText style={styles.cnsCount}>+{order.inCNS}</AppText>
+                    </AppText>
                   </View>
                   
                   <View style={styles.orderFooter}>
                     <View style={styles.draftBadge}>
-                      <Text style={styles.draftText}>DRAFT</Text>
+                      <AppText style={styles.draftText}>DRAFT</AppText>
                     </View>
                     
                     <View style={{ flexDirection: 'column', gap: 15, marginTop: -30 }}>
-                      <Text style={styles.podInfo}>POD/Invoice {order.podInvoiceCount}</Text>
+                      <AppText style={styles.podInfo}>POD/Invoice {order.podInvoiceCount}</AppText>
                       <TouchableOpacity 
                         style={styles.uploadButton}
                         onPress={() => handleUploadDocument(order)}
                       >
                         <Upload height={14} />
-                        <Text style={styles.uploadButtonText}>Upload Documents</Text>
+                        <AppText style={styles.uploadButtonText}>Upload Documents</AppText>
                       </TouchableOpacity>
                     </View>                    
                   </View>
@@ -147,7 +148,7 @@ const ClaimOrderListModal = ({ visible, onClose, claim }) => {
             onPress={handleGenerateClaim}
             disabled={selectedOrders.length === 0}
           >
-            <Text style={styles.generateButtonText}>Generate Claim</Text>
+            <AppText style={styles.generateButtonText}>Generate Claim</AppText>
           </TouchableOpacity>
         </View>
       </View>

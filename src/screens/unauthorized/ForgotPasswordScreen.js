@@ -19,6 +19,7 @@ import { colors } from '../../styles/colors';
 import SunLogo from '../../components/icons/SunLogo';
 import InputPhone from '../../components/icons/InputPhone';
 import { requestPasswordReset } from '../../redux/slices/authSlice';
+import AppText from "../../components/AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -196,13 +197,13 @@ const ForgotPasswordScreen = () => {
                     </Animated.View>
                     
                     {/* Title */}
-                    <Text style={[styles.title, isSmallScreen && styles.titleSmall]}>
+                    <AppText style={[styles.title, isSmallScreen && styles.titleSmall]}>
                         Forgot Password?
-                    </Text>
-                    <Text style={[styles.subtitle, isSmallScreen && styles.subtitleSmall]}>
+                    </AppText>
+                    <AppText style={[styles.subtitle, isSmallScreen && styles.subtitleSmall]}>
                         Please enter registered mobile number,{'\n'}
                         we will send you a 4 digit code
-                    </Text>
+                    </AppText>
                     
                     {/* Input */}
                     <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
@@ -232,7 +233,7 @@ const ForgotPasswordScreen = () => {
                         ]}
                         pointerEvents={keyboardHeight > 0 ? 'none' : 'auto'}>
                         <TouchableOpacity onPress={handleBackToLogin}>
-                            <Text style={styles.backToLoginText}>Back to login</Text>
+                            <AppText style={styles.backToLoginText}>Back to login</AppText>
                         </TouchableOpacity>
                     </Animated.View>
                     

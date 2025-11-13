@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import AppText from "../AppText"
 
 const CommentModal = ({ visible, onClose }) => {
   const [comment, setComment] = useState('');
@@ -36,14 +37,14 @@ const CommentModal = ({ visible, onClose }) => {
     return (
       <View style={styles.commentItem}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initial}</Text>
+          <AppText style={styles.avatarText}>{initial}</AppText>
         </View>
         <View style={styles.commentContent}>
           <View style={styles.commentHeader}>
-            <Text style={styles.authorName}>{item.author}</Text>
-            <Text style={styles.timeText}>{item.time}</Text>
+            <AppText style={styles.authorName}>{item.author}</AppText>
+            <AppText style={styles.timeText}>{item.time}</AppText>
           </View>
-          <Text style={styles.commentText}>{item.text}</Text>
+          <AppText style={styles.commentText}>{item.text}</AppText>
         </View>
       </View>
     );
@@ -69,7 +70,7 @@ const CommentModal = ({ visible, onClose }) => {
       >
         <View style={styles.modalContent}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Comment</Text>
+            <AppText style={styles.headerTitle}>Comment</AppText>
             <TouchableOpacity onPress={onClose}>
               <Icon name="close" size={24} color="#666" />
             </TouchableOpacity>
@@ -95,7 +96,7 @@ const CommentModal = ({ visible, onClose }) => {
           </View>
 
           <TouchableOpacity style={styles.doneButton} onPress={onClose}>
-            <Text style={styles.doneButtonText}>Done</Text>
+            <AppText style={styles.doneButtonText}>Done</AppText>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

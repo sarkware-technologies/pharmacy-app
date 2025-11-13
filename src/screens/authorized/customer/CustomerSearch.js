@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
+import AppText from "../../../components/AppText"
 
 const CustomerSearch = ({ navigation }) => {
   const [searchText, setSearchText] = useState('');
@@ -173,28 +174,28 @@ const CustomerSearch = ({ navigation }) => {
           activeOpacity={0.7}
         >
           <View style={styles.resultContent}>
-            <Text style={styles.resultName}>{item.name}</Text>
+            <AppText style={styles.resultName}>{item.name}</AppText>
             <Icon name="chevron-forward" size={20} color="#999" />
           </View>
           <View style={styles.resultMeta}>
             <Icon name="qr-code-outline" size={14} color="#999" />
-            <Text style={styles.resultMetaText}>{item.code}</Text>
-            <Text style={styles.divider}>|</Text>
-            <Text style={styles.resultMetaText}>{item.location}</Text>
-            <Text style={styles.divider}>|</Text>
-            <Text style={styles.resultMetaText}>{item.type}</Text>
-            <Text style={styles.divider}>|</Text>
-            <Text style={styles.resultMetaText}>{item.category}</Text>
+            <AppText style={styles.resultMetaText}>{item.code}</AppText>
+            <AppText style={styles.divider}>|</AppText>
+            <AppText style={styles.resultMetaText}>{item.location}</AppText>
+            <AppText style={styles.divider}>|</AppText>
+            <AppText style={styles.resultMetaText}>{item.type}</AppText>
+            <AppText style={styles.divider}>|</AppText>
+            <AppText style={styles.resultMetaText}>{item.category}</AppText>
             <Icon name="information-circle" size={14} color="#999" style={styles.infoIcon} />
           </View>
           <View style={styles.resultActions}>
             <Icon name="call-outline" size={16} color="#999" />
-            <Text style={styles.contactText}>9080807070</Text>
+            <AppText style={styles.contactText}>9080807070</AppText>
             <Icon name="mail-outline" size={16} color="#999" style={styles.mailIcon} />
-            <Text style={styles.contactText}>Sudhakarjoshi123@gmail.com</Text>
+            <AppText style={styles.contactText}>Sudhakarjoshi123@gmail.com</AppText>
           </View>
           <TouchableOpacity style={styles.onboardButton}>
-            <Text style={styles.onboardButtonText}>Onboard</Text>
+            <AppText style={styles.onboardButtonText}>Onboard</AppText>
           </TouchableOpacity>
         </TouchableOpacity>
       </Animated.View>
@@ -212,7 +213,7 @@ const CustomerSearch = ({ navigation }) => {
       ]}
     >
       <Icon name="search" size={60} color="#DDD" />
-      <Text style={styles.emptyStateText}>Searched results will display here</Text>
+      <AppText style={styles.emptyStateText}>Searched results will display here</AppText>
     </Animated.View>
   );
 
@@ -283,7 +284,7 @@ const CustomerSearch = ({ navigation }) => {
             },
           ]}
         >
-          <Text style={styles.recentSearchTitle}>Recent Searches</Text>
+          <AppText style={styles.recentSearchTitle}>Recent Searches</AppText>
           {recentSearches.map((search, index) => (
             <TouchableOpacity
               key={index}
@@ -292,7 +293,7 @@ const CustomerSearch = ({ navigation }) => {
               activeOpacity={0.7}
             >
               <Icon name="time-outline" size={18} color="#999" />
-              <Text style={styles.recentSearchText}>{search}</Text>
+              <AppText style={styles.recentSearchText}>{search}</AppText>
               <Icon name="arrow-forward-outline" size={16} color="#999" />
             </TouchableOpacity>
           ))}
@@ -312,8 +313,8 @@ const CustomerSearch = ({ navigation }) => {
       ) : searchText.length > 0 && searchResults.length === 0 ? (
         <View style={styles.noResults}>
           <Icon name="search-outline" size={60} color="#DDD" />
-          <Text style={styles.noResultsText}>No results found for "{searchText}"</Text>
-          <Text style={styles.noResultsSubtext}>Try searching with different keywords</Text>
+          <AppText style={styles.noResultsText}>No results found for "{searchText}"</AppText>
+          <AppText style={styles.noResultsSubtext}>Try searching with different keywords</AppText>
         </View>
       ) : searchText.length === 0 && recentSearches.length === 0 ? (
         <EmptyState />
@@ -326,7 +327,7 @@ const CustomerSearch = ({ navigation }) => {
             style={styles.doneButton}
             onPress={() => Keyboard.dismiss()}
           >
-            <Text style={styles.doneButtonText}>DONE</Text>
+            <AppText style={styles.doneButtonText}>DONE</AppText>
           </TouchableOpacity>
         </View>)}
       </KeyboardAvoidingView>

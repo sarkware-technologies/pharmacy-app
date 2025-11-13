@@ -24,6 +24,7 @@ import LoginPic from '../../components/icons/LoginPic';
 import InputUser from '../../components/icons/InputUser';
 import InputLock from '../../components/icons/InputLock';
 import Error from '../../components/icons/Error';
+import AppText from "../../components/AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -257,10 +258,10 @@ const LoginScreen = () => {
 
                         {/* Login Form */}
                         <View style={styles.formContainer}>
-                            <Text style={styles.title}>Login</Text>
-                            <Text style={styles.subtitle}>
+                            <AppText style={styles.title}>Login</AppText>
+                            <AppText style={styles.subtitle}>
                               Enter your credentials to access account
-                            </Text>
+                            </AppText>
 
                             <View style={styles.inputsContainer}>
 
@@ -290,7 +291,7 @@ const LoginScreen = () => {
                                     { transform: [{ translateX: errorShakeAnim }] }
                                   ]}>
                                     <Error width={16} height={16} />
-                                    <Text style={styles.errorText}>{loginError}</Text>
+                                    <AppText style={styles.errorText}>{loginError}</AppText>
                                 </Animated.View>
                             )}
 
@@ -304,7 +305,7 @@ const LoginScreen = () => {
                             <TouchableOpacity 
                                 style={styles.forgotPassword}
                                 onPress={() => navigation.navigate('ForgotPassword')}>
-                                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                                <AppText style={styles.forgotPasswordText}>Forgot Password?</AppText>
                             </TouchableOpacity>
                           </View>
                       </Animated.View>

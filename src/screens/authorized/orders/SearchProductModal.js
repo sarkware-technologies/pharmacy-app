@@ -14,6 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Svg, { Path } from 'react-native-svg';
 import { getProducts } from '../../../api/product';
+import AppText from "../../../components/AppText"
 
 const { height } = Dimensions.get('window');
 
@@ -107,32 +108,32 @@ export const SearchProductModal = ({
         <View style={styles.productContent}>
           <View style={styles.productHeader}>
             <View>
-              <Text style={styles.productName}>
+              <AppText style={styles.productName}>
                 {item.productName
                   ?.split(' ')
                   .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                   .join(' ')}
-              </Text>
-              <Text style={styles.productCode}>{item.productCode}</Text>
+              </AppText>
+              <AppText style={styles.productCode}>{item.productCode}</AppText>
             </View>
             <View style={styles.metricColumn}>
-              <Text style={styles.metricLabel}>PTH</Text>
-              <Text style={styles.metricValue}>₹ {item.pth ?? '-'}</Text>
+              <AppText style={styles.metricLabel}>PTH</AppText>
+              <AppText style={styles.metricValue}>₹ {item.pth ?? '-'}</AppText>
             </View>
           </View>
 
           <View style={styles.productMetrics}>
             <View style={styles.metricColumn}>
-              <Text style={styles.metricLabel}>PTR</Text>
-              <Text style={styles.metricValue}>₹ {item.ptr}</Text>
+              <AppText style={styles.metricLabel}>PTR</AppText>
+              <AppText style={styles.metricValue}>₹ {item.ptr}</AppText>
             </View>
             <View style={styles.metricColumn}>
-              <Text style={styles.metricLabel}>Margin</Text>
-              <Text style={styles.metricValue}>{item.packing ?? '-'}</Text>
+              <AppText style={styles.metricLabel}>Margin</AppText>
+              <AppText style={styles.metricValue}>{item.packing ?? '-'}</AppText>
             </View>
             <View style={styles.metricColumn}>
-              <Text style={styles.metricLabel}>MOQ</Text>
-              <Text style={[styles.metricValue,{textAlign:"right"}]}>{item.moq ?? '-'}</Text>
+              <AppText style={styles.metricLabel}>MOQ</AppText>
+              <AppText style={[styles.metricValue,{textAlign:"right"}]}>{item.moq ?? '-'}</AppText>
             </View>
           </View>
         </View>
@@ -154,7 +155,7 @@ export const SearchProductModal = ({
         <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Search & add product</Text>
+            <AppText style={styles.headerTitle}>Search & add product</AppText>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Icon name="close" size={24} color="#666" />
             </TouchableOpacity>
@@ -201,7 +202,7 @@ export const SearchProductModal = ({
                     <Path d="M16.9583 33.9163H16.5375C11.5116 33.9163 8.99563 33.9163 7.25046 32.6861C6.75381 32.3378 6.30988 31.9198 5.93233 31.445C4.625 29.8016 4.625 27.4367 4.625 22.7038V18.7803C4.625 14.2123 4.625 11.9275 5.34804 10.1038C6.51046 7.16997 8.96788 4.85747 12.0851 3.76288C14.0215 3.08301 16.4465 3.08301 21.3028 3.08301C24.0747 3.08301 25.4622 3.08301 26.5691 3.47151C28.3497 4.09742 29.7542 5.41863 30.4186 7.09443C30.8333 8.13659 30.8333 9.44238 30.8333 12.0524V18.4997" stroke="#777777" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     <Path d="M4.625 18.4997C4.625 17.1369 5.16636 15.8299 6.13 14.8663C7.09363 13.9027 8.40059 13.3613 9.76338 13.3613C10.7901 13.3613 12.0003 13.5401 12.9978 13.2734C13.4336 13.1561 13.831 12.9263 14.15 12.607C14.469 12.2877 14.6985 11.8902 14.8154 11.4543C15.0821 10.4568 14.9033 9.24659 14.9033 8.21984C14.9037 6.85733 15.4452 5.55076 16.4088 4.58746C17.3724 3.62416 18.6792 3.08301 20.0417 3.08301" stroke="#777777" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </Svg>
-                  <Text style={styles.emptyText}>No products found</Text>
+                  <AppText style={styles.emptyText}>No products found</AppText>
                 </View>
               ) : !isLoading && search.length === 0 ? (
                 <View style={styles.emptyContainer}>
@@ -210,7 +211,7 @@ export const SearchProductModal = ({
                     <Path d="M16.9583 33.9163H16.5375C11.5116 33.9163 8.99563 33.9163 7.25046 32.6861C6.75381 32.3378 6.30988 31.9198 5.93233 31.445C4.625 29.8016 4.625 27.4367 4.625 22.7038V18.7803C4.625 14.2123 4.625 11.9275 5.34804 10.1038C6.51046 7.16997 8.96788 4.85747 12.0851 3.76288C14.0215 3.08301 16.4465 3.08301 21.3028 3.08301C24.0747 3.08301 25.4622 3.08301 26.5691 3.47151C28.3497 4.09742 29.7542 5.41863 30.4186 7.09443C30.8333 8.13659 30.8333 9.44238 30.8333 12.0524V18.4997" stroke="#777777" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     <Path d="M4.625 18.4997C4.625 17.1369 5.16636 15.8299 6.13 14.8663C7.09363 13.9027 8.40059 13.3613 9.76338 13.3613C10.7901 13.3613 12.0003 13.5401 12.9978 13.2734C13.4336 13.1561 13.831 12.9263 14.15 12.607C14.469 12.2877 14.6985 11.8902 14.8154 11.4543C15.0821 10.4568 14.9033 9.24659 14.9033 8.21984C14.9037 6.85733 15.4452 5.55076 16.4088 4.58746C17.3724 3.62416 18.6792 3.08301 20.0417 3.08301" stroke="#777777" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </Svg>
-                  <Text style={styles.emptyText}>Start typing to search for a product</Text>
+                  <AppText style={styles.emptyText}>Start typing to search for a product</AppText>
                 </View>
               ) : null
             }

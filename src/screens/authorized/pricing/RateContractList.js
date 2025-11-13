@@ -27,6 +27,7 @@ import ChevronRight from '../../../components/icons/ChevronRight';
 import Business from '../../../components/icons/Business';
 import AddrLine from '../../../components/icons/AddrLine';
 import PauseCircle from '../../../components/icons/PauseCircle';
+import AppText from "../../../components/AppText"
 
 const RateContractList = () => {
   const navigation = useNavigation();
@@ -196,7 +197,7 @@ const RateContractList = () => {
 
     return (
       <View style={[styles.statusBadge, { backgroundColor: statusBackgroundColors[status] || colors.gray }]}>
-        <Text style={[ styles.statusText, { color : statusTextColors[status]} ]}>{status.replace('_', ' ')}</Text>
+        <AppText style={[ styles.statusText, { color : statusTextColors[status]} ]}>{status.replace('_', ' ')}</AppText>
       </View>
     );
   };
@@ -211,7 +212,7 @@ const RateContractList = () => {
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Filters</Text>
+            <AppText style={styles.modalTitle}>Filters</AppText>
             <TouchableOpacity onPress={() => setFilterVisible(false)}>
               <Icon name="close" size={24} color={colors.text} />
             </TouchableOpacity>
@@ -219,17 +220,17 @@ const RateContractList = () => {
 
           <ScrollView style={styles.filterScroll}>
             <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Status</Text>
+              <AppText style={styles.filterSectionTitle}>Status</AppText>
               {selectedFilters.status.map((status) => (
                 <TouchableOpacity key={status} style={styles.filterOption}>
                   <Icon name="check-box" size={24} color={colors.primary} />
-                  <Text style={styles.filterOptionText}>{status}</Text>
+                  <AppText style={styles.filterOptionText}>{status}</AppText>
                 </TouchableOpacity>
               ))}
             </View>
 
             <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Customer Group</Text>
+              <AppText style={styles.filterSectionTitle}>Customer Group</AppText>
               <TextInput
                 style={styles.filterInput}
                 placeholder="Enter customer group"
@@ -238,7 +239,7 @@ const RateContractList = () => {
             </View>
 
             <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Category</Text>
+              <AppText style={styles.filterSectionTitle}>Category</AppText>
               <TextInput
                 style={styles.filterInput}
                 placeholder="Enter category"
@@ -247,7 +248,7 @@ const RateContractList = () => {
             </View>
 
             <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>State</Text>
+              <AppText style={styles.filterSectionTitle}>State</AppText>
               <TextInput
                 style={styles.filterInput}
                 placeholder="Enter state"
@@ -256,7 +257,7 @@ const RateContractList = () => {
             </View>
 
             <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>City</Text>
+              <AppText style={styles.filterSectionTitle}>City</AppText>
               <TextInput
                 style={styles.filterInput}
                 placeholder="Enter city"
@@ -267,10 +268,10 @@ const RateContractList = () => {
 
           <View style={styles.modalFooter}>
             <TouchableOpacity style={styles.clearButton}>
-              <Text style={styles.clearButtonText}>Clear filter</Text>
+              <AppText style={styles.clearButtonText}>Clear filter</AppText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.applyButton}>
-              <Text style={styles.applyButtonText}>Apply filter</Text>
+              <AppText style={styles.applyButtonText}>Apply filter</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -285,47 +286,47 @@ const RateContractList = () => {
         onPress={() => navigation.navigate('RateContractDetail', { contract: item })}
       >
         <View style={styles.contractIdContainer}>
-          <Text style={styles.contractId}>{item.id} <ChevronRight color={colors.primary} height={11} /></Text>          
+          <AppText style={styles.contractId}>{item.id} <ChevronRight color={colors.primary} height={11} /></AppText>          
         </View>
         <View style={styles.contractBadges}>
           {item.rfqDate && (
             <View style={styles.dateBadge}>
-              <Text style={styles.dateBadgeText}>RFQ</Text>
+              <AppText style={styles.dateBadgeText}>RFQ</AppText>
             </View>
           )}
           {item.vqDate && (
             <View style={styles.dateBadge}>
-              <Text style={styles.dateBadgeText}>VQ</Text>
+              <AppText style={styles.dateBadgeText}>VQ</AppText>
             </View>
           )}
-          <Text style={styles.dateText}>
+          <AppText style={styles.dateText}>
             {item.rfqDate || item.vqDate}
-          </Text>
+          </AppText>
           {item.isMultiple && (
             <View style={styles.countBadge}>
-              <Text style={styles.countText}>{item.count} <ArrowDown color={colors.primary} width={8} /></Text>                            
+              <AppText style={styles.countText}>{item.count} <ArrowDown color={colors.primary} width={8} /></AppText>                            
             </View>
           )}
         </View>
       </TouchableOpacity>
 
       <View style={styles.contractBody}>
-        <Text style={styles.customerName}>{item.customer}</Text>
+        <AppText style={styles.customerName}>{item.customer}</AppText>
         <View style={styles.contractInfo}>          
           <AddrLine />
-          <Text style={styles.infoText}>
+          <AppText style={styles.infoText}>
             {item.code} | {item.location} | Product Count: {item.productCount}
-          </Text>
+          </AppText>
         </View>
 
         <View style={styles.distributorStockistRow}>
           <TouchableOpacity style={styles.distributorInfo}>
             <Business />
-            <Text style={{...styles.infoText, color: '#202020' }}>Configure Distribution <ChevronRight height={8} /></Text>                      
+            <AppText style={{...styles.infoText, color: '#202020' }}>Configure Distribution <ChevronRight height={8} /></AppText>                      
           </TouchableOpacity>
 
           <View style={styles.stockistInfo}>
-            <Text style={styles.stockistText}>Stockist:<Text style={{ color: '#202020', fontSize: 14, fontWeight: 'bold' }}>{item.stockist}</Text></Text>          
+            <AppText style={styles.stockistText}>Stockist:<AppText style={{ color: '#202020', fontSize: 14, fontWeight: 'bold' }}>{item.stockist}</AppText></AppText>          
             <EyeOpen color={colors.primary} width={16} />
           </View>
         </View>
@@ -336,13 +337,13 @@ const RateContractList = () => {
         {item.status === 'DRAFT' ? (
           <TouchableOpacity style={styles.createButton}>            
             <AddCircle />
-            <Text style={styles.createButtonText}>Create</Text>  
+            <AppText style={styles.createButtonText}>Create</AppText>  
             <ChevronRight height={11} />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={styles.suspendButton}>
             <PauseCircle />
-            <Text style={styles.suspendButtonText}>Suspend</Text>
+            <AppText style={styles.suspendButtonText}>Suspend</AppText>
             <ChevronRight height={11} />
           </TouchableOpacity>
         )}
@@ -357,10 +358,10 @@ const RateContractList = () => {
         <TouchableOpacity onPress={() => navigation.openDrawer()}>
           <Menu />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Pricing</Text>
+        <AppText style={styles.headerTitle}>Pricing</AppText>
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.groupUpdateButton}>
-            <Text style={styles.groupUpdateText}>GROUP UPDATE</Text>
+            <AppText style={styles.groupUpdateText}>GROUP UPDATE</AppText>
             <ArrowDown color={colors.primary} width={10} />
           </TouchableOpacity>
           <TouchableOpacity>
@@ -373,64 +374,64 @@ const RateContractList = () => {
         <View style={styles.statsContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Active</Text>
-              <Text style={[styles.statValue, { color: colors.success }]}>
+              <AppText style={styles.statLabel}>Active</AppText>
+              <AppText style={[styles.statValue, { color: colors.success }]}>
                 {statusCounts.Active}
-              </Text>
+              </AppText>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Draft</Text>
-              <Text style={[styles.statValue, { color: colors.primary }]}>
+              <AppText style={styles.statLabel}>Draft</AppText>
+              <AppText style={[styles.statValue, { color: colors.primary }]}>
                 {statusCounts.Draft}
-              </Text>
+              </AppText>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Expired RC</Text>
-              <Text style={[styles.statValue, { color: colors.error }]}>
+              <AppText style={styles.statLabel}>Expired RC</AppText>
+              <AppText style={[styles.statValue, { color: colors.error }]}>
                 {statusCounts['Expired RC']}
-              </Text>
+              </AppText>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Inactive RC</Text>
-              <Text style={[styles.statValue, { color: colors.gray }]}>
+              <AppText style={styles.statLabel}>Inactive RC</AppText>
+              <AppText style={[styles.statValue, { color: colors.gray }]}>
                 {statusCounts['Inactive RC']}
-              </Text>
+              </AppText>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Pending Approval</Text>
-              <Text style={[styles.statValue, { color: colors.primaryLight }]}>
+              <AppText style={styles.statLabel}>Pending Approval</AppText>
+              <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
                 {statusCounts['Pending Approval']}
-              </Text>
+              </AppText>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Approved</Text>
-              <Text style={[styles.statValue, { color: colors.success }]}>
+              <AppText style={styles.statLabel}>Approved</AppText>
+              <AppText style={[styles.statValue, { color: colors.success }]}>
                 {statusCounts.Approved}
-              </Text>
+              </AppText>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Rejected</Text>
-              <Text style={[styles.statValue, { color: colors.error }]}>
+              <AppText style={styles.statLabel}>Rejected</AppText>
+              <AppText style={[styles.statValue, { color: colors.error }]}>
                 {statusCounts.Rejected}
-              </Text>
+              </AppText>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Cancelled</Text>
-              <Text style={[styles.statValue, { color: colors.textSecondary }]}>
+              <AppText style={styles.statLabel}>Cancelled</AppText>
+              <AppText style={[styles.statValue, { color: colors.textSecondary }]}>
                 {statusCounts.Cancelled}
-              </Text>
+              </AppText>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Reassigned</Text>
-              <Text style={[styles.statValue, { color: colors.primaryLight }]}>
+              <AppText style={styles.statLabel}>Reassigned</AppText>
+              <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
                 {statusCounts.Reassigned}
-              </Text>
+              </AppText>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Expiring Soon</Text>
-              <Text style={[styles.statValue, { color: colors.primary }]}>
+              <AppText style={styles.statLabel}>Expiring Soon</AppText>
+              <AppText style={[styles.statValue, { color: colors.primary }]}>
                 {statusCounts['Expiring Soon']}
-              </Text>
+              </AppText>
             </View>
           </ScrollView>
         </View>
@@ -442,19 +443,19 @@ const RateContractList = () => {
               style={[styles.tab, activeTab === tab && styles.activeTab]}
               onPress={() => setActiveTab(tab)}
             >
-              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+              <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
                 {tab}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
         <View style={styles.filterContainer}>
           <TouchableOpacity style={styles.filterButton}>
-            <Text style={styles.filterButtonText}>New Pricing(30)</Text>
+            <AppText style={styles.filterButtonText}>New Pricing(30)</AppText>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.filterButton, styles.activeFilterButton]}>
-            <Text style={styles.activeFilterButtonText}>Multiple RC Found(50)</Text>
+            <AppText style={styles.activeFilterButtonText}>Multiple RC Found(50)</AppText>
           </TouchableOpacity>
         </View>
 

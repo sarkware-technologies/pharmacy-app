@@ -29,6 +29,7 @@ import Details from '../../../components/icons/Details';
 import Linkage from '../../../components/icons/Linkage';
 import EyeOpen from '../../../components/icons/EyeOpen';
 import Download from '../../../components/icons/Download';
+import AppText from "../../../components/AppText"
 
 import { Link } from '@react-navigation/native';
 import CloseCircle from '../../../components/icons/CloseCircle';
@@ -241,9 +242,9 @@ const CustomerDetail = ({ navigation, route }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.documentModalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+              <AppText style={styles.modalTitle}>
                 {selectedDocument?.doctypeName || selectedDocument?.fileName || 'DOCUMENT'}
-              </Text>
+              </AppText>
               <TouchableOpacity onPress={closeModal}>
                 <CloseCircle />
               </TouchableOpacity>
@@ -263,7 +264,7 @@ const CustomerDetail = ({ navigation, route }) => {
               ) : (
                 <View style={styles.dummyDocument}>
                   <Icon name="document-text" size={100} color="#999" />
-                  <Text style={styles.documentName}>{selectedDocument?.fileName}</Text>
+                  <AppText style={styles.documentName}>{selectedDocument?.fileName}</AppText>
                 </View>
               )}
             </View>
@@ -281,8 +282,8 @@ const CustomerDetail = ({ navigation, route }) => {
       activeOpacity={onPress ? 0.7 : 1}
     >
       <View style={styles.infoContent}>
-        <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={styles.infoValue}>{value}</Text>
+        <AppText style={styles.infoLabel}>{label}</AppText>
+        <AppText style={styles.infoValue}>{value}</AppText>
       </View>
       {icon && (
         <View style={styles.infoIcon}>
@@ -328,7 +329,7 @@ const CustomerDetail = ({ navigation, route }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{getCustomerName()}</Text>
+        <AppText style={styles.headerTitle}>{getCustomerName()}</AppText>
       </View>
 
       {/* Tabs */}
@@ -338,18 +339,18 @@ const CustomerDetail = ({ navigation, route }) => {
           onPress={() => setActiveTab('details')}
         >
           <Details color={activeTab === 'details' ? colors.primary : '#999'} />
-          <Text style={[styles.tabText, activeTab === 'details' && styles.activeTabText]}>
+          <AppText style={[styles.tabText, activeTab === 'details' && styles.activeTabText]}>
             Details
-          </Text>
+          </AppText>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'linkaged' && styles.activeTab]}
           onPress={() => setActiveTab('linkaged')}
         >
           <Linkage color={activeTab === 'linkaged' ? colors.primary : '#999'} />
-          <Text style={[styles.tabText, activeTab === 'linkaged' && styles.activeTabText]}>
+          <AppText style={[styles.tabText, activeTab === 'linkaged' && styles.activeTabText]}>
             Linkaged
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
 
@@ -363,7 +364,7 @@ const CustomerDetail = ({ navigation, route }) => {
             <SkeletonDetailPage />
           ) : !selectedCustomer ? (
             <View style={{ padding: 20 }}>
-              <Text>No customer data available</Text>
+              <AppText>No customer data available</AppText>
             </View>
           ) : (
             <Animated.View
@@ -374,7 +375,7 @@ const CustomerDetail = ({ navigation, route }) => {
             >
           {/* Details Section */}
           <AnimatedSection delay={100}>
-            <Text style={styles.sectionTitle}>Details</Text>
+            <AppText style={styles.sectionTitle}>Details</AppText>
             <View style={styles.card}>
               <View style={{ display: 'flex', flexDirection: 'row', gap: 120 }}>
                 <InfoRow label="Code" value={customerData.code} />
@@ -388,16 +389,16 @@ const CustomerDetail = ({ navigation, route }) => {
           {/* Address Details */}
           <AnimatedSection delay={200}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Address Details</Text>
+              <AppText style={styles.sectionTitle}>Address Details</AppText>
               {customerData.documents.electricityBill && (
                 <View style={{...styles.fileLinkGroup, marginTop: 4}}>
-                  <Text style={styles.linkText}>{customerData.documents.electricityBill?.fileName || customerData.documents.electricityBill}</Text>
+                  <AppText style={styles.linkText}>{customerData.documents.electricityBill?.fileName || customerData.documents.electricityBill}</AppText>
                   <View style={{...styles.iconGroup, width: 60, justifyContent: 'space-around'}}>
                     <TouchableOpacity
                       onPress={() => openDocument(customerData.documents.electricityBill)}
                       style={styles.linkButton}
                     ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                    <Text style={{ color: '#777' }}>|</Text>
+                    <AppText style={{ color: '#777' }}>|</AppText>
                     <TouchableOpacity
                       onPress={() => downloadDocument(customerData.documents.electricityBill)}
                       style={styles.linkButton}
@@ -411,16 +412,16 @@ const CustomerDetail = ({ navigation, route }) => {
               <InfoRow label="Address" value={customerData.address} />
               <View style={{...styles.rowContainer, marginTop: 5, paddingBottom: 10}}>
                 <View style={[styles.halfRow, { marginRight: 8 }]}>
-                  <Text style={styles.infoLabel}>Pincode</Text>
-                  <Text style={styles.infoValue}>{customerData.pincode}</Text>
+                  <AppText style={styles.infoLabel}>Pincode</AppText>
+                  <AppText style={styles.infoValue}>{customerData.pincode}</AppText>
                 </View>
                 <View style={[styles.halfRow, { marginLeft: 8 }]}>
-                  <Text style={styles.infoLabel}>City</Text>
-                  <Text style={styles.infoValue}>{customerData.city}</Text>
+                  <AppText style={styles.infoLabel}>City</AppText>
+                  <AppText style={styles.infoValue}>{customerData.city}</AppText>
                 </View>
                 <View style={[styles.halfRow, { marginLeft: 8 }]}>
-                  <Text style={styles.infoLabel}>State</Text>
-                  <Text style={styles.infoValue}>{customerData.state}</Text>
+                  <AppText style={styles.infoLabel}>State</AppText>
+                  <AppText style={styles.infoValue}>{customerData.state}</AppText>
                 </View>
               </View>
             </View>
@@ -428,30 +429,30 @@ const CustomerDetail = ({ navigation, route }) => {
 
           {/* License Details */}
           <AnimatedSection delay={300}>
-            <Text style={styles.sectionTitle}>License Details</Text>
+            <AppText style={styles.sectionTitle}>License Details</AppText>
             <View style={styles.card}>
               <View style={styles.licenseRow}>
                 <View style={styles.licenseInfo}>
-                  <Text style={styles.infoLabel}>Registration Number</Text>
-                  <Text style={styles.infoValue}>{customerData.registrationNumber}</Text>
+                  <AppText style={styles.infoLabel}>Registration Number</AppText>
+                  <AppText style={styles.infoValue}>{customerData.registrationNumber}</AppText>
                 </View>
                 <View style={styles.licenseExpiry}>
-                  <Text style={styles.infoLabel}>Expiry</Text>
-                  <Text style={styles.infoValue}>{customerData.registrationExpiry}</Text>
+                  <AppText style={styles.infoLabel}>Expiry</AppText>
+                  <AppText style={styles.infoValue}>{customerData.registrationExpiry}</AppText>
                 </View>
               </View>
               
               {customerData.documents.registrationCertificate && (
                 <>
-                  <Text style={styles.uploadedFileLabel}>Uploaded file</Text>
+                  <AppText style={styles.uploadedFileLabel}>Uploaded file</AppText>
                   <View style={styles.fileRow}>
-                    <Text style={styles.fileName}>{customerData.documents.registrationCertificate?.fileName || customerData.documents.registrationCertificate}</Text>
+                    <AppText style={styles.fileName}>{customerData.documents.registrationCertificate?.fileName || customerData.documents.registrationCertificate}</AppText>
                     <View style={styles.iconGroup}>
                       <TouchableOpacity 
                         style={styles.uploadedFile}
                         onPress={() => openDocument(customerData.documents.registrationCertificate)}
                       ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                      <Text style={{ color: '#777' }}>|</Text>
+                      <AppText style={{ color: '#777' }}>|</AppText>
                       <TouchableOpacity 
                         style={styles.uploadedFile}
                         onPress={() => downloadDocument(customerData.documents.registrationCertificate)}
@@ -463,26 +464,26 @@ const CustomerDetail = ({ navigation, route }) => {
               
               <View style={[styles.licenseRow, { marginTop: 10 }]}>
                 <View style={styles.licenseInfo}>
-                  <Text style={styles.infoLabel}>Practice License</Text>
-                  <Text style={styles.infoValue}>{customerData.practiceNumber}</Text>
+                  <AppText style={styles.infoLabel}>Practice License</AppText>
+                  <AppText style={styles.infoValue}>{customerData.practiceNumber}</AppText>
                 </View>
                 <View style={styles.licenseExpiry}>
-                  <Text style={styles.infoLabel}>Expiry</Text>
-                  <Text style={styles.infoValue}>{customerData.practiceExpiry}</Text>
+                  <AppText style={styles.infoLabel}>Expiry</AppText>
+                  <AppText style={styles.infoValue}>{customerData.practiceExpiry}</AppText>
                 </View>
               </View>
               
               {customerData.documents.practiceCertificate && (
                 <>
-                  <Text style={styles.uploadedFileLabel}>Uploaded file</Text>
+                  <AppText style={styles.uploadedFileLabel}>Uploaded file</AppText>
                   <View style={{...styles.fileRow, marginBottom: 8}}>
-                    <Text style={styles.fileName}>{customerData.documents.practiceCertificate?.fileName || customerData.documents.practiceCertificate}</Text>
+                    <AppText style={styles.fileName}>{customerData.documents.practiceCertificate?.fileName || customerData.documents.practiceCertificate}</AppText>
                     <View style={styles.iconGroup}>
                       <TouchableOpacity 
                         style={styles.uploadedFile}
                         onPress={() => openDocument(customerData.documents.practiceCertificate)}
                       ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                      <Text style={{ color: '#777' }}>|</Text>
+                      <AppText style={{ color: '#777' }}>|</AppText>
                       <TouchableOpacity 
                         style={styles.uploadedFile}
                         onPress={() => downloadDocument(customerData.documents.practiceCertificate)}
@@ -496,20 +497,20 @@ const CustomerDetail = ({ navigation, route }) => {
 
           {/* Other Details */}
           <AnimatedSection delay={400}>
-            <Text style={styles.sectionTitle}>Other Details</Text>
+            <AppText style={styles.sectionTitle}>Other Details</AppText>
             <View style={styles.card}>
               <View style={styles.otherDetailRow}>
                 <View style={styles.otherDetailItem}>
-                  <Text style={styles.infoLabel}>PAN</Text>
+                  <AppText style={styles.infoLabel}>PAN</AppText>
                   <View style={styles.valueWithIcons}>
-                    <Text style={styles.infoValue}>{customerData.pan}</Text>
+                    <AppText style={styles.infoValue}>{customerData.pan}</AppText>
                     {customerData.documents.panDoc && (
                       <View style={styles.iconGroup}>
                         <TouchableOpacity 
                           style={styles.uploadedFile}
                           onPress={() => openDocument(customerData.documents.panDoc)}
                         ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                        <Text style={{ color: '#777' }}>|</Text>
+                        <AppText style={{ color: '#777' }}>|</AppText>
                         <TouchableOpacity 
                           style={styles.uploadedFile}
                           onPress={() => downloadDocument(customerData.documents.panDoc)}                        
@@ -519,16 +520,16 @@ const CustomerDetail = ({ navigation, route }) => {
                   </View>
                 </View>
                 <View style={[styles.otherDetailItem, { marginLeft: 16 }]}>
-                  <Text style={styles.infoLabel}>GST</Text>
+                  <AppText style={styles.infoLabel}>GST</AppText>
                   <View style={styles.valueWithIcons}>
-                    <Text style={styles.infoValue}>{customerData.gst}</Text>
+                    <AppText style={styles.infoValue}>{customerData.gst}</AppText>
                     {customerData.documents.gstDoc && (
                       <View style={styles.iconGroup}>
                         <TouchableOpacity 
                           style={styles.uploadedFile}
                           onPress={() => openDocument(customerData.documents.gstDoc)}
                         ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                        <Text style={{ color: '#777' }}>|</Text>
+                        <AppText style={{ color: '#777' }}>|</AppText>
                         <TouchableOpacity 
                           style={styles.uploadedFile}
                           onPress={() => downloadDocument(customerData.documents.gstDoc)}                        
@@ -544,16 +545,16 @@ const CustomerDetail = ({ navigation, route }) => {
           {/* Image */}
           {customerData.documents.image && (
             <AnimatedSection delay={500}>
-              <Text style={styles.sectionTitle}>Image</Text>
+              <AppText style={styles.sectionTitle}>Image</AppText>
               <View style={{...styles.card, borderBottomWidth: 0, paddingBottom: 20}}>
                 <View style={styles.valueWithIcons}>
-                  <Text style={styles.imageName}>{customerData.documents.image?.fileName || customerData.documents.image}</Text>
+                  <AppText style={styles.imageName}>{customerData.documents.image?.fileName || customerData.documents.image}</AppText>
                   <View style={{...styles.iconGroup}}>
                     <TouchableOpacity 
                       style={styles.uploadedFile}
                       onPress={() => openDocument(customerData.documents.image)}
                     ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                    <Text style={{ color: '#777' }}>|</Text>              
+                    <AppText style={{ color: '#777' }}>|</AppText>              
                     <TouchableOpacity 
                           style={{...styles.uploadedFile}}
                           onPress={() => downloadDocument(customerData.documents.image)}                        

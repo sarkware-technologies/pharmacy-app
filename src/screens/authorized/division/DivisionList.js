@@ -18,6 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import Menu from '../../../components/icons/Menu';
 import GroupUpdateModal from '../../../components/GroupUpdateModal';
+import AppText from "../../../components/AppText"
 
 import { getDivisions } from '../../../api/division';
 import {
@@ -210,7 +211,7 @@ const DivisionList = () => {
     return (
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color={colors.primary} />
-        <Text style={styles.loadingMoreText}>Loading more divisions...</Text>
+        <AppText style={styles.loadingMoreText}>Loading more divisions...</AppText>
       </View>
     );
   };
@@ -222,7 +223,7 @@ const DivisionList = () => {
       activeOpacity={0.7}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.divisionName}>{item.divisionName || 'Unnamed Division'} <ChevronRight height={12} color={colors.primary} /></Text>
+        <AppText style={styles.divisionName}>{item.divisionName || 'Unnamed Division'} <ChevronRight height={12} color={colors.primary} /></AppText>
         <TouchableOpacity style={styles.editButton}>          
           <Edit />
         </TouchableOpacity>
@@ -231,28 +232,28 @@ const DivisionList = () => {
       <View style={styles.cardDetails}>
         <View style={styles.detailRow}>
           <AddrLine />
-          <Text style={styles.detailText}>
+          <AppText style={styles.detailText}>
             {item.divisionCode} | Customers: {item.totalDistributors || 0}
-          </Text>
+          </AppText>
         </View>
         
         <View style={styles.headerDivisionRow}>
-          <Text style={styles.headerDivisionLabel}>Header Division</Text>
-          <Text style={styles.headerDivisionValue}>
+          <AppText style={styles.headerDivisionLabel}>Header Division</AppText>
+          <AppText style={styles.headerDivisionValue}>
             {item.headerDivisionNamme || 'Common (2016)'}
-          </Text>
+          </AppText>
         </View>
       </View>
 
       <View style={styles.marginSection}>
-        <Text style={styles.marginTitle}>Max Discount</Text>
+        <AppText style={styles.marginTitle}>Max Discount</AppText>
         <View style={styles.marginRow}>
-          <Text style={styles.marginLabel}>
-            Doctor : <Text style={{ color: '#333' }}>{item.divisionMargin?.doctorMargin || item.ceoMargin?.doctorMargin || 0}%</Text>
-          </Text>
-          <Text style={styles.marginLabel}>
-            Hospital : <Text style={{ color: '#333' }}>{item.divisionMargin?.hospitalMargin || item.ceoMargin?.hospitalMargin || 0}%</Text>
-          </Text>
+          <AppText style={styles.marginLabel}>
+            Doctor : <AppText style={{ color: '#333' }}>{item.divisionMargin?.doctorMargin || item.ceoMargin?.doctorMargin || 0}%</AppText>
+          </AppText>
+          <AppText style={styles.marginLabel}>
+            Hospital : <AppText style={{ color: '#333' }}>{item.divisionMargin?.hospitalMargin || item.ceoMargin?.hospitalMargin || 0}%</AppText>
+          </AppText>
         </View>
       </View>
     </TouchableOpacity>
@@ -274,13 +275,13 @@ const DivisionList = () => {
         <TouchableOpacity onPress={() => navigation.openDrawer()}>
           <Menu />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Divisions</Text>
+        <AppText style={styles.headerTitle}>Divisions</AppText>
         <View style={styles.headerRight}>
           <TouchableOpacity 
             style={styles.groupUpdateButton}
             onPress={handleGroupUpdate}
           >
-            <Text style={styles.groupUpdateText}>GROUP UPDATE</Text>
+            <AppText style={styles.groupUpdateText}>GROUP UPDATE</AppText>
             <Icon name="arrow-drop-down" size={20} color={colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity>            
@@ -314,27 +315,27 @@ const DivisionList = () => {
         {loading && allDivisions.length === 0 ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Loading divisions...</Text>
+            <AppText style={styles.loadingText}>Loading divisions...</AppText>
           </View>
         ) : listError && allDivisions.length === 0 ? (
           <View style={styles.errorContainer}>
             <Icon name="error-outline" size={60} color="#EF4444" />
-            <Text style={styles.errorTitle}>Unable to Load Divisions</Text>
-            <Text style={styles.errorMessage}>
+            <AppText style={styles.errorTitle}>Unable to Load Divisions</AppText>
+            <AppText style={styles.errorMessage}>
               {listError || 'Something went wrong. Please try again.'}
-            </Text>
+            </AppText>
             <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
               <Icon name="refresh" size={20} color="#fff" />
-              <Text style={styles.retryButtonText}>Retry</Text>
+              <AppText style={styles.retryButtonText}>Retry</AppText>
             </TouchableOpacity>
           </View>
         ) : allDivisions.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Icon name="folder-open" size={60} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>No Divisions Found</Text>
-            <Text style={styles.emptyMessage}>
+            <AppText style={styles.emptyTitle}>No Divisions Found</AppText>
+            <AppText style={styles.emptyMessage}>
               {searchText ? `No divisions match "${searchText}"` : 'No divisions available'}
-            </Text>
+            </AppText>
           </View>
         ) : (
           <FlatList

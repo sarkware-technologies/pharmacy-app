@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import AppText from "../../../components/AppText"
 
 const VerticalText = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.verticalText}>DIV</Text>
+      <AppText style={styles.verticalText}>DIV</AppText>
     </View>
   );
 };

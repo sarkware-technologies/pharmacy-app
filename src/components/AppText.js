@@ -4,7 +4,7 @@ import { Text } from "react-native";
 
 const AppText = ({ style, children, ...props }) => {
     return (
-        <Text {...props} style={[{ fontFamily: "Lato-BlackItalic" }, style]}>
+        <Text {...props} style={[{ fontFamily: "Lato-Bold" }, style]}>
             {children}
         </Text>
     );

@@ -25,6 +25,7 @@ import Delete from '../../../components/icons/Delete';
 import { setCartDetails } from "../../../redux/slices/orderSlice"
 import CustomerSelectionModal from './CustomerSelector';
 import SelectDistributor from './SelectDistributor';
+import AppText from "../../../components/AppText"
 
 const SearchAddProducts = () => {
   const route = useRoute();
@@ -267,52 +268,52 @@ const SearchAddProducts = () => {
       <View style={styles.productCard}>
         {index === 0 && item.isMappingRequired && (
           <View style={styles.mappingBanner}>
-            <Text style={styles.mappingText}>Find Product</Text>
+            <AppText style={styles.mappingText}>Find Product</AppText>
             <View style={styles.mappingBadge}>
-              <Text style={styles.mappingBadgeText}>Mapping Required</Text>
+              <AppText style={styles.mappingBadgeText}>Mapping Required</AppText>
             </View>
           </View>
         )}
 
         <View style={styles.productContent}>
-          <CustomCheckbox containerStyle={{ alignItems: "flex-start" }} size={20} title={<Text style={styles.productName}>{item?.productDetails?.productName ? item?.productDetails?.productName.toUpperCase() : ''}</Text>} checkboxStyle={{ marginTop: 2 }} />
+          <CustomCheckbox containerStyle={{ alignItems: "flex-start" }} size={20} title={<AppText style={styles.productName}>{item?.productDetails?.productName ? item?.productDetails?.productName.toUpperCase() : ''}</AppText>} checkboxStyle={{ marginTop: 2 }} />
           <View style={{ marginLeft: 29, marginTop: 0 }}>
-            <Text style={styles.productId}>{item.id}</Text>
+            <AppText style={styles.productId}>{item.id}</AppText>
           </View>
 
           <View style={styles.productMetrics}>
             <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>PTR</Text>
-              <Text style={styles.metricValue}>₹ {item?.productDetails?.ptr}</Text>
+              <AppText style={styles.metricLabel}>PTR</AppText>
+              <AppText style={styles.metricValue}>₹ {item?.productDetails?.ptr}</AppText>
             </View>
             <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>Discount</Text>
-              <Text style={styles.metricValue}>₹ {item?.discount}</Text>
+              <AppText style={styles.metricLabel}>Discount</AppText>
+              <AppText style={styles.metricValue}>₹ {item?.discount}</AppText>
             </View>
             <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>Margin</Text>
-              <Text style={styles.metricValue}>₹{item?.productDetails?.doctorMargin}</Text>
+              <AppText style={styles.metricLabel}>Margin</AppText>
+              <AppText style={styles.metricValue}>₹{item?.productDetails?.doctorMargin}</AppText>
             </View>
             <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>PTH</Text>
-              <Text style={styles.metricValue}>₹ {(item?.pth ?? 0)}</Text>
+              <AppText style={styles.metricLabel}>PTH</AppText>
+              <AppText style={styles.metricValue}>₹ {(item?.pth ?? 0)}</AppText>
             </View>
 
           </View>
           <View style={styles.productMetrics}>
             <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>MOQ</Text>
-              <Text style={styles.metricValue}>{(item?.productDetails?.packing ?? 0)}</Text>
+              <AppText style={styles.metricLabel}>MOQ</AppText>
+              <AppText style={styles.metricValue}>{(item?.productDetails?.packing ?? 0)}</AppText>
             </View>
             <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>Exausted /Max Qty</Text>
-              <Text style={{ ...styles.metricValue, ...{ textAlign: "right" } }}>{item.exhaustedQty ?? 0}/{item.maxOrderQty}</Text>
+              <AppText style={styles.metricLabel}>Exausted /Max Qty</AppText>
+              <AppText style={{ ...styles.metricValue, ...{ textAlign: "right" } }}>{item.exhaustedQty ?? 0}/{item.maxOrderQty}</AppText>
             </View>
           </View>
 
           <View style={styles.actionRow}>
             <View style={styles.statusBadge}>
-              <Text style={styles.staus}>ACTIVE</Text>
+              <AppText style={styles.staus}>ACTIVE</AppText>
             </View>
             <View style={{ height: 45 }}>
               {item.isInCart ? (
@@ -325,14 +326,14 @@ const SearchAddProducts = () => {
                     >
                       <Icon name="remove" size={20} color={colors.primary} />
                     </TouchableOpacity>
-                    <Text style={styles.quantityText}>
+                    <AppText style={styles.quantityText}>
                       {loadingProductId === item?.productDetails?.productId ? (
                         <ActivityIndicator size="small" color={colors.primary} />
                       ) : (
                         quantity
                       )}
 
-                    </Text>
+                    </AppText>
                     <TouchableOpacity
                       style={styles.quantityButton}
                       onPress={() => handleQuantityChange(item, 'plus')}
@@ -350,7 +351,7 @@ const SearchAddProducts = () => {
                   style={styles.addToCartButton}
                   onPress={() => handleAddToCart(item)}
                 >
-                  <Text style={styles.addToCartText}>Add to cart</Text>
+                  <AppText style={styles.addToCartText}>Add to cart</AppText>
                   <Svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <Path fill-rule="evenodd" clip-rule="evenodd" d="M6.66667 13.3333C10.3487 13.3333 13.3333 10.3487 13.3333 6.66667C13.3333 2.98467 10.3487 0 6.66667 0C2.98467 0 0 2.98467 0 6.66667C0 10.3487 2.98467 13.3333 6.66667 13.3333ZM6.98 4.31333C7.07375 4.2197 7.20083 4.16711 7.33333 4.16711C7.46583 4.16711 7.59292 4.2197 7.68667 4.31333L9.68667 6.31333C9.7803 6.40708 9.83289 6.53417 9.83289 6.66667C9.83289 6.79917 9.7803 6.92625 9.68667 7.02L7.68667 9.02C7.64089 9.06912 7.58569 9.10853 7.52436 9.13585C7.46303 9.16318 7.39682 9.17788 7.32968 9.17906C7.26255 9.18025 7.19586 9.1679 7.1336 9.14275C7.07134 9.1176 7.01479 9.08017 6.96731 9.03269C6.91983 8.98521 6.8824 8.92866 6.85725 8.8664C6.8321 8.80414 6.81975 8.73745 6.82094 8.67032C6.82212 8.60318 6.83682 8.53697 6.86415 8.47564C6.89147 8.41431 6.93088 8.35911 6.98 8.31333L8.12667 7.16667H4C3.86739 7.16667 3.74021 7.11399 3.64645 7.02022C3.55268 6.92645 3.5 6.79927 3.5 6.66667C3.5 6.53406 3.55268 6.40688 3.64645 6.31311C3.74021 6.21935 3.86739 6.16667 4 6.16667H8.12667L6.98 5.02C6.88637 4.92625 6.83377 4.79917 6.83377 4.66667C6.83377 4.53417 6.88637 4.40708 6.98 4.31333Z" fill="white" />
                   </Svg>
@@ -371,7 +372,7 @@ const SearchAddProducts = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Search & Add Products to Cart</Text>
+        <AppText style={styles.headerTitle}>Search & Add Products to Cart</AppText>
         <TouchableOpacity style={styles.cartIcon} onPress={handleCheckout}>
           <Carticon />
           {cartCount < 0 && (
@@ -379,7 +380,7 @@ const SearchAddProducts = () => {
           )}
           {cartCount > 0 && (
             <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{cartCount}</Text>
+              <AppText style={styles.cartBadgeText}>{cartCount}</AppText>
             </View>
           )}
         </TouchableOpacity>
@@ -387,7 +388,7 @@ const SearchAddProducts = () => {
 
       <View style={styles.infoBarContainer}>
         <View style={styles.infoBar}>
-          <Text style={styles.infoText}>Showing most ordered products in last 30 days</Text>
+          <AppText style={styles.infoText}>Showing most ordered products in last 30 days</AppText>
         </View>
       </View>
       <View style={styles.filtersContainer}>
@@ -395,21 +396,21 @@ const SearchAddProducts = () => {
           {/* Row for both boxes */}
           <View style={styles.row}>
             <TouchableOpacity style={styles.box} onPress={() => setShowCustomerselection(true)}>
-              <Text style={styles.label}>Customer</Text>
+              <AppText style={styles.label}>Customer</AppText>
               <View style={styles.valueRow}>
-                <Text style={styles.valueText} numberOfLines={1}>
+                <AppText style={styles.valueText} numberOfLines={1}>
                   {selectedCustomer?.customerName ?? 'Select Customer'}
-                </Text>
+                </AppText>
                 <Downarrow />
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.box} onPress={() => setShowSelectdistributor(true)}>
-              <Text style={styles.label}>Distributor</Text>
+              <AppText style={styles.label}>Distributor</AppText>
               <View style={styles.valueRow}>
-                <Text style={styles.valueText} numberOfLines={1}>
+                <AppText style={styles.valueText} numberOfLines={1}>
                   {selectedDistributor?.name ?? 'Select Distributor'}
-                </Text>
+                </AppText>
                 <Downarrow />
               </View>
             </TouchableOpacity>

@@ -10,6 +10,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AppText from "../../../components/AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -90,7 +91,7 @@ export const DivisionSelectionModal = ({
             <View style={styles.modalContent}>
               {/* Header */}
               <View style={styles.header}>
-                <Text style={styles.headerTitle}>Divisions</Text>
+                <AppText style={styles.headerTitle}>Divisions</AppText>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                   <Icon name="close" size={24} color="#666" />
                 </TouchableOpacity>
@@ -98,8 +99,8 @@ export const DivisionSelectionModal = ({
 
               {/* Column Headers */}
               <View style={styles.columnHeaders}>
-                <Text style={styles.columnHeaderText}>Name</Text>
-                <Text style={[styles.columnHeaderText, styles.codeHeader]}>Code</Text>
+                <AppText style={styles.columnHeaderText}>Name</AppText>
+                <AppText style={[styles.columnHeaderText, styles.codeHeader]}>Code</AppText>
               </View>
 
               {/* Division List */}
@@ -123,9 +124,9 @@ export const DivisionSelectionModal = ({
                           <Icon name="check" size={16} color="#fff" />
                         )}
                       </View>
-                      <Text style={styles.divisionName}>{division.name}</Text>
+                      <AppText style={styles.divisionName}>{division.name}</AppText>
                     </View>
-                    <Text style={styles.divisionCode}>{division.code}</Text>
+                    <AppText style={styles.divisionCode}>{division.code}</AppText>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -136,7 +137,7 @@ export const DivisionSelectionModal = ({
                 style={styles.confirmButton}
                 onPress={handleConfirm}
               >
-                <Text style={styles.confirmButtonText}>Confirm Selection</Text>
+                <AppText style={styles.confirmButtonText}>Confirm Selection</AppText>
               </TouchableOpacity> */}
             </View>
           </TouchableWithoutFeedback>

@@ -19,6 +19,7 @@ import { useDispatch } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { bulkUpdateProductDiscounts } from '../../../api/product';
 import { setProducts, setBulkEditMode, deselectAllProducts } from '../../../redux/slices/productSlice';
+import AppText from "../../../components/AppText"
 
 const ProductBulkEdit = () => {
   const navigation = useNavigation();
@@ -91,7 +92,7 @@ const ProductBulkEdit = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Bulk Edit Products</Text>
+        <AppText style={styles.headerTitle}>Bulk Edit Products</AppText>
         <View style={{ width: 24 }} />
       </View>
 
@@ -102,13 +103,13 @@ const ProductBulkEdit = () => {
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.selectionInfo}>
             <Icon name="info-outline" size={20} color={colors.primary} />
-            <Text style={styles.selectionText}>
+            <AppText style={styles.selectionText}>
               {products.length} products selected for bulk update
-            </Text>
+            </AppText>
           </View>
 
           <View style={styles.selectedProductsList}>
-            <Text style={styles.sectionTitle}>Selected Products</Text>
+            <AppText style={styles.sectionTitle}>Selected Products</AppText>
             <ScrollView 
               style={styles.productScrollView}
               nestedScrollEnabled={true}
@@ -117,35 +118,35 @@ const ProductBulkEdit = () => {
               {products.slice(0, 5).map((product, index) => (
                 <View key={product.productId} style={styles.productItem}>
                   <View style={styles.productInfo}>
-                    <Text style={styles.productName} numberOfLines={1}>
+                    <AppText style={styles.productName} numberOfLines={1}>
                       {product.productName}
-                    </Text>
-                    <Text style={styles.productCode}>{product.productCode}</Text>
+                    </AppText>
+                    <AppText style={styles.productCode}>{product.productCode}</AppText>
                   </View>
                   <View style={styles.currentDiscounts}>
-                    <Text style={styles.discountText}>
+                    <AppText style={styles.discountText}>
                       D: {product.doctorMargin || 0}%
-                    </Text>
-                    <Text style={styles.discountText}>
+                    </AppText>
+                    <AppText style={styles.discountText}>
                       H: {product.hosptialMargin || 0}%
-                    </Text>
+                    </AppText>
                   </View>
                 </View>
               ))}
               {products.length > 5 && (
-                <Text style={styles.moreText}>
+                <AppText style={styles.moreText}>
                   And {products.length - 5} more products...
-                </Text>
+                </AppText>
               )}
             </ScrollView>
           </View>
 
           <View style={styles.discountSection}>
-            <Text style={styles.sectionTitle}>New Discount Configuration</Text>
+            <AppText style={styles.sectionTitle}>New Discount Configuration</AppText>
             
             <View style={styles.discountInputContainer}>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Doctor Discount (%)</Text>
+                <AppText style={styles.inputLabel}>Doctor Discount (%)</AppText>
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
@@ -155,15 +156,15 @@ const ProductBulkEdit = () => {
                     placeholder="Enter discount"
                     placeholderTextColor="#999"
                   />
-                  <Text style={styles.percentSign}>%</Text>
+                  <AppText style={styles.percentSign}>%</AppText>
                 </View>
-                <Text style={styles.helperText}>
+                <AppText style={styles.helperText}>
                   Leave empty to keep existing values
-                </Text>
+                </AppText>
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Hospital Discount (%)</Text>
+                <AppText style={styles.inputLabel}>Hospital Discount (%)</AppText>
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
@@ -173,11 +174,11 @@ const ProductBulkEdit = () => {
                     placeholder="Enter discount"
                     placeholderTextColor="#999"
                   />
-                  <Text style={styles.percentSign}>%</Text>
+                  <AppText style={styles.percentSign}>%</AppText>
                 </View>
-                <Text style={styles.helperText}>
+                <AppText style={styles.helperText}>
                   Leave empty to keep existing values
-                </Text>
+                </AppText>
               </View>
             </View>
 
@@ -190,28 +191,28 @@ const ProductBulkEdit = () => {
                 size={24}
                 color={colors.primary}
               />
-              <Text style={styles.applyOptionText}>
+              <AppText style={styles.applyOptionText}>
                 Apply same discount to all selected products
-              </Text>
+              </AppText>
             </TouchableOpacity>
           </View>
 
           <View style={styles.summary}>
-            <Text style={styles.summaryTitle}>Update Summary</Text>
+            <AppText style={styles.summaryTitle}>Update Summary</AppText>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Products to update:</Text>
-              <Text style={styles.summaryValue}>{products.length}</Text>
+              <AppText style={styles.summaryLabel}>Products to update:</AppText>
+              <AppText style={styles.summaryValue}>{products.length}</AppText>
             </View>
             {doctorDiscount && (
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>New doctor discount:</Text>
-                <Text style={styles.summaryValue}>{doctorDiscount}%</Text>
+                <AppText style={styles.summaryLabel}>New doctor discount:</AppText>
+                <AppText style={styles.summaryValue}>{doctorDiscount}%</AppText>
               </View>
             )}
             {hospitalDiscount && (
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>New hospital discount:</Text>
-                <Text style={styles.summaryValue}>{hospitalDiscount}%</Text>
+                <AppText style={styles.summaryLabel}>New hospital discount:</AppText>
+                <AppText style={styles.summaryValue}>{hospitalDiscount}%</AppText>
               </View>
             )}
           </View>
@@ -222,7 +223,7 @@ const ProductBulkEdit = () => {
             style={styles.cancelButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <AppText style={styles.cancelButtonText}>Cancel</AppText>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -233,7 +234,7 @@ const ProductBulkEdit = () => {
             {updating ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.updateButtonText}>Update All</Text>
+              <AppText style={styles.updateButtonText}>Update All</AppText>
             )}
           </TouchableOpacity>
         </View>

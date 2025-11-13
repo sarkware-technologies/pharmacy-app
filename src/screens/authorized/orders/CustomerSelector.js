@@ -14,6 +14,7 @@ import Svg, { Path, Circle } from 'react-native-svg';
 import FilterModal from '../../../components/FilterModal';
 import { customerAPI } from '../../../api/customer';
 import { FlatList } from 'react-native-gesture-handler';
+import AppText from "../../../components/AppText"
 
 // Icon Components
 const CloseIcon = () => (
@@ -168,7 +169,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
                     </Svg>
                   </View>
                 </TouchableOpacity>
-                <Text style={styles.title}>Select Customer</Text>
+                <AppText style={styles.title}>Select Customer</AppText>
               </View>
             </View>
 
@@ -178,7 +179,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
                 style={styles.searchButton}
                 onPress={handleSearchByFilters}
               >
-                <Text style={styles.searchButtonText}>Search by filters</Text>
+                <AppText style={styles.searchButtonText}>Search by filters</AppText>
                 <Svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <Path d="M16.1667 8.0725H5.87083M2.23667 8.0725H0.75M2.23667 8.0725C2.23667 7.59069 2.42806 7.12861 2.76876 6.78792C3.10945 6.44723 3.57152 6.25583 4.05333 6.25583C4.53514 6.25583 4.99722 6.44723 5.33791 6.78792C5.6786 7.12861 5.87 7.59069 5.87 8.0725C5.87 8.55431 5.6786 9.01639 5.33791 9.35708C4.99722 9.69777 4.53514 9.88917 4.05333 9.88917C3.57152 9.88917 3.10945 9.69777 2.76876 9.35708C2.42806 9.01639 2.23667 8.55431 2.23667 8.0725ZM16.1667 13.5783H11.3767M11.3767 13.5783C11.3767 14.0603 11.1848 14.5229 10.844 14.8636C10.5033 15.2044 10.0411 15.3958 9.55917 15.3958C9.07736 15.3958 8.61528 15.2036 8.27459 14.8629C7.9339 14.5222 7.7425 14.0601 7.7425 13.5783M11.3767 13.5783C11.3767 13.0964 11.1848 12.6346 10.844 12.2939C10.5033 11.9531 10.0411 11.7617 9.55917 11.7617C9.07736 11.7617 8.61528 11.9531 8.27459 12.2938C7.9339 12.6344 7.7425 13.0965 7.7425 13.5783M7.7425 13.5783H0.75M16.1667 2.56667H13.5792M9.945 2.56667H0.75M9.945 2.56667C9.945 2.08486 10.1364 1.62278 10.4771 1.28209C10.8178 0.941398 11.2799 0.75 11.7617 0.75C12.0002 0.75 12.2365 0.79699 12.4569 0.888286C12.6773 0.979582 12.8776 1.1134 13.0462 1.28209C13.2149 1.45078 13.3488 1.65105 13.44 1.87146C13.5313 2.09187 13.5783 2.3281 13.5783 2.56667C13.5783 2.80523 13.5313 3.04147 13.44 3.26187C13.3488 3.48228 13.2149 3.68255 13.0462 3.85124C12.8776 4.01994 12.6773 4.15375 12.4569 4.24505C12.2365 4.33634 12.0002 4.38333 11.7617 4.38333C11.2799 4.38333 10.8178 4.19193 10.4771 3.85124C10.1364 3.51055 9.945 3.04848 9.945 2.56667Z" stroke="#F7941E" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" />
                 </Svg>
@@ -200,7 +201,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
                     </Svg>
                   </View>
                 </TouchableOpacity>
-                <Text style={styles.title}>Select Customer</Text>
+                <AppText style={styles.title}>Select Customer</AppText>
               </View>
 
               {/* Filter chips */}
@@ -217,7 +218,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
                 </TouchableOpacity>
                 {selectedFilters.states > 0 && (
                   <TouchableOpacity style={styles.chip} onPress={() => setShowFilterModal(true)}>
-                    <Text style={styles.chipText}>{selectedFilters.states} States</Text>
+                    <AppText style={styles.chipText}>{selectedFilters.states} States</AppText>
                     <Svg width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <Path d="M1.00198 0C0.111077 0 -0.335089 1.07714 0.294875 1.70711L2.88066 4.29289C3.27119 4.68342 3.90435 4.68342 4.29488 4.29289L6.88066 1.70711C7.51063 1.07714 7.06446 0 6.17355 0L1.00198 0Z" fill="#2B2B2B" />
                     </Svg>
@@ -226,7 +227,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
 
                 {selectedFilters.cities > 0 && (
                   <TouchableOpacity style={styles.chip} onPress={() => setShowFilterModal(true)}>
-                    <Text style={styles.chipText}>{selectedFilters.cities} Cities</Text>
+                    <AppText style={styles.chipText}>{selectedFilters.cities} Cities</AppText>
                     <Svg width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <Path d="M1.00198 0C0.111077 0 -0.335089 1.07714 0.294875 1.70711L2.88066 4.29289C3.27119 4.68342 3.90435 4.68342 4.29488 4.29289L6.88066 1.70711C7.51063 1.07714 7.06446 0 6.17355 0L1.00198 0Z" fill="#2B2B2B" />
                     </Svg>
@@ -235,7 +236,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
                 )}
                 {selectedFilters.contract > 0 && (
                   <TouchableOpacity style={styles.chip} onPress={() => setShowFilterModal(true)}>
-                    <Text style={styles.chipText}>{selectedFilters.contract}-Contract</Text>
+                    <AppText style={styles.chipText}>{selectedFilters.contract}-Contract</AppText>
                     <Svg width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <Path d="M1.00198 0C0.111077 0 -0.335089 1.07714 0.294875 1.70711L2.88066 4.29289C3.27119 4.68342 3.90435 4.68342 4.29488 4.29289L6.88066 1.70711C7.51063 1.07714 7.06446 0 6.17355 0L1.00198 0Z" fill="#2B2B2B" />
                     </Svg>
@@ -245,7 +246,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
 
                 {selectedFilters.type !== '' && (
                   <TouchableOpacity style={styles.chip} onPress={() => setShowFilterModal(true)}>
-                    <Text style={styles.chipText}>{selectedFilters.type}</Text>
+                    <AppText style={styles.chipText}>{selectedFilters.type}</AppText>
                     <Svg width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <Path d="M1.00198 0C0.111077 0 -0.335089 1.07714 0.294875 1.70711L2.88066 4.29289C3.27119 4.68342 3.90435 4.68342 4.29488 4.29289L6.88066 1.70711C7.51063 1.07714 7.06446 0 6.17355 0L1.00198 0Z" fill="#2B2B2B" />
                     </Svg>
@@ -269,8 +270,8 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
 
               {/* Table header */}
               <View style={styles.tableHeader}>
-                <Text style={styles.tableHeaderText}>Name</Text>
-                <Text style={styles.tableHeaderText}>City</Text>
+                <AppText style={styles.tableHeaderText}>Name</AppText>
+                <AppText style={styles.tableHeaderText}>City</AppText>
               </View>
             </View>
 
@@ -284,10 +285,10 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
                   onPress={() => handleCustomerSelect(item)}
                 >
                   <View style={styles.customerInfo}>
-                    <Text style={styles.customerName}>{item.customerName}</Text>
-                    <Text style={styles.customerId}>{item.customerCode}</Text>
+                    <AppText style={styles.customerName}>{item.customerName}</AppText>
+                    <AppText style={styles.customerId}>{item.customerCode}</AppText>
                   </View>
-                  <Text style={styles.customerCity}>{item.cityName}</Text>
+                  <AppText style={styles.customerCity}>{item.cityName}</AppText>
                 </TouchableOpacity>
               )}
               onEndReachedThreshold={0.2}
@@ -301,11 +302,11 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
               ListFooterComponent={() =>
                 loading ? (
                   <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-                    <Text style={{ color: '#999' }}>Loading...</Text>
+                    <AppText style={{ color: '#999' }}>Loading...</AppText>
                   </View>
                 ) : !hasMore && customers.length > 20 ? (
                   <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-                    <Text style={{ color: '#999' }}>No more customers</Text>
+                    <AppText style={{ color: '#999' }}>No more customers</AppText>
                   </View>
                 ) : null
               }

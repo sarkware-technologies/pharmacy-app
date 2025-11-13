@@ -14,6 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../styles/colors';
+import AppText from "../../../components/AppText"
 
 const DivisionGroupUpdate = () => {
   const navigation = useNavigation();
@@ -99,17 +100,17 @@ const DivisionGroupUpdate = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Group Update</Text>
+        <AppText style={styles.headerTitle}>Group Update</AppText>
         <TouchableOpacity onPress={selectAll}>
-          <Text style={styles.selectAllText}>
+          <AppText style={styles.selectAllText}>
             {selectedDivisions.length === divisions.length ? 'Deselect All' : 'Select All'}
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Divisions</Text>
+          <AppText style={styles.sectionTitle}>Select Divisions</AppText>
           {divisions.map(division => (
             <TouchableOpacity 
               key={division.id}
@@ -125,17 +126,17 @@ const DivisionGroupUpdate = () => {
                 )}
               </View>
               <View style={styles.divisionInfo}>
-                <Text style={styles.divisionName}>{division.name}</Text>
-                <Text style={styles.divisionCode}>
+                <AppText style={styles.divisionName}>{division.name}</AppText>
+                <AppText style={styles.divisionCode}>
                   {division.code} | {division.customers} customers
-                </Text>
+                </AppText>
               </View>
             </TouchableOpacity>
           ))}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Update Type</Text>
+          <AppText style={styles.sectionTitle}>Update Type</AppText>
           
           <TouchableOpacity 
             style={[styles.updateOption, updateType === 'margin' && styles.updateOptionActive]}
@@ -146,9 +147,9 @@ const DivisionGroupUpdate = () => {
               size={20} 
               color={updateType === 'margin' ? colors.primary : '#666'} 
             />
-            <Text style={[styles.updateOptionText, updateType === 'margin' && styles.updateOptionTextActive]}>
+            <AppText style={[styles.updateOptionText, updateType === 'margin' && styles.updateOptionTextActive]}>
               Update Margins
-            </Text>
+            </AppText>
             {updateType === 'margin' && (
               <Icon name="check-circle" size={20} color={colors.primary} />
             )}
@@ -163,9 +164,9 @@ const DivisionGroupUpdate = () => {
               size={20} 
               color={updateType === 'status' ? colors.primary : '#666'} 
             />
-            <Text style={[styles.updateOptionText, updateType === 'status' && styles.updateOptionTextActive]}>
+            <AppText style={[styles.updateOptionText, updateType === 'status' && styles.updateOptionTextActive]}>
               Update Status
-            </Text>
+            </AppText>
             {updateType === 'status' && (
               <Icon name="check-circle" size={20} color={colors.primary} />
             )}
@@ -180,9 +181,9 @@ const DivisionGroupUpdate = () => {
               size={20} 
               color={updateType === 'header' ? colors.primary : '#666'} 
             />
-            <Text style={[styles.updateOptionText, updateType === 'header' && styles.updateOptionTextActive]}>
+            <AppText style={[styles.updateOptionText, updateType === 'header' && styles.updateOptionTextActive]}>
               Update Header Division
-            </Text>
+            </AppText>
             {updateType === 'header' && (
               <Icon name="check-circle" size={20} color={colors.primary} />
             )}
@@ -191,9 +192,9 @@ const DivisionGroupUpdate = () => {
 
         {updateType === 'margin' && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Margin Values</Text>
+            <AppText style={styles.sectionTitle}>Margin Values</AppText>
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Doctor Margin (%)</Text>
+              <AppText style={styles.inputLabel}>Doctor Margin (%)</AppText>
               <TextInput
                 style={styles.input}
                 value={doctorMargin}
@@ -204,7 +205,7 @@ const DivisionGroupUpdate = () => {
               />
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Hospital Margin (%)</Text>
+              <AppText style={styles.inputLabel}>Hospital Margin (%)</AppText>
               <TextInput
                 style={styles.input}
                 value={hospitalMargin}
@@ -219,11 +220,11 @@ const DivisionGroupUpdate = () => {
 
         {updateType === 'status' && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Division Status</Text>
+            <AppText style={styles.sectionTitle}>Division Status</AppText>
             <View style={styles.switchGroup}>
-              <Text style={styles.switchLabel}>
+              <AppText style={styles.switchLabel}>
                 {activeStatus ? 'Active' : 'Inactive'}
-              </Text>
+              </AppText>
               <Switch
                 value={activeStatus}
                 onValueChange={setActiveStatus}
@@ -236,9 +237,9 @@ const DivisionGroupUpdate = () => {
 
         {updateType === 'header' && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Header Division</Text>
+            <AppText style={styles.sectionTitle}>Header Division</AppText>
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Header Division Code</Text>
+              <AppText style={styles.inputLabel}>Header Division Code</AppText>
               <TextInput
                 style={styles.input}
                 value={headerDivision}
@@ -251,9 +252,9 @@ const DivisionGroupUpdate = () => {
 
         <View style={styles.selectedSummary}>
           <Icon name="info" size={20} color={colors.primary} />
-          <Text style={styles.summaryText}>
+          <AppText style={styles.summaryText}>
             {selectedDivisions.length} division{selectedDivisions.length !== 1 ? 's' : ''} selected
-          </Text>
+          </AppText>
         </View>
       </ScrollView>
 
@@ -262,14 +263,14 @@ const DivisionGroupUpdate = () => {
           style={styles.cancelButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
+          <AppText style={styles.cancelButtonText}>Cancel</AppText>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.updateButton, selectedDivisions.length === 0 && styles.updateButtonDisabled]}
           onPress={handleGroupUpdate}
           disabled={selectedDivisions.length === 0}
         >
-          <Text style={styles.updateButtonText}>Update {selectedDivisions.length} Divisions</Text>
+          <AppText style={styles.updateButtonText}>Update {selectedDivisions.length} Divisions</AppText>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

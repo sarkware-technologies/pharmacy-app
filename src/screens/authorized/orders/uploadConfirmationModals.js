@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconFeather from 'react-native-vector-icons/Feather';
+import AppText from "../../../components/AppText"
 
 const { width } = Dimensions.get('window');
 
@@ -32,17 +33,17 @@ const UnmappedProductsModal = ({ visible, onClose, onMapProducts, onCheckout, me
           </View>
         </View>
 
-        <Text style={styles.title}>Warning!</Text>
-        <Text style={styles.message}>
+        <AppText style={styles.title}>Warning!</AppText>
+        <AppText style={styles.message}>
           {message}
-        </Text>
+        </AppText>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.outlineButton} onPress={onMapProducts}>
-            <Text style={styles.outlineButtonText}>Map Products</Text>
+            <AppText style={styles.outlineButtonText}>Map Products</AppText>
           </TouchableOpacity>
           <TouchableOpacity style={styles.fillButton} onPress={onCheckout}>
-            <Text style={styles.fillButtonText}>Proceed To Cart</Text>
+            <AppText style={styles.fillButtonText}>Proceed To Cart</AppText>
           </TouchableOpacity>
         </View>
       </View>

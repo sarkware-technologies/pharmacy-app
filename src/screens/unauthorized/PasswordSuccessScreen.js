@@ -11,6 +11,7 @@ import { colors } from '../../styles/colors';
 import SunLogo from '../../components/icons/SunLogo';
 import Shield from '../../components/icons/Shield';
 import CheckCircle from '../../components/icons/CheckCircle';
+import AppText from "../../components/AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -162,7 +163,7 @@ const PasswordSuccessScreen = () => {
                     ]
                 }
             ]}>
-            <Text style={styles.particleText}>{content}</Text>
+            <AppText style={styles.particleText}>{content}</AppText>
         </Animated.View>
     );
     
@@ -211,10 +212,10 @@ const PasswordSuccessScreen = () => {
                         styles.textContainer,
                         { opacity: successTextFade }
                     ]}>
-                    <Text style={styles.title}>Password Updated!</Text>
-                    <Text style={styles.subtitle}>
+                    <AppText style={styles.title}>Password Updated!</AppText>
+                    <AppText style={styles.subtitle}>
                         You can login with updated{'\n'}password now!
-                    </Text>
+                    </AppText>
                 </Animated.View>
             </Animated.View>
         </View>

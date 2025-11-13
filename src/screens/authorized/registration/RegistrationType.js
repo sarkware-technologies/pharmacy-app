@@ -21,6 +21,7 @@ import {
   fetchCustomerTypes,
   selectCustomerTypes,
 } from '../../../redux/slices/customerSlice';
+import AppText from "../../../components/AppText"
 
 const { width } = Dimensions.get('window');
 
@@ -225,12 +226,12 @@ const RegistrationType = () => {
           onPressOut={handlePressOut}
           activeOpacity={0.8}
         >
-          <Text style={[
+          <AppText style={[
             styles.typeButtonText,
             isSelected && styles.selectedTypeButtonText,
           ]}>
             {type.name}
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </Animated.View>
     );
@@ -247,7 +248,7 @@ const RegistrationType = () => {
           >
             <ChevronLeft />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Registration</Text>
+          <AppText style={styles.headerTitle}>Registration</AppText>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -267,15 +268,15 @@ const RegistrationType = () => {
           >
             <ChevronLeft />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Registration</Text>
+          <AppText style={styles.headerTitle}>Registration</AppText>
         </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Error loading customer types</Text>
+          <AppText style={styles.errorText}>Error loading customer types</AppText>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => dispatch(fetchCustomerTypes())}
           >
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <AppText style={styles.retryButtonText}>Retry</AppText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -294,7 +295,7 @@ const RegistrationType = () => {
         >          
           <ChevronLeft />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Registration</Text>
+        <AppText style={styles.headerTitle}>Registration</AppText>
       </View>
 
       <ScrollView
@@ -315,7 +316,7 @@ const RegistrationType = () => {
         >
           {/* Type Selection */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Type <Text style={styles.subtitle}>(Select Any One)</Text></Text>
+            <AppText style={styles.sectionTitle}>Type <AppText style={styles.subtitle}>(Select Any One)</AppText></AppText>
             <View style={styles.typeContainer}>
               {customerTypes && customerTypes.length > 0 ? (
                 customerTypes.map((type) => (
@@ -326,7 +327,7 @@ const RegistrationType = () => {
                   />
                 ))
               ) : (
-                <Text style={styles.noDataText}>No customer types available</Text>
+                <AppText style={styles.noDataText}>No customer types available</AppText>
               )}
             </View>
           </View>
@@ -342,9 +343,9 @@ const RegistrationType = () => {
                 },
               ]}
             >
-              <Text style={styles.sectionTitle}>
-                Category <Text style={styles.subtitle}>(Select Any One)</Text>
-              </Text>
+              <AppText style={styles.sectionTitle}>
+                Category <AppText style={styles.subtitle}>(Select Any One)</AppText>
+              </AppText>
               <View style={styles.categoryContainer}>
                 {getCategories().map((category) => (
                   <TouchableOpacity
@@ -356,12 +357,12 @@ const RegistrationType = () => {
                     onPress={() => handleCategorySelect(category)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[
+                    <AppText style={[
                       styles.categoryButtonText,
                       selectedCategory?.id === category.id && styles.selectedCategoryButtonText,
                     ]}>
                       {category.name}
-                    </Text>
+                    </AppText>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -379,7 +380,7 @@ const RegistrationType = () => {
                 },
               ]}
             >
-              <Text style={styles.sectionTitle}>Sub Category</Text>
+              <AppText style={styles.sectionTitle}>Sub Category</AppText>
               <View style={styles.subCategoryContainer}>
                 {getSubCategories().map((subCat) => (
                   <TouchableOpacity
@@ -391,12 +392,12 @@ const RegistrationType = () => {
                     onPress={() => handleSubCategorySelect(subCat)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[
+                    <AppText style={[
                       styles.subCategoryButtonText,
                       selectedSubCategory?.id === subCat.id && styles.selectedSubCategoryButtonText,
                     ]}>
                       {subCat.name}
-                    </Text>
+                    </AppText>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -424,7 +425,7 @@ const RegistrationType = () => {
             onPress={handleContinue}
             activeOpacity={0.8}
           >
-            <Text style={styles.continueButtonText}>Continue</Text>
+            <AppText style={styles.continueButtonText}>Continue</AppText>
           </TouchableOpacity>
         </Animated.View>
       )}

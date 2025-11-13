@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../styles/colors';
+import AppText from "./AppText"
 
 const GroupUpdateModal = ({ visible, onClose, onSelectOption }) => {
   const options = [
@@ -41,7 +42,7 @@ const GroupUpdateModal = ({ visible, onClose, onSelectOption }) => {
           <TouchableWithoutFeedback>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Group Update</Text>
+                <AppText style={styles.modalTitle}>Group Update</AppText>
                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                   <Icon name="close" size={24} color="#666" />
                 </TouchableOpacity>
@@ -58,7 +59,7 @@ const GroupUpdateModal = ({ visible, onClose, onSelectOption }) => {
                     }}
                   >
                     <Icon name={option.icon} size={24} color="#333" />
-                    <Text style={styles.optionText}>{option.title}</Text>
+                    <AppText style={styles.optionText}>{option.title}</AppText>
                   </TouchableOpacity>
                 ))}
               </View>

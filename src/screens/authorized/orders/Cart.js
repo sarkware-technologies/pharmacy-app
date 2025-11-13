@@ -30,6 +30,7 @@ import Svg, { Path } from 'react-native-svg';
 import { DeleteCart, getCartDetails, IncreaseQTY, PlaceOrder } from '../../../api/orders';
 import ErrorMessage from "../../../components/view/error"
 import FilterModal from '../../../components/FilterModal';
+import AppText from "../../../components/AppText"
 
 import { OrderPlaceSuccessModal } from "./orderConfirm";
 import CustomerSelectionModal from './CustomerSelector';
@@ -200,30 +201,30 @@ const Cart = () => {
     <View style={styles.summaryCard}>
       <View style={styles.summaryRow}>
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>SKU Count</Text>
-          <Text style={styles.summaryValue}>{orderSummery?.skuCount ?? 0}</Text>
+          <AppText style={styles.summaryLabel}>SKU Count</AppText>
+          <AppText style={styles.summaryValue}>{orderSummery?.skuCount ?? 0}</AppText>
         </View>
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Total Order Value</Text>
-          <Text style={styles.summaryValue}>{formatCurrency(orderSummery?.totalOrderValue ?? 0)}</Text>
+          <AppText style={styles.summaryLabel}>Total Order Value</AppText>
+          <AppText style={styles.summaryValue}>{formatCurrency(orderSummery?.totalOrderValue ?? 0)}</AppText>
         </View>
         <View style={styles.summaryItem}>
-          <Text style={[styles.summaryLabel]}>(-) Discount</Text>
-          <Text style={[styles.summaryValue, styles.greenText]}>{formatCurrency(orderSummery?.toalDiscount ?? 0)}</Text>
+          <AppText style={[styles.summaryLabel]}>(-) Discount</AppText>
+          <AppText style={[styles.summaryValue, styles.greenText]}>{formatCurrency(orderSummery?.toalDiscount ?? 0)}</AppText>
         </View>
       </View>
       <View style={styles.summaryRow}>
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>(=) Gross Ord Value</Text>
-          <Text style={styles.summaryValue}>{formatCurrency(orderSummery?.grossOrderValue ?? 0)}</Text>
+          <AppText style={styles.summaryLabel}>(=) Gross Ord Value</AppText>
+          <AppText style={styles.summaryValue}>{formatCurrency(orderSummery?.grossOrderValue ?? 0)}</AppText>
         </View>
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>(+) Tax</Text>
-          <Text style={styles.summaryValue}>{formatCurrency(orderSummery?.tax ?? 0)}</Text>
+          <AppText style={styles.summaryLabel}>(+) Tax</AppText>
+          <AppText style={styles.summaryValue}>{formatCurrency(orderSummery?.tax ?? 0)}</AppText>
         </View>
         <View style={styles.summaryItem}>
-          <Text style={[styles.summaryLabel]}>(=) Net Ord Value</Text>
-          <Text style={[styles.summaryValue, styles.orangeText]}>{formatCurrency(orderSummery?.netOrderValue ?? 0)}</Text>
+          <AppText style={[styles.summaryLabel]}>(=) Net Ord Value</AppText>
+          <AppText style={[styles.summaryValue, styles.orangeText]}>{formatCurrency(orderSummery?.netOrderValue ?? 0)}</AppText>
         </View>
       </View>
     </View>
@@ -236,9 +237,9 @@ const Cart = () => {
         onPress={() => setActiveTab('manual')}
       >
         <Mappedorder />
-        <Text style={[styles.tabText, activeTab === 'manual' && styles.activeTabText]}>
+        <AppText style={[styles.tabText, activeTab === 'manual' && styles.activeTabText]}>
           Manual Order
-        </Text>
+        </AppText>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -250,9 +251,9 @@ const Cart = () => {
           size={18}
           color={activeTab === 'upload' ? '#FF6B00' : '#999'}
         />
-        <Text style={[styles.tabText, activeTab === 'upload' && styles.activeTabText]}>
+        <AppText style={[styles.tabText, activeTab === 'upload' && styles.activeTabText]}>
           Upload Order
-        </Text>
+        </AppText>
       </TouchableOpacity>
     </View>
   );
@@ -260,42 +261,42 @@ const Cart = () => {
   const ProductCard = ({ product }) => (
     <View style={styles.productCard}>
       <View style={styles.productHeader}>
-        <Text style={styles.productName}>{product.productName}</Text>
-        <Text style={styles.orderValue}>Order Value</Text>
+        <AppText style={styles.productName}>{product.productName}</AppText>
+        <AppText style={styles.orderValue}>Order Value</AppText>
       </View>
       <View style={styles.productSubHeader}>
-        <Text style={styles.skuText}>{product.sku} | {product?.rcDetails?.supplyModeId}</Text>
-        <Text style={styles.orderValueAmount}>{formatCurrency(product.orderAmount ?? 0)}</Text>
+        <AppText style={styles.skuText}>{product.sku} | {product?.rcDetails?.supplyModeId}</AppText>
+        <AppText style={styles.orderValueAmount}>{formatCurrency(product.orderAmount ?? 0)}</AppText>
       </View>
 
       <View style={styles.productDetails}>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Customer Product</Text>
-          <Text style={styles.detailLabel}>MOQ</Text>
+          <AppText style={styles.detailLabel}>Customer Product</AppText>
+          <AppText style={styles.detailLabel}>MOQ</AppText>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.detailValue}>{product.customerProduct ?? "-"}</Text>
-          <Text style={styles.detailValue}>{product?.rcDetails?.maxOrderQty ?? '-'}</Text>
+          <AppText style={styles.detailValue}>{product.customerProduct ?? "-"}</AppText>
+          <AppText style={styles.detailValue}>{product?.rcDetails?.maxOrderQty ?? '-'}</AppText>
         </View>
       </View>
 
       <View style={styles.productMetrics}>
         <View style={styles.metricsRow}>
           <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>PTH</Text>
-            <Text style={styles.metricValue}>{formatCurrency(product.pth ?? product.ptr ?? 0)}</Text>
+            <AppText style={styles.metricLabel}>PTH</AppText>
+            <AppText style={styles.metricValue}>{formatCurrency(product.pth ?? product.ptr ?? 0)}</AppText>
           </View>
           <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>Margin</Text>
-            <Text style={styles.metricValue}>{formatCurrency(product.margin ?? 0)}</Text>
+            <AppText style={styles.metricLabel}>Margin</AppText>
+            <AppText style={styles.metricValue}>{formatCurrency(product.margin ?? 0)}</AppText>
           </View>
           <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>Tax(GST)</Text>
-            <Text style={styles.metricValue}>₹ {product.taxGST ?? '-'}</Text>
+            <AppText style={styles.metricLabel}>Tax(GST)</AppText>
+            <AppText style={styles.metricValue}>₹ {product.taxGST ?? '-'}</AppText>
           </View>
           <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>Exausted /Max Qty</Text>
-            <Text style={[styles.metricValue, { textAlign: "right" }]}>{product?.rcDetails?.maxOrderQty ?? '-'}/{product?.rcDetails?.maxOrderQty ?? '-'}</Text>
+            <AppText style={styles.metricLabel}>Exausted /Max Qty</AppText>
+            <AppText style={[styles.metricValue, { textAlign: "right" }]}>{product?.rcDetails?.maxOrderQty ?? '-'}/{product?.rcDetails?.maxOrderQty ?? '-'}</AppText>
           </View>
         </View>
       </View>
@@ -307,7 +308,7 @@ const Cart = () => {
           <View style={{ display: "flex", flexDirection: "column" }}>
             <TouchableOpacity >
               <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 }}>
-                <Text style={{ color: "#F7941E", fontWeight: 700, fontSize: 14 }}>Find Product</Text>
+                <AppText style={{ color: "#F7941E", fontWeight: 700, fontSize: 14 }}>Find Product</AppText>
                 <Svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <Path fillRule="evenodd" clipRule="evenodd" d="M5.83333 11.6667C9.05508 11.6667 11.6667 9.05508 11.6667 5.83333C11.6667 2.61158 9.05508 0 5.83333 0C2.61158 0 0 2.61158 0 5.83333C0 9.05508 2.61158 11.6667 5.83333 11.6667ZM6.1075 3.77417C6.18953 3.69224 6.30073 3.64622 6.41667 3.64622C6.5326 3.64622 6.6438 3.69224 6.72583 3.77417L8.47583 5.52417C8.55776 5.6062 8.60378 5.7174 8.60378 5.83333C8.60378 5.94927 8.55776 6.06047 8.47583 6.1425L6.72583 7.8925C6.68578 7.93548 6.63748 7.96996 6.58381 7.99387C6.53015 8.01778 6.47221 8.03064 6.41347 8.03168C6.35473 8.03271 6.29638 8.02191 6.2419 7.9999C6.18742 7.9779 6.13794 7.94515 6.09639 7.9036C6.05485 7.86206 6.0221 7.81257 6.00009 7.7581C5.97809 7.70362 5.96728 7.64527 5.96832 7.58653C5.96936 7.52779 5.98222 7.46985 6.00613 7.41619C6.03004 7.36252 6.06452 7.31422 6.1075 7.27417L7.11083 6.27083H3.5C3.38397 6.27083 3.27269 6.22474 3.19064 6.14269C3.10859 6.06065 3.0625 5.94937 3.0625 5.83333C3.0625 5.7173 3.10859 5.60602 3.19064 5.52397C3.27269 5.44193 3.38397 5.39583 3.5 5.39583H7.11083L6.1075 4.3925C6.02557 4.31047 5.97955 4.19927 5.97955 4.08333C5.97955 3.9674 6.02557 3.8562 6.1075 3.77417Z" fill="#F7941E" />
                 </Svg>
@@ -315,7 +316,7 @@ const Cart = () => {
             </TouchableOpacity>
             <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
               <UnMapped />
-              <Text style={{ color: "#E85B49", fontSize: 10, fontWeight: 700 }}>Mapping Required</Text>
+              <AppText style={{ color: "#E85B49", fontSize: 10, fontWeight: 700 }}>Mapping Required</AppText>
             </View>
           </View>
         ) : <View ></View>}
@@ -328,14 +329,14 @@ const Cart = () => {
             >
               <Icon name="remove" size={20} color={colors.primary} />
             </TouchableOpacity>
-            <Text style={styles.quantityText}>
+            <AppText style={styles.quantityText}>
               {loadingProductId === product.id ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 product.qty
               )}
 
-            </Text>
+            </AppText>
             <TouchableOpacity
               style={styles.quantityButton}
               onPress={() => loadingProductId !== product.id ? handleQuantityChange(product, 'plus') : null}
@@ -367,7 +368,7 @@ const Cart = () => {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <IconMaterial name="chevron-left" size={30} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Your Cart</Text>
+        <AppText style={styles.headerTitle}>Your Cart</AppText>
         <View style={styles.headerRight} />
       </View>
 
@@ -394,21 +395,21 @@ const Cart = () => {
                 {/* Row for both boxes */}
                 <View style={styles.row}>
                   <TouchableOpacity style={styles.box} onPress={() => setShowCustomerselection(true)}>
-                    <Text style={styles.label}>Customer</Text>
+                    <AppText style={styles.label}>Customer</AppText>
                     <View style={styles.valueRow}>
-                      <Text style={styles.valueText} numberOfLines={1}>
+                      <AppText style={styles.valueText} numberOfLines={1}>
                         {selectedCustomer ? selectedCustomer.customerName : "All"}
-                      </Text>
+                      </AppText>
                       <Downarrow />
                     </View>
                   </TouchableOpacity>
 
                   <TouchableOpacity style={styles.box} onPress={() => setShowSelectdistributor(true)}>
-                    <Text style={styles.label}>Distributor</Text>
+                    <AppText style={styles.label}>Distributor</AppText>
                     <View style={styles.valueRow}>
-                      <Text style={styles.valueText} numberOfLines={1}>
+                      <AppText style={styles.valueText} numberOfLines={1}>
                         {selectedDistributor ? selectedDistributor.name : "All"}
-                      </Text>
+                      </AppText>
                       <Downarrow />
                     </View>
                   </TouchableOpacity>
@@ -430,11 +431,11 @@ const Cart = () => {
                     <View style={[styles.sectionIcon]}>
                       <VerticalText />
                     </View>
-                    <Text style={[styles.sectionTitle, { color: '#4481B4', textDecorationColor: "#4481B4", textDecorationStyle: "solid", textDecorationLine: "underline" }]}>SELECTA</Text>
+                    <AppText style={[styles.sectionTitle, { color: '#4481B4', textDecorationColor: "#4481B4", textDecorationStyle: "solid", textDecorationLine: "underline" }]}>SELECTA</AppText>
                   </View>
-                  <Text>|</Text>
+                  <AppText>|</AppText>
                   <View style={styles.sectionActions}>
-                    <Text style={styles.skuCount}>SKU's</Text>
+                    <AppText style={styles.skuCount}>SKU's</AppText>
                     {/* <TouchableOpacity>
                       <IconFeather name="trash-2" size={18} color="#666" />
                     </TouchableOpacity> */}
@@ -451,10 +452,10 @@ const Cart = () => {
                     <View style={[styles.sectionIcon, { backgroundColor: '#E91E63' }]}>
                       <Icon name="currency-inr" size={16} color="#fff" />
                     </View>
-                    <Text style={[styles.sectionTitle, { color: '#E91E63' }]}>IN CNS</Text>
+                    <AppText style={[styles.sectionTitle, { color: '#E91E63' }]}>IN CNS</AppText>
                   </View>
                   <View style={styles.sectionActions}>
-                    <Text style={styles.skuCount}>SKU's</Text>
+                    <AppText style={styles.skuCount}>SKU's</AppText>
                     <TouchableOpacity>
                       <IconFeather name="trash-2" size={18} color="#666" />
                     </TouchableOpacity>
@@ -473,7 +474,7 @@ const Cart = () => {
             )}
             {activeTab === 'upload' && (
               <View style={{ height: 100, alignItems: "center", justifyContent: "center" }}>
-                <Text>There are no items in your upload cart.</Text>
+                <AppText>There are no items in your upload cart.</AppText>
               </View>
 
             )}
@@ -484,10 +485,10 @@ const Cart = () => {
                     <View style={[styles.sectionIcon, { backgroundColor: '#4CAF50' }]}>
                       <Divview />
                     </View>
-                    <Text style={[styles.sectionTitle, { color: '#4CAF50' }]}>SELECTA</Text>
+                    <AppText style={[styles.sectionTitle, { color: '#4CAF50' }]}>SELECTA</AppText>
                   </View>
                   <View style={styles.sectionActions}>
-                    <Text style={styles.skuCount}>SKU's</Text>
+                    <AppText style={styles.skuCount}>SKU's</AppText>
                     <TouchableOpacity>
                       <IconFeather name="trash-2" size={18} color="#666" />
                     </TouchableOpacity>
@@ -508,10 +509,10 @@ const Cart = () => {
                     <View style={[styles.sectionIcon, { backgroundColor: '#E91E63' }]}>
                       <Icon name="currency-inr" size={16} color="#fff" />
                     </View>
-                    <Text style={[styles.sectionTitle, { color: '#E91E63' }]}>IN CNS</Text>
+                    <AppText style={[styles.sectionTitle, { color: '#E91E63' }]}>IN CNS</AppText>
                   </View>
                   <View style={styles.sectionActions}>
-                    <Text style={styles.skuCount}>SKU's</Text>
+                    <AppText style={styles.skuCount}>SKU's</AppText>
                     <TouchableOpacity>
                       <IconFeather name="trash-2" size={18} color="#666" />
                     </TouchableOpacity>
@@ -563,7 +564,7 @@ const Cart = () => {
 
       {/* Checkout Button */}
       <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
-        <Text style={styles.checkoutButtonText}>Checkout</Text>
+        <AppText style={styles.checkoutButtonText}>Checkout</AppText>
       </TouchableOpacity>
     </SafeAreaView>
   );

@@ -22,6 +22,7 @@ import Upload from './icons/Upload';
 import CloseCircle from './icons/CloseCircle';
 import EyeOpen from './icons/EyeOpen';
 import apiClient, { BASE_URL } from '../api/apiClient';
+import AppText from "./AppText"
 
 const { width } = Dimensions.get('window');
 
@@ -373,9 +374,9 @@ const FileUploadComponent = ({
         <View style={styles.modalOverlay}>
           <View style={styles.documentModalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+              <AppText style={styles.modalTitle}>
                 {file?.fileName || 'DOCUMENT'}
-              </Text>
+              </AppText>
               <TouchableOpacity onPress={closeModal}>
                 <CloseCircle />
               </TouchableOpacity>
@@ -395,7 +396,7 @@ const FileUploadComponent = ({
               ) : signedUrl ? (
                 <View style={styles.dummyDocument}>
                   <Icon name="document-text" size={100} color="#999" />
-                  <Text style={styles.documentName}>{file?.fileName}</Text>
+                  <AppText style={styles.documentName}>{file?.fileName}</AppText>
                   <TouchableOpacity
                     style={styles.downloadButton}
                     onPress={() => {
@@ -406,7 +407,7 @@ const FileUploadComponent = ({
                     }}
                   >
                     <Icon name="download-outline" size={20} color="#fff" />
-                    <Text style={styles.downloadButtonText}>Download</Text>
+                    <AppText style={styles.downloadButtonText}>Download</AppText>
                   </TouchableOpacity>
                 </View>
               ) : null}
@@ -433,18 +434,18 @@ const FileUploadComponent = ({
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={colors.primary} />
-            <Text style={styles.loadingText}>
+            <AppText style={styles.loadingText}>
               {file ? 'Processing...' : 'Uploading...'}
-            </Text>
+            </AppText>
           </View>
         ) : (
           <>
             {file ? (
               // File Selected State
               <View style={styles.fileSelectedContainer}>
-                <Text style={styles.fileName} numberOfLines={1}>
+                <AppText style={styles.fileName} numberOfLines={1}>
                   {file.fileName}
-                </Text>
+                </AppText>
                 <View style={styles.fileActions}>
                   {showPreview && (
                     <TouchableOpacity
@@ -470,7 +471,7 @@ const FileUploadComponent = ({
                 activeOpacity={0.7}
                 disabled={disabled}
               >
-                <Text style={styles.placeholderText}>{placeholder}</Text>
+                <AppText style={styles.placeholderText}>{placeholder}</AppText>
                 <Upload color={colors.primary} />
               </TouchableOpacity>
             )}

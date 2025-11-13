@@ -35,6 +35,7 @@ import CloseCircle from '../../../components/icons/CloseCircle';
 import { customerAPI } from '../../../api/customer';
 import AddNewPharmacyModal from './AddNewPharmacyModal';
 import AddNewHospitalModal from './AddNewHospitalModal';
+import AppText from "../../../components/AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -974,7 +975,7 @@ const PrivateRegistrationForm = () => {
           },
         ]}
       >
-        <Text style={styles.otpTitle}>Enter 4-digit OTP</Text>
+        <AppText style={styles.otpTitle}>Enter 4-digit OTP</AppText>
         <View style={styles.otpInputContainer}>
           {[0, 1, 2, 3].map(index => (
             <TextInput
@@ -989,13 +990,13 @@ const PrivateRegistrationForm = () => {
           ))}
         </View>
         <View style={styles.otpFooter}>
-          <Text style={styles.otpTimer}>
+          <AppText style={styles.otpTimer}>
             {otpTimers[field] > 0 ? `Resend OTP in ${otpTimers[field]}s` : (
               <TouchableOpacity onPress={() => handleResendOTP(field)}>
-                <Text style={styles.resendText}>Resend OTP</Text>
+                <AppText style={styles.resendText}>Resend OTP</AppText>
               </TouchableOpacity>
             )}
-          </Text>
+          </AppText>
         </View>
       </Animated.View>
     );
@@ -1017,7 +1018,7 @@ const PrivateRegistrationForm = () => {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{title}</Text>
+              <AppText style={styles.modalTitle}>{title}</AppText>
               <TouchableOpacity onPress={onClose}>
                 <Icon name="close" size={24} color="#666" />
               </TouchableOpacity>
@@ -1040,12 +1041,12 @@ const PrivateRegistrationForm = () => {
                       onClose();
                     }}
                   >
-                    <Text style={[
+                    <AppText style={[
                       styles.modalItemText,
                       selectedId == item.id && styles.modalItemTextSelected
                     ]}>
                       {item.name || item.stateName || item.cityName}
-                    </Text>
+                    </AppText>
                     {selectedId == item.id && (
                       <Icon name="check" size={20} color={colors.primary} />
                     )}
@@ -1066,7 +1067,7 @@ const PrivateRegistrationForm = () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading customer details...</Text>
+          <AppText style={styles.loadingText}>Loading customer details...</AppText>
         </View>
       </SafeAreaView>
     );
@@ -1084,26 +1085,26 @@ const PrivateRegistrationForm = () => {
         >          
           <ChevronLeft />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEditMode ? 'Edit Registration' : 'Registration'}</Text>
+        <AppText style={styles.headerTitle}>{isEditMode ? 'Edit Registration' : 'Registration'}</AppText>
       </View>
 
       <View style={styles.typeHeader}>
         <View style={styles.typeTag}>
-          <Text style={styles.typeTagText}>
+          <AppText style={styles.typeTagText}>
             {isEditMode ? originalTypeData.typeName : (typeName || 'Hospital')}
-          </Text>
+          </AppText>
         </View>        
         <ChevronRight height={10} />
         <View style={styles.typeTag}>
-          <Text style={styles.typeTagText}>
+          <AppText style={styles.typeTagText}>
             {isEditMode ? originalTypeData.categoryName : (categoryName || 'Private')}
-          </Text>
+          </AppText>
         </View>
         <ChevronRight height={10} />
         <View style={[styles.typeTag, styles.typeTagActive]}>
-          <Text style={[styles.typeTagText, styles.typeTagTextActive]}>
+          <AppText style={[styles.typeTagText, styles.typeTagTextActive]}>
             {isEditMode ? originalTypeData.subCategoryName : subCategoryName}
-          </Text>
+          </AppText>
         </View>
       </View>
 
@@ -1128,7 +1129,7 @@ const PrivateRegistrationForm = () => {
           >
             {/* License Details Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>License Details*</Text>
+              <AppText style={styles.sectionTitle}>License Details*</AppText>
               
               {/* Registration Certificate Upload */}
               <FileUploadComponent
@@ -1160,13 +1161,13 @@ const PrivateRegistrationForm = () => {
                 onPress={() => setShowDatePicker(true)}
                 activeOpacity={0.7}
               >
-                <Text style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
+                <AppText style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
                   {formData.registrationDate || 'Registration Date'}
-                </Text>        
+                </AppText>        
                 <Calendar />
               </TouchableOpacity>
               {errors.registrationDate && (
-                <Text style={styles.errorText}>{errors.registrationDate}</Text>
+                <AppText style={styles.errorText}>{errors.registrationDate}</AppText>
               )}
 
               <FileUploadComponent
@@ -1197,7 +1198,7 @@ const PrivateRegistrationForm = () => {
 
             {/* General Details Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>General Details*</Text>
+              <AppText style={styles.sectionTitle}>General Details*</AppText>
               
               <CustomInput
                 placeholder="Hospital/Clinic Name"
@@ -1257,15 +1258,15 @@ const PrivateRegistrationForm = () => {
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <>
-                    <Text style={formData.state ? styles.inputText : styles.placeholderText}>
+                    <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
                       {formData.state || 'State'}
-                    </Text>
+                    </AppText>
                     <ArrowDown color='#999' />
                   </>
                 )}
               </TouchableOpacity>
               {errors.state && (
-                <Text style={styles.errorText}>{errors.state}</Text>
+                <AppText style={styles.errorText}>{errors.state}</AppText>
               )}
 
               {/* Area Dropdown */}
@@ -1274,9 +1275,9 @@ const PrivateRegistrationForm = () => {
                 onPress={() => setShowAreaModal(true)}
                 activeOpacity={0.7}
               >
-                <Text style={formData.area ? styles.inputText : styles.placeholderText}>
+                <AppText style={formData.area ? styles.inputText : styles.placeholderText}>
                   {formData.area || 'Area'}
-                </Text>        
+                </AppText>        
                 <ArrowDown color='#999' />
               </TouchableOpacity>              
 
@@ -1301,28 +1302,28 @@ const PrivateRegistrationForm = () => {
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <>
-                    <Text style={[
+                    <AppText style={[
                       formData.city ? styles.inputText : styles.placeholderText,
                       !formData.stateId && styles.disabledText
                     ]}>
                       {formData.city || (formData.stateId ? 'City' : 'Select state first')}
-                    </Text>
+                    </AppText>
                     <ArrowDown color={formData.stateId ? '#999' : '#DDD'} />
                   </>
                 )}
               </TouchableOpacity>
               {errors.city && (
-                <Text style={styles.errorText}>{errors.city}</Text>
+                <AppText style={styles.errorText}>{errors.city}</AppText>
               )}
             </View>
 
             {/* Security Details Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Security Details*</Text>
+              <AppText style={styles.sectionTitle}>Security Details*</AppText>
               
               {/* Mobile Number with Verify */}
               <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-                <Text style={styles.countryCode}>+91</Text>
+                <AppText style={styles.countryCode}>+91</AppText>
                 <TextInput
                   style={styles.inputField}
                   placeholder="Mobile Number"
@@ -1341,19 +1342,19 @@ const PrivateRegistrationForm = () => {
                   onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
                   disabled={verificationStatus.mobile}
                 >
-                  <Text style={[
+                  <AppText style={[
                     styles.inlineVerifyText,
                     verificationStatus.mobile && styles.verifiedText
                   ]}>
                     {verificationStatus.mobile ? 'Verified' : 'Verify'}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               </View>
               {errors.mobileNumber && (
-                <Text style={styles.errorText}>{errors.mobileNumber}</Text>
+                <AppText style={styles.errorText}>{errors.mobileNumber}</AppText>
               )}
               {errors.mobileVerification && (
-                <Text style={styles.errorText}>{errors.mobileVerification}</Text>
+                <AppText style={styles.errorText}>{errors.mobileVerification}</AppText>
               )}
               {renderOTPInput('mobile')}
 
@@ -1377,19 +1378,19 @@ const PrivateRegistrationForm = () => {
                   onPress={() => !verificationStatus.email && handleVerify('email')}
                   disabled={verificationStatus.email}
                 >
-                  <Text style={[
+                  <AppText style={[
                     styles.inlineVerifyText,
                     verificationStatus.email && styles.verifiedText
                   ]}>
                     {verificationStatus.email ? 'Verified' : 'Verify'}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               </View>
               {errors.emailAddress && (
-                <Text style={styles.errorText}>{errors.emailAddress}</Text>
+                <AppText style={styles.errorText}>{errors.emailAddress}</AppText>
               )}
               {errors.emailVerification && (
-                <Text style={styles.errorText}>{errors.emailVerification}</Text>
+                <AppText style={styles.errorText}>{errors.emailVerification}</AppText>
               )}
               {renderOTPInput('email')}
 
@@ -1430,11 +1431,11 @@ const PrivateRegistrationForm = () => {
                     });
                   }}
                 >
-                  <Text style={styles.inlineVerifyText}>Verify</Text>
+                  <AppText style={styles.inlineVerifyText}>Verify</AppText>
                 </TouchableOpacity>
               </View>
               {errors.panNumber && (
-                <Text style={styles.errorText}>{errors.panNumber}</Text>
+                <AppText style={styles.errorText}>{errors.panNumber}</AppText>
               )}
 
               {/* Fetch GST from PAN Link */}
@@ -1450,7 +1451,7 @@ const PrivateRegistrationForm = () => {
                   // and populate the GST dropdown options
                 }}
               >
-                <Text style={styles.linkText}>Fetch GST from PAN</Text>
+                <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
               </TouchableOpacity>
 
               {/* GST Upload */}
@@ -1474,9 +1475,9 @@ const PrivateRegistrationForm = () => {
                 onPress={() => Alert.alert('GST Number', 'Select from GST numbers fetched from PAN')}
                 activeOpacity={0.7}
               >
-                <Text style={formData.gstNumber ? styles.inputText : styles.placeholderText}>
+                <AppText style={formData.gstNumber ? styles.inputText : styles.placeholderText}>
                   {formData.gstNumber || 'GST Number'}
-                </Text>
+                </AppText>
                 <ArrowDown color='#999' />
               </TouchableOpacity> */}
 
@@ -1490,10 +1491,10 @@ const PrivateRegistrationForm = () => {
 
             {/* Mapping Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Mapping</Text>
+              <AppText style={styles.sectionTitle}>Mapping</AppText>
               
               <View style={styles.switchContainer}>
-                <Text style={styles.switchLabel}>Mark as buying entity</Text>
+                <AppText style={styles.switchLabel}>Mark as buying entity</AppText>
                 <TouchableOpacity
                   style={[
                     styles.switch,
@@ -1514,7 +1515,7 @@ const PrivateRegistrationForm = () => {
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.sectionLabel}>Select category <Text style={styles.optional}>(Optional)</Text></Text>
+              <AppText style={styles.sectionLabel}>Select category <AppText style={styles.optional}>(Optional)</AppText></AppText>
               
               <View style={styles.categoryOptions}>
                 <TouchableOpacity
@@ -1536,10 +1537,10 @@ const PrivateRegistrationForm = () => {
                     formData.selectedCategory.groupCorporateHospital && styles.checkboxSelected
                   ]}>
                     {formData.selectedCategory.groupCorporateHospital && (
-                      <Text style={styles.checkboxTick}>✓</Text>
+                      <AppText style={styles.checkboxTick}>✓</AppText>
                     )}
                   </View>
-                  <Text style={styles.checkboxLabel}>Group Corporate Hospital</Text>
+                  <AppText style={styles.checkboxLabel}>Group Corporate Hospital</AppText>
                 </TouchableOpacity>
 
                  {/* Group Hospital Selector - Show when Group Corporate Hospital is selected */}
@@ -1562,7 +1563,7 @@ const PrivateRegistrationForm = () => {
                       <View style={styles.selectedItemsContainer}>
                         {formData.selectedHospitals.map((hospital, index) => (
                           <View key={hospital.id} style={styles.selectedItemTag}>
-                            <Text style={styles.selectedItemTagText}>{hospital.name}</Text>
+                            <AppText style={styles.selectedItemTagText}>{hospital.name}</AppText>
                             <TouchableOpacity
                               onPress={(e) => {
                                 e.stopPropagation();
@@ -1573,14 +1574,14 @@ const PrivateRegistrationForm = () => {
                               }}
                               style={styles.removeTagButton}
                             >
-                              <Text style={styles.removeTagText}>×</Text>
+                              <AppText style={styles.removeTagText}>×</AppText>
                             </TouchableOpacity>
                           </View>
                         ))}
                       </View>
                     ) : (
                       <>
-                        <Text style={styles.selectorPlaceholder}>Search hospital name/code</Text>                
+                        <AppText style={styles.selectorPlaceholder}>Search hospital name/code</AppText>                
                         <Search />
                       </>
                     )}
@@ -1590,7 +1591,7 @@ const PrivateRegistrationForm = () => {
                     style={styles.addNewLink}
                     onPress={() => setShowHospitalModal(true)}
                   >            
-                    <Text style={styles.addNewLinkText}>+ Add New Group Hospital</Text>
+                    <AppText style={styles.addNewLinkText}>+ Add New Group Hospital</AppText>
                   </TouchableOpacity>
                 </>
               )}
@@ -1614,10 +1615,10 @@ const PrivateRegistrationForm = () => {
                     formData.selectedCategory.pharmacy && styles.checkboxSelected
                   ]}>
                     {formData.selectedCategory.pharmacy && (
-                      <Text style={styles.checkboxTick}>✓</Text>
+                      <AppText style={styles.checkboxTick}>✓</AppText>
                     )}
                   </View>
-                  <Text style={styles.checkboxLabel}>Pharmacy</Text>
+                  <AppText style={styles.checkboxLabel}>Pharmacy</AppText>
                 </TouchableOpacity>
               </View>
 
@@ -1638,7 +1639,7 @@ const PrivateRegistrationForm = () => {
                     }}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.selectorPlaceholder}>Search pharmacy name/code</Text>
+                    <AppText style={styles.selectorPlaceholder}>Search pharmacy name/code</AppText>
                     <Search />
                   </TouchableOpacity>
                   
@@ -1646,8 +1647,8 @@ const PrivateRegistrationForm = () => {
                   {formData.selectedPharmacies.map((pharmacy) => (
                     <View key={pharmacy.id} style={styles.selectedPharmacyItem}>
                       <View style={styles.pharmacyInfo}>
-                        <Text style={styles.pharmacyName}>{pharmacy.name}</Text>
-                        <Text style={styles.pharmacyCode}>{pharmacy.code}</Text>
+                        <AppText style={styles.pharmacyName}>{pharmacy.name}</AppText>
+                        <AppText style={styles.pharmacyCode}>{pharmacy.code}</AppText>
                       </View>
                       <TouchableOpacity
                         onPress={() => {
@@ -1666,14 +1667,14 @@ const PrivateRegistrationForm = () => {
                     style={styles.addNewLink}
                     onPress={() => setShowPharmacyModal(true)}
                   >
-                    <Text style={styles.addNewLinkText}>+ Add New Pharmacy</Text>
+                    <AppText style={styles.addNewLinkText}>+ Add New Pharmacy</AppText>
                   </TouchableOpacity>
                 </>
               )}
 
               <View style={styles.divider} />
 
-              <Text style={styles.sectionLabel}>Customer group</Text>
+              <AppText style={styles.sectionLabel}>Customer group</AppText>
               
               <View style={styles.customerGroupContainer}>
                 {customerGroups.length > 0 ? (
@@ -1687,12 +1688,12 @@ const PrivateRegistrationForm = () => {
                       onPress={() => setFormData(prev => ({ ...prev, customerGroup: group.customerGroupName }))}
                       activeOpacity={0.7}
                     >
-                      <Text style={[
+                      <AppText style={[
                         styles.customerGroupButtonText,
                         formData.customerGroup === group.customerGroupName && styles.customerGroupButtonTextActive,
                       ]}>
                         {group.customerGroupName}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                   ))
                 ) : (
@@ -1707,18 +1708,18 @@ const PrivateRegistrationForm = () => {
                       onPress={() => setFormData(prev => ({ ...prev, customerGroup: group }))}
                       activeOpacity={0.7}
                     >
-                      <Text style={[
+                      <AppText style={[
                         styles.customerGroupButtonText,
                         formData.customerGroup === group && styles.customerGroupButtonTextActive,
                       ]}>
                         {group}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                   ))
                 )}
               </View>
 
-              <Text style={styles.sectionLabel}>Stockist Suggestions <Text style={styles.optional}>(Optional)</Text></Text>
+              <AppText style={styles.sectionLabel}>Stockist Suggestions <AppText style={styles.optional}>(Optional)</AppText></AppText>
               
               <CustomInput
                 placeholder="Name of the Stockist"
@@ -1743,7 +1744,7 @@ const PrivateRegistrationForm = () => {
                 onPress={() => Alert.alert('Add Stockist', 'Stockist addition will be available soon')}
                 activeOpacity={0.7}
               >        
-                <Text style={styles.addStockistButtonText}>+ Add New Stockist</Text>
+                <AppText style={styles.addStockistButtonText}>+ Add New Stockist</AppText>
               </TouchableOpacity>
             </View>
 
@@ -1755,7 +1756,7 @@ const PrivateRegistrationForm = () => {
                 disabled={loading}
                 activeOpacity={0.8}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <AppText style={styles.cancelButtonText}>Cancel</AppText>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -1767,9 +1768,9 @@ const PrivateRegistrationForm = () => {
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.registerButtonText}>
+                  <AppText style={styles.registerButtonText}>
                     {isEditMode ? 'Update' : 'Register'}
-                  </Text>
+                  </AppText>
                 )}
               </TouchableOpacity>
             </View>
@@ -1853,9 +1854,9 @@ const PrivateRegistrationForm = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalIconContainer}>
-              <Text style={styles.modalIcon}>!</Text>
+              <AppText style={styles.modalIcon}>!</AppText>
             </View>
-            <Text style={styles.modalTitle}>Are you sure you want to Cancel the {isEditMode ? 'Editing' : 'Onboarding'}?</Text>
+            <AppText style={styles.modalTitle}>Are you sure you want to Cancel the {isEditMode ? 'Editing' : 'Onboarding'}?</AppText>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={styles.modalYesButton}
@@ -1864,13 +1865,13 @@ const PrivateRegistrationForm = () => {
                   navigation.goBack();
                 }}
               >
-                <Text style={styles.modalYesButtonText}>Yes</Text>
+                <AppText style={styles.modalYesButtonText}>Yes</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalNoButton}
                 onPress={() => setShowCancelModal(false)}
               >
-                <Text style={styles.modalNoButtonText}>No</Text>
+                <AppText style={styles.modalNoButtonText}>No</AppText>
               </TouchableOpacity>
             </View>
           </View>

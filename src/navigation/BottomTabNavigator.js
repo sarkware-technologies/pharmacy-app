@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import OrdersStack from '../navigation/OrdersStack';
 import { colors } from '../styles/colors';
+import AppText from "../components/AppText"
 
 import Home from '../components/icons/menu/Home';
 import Customer from '../components/icons/menu/Customer';
@@ -40,15 +41,15 @@ import MoreMenu from "../components/MoreMenu"
 // Placeholder screens for other tabs
 const HomeScreen = () => (
   <View style={styles.placeholder}>
-    <Text style={styles.placeholderText}>Home Screen</Text>
-    <Text style={styles.placeholderSubtext}>Coming Soon</Text>
+    <AppText style={styles.placeholderText}>Home Screen</AppText>
+    <AppText style={styles.placeholderSubtext}>Coming Soon</AppText>
   </View>
 );
 
 const OrdersScreen = () => (
   <View style={styles.placeholder}>
-    <Text style={styles.placeholderText}>Orders Screen</Text>
-    <Text style={styles.placeholderSubtext}>Coming Soon</Text>
+    <AppText style={styles.placeholderText}>Orders Screen</AppText>
+    <AppText style={styles.placeholderSubtext}>Coming Soon</AppText>
   </View>
 );
 
@@ -198,7 +199,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                   <View style={{ borderBottomColor: "#F7941E", borderBottomWidth: 4, width: "100%", position: "absolute", top: 0, borderBottomLeftRadius: 10, borderBottomRightRadius: 10 }}></View>
                 )}
                 {iconName}
-                <Text
+                <AppText
                   style={[
                     styles.tabLabel,
                     { color: isFocused ? colors.primary : '#999' },
@@ -206,7 +207,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                   ]}
                 >
                   {label}
-                </Text>
+                </AppText>
               </TouchableOpacity>
             );
           })}

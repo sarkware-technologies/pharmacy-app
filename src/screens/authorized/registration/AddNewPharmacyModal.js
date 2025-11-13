@@ -15,6 +15,7 @@ import { colors } from '../../../styles/colors';
 import Toast from 'react-native-toast-message';
 import { customerAPI } from '../../../api/customer';
 import FileUploadComponent from '../../../components/FileUploadComponent';
+import AppText from "../../../components/AppText"
 
 const DOC_TYPES = {
   LICENSE_20B: 4,
@@ -231,14 +232,14 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
       <SafeAreaView style={styles.modalContainer}>
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Pharmacy Account</Text>
+            <AppText style={styles.modalTitle}>Add Pharmacy Account</AppText>
             <TouchableOpacity onPress={handleClose}>
-              <Text style={styles.modalCloseButton}>✕</Text>
+              <AppText style={styles.modalCloseButton}>✕</AppText>
             </TouchableOpacity>
           </View>
 
           {/* License Details - 20B */}
-          <Text style={styles.modalSectionLabel}>Licence Details <Text style={styles.mandatory}>*</Text></Text>
+          <AppText style={styles.modalSectionLabel}>Licence Details <AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
             placeholder="Upload 20B license"
             accept={['pdf', 'jpg', 'png']}
@@ -257,7 +258,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, license20b: text }))}
           />
           <TouchableOpacity style={[styles.modalInput, { marginBottom: 10 }]}>
-            <Text style={styles.dropdownPlaceholder}>Expiry date</Text>
+            <AppText style={styles.dropdownPlaceholder}>Expiry date</AppText>
           </TouchableOpacity>
 
           {/* License Details - 21B */}
@@ -279,7 +280,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, license21b: text }))}
           />
           <TouchableOpacity style={[styles.modalInput, { marginBottom: 10 }]}>
-            <Text style={styles.dropdownPlaceholder}>Expiry date</Text>
+            <AppText style={styles.dropdownPlaceholder}>Expiry date</AppText>
           </TouchableOpacity>
 
           {/* Pharmacy Image */}
@@ -295,7 +296,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
           />
 
           {/* General Details */}
-          <Text style={styles.modalSectionLabel}>General Details <Text style={styles.mandatory}>*</Text></Text>
+          <AppText style={styles.modalSectionLabel}>General Details <AppText style={styles.mandatory}>*</AppText></AppText>
           <TextInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Name of the Pharmacy"
@@ -358,9 +359,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             style={[styles.dropdownInput, { marginBottom: 10 }]}
             onPress={() => setShowStateDropdown(!showStateDropdown)}
           >
-            <Text style={styles.dropdownPlaceholder}>
+            <AppText style={styles.dropdownPlaceholder}>
               {pharmacyForm.state || 'State *'}
-            </Text>
+            </AppText>
           </TouchableOpacity>
           {showStateDropdown && (
             <View style={styles.dropdown}>
@@ -383,7 +384,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
                       loadCities(state.id);
                     }}
                   >
-                    <Text style={styles.dropdownText}>{state.name}</Text>
+                    <AppText style={styles.dropdownText}>{state.name}</AppText>
                   </TouchableOpacity>
                 ))
               )}
@@ -395,9 +396,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             style={[styles.dropdownInput, { marginBottom: 10 }]}
             onPress={() => setShowCityDropdown(!showCityDropdown)}
           >
-            <Text style={styles.dropdownPlaceholder}>
+            <AppText style={styles.dropdownPlaceholder}>
               {pharmacyForm.city || 'City *'}
-            </Text>
+            </AppText>
           </TouchableOpacity>
           {showCityDropdown && (
             <View style={styles.dropdown}>
@@ -417,7 +418,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
                       setShowCityDropdown(false);
                     }}
                   >
-                    <Text style={styles.dropdownText}>{city.name}</Text>
+                    <AppText style={styles.dropdownText}>{city.name}</AppText>
                   </TouchableOpacity>
                 ))
               )}
@@ -425,12 +426,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
           )}
 
           <TouchableOpacity style={[styles.dropdownInput, { marginBottom: 10 }]}>
-            <Text style={styles.dropdownPlaceholder}>Area</Text>
+            <AppText style={styles.dropdownPlaceholder}>Area</AppText>
           </TouchableOpacity>
 
           {/* Security Details */}
-          <Text style={styles.modalSectionLabel}>Security Details <Text style={styles.mandatory}>*</Text></Text>
-          <Text style={styles.modalFieldLabel}>Mobile number <Text style={styles.mandatory}>*</Text></Text>
+          <AppText style={styles.modalSectionLabel}>Security Details <AppText style={styles.mandatory}>*</AppText></AppText>
+          <AppText style={styles.modalFieldLabel}>Mobile number <AppText style={styles.mandatory}>*</AppText></AppText>
           <View style={styles.fileUploadRow}>
             <TextInput
               style={styles.modalInput}
@@ -441,12 +442,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
               onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, mobileNumber: text }))}
             />
             <TouchableOpacity style={[styles.verifyButton, { marginBottom: 0 }]}>
-              <Text style={styles.verifyButtonText}>🔒</Text>
+              <AppText style={styles.verifyButtonText}>🔒</AppText>
             </TouchableOpacity>
           </View>
-          <Text style={styles.otpNote}>Auto verified after OTP</Text>
+          <AppText style={styles.otpNote}>Auto verified after OTP</AppText>
 
-          <Text style={styles.modalFieldLabel}>Email address <Text style={styles.mandatory}>*</Text></Text>
+          <AppText style={styles.modalFieldLabel}>Email address <AppText style={styles.mandatory}>*</AppText></AppText>
           <View style={styles.fileUploadRow}>
             <TextInput
               style={styles.modalInput}
@@ -457,10 +458,10 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
               onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, emailAddress: text }))}
             />
             <TouchableOpacity style={[styles.verifyButton, { marginBottom: 0 }]}>
-              <Text style={styles.verifyButtonText}>🔒</Text>
+              <AppText style={styles.verifyButtonText}>🔒</AppText>
             </TouchableOpacity>
           </View>
-          <Text style={styles.otpNote}>Auto verified after OTP</Text>
+          <AppText style={styles.otpNote}>Auto verified after OTP</AppText>
 
           {/* PAN */}
           <FileUploadComponent
@@ -510,14 +511,14 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.submitButtonText}>Submit</Text>
+                <AppText style={styles.submitButtonText}>Submit</AppText>
               )}
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.cancelButton}
               onPress={handleClose}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <AppText style={styles.cancelButtonText}>Cancel</AppText>
             </TouchableOpacity>
           </View>
         </ScrollView>

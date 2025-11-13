@@ -15,6 +15,7 @@ import {
 import { colors } from '../styles/colors';
 import { useSelector, useDispatch } from 'react-redux';
 import apiClient from '../api/apiClient';
+import AppText from "./AppText"
 
 import CloseCircle from './icons/CloseCircle';
 import Search from './icons/Search';
@@ -309,7 +310,7 @@ const FilterModal = ({ visible, onClose, onApply }) => {
           ]}
         >
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Filters</Text>
+            <AppText style={styles.modalTitle}>Filters</AppText>
             <TouchableOpacity onPress={handleClose}>
               <CloseCircle />
             </TouchableOpacity>
@@ -333,14 +334,14 @@ const FilterModal = ({ visible, onClose, onApply }) => {
                         setSearchQuery('');
                       }}
                     >
-                      <Text
+                      <AppText
                         style={[
                           styles.leftMenuText,
                           activeSection === section.id && styles.leftMenuTextActive,
                         ]}
                       >
                         {section.label} {count > 0 && `(${count})`}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                   );
                 })}
@@ -378,9 +379,9 @@ const FilterModal = ({ visible, onClose, onApply }) => {
                   keyboardShouldPersistTaps="handled"
                 >
                   {activeSection === 'city' && filters.state.length === 0 ? (
-                    <Text style={styles.noResults}>Please select a state first</Text>
+                    <AppText style={styles.noResults}>Please select a state first</AppText>
                   ) : filteredData.length === 0 ? (
-                    <Text style={styles.noResults}>No results found</Text>
+                    <AppText style={styles.noResults}>No results found</AppText>
                   ) : (
                     filteredData.map((item, index) => {
                       const isChecked = filters[activeSection].includes(item);
@@ -396,9 +397,9 @@ const FilterModal = ({ visible, onClose, onApply }) => {
                           <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
                             {isChecked && <FilterCheck width={12} height={12} color="#fff" />}
                           </View>
-                          <Text style={[styles.optionText, isChecked && styles.optionTextChecked]}>
+                          <AppText style={[styles.optionText, isChecked && styles.optionTextChecked]}>
                             {item}
-                          </Text>
+                          </AppText>
                         </TouchableOpacity>
                       );
                     })
@@ -411,10 +412,10 @@ const FilterModal = ({ visible, onClose, onApply }) => {
           {/* Footer Buttons */}
           <View style={styles.modalFooter}>
             <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
-              <Text style={styles.clearButtonText}>Clear</Text>
+              <AppText style={styles.clearButtonText}>Clear</AppText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
-              <Text style={styles.applyButtonText}>Apply</Text>
+              <AppText style={styles.applyButtonText}>Apply</AppText>
             </TouchableOpacity>
           </View>
         </Animated.View>

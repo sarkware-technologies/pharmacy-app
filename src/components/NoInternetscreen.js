@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import Svg, { Path, Circle, Line } from 'react-native-svg';
+import AppText from "./AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -73,14 +74,14 @@ export default function NoInternetScreen({ onRetry }) {
         </Svg>
 
         {/* Text Section */}
-        <Text style={styles.title}>No Internet Connection</Text>
-        <Text style={styles.subtitle}>
+        <AppText style={styles.title}>No Internet Connection</AppText>
+        <AppText style={styles.subtitle}>
           You’re currently offline. Please check your internet connection and try again.
-        </Text>
+        </AppText>
 
         {/* Retry Button */}
         <TouchableOpacity style={styles.button} onPress={onRetry}>
-          <Text style={styles.buttonText}>Retry</Text>
+          <AppText style={styles.buttonText}>Retry</AppText>
         </TouchableOpacity>
       </Animated.View>
     </View>

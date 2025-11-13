@@ -15,6 +15,7 @@ import { useDispatch } from 'react-redux';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../styles/colors';
 import { logout } from '../redux/slices/authSlice';
+import AppText from "./AppText"
 
 // Import your custom icons
 import CloseCircle from './icons/CloseCircle';
@@ -307,12 +308,12 @@ const SidebarDrawer = ({ navigation }) => {
                   return null
                 }
               })()}
-              <Text style={[
+              <AppText style={[
                 styles.submenuItemText,
                 activeItem === subItem.id && styles.activeSubmenuItemText,
               ]}>
                 {subItem.label}
-              </Text>
+              </AppText>
             </View>
           </TouchableOpacity>
         ))}
@@ -391,14 +392,14 @@ const SidebarDrawer = ({ navigation }) => {
                 return null
               }
             })()}
-            <Text style={[
+            <AppText style={[
               styles.menuItemText,
               isActive && styles.activeMenuItemText,
               isParentOfActive && styles.parentOfActiveMenuItemText,
               item.isLogout && styles.logoutText,
             ]}>
               {item.label}
-            </Text>
+            </AppText>
           </View>
           {hasSubmenu && (
             <Animated.View
@@ -468,10 +469,10 @@ const SidebarDrawer = ({ navigation }) => {
             </View>
           </Animated.View>
 
-          <Text style={styles.companyName}>Mahalxmi Distributors</Text>
+          <AppText style={styles.companyName}>Mahalxmi Distributors</AppText>
           <View style={styles.phoneContainer}>
             <Phone color='#fff' />
-            <Text style={styles.phoneText}>9080704010</Text>
+            <AppText style={styles.phoneText}>9080704010</AppText>
           </View>
         </View>
 

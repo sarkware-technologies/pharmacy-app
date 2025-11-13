@@ -13,6 +13,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import CloseCircle from '../icons/CloseCircle';
 import { colors } from '../../styles/colors';
 import Upload from '../icons/Upload';
+import AppText from "../AppText"
 
 const DocumentUploadModal = ({ visible, onClose, order }) => {
   const [claimForm, setClaimForm] = useState(null);
@@ -73,22 +74,22 @@ const DocumentUploadModal = ({ visible, onClose, order }) => {
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Document Upload</Text>
+            <AppText style={styles.headerTitle}>Document Upload</AppText>
             <TouchableOpacity onPress={onClose}>
               <CloseCircle />
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.estimatedTime}>
+          <AppText style={styles.estimatedTime}>
             Estimated time to Read the file with OCR | 02:15 Sec
-          </Text>
+          </AppText>
 
           <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
             <View style={styles.claimSection}>
-              <Text style={styles.claimId}>CLM12345</Text>
+              <AppText style={styles.claimId}>CLM12345</AppText>
               <TouchableOpacity style={styles.downloadTemplate}>
                 <Icon name="download" size={16} color="#FFA500" />
-                <Text style={styles.downloadText}>Download Template</Text>
+                <AppText style={styles.downloadText}>Download Template</AppText>
               </TouchableOpacity>
             </View>
 
@@ -96,32 +97,32 @@ const DocumentUploadModal = ({ visible, onClose, order }) => {
               style={styles.uploadBox}
               onPress={() => handleFilePick('claim')}
             >
-              <Text style={styles.uploadLabel}>Upload Claim form</Text>
+              <AppText style={styles.uploadLabel}>Upload Claim form</AppText>
               {claimForm && (
-                <Text style={styles.fileName} numberOfLines={1}>
+                <AppText style={styles.fileName} numberOfLines={1}>
                   {claimForm.name}
-                </Text>
+                </AppText>
               )}
               <Upload />
             </TouchableOpacity>
 
             <View style={styles.orderSection}>
               <TouchableOpacity style={styles.orderHeader}>
-                <Text style={styles.orderId}>{order?.id || 'ORDR_777'}</Text>
+                <AppText style={styles.orderId}>{order?.id || 'ORDR_777'}</AppText>
                 <Icon name="keyboard-arrow-up" size={24} color="#666" />
               </TouchableOpacity>
 
-              <Text style={styles.fileFormatText}>
+              <AppText style={styles.fileFormatText}>
                 Please ensure that template file format is in excel PDF,Jpeg, Jpg and is within 25 mb.
-              </Text>
+              </AppText>
 
               <View style={styles.documentSection}>
-                <Text style={styles.sectionTitle}>Original Hospital Order</Text>
+                <AppText style={styles.sectionTitle}>Original Hospital Order</AppText>
                 <TouchableOpacity 
                   style={styles.uploadedFile}
                   onPress={() => handleFilePick('hospital')}
                 >
-                  <Text style={styles.placeholderText}>Orderhspfilen....csv</Text>
+                  <AppText style={styles.placeholderText}>Orderhspfilen....csv</AppText>
                   <View style={styles.fileActions}>
                     <Icon name="visibility" size={20} color="#FFA500" />
                     <Icon name="download" size={20} color="#666" style={styles.actionIcon} />
@@ -130,25 +131,25 @@ const DocumentUploadModal = ({ visible, onClose, order }) => {
               </View>
 
               <View style={styles.documentSection}>
-                <Text style={styles.sectionTitle}>Upload Proof Of Delivery</Text>
+                <AppText style={styles.sectionTitle}>Upload Proof Of Delivery</AppText>
                 
                 <View style={styles.subSection}>
-                  <Text style={styles.subTitle}>DT Generated Invoice</Text>
+                  <AppText style={styles.subTitle}>DT Generated Invoice</AppText>
                   <TouchableOpacity 
                     style={styles.uploadedFile}
                     onPress={() => handleFilePick('invoice')}
                   >
-                    <Text style={styles.placeholderText}>Invoicehspfilena.pdf</Text>
+                    <AppText style={styles.placeholderText}>Invoicehspfilena.pdf</AppText>
                     <View style={styles.fileActions}>
                       <Icon name="visibility" size={20} color="#FFA500" />
                       <Icon name="download" size={20} color="#666" style={styles.actionIcon} />
                     </View>
                   </TouchableOpacity>
-                  <Text style={styles.invoiceInfo}>INVC001 | 05/03/2025</Text>
+                  <AppText style={styles.invoiceInfo}>INVC001 | 05/03/2025</AppText>
                 </View>
 
                 <View style={styles.subSection}>
-                  <Text style={styles.subTitle}>Proof Of Delivery*</Text>
+                  <AppText style={styles.subTitle}>Proof Of Delivery*</AppText>
                   
                   {podDetails.map((pod, index) => (
                     <View key={index}>
@@ -156,7 +157,7 @@ const DocumentUploadModal = ({ visible, onClose, order }) => {
                         style={styles.podFile}
                         onPress={() => handleFilePick('pod')}
                       >
-                        <Text style={styles.podFileName}>PODFilename.jpeg</Text>
+                        <AppText style={styles.podFileName}>PODFilename.jpeg</AppText>
                         <View style={styles.fileActions}>
                           <Icon name="visibility" size={20} color="#FFA500" />
                           <TouchableOpacity onPress={() => removePOD(index)}>
@@ -168,7 +169,7 @@ const DocumentUploadModal = ({ visible, onClose, order }) => {
                       {proofOfDelivery[index] && (
                         <View style={styles.successMessage}>
                           <Icon name="check-circle" size={16} color="#4CAF50" />
-                          <Text style={styles.successText}>File successfully uploaded</Text>
+                          <AppText style={styles.successText}>File successfully uploaded</AppText>
                         </View>
                       )}
                       
@@ -190,7 +191,7 @@ const DocumentUploadModal = ({ visible, onClose, order }) => {
                   ))}
                   
                   <TouchableOpacity style={styles.addMore} onPress={addMorePOD}>
-                    <Text style={styles.addMoreText}>+Add More</Text>
+                    <AppText style={styles.addMoreText}>+Add More</AppText>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -199,10 +200,10 @@ const DocumentUploadModal = ({ visible, onClose, order }) => {
 
           <View style={styles.footer}>
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <AppText style={styles.cancelText}>Cancel</AppText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.uploadButton} onPress={handleUpload}>
-              <Text style={styles.uploadButtonText}>Upload</Text>
+              <AppText style={styles.uploadButtonText}>Upload</AppText>
             </TouchableOpacity>
           </View>
         </View>

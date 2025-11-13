@@ -21,6 +21,7 @@ import Filter from '../../../components/icons/Filter';
 import Calendar from '../../../components/icons/Calendar';
 import Download from '../../../components/icons/Download';
 import AddrLine from '../../../components/icons/AddrLine';
+import AppText from "../../../components/AppText"
 
 const NetRateListing = () => {
 
@@ -60,23 +61,23 @@ const NetRateListing = () => {
         <View style={styles.invoiceHeader}>
           <View style={styles.invoiceIdContainer}>
             <View style={{flexDirection: 'row', alignItems: 'center'}}>
-              <Text style={styles.invoiceId}>{item.id}</Text>
+              <AppText style={styles.invoiceId}>{item.id}</AppText>
               <Icon name="chevron-right" size={24} color="#FFA500" />
             </View>
-            <Text style={styles.dateText}>Invoice Date: {item.invoiceDate}</Text>
+            <AppText style={styles.dateText}>Invoice Date: {item.invoiceDate}</AppText>
           </View>
           <View style={styles.amountContainer}>
-            <Text style={styles.podLabel}>POD: ₹ {item.podAmount?.toLocaleString('en-IN')}</Text>
+            <AppText style={styles.podLabel}>POD: ₹ {item.podAmount?.toLocaleString('en-IN')}</AppText>
             {item.dbtnNumber && (
-              <Text style={styles.dbtnText}>
+              <AppText style={styles.dbtnText}>
                 {item.dbtnNumber} ₹ {item.dbtnAmount?.toLocaleString('en-IN')}
-              </Text>
+              </AppText>
             )}
           </View>
         </View>
         
         <View style={styles.customerInfo}>
-          <Text style={styles.customerName}>{item.customerName}</Text>
+          <AppText style={styles.customerName}>{item.customerName}</AppText>
           {isDraft && (
             <TouchableOpacity>
               <Download />
@@ -87,44 +88,44 @@ const NetRateListing = () => {
         <View style={styles.detailsRow}>
           <View style={styles.codeContainer}>
             <AddrLine />
-            <Text style={styles.codeText}>{item.customerCode}</Text>
+            <AppText style={styles.codeText}>{item.customerCode}</AppText>
           </View>
-          <Text style={styles.separator}>|</Text>
-          <Text style={styles.typeText}>{item.customerType}</Text>
-          <Text style={styles.separator}>|</Text>
-          <Text style={styles.orderText}>
+          <AppText style={styles.separator}>|</AppText>
+          <AppText style={styles.typeText}>{item.customerType}</AppText>
+          <AppText style={styles.separator}>|</AppText>
+          <AppText style={styles.orderText}>
             {item.orderCode} ({item.orderDate})
-          </Text>
+          </AppText>
         </View>
         
-        <Text style={styles.shortSupplyText}>
+        <AppText style={styles.shortSupplyText}>
           Short Supply (SKU's) : {item.shortSupply}
-        </Text>
+        </AppText>
         
-        <Text style={styles.poText}>
+        <AppText style={styles.poText}>
           {item.poNumber} | POD submission number: {item.podSubmissionNumber}
-        </Text>
+        </AppText>
         
         <View style={styles.statusContainer}>
           {isDraft && (
             <>
               <View style={styles.draftBadge}>
-                <Text style={styles.draftText}>DRAFT</Text>
+                <AppText style={styles.draftText}>DRAFT</AppText>
               </View>
               <TouchableOpacity style={styles.uploadButton}>
                 <Icon name="cloud-upload" size={20} color="white" />
-                <Text style={styles.uploadText}>Upload Documents</Text>
+                <AppText style={styles.uploadText}>Upload Documents</AppText>
               </TouchableOpacity>
             </>
           )}
           {isProcessed && (
             <>
               <View style={styles.processedBadge}>
-                <Text style={styles.processedText}>PROCESSED</Text>
+                <AppText style={styles.processedText}>PROCESSED</AppText>
               </View>
               <TouchableOpacity style={styles.viewButton}>
                 <Icon name="visibility" size={20} color="#FFA500" />
-                <Text style={styles.viewText}>View</Text>
+                <AppText style={styles.viewText}>View</AppText>
               </TouchableOpacity>
             </>
           )}
@@ -154,9 +155,9 @@ const NetRateListing = () => {
                   style={[styles.toggleButton, spilType === 'SPIL' && styles.activeToggle]}
                   onPress={() => setSpilType('SPIL')}
                 >
-                  <Text style={[styles.toggleText, spilType === 'SPIL' && styles.activeToggleText]}>
+                  <AppText style={[styles.toggleText, spilType === 'SPIL' && styles.activeToggleText]}>
                     SPIL
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.middleToggle}
@@ -166,22 +167,22 @@ const NetRateListing = () => {
                     <View style={[styles.radio, overdueFilter === 'Overdue' && styles.radioSelected]}>
                       {overdueFilter === 'Overdue' && <View style={styles.radioInner} />}
                     </View>
-                    <Text style={styles.radioText}>Overdue</Text>
+                    <AppText style={styles.radioText}>Overdue</AppText>
                   </View>
                   <View style={styles.radioButton}>
                     <View style={[styles.radio, overdueFilter === 'Due' && styles.radioSelected]}>
                       {overdueFilter === 'Due' && <View style={styles.radioInner} />}
                     </View>
-                    <Text style={styles.radioText}>Due</Text>
+                    <AppText style={styles.radioText}>Due</AppText>
                   </View>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.toggleButton, styles.toggleButtonRight, spilType === 'SPLL' && styles.activeToggle]}
                   onPress={() => setSpilType('SPLL')}
                 >
-                  <Text style={[styles.toggleText, spilType === 'SPLL' && styles.activeToggleText]}>
+                  <AppText style={[styles.toggleText, spilType === 'SPLL' && styles.activeToggleText]}>
                     SPLL
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -198,7 +199,7 @@ const NetRateListing = () => {
       case 'Reassigned':
         return (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No {activeTab.toLowerCase()} available</Text>
+            <AppText style={styles.emptyText}>No {activeTab.toLowerCase()} available</AppText>
           </View>
         );
       default:
@@ -214,7 +215,7 @@ const NetRateListing = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Menu />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>NetRate</Text>
+        <AppText style={styles.headerTitle}>NetRate</AppText>
         <View style={styles.headerRight}>
           <TouchableOpacity>
             <Bell />
@@ -233,9 +234,9 @@ const NetRateListing = () => {
             style={[styles.tab, activeTab === tab && styles.activeTab]}
             onPress={() => setActiveTab(tab)}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+            <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
               {tab}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         ))}
       </ScrollView>

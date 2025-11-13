@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import AppText from "./AppText"
 
 const { width } = Dimensions.get('window');
 
@@ -46,14 +47,14 @@ export const ApproveConfirmModal = ({ visible, onClose, onConfirm, customerName 
                 {/* Alert Icon - Orange */}
                 <View style={styles.iconContainer}>
                   <View style={[styles.alertCircle, { backgroundColor: '#FF6B00' }]}>
-                    <Text style={styles.exclamationMark}>!</Text>
+                    <AppText style={styles.exclamationMark}>!</AppText>
                   </View>
                 </View>
 
                 {/* Title */}
-                <Text style={styles.modalTitle}>
+                <AppText style={styles.modalTitle}>
                   Are you sure you want to{'\n'}Approve {customerName}?
-                </Text>
+                </AppText>
 
                 {/* Comment Input */}
                 <View style={styles.inputContainer}>
@@ -66,7 +67,7 @@ export const ApproveConfirmModal = ({ visible, onClose, onConfirm, customerName 
                     multiline={true}
                     textAlignVertical="top"
                   />
-                  <Text style={styles.asterisk}>*</Text>
+                  <AppText style={styles.asterisk}>*</AppText>
                 </View>
 
                 {/* Buttons */}
@@ -76,7 +77,7 @@ export const ApproveConfirmModal = ({ visible, onClose, onConfirm, customerName 
                     onPress={handleCancel}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.cancelButtonText}>No</Text>
+                    <AppText style={styles.cancelButtonText}>No</AppText>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -84,7 +85,7 @@ export const ApproveConfirmModal = ({ visible, onClose, onConfirm, customerName 
                     onPress={handleConfirm}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.confirmButtonText}>Yes</Text>
+                    <AppText style={styles.confirmButtonText}>Yes</AppText>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -128,14 +129,14 @@ export const LinkDivisionsModal = ({ visible, onClose, onConfirm }) => {
                 {/* Alert Icon - Orange */}
                 <View style={styles.iconContainer}>
                   <View style={[styles.alertCircle, { backgroundColor: '#FF6B00' }]}>
-                    <Text style={styles.exclamationMark}>!</Text>
+                    <AppText style={styles.exclamationMark}>!</AppText>
                   </View>
                 </View>
 
                 {/* Title */}
-                <Text style={styles.modalTitle}>
+                <AppText style={styles.modalTitle}>
                   Are you sure you want to{'\n'}Link Divisions?
-                </Text>
+                </AppText>
 
                 {/* Comment Input */}
                 <View style={styles.inputContainer}>
@@ -148,7 +149,7 @@ export const LinkDivisionsModal = ({ visible, onClose, onConfirm }) => {
                     multiline={true}
                     textAlignVertical="top"
                   />
-                  <Text style={styles.asterisk}>*</Text>
+                  <AppText style={styles.asterisk}>*</AppText>
                 </View>
 
                 {/* Buttons */}
@@ -158,7 +159,7 @@ export const LinkDivisionsModal = ({ visible, onClose, onConfirm }) => {
                     onPress={handleCancel}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.cancelButtonText}>No</Text>
+                    <AppText style={styles.cancelButtonText}>No</AppText>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -166,7 +167,7 @@ export const LinkDivisionsModal = ({ visible, onClose, onConfirm }) => {
                     onPress={handleConfirm}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.confirmButtonText}>Yes</Text>
+                    <AppText style={styles.confirmButtonText}>Yes</AppText>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -202,17 +203,17 @@ export const RejectCustomerModal = ({ visible, onClose, onConfirm, message = "Te
               {/* Alert Icon - Red/Pink */}
               <View style={styles.iconContainer}>
                 <View style={[styles.alertCircle, { backgroundColor: '#FF5252' }]}>
-                  <Text style={styles.exclamationMark}>!</Text>
+                  <AppText style={styles.exclamationMark}>!</AppText>
                 </View>
               </View>
 
               {/* Title */}
-              <Text style={styles.modalTitle}>
+              <AppText style={styles.modalTitle}>
                 Are you sure you want to{'\n'}Reject customer?
-              </Text>
+              </AppText>
 
               {/* Message Text */}
-              <Text style={styles.messageText}>{message}</Text>
+              <AppText style={styles.messageText}>{message}</AppText>
 
               {/* Buttons - Reversed for Reject */}
               <View style={styles.buttonContainer}>
@@ -221,7 +222,7 @@ export const RejectCustomerModal = ({ visible, onClose, onConfirm, message = "Te
                   onPress={handleConfirm}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.cancelButtonText}>Yes</Text>
+                  <AppText style={styles.cancelButtonText}>Yes</AppText>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -229,7 +230,7 @@ export const RejectCustomerModal = ({ visible, onClose, onConfirm, message = "Te
                   onPress={handleCancel}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.confirmButtonText}>No</Text>
+                  <AppText style={styles.confirmButtonText}>No</AppText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -265,15 +266,15 @@ export const TagHospitalModal = ({ visible, onClose, onConfirm, hospitalName = "
               <View style={styles.iconContainer}>
                 <View style={[styles.warningCircle]}>
                   <View style={styles.triangle}>
-                    <Text style={styles.warningExclamation}>!</Text>
+                    <AppText style={styles.warningExclamation}>!</AppText>
                   </View>
                 </View>
               </View>
 
               {/* Title */}
-              <Text style={styles.modalTitle}>
+              <AppText style={styles.modalTitle}>
                 Do you want to tag{'\n'}{hospitalName} to {teamName}?
-              </Text>
+              </AppText>
 
               {/* Buttons */}
               <View style={[styles.buttonContainer, { marginTop: 40 }]}>
@@ -282,7 +283,7 @@ export const TagHospitalModal = ({ visible, onClose, onConfirm, hospitalName = "
                   onPress={handleCancel}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.cancelButtonText}>No</Text>
+                  <AppText style={styles.cancelButtonText}>No</AppText>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -290,7 +291,7 @@ export const TagHospitalModal = ({ visible, onClose, onConfirm, hospitalName = "
                   onPress={handleConfirm}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.confirmButtonText}>Yes</Text>
+                  <AppText style={styles.confirmButtonText}>Yes</AppText>
                 </TouchableOpacity>
               </View>
             </View>

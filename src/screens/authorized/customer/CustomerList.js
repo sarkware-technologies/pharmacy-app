@@ -49,6 +49,7 @@ import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModa
 import RejectCustomerModal from '../../../components/modals/RejectCustomerModal';
 import { customerAPI } from '../../../api/customer';
 import { SkeletonList } from '../../../components/SkeletonLoader';
+import AppText from "../../../components/AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -242,9 +243,9 @@ const CustomerList = ({ navigation }) => {
     return (
       <View style={{ paddingVertical: 20 }}>
         <ActivityIndicator size="small" color={colors.primary} />
-        <Text style={{ textAlign: 'center', marginTop: 10, color: '#666' }}>
+        <AppText style={{ textAlign: 'center', marginTop: 10, color: '#666' }}>
           Loading more customers...
-        </Text>
+        </AppText>
       </View>
     );
   };
@@ -255,12 +256,12 @@ const CustomerList = ({ navigation }) => {
     
     return (
       <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-        <Text style={{ color: '#999', fontSize: 14 }}>
+        <AppText style={{ color: '#999', fontSize: 14 }}>
           — End of list —
-        </Text>
-        <Text style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+        </AppText>
+        <AppText style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
           {customers.length} customers loaded
-        </Text>
+        </AppText>
       </View>
     );
   };
@@ -762,7 +763,7 @@ const CustomerList = ({ navigation }) => {
             ]}
           >
             <View style={styles.documentModalHeader}>
-              <Text style={styles.documentModalTitle}>Click to download documents</Text>
+              <AppText style={styles.documentModalTitle}>Click to download documents</AppText>
               <TouchableOpacity onPress={handleClose}>
                 <CloseCircle />
               </TouchableOpacity>
@@ -783,7 +784,7 @@ const CustomerList = ({ navigation }) => {
                 >
                   <View style={styles.topDocumentContent}>
                     <Document />
-                    <Text style={styles.topDocumentName}>GST</Text>
+                    <AppText style={styles.topDocumentName}>GST</AppText>
                   </View>
                   <TouchableOpacity 
                     style={styles.eyeIconButton}
@@ -804,7 +805,7 @@ const CustomerList = ({ navigation }) => {
                 >
                   <View style={styles.topDocumentContent}>
                     <Document />
-                    <Text style={styles.topDocumentName}>PAN</Text>
+                    <AppText style={styles.topDocumentName}>PAN</AppText>
                   </View>
                   <TouchableOpacity 
                     style={styles.eyeIconButton}
@@ -833,7 +834,7 @@ const CustomerList = ({ navigation }) => {
                   >
                     <View style={styles.documentLeftSection}>
                       <Document />
-                      <Text style={styles.documentName}>{doc.name}</Text>
+                      <AppText style={styles.documentName}>{doc.name}</AppText>
                     </View>
                   </TouchableOpacity>
                   
@@ -878,7 +879,7 @@ const CustomerList = ({ navigation }) => {
           onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
         >
           <View style={styles.customerHeader}>
-            <Text style={styles.customerName}>{item.customerName} <ChevronRight height={11} color={colors.primary} /></Text>
+            <AppText style={styles.customerName}>{item.customerName} <ChevronRight height={11} color={colors.primary} /></AppText>
             <View style={styles.actionsContainer}>
               {item.statusName === 'NOT-ONBOARDED' && (
                 <TouchableOpacity 
@@ -910,19 +911,19 @@ const CustomerList = ({ navigation }) => {
           <View style={styles.customerInfo}>
            <View style={styles.infoRow}>
               <AddrLine color="#999" />
-              <Text style={styles.infoText}>{item.customerCode}</Text>
-              <Text style={styles.divider}>|</Text>
-              <Text style={styles.infoText}>{item.cityName}</Text>
-              <Text style={styles.divider}>|</Text>
-              <Text style={styles.infoText}>{item.groupName}</Text>
-              <Text style={styles.divider}>|</Text>
-              <Text
+              <AppText style={styles.infoText}>{item.customerCode}</AppText>
+              <AppText style={styles.divider}>|</AppText>
+              <AppText style={styles.infoText}>{item.cityName}</AppText>
+              <AppText style={styles.divider}>|</AppText>
+              <AppText style={styles.infoText}>{item.groupName}</AppText>
+              <AppText style={styles.divider}>|</AppText>
+              <AppText
                 style={[styles.infoText, { marginRight: 5, maxWidth: 100 }]} // limit width
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
                 {item.customerType}
-              </Text>
+              </AppText>
 
               {item.customerType === 'Hospital' && (
                 <AlertFilled color="#999" style={styles.infoIcon} />
@@ -930,17 +931,17 @@ const CustomerList = ({ navigation }) => {
             </View>
             <View style={styles.contactRow}>
               <Phone color="#999" />
-              <Text style={{...styles.contactText, marginRight: 15}}>{item.mobile}</Text>
+              <AppText style={{...styles.contactText, marginRight: 15}}>{item.mobile}</AppText>
               <Email color="#999" style={styles.mailIcon} />
-              <Text style={styles.contactText}   ellipsizeMode="tail" numberOfLines={1}  >{item.email}</Text>
+              <AppText style={styles.contactText}   ellipsizeMode="tail" numberOfLines={1}  >{item.email}</AppText>
             </View>
           </View>
 
           <View style={styles.statusRow}>
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
-              <Text style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
+              <AppText style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
                 {item.statusName}
-              </Text>
+              </AppText>
             </View>
             {item.statusName === 'LOCKED' ? (
             <TouchableOpacity 
@@ -949,7 +950,7 @@ const CustomerList = ({ navigation }) => {
               disabled={blockUnblockLoading}
             >
               <UnLocked fill="#EF4444" />
-              <Text style={styles.unlockButtonText}>Unblock</Text>
+              <AppText style={styles.unlockButtonText}>Unblock</AppText>
             </TouchableOpacity>
           ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
             <TouchableOpacity 
@@ -958,7 +959,7 @@ const CustomerList = ({ navigation }) => {
               disabled={blockUnblockLoading}
             >
               <Locked fill="#666" />
-              <Text style={styles.blockButtonText}>Block</Text>
+              <AppText style={styles.blockButtonText}>Block</AppText>
             </TouchableOpacity>
           ) :  item.statusName === 'PENDING' && item.action == 'APPROVE' ? (
             <View style={styles.pendingActions}>
@@ -966,7 +967,7 @@ const CustomerList = ({ navigation }) => {
                 style={styles.approveButton}
                 onPress={() => handleApprovePress(item)}
               >
-                <Text style={styles.approveButtonText}>Approve</Text>
+                <AppText style={styles.approveButtonText}>Approve</AppText>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.rejectButton}
@@ -979,7 +980,7 @@ const CustomerList = ({ navigation }) => {
             <TouchableOpacity 
               style={styles.onboardButton}
               onPress={() => navigation.navigate('PrivateRegistrationForm', { customerId: item.customerId || item.stgCustomerId })}>
-              <Text style={styles.onboardButtonText}>Onboard</Text>
+              <AppText style={styles.onboardButtonText}>Onboard</AppText>
             </TouchableOpacity>
           ) : null}
           </View>
@@ -1000,7 +1001,7 @@ const CustomerList = ({ navigation }) => {
         <View style={styles.documentsModalContent}>
           {/* Header */}
           <View style={styles.documentsModalHeader}>
-            <Text style={styles.documentsModalTitle}>All Documents</Text>
+            <AppText style={styles.documentsModalTitle}>All Documents</AppText>
             <TouchableOpacity onPress={() => setShowDocumentsModal(false)}>
               <CloseCircle />
             </TouchableOpacity>
@@ -1009,7 +1010,7 @@ const CustomerList = ({ navigation }) => {
           {loadingDocuments ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Loading documents...</Text>
+              <AppText style={styles.loadingText}>Loading documents...</AppText>
             </View>
           ) : customerDocuments && customerDocuments.allDocuments && customerDocuments.allDocuments.length > 0 ? (
             <ScrollView style={styles.documentsListContainer} showsVerticalScrollIndicator={false}>
@@ -1021,10 +1022,10 @@ const CustomerList = ({ navigation }) => {
                       <View style={styles.documentCardLeftSmall}>
                         <Icon name="document-outline" size={20} color={colors.primary} />
                         <View style={styles.documentInfoSmall}>
-                          <Text style={styles.documentFileNameSmall} numberOfLines={1}>
+                          <AppText style={styles.documentFileNameSmall} numberOfLines={1}>
                             {customerDocuments.gstDoc.fileName || 'GST'}
-                          </Text>
-                          <Text style={styles.documentTypeSmall}>{customerDocuments.gstDoc.doctypeName}</Text>
+                          </AppText>
+                          <AppText style={styles.documentTypeSmall}>{customerDocuments.gstDoc.doctypeName}</AppText>
                         </View>
                       </View>
                       <View style={styles.documentActionsSmall}>
@@ -1050,10 +1051,10 @@ const CustomerList = ({ navigation }) => {
                       <View style={styles.documentCardLeftSmall}>
                         <Icon name="document-outline" size={20} color={colors.primary} />
                         <View style={styles.documentInfoSmall}>
-                          <Text style={styles.documentFileNameSmall} numberOfLines={1}>
+                          <AppText style={styles.documentFileNameSmall} numberOfLines={1}>
                             {customerDocuments.panDoc.fileName || 'PAN'}
-                          </Text>
-                          <Text style={styles.documentTypeSmall}>{customerDocuments.panDoc.doctypeName}</Text>
+                          </AppText>
+                          <AppText style={styles.documentTypeSmall}>{customerDocuments.panDoc.doctypeName}</AppText>
                         </View>
                       </View>
                       <View style={styles.documentActionsSmall}>
@@ -1084,10 +1085,10 @@ const CustomerList = ({ navigation }) => {
                       <View style={styles.documentCardLeft}>
                         <Icon name="document-outline" size={24} color={colors.primary} />
                         <View style={styles.documentInfo}>
-                          <Text style={styles.documentFileName} numberOfLines={1}>
+                          <AppText style={styles.documentFileName} numberOfLines={1}>
                             {doc.fileName || doc.doctypeName}
-                          </Text>
-                          <Text style={styles.documentType}>{doc.doctypeName}</Text>
+                          </AppText>
+                          <AppText style={styles.documentType}>{doc.doctypeName}</AppText>
                         </View>
                       </View>
                       <View style={styles.documentActions}>
@@ -1111,7 +1112,7 @@ const CustomerList = ({ navigation }) => {
           ) : (
             <View style={styles.noDocumentsContainer}>
               <Icon name="document-outline" size={48} color="#ccc" />
-              <Text style={styles.noDocumentsText}>No documents available</Text>
+              <AppText style={styles.noDocumentsText}>No documents available</AppText>
             </View>
           )}
         </View>
@@ -1130,9 +1131,9 @@ const CustomerList = ({ navigation }) => {
       <View style={styles.previewModalOverlay}>
         <View style={styles.previewModalContent}>
           <View style={styles.previewModalHeader}>
-            <Text style={styles.previewModalTitle} numberOfLines={1}>
+            <AppText style={styles.previewModalTitle} numberOfLines={1}>
               {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
-            </Text>
+            </AppText>
             <TouchableOpacity onPress={() => setPreviewModalVisible(false)}>
               <CloseCircle />
             </TouchableOpacity>
@@ -1152,7 +1153,7 @@ const CustomerList = ({ navigation }) => {
             ) : (
               <View style={styles.documentPreviewPlaceholder}>
                 <Icon name="document-text-outline" size={64} color="#999" />
-                <Text style={styles.documentPreviewText}>{selectedDocumentForPreview?.fileName}</Text>
+                <AppText style={styles.documentPreviewText}>{selectedDocumentForPreview?.fileName}</AppText>
               </View>
             )}
           </View>
@@ -1162,7 +1163,7 @@ const CustomerList = ({ navigation }) => {
             onPress={() => downloadDocument(selectedDocumentForPreview)}
           >
             <Download width={20} color="#fff" />
-            <Text style={styles.downloadButtonText}>Download</Text>
+            <AppText style={styles.downloadButtonText}>Download</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -1183,7 +1184,7 @@ const CustomerList = ({ navigation }) => {
       >
         <Animated.View style={styles.downloadModalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Click to download documents</Text>
+            <AppText style={styles.modalTitle}>Click to download documents</AppText>
             <TouchableOpacity onPress={() => setDownloadModalVisible(false)}>
               <AlertFilled color="#666" />
             </TouchableOpacity>
@@ -1200,7 +1201,7 @@ const CustomerList = ({ navigation }) => {
             <TouchableOpacity key={index} style={styles.documentItem}>
               <View style={styles.documentLeft}>
                 <Icon name={doc.icon} size={20} color="#666" />
-                <Text style={styles.documentText}>{doc.name}</Text>
+                <AppText style={styles.documentText}>{doc.name}</AppText>
               </View>
               <Icon name="eye-outline" size={20} color={colors.primary} />
             </TouchableOpacity>
@@ -1220,10 +1221,10 @@ const CustomerList = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.openDrawer()}>
           <Menu />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Customers</Text>
+        <AppText style={styles.headerTitle}>Customers</AppText>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('RegistrationType')}>
-            <Text style={styles.createButtonText}>CREATE</Text>
+            <AppText style={styles.createButtonText}>CREATE</AppText>
           </TouchableOpacity>
           <TouchableOpacity>
             <Bell color="#333" />
@@ -1240,33 +1241,33 @@ const CustomerList = ({ navigation }) => {
           style={[styles.tab, activeTab === 'all' && styles.activeTab]}
           onPress={() => setActiveTab('all')}
         >
-          <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
+          <AppText style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
             All ({pagination.totalCustomers})
-          </Text>
+          </AppText>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'waitingForApproval' && styles.activeTab]}
           onPress={() => setActiveTab('waitingForApproval')}
         >
-          <Text style={[styles.tabText, activeTab === 'waitingForApproval' && styles.activeTabText]}>
+          <AppText style={[styles.tabText, activeTab === 'waitingForApproval' && styles.activeTabText]}>
             Waiting for Approval
-          </Text>
+          </AppText>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'notOnboarded' && styles.activeTab]}
           onPress={() => setActiveTab('notOnboarded')}
         >
-          <Text style={[styles.tabText, activeTab === 'notOnboarded' && styles.activeTabText]}>
+          <AppText style={[styles.tabText, activeTab === 'notOnboarded' && styles.activeTabText]}>
             Not Onboarded
-          </Text>
+          </AppText>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'unverified' && styles.activeTab]}
           onPress={() => setActiveTab('unverified')}
         >
-          <Text style={[styles.tabText, activeTab === 'unverified' && styles.activeTabText]}>
+          <AppText style={[styles.tabText, activeTab === 'unverified' && styles.activeTabText]}>
             Unverified
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
 
@@ -1306,24 +1307,24 @@ const CustomerList = ({ navigation }) => {
       ) :listError && customers.length === 0 ? (
         <View style={styles.errorContainer}>
           <AlertCircle size={60} color="#EF4444" />
-          <Text style={styles.errorTitle}>Unable to Load Customers</Text>
-          <Text style={styles.errorMessage}>
+          <AppText style={styles.errorTitle}>Unable to Load Customers</AppText>
+          <AppText style={styles.errorMessage}>
             {listError === 'Network request failed' || listError.includes('Network') 
               ? 'Server is currently unavailable. Please check your connection and try again.'
               : listError || 'Something went wrong. Please try again.'}
-          </Text>
+          </AppText>
           <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
             <Refresh size={20} color="#fff" />
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <AppText style={styles.retryButtonText}>Retry</AppText>
           </TouchableOpacity>
         </View>
       ) : customers.length === 0 ? (
         <View style={styles.emptyContainer}>
           <People size={60} color="#9CA3AF" />
-          <Text style={styles.emptyTitle}>No Customers Found</Text>
-          <Text style={styles.emptyMessage}>
+          <AppText style={styles.emptyTitle}>No Customers Found</AppText>
+          <AppText style={styles.emptyMessage}>
             {searchText ? `No customers match "${searchText}"` : 'Start by adding your first customer'}
-          </Text>
+          </AppText>
         </View>
       ) : (
         
@@ -1358,12 +1359,12 @@ const CustomerList = ({ navigation }) => {
           !listLoading && (
             <View style={styles.emptyContainer}>
               <People width={80} height={80} color="#E0E0E0" />
-              <Text style={styles.emptyTitle}>No Customers Found</Text>
-              <Text style={styles.emptyMessage}>
+              <AppText style={styles.emptyTitle}>No Customers Found</AppText>
+              <AppText style={styles.emptyMessage}>
                 {searchText 
                   ? `No results for "${searchText}"`
                   : 'Start by adding your first customer'}
-              </Text>
+              </AppText>
             </View>
           )
         }                
@@ -1409,7 +1410,7 @@ const CustomerList = ({ navigation }) => {
               styles.toast,
               toastType === 'success' ? styles.toastSuccess : styles.toastError
             ]}>
-              <Text style={styles.toastText}>{toastMessage}</Text>
+              <AppText style={styles.toastText}>{toastMessage}</AppText>
             </View>
           </View>
         )}

@@ -23,6 +23,7 @@ import Filter from '../../../components/icons/Filter';
 import Calendar from '../../../components/icons/Calendar';
 import Download from '../../../components/icons/Download';
 import AddrLine from '../../../components/icons/AddrLine';
+import AppText from "../../../components/AppText"
 
 const ChargebackListing = () => {
 
@@ -56,23 +57,23 @@ const ChargebackListing = () => {
         <View style={styles.claimHeader}>
           <View style={styles.claimIdContainer}>
             <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <Text style={styles.claimId}>{item.id}</Text>
+            <AppText style={styles.claimId}>{item.id}</AppText>
             <Icon name="chevron-right" size={24} color="#FFA500" />
             </View>
-            <Text style={styles.dateText}>{item.date}</Text>
+            <AppText style={styles.dateText}>{item.date}</AppText>
           </View>
           <View style={styles.amountContainer}>
-            <Text style={styles.amount}>₹ {item.amount?.toLocaleString('en-IN') || '0'}</Text>
+            <AppText style={styles.amount}>₹ {item.amount?.toLocaleString('en-IN') || '0'}</AppText>
             {item.crtnNumber && (
-              <Text style={styles.crtnText}>
+              <AppText style={styles.crtnText}>
                 {item.crtnNumber} ₹ {item.crtnAmount?.toLocaleString('en-IN')}
-              </Text>
+              </AppText>
             )}
           </View>
         </View>
         
         <View style={styles.customerInfo}>
-          <Text style={styles.customerName}>{item.customerName}</Text>
+          <AppText style={styles.customerName}>{item.customerName}</AppText>
           {isDraft && (
             <TouchableOpacity>
               <Download />
@@ -83,24 +84,24 @@ const ChargebackListing = () => {
         <View style={styles.detailsRow}>
           <View style={styles.codeContainer}>
             <AddrLine />
-            <Text style={styles.codeText}>{item.customerCode}</Text>
+            <AppText style={styles.codeText}>{item.customerCode}</AppText>
           </View>
-          <Text style={styles.separator}>|</Text>
-          <Text style={styles.typeText}>{item.customerType}</Text>
-          <Text style={styles.separator}>|</Text>
-          <Text style={styles.orderText}>
-            {item.orderCode} <Text style={styles.spilBadge}>+{item.spilCount}</Text> ({item.spilType})
-          </Text>
+          <AppText style={styles.separator}>|</AppText>
+          <AppText style={styles.typeText}>{item.customerType}</AppText>
+          <AppText style={styles.separator}>|</AppText>
+          <AppText style={styles.orderText}>
+            {item.orderCode} <AppText style={styles.spilBadge}>+{item.spilCount}</AppText> ({item.spilType})
+          </AppText>
         </View>
         
         {isSubmitted && (
           <View style={styles.statusContainer}>
             <View style={styles.submittedBadge}>
-              <Text style={styles.submittedText}>SUBMITTED</Text>
+              <AppText style={styles.submittedText}>SUBMITTED</AppText>
             </View>
             <TouchableOpacity style={styles.viewButton}>
               <Icon name="visibility" size={20} color="#FFA500" />
-              <Text style={styles.viewText}>View</Text>
+              <AppText style={styles.viewText}>View</AppText>
             </TouchableOpacity>
           </View>
         )}
@@ -108,11 +109,11 @@ const ChargebackListing = () => {
         {isDraft && (
           <View style={styles.draftContainer}>
             <View style={styles.draftBadge}>
-              <Text style={styles.draftText}>DRAFT</Text>
+              <AppText style={styles.draftText}>DRAFT</AppText>
             </View>
             <TouchableOpacity style={styles.uploadButton}>
               <Icon name="cloud-upload" size={20} color="white" />
-              <Text style={styles.uploadText}>Upload Documents</Text>
+              <AppText style={styles.uploadText}>Upload Documents</AppText>
             </TouchableOpacity>
           </View>
         )}
@@ -124,33 +125,33 @@ const ChargebackListing = () => {
     return (
       <View style={styles.pendingCard}>
         <View style={styles.pendingHeader}>
-          <Text style={styles.customerName}>{item.customerName}</Text>
-          <Text style={styles.amount}>₹ {item.amount?.toLocaleString('en-IN')}</Text>
+          <AppText style={styles.customerName}>{item.customerName}</AppText>
+          <AppText style={styles.amount}>₹ {item.amount?.toLocaleString('en-IN')}</AppText>
         </View>
         
         <View style={styles.detailsRow}>
           <View style={styles.codeContainer}>
             <AddrLine />
-            <Text style={styles.codeText}>{item.customerCode}</Text>
+            <AppText style={styles.codeText}>{item.customerCode}</AppText>
           </View>
-          <Text style={styles.separator}>|</Text>
-          <Text style={styles.typeText}>{item.customerType}</Text>
-          <Text style={styles.separator}>|</Text>
-          <Text style={styles.claimText}>
-            {item.claimNumber} <Text style={styles.spilBadge}>+{item.spilCount}</Text>
-          </Text>
+          <AppText style={styles.separator}>|</AppText>
+          <AppText style={styles.typeText}>{item.customerType}</AppText>
+          <AppText style={styles.separator}>|</AppText>
+          <AppText style={styles.claimText}>
+            {item.claimNumber} <AppText style={styles.spilBadge}>+{item.spilCount}</AppText>
+          </AppText>
         </View>
         
         <View style={styles.statsRow}>
-          <Text style={styles.statText}>PO Count {item.poCount}</Text>
-          <Text style={styles.separator}>|</Text>
-          <Text style={styles.statText}>Order Count {item.orderCount}</Text>
-          <Text style={styles.separator}>|</Text>
-          <Text style={styles.statText}>POD/Invoice {item.podInvoiceRatio}</Text>
+          <AppText style={styles.statText}>PO Count {item.poCount}</AppText>
+          <AppText style={styles.separator}>|</AppText>
+          <AppText style={styles.statText}>Order Count {item.orderCount}</AppText>
+          <AppText style={styles.separator}>|</AppText>
+          <AppText style={styles.statText}>POD/Invoice {item.podInvoiceRatio}</AppText>
         </View>
         
         <View style={styles.claimValueContainer}>
-          <Text style={styles.claimValueLabel}>Claim Value ₹ {item.claimValue?.toLocaleString('en-IN')}</Text>
+          <AppText style={styles.claimValueLabel}>Claim Value ₹ {item.claimValue?.toLocaleString('en-IN')}</AppText>
           <TouchableOpacity>
             <Icon name="keyboard-arrow-down" size={24} color="#FFA500" />
           </TouchableOpacity>
@@ -180,17 +181,17 @@ const ChargebackListing = () => {
                   style={[styles.toggleButton, spilType === 'SPIL' && styles.activeToggle]}
                   onPress={() => setSpilType('SPIL')}
                 >
-                  <Text style={[styles.toggleText, spilType === 'SPIL' && styles.activeToggleText]}>
+                  <AppText style={[styles.toggleText, spilType === 'SPIL' && styles.activeToggleText]}>
                     SPIL
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.toggleButton, spilType === 'SPLL' && styles.activeToggle]}
                   onPress={() => setSpilType('SPLL')}
                 >
-                  <Text style={[styles.toggleText, spilType === 'SPLL' && styles.activeToggleText]}>
+                  <AppText style={[styles.toggleText, spilType === 'SPLL' && styles.activeToggleText]}>
                     SPLL
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               </View>
               
@@ -202,7 +203,7 @@ const ChargebackListing = () => {
                   <View style={styles.radio}>
                     {overdueFilter === 'Overdue' && <View style={styles.radioSelected} />}
                   </View>
-                  <Text style={styles.radioText}>Overdue</Text>
+                  <AppText style={styles.radioText}>Overdue</AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.radioButton}
@@ -211,7 +212,7 @@ const ChargebackListing = () => {
                   <View style={styles.radio}>
                     {overdueFilter === 'Due' && <View style={styles.radioSelected} />}
                   </View>
-                  <Text style={styles.radioText}>Due</Text>
+                  <AppText style={styles.radioText}>Due</AppText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -228,7 +229,7 @@ const ChargebackListing = () => {
       case 'Reassigned':
         return (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No {activeTab.toLowerCase()} available</Text>
+            <AppText style={styles.emptyText}>No {activeTab.toLowerCase()} available</AppText>
           </View>
         );
       default:
@@ -245,7 +246,7 @@ const ChargebackListing = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>          
           <Menu />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chargeback</Text>
+        <AppText style={styles.headerTitle}>Chargeback</AppText>
         <View style={styles.headerRight}>
           <TouchableOpacity>            
             <Bell />
@@ -264,9 +265,9 @@ const ChargebackListing = () => {
             style={[styles.tab, activeTab === tab && styles.activeTab]}
             onPress={() => setActiveTab(tab)}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+            <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
               {tab}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         ))}
       </ScrollView>

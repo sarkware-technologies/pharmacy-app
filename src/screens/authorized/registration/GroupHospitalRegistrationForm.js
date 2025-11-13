@@ -34,6 +34,7 @@ import ArrowDown from '../../../components/icons/ArrowDown';
 import Search from '../../../components/icons/Search';
 import CloseCircle from '../../../components/icons/CloseCircle';
 import { customerAPI } from '../../../api/customer';
+import AppText from "../../../components/AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -327,7 +328,7 @@ const GroupHospitalRegistrationForm = () => {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{title}</Text>
+              <AppText style={styles.modalTitle}>{title}</AppText>
               <TouchableOpacity onPress={onClose}>
                 <Icon name="close" size={24} color="#666" />
               </TouchableOpacity>
@@ -350,12 +351,12 @@ const GroupHospitalRegistrationForm = () => {
                       onClose();
                     }}
                   >
-                    <Text style={[
+                    <AppText style={[
                       styles.modalItemText,
                       selectedId == item.id && styles.modalItemTextSelected
                     ]}>
                       {item.name}
-                    </Text>
+                    </AppText>
                     {selectedId == item.id && (
                       <Icon name="check" size={20} color={colors.primary} />
                     )}
@@ -521,20 +522,20 @@ const GroupHospitalRegistrationForm = () => {
                 {currentStep > index + 1 ? (
                   <Icon name="checkmark" size={12} color="#fff" />
                 ) : (
-                  <Text style={[
+                  <AppText style={[
                     styles.stepDotText,
                     currentStep === index + 1 && styles.stepDotTextActive,
                   ]}>
                     {index + 1}
-                  </Text>
+                  </AppText>
                 )}
               </View>
-              <Text style={[
+              <AppText style={[
                 styles.stepLabel,
                 currentStep === index + 1 && styles.stepLabelActive,
               ]}>
                 {step}
-              </Text>
+              </AppText>
             </View>
           ))}
         </View>
@@ -555,7 +556,7 @@ const GroupHospitalRegistrationForm = () => {
           },
         ]}
       >
-        <Text style={styles.otpTitle}>Enter 4-digit OTP</Text>
+        <AppText style={styles.otpTitle}>Enter 4-digit OTP</AppText>
         <View style={styles.otpInputContainer}>
           {[0, 1, 2, 3].map(index => (
             <TextInput
@@ -570,12 +571,12 @@ const GroupHospitalRegistrationForm = () => {
           ))}
         </View>
         <View style={styles.otpFooter}>
-          <Text style={styles.otpTimer}>
+          <AppText style={styles.otpTimer}>
             {otpTimers[field] > 0 ? `Resend in ${otpTimers[field]}s` : ''}
-          </Text>
+          </AppText>
           {otpTimers[field] === 0 && (
             <TouchableOpacity onPress={() => handleResendOTP(field)}>
-              <Text style={styles.resendText}>Resend OTP</Text>
+              <AppText style={styles.resendText}>Resend OTP</AppText>
             </TouchableOpacity>
           )}
         </View>
@@ -593,7 +594,7 @@ const GroupHospitalRegistrationForm = () => {
         },
       ]}
     >
-      <Text style={styles.stepTitle}>License Details*</Text>
+      <AppText style={styles.stepTitle}>License Details*</AppText>
       
       <FileUploadComponent
         placeholder="Upload registration certificate"
@@ -620,13 +621,13 @@ const GroupHospitalRegistrationForm = () => {
         onPress={() => setShowDatePicker(true)}
         activeOpacity={0.7}
       >
-        <Text style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
+        <AppText style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
           {formData.registrationDate || 'Registration date'}
-        </Text>
+        </AppText>
         <Calendar />
       </TouchableOpacity>
       {errors.registrationDate && (
-        <Text style={styles.errorText}>{errors.registrationDate}</Text>
+        <AppText style={styles.errorText}>{errors.registrationDate}</AppText>
       )}
 
       <FileUploadComponent
@@ -661,7 +662,7 @@ const GroupHospitalRegistrationForm = () => {
         },
       ]}
     >
-      <Text style={styles.stepTitle}>General Details*</Text>
+      <AppText style={styles.stepTitle}>General Details*</AppText>
       
       <CustomInput
         placeholder="Hospital name"
@@ -720,9 +721,9 @@ const GroupHospitalRegistrationForm = () => {
         onPress={() => setShowAreaModal(true)}
         activeOpacity={0.7}
       >
-        <Text style={formData.area ? styles.inputText : styles.placeholderText}>
+        <AppText style={formData.area ? styles.inputText : styles.placeholderText}>
           {formData.area || 'Area'}
-        </Text>
+        </AppText>
         <ArrowDown color='#999' />
       </TouchableOpacity>
 
@@ -733,15 +734,15 @@ const GroupHospitalRegistrationForm = () => {
         activeOpacity={0.7}
       >
         <View style={styles.inputTextContainer}>
-          <Text style={formData.city ? styles.inputText : styles.placeholderText}>
+          <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
             {formData.city || 'City'}
-          </Text>
-          <Text style={styles.mandatoryIndicator}>*</Text>
+          </AppText>
+          <AppText style={styles.mandatoryIndicator}>*</AppText>
         </View>
         <ArrowDown color='#999' />
       </TouchableOpacity>
       {errors.city && (
-        <Text style={styles.errorText}>{errors.city}</Text>
+        <AppText style={styles.errorText}>{errors.city}</AppText>
       )}
 
       {/* State Dropdown */}
@@ -751,15 +752,15 @@ const GroupHospitalRegistrationForm = () => {
         activeOpacity={0.7}
       >
         <View style={styles.inputTextContainer}>
-          <Text style={formData.state ? styles.inputText : styles.placeholderText}>
+          <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
             {formData.state || 'State'}
-          </Text>
-          <Text style={styles.mandatoryIndicator}>*</Text>
+          </AppText>
+          <AppText style={styles.mandatoryIndicator}>*</AppText>
         </View>
         <ArrowDown color='#999' />
       </TouchableOpacity>
       {errors.state && (
-        <Text style={styles.errorText}>{errors.state}</Text>
+        <AppText style={styles.errorText}>{errors.state}</AppText>
       )}
     </Animated.View>
   );
@@ -774,11 +775,11 @@ const GroupHospitalRegistrationForm = () => {
         },
       ]}
     >
-      <Text style={styles.stepTitle}>Security Details*</Text>
+      <AppText style={styles.stepTitle}>Security Details*</AppText>
       
       {/* Mobile Number with Verify */}
       <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-        <Text style={styles.countryCode}>+91</Text>
+        <AppText style={styles.countryCode}>+91</AppText>
         <TextInput
           style={styles.inputField}
           placeholder="Mobile number"
@@ -788,16 +789,16 @@ const GroupHospitalRegistrationForm = () => {
           maxLength={10}
           placeholderTextColor="#999"
         />
-        <Text style={styles.mandatoryIndicator}>*</Text>
+        <AppText style={styles.mandatoryIndicator}>*</AppText>
         <TouchableOpacity
           style={styles.inlineVerifyButton}
           onPress={() => handleVerify('mobile')}
         >
-          <Text style={styles.inlineVerifyText}>Verify</Text>
+          <AppText style={styles.inlineVerifyText}>Verify</AppText>
         </TouchableOpacity>
       </View>
       {errors.mobileNumber && (
-        <Text style={styles.errorText}>{errors.mobileNumber}</Text>
+        <AppText style={styles.errorText}>{errors.mobileNumber}</AppText>
       )}
       {renderOTPInput('mobile')}
 
@@ -812,16 +813,16 @@ const GroupHospitalRegistrationForm = () => {
           autoCapitalize="none"
           placeholderTextColor="#999"
         />
-        <Text style={styles.mandatoryIndicator}>*</Text>
+        <AppText style={styles.mandatoryIndicator}>*</AppText>
         <TouchableOpacity
           style={styles.inlineVerifyButton}
           onPress={() => handleVerify('email')}
         >
-          <Text style={styles.inlineVerifyText}>Verify</Text>
+          <AppText style={styles.inlineVerifyText}>Verify</AppText>
         </TouchableOpacity>
       </View>
       {errors.emailAddress && (
-        <Text style={styles.errorText}>{errors.emailAddress}</Text>
+        <AppText style={styles.errorText}>{errors.emailAddress}</AppText>
       )}
       {renderOTPInput('email')}
 
@@ -854,7 +855,7 @@ const GroupHospitalRegistrationForm = () => {
             Alert.alert('PAN Verification', 'PAN verified successfully!');
           }}
         >
-          <Text style={styles.inlineVerifyText}>Verify</Text>
+          <AppText style={styles.inlineVerifyText}>Verify</AppText>
         </TouchableOpacity>
       </View>
 
@@ -863,7 +864,7 @@ const GroupHospitalRegistrationForm = () => {
         style={styles.linkButton}
         onPress={handleFetchGstFromPan}
       >
-        <Text style={styles.linkText}>Fetch GST from PAN</Text>
+        <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
       </TouchableOpacity>
 
       {/* Upload GST */}
@@ -884,9 +885,9 @@ const GroupHospitalRegistrationForm = () => {
         onPress={() => setShowGstDropdown(!showGstDropdown)}
         activeOpacity={0.7}
       >
-        <Text style={formData.gstNumber ? styles.inputText : styles.placeholderText}>
+        <AppText style={formData.gstNumber ? styles.inputText : styles.placeholderText}>
           {formData.gstNumber || 'GST Number (e.g., 27ASDSD1234F1Z5)'}
-        </Text>
+        </AppText>
         <ArrowDown color='#999' />
       </TouchableOpacity>
       {showGstDropdown && (
@@ -900,7 +901,7 @@ const GroupHospitalRegistrationForm = () => {
                 setShowGstDropdown(false);
               }}
             >
-              <Text style={styles.dropdownItemText}>{gst}</Text>
+              <AppText style={styles.dropdownItemText}>{gst}</AppText>
             </TouchableOpacity>
           ))}
         </View>
@@ -918,11 +919,11 @@ const GroupHospitalRegistrationForm = () => {
         },
       ]}
     >
-      <Text style={styles.stepTitle}>Mapping</Text>
+      <AppText style={styles.stepTitle}>Mapping</AppText>
       
       {/* Mark as Buying Entity Switch */}
       <View style={styles.switchContainer}>
-        <Text style={styles.switchLabel}>Mark as buying entity</Text>
+        <AppText style={styles.switchLabel}>Mark as buying entity</AppText>
         <TouchableOpacity
           style={[
             styles.switch,
@@ -943,12 +944,12 @@ const GroupHospitalRegistrationForm = () => {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.sectionLabel}>
-        Select category <Text style={styles.optional}>(Optional)</Text>
-      </Text>
+      <AppText style={styles.sectionLabel}>
+        Select category <AppText style={styles.optional}>(Optional)</AppText>
+      </AppText>
       
       {/* Link Child Hospital */}
-      <Text style={styles.subsectionLabel}>Link child hospital <Icon name="information-circle-outline" size={16} color="#999" /></Text>
+      <AppText style={styles.subsectionLabel}>Link child hospital <Icon name="information-circle-outline" size={16} color="#999" /></AppText>
       
       <TouchableOpacity
         style={styles.selectorInput}
@@ -965,8 +966,8 @@ const GroupHospitalRegistrationForm = () => {
         {formData.linkedHospital ? (
           <View style={styles.selectedItem}>
             <View>
-              <Text style={styles.selectedItemName}>{formData.linkedHospital.name}</Text>
-              <Text style={styles.selectedItemCode}>{formData.linkedHospital.code}</Text>
+              <AppText style={styles.selectedItemName}>{formData.linkedHospital.name}</AppText>
+              <AppText style={styles.selectedItemCode}>{formData.linkedHospital.code}</AppText>
             </View>
             <TouchableOpacity
               onPress={(e) => {
@@ -979,7 +980,7 @@ const GroupHospitalRegistrationForm = () => {
           </View>
         ) : (
           <>
-            <Text style={styles.selectorPlaceholder}>Search hospital name/code</Text>
+            <AppText style={styles.selectorPlaceholder}>Search hospital name/code</AppText>
             <Search />
           </>
         )}
@@ -988,11 +989,11 @@ const GroupHospitalRegistrationForm = () => {
       {/* Selected Hospital Display */}
       {formData.linkedHospital && (
         <View style={styles.linkedHospitalCard}>
-          <Text style={styles.linkedHospitalLabel}>1 Hospital Selected</Text>
+          <AppText style={styles.linkedHospitalLabel}>1 Hospital Selected</AppText>
           <View style={styles.linkedHospitalItem}>
             <View style={styles.linkedHospitalInfo}>
-              <Text style={styles.linkedHospitalName}>{formData.linkedHospital.name}</Text>
-              <Text style={styles.linkedHospitalCode}>{formData.linkedHospital.code}</Text>
+              <AppText style={styles.linkedHospitalName}>{formData.linkedHospital.name}</AppText>
+              <AppText style={styles.linkedHospitalCode}>{formData.linkedHospital.code}</AppText>
             </View>
             <TouchableOpacity
               onPress={() => {
@@ -1009,13 +1010,13 @@ const GroupHospitalRegistrationForm = () => {
         style={styles.addNewLink}
         onPress={() => Alert.alert('Add Hospital', 'Navigate to add new hospital')}
       >
-        <Text style={styles.addNewLinkText}>+ Add New Hospital</Text>
+        <AppText style={styles.addNewLinkText}>+ Add New Hospital</AppText>
       </TouchableOpacity>
 
       <View style={styles.divider} />
 
       {/* Customer Group */}
-      <Text style={styles.sectionLabel}>Customer group</Text>
+      <AppText style={styles.sectionLabel}>Customer group</AppText>
       
       <View style={styles.customerGroupContainer}>
         {['X', 'Y Doctor Supply', '10+VQ', '12+60'].map((group) => (
@@ -1028,20 +1029,20 @@ const GroupHospitalRegistrationForm = () => {
             onPress={() => setFormData(prev => ({ ...prev, customerGroup: group }))}
             activeOpacity={0.7}
           >
-            <Text style={[
+            <AppText style={[
               styles.customerGroupButtonText,
               formData.customerGroup === group && styles.customerGroupButtonTextActive,
             ]}>
               {group}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         ))}
       </View>
 
       {/* Stockist Suggestions */}
-      <Text style={styles.sectionLabel}>
-        Stockist Suggestions <Text style={styles.optional}>(Optional)</Text>
-      </Text>
+      <AppText style={styles.sectionLabel}>
+        Stockist Suggestions <AppText style={styles.optional}>(Optional)</AppText>
+      </AppText>
       
       <CustomInput
         placeholder="Name of the stockist"
@@ -1066,7 +1067,7 @@ const GroupHospitalRegistrationForm = () => {
         onPress={() => Alert.alert('Add Stockist', 'Stockist addition will be available soon')}
         activeOpacity={0.7}
       >
-        <Text style={styles.addStockistButtonText}>+ Add More Stockist</Text>
+        <AppText style={styles.addStockistButtonText}>+ Add More Stockist</AppText>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -1098,21 +1099,21 @@ const GroupHospitalRegistrationForm = () => {
         >
           <ChevronLeft />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Registration</Text>
+        <AppText style={styles.headerTitle}>Registration</AppText>
       </View>
 
       {/* Type Header */}
       <View style={styles.typeHeader}>
         <View style={styles.typeTag}>
-          <Text style={styles.typeTagText}>Hospital</Text>
+          <AppText style={styles.typeTagText}>Hospital</AppText>
         </View>
         <ChevronRight />
         <View style={styles.typeTag}>
-          <Text style={styles.typeTagText}>Private</Text>
+          <AppText style={styles.typeTagText}>Private</AppText>
         </View>
         <ChevronRight />
         <View style={[styles.typeTag, styles.typeTagActive]}>
-          <Text style={[styles.typeTagText, styles.typeTagTextActive]}>Group Hospital/CBU</Text>
+          <AppText style={[styles.typeTagText, styles.typeTagTextActive]}>Group Hospital/CBU</AppText>
         </View>
       </View>
 
@@ -1140,7 +1141,7 @@ const GroupHospitalRegistrationForm = () => {
             onPress={handlePreviousStep}
             activeOpacity={0.7}
           >
-            <Text style={styles.backStepButtonText}>Cancel</Text>
+            <AppText style={styles.backStepButtonText}>Cancel</AppText>
           </TouchableOpacity>
         )}
         
@@ -1159,9 +1160,9 @@ const GroupHospitalRegistrationForm = () => {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.nextStepButtonText}>
+              <AppText style={styles.nextStepButtonText}>
                 {currentStep === 4 ? 'Register' : currentStep === 1 ? 'Submit' : 'Submit'}
-              </Text>
+              </AppText>
             )}
           </TouchableOpacity>
         </Animated.View>
@@ -1227,9 +1228,9 @@ const GroupHospitalRegistrationForm = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalIconContainer}>
-              <Text style={styles.modalIcon}>!</Text>
+              <AppText style={styles.modalIcon}>!</AppText>
             </View>
-            <Text style={styles.modalTitle}>Are you sure you want to Cancel the Onboarding?</Text>
+            <AppText style={styles.modalTitle}>Are you sure you want to Cancel the Onboarding?</AppText>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={styles.modalYesButton}
@@ -1238,13 +1239,13 @@ const GroupHospitalRegistrationForm = () => {
                   navigation.goBack();
                 }}
               >
-                <Text style={styles.modalYesButtonText}>Yes</Text>
+                <AppText style={styles.modalYesButtonText}>Yes</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalNoButton}
                 onPress={() => setShowCancelModal(false)}
               >
-                <Text style={styles.modalNoButtonText}>No</Text>
+                <AppText style={styles.modalNoButtonText}>No</AppText>
               </TouchableOpacity>
             </View>
           </View>

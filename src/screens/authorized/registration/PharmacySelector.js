@@ -17,6 +17,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
+import AppText from "../../../components/AppText"
 
 // Mock pharmacy data
 const MOCK_PHARMACIES = [
@@ -120,11 +121,11 @@ const PharmacySelector = () => {
         </View>
         
         <View style={styles.pharmacyInfo}>
-          <Text style={styles.pharmacyName}>{item.name}</Text>
-          <Text style={styles.pharmacyCode}>{item.code}</Text>
+          <AppText style={styles.pharmacyName}>{item.name}</AppText>
+          <AppText style={styles.pharmacyCode}>{item.code}</AppText>
         </View>
         
-        <Text style={styles.pharmacyCity}>{item.city}</Text>
+        <AppText style={styles.pharmacyCity}>{item.city}</AppText>
       </TouchableOpacity>
     );
   };
@@ -141,7 +142,7 @@ const PharmacySelector = () => {
         >
           <Icon name="close" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Select Pharmacy</Text>
+        <AppText style={styles.headerTitle}>Select Pharmacy</AppText>
       </View>
 
       {/* Filter Pills */}
@@ -158,7 +159,7 @@ const PharmacySelector = () => {
             style={styles.filterPill}
             onPress={() => setShowStateDropdown(!showStateDropdown)}
           >
-            <Text style={styles.filterPillText}>{selectedState}</Text>
+            <AppText style={styles.filterPillText}>{selectedState}</AppText>
             <Icon name="chevron-down" size={16} color="#666" />
           </TouchableOpacity>
 
@@ -166,7 +167,7 @@ const PharmacySelector = () => {
             style={styles.filterPill}
             onPress={() => setShowCityDropdown(!showCityDropdown)}
           >
-            <Text style={styles.filterPillText}>{selectedCity}</Text>
+            <AppText style={styles.filterPillText}>{selectedCity}</AppText>
             <Icon name="chevron-down" size={16} color="#666" />
           </TouchableOpacity>
         </ScrollView>
@@ -203,7 +204,7 @@ const PharmacySelector = () => {
             onPress={handleAddNewPharmacy}
           >
             <Icon name="add" size={20} color={colors.primary} />
-            <Text style={styles.addNewPharmacyText}>Add New Pharmacy</Text>
+            <AppText style={styles.addNewPharmacyText}>Add New Pharmacy</AppText>
           </TouchableOpacity>
         )}
       />
@@ -215,9 +216,9 @@ const PharmacySelector = () => {
             style={styles.continueButton}
             onPress={handleContinue}
           >
-            <Text style={styles.continueButtonText}>
+            <AppText style={styles.continueButtonText}>
               Continue ({selectedItems.length} selected)
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </View>
       )}

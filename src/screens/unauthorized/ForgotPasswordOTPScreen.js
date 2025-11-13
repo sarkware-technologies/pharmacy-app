@@ -16,6 +16,7 @@ import CustomButton from '../../components/CustomButton';
 import { colors } from '../../styles/colors';
 import SunLogo from '../../components/icons/SunLogo';
 import ArrowLeft from '../../components/icons/ArrowLeft';
+import AppText from "../../components/AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -204,11 +205,11 @@ const ForgotPasswordOTPScreen = () => {
                 </Animated.View>
                 
                 {/* Title */}
-                <Text style={styles.title}>OTP Verification</Text>
-                <Text style={styles.subtitle}>
+                <AppText style={styles.title}>OTP Verification</AppText>
+                <AppText style={styles.subtitle}>
                     We have sent a verification code to on your{'\n'}
                     registered mobile number
-                </Text>
+                </AppText>
                 
                 {/* OTP Input */}
                 <View style={styles.otpContainer}>
@@ -221,7 +222,7 @@ const ForgotPasswordOTPScreen = () => {
                 
                 {/* Resend Section */}
                 <View style={styles.resendContainer}>
-                    <Text style={styles.resendText}>Didn't get the code?</Text>
+                    <AppText style={styles.resendText}>Didn't get the code?</AppText>
                     <TouchableOpacity 
                         onPress={handleResendCode}
                         disabled={!canResend}>
@@ -232,9 +233,9 @@ const ForgotPasswordOTPScreen = () => {
                                 { transform: [{ scale: countdownScale }] }
                             ]}>
                             Resend Code {!canResend && (
-                                <Text style={styles.countdown}>
+                                <AppText style={styles.countdown}>
                                     in {Math.ceil(countdown / 10).toFixed(1)} Sec
-                                </Text>
+                                </AppText>
                             )}
                         </Animated.Text>
                     </TouchableOpacity>

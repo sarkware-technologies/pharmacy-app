@@ -38,6 +38,7 @@ import {
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import Details from '../../../components/icons/Details';
 import Linkage from '../../../components/icons/Linkage';
+import AppText from "../../../components/AppText"
 
 const DivisionDetail = () => {
   const navigation = useNavigation();
@@ -210,11 +211,11 @@ const DivisionDetail = () => {
     <View style={styles.productCard}>
       <View style={styles.productHeader}>
         <View>
-          <Text style={styles.productName}>{item.productName}</Text>
-          <Text style={styles.productCode}>{item.productCode}</Text>
+          <AppText style={styles.productName}>{item.productName}</AppText>
+          <AppText style={styles.productCode}>{item.productCode}</AppText>
         </View>
         <View style={styles.marginInfo}>
-          <Text style={styles.marginText}>{item.doctorMargin || 10}% | {item.hospitalMargin || 12}%</Text>
+          <AppText style={styles.marginText}>{item.doctorMargin || 10}% | {item.hospitalMargin || 12}%</AppText>
         </View>
       </View>
     </View>
@@ -223,13 +224,13 @@ const DivisionDetail = () => {
   const renderDistributorItem = ({ item }) => (
     <View style={styles.linkageCard}>
       <View style={styles.linkageHeader}>
-        <Text style={styles.linkageName}>{item.name}</Text>
-        <Text style={styles.linkageCode}>{item.cityName}</Text>
+        <AppText style={styles.linkageName}>{item.name}</AppText>
+        <AppText style={styles.linkageCode}>{item.cityName}</AppText>
       </View>
       <View style={styles.linkageDetails}>
-        <Text style={styles.linkageLocation}>
+        <AppText style={styles.linkageLocation}>
           {item.code}
-        </Text>        
+        </AppText>        
       </View>
     </View>
   );
@@ -237,12 +238,12 @@ const DivisionDetail = () => {
   const renderCustomerItem = ({ item }) => (
     <View style={styles.linkageCard}>
       <View style={styles.linkageHeader}>
-        <Text style={styles.linkageName}>{item.customerName}</Text>
-        <Text style={styles.linkageCode}>{item.customerCategory}/</Text>
+        <AppText style={styles.linkageName}>{item.customerName}</AppText>
+        <AppText style={styles.linkageCode}>{item.customerCategory}/</AppText>
       </View>
       <View style={styles.linkageDetails}>
-        <Text style={styles.linkageCategory}>{item.customerCode || item.customerId}</Text>
-        <Text style={styles.linkageCode}>{item.customerSubcategory}</Text>
+        <AppText style={styles.linkageCategory}>{item.customerCode || item.customerId}</AppText>
+        <AppText style={styles.linkageCode}>{item.customerSubcategory}</AppText>
       </View>
     </View>
   );
@@ -251,10 +252,10 @@ const DivisionDetail = () => {
     <View style={styles.linkageCard}>
       <View style={styles.linkageHeader}>
         <View>
-          <Text style={styles.linkageName}>{item.name}</Text>
-          <Text style={styles.linkageCode}>{item.code}</Text>
+          <AppText style={styles.linkageName}>{item.name}</AppText>
+          <AppText style={styles.linkageCode}>{item.code}</AppText>
         </View>
-        <Text style={styles.designation}>{item.designation}</Text>
+        <AppText style={styles.designation}>{item.designation}</AppText>
       </View>
     </View>
   );
@@ -282,7 +283,7 @@ const DivisionDetail = () => {
           </View>
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No products found</Text>
+            <AppText style={styles.emptyText}>No products found</AppText>
           </View>
         )
       )}
@@ -300,9 +301,9 @@ const DivisionDetail = () => {
           onPress={() => handleLinkagedTabChange('Distributors')}
         >
           <Icon name="business" size={18} color={activeLinkagedTab === 'Distributors' ? colors.primary : '#666'} />
-          <Text style={[styles.linkagedTabText, activeLinkagedTab === 'Distributors' && styles.activeLinkagedTabText]}>
+          <AppText style={[styles.linkagedTabText, activeLinkagedTab === 'Distributors' && styles.activeLinkagedTabText]}>
             Distributors
-          </Text>
+          </AppText>
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -310,9 +311,9 @@ const DivisionDetail = () => {
           onPress={() => handleLinkagedTabChange('Field')}
         >
           <Icon name="people" size={18} color={activeLinkagedTab === 'Field' ? colors.primary : '#666'} />
-          <Text style={[styles.linkagedTabText, activeLinkagedTab === 'Field' && styles.activeLinkagedTabText]}>
+          <AppText style={[styles.linkagedTabText, activeLinkagedTab === 'Field' && styles.activeLinkagedTabText]}>
             Field
-          </Text>
+          </AppText>
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -320,17 +321,17 @@ const DivisionDetail = () => {
           onPress={() => handleLinkagedTabChange('Customer')}
         >
           <Icon name="store" size={18} color={activeLinkagedTab === 'Customer' ? colors.primary : '#666'} />
-          <Text style={[styles.linkagedTabText, activeLinkagedTab === 'Customer' && styles.activeLinkagedTabText]}>
+          <AppText style={[styles.linkagedTabText, activeLinkagedTab === 'Customer' && styles.activeLinkagedTabText]}>
             Customer
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
 
       {activeLinkagedTab === 'Distributors' && (
         <>
         <View style={styles.linkageTabItemHeader}>
-          <Text style={{color: '#666'}}>Name</Text>
-          <Text style={{color: '#666'}}>City</Text>
+          <AppText style={{color: '#666'}}>Name</AppText>
+          <AppText style={{color: '#666'}}>City</AppText>
         </View>
         <FlatList
           data={divisionDistributors}
@@ -352,7 +353,7 @@ const DivisionDetail = () => {
               </View>
             ) : (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No distributors found</Text>
+                <AppText style={styles.emptyText}>No distributors found</AppText>
               </View>
             )
           )}
@@ -363,8 +364,8 @@ const DivisionDetail = () => {
       {activeLinkagedTab === 'Customer' && (
         <>
         <View style={styles.linkageTabItemHeader}>
-          <Text style={{color: '#666'}}>Customer Details</Text>
-          <Text style={{color: '#666'}}>Category/Subcategory</Text>
+          <AppText style={{color: '#666'}}>Customer Details</AppText>
+          <AppText style={{color: '#666'}}>Category/Subcategory</AppText>
         </View>
         <FlatList
           data={divisionCustomers}
@@ -388,7 +389,7 @@ const DivisionDetail = () => {
               </View>
             ) : (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No customers found</Text>
+                <AppText style={styles.emptyText}>No customers found</AppText>
               </View>
             )
           )}
@@ -402,8 +403,8 @@ const DivisionDetail = () => {
       {activeLinkagedTab === 'Field' && (
          <>
         <View style={styles.linkageTabItemHeader}>
-          <Text style={{color: '#666'}}>Employee Name & Code</Text>
-          <Text style={{color: '#666'}}>Designation</Text>
+          <AppText style={{color: '#666'}}>Employee Name & Code</AppText>
+          <AppText style={{color: '#666'}}>Designation</AppText>
         </View>
         <FlatList
           data={divisionFieldEmployees}
@@ -425,7 +426,7 @@ const DivisionDetail = () => {
               </View>
             ) : (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No field employees found</Text>
+                <AppText style={styles.emptyText}>No field employees found</AppText>
               </View>
             )
           )}
@@ -443,7 +444,7 @@ const DivisionDetail = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{division?.divisionName || 'Division'}</Text>
+        <AppText style={styles.headerTitle}>{division?.divisionName || 'Division'}</AppText>
       </View>
 
       <View style={styles.tabs}>
@@ -452,9 +453,9 @@ const DivisionDetail = () => {
           onPress={() => handleTabChange('Details')}
         >
           <Details color={activeTab === 'Details' ? colors.primary : '#999'} />
-          <Text style={[styles.tabText, activeTab === 'Details' && styles.activeTabText]}>
+          <AppText style={[styles.tabText, activeTab === 'Details' && styles.activeTabText]}>
             Details
-          </Text>
+          </AppText>
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -462,9 +463,9 @@ const DivisionDetail = () => {
           onPress={() => handleTabChange('Linkaged')}
         >
           <Linkage color={activeTab === 'Linkaged' ? colors.primary : '#999'} />
-          <Text style={[styles.tabText, activeTab === 'Linkaged' && styles.activeTabText]}>
+          <AppText style={[styles.tabText, activeTab === 'Linkaged' && styles.activeTabText]}>
             Linkaged
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
 

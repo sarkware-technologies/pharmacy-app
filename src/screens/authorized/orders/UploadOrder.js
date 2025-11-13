@@ -23,6 +23,7 @@ import Upload from "../../../components/icons/Upload"
 import { pick, types } from '@react-native-documents/picker';
 import CustomerSelectionModal from './CustomerSelector';
 import SelectDistributor from './SelectDistributor';
+import AppText from "../../../components/AppText"
 
 const UploadOrder = () => {
   const navigation = useNavigation();
@@ -165,29 +166,29 @@ const UploadOrder = () => {
       <View style={styles.content}>
         <View style={styles.scrollcontent}>
           <ScrollView style={{ marginBottom: 20 }} showsVerticalScrollIndicator={false}>
-            <Text style={styles.instructionText}>
+            <AppText style={styles.instructionText}>
               To create an order, please upload the order file that you downloaded from the ERP system.
-            </Text>
+            </AppText>
             <View style={styles.filtersContainer}>
               <View style={styles.wrapper}>
                 <View style={styles.row}>
 
                   <TouchableOpacity style={styles.box} onPress={() => setShowCustomerselection(true)}>
-                    <Text style={styles.label}>Customer</Text>
+                    <AppText style={styles.label}>Customer</AppText>
                     <View style={styles.valueRow}>
-                      <Text style={styles.valueText} numberOfLines={1}>
+                      <AppText style={styles.valueText} numberOfLines={1}>
                         {selectedCustomer?.customerName ?? 'Select Customer'}
-                      </Text>
+                      </AppText>
                       <Downarrow />
                     </View>
                   </TouchableOpacity>
 
                   <TouchableOpacity style={styles.box} onPress={() => setShowSelectdistributor(true)}>
-                    <Text style={styles.label}>Distributor</Text>
+                    <AppText style={styles.label}>Distributor</AppText>
                     <View style={styles.valueRow}>
-                      <Text style={styles.valueText} numberOfLines={1}>
+                      <AppText style={styles.valueText} numberOfLines={1}>
                         {selectedDistributor?.name ?? 'Select Distributor'}
-                      </Text>
+                      </AppText>
                       <Downarrow />
                     </View>
                   </TouchableOpacity>
@@ -202,18 +203,18 @@ const UploadOrder = () => {
             >
               <>
                 {originalFile ? <Note /> : <Upload color='#2B2B2B' width={20} height={20} />}
-                <Text style={styles.uploadTitle}>{originalFile ? originalFile?.name : 'Upload Original Order File*'}</Text>
+                <AppText style={styles.uploadTitle}>{originalFile ? originalFile?.name : 'Upload Original Order File*'}</AppText>
                 {!originalFile ? (
-                  <Text style={styles.uploadSubtext}>
+                  <AppText style={styles.uploadSubtext}>
                     xls, xlsx, csv, txt, xlsb & pdf file of maximum{'\n'}5 mb size is supported.
-                  </Text>
+                  </AppText>
                 ) : (
-                  <Text style={styles.fileSize}>Uploaded {originalFile.size}</Text>
+                  <AppText style={styles.fileSize}>Uploaded {originalFile.size}</AppText>
                 )}
 
                 {originalFile && (
                   <TouchableOpacity style={{ marginTop: 6 }} onPress={() => handleCancelUpload('original')}>
-                    <Text style={styles.cancelUpload}>Cancel Upload</Text>
+                    <AppText style={styles.cancelUpload}>Cancel Upload</AppText>
                   </TouchableOpacity>
                 )}
               </>
@@ -227,18 +228,18 @@ const UploadOrder = () => {
             >
               <>
                 {templateFile ? <Note /> : <Upload color='#2B2B2B' width={20} height={20} />}
-                <Text style={styles.uploadTitle}>{templateFile ? templateFile?.name : 'Upload Template File'}</Text>
+                <AppText style={styles.uploadTitle}>{templateFile ? templateFile?.name : 'Upload Template File'}</AppText>
                 {!templateFile ? (
-                  <Text style={styles.uploadSubtext}>
+                  <AppText style={styles.uploadSubtext}>
                     xls, xlsx, csv, txt, xlsb & pdf file of maximum{'\n'}5 mb size is supported.
-                  </Text>
+                  </AppText>
                 ) : (
-                  <Text style={styles.fileSize}>Uploaded {templateFile.size}</Text>
+                  <AppText style={styles.fileSize}>Uploaded {templateFile.size}</AppText>
                 )}
 
                 {templateFile && (
                   <TouchableOpacity style={{ marginTop: 6 }} onPress={() => handleCancelUpload('template')}>
-                    <Text style={styles.cancelUpload}>Cancel Upload</Text>
+                    <AppText style={styles.cancelUpload}>Cancel Upload</AppText>
                   </TouchableOpacity>
                 )}
               </>
@@ -251,13 +252,13 @@ const UploadOrder = () => {
                 {isProcessing ? (
                   <>
                     <ActivityIndicator size="small" color={colors.primary} />
-                    <Text style={styles.ocrText}>Reading file with OCR...</Text>
+                    <AppText style={styles.ocrText}>Reading file with OCR...</AppText>
                   </>
                 ) : (
                   <>
-                    <CustomCheckbox activeColor="#F7941E" size={15} title={<Text style={styles.ocrText}>
+                    <CustomCheckbox activeColor="#F7941E" size={15} title={<AppText style={styles.ocrText}>
                       Read the file with OCR  |  02:15 Sec
-                    </Text>} />
+                    </AppText>} />
 
                   </>
                 )}
@@ -274,7 +275,7 @@ const UploadOrder = () => {
               onPress={handleDownloadTemplate}
             >
               <Download width={13} height={13} color='#F7941E' />
-              <Text style={styles.downloadText}>Download Template</Text>
+              <AppText style={styles.downloadText}>Download Template</AppText>
             </TouchableOpacity>
           </ScrollView>
           <TouchableOpacity
@@ -285,7 +286,7 @@ const UploadOrder = () => {
             onPress={handleContinue}
             disabled={!originalFile && !templateFile || !templateFile}
           >
-            <Text style={styles.continueText}>Continue</Text>
+            <AppText style={styles.continueText}>Continue</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -303,21 +304,21 @@ const UploadOrder = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Order</Text>
+        <AppText style={styles.headerTitle}>Create Order</AppText>
       </View>
       <View style={styles.progressContainer}>
         <View style={styles.progressStep}>
           <View style={[styles.stepCircle, styles.activeStep]}>
-            <Text style={styles.stepNumber}>1</Text>
+            <AppText style={styles.stepNumber}>1</AppText>
           </View>
-          <Text style={[styles.stepLabel, styles.activeStepLabel]}>Upload Order</Text>
+          <AppText style={[styles.stepLabel, styles.activeStepLabel]}>Upload Order</AppText>
         </View>
         <View style={styles.progressLine} />
         <View style={styles.progressStep}>
           <View style={[styles.stepCircle, styles.inactiveStep]}>
-            <Text style={[styles.stepNumber, styles.inactiveStepNumber]}>2</Text>
+            <AppText style={[styles.stepNumber, styles.inactiveStepNumber]}>2</AppText>
           </View>
-          <Text style={[styles.stepLabel, styles.inactiveStepLabel]}>Products Mapping</Text>
+          <AppText style={[styles.stepLabel, styles.inactiveStepLabel]}>Products Mapping</AppText>
         </View>
       </View>
       {renderUploadfile()}

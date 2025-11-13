@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native";
+import AppText from "../AppText"
 
 export default function CustomCheckbox({
   title = "",
@@ -40,10 +41,10 @@ export default function CustomCheckbox({
           checkboxStyle,
         ]}
       >
-        {checked && <Text style={[styles.checkMark,{fontSize:size-8}]}>✓</Text>}
+        {checked && <AppText style={[styles.checkMark,{fontSize:size-8}]}>✓</AppText>}
       </View>
 
-      {title ? <Text style={[styles.label, textStyle]}>{title}</Text> : null}
+      {title ? <AppText style={[styles.label, textStyle]}>{title}</AppText> : null}
     </TouchableOpacity>
   );
 }

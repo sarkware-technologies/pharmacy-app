@@ -12,6 +12,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../styles/colors';
+import AppText from "../../../components/AppText"
 
 const DivisionSearch = () => {
   const navigation = useNavigation();
@@ -51,7 +52,7 @@ const DivisionSearch = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Search Divisions</Text>
+        <AppText style={styles.headerTitle}>Search Divisions</AppText>
       </View>
 
       <View style={styles.searchContainer}>
@@ -73,15 +74,15 @@ const DivisionSearch = () => {
           )}
         </View>
         <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchButtonText}>Search</Text>
+          <AppText style={styles.searchButtonText}>Search</AppText>
         </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
         <View style={styles.recentHeader}>
-          <Text style={styles.recentTitle}>Recent Searches</Text>
+          <AppText style={styles.recentTitle}>Recent Searches</AppText>
           <TouchableOpacity onPress={clearRecentSearches}>
-            <Text style={styles.clearText}>Clear All</Text>
+            <AppText style={styles.clearText}>Clear All</AppText>
           </TouchableOpacity>
         </View>
 
@@ -94,13 +95,13 @@ const DivisionSearch = () => {
               onPress={() => handleRecentSearch(item)}
             >
               <Icon name="history" size={20} color="#999" />
-              <Text style={styles.recentText}>{item}</Text>
+              <AppText style={styles.recentText}>{item}</AppText>
               <Icon name="north-west" size={18} color="#999" />
             </TouchableOpacity>
           )}
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No recent searches</Text>
+              <AppText style={styles.emptyText}>No recent searches</AppText>
             </View>
           )}
         />

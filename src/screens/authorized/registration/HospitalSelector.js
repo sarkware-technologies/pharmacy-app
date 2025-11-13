@@ -20,6 +20,7 @@ import Filter from '../../../components/icons/Filter';
 import ArrowDown from '../../../components/icons/ArrowDown';
 import Search from '../../../components/icons/Search';
 import FilterCheck from '../../../components/icons/FilterCheck';
+import AppText from "../../../components/AppText"
 
 // Mock hospital data
 const MOCK_HOSPITALS = [
@@ -129,11 +130,11 @@ const HospitalSelector = () => {
         </View>
         
         <View style={styles.hospitalInfo}>
-          <Text style={styles.hospitalName}>{item.name}</Text>
-          <Text style={styles.hospitalCode}>{item.code}</Text>
+          <AppText style={styles.hospitalName}>{item.name}</AppText>
+          <AppText style={styles.hospitalCode}>{item.code}</AppText>
         </View>
         
-        <Text style={styles.hospitalCity}>{item.city}</Text>
+        <AppText style={styles.hospitalCity}>{item.city}</AppText>
       </TouchableOpacity>
     );
   };
@@ -141,16 +142,16 @@ const HospitalSelector = () => {
   const renderNoResults = () => (
     <View style={styles.noResultsContainer}>
       <Icon name="search-outline" size={60} color="#CCC" />
-      <Text style={styles.noResultsTitle}>Hospital Not Found</Text>
-      <Text style={styles.noResultsText}>
+      <AppText style={styles.noResultsTitle}>Hospital Not Found</AppText>
+      <AppText style={styles.noResultsText}>
         Hospital not found. You can add group hospital to continue.{'\n'}
         Else try to search different hospital
-      </Text>
+      </AppText>
       <TouchableOpacity
         style={styles.addNewButton}
         onPress={handleAddNewHospital}
       >        
-        <Text style={styles.addNewButtonText}>+Add New Group Hospital</Text>
+        <AppText style={styles.addNewButtonText}>+Add New Group Hospital</AppText>
       </TouchableOpacity>
     </View>
   );
@@ -167,7 +168,7 @@ const HospitalSelector = () => {
         >          
           <CloseCircle />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Select Hospital</Text>
+        <AppText style={styles.headerTitle}>Select Hospital</AppText>
       </View>
 
       {/* Filter Pills */}
@@ -184,7 +185,7 @@ const HospitalSelector = () => {
             style={styles.filterPill}
             onPress={() => setShowStateDropdown(!showStateDropdown)}
           >
-            <Text style={styles.filterPillText}>{selectedState}</Text>            
+            <AppText style={styles.filterPillText}>{selectedState}</AppText>            
             <ArrowDown width='10' color='#666' />
           </TouchableOpacity>
 
@@ -192,7 +193,7 @@ const HospitalSelector = () => {
             style={styles.filterPill}
             onPress={() => setShowCityDropdown(!showCityDropdown)}
           >
-            <Text style={styles.filterPillText}>{selectedCity}</Text>
+            <AppText style={styles.filterPillText}>{selectedCity}</AppText>
             <ArrowDown width='10' color='#666' />
           </TouchableOpacity>
 
@@ -200,7 +201,7 @@ const HospitalSelector = () => {
             style={styles.filterPill}
             onPress={() => setShowContractDropdown(!showContractDropdown)}
           >
-            <Text style={styles.filterPillText}>{selectedContract}</Text>
+            <AppText style={styles.filterPillText}>{selectedContract}</AppText>
             <ArrowDown width='10' color='#666' />
           </TouchableOpacity>
 
@@ -208,7 +209,7 @@ const HospitalSelector = () => {
             style={styles.filterPill}
             onPress={() => {}}
           >
-            <Text style={styles.filterPillText}>Hospital/Clinic...</Text>
+            <AppText style={styles.filterPillText}>Hospital/Clinic...</AppText>
             <ArrowDown width='10' color='#666' />
           </TouchableOpacity>
         </ScrollView>
@@ -252,9 +253,9 @@ const HospitalSelector = () => {
             style={styles.continueButton}
             onPress={handleContinue}
           >
-            <Text style={styles.continueButtonText}>
+            <AppText style={styles.continueButtonText}>
               Continue ({selectedItems.length} selected)
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </View>
       )}

@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors } from '../../../styles/colors';
+import AppText from "../../../components/AppText"
 
 const CreateRateContract = () => {
   const navigation = useNavigation();
@@ -145,7 +146,7 @@ const CreateRateContract = () => {
                 setShowCustomerDropdown(false);
               }}
             >
-              <Text style={styles.dropdownItemText}>{customer.name}</Text>
+              <AppText style={styles.dropdownItemText}>{customer.name}</AppText>
             </TouchableOpacity>
           ))}
         </View>
@@ -166,15 +167,15 @@ const CreateRateContract = () => {
             <TouchableOpacity onPress={() => setShowCopyModal(false)}>
               <Icon name="close" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Copy RC's From Existing Customer</Text>
+            <AppText style={styles.modalTitle}>Copy RC's From Existing Customer</AppText>
             <View style={{ width: 24 }} />
           </View>
 
           <View style={styles.modalBody}>
             <View style={styles.newCustomerInfo}>
-              <Text style={styles.sectionLabel}>New Customer</Text>
-              <Text style={styles.customerName}>Columbia Asia</Text>
-              <Text style={styles.customerDetails}>10106555 | Pune</Text>
+              <AppText style={styles.sectionLabel}>New Customer</AppText>
+              <AppText style={styles.customerName}>Columbia Asia</AppText>
+              <AppText style={styles.customerDetails}>10106555 | Pune</AppText>
             </View>
 
             <View style={styles.filterRow}>
@@ -182,11 +183,11 @@ const CreateRateContract = () => {
                 <Icon name="filter-list" size={18} color={colors.primary} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.filterDropdown}>
-                <Text style={styles.filterText}>4 States</Text>
+                <AppText style={styles.filterText}>4 States</AppText>
                 <Icon name="arrow-drop-down" size={20} color={colors.text} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.filterDropdown}>
-                <Text style={styles.filterText}>55 Cities</Text>
+                <AppText style={styles.filterText}>55 Cities</AppText>
                 <Icon name="arrow-drop-down" size={20} color={colors.text} />
               </TouchableOpacity>
             </View>
@@ -202,17 +203,17 @@ const CreateRateContract = () => {
 
             <View style={styles.customerList}>
               <View style={styles.listHeader}>
-                <Text style={styles.listHeaderText}>Customer Details</Text>
-                <Text style={styles.listHeaderText}>City</Text>
+                <AppText style={styles.listHeaderText}>Customer Details</AppText>
+                <AppText style={styles.listHeaderText}>City</AppText>
               </View>
               
               {customers.map((customer, index) => (
                 <TouchableOpacity key={index} style={styles.customerItem}>
                   <View>
-                    <Text style={styles.customerItemName}>{customer.name}</Text>
-                    <Text style={styles.customerItemCode}>{customer.id}</Text>
+                    <AppText style={styles.customerItemName}>{customer.name}</AppText>
+                    <AppText style={styles.customerItemCode}>{customer.id}</AppText>
                   </View>
-                  <Text style={styles.customerItemCity}>{customer.location}</Text>
+                  <AppText style={styles.customerItemCity}>{customer.location}</AppText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -232,7 +233,7 @@ const CreateRateContract = () => {
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Configure Supply Mode</Text>
+            <AppText style={styles.modalTitle}>Configure Supply Mode</AppText>
             <TouchableOpacity onPress={() => setShowConfigureModal(false)}>
               <Icon name="close" size={24} color={colors.text} />
             </TouchableOpacity>
@@ -240,10 +241,10 @@ const CreateRateContract = () => {
 
           <View style={styles.tabContainer}>
             <TouchableOpacity style={[styles.tab, styles.activeTab]}>
-              <Text style={styles.activeTabText}>Preferred Distributors</Text>
+              <AppText style={styles.activeTabText}>Preferred Distributors</AppText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.tab}>
-              <Text style={styles.tabText}>All Distributors</Text>
+              <AppText style={styles.tabText}>All Distributors</AppText>
             </TouchableOpacity>
           </View>
 
@@ -251,19 +252,19 @@ const CreateRateContract = () => {
             {distributors.map((distributor, index) => (
               <View key={index} style={styles.distributorCard}>
                 <View style={styles.distributorHeader}>
-                  <Text style={styles.distributorName}>{distributor.name}</Text>
-                  <Text style={styles.marginLabel}>Margin</Text>
+                  <AppText style={styles.distributorName}>{distributor.name}</AppText>
+                  <AppText style={styles.marginLabel}>Margin</AppText>
                 </View>
-                <Text style={styles.distributorDetails}>{distributor.id} | {distributor.location}</Text>
+                <AppText style={styles.distributorDetails}>{distributor.id} | {distributor.location}</AppText>
                 
                 <View style={styles.distributorControls}>
                   <TouchableOpacity style={styles.dropdownButton}>
-                    <Text style={styles.dropdownButtonText}>{distributor.spll}</Text>
+                    <AppText style={styles.dropdownButtonText}>{distributor.spll}</AppText>
                     <Icon name="arrow-drop-down" size={20} color={colors.text} />
                   </TouchableOpacity>
                   
                   <TouchableOpacity style={styles.dropdownButton}>
-                    <Text style={styles.dropdownButtonText}>{distributor.division}</Text>
+                    <AppText style={styles.dropdownButtonText}>{distributor.division}</AppText>
                     <Icon name="arrow-drop-down" size={20} color={colors.text} />
                   </TouchableOpacity>
                   
@@ -273,7 +274,7 @@ const CreateRateContract = () => {
                       value={distributor.margin.toString()}
                       keyboardType="numeric"
                     />
-                    <Text style={styles.percentSymbol}>%</Text>
+                    <AppText style={styles.percentSymbol}>%</AppText>
                   </View>
                 </View>
                 
@@ -282,14 +283,14 @@ const CreateRateContract = () => {
                     <View style={[styles.radioOuter, distributor.supplyMode === 'Net Rate' && styles.radioActive]}>
                       {distributor.supplyMode === 'Net Rate' && <View style={styles.radioInner} />}
                     </View>
-                    <Text style={styles.radioText}>Net Rate</Text>
+                    <AppText style={styles.radioText}>Net Rate</AppText>
                   </TouchableOpacity>
                   
                   <TouchableOpacity style={styles.radioButton}>
                     <View style={styles.radioOuter}>
                       {distributor.supplyMode === 'Chargeback' && <View style={styles.radioInner} />}
                     </View>
-                    <Text style={styles.radioText}>Chargeback</Text>
+                    <AppText style={styles.radioText}>Chargeback</AppText>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -297,7 +298,7 @@ const CreateRateContract = () => {
           </ScrollView>
 
           <TouchableOpacity style={styles.configureButton} onPress={() => setShowConfigureModal(false)}>
-            <Text style={styles.configureButtonText}>Configure</Text>
+            <AppText style={styles.configureButtonText}>Configure</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -314,7 +315,7 @@ const CreateRateContract = () => {
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Search & add product</Text>
+            <AppText style={styles.modalTitle}>Search & add product</AppText>
             <TouchableOpacity onPress={() => setShowProductSearch(false)}>
               <Icon name="close" size={24} color={colors.text} />
             </TouchableOpacity>
@@ -349,8 +350,8 @@ const CreateRateContract = () => {
                   }}
                 >
                   <View style={styles.searchResultInfo}>
-                    <Text style={styles.searchResultName}>{product.name}</Text>
-                    <Text style={styles.searchResultCode}>{product.id}</Text>
+                    <AppText style={styles.searchResultName}>{product.name}</AppText>
+                    <AppText style={styles.searchResultCode}>{product.id}</AppText>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -358,7 +359,7 @@ const CreateRateContract = () => {
           ) : (
             <View style={styles.emptySearchState}>
               <Icon name="search" size={48} color={colors.border} />
-              <Text style={styles.emptySearchText}>Searched results will display here</Text>
+              <AppText style={styles.emptySearchText}>Searched results will display here</AppText>
             </View>
           )}
         </View>
@@ -376,7 +377,7 @@ const CreateRateContract = () => {
       <View style={styles.modalOverlay}>
         <View style={styles.modalContentSmall}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Discount %</Text>
+            <AppText style={styles.modalTitle}>Discount %</AppText>
             <TouchableOpacity onPress={() => setShowDiscountFilter(false)}>
               <Icon name="close" size={24} color={colors.text} />
             </TouchableOpacity>
@@ -403,9 +404,9 @@ const CreateRateContract = () => {
                   <View style={styles.checkbox}>
                     {option.selected && <Icon name="check" size={16} color={colors.primary} />}
                   </View>
-                  <Text style={styles.discountOptionText}>
+                  <AppText style={styles.discountOptionText}>
                     {option.range} ({option.count})
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -415,7 +416,7 @@ const CreateRateContract = () => {
             style={styles.applyButton}
             onPress={() => setShowDiscountFilter(false)}
           >
-            <Text style={styles.applyButtonText}>Apply</Text>
+            <AppText style={styles.applyButtonText}>Apply</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -435,43 +436,43 @@ const CreateRateContract = () => {
             <Icon name="error" size={48} color={colors.error} />
           </View>
 
-          <Text style={styles.confirmationTitle}>
+          <AppText style={styles.confirmationTitle}>
             Are you sure you want{'\n'}to submit the Rate Contract?
-          </Text>
+          </AppText>
 
-          <Text style={styles.confirmationSubtitle}>
+          <AppText style={styles.confirmationSubtitle}>
             Please review the below summary of{'\n'}created rate contract
-          </Text>
+          </AppText>
 
           <View style={styles.summaryGrid}>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>No Change</Text>
-              <Text style={styles.summaryValue}>300</Text>
+              <AppText style={styles.summaryLabel}>No Change</AppText>
+              <AppText style={styles.summaryValue}>300</AppText>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Fixed Rate</Text>
-              <Text style={styles.summaryValue}>20</Text>
+              <AppText style={styles.summaryLabel}>Fixed Rate</AppText>
+              <AppText style={styles.summaryValue}>20</AppText>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Disc. On PTR</Text>
-              <Text style={styles.summaryValue}>25</Text>
+              <AppText style={styles.summaryLabel}>Disc. On PTR</AppText>
+              <AppText style={styles.summaryValue}>25</AppText>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Chargeback</Text>
-              <Text style={styles.summaryValue}>30</Text>
+              <AppText style={styles.summaryLabel}>Chargeback</AppText>
+              <AppText style={styles.summaryValue}>30</AppText>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Net rate</Text>
-              <Text style={styles.summaryValue}>15</Text>
+              <AppText style={styles.summaryLabel}>Net rate</AppText>
+              <AppText style={styles.summaryValue}>15</AppText>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>With / Without MOQ</Text>
-              <Text style={styles.summaryValue}>80/100</Text>
+              <AppText style={styles.summaryLabel}>With / Without MOQ</AppText>
+              <AppText style={styles.summaryValue}>80/100</AppText>
             </View>
           </View>
 
           <View style={styles.discountSummary}>
-            <Text style={styles.discountSummaryTitle}>Discount (%)</Text>
+            <AppText style={styles.discountSummaryTitle}>Discount (%)</AppText>
             <View style={styles.discountGrid}>
               {[
                 { label: 'Below 5%', value: 20 },
@@ -482,8 +483,8 @@ const CreateRateContract = () => {
                 { label: '25%-30%', value: 20 },
               ].map((item, index) => (
                 <View key={index} style={styles.discountGridItem}>
-                  <Text style={styles.discountGridLabel}>{item.label}</Text>
-                  <Text style={styles.discountGridValue}>{item.value}</Text>
+                  <AppText style={styles.discountGridLabel}>{item.label}</AppText>
+                  <AppText style={styles.discountGridValue}>{item.value}</AppText>
                 </View>
               ))}
             </View>
@@ -494,13 +495,13 @@ const CreateRateContract = () => {
               style={styles.noButton}
               onPress={() => setShowSubmitConfirmation(false)}
             >
-              <Text style={styles.noButtonText}>No</Text>
+              <AppText style={styles.noButtonText}>No</AppText>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.yesButton}
               onPress={confirmSubmit}
             >
-              <Text style={styles.yesButtonText}>Yes</Text>
+              <AppText style={styles.yesButtonText}>Yes</AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -515,13 +516,13 @@ const CreateRateContract = () => {
           <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>{rcId}</Text>
+          <AppText style={styles.headerTitle}>{rcId}</AppText>
           <View style={styles.headerBadges}>
             <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
-              <Text style={styles.badgeText}>DRAFT</Text>
+              <AppText style={styles.badgeText}>DRAFT</AppText>
             </View>
             <View style={[styles.badge, { backgroundColor: colors.lightGray }]}>
-              <Text style={styles.badgeText}>RFQ</Text>
+              <AppText style={styles.badgeText}>RFQ</AppText>
             </View>
           </View>
         </View>
@@ -532,12 +533,12 @@ const CreateRateContract = () => {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.formSection}>
-          <Text style={styles.sectionLabel}>Select Customer</Text>
+          <AppText style={styles.sectionLabel}>Select Customer</AppText>
           <TouchableOpacity 
             style={styles.dropdown}
             onPress={() => setShowCustomerDropdown(true)}
           >
-            <Text style={styles.dropdownText}>{selectedCustomer}</Text>
+            <AppText style={styles.dropdownText}>{selectedCustomer}</AppText>
             <Icon name="arrow-drop-down" size={24} color={colors.text} />
           </TouchableOpacity>
 
@@ -545,7 +546,7 @@ const CreateRateContract = () => {
             <>
               <TouchableOpacity style={styles.addCustomerChip}>
                 <Icon name="apartment" size={16} color={colors.textSecondary} />
-                <Text style={styles.chipText}>Kokilaben Dhirubhai Hospital</Text>
+                <AppText style={styles.chipText}>Kokilaben Dhirubhai Hospital</AppText>
                 <TouchableOpacity>
                   <Icon name="close" size={16} color={colors.textSecondary} />
                 </TouchableOpacity>
@@ -556,24 +557,24 @@ const CreateRateContract = () => {
                 onPress={() => setShowCopyModal(true)}
               >
                 <Icon name="content-copy" size={16} color={colors.primary} />
-                <Text style={styles.copyLinkText}>Copy RC from another customer</Text>
+                <AppText style={styles.copyLinkText}>Copy RC from another customer</AppText>
               </TouchableOpacity>
             </>
           )}
         </View>
 
         <View style={styles.formSection}>
-          <Text style={styles.sectionLabel}>Linked Distributors</Text>
+          <AppText style={styles.sectionLabel}>Linked Distributors</AppText>
           <View style={styles.row}>
             <View style={styles.infoBox}>
-              <Text style={styles.infoBoxText}>{linkedDistributors} Distributors</Text>
+              <AppText style={styles.infoBoxText}>{linkedDistributors} Distributors</AppText>
             </View>
             <TouchableOpacity 
               style={styles.configureBtn}
               onPress={() => setShowConfigureModal(true)}
             >
               <Icon name="settings" size={16} color={colors.text} />
-              <Text style={styles.configureBtnText}>Configure</Text>
+              <AppText style={styles.configureBtnText}>Configure</AppText>
               <Icon name="chevron-right" size={20} color={colors.text} />
             </TouchableOpacity>
           </View>
@@ -582,7 +583,7 @@ const CreateRateContract = () => {
         <View style={styles.formSection}>
           <View style={styles.row}>
             <View style={styles.halfWidth}>
-              <Text style={styles.sectionLabel}>Start Date</Text>
+              <AppText style={styles.sectionLabel}>Start Date</AppText>
               <TouchableOpacity 
                 style={styles.dateInput}
                 onPress={() => {
@@ -590,14 +591,14 @@ const CreateRateContract = () => {
                   setShowDatePicker(true);
                 }}
               >
-                <Text style={styles.dateText}>
+                <AppText style={styles.dateText}>
                   {startDate.toLocaleDateString('en-GB').replace(/\//g, '/')}
-                </Text>
+                </AppText>
                 <Icon name="calendar-today" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             <View style={styles.halfWidth}>
-              <Text style={styles.sectionLabel}>End Date</Text>
+              <AppText style={styles.sectionLabel}>End Date</AppText>
               <TouchableOpacity 
                 style={styles.dateInput}
                 onPress={() => {
@@ -605,9 +606,9 @@ const CreateRateContract = () => {
                   setShowDatePicker(true);
                 }}
               >
-                <Text style={styles.dateText}>
+                <AppText style={styles.dateText}>
                   {endDate.toLocaleDateString('en-GB').replace(/\//g, '/')}
-                </Text>
+                </AppText>
                 <Icon name="calendar-today" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
@@ -615,7 +616,7 @@ const CreateRateContract = () => {
         </View>
 
         <View style={styles.formSection}>
-          <Text style={styles.sectionLabel}>Supply Mode</Text>
+          <AppText style={styles.sectionLabel}>Supply Mode</AppText>
           <View style={styles.radioGroup}>
             <TouchableOpacity 
               style={styles.radioButton}
@@ -624,7 +625,7 @@ const CreateRateContract = () => {
               <View style={[styles.radioOuter, supplyMode === 'Net Rate' && styles.radioActive]}>
                 {supplyMode === 'Net Rate' && <View style={styles.radioInner} />}
               </View>
-              <Text style={styles.radioText}>Net Rate</Text>
+              <AppText style={styles.radioText}>Net Rate</AppText>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.radioButton}
@@ -633,7 +634,7 @@ const CreateRateContract = () => {
               <View style={[styles.radioOuter, supplyMode === 'Chargeback' && styles.radioActive]}>
                 {supplyMode === 'Chargeback' && <View style={styles.radioInner} />}
               </View>
-              <Text style={styles.radioText}>Chargeback</Text>
+              <AppText style={styles.radioText}>Chargeback</AppText>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.radioButton}
@@ -642,29 +643,29 @@ const CreateRateContract = () => {
               <View style={[styles.radioOuter, supplyMode === 'Mixed' && styles.radioActive]}>
                 {supplyMode === 'Mixed' && <View style={styles.radioInner} />}
               </View>
-              <Text style={styles.radioText}>Mixed</Text>
+              <AppText style={styles.radioText}>Mixed</AppText>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.formSection}>
           <View style={styles.rcHeader}>
-            <Text style={styles.sectionTitle}>RC's</Text>
+            <AppText style={styles.sectionTitle}>RC's</AppText>
           </View>
           
           <TouchableOpacity 
             style={styles.addProductBar}
             onPress={() => setShowProductSearch(true)}
           >
-            <Text style={styles.addProductPlaceholder}>
+            <AppText style={styles.addProductPlaceholder}>
               Enter product code/name to add...
-            </Text>
+            </AppText>
             <View style={styles.addProductIcons}>
               <TouchableOpacity onPress={() => setShowProductSearch(true)}>
                 <Icon name="filter-list" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setShowDiscountFilter(true)}>
-                <Text style={styles.percentIcon}>%</Text>
+                <AppText style={styles.percentIcon}>%</AppText>
                 <Icon name="arrow-drop-down" size={16} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
@@ -673,46 +674,46 @@ const CreateRateContract = () => {
           {products.map((product, index) => (
             <View key={product.id} style={styles.productCard}>
               <View style={styles.productHeader}>
-                <Text style={styles.productName}>{product.name}</Text>
+                <AppText style={styles.productName}>{product.name}</AppText>
                 <TouchableOpacity onPress={() => removeProduct(product.id)}>
                   <Icon name="delete-outline" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
               
               <View style={styles.productPrices}>
-                <Text style={styles.priceText}>{product.id} | </Text>
-                <Text style={styles.priceText}>PTS: ₹{product.pts} </Text>
-                <Text style={styles.priceText}>PTR: ₹{product.ptr} </Text>
-                <Text style={styles.priceText}>MRP: ₹{product.mrp}</Text>
+                <AppText style={styles.priceText}>{product.id} | </AppText>
+                <AppText style={styles.priceText}>PTS: ₹{product.pts} </AppText>
+                <AppText style={styles.priceText}>PTR: ₹{product.ptr} </AppText>
+                <AppText style={styles.priceText}>MRP: ₹{product.mrp}</AppText>
               </View>
 
               <View style={styles.productInputRow}>
                 <View style={styles.productInputGroup}>
-                  <Text style={styles.inputLabel}>Special Price Type</Text>
+                  <AppText style={styles.inputLabel}>Special Price Type</AppText>
                   <TouchableOpacity style={styles.productDropdown}>
-                    <Text style={styles.productDropdownText}>{product.specialPriceType}</Text>
+                    <AppText style={styles.productDropdownText}>{product.specialPriceType}</AppText>
                     <Icon name="arrow-drop-down" size={20} color={colors.text} />
                   </TouchableOpacity>
                 </View>
                 
                 <View style={styles.productInputGroup}>
-                  <Text style={styles.inputLabel}>Discount (%)</Text>
+                  <AppText style={styles.inputLabel}>Discount (%)</AppText>
                   <View style={styles.discountInput}>
                     <TextInput
                       style={styles.discountInputText}
                       value={product.discount.toString()}
                       keyboardType="numeric"
                     />
-                    <Text style={styles.percentSymbol}>%</Text>
+                    <AppText style={styles.percentSymbol}>%</AppText>
                   </View>
                 </View>
               </View>
 
               <View style={styles.productInputRow}>
                 <View style={styles.productInputGroup}>
-                  <Text style={styles.inputLabel}>Special Price</Text>
+                  <AppText style={styles.inputLabel}>Special Price</AppText>
                   <View style={styles.priceInput}>
-                    <Text style={styles.rupeeSymbol}>₹</Text>
+                    <AppText style={styles.rupeeSymbol}>₹</AppText>
                     <TextInput
                       style={styles.priceInputText}
                       value={product.specialPrice.toString()}
@@ -722,7 +723,7 @@ const CreateRateContract = () => {
                 </View>
                 
                 <View style={styles.productInputGroup}>
-                  <Text style={styles.inputLabel}>MOQ(Monthly)</Text>
+                  <AppText style={styles.inputLabel}>MOQ(Monthly)</AppText>
                   <TextInput
                     style={styles.moqInput}
                     value={product.moq.toString()}
@@ -736,17 +737,17 @@ const CreateRateContract = () => {
                   <View style={[styles.radioOuter, styles.radioActive]}>
                     <View style={styles.radioInner} />
                   </View>
-                  <Text style={styles.radioText}>Net Rate</Text>
+                  <AppText style={styles.radioText}>Net Rate</AppText>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.radioButton}>
                   <View style={styles.radioOuter} />
-                  <Text style={styles.radioText}>Chargeback</Text>
+                  <AppText style={styles.radioText}>Chargeback</AppText>
                 </TouchableOpacity>
               </View>
 
               <TouchableOpacity style={styles.lastSavedInfo}>
                 <Icon name="refresh" size={16} color={colors.textSecondary} />
-                <Text style={styles.lastSavedText}>Last saved 05/04/2025</Text>
+                <AppText style={styles.lastSavedText}>Last saved 05/04/2025</AppText>
               </TouchableOpacity>
             </View>
           ))}
@@ -754,7 +755,7 @@ const CreateRateContract = () => {
       </ScrollView>
 
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitButtonText}>Submit</Text>
+        <AppText style={styles.submitButtonText}>Submit</AppText>
       </TouchableOpacity>
 
       {showDatePicker && (

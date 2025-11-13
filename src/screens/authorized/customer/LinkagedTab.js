@@ -22,6 +22,7 @@ import {
 } from '../../../components/OnboardConfirmModel';
 import { customerAPI } from '../../../api/customer';
 import { useSelector } from 'react-redux';
+import AppText from "../../../components/AppText"
 
 const { width } = Dimensions.get('window');
 
@@ -502,17 +503,17 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
           style={[styles.distributorTab, activeDistributorTab === 'preferred' && styles.activeDistributorTab]}
           onPress={() => setActiveDistributorTab('preferred')}
         >
-          <Text style={[styles.distributorTabText, activeDistributorTab === 'preferred' && styles.activeDistributorTabText]}>
+          <AppText style={[styles.distributorTabText, activeDistributorTab === 'preferred' && styles.activeDistributorTabText]}>
             Preferred Distributors
-          </Text>
+          </AppText>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.distributorTab, activeDistributorTab === 'all' && styles.activeDistributorTab]}
           onPress={() => setActiveDistributorTab('all')}
         >
-          <Text style={[styles.distributorTabText, activeDistributorTab === 'all' && styles.activeDistributorTabText]}>
+          <AppText style={[styles.distributorTabText, activeDistributorTab === 'all' && styles.activeDistributorTabText]}>
             All Distributors
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
 
@@ -520,7 +521,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
         <ScrollView style={styles.scrollContent}>
           {/* Suggested Stockist */}
           <View style={styles.suggestedSection}>
-            <Text style={styles.suggestedTitle}>Suggested Stockist by MR</Text>
+            <AppText style={styles.suggestedTitle}>Suggested Stockist by MR</AppText>
             <TouchableOpacity style={styles.infoIcon}>
               <Icon name="information-outline" size={20} color="#666" />
             </TouchableOpacity>
@@ -529,30 +530,30 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
           {preferredDistributorsData.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Icon name="package-variant-closed" size={40} color="#999" />
-              <Text style={styles.emptyText}>No preferred distributors added yet</Text>
-              <Text style={styles.emptySubText}>Add distributors from "All Distributors" tab</Text>
+              <AppText style={styles.emptyText}>No preferred distributors added yet</AppText>
+              <AppText style={styles.emptySubText}>Add distributors from "All Distributors" tab</AppText>
             </View>
           ) : (
             preferredDistributorsData.map((distributor) => (
               <View key={distributor.id} style={styles.distributorCard}>
                 <View style={styles.distributorHeader}>
-                  <Text style={styles.distributorName}>{distributor.name}</Text>
+                  <AppText style={styles.distributorName}>{distributor.name}</AppText>
                   <View style={styles.marginContainer}>
-                    <Text style={styles.marginLabel}>Margin</Text>
+                    <AppText style={styles.marginLabel}>Margin</AppText>
                     <View style={styles.marginInputContainer}>
                       <TextInput
                         style={styles.marginInput}
                         placeholder="0"
                         keyboardType="numeric"
                       />
-                      <Text style={styles.marginPercent}>%</Text>
+                      <AppText style={styles.marginPercent}>%</AppText>
                     </View>
                   </View>
                 </View>
                 
-                <Text style={styles.distributorInfo}>
+                <AppText style={styles.distributorInfo}>
                   {distributor.code} | {distributor.cityName || 'N/A'} | {distributor.stateName || 'N/A'}
-                </Text>
+                </AppText>
 
                 <View style={styles.distributorActions}>
                   <View style={styles.dropdownsRow}>
@@ -562,9 +563,9 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                         style={styles.dropdown}
                         onPress={() => toggleDivisionDropdown(distributor.id)}
                       >
-                        <Text style={styles.dropdownText}>
+                        <AppText style={styles.dropdownText}>
                           {distributorDivision[distributor.id] || 'SPILL'}
-                        </Text>
+                        </AppText>
                         <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
                       </TouchableOpacity>
                       {showDivisionDropdown[distributor.id] && (
@@ -573,13 +574,13 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                             style={styles.dropdownMenuItem}
                             onPress={() => handleDivisionSelect(distributor.id, 'SPILL')}
                           >
-                            <Text style={styles.dropdownMenuText}>SPILL</Text>
+                            <AppText style={styles.dropdownMenuText}>SPILL</AppText>
                           </TouchableOpacity>
                           <TouchableOpacity 
                             style={styles.dropdownMenuItem}
                             onPress={() => handleDivisionSelect(distributor.id, 'BOTH')}
                           >
-                            <Text style={styles.dropdownMenuText}>BOTH</Text>
+                            <AppText style={styles.dropdownMenuText}>BOTH</AppText>
                           </TouchableOpacity>
                         </View>
                       )}
@@ -591,9 +592,9 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                         style={styles.dropdown}
                         onPress={() => toggleRateTypeDropdown(distributor.id)}
                       >
-                        <Text style={styles.dropdownText}>
+                        <AppText style={styles.dropdownText}>
                           {distributorRateType[distributor.id] || 'All Divisions'}
-                        </Text>
+                        </AppText>
                         <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
                       </TouchableOpacity>
                       {showRateTypeDropdown[distributor.id] && (
@@ -602,19 +603,19 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                             style={styles.dropdownMenuItem}
                             onPress={() => handleRateTypeSelect(distributor.id, 'All Divisions')}
                           >
-                            <Text style={styles.dropdownMenuText}>All Divisions</Text>
+                            <AppText style={styles.dropdownMenuText}>All Divisions</AppText>
                           </TouchableOpacity>
                           <TouchableOpacity 
                             style={styles.dropdownMenuItem}
                             onPress={() => handleRateTypeSelect(distributor.id, 't4')}
                           >
-                            <Text style={styles.dropdownMenuText}>t4</Text>
+                            <AppText style={styles.dropdownMenuText}>t4</AppText>
                           </TouchableOpacity>
                           <TouchableOpacity 
                             style={styles.dropdownMenuItem}
                             onPress={() => handleRateTypeSelect(distributor.id, 'test35')}
                           >
-                            <Text style={styles.dropdownMenuText}>test35</Text>
+                            <AppText style={styles.dropdownMenuText}>test35</AppText>
                           </TouchableOpacity>
                         </View>
                       )}
@@ -625,7 +626,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                     style={styles.removeButton}
                     onPress={() => handleRemoveDistributor(distributor.id)}
                   >
-                    <Text style={styles.removeText}>Remove</Text>
+                    <AppText style={styles.removeText}>Remove</AppText>
                     <IconFeather name="trash-2" size={16} color="#FF6B00" />
                   </TouchableOpacity>
                 </View>
@@ -638,7 +639,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                     <View style={[styles.radioOuter, distributorRateType[distributor.id] === 'Net Rate' && styles.radioSelected]}>
                       {distributorRateType[distributor.id] === 'Net Rate' && <View style={styles.radioInner} />}
                     </View>
-                    <Text style={styles.radioText}>Net Rate</Text>
+                    <AppText style={styles.radioText}>Net Rate</AppText>
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={styles.radioButton}
@@ -647,7 +648,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                     <View style={[styles.radioOuter, distributorRateType[distributor.id] === 'Chargeback' && styles.radioSelected]}>
                       {distributorRateType[distributor.id] === 'Chargeback' && <View style={styles.radioInner} />}
                     </View>
-                    <Text style={styles.radioText}>Chargeback</Text>
+                    <AppText style={styles.radioText}>Chargeback</AppText>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -655,7 +656,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
           )}
 
           <TouchableOpacity style={styles.linkButton}>
-            <Text style={styles.linkButtonText}>Link Distributors</Text>
+            <AppText style={styles.linkButtonText}>Link Distributors</AppText>
           </TouchableOpacity>
         </ScrollView>
       ) : (
@@ -663,13 +664,13 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
           {distributorsLoading ? (
             <View style={styles.loadingContainer}>
               <Icon name="loading" size={40} color="#FF6B00" />
-              <Text style={styles.loadingText}>Loading distributors...</Text>
+              <AppText style={styles.loadingText}>Loading distributors...</AppText>
             </View>
           ) : distributorsError ? (
             <View style={styles.errorContainer}>
               <Icon name="alert-circle" size={40} color="#EF4444" />
-              <Text style={styles.errorText}>Error loading distributors</Text>
-              <Text style={styles.errorSubText}>{distributorsError}</Text>
+              <AppText style={styles.errorText}>Error loading distributors</AppText>
+              <AppText style={styles.errorSubText}>{distributorsError}</AppText>
             </View>
           ) : (
             <>
@@ -679,11 +680,11 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                   <Icon name="tune" size={20} color="#666" />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.filterDropdown}>
-                  <Text style={styles.filterText}>State</Text>
+                  <AppText style={styles.filterText}>State</AppText>
                   <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.filterDropdown}>
-                  <Text style={styles.filterText}>City</Text>
+                  <AppText style={styles.filterText}>City</AppText>
                   <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
                 </TouchableOpacity>
               </View>
@@ -702,33 +703,33 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
 
               {/* Table Header */}
               <View style={styles.tableHeader}>
-                <Text style={styles.tableHeaderText}>Name, Code & City</Text>
-                <Text style={styles.tableHeaderText}>Status</Text>
-                <Text style={styles.tableHeaderText}>Action</Text>
+                <AppText style={styles.tableHeaderText}>Name, Code & City</AppText>
+                <AppText style={styles.tableHeaderText}>Status</AppText>
+                <AppText style={styles.tableHeaderText}>Action</AppText>
               </View>
 
               {/* Distributor List */}
               {allDistributorsData.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Icon name="package-variant-closed" size={40} color="#999" />
-                  <Text style={styles.emptyText}>No distributors available</Text>
+                  <AppText style={styles.emptyText}>No distributors available</AppText>
                 </View>
               ) : (
                 allDistributorsData.map((distributor) => (
                   <View key={`${distributor.id}-${distributor.name}`} style={styles.distributorRow}>
                     <View style={styles.distributorInfo}>
-                      <Text style={styles.distributorRowName}>{distributor.name}</Text>
-                      <Text style={styles.distributorRowCode}>{distributor.code} | {distributor.cityName || 'N/A'}</Text>
+                      <AppText style={styles.distributorRowName}>{distributor.name}</AppText>
+                      <AppText style={styles.distributorRowCode}>{distributor.code} | {distributor.cityName || 'N/A'}</AppText>
                     </View>
                     <TouchableOpacity style={styles.supplyTypeDropdown}>
-                      <Text style={styles.supplyTypeText}>{distributor.inviteStatusName}</Text>
+                      <AppText style={styles.supplyTypeText}>{distributor.inviteStatusName}</AppText>
                       <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
                     </TouchableOpacity>
                     <TouchableOpacity 
                       style={styles.addButton}
                       onPress={() => handleAddDistributor(distributor)}
                     >
-                      <Text style={styles.addButtonText}>+ Add</Text>
+                      <AppText style={styles.addButtonText}>+ Add</AppText>
                     </TouchableOpacity>
                   </View>
                 ))
@@ -745,37 +746,37 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
       {divisionsLoading ? (
         <View style={styles.loadingContainer}>
           <Icon name="loading" size={40} color="#FF6B00" />
-          <Text style={styles.loadingText}>Loading divisions...</Text>
+          <AppText style={styles.loadingText}>Loading divisions...</AppText>
         </View>
       ) : divisionsError ? (
         <View style={styles.errorContainer}>
           <Icon name="alert-circle" size={40} color="#EF4444" />
-          <Text style={styles.errorText}>Error loading divisions</Text>
-          <Text style={styles.errorSubText}>{divisionsError}</Text>
+          <AppText style={styles.errorText}>Error loading divisions</AppText>
+          <AppText style={styles.errorSubText}>{divisionsError}</AppText>
         </View>
       ) : (
         <ScrollView style={styles.scrollContent}>
           <View style={styles.divisionsContainer}>
             <View style={styles.divisionColumn}>
-              <Text style={styles.columnTitle}>Opened Division</Text>
-              <Text style={styles.columnSubtitle}>Name & Code</Text>
+              <AppText style={styles.columnTitle}>Opened Division</AppText>
+              <AppText style={styles.columnSubtitle}>Name & Code</AppText>
               
               {openedDivisionsData.length === 0 ? (
                 <View style={styles.emptyDivisionContainer}>
-                  <Text style={styles.emptyDivisionText}>No divisions opened yet</Text>
+                  <AppText style={styles.emptyDivisionText}>No divisions opened yet</AppText>
                 </View>
               ) : (
                 openedDivisionsData.map((division) => (
                   <View key={division.divisionId} style={styles.divisionItem}>
                     <View>
-                      <Text style={styles.divisionName}>{division.divisionName}</Text>
-                      <Text style={styles.divisionCode}>{division.divisionCode}</Text>
+                      <AppText style={styles.divisionName}>{division.divisionName}</AppText>
+                      <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
                     </View>
                     <TouchableOpacity 
                       style={[styles.blockButton, styles.unblockButton]}
                     >
                       <Icon name="lock" size={16} color="#FF6B00" />
-                      <Text style={styles.unblockText}>Unblock</Text>
+                      <AppText style={styles.unblockText}>Unblock</AppText>
                     </TouchableOpacity>
                   </View>
                 ))
@@ -784,16 +785,16 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
 
             <View style={styles.divisionColumn}>
               <View style={styles.columnHeader}>
-                <Text style={styles.columnTitle}>Other Division</Text>
+                <AppText style={styles.columnTitle}>Other Division</AppText>
                 <TouchableOpacity>
-                  <Text style={styles.assignText}>Assign to Instra</Text>
+                  <AppText style={styles.assignText}>Assign to Instra</AppText>
                 </TouchableOpacity>
               </View>
-              <Text style={styles.columnSubtitle}>Name & Code</Text>
+              <AppText style={styles.columnSubtitle}>Name & Code</AppText>
               
               {otherDivisionsData.length === 0 ? (
                 <View style={styles.emptyDivisionContainer}>
-                  <Text style={styles.emptyDivisionText}>No other divisions available</Text>
+                  <AppText style={styles.emptyDivisionText}>No other divisions available</AppText>
                 </View>
               ) : (
                 otherDivisionsData.map((division) => (
@@ -808,8 +809,8 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                       )}
                     </View>
                     <View>
-                      <Text style={styles.divisionName}>{division.divisionName}</Text>
-                      <Text style={styles.divisionCode}>{division.divisionCode}</Text>
+                      <AppText style={styles.divisionName}>{division.divisionName}</AppText>
+                      <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
                     </View>
                   </TouchableOpacity>
                 ))
@@ -821,14 +822,14 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
             style={styles.linkDivisionsButton}
             onPress={() => setShowDivisionModal(true)}
           >
-            <Text style={styles.linkButtonText}>Link Divisions</Text>
+            <AppText style={styles.linkButtonText}>Link Divisions</AppText>
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.continueButton}
             onPress={() => console.log('Continue')}
           >
-            <Text style={styles.linkButtonText}>Continue</Text>
+            <AppText style={styles.linkButtonText}>Continue</AppText>
           </TouchableOpacity>
         </ScrollView>
       )}
@@ -840,33 +841,33 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
       {fieldTeamLoading ? (
         <View style={styles.loadingContainer}>
           <Icon name="loading" size={40} color="#FF6B00" />
-          <Text style={styles.loadingText}>Loading field team...</Text>
+          <AppText style={styles.loadingText}>Loading field team...</AppText>
         </View>
       ) : fieldTeamError ? (
         <View style={styles.errorContainer}>
           <Icon name="alert-circle" size={40} color="#EF4444" />
-          <Text style={styles.errorText}>Error loading field team</Text>
-          <Text style={styles.errorSubText}>{fieldTeamError}</Text>
+          <AppText style={styles.errorText}>Error loading field team</AppText>
+          <AppText style={styles.errorSubText}>{fieldTeamError}</AppText>
         </View>
       ) : fieldTeamData.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Icon name="account-multiple-outline" size={40} color="#999" />
-          <Text style={styles.emptyText}>No field team members found</Text>
+          <AppText style={styles.emptyText}>No field team members found</AppText>
         </View>
       ) : (
         <ScrollView style={styles.scrollContent}>
           <View style={styles.fieldHeader}>
-            <Text style={styles.fieldHeaderText}>Employee Name & Code</Text>
-            <Text style={styles.fieldHeaderText}>Designation</Text>
+            <AppText style={styles.fieldHeaderText}>Employee Name & Code</AppText>
+            <AppText style={styles.fieldHeaderText}>Designation</AppText>
           </View>
 
           {fieldTeamData.map((employee) => (
             <View key={employee.id} style={styles.fieldRow}>
               <View style={styles.employeeInfo}>
-                <Text style={styles.employeeName}>{employee.userName}</Text>
-                <Text style={styles.employeeCode}>{employee.userCode}</Text>
+                <AppText style={styles.employeeName}>{employee.userName}</AppText>
+                <AppText style={styles.employeeCode}>{employee.userCode}</AppText>
               </View>
-              <Text style={styles.employeeDesignation}>{employee.designation}</Text>
+              <AppText style={styles.employeeDesignation}>{employee.designation}</AppText>
             </View>
           ))}
         </ScrollView>
@@ -880,18 +881,18 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
       return (
         <View style={styles.tabContent}>
           <ScrollView style={styles.scrollContent}>
-            <Text style={styles.hierarchyTitle}>Linked Pharmacies</Text>
+            <AppText style={styles.hierarchyTitle}>Linked Pharmacies</AppText>
             
             <View style={styles.hierarchyHeader}>
-              <Text style={styles.hierarchyHeaderText}>Pharmacy Details</Text>
-              <Text style={styles.hierarchyHeaderText}>Action</Text>
+              <AppText style={styles.hierarchyHeaderText}>Pharmacy Details</AppText>
+              <AppText style={styles.hierarchyHeaderText}>Action</AppText>
             </View>
 
             {mockLinkagedData.doctor.linkedPharmacies.map((pharmacy) => (
               <View key={pharmacy.id} style={styles.hierarchyRow}>
                 <View style={styles.hierarchyInfo}>
-                  <Text style={styles.hierarchyName}>{pharmacy.name}</Text>
-                  <Text style={styles.hierarchyCode}>{pharmacy.code} | {pharmacy.location}</Text>
+                  <AppText style={styles.hierarchyName}>{pharmacy.name}</AppText>
+                  <AppText style={styles.hierarchyCode}>{pharmacy.code} | {pharmacy.location}</AppText>
                 </View>
                 <View style={styles.hierarchyActions}>
                   <TouchableOpacity 
@@ -899,7 +900,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                     onPress={() => handleApprove(pharmacy)}
                   >
                     <Icon name="check" size={16} color="#fff" />
-                    <Text style={styles.approveButtonText}>Approve</Text>
+                    <AppText style={styles.approveButtonText}>Approve</AppText>
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={styles.rejectButton}
@@ -921,11 +922,11 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
             <ScrollView style={styles.scrollContent}>
               {/* Parent Hospital Info */}
               <View style={styles.parentHospitalCard}>
-                <Text style={styles.parentLabel}>Group Hospital</Text>
-                <Text style={styles.parentTitle}>Parent Hospital</Text>
-                <Text style={styles.parentName}>
+                <AppText style={styles.parentLabel}>Group Hospital</AppText>
+                <AppText style={styles.parentTitle}>Parent Hospital</AppText>
+                <AppText style={styles.parentName}>
                   {mockLinkagedData.hospital.parentHospital.name} | {mockLinkagedData.hospital.parentHospital.code}
-                </Text>
+                </AppText>
               </View>
 
               {/* Tabs for Linked Pharmacies and Doctors */}
@@ -934,30 +935,30 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                   style={[styles.hierarchyTab, activeHierarchyTab === 'pharmacies' && styles.activeHierarchyTab]}
                   onPress={() => setActiveHierarchyTab('pharmacies')}
                 >
-                  <Text style={[styles.hierarchyTabText, activeHierarchyTab === 'pharmacies' && styles.activeHierarchyTabText]}>
+                  <AppText style={[styles.hierarchyTabText, activeHierarchyTab === 'pharmacies' && styles.activeHierarchyTabText]}>
                     Linked Pharmacies
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.hierarchyTab, activeHierarchyTab === 'doctors' && styles.activeHierarchyTab]}
                   onPress={() => setActiveHierarchyTab('doctors')}
                 >
-                  <Text style={[styles.hierarchyTabText, activeHierarchyTab === 'doctors' && styles.activeHierarchyTabText]}>
+                  <AppText style={[styles.hierarchyTabText, activeHierarchyTab === 'doctors' && styles.activeHierarchyTabText]}>
                     Linked Doctors
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.hierarchyHeader}>
-                <Text style={styles.hierarchyHeaderText}>Pharmacy Details</Text>
-                <Text style={styles.hierarchyHeaderText}>Action</Text>
+                <AppText style={styles.hierarchyHeaderText}>Pharmacy Details</AppText>
+                <AppText style={styles.hierarchyHeaderText}>Action</AppText>
               </View>
 
               {mockLinkagedData.hospital.linkedPharmacies.map((pharmacy) => (
                 <View key={pharmacy.id} style={styles.hierarchyRow}>
                   <View style={styles.hierarchyInfo}>
-                    <Text style={styles.hierarchyName}>{pharmacy.name}</Text>
-                    <Text style={styles.hierarchyCode}>{pharmacy.code} | {pharmacy.location}</Text>
+                    <AppText style={styles.hierarchyName}>{pharmacy.name}</AppText>
+                    <AppText style={styles.hierarchyCode}>{pharmacy.code} | {pharmacy.location}</AppText>
                   </View>
                   <View style={styles.hierarchyActions}>
                     <TouchableOpacity 
@@ -965,7 +966,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                       onPress={() => handleApprove(pharmacy)}
                     >
                       <Icon name="check" size={16} color="#fff" />
-                      <Text style={styles.approveButtonText}>Approve</Text>
+                      <AppText style={styles.approveButtonText}>Approve</AppText>
                     </TouchableOpacity>
                     <TouchableOpacity 
                       style={styles.rejectButton}
@@ -988,8 +989,8 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                 <View key={hospital.id} style={styles.hospitalCard}>
                   <View style={styles.hospitalHeader}>
                     <View>
-                      <Text style={styles.hospitalName}>{hospital.name}</Text>
-                      <Text style={styles.hospitalCode}>{hospital.code} | {hospital.type}</Text>
+                      <AppText style={styles.hospitalName}>{hospital.name}</AppText>
+                      <AppText style={styles.hospitalCode}>{hospital.code} | {hospital.type}</AppText>
                     </View>
                     <View style={styles.hierarchyActions}>
                       <TouchableOpacity 
@@ -997,7 +998,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                         onPress={() => handleApprove(hospital)}
                       >
                         <Icon name="check" size={16} color="#fff" />
-                        <Text style={styles.approveButtonText}>Approve</Text>
+                        <AppText style={styles.approveButtonText}>Approve</AppText>
                       </TouchableOpacity>
                       <TouchableOpacity 
                         style={styles.rejectButton}
@@ -1009,33 +1010,33 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                   </View>
 
                   <TouchableOpacity style={styles.expandButton}>
-                    <Text style={styles.expandText}>Linked Pharmacies & Doctors</Text>
+                    <AppText style={styles.expandText}>Linked Pharmacies & Doctors</AppText>
                     <IconMaterial name="keyboard-arrow-down" size={24} color="#666" />
                   </TouchableOpacity>
 
                   {/* Tabs */}
                   <View style={styles.hierarchyTabs}>
                     <TouchableOpacity style={[styles.hierarchyTab, styles.activeHierarchyTab]}>
-                      <Text style={[styles.hierarchyTabText, styles.activeHierarchyTabText]}>
+                      <AppText style={[styles.hierarchyTabText, styles.activeHierarchyTabText]}>
                         Pharmacies
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.hierarchyTab}>
-                      <Text style={styles.hierarchyTabText}>Doctors</Text>
+                      <AppText style={styles.hierarchyTabText}>Doctors</AppText>
                     </TouchableOpacity>
                   </View>
 
                   <View style={styles.linkedItemsContainer}>
                     <View style={styles.hierarchyHeader}>
-                      <Text style={styles.hierarchyHeaderText}>Pharmacy Details</Text>
-                      <Text style={styles.hierarchyHeaderText}>Action</Text>
+                      <AppText style={styles.hierarchyHeaderText}>Pharmacy Details</AppText>
+                      <AppText style={styles.hierarchyHeaderText}>Action</AppText>
                     </View>
 
                     {mockLinkagedData.hospital.linkedPharmacies.map((pharmacy) => (
                       <View key={`${hospital.id}-${pharmacy.id}`} style={styles.hierarchyRow}>
                         <View style={styles.hierarchyInfo}>
-                          <Text style={styles.hierarchyName}>{pharmacy.name}</Text>
-                          <Text style={styles.hierarchyCode}>{pharmacy.code} | {pharmacy.location}</Text>
+                          <AppText style={styles.hierarchyName}>{pharmacy.name}</AppText>
+                          <AppText style={styles.hierarchyCode}>{pharmacy.code} | {pharmacy.location}</AppText>
                         </View>
                         <View style={styles.hierarchyActions}>
                           <TouchableOpacity 
@@ -1043,7 +1044,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                             onPress={() => handleApprove(pharmacy)}
                           >
                             <Icon name="check" size={16} color="#fff" />
-                            <Text style={styles.approveButtonText}>Approve</Text>
+                            <AppText style={styles.approveButtonText}>Approve</AppText>
                           </TouchableOpacity>
                           <TouchableOpacity 
                             style={styles.rejectButton}
@@ -1076,15 +1077,15 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
       <View style={styles.modalOverlay}>
         <View style={styles.divisionModalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Divisions</Text>
+            <AppText style={styles.modalTitle}>Divisions</AppText>
             <TouchableOpacity onPress={() => setShowDivisionModal(false)}>
               <Icon name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
 
           <View style={styles.divisionModalHeader}>
-            <Text style={styles.divisionModalHeaderText}>Name</Text>
-            <Text style={styles.divisionModalHeaderText}>Code</Text>
+            <AppText style={styles.divisionModalHeaderText}>Name</AppText>
+            <AppText style={styles.divisionModalHeaderText}>Code</AppText>
           </View>
 
           <ScrollView style={styles.divisionModalList}>
@@ -1099,8 +1100,8 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                     <Icon name="check" size={16} color="#fff" />
                   )}
                 </View>
-                <Text style={styles.divisionModalName}>{division.name}</Text>
-                <Text style={styles.divisionModalCode}>{division.code}</Text>
+                <AppText style={styles.divisionModalName}>{division.name}</AppText>
+                <AppText style={styles.divisionModalCode}>{division.code}</AppText>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -1118,9 +1119,9 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
           onPress={() => setActiveSubTab('distributors')}
         >
           <Icon name="store" size={20} color={activeSubTab === 'distributors' ? '#FF6B00' : '#999'} />
-          <Text style={[styles.subTabText, activeSubTab === 'distributors' && styles.activeSubTabText]}>
+          <AppText style={[styles.subTabText, activeSubTab === 'distributors' && styles.activeSubTabText]}>
             Distributors
-          </Text>
+          </AppText>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -1128,9 +1129,9 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
           onPress={() => setActiveSubTab('divisions')}
         >
           <Icon name="view-grid" size={20} color={activeSubTab === 'divisions' ? '#FF6B00' : '#999'} />
-          <Text style={[styles.subTabText, activeSubTab === 'divisions' && styles.activeSubTabText]}>
+          <AppText style={[styles.subTabText, activeSubTab === 'divisions' && styles.activeSubTabText]}>
             Divisions
-          </Text>
+          </AppText>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -1138,9 +1139,9 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
           onPress={() => setActiveSubTab('field')}
         >
           <IconFeather name="users" size={20} color={activeSubTab === 'field' ? '#FF6B00' : '#999'} />
-          <Text style={[styles.subTabText, activeSubTab === 'field' && styles.activeSubTabText]}>
+          <AppText style={[styles.subTabText, activeSubTab === 'field' && styles.activeSubTabText]}>
             Field
-          </Text>
+          </AppText>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -1148,9 +1149,9 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
           onPress={() => setActiveSubTab('hierarchy')}
         >
           <Icon name="sitemap" size={20} color={activeSubTab === 'hierarchy' ? '#FF6B00' : '#999'} />
-          <Text style={[styles.subTabText, activeSubTab === 'hierarchy' && styles.activeSubTabText]}>
+          <AppText style={[styles.subTabText, activeSubTab === 'hierarchy' && styles.activeSubTabText]}>
             Customer Hierarchy
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
 
@@ -1204,7 +1205,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
             styles.toast,
             toastType === 'success' ? styles.toastSuccess : styles.toastError
           ]}>
-            <Text style={styles.toastText}>{toastMessage}</Text>
+            <AppText style={styles.toastText}>{toastMessage}</AppText>
           </View>
         </View>
       )}

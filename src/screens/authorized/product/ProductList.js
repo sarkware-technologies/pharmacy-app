@@ -37,6 +37,7 @@ import Bell from '../../../components/icons/Bell';
 import Search from '../../../components/icons/Search';
 import Filter from '../../../components/icons/Filter';
 import FilterModal from '../../../components/FilterModal';
+import AppText from "../../../components/AppText"
 
 const ProductList = () => {
   const navigation = useNavigation();
@@ -256,7 +257,7 @@ const ProductList = () => {
     return (
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color={colors.primary} />
-        <Text style={styles.loadingMoreText}>Loading more products...</Text>
+        <AppText style={styles.loadingMoreText}>Loading more products...</AppText>
       </View>
     );
   };
@@ -287,35 +288,35 @@ const ProductList = () => {
 
         <View style={styles.cardHeader}>
           <View style={styles.productInfo}>
-            <Text style={styles.productName} numberOfLines={2}>
+            <AppText style={styles.productName} numberOfLines={2}>
               {item.productName}
-            </Text>
-            <Text style={styles.productCode}>{item.productCode}</Text>
+            </AppText>
+            <AppText style={styles.productCode}>{item.productCode}</AppText>
           </View>
           <View style={styles.moqContainer}>
-            <Text style={styles.moqLabel}>MOQ</Text>
-            <Text style={styles.moqValue}>{item.moq || '50'}</Text>
+            <AppText style={styles.moqLabel}>MOQ</AppText>
+            <AppText style={styles.moqValue}>{item.moq || '50'}</AppText>
           </View>
         </View>
 
         <View style={styles.priceRow}>
           <View style={styles.priceItem}>
-            <Text style={styles.priceLabel}>PTS</Text>
-            <Text style={styles.priceValue}>{formatPrice(item.pts)}</Text>
+            <AppText style={styles.priceLabel}>PTS</AppText>
+            <AppText style={styles.priceValue}>{formatPrice(item.pts)}</AppText>
           </View>
           <View style={styles.priceItem}>
-            <Text style={styles.priceLabel}>PTR</Text>
-            <Text style={styles.priceValue}>{formatPrice(item.ptr)}</Text>
+            <AppText style={styles.priceLabel}>PTR</AppText>
+            <AppText style={styles.priceValue}>{formatPrice(item.ptr)}</AppText>
           </View>
           <View style={styles.priceItem}>
-            <Text style={styles.priceLabel}>Margin</Text>
-            <Text style={styles.priceValue}>
+            <AppText style={styles.priceLabel}>Margin</AppText>
+            <AppText style={styles.priceValue}>
               {formatPrice(item.ptr - item.pts)}
-            </Text>
+            </AppText>
           </View>
           <View style={{ ...styles.priceItem, alignItems: 'flex-end'}}>
-            <Text style={styles.priceLabel}>PTH</Text>
-            <Text style={styles.priceValue}>{formatPrice(item.mrp)}</Text>
+            <AppText style={styles.priceLabel}>PTH</AppText>
+            <AppText style={styles.priceValue}>{formatPrice(item.mrp)}</AppText>
           </View>
         </View>
 
@@ -327,21 +328,21 @@ const ProductList = () => {
             ]}
             onPress={() => handleToggleStatus(item)}
           >
-            <Text style={[
+            <AppText style={[
               styles.statusText,
               item.isActive ? styles.activeText : styles.inactiveText
             ]}>
               {item.isActive ? 'ACTIVE' : 'IN-ACTIVE'}
-            </Text>
+            </AppText>
           </TouchableOpacity>
 
           <View style={styles.quantityInfo}>
-            <Text style={styles.quantityText}>
+            <AppText style={styles.quantityText}>
               Exausted /Max Qty
-            </Text>
-            <Text style={styles.quantityValue}>
+            </AppText>
+            <AppText style={styles.quantityValue}>
               {item.exhaustedQty || '100'}/{item.maxQty || '200'}
-            </Text>
+            </AppText>
           </View>
         </View>
       </TouchableOpacity>
@@ -364,7 +365,7 @@ const ProductList = () => {
         <TouchableOpacity onPress={() => navigation.openDrawer()}>
           <Menu />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Products</Text>
+        <AppText style={styles.headerTitle}>Products</AppText>
         <View style={styles.headerRight}>
           <TouchableOpacity>
             <Bell />
@@ -394,15 +395,15 @@ const ProductList = () => {
       {bulkEditMode && (
         <View style={styles.bulkEditBar}>
           <TouchableOpacity onPress={handleSelectAll}>
-            <Text style={styles.selectAllText}>
+            <AppText style={styles.selectAllText}>
               {selectedProducts.length === allProducts.length ? 'Deselect All' : 'Select All'}
-            </Text>
+            </AppText>
           </TouchableOpacity>
-          <Text style={styles.selectedCount}>
+          <AppText style={styles.selectedCount}>
             {selectedProducts.length} selected
-          </Text>
+          </AppText>
           <TouchableOpacity onPress={handleBulkEdit}>
-            <Text style={styles.bulkEditText}>Edit</Text>
+            <AppText style={styles.bulkEditText}>Edit</AppText>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => dispatch(setBulkEditMode(false))}>
             <Icon name="close" size={20} color="#666" />
@@ -422,27 +423,27 @@ const ProductList = () => {
         {loading && allProducts.length === 0 ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Loading products...</Text>
+            <AppText style={styles.loadingText}>Loading products...</AppText>
           </View>
         ) : listError && allProducts.length === 0 ? (
           <View style={styles.errorContainer}>
             <Icon name="error-outline" size={60} color="#EF4444" />
-            <Text style={styles.errorTitle}>Unable to Load Products</Text>
-            <Text style={styles.errorMessage}>
+            <AppText style={styles.errorTitle}>Unable to Load Products</AppText>
+            <AppText style={styles.errorMessage}>
               {listError || 'Something went wrong. Please try again.'}
-            </Text>
+            </AppText>
             <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
               <Icon name="refresh" size={20} color="#fff" />
-              <Text style={styles.retryButtonText}>Retry</Text>
+              <AppText style={styles.retryButtonText}>Retry</AppText>
             </TouchableOpacity>
           </View>
         ) : allProducts.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Icon name="inventory" size={60} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>No Products Found</Text>
-            <Text style={styles.emptyMessage}>
+            <AppText style={styles.emptyTitle}>No Products Found</AppText>
+            <AppText style={styles.emptyMessage}>
               {searchText ? `No products match "${searchText}"` : 'No products available'}
-            </Text>
+            </AppText>
           </View>
         ) : (
           <FlatList

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import AppText from "../AppText"
 
 const ConfirmSubmitModal = ({ visible, onClose, onConfirm }) => {
   return (
@@ -22,14 +23,14 @@ const ConfirmSubmitModal = ({ visible, onClose, onConfirm }) => {
             <Icon name="warning" size={48} color="#FFA500" />
           </View>
 
-          <Text style={styles.title}>Are you sure you want to submit the claim?</Text>
+          <AppText style={styles.title}>Are you sure you want to submit the claim?</AppText>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.cancelText}>No</Text>
+              <AppText style={styles.cancelText}>No</AppText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.confirmButton} onPress={onConfirm}>
-              <Text style={styles.confirmText}>Yes</Text>
+              <AppText style={styles.confirmText}>Yes</AppText>
             </TouchableOpacity>
           </View>
         </View>

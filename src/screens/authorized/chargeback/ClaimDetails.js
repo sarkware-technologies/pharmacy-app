@@ -18,6 +18,7 @@ import PrimaryInvoiceDetailsModal from '../../../components/chargeback/PrimaryIn
 import ConfirmSubmitModal from '../../../components/chargeback/ConfirmSubmitModal';
 import ClaimSuccessModal from '../../../components/chargeback/ClaimSuccessModal';
 import CommentModal from '../../../components/chargeback/CommentModal';
+import AppText from "../../../components/AppText"
 
 const ClaimDetails = () => {
 
@@ -92,43 +93,43 @@ const ClaimDetails = () => {
       <View key={product.id} style={styles.productCard}>
         <View style={styles.productHeader}>
           <View>
-            <Text style={styles.productName}>{product.name}</Text>
-            <Text style={styles.productCode}>{product.code} | In CNS {isInCNS ? '✓' : '✗'}</Text>
+            <AppText style={styles.productName}>{product.name}</AppText>
+            <AppText style={styles.productCode}>{product.code} | In CNS {isInCNS ? '✓' : '✗'}</AppText>
           </View>
           <View style={[styles.batchBadge, !isInCNS && styles.batchBadgeRed]}>
-            <Text style={[styles.batchText, !isInCNS && styles.batchTextWhite]}>
+            <AppText style={[styles.batchText, !isInCNS && styles.batchTextWhite]}>
               {product.batch}
-            </Text>
+            </AppText>
           </View>
         </View>
 
         <View style={styles.productDetails}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Order Qty</Text>
-            <Text style={styles.detailValue}>{product.orderQty}</Text>
-            <Text style={styles.detailLabel}>Already Claimed Qty</Text>
-            <Text style={styles.detailValue}>{product.alreadyClaimedQty}</Text>
+            <AppText style={styles.detailLabel}>Order Qty</AppText>
+            <AppText style={styles.detailValue}>{product.orderQty}</AppText>
+            <AppText style={styles.detailLabel}>Already Claimed Qty</AppText>
+            <AppText style={styles.detailValue}>{product.alreadyClaimedQty}</AppText>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Current Claimed Qty</Text>
+            <AppText style={styles.detailLabel}>Current Claimed Qty</AppText>
             <TextInput
               style={styles.quantityInput}
               value={productQuantities[product.id] || product.currentClaimedQty.toString()}
               onChangeText={(value) => handleQuantityChange(product.id, value)}
               keyboardType="numeric"
             />
-            <Text style={styles.detailLabel}>Balance Qty</Text>
-            <Text style={styles.detailValue}>{product.balanceQty}</Text>
+            <AppText style={styles.detailLabel}>Balance Qty</AppText>
+            <AppText style={styles.detailValue}>{product.balanceQty}</AppText>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Approved Rate</Text>
-            <Text style={styles.detailValue}>₹ {product.approvedRate}</Text>
+            <AppText style={styles.detailLabel}>Approved Rate</AppText>
+            <AppText style={styles.detailValue}>₹ {product.approvedRate}</AppText>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Stockist Supply Rate</Text>
+            <AppText style={styles.detailLabel}>Stockist Supply Rate</AppText>
             <TextInput
               style={styles.rateInput}
               value={`₹ ${product.stockistSupplyRate}`}
@@ -138,10 +139,10 @@ const ClaimDetails = () => {
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Tax</Text>
-            <Text style={styles.detailValue}>₹ {product.tax}</Text>
-            <Text style={styles.detailLabel}>Claimed Amount</Text>
-            <Text style={styles.detailValue}>₹ {product.claimedAmount}</Text>
+            <AppText style={styles.detailLabel}>Tax</AppText>
+            <AppText style={styles.detailValue}>₹ {product.tax}</AppText>
+            <AppText style={styles.detailLabel}>Claimed Amount</AppText>
+            <AppText style={styles.detailValue}>₹ {product.claimedAmount}</AppText>
           </View>
         </View>
 
@@ -149,7 +150,7 @@ const ClaimDetails = () => {
           style={styles.primaryInvoiceButton}
           onPress={() => handleViewPrimaryInvoice(product)}
         >
-          <Text style={styles.primaryInvoiceText}>View Primary Invoice Details {'>'}</Text>
+          <AppText style={styles.primaryInvoiceText}>View Primary Invoice Details {'>'}</AppText>
         </TouchableOpacity>
       </View>
     );
@@ -165,15 +166,15 @@ const ClaimDetails = () => {
           onPress={() => toggleOrderExpansion(order.id)}
         >
           <View>
-            <Text style={styles.orderId}>{order.id}</Text>
+            <AppText style={styles.orderId}>{order.id}</AppText>
             <View style={styles.orderStats}>
-              <Text style={styles.orderStat}>Invoice {order.invoiceCount}</Text>
-              <Text style={styles.orderStat}>POD {order.podCount}</Text>
+              <AppText style={styles.orderStat}>Invoice {order.invoiceCount}</AppText>
+              <AppText style={styles.orderStat}>POD {order.podCount}</AppText>
             </View>
           </View>
           <View style={styles.orderHeaderRight}>
             <TouchableOpacity onPress={() => Alert.alert('View Documents')}>
-              <Text style={styles.viewDocsText}>View Documents</Text>
+              <AppText style={styles.viewDocsText}>View Documents</AppText>
             </TouchableOpacity>
             <Icon 
               name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
@@ -187,27 +188,27 @@ const ClaimDetails = () => {
           <View style={styles.orderContent}>
             <View style={styles.orderInfo}>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>PO_No_{order.poNumber?.split('_')[2]}</Text>
-                <Text style={styles.infoValue}>₹ {order.amount?.toLocaleString('en-IN') || '45026.34'}</Text>
+                <AppText style={styles.infoLabel}>PO_No_{order.poNumber?.split('_')[2]}</AppText>
+                <AppText style={styles.infoValue}>₹ {order.amount?.toLocaleString('en-IN') || '45026.34'}</AppText>
               </View>
-              <Text style={styles.infoDate}>{order.poDate} | {order.chargebackType}</Text>
-              <Text style={styles.batchCount}>Batch Count : {order.batchCount}</Text>
+              <AppText style={styles.infoDate}>{order.poDate} | {order.chargebackType}</AppText>
+              <AppText style={styles.batchCount}>Batch Count : {order.batchCount}</AppText>
               
               <View style={styles.supplierInfo}>
                 <View>
-                  <Text style={styles.supplierLabel}>Supplied to</Text>
-                  <Text style={styles.supplierName}>{order.suppliedTo?.name || 'Columbia Pharmacy'}</Text>
-                  <Text style={styles.supplierCode}>{order.suppliedTo?.code || '1356'}</Text>
+                  <AppText style={styles.supplierLabel}>Supplied to</AppText>
+                  <AppText style={styles.supplierName}>{order.suppliedTo?.name || 'Columbia Pharmacy'}</AppText>
+                  <AppText style={styles.supplierCode}>{order.suppliedTo?.code || '1356'}</AppText>
                 </View>
                 <View>
-                  <Text style={styles.supplierLabel}>Fulfilled by</Text>
-                  <Text style={styles.supplierName}>{order.fulfilledBy?.name || 'Sumeet distributors'}</Text>
-                  <Text style={styles.supplierCode}>{order.fulfilledBy?.code || '0033678950'}</Text>
+                  <AppText style={styles.supplierLabel}>Fulfilled by</AppText>
+                  <AppText style={styles.supplierName}>{order.fulfilledBy?.name || 'Sumeet distributors'}</AppText>
+                  <AppText style={styles.supplierCode}>{order.fulfilledBy?.code || '0033678950'}</AppText>
                 </View>
               </View>
             </View>
 
-            <Text style={styles.claimDetailsTitle}>Claim Details</Text>
+            <AppText style={styles.claimDetailsTitle}>Claim Details</AppText>
             <TextInput
               style={styles.searchInput}
               placeholder="Search product name/code..."
@@ -229,20 +230,20 @@ const ClaimDetails = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.claimNumber}>{claimDetails.claimId}</Text>
+        <AppText style={styles.claimNumber}>{claimDetails.claimId}</AppText>
         <TouchableOpacity onPress={() => setShowCommentModal(true)}>
           <Icon name="history" size={24} color="#666" />
-          <Text style={styles.logsText}>Logs</Text>
+          <AppText style={styles.logsText}>Logs</AppText>
         </TouchableOpacity>
       </View>
 
       <View style={styles.claimInfo}>
-        <Text style={styles.claimDate}>{claimDetails.date} | ₹ {claimDetails.totalAmount?.toLocaleString('en-IN')}</Text>
+        <AppText style={styles.claimDate}>{claimDetails.date} | ₹ {claimDetails.totalAmount?.toLocaleString('en-IN')}</AppText>
         <TouchableOpacity 
           style={styles.jumpToOrder}
           onPress={() => handleJumpToOrder((currentOrderIndex + 1) % claimDetails.orders.length)}
         >
-          <Text style={styles.jumpText}>Total Orders: {claimDetails.orders.length}</Text>
+          <AppText style={styles.jumpText}>Total Orders: {claimDetails.orders.length}</AppText>
         </TouchableOpacity>
       </View>
 
@@ -250,19 +251,19 @@ const ClaimDetails = () => {
         {claimDetails.orders.map((order, index) => renderOrder(order, index))}
         
         <TouchableOpacity style={styles.addOrderButton} onPress={handleAddOrder}>
-          <Text style={styles.addOrderText}>+Add Order</Text>
+          <AppText style={styles.addOrderText}>+Add Order</AppText>
         </TouchableOpacity>
 
-        <Text style={styles.lastSavedText}>* Last saved 05/06/2025</Text>
+        <AppText style={styles.lastSavedText}>* Last saved 05/06/2025</AppText>
       </ScrollView>
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.claimFormButton}>
           <Icon name="description" size={20} color="#FFA500" />
-          <Text style={styles.claimFormText}>Claim Form</Text>
+          <AppText style={styles.claimFormText}>Claim Form</AppText>
         </TouchableOpacity>
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Submit</Text>
+          <AppText style={styles.submitButtonText}>Submit</AppText>
         </TouchableOpacity>
       </View>
 

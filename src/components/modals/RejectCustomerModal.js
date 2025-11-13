@@ -10,6 +10,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { colors } from '../../styles/colors';
+import AppText from "../AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -40,14 +41,14 @@ const RejectCustomerModal = ({ visible, onClose, onConfirm, customerName }) => {
           {/* Warning Icon */}
           <View style={styles.iconContainer}>
             <View style={styles.iconCircle}>
-              <Text style={styles.iconText}>!</Text>
+              <AppText style={styles.iconText}>!</AppText>
             </View>
           </View>
 
           {/* Title */}
-          <Text style={styles.title}>
+          <AppText style={styles.title}>
             Are you sure you want to{'\n'}Reject customer?
-          </Text>
+          </AppText>
 
           {/* Comment Input */}
           <View style={styles.inputContainer}>
@@ -70,7 +71,7 @@ const RejectCustomerModal = ({ visible, onClose, onConfirm, customerName }) => {
               onPress={handleConfirm}
               activeOpacity={0.7}
             >
-              <Text style={styles.yesButtonText}>Yes</Text>
+              <AppText style={styles.yesButtonText}>Yes</AppText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -78,7 +79,7 @@ const RejectCustomerModal = ({ visible, onClose, onConfirm, customerName }) => {
               onPress={handleClose}
               activeOpacity={0.7}
             >
-              <Text style={styles.noButtonText}>No</Text>
+              <AppText style={styles.noButtonText}>No</AppText>
             </TouchableOpacity>
           </View>
             </View>

@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { getDivisions, updateDivisionMargins } from '../../../api/division';
 import { setLoading } from '../../../redux/slices/divisionSlice';
+import AppText from "../../../components/AppText"
 
 const UpdateMaxDiscount = () => {
   const navigation = useNavigation();
@@ -120,8 +121,8 @@ const UpdateMaxDiscount = () => {
   const renderDivisionItem = (division) => (
     <View key={division.divisionId} style={styles.divisionRow}>
       <View style={styles.divisionInfo}>
-        <Text style={styles.divisionName}>{division.divisionName}</Text>
-        <Text style={styles.divisionCode}>{division.divisionCode}</Text>
+        <AppText style={styles.divisionName}>{division.divisionName}</AppText>
+        <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
       </View>
       
       <View style={styles.inputContainer}>
@@ -133,7 +134,7 @@ const UpdateMaxDiscount = () => {
           maxLength={3}
           placeholder="0"
         />
-        <Text style={styles.percentSign}>%</Text>
+        <AppText style={styles.percentSign}>%</AppText>
       </View>
       
       <View style={styles.inputContainer}>
@@ -145,7 +146,7 @@ const UpdateMaxDiscount = () => {
           maxLength={3}
           placeholder="0"
         />
-        <Text style={styles.percentSign}>%</Text>
+        <AppText style={styles.percentSign}>%</AppText>
       </View>
     </View>
   );
@@ -168,13 +169,13 @@ const UpdateMaxDiscount = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Update Max Discount</Text>
+        <AppText style={styles.headerTitle}>Update Max Discount</AppText>
       </View>
 
       <View style={styles.tableHeader}>
-        <Text style={styles.headerLabel}>Name</Text>
-        <Text style={styles.headerLabel}>For Doctor</Text>
-        <Text style={styles.headerLabel}>For Hospital</Text>
+        <AppText style={styles.headerLabel}>Name</AppText>
+        <AppText style={styles.headerLabel}>For Doctor</AppText>
+        <AppText style={styles.headerLabel}>For Hospital</AppText>
       </View>
 
       <ScrollView 
@@ -189,7 +190,7 @@ const UpdateMaxDiscount = () => {
           style={styles.resetButton}
           onPress={handleReset}
         >
-          <Text style={styles.resetButtonText}>Reset</Text>
+          <AppText style={styles.resetButtonText}>Reset</AppText>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -200,7 +201,7 @@ const UpdateMaxDiscount = () => {
           {isUpdating ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.updateButtonText}>Update</Text>
+            <AppText style={styles.updateButtonText}>Update</AppText>
           )}
         </TouchableOpacity>
       </View>

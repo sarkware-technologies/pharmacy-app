@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { getDivisions, updateDivisionMargins } from '../../../api/division';
 import { setLoading } from '../../../redux/slices/divisionSlice';
+import AppText from "../../../components/AppText"
 
 const CEOThresholdUpdate = () => {
   const navigation = useNavigation();
@@ -144,8 +145,8 @@ const CEOThresholdUpdate = () => {
   const renderDivisionItem = (division) => (
     <View key={division.divisionId} style={styles.divisionRow}>
       <View style={styles.divisionInfo}>
-        <Text style={styles.divisionName}>{division.divisionName}</Text>
-        <Text style={styles.divisionCode}>{division.divisionCode}</Text>
+        <AppText style={styles.divisionName}>{division.divisionName}</AppText>
+        <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
       </View>
       
       <View style={styles.inputContainer}>
@@ -157,7 +158,7 @@ const CEOThresholdUpdate = () => {
           maxLength={3}
           placeholder="0"
         />
-        <Text style={styles.percentSign}>%</Text>
+        <AppText style={styles.percentSign}>%</AppText>
       </View>
       
       <View style={styles.inputContainer}>
@@ -169,7 +170,7 @@ const CEOThresholdUpdate = () => {
           maxLength={3}
           placeholder="0"
         />
-        <Text style={styles.percentSign}>%</Text>
+        <AppText style={styles.percentSign}>%</AppText>
       </View>
     </View>
   );
@@ -192,17 +193,17 @@ const CEOThresholdUpdate = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>CEO's Threshold</Text>
+        <AppText style={styles.headerTitle}>CEO's Threshold</AppText>
       </View>
 
       <View style={styles.globalUpdateSection}>
         <View style={styles.globalHeader}>
-          <Text style={styles.globalTitle}>Update For All Divisions</Text>
-          <Text style={styles.divisionCountBadge}>{divisionCount}</Text>
+          <AppText style={styles.globalTitle}>Update For All Divisions</AppText>
+          <AppText style={styles.divisionCountBadge}>{divisionCount}</AppText>
         </View>
         
         <View style={styles.globalInputRow}>
-          <Text style={styles.globalLabel}>For Doctor</Text>
+          <AppText style={styles.globalLabel}>For Doctor</AppText>
           <View style={styles.globalInputContainer}>
             <TextInput
               style={styles.globalInput}
@@ -212,10 +213,10 @@ const CEOThresholdUpdate = () => {
               maxLength={3}
               placeholder="0"
             />
-            <Text style={styles.percentSign}>%</Text>
+            <AppText style={styles.percentSign}>%</AppText>
           </View>
           
-          <Text style={styles.globalLabel}>For Hospital</Text>
+          <AppText style={styles.globalLabel}>For Hospital</AppText>
           <View style={styles.globalInputContainer}>
             <TextInput
               style={styles.globalInput}
@@ -225,15 +226,15 @@ const CEOThresholdUpdate = () => {
               maxLength={3}
               placeholder="0"
             />
-            <Text style={styles.percentSign}>%</Text>
+            <AppText style={styles.percentSign}>%</AppText>
           </View>
         </View>
       </View>
 
       <View style={styles.tableHeader}>
-        <Text style={styles.headerLabel}>Name</Text>
-        <Text style={styles.headerLabel}>For Doctor</Text>
-        <Text style={styles.headerLabel}>For Hospital</Text>
+        <AppText style={styles.headerLabel}>Name</AppText>
+        <AppText style={styles.headerLabel}>For Doctor</AppText>
+        <AppText style={styles.headerLabel}>For Hospital</AppText>
       </View>
 
       <ScrollView 
@@ -248,7 +249,7 @@ const CEOThresholdUpdate = () => {
           style={styles.resetButton}
           onPress={handleReset}
         >
-          <Text style={styles.resetButtonText}>Reset</Text>
+          <AppText style={styles.resetButtonText}>Reset</AppText>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -259,7 +260,7 @@ const CEOThresholdUpdate = () => {
           {isUpdating ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.updateButtonText}>Update</Text>
+            <AppText style={styles.updateButtonText}>Update</AppText>
           )}
         </TouchableOpacity>
       </View>

@@ -23,6 +23,7 @@ import { verifyOTP, resendOTP, clearError, clearDevelopmentOtp } from '../../red
 import SunLogo from '../../components/icons/SunLogo';
 import Back from '../../components/icons/Back';
 import Error from '../../components/icons/Error';
+import AppText from "../../components/AppText"
 
 const { width, height } = Dimensions.get('window');
 
@@ -289,22 +290,22 @@ const OTPScreen = () => {
             
             {/* OTP Form */}
             <View style={styles.formContainer}>
-              <Text style={[
+              <AppText style={[
                 styles.title,
                 keyboardHeight > 0 && styles.titleCompact
-              ]}>OTP Verification</Text>
-              <Text style={[
+              ]}>OTP Verification</AppText>
+              <AppText style={[
                 styles.subtitle,
                 keyboardHeight > 0 && styles.subtitleCompact
               ]}>
                 We have sent a verification code to{'\n'}
-                <Text style={styles.phoneNumber}>{formatPhoneOrEmail(phoneOrEmail)}</Text>
-              </Text>
+                <AppText style={styles.phoneNumber}>{formatPhoneOrEmail(phoneOrEmail)}</AppText>
+              </AppText>
 
               {/* Development Mode Indicator - Show when OTP is auto-filled */}
               {__DEV__ && developmentOtp && (
                 <View style={styles.devModeIndicator}>
-                  <Text style={styles.devModeText}>📱 Dev Mode: OTP auto-filled</Text>
+                  <AppText style={styles.devModeText}>📱 Dev Mode: OTP auto-filled</AppText>
                 </View>
               )}
 
@@ -318,23 +319,23 @@ const OTPScreen = () => {
                     { transform: [{ translateX: errorShakeAnim }] }
                   ]}>
                   <Error width={16} height={16} />
-                  <Text style={styles.errorText}>{verificationError}</Text>
+                  <AppText style={styles.errorText}>{verificationError}</AppText>
                 </Animated.View>
               )}
 
               {/* Hide resend section when keyboard is visible to save space */}
               {keyboardHeight === 0 ? (
                 <>
-                  <Text style={styles.resendText}>Didn't get the code?</Text>
+                  <AppText style={styles.resendText}>Didn't get the code?</AppText>
                   
                   <TouchableOpacity
                     onPress={handleResend}
                     disabled={!canResend || otpVerificationLoading}>
-                    <Text style={[styles.resendButton, !canResend && styles.resendDisabled]}>
+                    <AppText style={[styles.resendButton, !canResend && styles.resendDisabled]}>
                       Resend Code {!canResend && (
-                        <Text style={styles.timerText}>in {formatTimer()}</Text>
+                        <AppText style={styles.timerText}>in {formatTimer()}</AppText>
                       )}
-                    </Text>
+                    </AppText>
                   </TouchableOpacity>
                 </>
               ) : (
@@ -343,9 +344,9 @@ const OTPScreen = () => {
                   onPress={handleResend}
                   disabled={!canResend || otpVerificationLoading}
                   style={{...styles.compactResend, marginBottom: (keyboardHeight > 0 ? -10 : 10), marginTop: (keyboardHeight > 0 ? -5 : 10)}}>
-                  <Text style={[styles.resendButtonCompact, !canResend && styles.resendDisabled]}>
+                  <AppText style={[styles.resendButtonCompact, !canResend && styles.resendDisabled]}>
                     {canResend ? 'Resend' : `Resend in ${formatTimer()}`}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               )}
 

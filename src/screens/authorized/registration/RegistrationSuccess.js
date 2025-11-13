@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
+import AppText from "../../../components/AppText"
 
 const { width } = Dimensions.get('window');
 
@@ -182,7 +183,7 @@ const RegistrationSuccess = () => {
                 }
               ]}
             >
-              <Text style={styles.plusText}>+</Text>
+              <AppText style={styles.plusText}>+</AppText>
             </Animated.View>
             <Animated.View 
               style={[
@@ -204,7 +205,7 @@ const RegistrationSuccess = () => {
                 }
               ]}
             >
-              <Text style={styles.crossText}>×</Text>
+              <AppText style={styles.crossText}>×</AppText>
             </Animated.View>
             <Animated.View 
               style={[
@@ -239,13 +240,13 @@ const RegistrationSuccess = () => {
             },
           ]}
         >
-          <Text style={styles.successTitle}>Successful!</Text>
-          <Text style={styles.successMessage}>
+          <AppText style={styles.successTitle}>Successful!</AppText>
+          <AppText style={styles.successMessage}>
             We have received your information,{'\n'}
             It will take upto 24 hours to approved, if we found{'\n'}
             any issue our team will get back to you
-          </Text>
-          <Text style={styles.customerCode}>{codeType || 'Customer'} Code: {customerCode}</Text>
+          </AppText>
+          <AppText style={styles.customerCode}>{codeType || 'Customer'} Code: {customerCode}</AppText>
         </Animated.View>
         
         {/* Spacer */}
@@ -265,7 +266,7 @@ const RegistrationSuccess = () => {
             onPress={handleOkay}
             activeOpacity={0.8}
           >
-            <Text style={styles.okayButtonText}>Okay</Text>
+            <AppText style={styles.okayButtonText}>Okay</AppText>
           </TouchableOpacity>
         </Animated.View>
       </View>

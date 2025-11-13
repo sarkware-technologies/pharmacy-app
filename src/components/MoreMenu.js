@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, { Path, G, Defs, ClipPath, Rect } from 'react-native-svg';
+import AppText from "./AppText"
 
 const items = [
   {
@@ -85,14 +86,14 @@ export default function MoreMenu({ visible, onClose, onSelect, activeScreen }) {
                   ),
                 })}
               </View>
-              <Text
+              <AppText
                 style={[
                   styles.label,
                   isActive && styles.activeLabel,
                 ]}
               >
                 {item.label}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           );
         })}
@@ -100,7 +101,7 @@ export default function MoreMenu({ visible, onClose, onSelect, activeScreen }) {
     </TouchableOpacity>
   );
 }
-
+ 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,

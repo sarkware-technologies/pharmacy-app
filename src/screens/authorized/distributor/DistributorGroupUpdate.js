@@ -13,6 +13,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../styles/colors';
+import AppText from "../../../components/AppText"
 
 const DistributorGroupUpdate = () => {
   const navigation = useNavigation();
@@ -77,15 +78,15 @@ const DistributorGroupUpdate = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Group Update</Text>
+        <AppText style={styles.headerTitle}>Group Update</AppText>
         <TouchableOpacity onPress={handleUpdate}>
-          <Text style={styles.saveText}>SAVE</Text>
+          <AppText style={styles.saveText}>SAVE</AppText>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Distributors</Text>
+          <AppText style={styles.sectionTitle}>Select Distributors</AppText>
           
           <TouchableOpacity
             style={styles.selectAllRow}
@@ -99,11 +100,11 @@ const DistributorGroupUpdate = () => {
                 <Icon name="check" size={14} color="#fff" />
               )}
             </View>
-            <Text style={styles.selectAllText}>Select All</Text>
+            <AppText style={styles.selectAllText}>Select All</AppText>
             {selectedDistributors.length > 0 && (
-              <Text style={styles.selectedCount}>
+              <AppText style={styles.selectedCount}>
                 ({selectedDistributors.length} selected)
-              </Text>
+              </AppText>
             )}
           </TouchableOpacity>
 
@@ -122,18 +123,18 @@ const DistributorGroupUpdate = () => {
                 )}
               </View>
               <View style={styles.distributorInfo}>
-                <Text style={styles.distributorName}>{distributor.name}</Text>
-                <Text style={styles.distributorCode}>{distributor.code}</Text>
+                <AppText style={styles.distributorName}>{distributor.name}</AppText>
+                <AppText style={styles.distributorCode}>{distributor.code}</AppText>
               </View>
             </TouchableOpacity>
           ))}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Update Fields</Text>
+          <AppText style={styles.sectionTitle}>Update Fields</AppText>
           
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Doctor Supply Margin (%)</Text>
+            <AppText style={styles.fieldLabel}>Doctor Supply Margin (%)</AppText>
             <TextInput
               style={styles.input}
               placeholder="Enter percentage"
@@ -145,7 +146,7 @@ const DistributorGroupUpdate = () => {
           </View>
 
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Hospital Supply Margin (%)</Text>
+            <AppText style={styles.fieldLabel}>Hospital Supply Margin (%)</AppText>
             <TextInput
               style={styles.input}
               placeholder="Enter percentage"
@@ -157,11 +158,11 @@ const DistributorGroupUpdate = () => {
           </View>
 
           <View style={styles.switchRow}>
-            <Text style={styles.fieldLabel}>Status</Text>
+            <AppText style={styles.fieldLabel}>Status</AppText>
             <View style={styles.statusToggle}>
-              <Text style={styles.statusText}>
+              <AppText style={styles.statusText}>
                 {updateFields.status ? 'Active' : 'Inactive'}
-              </Text>
+              </AppText>
               <Switch
                 value={updateFields.status}
                 onValueChange={(value) => setUpdateFields({...updateFields, status: value})}
@@ -172,7 +173,7 @@ const DistributorGroupUpdate = () => {
           </View>
 
           <View style={styles.switchRow}>
-            <Text style={styles.fieldLabel}>Send Invite</Text>
+            <AppText style={styles.fieldLabel}>Send Invite</AppText>
             <Switch
               value={updateFields.sendInvite}
               onValueChange={(value) => setUpdateFields({...updateFields, sendInvite: value})}
@@ -184,9 +185,9 @@ const DistributorGroupUpdate = () => {
 
         <View style={styles.noteSection}>
           <Icon name="info-outline" size={16} color={colors.primary} />
-          <Text style={styles.noteText}>
+          <AppText style={styles.noteText}>
             Only filled fields will be updated. Leave blank to keep existing values.
-          </Text>
+          </AppText>
         </View>
       </ScrollView>
 
@@ -195,7 +196,7 @@ const DistributorGroupUpdate = () => {
           style={styles.cancelButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
+          <AppText style={styles.cancelButtonText}>Cancel</AppText>
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -203,9 +204,9 @@ const DistributorGroupUpdate = () => {
           onPress={handleUpdate}
           disabled={selectedDistributors.length === 0}
         >
-          <Text style={styles.updateButtonText}>
+          <AppText style={styles.updateButtonText}>
             Update ({selectedDistributors.length})
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

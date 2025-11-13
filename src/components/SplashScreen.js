@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, Easing, StyleSheet, Dimensions, Text } from 'react-native';
 import SunLogo from './icons/SunLogo'; // your SVG logo component
+import AppText from "./AppText"
 
 const { width } = Dimensions.get('window');
 
@@ -58,7 +59,7 @@ export default function SplashScreen({ onFinish }) {
 
             {/* Welcome message */}
             <Animated.View style={[styles.messageContainer, { opacity: welcomeFade }]}>
-                <Text style={styles.welcomeText}>Welcome to Sun Pharma</Text>
+                <AppText style={styles.welcomeText}>Welcome to Sun Pharma</AppText>
             </Animated.View>
 
             {/* Progress Bar */}
@@ -75,7 +76,7 @@ export default function SplashScreen({ onFinish }) {
 
             {/* Loading message */}
             <Animated.View style={[styles.loadingContainer, { opacity: loadingFade }]}>
-                <Text style={styles.loadingText}>Loading, please wait...</Text>
+                <AppText style={styles.loadingText}>Loading, please wait...</AppText>
             </Animated.View>
         </View>
     );
