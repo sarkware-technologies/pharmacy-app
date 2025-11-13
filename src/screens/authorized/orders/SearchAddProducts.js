@@ -187,9 +187,9 @@ const SearchAddProducts = () => {
     }
     finally {
       getCartdetails();
-      setTimeout(()=>{
-      setLoadingProductId(null);
-      },300)
+      setTimeout(() => {
+        setLoadingProductId(null);
+      }, 300)
 
     }
 

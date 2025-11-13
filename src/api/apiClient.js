@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ErrorMessage } from '../components/view/error';
-import { DevSettings } from 'react-native';
+import { resetTo } from '../navigation/NavigationService';
 
 export const BASE_URL = 'https://pharmsupply-dev-api.pharmconnect.com';
 
@@ -51,9 +51,8 @@ class ApiClient {
         });
 
         setTimeout(() => {
-            DevSettings.reload();
+            resetTo('Auth');
         }, 1500);
-
     }
 
     async request(endpoint, options = {}) {

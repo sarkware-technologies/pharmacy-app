@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Provider } from 'react-redux';
 import NetInfo from '@react-native-community/netinfo';
 import Toast from 'react-native-toast-message';
@@ -9,42 +9,42 @@ import AppNavigator from './src/navigation/AppNavigator';
 import NoInternetScreen from './src/components/NoInternetscreen';
 import SplashScreen from './src/components/SplashScreen';
 
-// Apply global font to entire application
+import { setTopLevelNavigator } from './src/navigation/NavigationService';
+
 import './GlobalFont';
 
-
 const App = () => {
+    const navigationRef = useRef(null);
     const [isConnected, setIsConnected] = useState(true);
     const [checking, setChecking] = useState(true);
 
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setIsConnected(state.isConnected);
-            setTimeout(() => {
-                setChecking(false);
-            }, 1500)
+            setTimeout(() => setChecking(false), 1500);
         });
 
         return () => unsubscribe();
     }, []);
 
-    const handleRetry = () => {
-        NetInfo.fetch().then(state => {
-            setIsConnected(state.isConnected);
-        });
-    };
+    useEffect(() => {
+        if (navigationRef.current) {
+            setTopLevelNavigator(navigationRef.current);
+        }
+    }, []);
 
     if (checking) {
-        return <SplashScreen />
+        return <SplashScreen />;
     }
 
     return (
         <Provider store={store}>
             <View style={{ flex: 1 }}>
-                <AppNavigator />
+                <AppNavigator navigationRef={navigationRef} />
+
                 {!isConnected && (
                     <View style={styles.overlay}>
-                        <NoInternetScreen onRetry={handleRetry} />
+                        <NoInternetScreen onRetry={() => NetInfo.fetch().then(state => setIsConnected(state.isConnected))} />
                     </View>
                 )}
             </View>
@@ -56,17 +56,12 @@ const App = () => {
 export default App;
 
 const styles = StyleSheet.create({
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
     overlay: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: 'white',
         justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 999, // ensures it’s above everything
-        elevation: 10, // for Android
+        zIndex: 999,
+        elevation: 10,
     },
 });

@@ -4,7 +4,7 @@
 
 // IMPORTANT: Import global font FIRST before anything else
 // This must be imported before App to ensure font patching happens early
-import './GlobalFont';
+// import './GlobalFont';
 
 import { AppRegistry } from 'react-native';
 import App from './App';
