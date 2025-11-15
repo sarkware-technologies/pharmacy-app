@@ -11,7 +11,7 @@ import {
 import { colors } from '../styles/colors';
 import InputEyeClose from './icons/InputEyeClose';
 import InputEyeOpen from './icons/InputEyeOpen';
-import {AppText,AppInput} from "."
+import { AppText, AppInput } from "."
 
 const CustomInput = ({
     label,
@@ -31,10 +31,10 @@ const CustomInput = ({
 }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.95)).current;
-    
+
     // Floating label animation
     const floatingLabelAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
-    
+
     const [showPassword, setShowPassword] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
 
@@ -133,9 +133,9 @@ const CustomInput = ({
                         {mandatory && <AppText style={styles.asterisk}>*</AppText>}
                     </Animated.Text>
                 </Animated.View>
-                
+
                 {icon && (<View style={styles.icon}>{icon}</View>)}
-                
+
                 <AppInput
                     style={[styles.input, icon && styles.inputWithIcon]}
                     value={value}
@@ -151,7 +151,7 @@ const CustomInput = ({
                     maxLength={maxLength}
                     {...props}
                 />
-                
+
                 {secureTextEntry && (
                     <TouchableOpacity
                         onPress={() => setShowPassword(!showPassword)}
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
         paddingLeft: 0,
     },
     eyeIcon: {
-        padding: 8        
+        padding: 8
     },
     asterisk: {
         color: 'red',

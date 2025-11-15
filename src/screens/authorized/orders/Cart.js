@@ -40,7 +40,7 @@ import { setCartTotal } from '../../../redux/slices/orderSlice';
 import { AppInput } from '../../../components';
 const Cart = () => {
   const navigation = useNavigation();
-  const [activeTab, setActiveTab] = useState('manual'); // 'manual' or 'upload'
+  const [activeTab, setActiveTab] = useState('MANUAL'); // 'manual' or 'upload'
 
   const formatCurrency = (value) => {
     if (value === '-') return '-';
@@ -115,9 +115,9 @@ const Cart = () => {
       const cartDetails = response?.cartDetails ?? [];
       setOrderSummery(response?.summary)
       if (cartDetails.length > 0) {
-          const count = cartDetails.reduce((acc, item) => acc + (item.products?.length ?? 0), 0);
-          setCartDetails(cartDetails);
-          dispatch(setCartTotal(count));
+        const count = cartDetails.reduce((acc, item) => acc + (item.products?.length ?? 0), 0);
+        setCartDetails(cartDetails);
+        dispatch(setCartTotal(count));
       } else {
         if (load) {
           dispatch(setCartTotal(0));
@@ -135,20 +135,24 @@ const Cart = () => {
     }
   };
 
-  const handleDelete = async (product) => {
+  const handleDelete = async (products) => {
     try {
+      const cartIds = products.map((e) => parseInt(e.id));
       setLoading(true);
-      const deleteCart = await DeleteCart([parseInt(product.id)]);
-      if (deleteCart?.message == "Product deleted successfully.") {
-        const list = cartDetails.map(item => ({
-          ...item,
-          products: item?.products?.filter(e => e.id !== product.id)
-        }))
-        console.log(list, 78908765)
-        setCartDetails(list);
-        getCartdetails(false)
-      }
 
+      const deleteCart = await DeleteCart(cartIds);
+
+      if (deleteCart?.message === "Product deleted successfully.") {
+        const updatedList = cartDetails.map((item) => ({
+          ...item,
+          products: item?.products?.filter((e) => !cartIds.includes(e.id)),
+        }));
+
+        console.log(updatedList, "updated cart details");
+
+        setCartDetails(updatedList);
+        getCartdetails(false);
+      }
     }
     catch (error) {
       ErrorMessage(error);
@@ -169,9 +173,9 @@ const Cart = () => {
       const updateQTY = product?.qty + (event === 'plus' ? +minQTY : -minQTY);
       if (updateQTY > 0) {
         setLoadingProductId(product?.id)
-        console.log( parseInt(product?.id),
+        console.log(parseInt(product?.id),
           product?.productId,
-          updateQTY,987978)
+          updateQTY, 987978)
         const increasesQTY = await IncreaseQTY(
           parseInt(product?.id),
           product?.productId,
@@ -180,7 +184,7 @@ const Cart = () => {
         console.log(increasesQTY);
       }
       else {
-        await handleDelete(product);
+        await handleDelete([product]);
       }
 
     } catch (error) {
@@ -234,25 +238,25 @@ const Cart = () => {
   const TabSelector = () => (
     <View style={styles.tabContainer}>
       <TouchableOpacity
-        style={[styles.tab, activeTab === 'manual' && styles.activeTab]}
-        onPress={() => setActiveTab('manual')}
+        style={[styles.tab, activeTab === 'MANUAL' && styles.activeTab]}
+        onPress={() => setActiveTab('MANUAL')}
       >
         <Mappedorder />
-        <AppText style={[styles.tabText, activeTab === 'manual' && styles.activeTabText]}>
+        <AppText style={[styles.tabText, activeTab === 'MANUAL' && styles.activeTabText]}>
           Manual Order
         </AppText>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.tab, activeTab === 'upload' && styles.activeTab]}
-        onPress={() => setActiveTab('upload')}
+        style={[styles.tab, activeTab === 'UPLOAD' && styles.activeTab]}
+        onPress={() => setActiveTab('UPLOAD')}
       >
         <IconFeather
           name="upload"
           size={18}
           color={activeTab === 'upload' ? '#FF6B00' : '#999'}
         />
-        <AppText style={[styles.tabText, activeTab === 'upload' && styles.activeTabText]}>
+        <AppText style={[styles.tabText, activeTab === 'UPLOAD' && styles.activeTabText]}>
           Upload Order
         </AppText>
       </TouchableOpacity>
@@ -346,7 +350,7 @@ const Cart = () => {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(product)}>
+          <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete([product])}>
             <Delete />
           </TouchableOpacity>
         </View>
@@ -405,7 +409,7 @@ const Cart = () => {
                     </View>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.box} onPress={() => setShowSelectdistributor(true)}>
+                  <TouchableOpacity style={styles.box} onPress={() => setShowSelectdistributor(true)} disabled={!selectedCustomer}>
                     <AppText style={styles.label}>Distributor</AppText>
                     <View style={styles.valueRow}>
                       <AppText style={styles.valueText} numberOfLines={1}>
@@ -423,113 +427,71 @@ const Cart = () => {
               </View>
             </View>
 
-            {/* Products based on active tab */}
-            {activeTab === 'manual' && (
-              <>
-                {/* SELECTA Section for Manual Order */}
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleContainer}>
-                    <View style={[styles.sectionIcon]}>
-                      <VerticalText />
+            {
+              (() => {
+                const filteredCarts = cartDetails.filter(
+                  (cart) =>
+                    cart.products?.length > 0 &&
+                    cart.products.some((e) => e.orderType === activeTab)
+                );
+
+                if (filteredCarts.length === 0) {
+                  return (
+                    <View style={{ padding: 20, alignItems: "center" }}>
+                      <AppText style={{ fontSize: 16, color: "#666" }}>
+                        No products found
+                      </AppText>
                     </View>
-                    <AppText style={[styles.sectionTitle, { color: '#4481B4', textDecorationColor: "#4481B4", textDecorationStyle: "solid", textDecorationLine: "underline" }]}>SELECTA</AppText>
-                  </View>
-                  <AppText>|</AppText>
-                  <View style={styles.sectionActions}>
-                    <AppText style={styles.skuCount}>SKU's</AppText>
-                    {/* <TouchableOpacity>
-                      <IconFeather name="trash-2" size={18} color="#666" />
-                    </TouchableOpacity> */}
-                    <TouchableOpacity>
-                      <IconMaterial name="keyboard-arrow-up" size={24} color="#666" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                {cartDetails?.map((cart, index) => cart.products.map((product, i) => <ProductCard key={index + '_' + i} product={product} />))}
+                  );
+                }
 
-
-                {/* <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleContainer}>
-                    <View style={[styles.sectionIcon, { backgroundColor: '#E91E63' }]}>
-                      <Icon name="currency-inr" size={16} color="#fff" />
+                return filteredCarts.map((cart, index) => (
+                  <View key={index}>
+                    {/* Header */}
+                    <View style={styles.sectionHeader}>
+                      <View style={styles.sectionTitleContainer}>
+                        <View style={[styles.sectionIcon]}>
+                          <VerticalText />
+                        </View>
+                        <AppText
+                          style={[
+                            styles.sectionTitle,
+                            {
+                              color: "#4481B4",
+                              textDecorationColor: "#4481B4",
+                              textDecorationStyle: "solid",
+                              textDecorationLine: "underline",
+                            },
+                          ]}
+                        >
+                          {cart?.divisionName ?? '-'}
+                        </AppText>
+                      </View>
+                      <AppText>|</AppText>
+                      <View style={styles.sectionActions}>
+                        <AppText style={styles.skuCount}>SKU's</AppText>
+                        <TouchableOpacity onPress={() => handleDelete(cart.products)}>
+                          <Svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <Path d="M6.50041 0.000312327C5.93625 -0.00881525 5.38724 0.182378 4.95171 0.539657C4.51618 0.896936 4.22256 1.39697 4.12342 1.95021H1.77336C1.71936 1.94112 1.66421 1.94112 1.61022 1.95021H0.489427C0.359623 1.95021 0.235135 2.00157 0.14335 2.09299C0.0515645 2.18441 0 2.3084 0 2.43768C0 2.56697 0.0515645 2.69096 0.14335 2.78238C0.235135 2.8738 0.359623 2.92516 0.489427 2.92516H1.22357L2.08822 11.3845C2.14722 11.8375 2.37209 12.2529 2.71968 12.551C3.06727 12.8491 3.51312 13.0088 3.9717 12.9996H9.02911C9.48714 13.008 9.93219 12.8479 10.2791 12.5499C10.626 12.2519 10.8504 11.8369 10.9093 11.3845L11.7764 2.92516H12.5106C12.6404 2.92516 12.7649 2.8738 12.8567 2.78238C12.9484 2.69096 13 2.56697 13 2.43768C13 2.3084 12.9484 2.18441 12.8567 2.09299C12.7649 2.00157 12.6404 1.95021 12.5106 1.95021H11.3947C11.3406 1.94201 11.2856 1.94201 11.2315 1.95021H8.87658C8.77747 1.39711 8.48396 0.897185 8.0486 0.539924C7.61324 0.182662 7.06443 -0.00862056 6.50041 0.000312327ZM6.50041 0.975261C6.79856 0.969038 7.09038 1.06132 7.33033 1.23769C7.57027 1.41407 7.74483 1.66461 7.82676 1.95021H5.17406C5.25598 1.66461 5.43054 1.41407 5.67049 1.23769C5.91043 1.06132 6.20226 0.969038 6.50041 0.975261ZM2.25871 2.92516H10.7421L9.8848 11.2935C9.85929 11.4995 9.75753 11.6886 9.59943 11.8238C9.44132 11.9591 9.23825 12.0307 9.02993 12.0247H3.9717C3.76343 12.0305 3.56046 11.9588 3.40239 11.8236C3.24433 11.6884 3.14252 11.4994 3.11684 11.2935L2.25871 2.92516ZM5.28989 4.54276C5.22394 4.54201 5.15849 4.55422 5.09729 4.57869C5.03608 4.60316 4.98032 4.63941 4.93319 4.68536C4.88607 4.73132 4.8485 4.78608 4.82265 4.84651C4.79679 4.90694 4.78316 4.97186 4.78252 5.03755V9.91229C4.78782 10.0448 4.8444 10.1702 4.94043 10.2621C5.03645 10.354 5.16446 10.4053 5.29764 10.4053C5.43082 10.4053 5.55883 10.354 5.65485 10.2621C5.75088 10.1702 5.80747 10.0448 5.81276 9.91229V5.03755C5.81345 4.97169 5.80039 4.90642 5.77441 4.84586C5.74844 4.7853 5.71011 4.73078 5.66186 4.68575C5.56132 4.59163 5.42785 4.54032 5.28989 4.54276ZM7.69379 4.54276C7.62785 4.54201 7.5624 4.55422 7.50119 4.57869C7.43998 4.60316 7.38422 4.63941 7.3371 4.68536C7.28997 4.73132 7.25241 4.78608 7.22655 4.84651C7.2007 4.90694 7.18706 4.97186 7.18642 5.03755V9.91229C7.19172 10.0448 7.24831 10.1702 7.34433 10.2621C7.44036 10.354 7.56837 10.4053 7.70154 10.4053C7.83472 10.4053 7.96273 10.354 8.05876 10.2621C8.15478 10.1702 8.21137 10.0448 8.21667 9.91229V5.03755C8.21735 4.97169 8.2043 4.90642 8.17832 4.84586C8.15234 4.7853 8.11401 4.73078 8.06576 4.68575C7.96542 4.59183 7.83147 4.54053 7.69379 4.54276Z" fill="#1D1D22" />
+                          </Svg>
+                        </TouchableOpacity>
+                        <TouchableOpacity>
+                          <IconMaterial name="keyboard-arrow-up" size={24} color="#666" />
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                    <AppText style={[styles.sectionTitle, { color: '#E91E63' }]}>IN CNS</AppText>
-                  </View>
-                  <View style={styles.sectionActions}>
-                    <AppText style={styles.skuCount}>SKU's</AppText>
-                    <TouchableOpacity>
-                      <IconFeather name="trash-2" size={18} color="#666" />
-                    </TouchableOpacity>
-                    <TouchableOpacity>
-                      <IconMaterial name="keyboard-arrow-up" size={24} color="#666" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
 
-                {mockData.manualOrderProducts
-                  .filter(p => p.section === 'IN CNS')
-                  .map(product => (
-                    <ProductCard key={product.id} product={product} />
-                  ))} */}
-              </>
-            )}
-            {activeTab === 'upload' && (
-              <View style={{ height: 100, alignItems: "center", justifyContent: "center" }}>
-                <AppText>There are no items in your upload cart.</AppText>
-              </View>
-
-            )}
-            {/* {activeTab === 'upload' && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleContainer}>
-                    <View style={[styles.sectionIcon, { backgroundColor: '#4CAF50' }]}>
-                      <Divview />
-                    </View>
-                    <AppText style={[styles.sectionTitle, { color: '#4CAF50' }]}>SELECTA</AppText>
+                    {/* Products */}
+                    {cart.products
+                      .filter((e) => e.orderType === activeTab)
+                      .map((product, i) => (
+                        <ProductCard key={`${index}_${i}`} product={product} />
+                      ))}
                   </View>
-                  <View style={styles.sectionActions}>
-                    <AppText style={styles.skuCount}>SKU's</AppText>
-                    <TouchableOpacity>
-                      <IconFeather name="trash-2" size={18} color="#666" />
-                    </TouchableOpacity>
-                    <TouchableOpacity>
-                      <IconMaterial name="keyboard-arrow-up" size={24} color="#666" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                ));
+              })()
+            }
 
-                {mockData.uploadOrderProducts
-                  .filter(p => p.section === 'SELECTA')
-                  .map(product => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleContainer}>
-                    <View style={[styles.sectionIcon, { backgroundColor: '#E91E63' }]}>
-                      <Icon name="currency-inr" size={16} color="#fff" />
-                    </View>
-                    <AppText style={[styles.sectionTitle, { color: '#E91E63' }]}>IN CNS</AppText>
-                  </View>
-                  <View style={styles.sectionActions}>
-                    <AppText style={styles.skuCount}>SKU's</AppText>
-                    <TouchableOpacity>
-                      <IconFeather name="trash-2" size={18} color="#666" />
-                    </TouchableOpacity>
-                    <TouchableOpacity>
-                      <IconMaterial name="keyboard-arrow-up" size={24} color="#666" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {mockData.uploadOrderProducts
-                  .filter(p => p.section === 'IN CNS')
-                  .map(product => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-              </>
-            )} */}
 
             <View style={styles.bottomPadding} />
           </View>

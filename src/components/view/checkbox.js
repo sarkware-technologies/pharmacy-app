@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native";
-import AppText from "../AppText"
+import { View, TouchableOpacity, StyleSheet } from "react-native";
+import AppText from "../AppText";
 
 export default function CustomCheckbox({
   title = "",
@@ -11,12 +11,15 @@ export default function CustomCheckbox({
   textStyle,
   activeColor = "#007AFF",
   inactiveColor = "#C7C7CC",
+  disabled = false,
+  disabledColor = "#E5E5E5",
   size = 18,
 }) {
   const [internalChecked, setInternalChecked] = useState(false);
   const checked = controlledChecked ?? internalChecked;
 
   const handlePress = () => {
+    if (disabled) return;
     const newValue = !checked;
     setInternalChecked(newValue);
     onChange?.(newValue);
@@ -24,16 +27,26 @@ export default function CustomCheckbox({
 
   return (
     <TouchableOpacity
-      style={[styles.container,containerStyle]}
+      style={[
+        styles.container,
+        { opacity: disabled ? 0.5 : 1 },
+        containerStyle,
+      ]}
       onPress={handlePress}
       activeOpacity={0.8}
+      disabled={disabled}
     >
       <View
         style={[
           styles.checkbox,
           {
-            borderColor: checked ? activeColor : inactiveColor,
-            backgroundColor: checked ? activeColor : "transparent",
+            borderColor: disabled
+              ? disabledColor
+              : checked
+                ? activeColor
+                : inactiveColor,
+            backgroundColor:
+              disabled ? disabledColor : checked ? activeColor : "transparent",
             width: size,
             height: size,
             borderRadius: size / 4,
@@ -41,7 +54,11 @@ export default function CustomCheckbox({
           checkboxStyle,
         ]}
       >
-        {checked && <AppText style={[styles.checkMark,{fontSize:size-8}]}>✓</AppText>}
+        {checked && !disabled && (
+          <AppText style={[styles.checkMark, { fontSize: size - 8 }]}>
+            ✓
+          </AppText>
+        )}
       </View>
 
       {title ? <AppText style={[styles.label, textStyle]}>{title}</AppText> : null}
@@ -62,7 +79,6 @@ const styles = StyleSheet.create({
   },
   checkMark: {
     color: "#fff",
-    fontSize: 12,
     fontWeight: "600",
   },
   label: {

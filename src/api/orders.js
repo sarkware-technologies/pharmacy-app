@@ -101,7 +101,7 @@ export const AddtoCart = async (cartItem) => {
 
 export const DeleteCart = async (cartId) => {
   try {
-    const response = await apiClient.delete(`/orders/cart/product`, { cartIds: cartId });
+    const response = await apiClient.delete(`/orders/cart/product`, { cartIds: cartId,isAll:true });
     return response.data;
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -131,7 +131,7 @@ export const PlaceOrder = async (order) => {
 };
 
 
-export const UploadTemplateOrder = async (file, customerId, distributorId, orderType) => {
+export const UploadTemplateOrder = async (file, customerId, distributorId, orderType, isOCR) => {
   try {
     const formData = new FormData();
     formData.append('file', {
@@ -142,6 +142,7 @@ export const UploadTemplateOrder = async (file, customerId, distributorId, order
     formData.append('customerId', String(customerId));
     formData.append('distributorId', String(distributorId));
     formData.append('orderType', String(orderType));
+    formData.append('isOcr', isOCR ? 'true' : 'false');
 
     const response = await apiClient.post('/orders/upload-order', formData, true);
     return response.data;
@@ -154,6 +155,19 @@ export const UploadTemplateOrder = async (file, customerId, distributorId, order
 export const UploadProductMapping = async (payload) => {
   try {
     const response = await apiClient.put(`/orders/upload-order/map-product`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
+}
+
+
+
+
+export const OrderDetails = async (orderId) => {
+  try {
+    const response = await apiClient.get(`/orders/order/order-details/${orderId}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching products:', error);

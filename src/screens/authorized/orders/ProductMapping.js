@@ -24,7 +24,9 @@ import CancelOrderModal from "./CancelOrderModal"
 import Modals from './uploadConfirmationModals';
 import { ErrorMessage } from '../../../components/view/error';
 import Toast from 'react-native-toast-message';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from "../../../components"
+import BackButton from '../../../components/view/backButton';
+import { Fonts } from '../../../utils/fontHelper';
 
 
 const { UnmappedProductsModal } = Modals;
@@ -68,7 +70,7 @@ const ProductMapping = () => {
 
 
 
-  const { originalFile, templateFile, distributor, customer, } = route.params || {};
+  const { originalFile, templateFile, distributor, customer, isOCR } = route.params || {};
   const [selectedDistributor, setSelectedDistributor] = useState(distributor);
   const [selectedCustomer, setSelectedCustomer] = useState(customer);
 
@@ -82,12 +84,9 @@ const ProductMapping = () => {
 
     try {
       setIsLoading(true);
-      if (originalFile && templateFile) {
 
-      }
-      else if (!originalFile && templateFile) {
-        console.log(templateFile, parseInt(selectedCustomer?.customerId), selectedDistributor?.id, "UPLOAD", 999999)
-        const fileUpload = await UploadTemplateOrder(templateFile, parseInt(selectedCustomer?.customerId), selectedDistributor?.id, "UPLOAD");
+      if (originalFile || templateFile) {
+        const fileUpload = await UploadTemplateOrder(originalFile ?? templateFile, parseInt(selectedCustomer?.customerId), selectedDistributor?.id, "UPLOAD", isOCR);
         console.log(fileUpload, "Upload file response")
         if (fileUpload?.poFileProducts) {
           const updatedProducts = fileUpload.poFileProducts.map(element => ({
@@ -110,6 +109,14 @@ const ProductMapping = () => {
     }
 
   };
+
+  const showToast = () => {
+    Toast.show({
+      type: 'error',
+      text1: 'Not Found',
+      text2: 'Product mapping is required.',
+    });
+  }
 
   const handleQuantityChange = async (item, type) => {
     if (!item) return;
@@ -240,8 +247,8 @@ const ProductMapping = () => {
           uploadedProductName: mappingProduct.uploadedProductName,
           packing: product.packing,
         })
-        console.log(response,98768)
-        if (response && response.length >0) {
+        console.log(response, 98768)
+        if (response && response.length > 0) {
           console.log(response[0])
           const list = products.map((e) => {
             const findItem = e.id === mappingProduct?.id;
@@ -266,7 +273,7 @@ const ProductMapping = () => {
               }
               : e;
           });
-          console.log(list,8678909876,product)
+          console.log(list, 8678909876, product)
           setProducts(list);
           setProductMapping(false)
           setMappingProduct(null)
@@ -282,6 +289,8 @@ const ProductMapping = () => {
     }
   }
 
+
+
   const renderProduct = ({ item }) => {
     const quantity = item?.uploadedQty || 0;
 
@@ -296,7 +305,7 @@ const ProductMapping = () => {
           <View style={styles.infoRow}>
             <AppText style={styles.infoLabel}>Customer Product Title</AppText>
             {item.isMapped == 1 && (
-              <AppText style={{ fontSize: 11, color: '#999', }}>Mapping</AppText>
+              <AppText style={[styles.infoLabel, { textAlign: "right" }]}>Mapping</AppText>
             )}
           </View>
           <View style={styles.infoRow}>
@@ -335,7 +344,7 @@ const ProductMapping = () => {
             <View style={{ display: "flex", flexDirection: "column" }}>
               <TouchableOpacity onPress={() => hanldeMappingclicked(item)}>
                 <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 }}>
-                  <AppText style={{ color: "#F7941E", fontWeight: 700, fontSize: 14 }}>Find Product</AppText>
+                  <AppText style={{ color: "#F7941E", fontWeight: 700, fontSize: 12 }}>Find Product</AppText>
                   <Svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <Path fillRule="evenodd" clipRule="evenodd" d="M5.83333 11.6667C9.05508 11.6667 11.6667 9.05508 11.6667 5.83333C11.6667 2.61158 9.05508 0 5.83333 0C2.61158 0 0 2.61158 0 5.83333C0 9.05508 2.61158 11.6667 5.83333 11.6667ZM6.1075 3.77417C6.18953 3.69224 6.30073 3.64622 6.41667 3.64622C6.5326 3.64622 6.6438 3.69224 6.72583 3.77417L8.47583 5.52417C8.55776 5.6062 8.60378 5.7174 8.60378 5.83333C8.60378 5.94927 8.55776 6.06047 8.47583 6.1425L6.72583 7.8925C6.68578 7.93548 6.63748 7.96996 6.58381 7.99387C6.53015 8.01778 6.47221 8.03064 6.41347 8.03168C6.35473 8.03271 6.29638 8.02191 6.2419 7.9999C6.18742 7.9779 6.13794 7.94515 6.09639 7.9036C6.05485 7.86206 6.0221 7.81257 6.00009 7.7581C5.97809 7.70362 5.96728 7.64527 5.96832 7.58653C5.96936 7.52779 5.98222 7.46985 6.00613 7.41619C6.03004 7.36252 6.06452 7.31422 6.1075 7.27417L7.11083 6.27083H3.5C3.38397 6.27083 3.27269 6.22474 3.19064 6.14269C3.10859 6.06065 3.0625 5.94937 3.0625 5.83333C3.0625 5.7173 3.10859 5.60602 3.19064 5.52397C3.27269 5.44193 3.38397 5.39583 3.5 5.39583H7.11083L6.1075 4.3925C6.02557 4.31047 5.97955 4.19927 5.97955 4.08333C5.97955 3.9674 6.02557 3.8562 6.1075 3.77417Z" fill="#F7941E" />
                   </Svg>
@@ -347,13 +356,11 @@ const ProductMapping = () => {
               </View>
             </View>
           )}
-
           <View style={styles.quantityControls}>
-
             <>
               <TouchableOpacity
                 style={styles.quantityButton}
-                onPress={() => loadingProductId !== item.id ? handleQuantityChange(item, 'minus') : null}
+                onPress={() => item.isMapped != 1 ? showToast() : loadingProductId !== item.id ? handleQuantityChange(item, 'minus') : null}
               >
                 <Icon name="remove" size={20} color={colors.primary} />
               </TouchableOpacity>
@@ -367,12 +374,14 @@ const ProductMapping = () => {
               </AppText>
               <TouchableOpacity
                 style={styles.quantityButton}
-                onPress={() => loadingProductId !== item.id ? handleQuantityChange(item, 'plus') : null}
+                onPress={() => item.isMapped != 1 ? showToast() : loadingProductId !== item.id ? handleQuantityChange(item, 'plus') : null}
               >
                 <Icon name="add" size={20} color={colors.primary} />
               </TouchableOpacity>
             </>
           </View>
+
+
         </View>
       </View>
     );
@@ -382,9 +391,7 @@ const ProductMapping = () => {
     <SafeAreaView style={styles.container} edges={['top']}>
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
+        <BackButton />
         <AppText style={styles.headerTitle}>Create Order/Product Mapping</AppText>
       </View>
       <View style={styles.progressContainer}>
@@ -470,8 +477,8 @@ const ProductMapping = () => {
                     Try adjusting your filters or check back later.
                   </AppText>
                 </View>
-              ) : <View style={{ paddingVertical: 20 }}>
-                <ActivityIndicator size="small" color="#FF6B00" />
+              ) : <View style={{ paddingVertical: 20, minHeight: 300, display: 'flex', alignItems: "center", justifyContent: "center" }}>
+                <ActivityIndicator size="large" color="#FF6B00" />
               </View>
             )}
           />
@@ -532,12 +539,12 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#333',
-    marginLeft: 16,
+    color: colors.primaryText,
     textAlign: "center",
-    width: "80%"
+    width: "80%",
+    marginLeft: 10
   },
   progressContainer: {
     flexDirection: 'row',
@@ -582,7 +589,6 @@ const styles = StyleSheet.create({
     fontWeight: 900
   },
   activeStepLabel: {
-    fontWeight: '600',
     color: '#169560',
     fontWeight: 700,
     fontSize: 16
@@ -626,9 +632,9 @@ const styles = StyleSheet.create({
     // backgroundColor: '#E8F4EF',
   },
   mappingCompleteText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#169560',
-    fontWeight: '600',
+    fontWeight: '700',
     marginLeft: 8,
   },
   tabContainer: {
@@ -648,11 +654,13 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.secondaryText,
+    fontFamily: Fonts.Regular
   },
   activeTabText: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: 700,
+
   },
   searchContainer: {
     flexDirection: 'row',
@@ -677,6 +685,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: '#333',
+    fontFamily: Fonts.Regular
   },
   menuButton: {
     width: 45,
@@ -708,12 +717,13 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: colors.primaryText,
   },
   productId: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 11,
+    color: colors.secondaryText,
     marginBottom: 12,
+    fontFamily: Fonts.Regular
   },
   productInfo: {
     marginBottom: 12,
@@ -724,20 +734,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   infoLabel: {
-    fontSize: 11,
-    color: '#999',
     flex: 1,
+    fontSize: 11,
+    color: colors.secondaryText,
+    fontFamily: Fonts.Regular
   },
   infoValue: {
     fontSize: 13,
-    color: '#333',
-    fontWeight: '500',
+    color: colors.primaryText,
+    fontWeight: '600',
     flex: 1,
   },
   changeLink: {
     fontSize: 13,
     color: colors.primary,
     fontWeight: '600',
+    fontFamily: colors.Regular
   },
   productMetrics: {
     flexDirection: 'row',
@@ -749,12 +761,13 @@ const styles = StyleSheet.create({
     // flex: 1,
   },
   metricLabel: {
-    fontSize: 11,
-    color: '#777777',
+    fontSize: 10,
+    color: colors.secondaryText,
     marginBottom: 2,
+    fontFamily:Fonts.Regular
   },
   metricValue: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#777777',
     fontWeight: '500',
   },

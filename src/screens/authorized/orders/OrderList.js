@@ -29,7 +29,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import Downarrow from '../../../components/icons/downArrow';
 import Toast from 'react-native-toast-message';
 import ErrorMessage from "../../../components/view/error"
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from "../../../components"
+import { Fonts } from "../../../utils/fontHelper"
+import { formatPrice, getInitials } from "../../../utils/getInitials"
+import Svg, { Path } from 'react-native-svg';
 
 const OrderList = () => {
   const navigation = useNavigation();
@@ -224,7 +227,7 @@ const OrderList = () => {
     })}`;
 
     return (
-      <TouchableOpacity style={styles.orderCard} activeOpacity={0.7} onPress={() => navigation.push("OrderDetails")}>
+      <TouchableOpacity style={styles.orderCard} activeOpacity={0.7} onPress={() => navigation.push("OrderDetails", { orderId: item?.orderId })}>
         <TouchableOpacity onPress={() => navigation.push("OrderDetails")}>
           <View style={styles.orderHeader}>
             <View style={styles.orderIdRow}>
@@ -232,27 +235,42 @@ const OrderList = () => {
               <Icon name="chevron-right" size={20} color={colors.primary} />
             </View>
             <AppText style={styles.orderAmount}>
-              ₹ {Number(item.netOrderValue || 0).toFixed(2)}
+              {formatPrice(parseFloat(item.netOrderValue || 0))}
             </AppText>
           </View>
 
           <View style={styles.orderMeta}>
             <AppText style={styles.orderDate}>{formattedDate}</AppText>
             <AppText style={styles.skuCount}>
-              SKU : <AppText style={{ color: '#222' }}>{item.skwCount ?? 0}</AppText>
+              SKU : <AppText style={{ color: '#2B2B2B', fontFamily: Fonts.Bold }}>{item.skwCount ?? 0}</AppText>
             </AppText>
           </View>
         </TouchableOpacity>
         <View style={styles.customerSection}>
           <View style={styles.customerInfo}>
             <View style={styles.customerDetails}>
-              <AppText style={styles.customerName}>{item.customerDetails?.customerName}</AppText>
+              <View style={{ display: "flex", alignItems: "center", flexDirection: "row", gap: 4 }}>
+                <View style={{ backgroundColor: "#9C874333", width: 23, height: 22, paddingLeft: 0, borderRadius: "50%", display: 'flex', alignItems: "center", justifyContent: "center" }}>
+                  <AppText style={{ fontSize: 10, color: "#9C8743", fontFamily: Fonts.Regular }}>
+                    {getInitials(item.customerDetails?.customerName ?? '')}
+                  </AppText></View>
+                <AppText style={styles.customerName}>
+                  {item.customerDetails?.customerName}
+                </AppText>
+              </View>
               <View style={styles.customerMeta}>
                 <AddrLine />
-                <AppText style={styles.customerMetaText}>
-                  {item.customerDetails?.customerId} | {item.customerDetails?.cityName} | Div:{' '}
-                  {item.divisionDetails?.divisionName}
-                </AppText>
+                <View style={{ display: "flex", flexDirection: 'row', gap: 10, marginLeft: 5 }}>
+                  <AppText style={styles.customerMetaText}>
+                    {item.customerDetails?.customerId}
+                  </AppText>
+                  <AppText style={styles.customerMetaText}>
+                    | {item.customerDetails?.cityName} | Div:{' '}
+                  </AppText>
+                  <AppText style={styles.customerMetaText}>
+                    {item.divisionDetails?.divisionName}
+                  </AppText>
+                </View>
               </View>
               <AppText style={styles.pendingAction}>
                 Pending Action by:{' '}
@@ -262,7 +280,10 @@ const OrderList = () => {
               </AppText>
             </View>
             <TouchableOpacity>
-              <Icon name="download" size={20} color="#999" />
+              <Svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <Path d="M2.5 13.3907V14.2903C2.5 15.009 2.78548 15.6982 3.29365 16.2064C3.80181 16.7145 4.49103 17 5.20968 17H14.2419C14.9606 17 15.6498 16.7145 16.158 16.2064C16.6661 15.6982 16.9516 15.009 16.9516 14.2903V13.3871M9.72581 3V12.9355M9.72581 12.9355L12.8871 9.77419M9.72581 12.9355L6.56452 9.77419" stroke="#909090" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+
             </TouchableOpacity>
           </View>
         </View>
@@ -321,7 +342,6 @@ const OrderList = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-
       <View style={{ backgroundColor: '#F6F6F6' }}>
         <StatusBar backgroundColor="#fff" barStyle="dark-content" />
         {/* Header */}
@@ -455,16 +475,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  headerTitle: { fontSize: 20, fontWeight: '600', color: '#333', marginLeft: 16 },
+  headerTitle: { fontSize: 22, fontWeight: 700, color: colors.primaryText, marginLeft: 16, fontFamily: Fonts.Bold },
   headerRight: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 12 },
   createOrderButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: "#F7941E",
   },
-  createOrderText: { fontSize: 12, fontWeight: '600', color: colors.primary },
+  createOrderText: { fontSize: 12, fontWeight: '700', color: colors.primary, fontFamily: Fonts.Bold },
   cartButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -480,9 +500,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   tab: { paddingHorizontal: 20, paddingVertical: 10 },
-  activeTab: { borderBottomWidth: 2, borderBottomColor: colors.primary },
-  tabText: { fontSize: 14, color: '#666' },
-  activeTabText: { color: colors.primary, fontWeight: '500' },
+  activeTab: { borderBottomWidth: 3, borderBottomColor: colors.primary },
+  tabText: { fontSize: 16, color: '#909090', fontWeight: 400, fontFamily: Fonts.Regular },
+  activeTabText: { color: colors.primary, fontWeight: 700, fontFamily: Fonts.Bold },
   searchContainer: { flexDirection: 'row', padding: 16, gap: 12, backgroundColor: '#F6F6F6' },
   searchBar: {
     flex: 1,
@@ -493,7 +513,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 44,
   },
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: '#333' },
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 15, color: '#777777', fontFamily: Fonts.Regular },
   filterButton: {
     width: 44,
     height: 44,
@@ -511,26 +531,25 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   orderIdRow: { flexDirection: 'row', alignItems: 'center' },
-  orderId: { fontSize: 14, fontWeight: '600', color: '#333' },
-  orderAmount: { fontSize: 12, fontWeight: '500', color: '#333' },
+  orderId: { fontSize: 16, fontWeight: '700', color: '#2B2B2B', fontFamily: Fonts.Black },
+  orderAmount: { fontSize: 14, fontWeight: '600', fontFamily: Fonts.Bold, color: '#333' },
   orderMeta: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  orderDate: { fontSize: 12, color: '#666' },
-  skuCount: { fontSize: 12, color: '#666' },
+  orderDate: { fontSize: 12, color: '#777777', fontFamily: Fonts.Regular, marginTop: 4 },
+  skuCount: { fontSize: 12, color: '#777777', marginTop: 4, fontFamily: Fonts.Regular },
   customerSection: { borderTopWidth: 1, borderTopColor: '#F0F0F0', paddingTop: 8 },
   customerInfo: { flexDirection: 'row', alignItems: 'flex-start' },
-  customerDetails: { flex: 1 },
-  customerName: { fontSize: 14, fontWeight: '500', color: '#333', marginBottom: 4 },
-  customerMeta: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  customerMetaText: { fontSize: 12, color: '#666', marginLeft: 4 },
-  pendingAction: { fontSize: 12, color: '#666' },
+  customerDetails: { flex: 1, },
+  customerName: { fontSize: 16, fontWeight: '600', color: colors.primaryText, marginBottom: 4, fontFamily: Fonts.Bold, alignItems: "center", display: 'flex', marginTop: 4 },
+  customerMeta: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, marginTop: 7 },
+  customerMetaText: { fontSize: 14, color: colors.secondaryText, marginLeft: 4, fontFamily: Fonts.Regular },
+  pendingAction: { fontSize: 12, color: colors.secondaryText, marginTop: 8 },
   orderFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 7,
     paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+
   },
   statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
   statusText: { fontSize: 12, fontWeight: '600' },

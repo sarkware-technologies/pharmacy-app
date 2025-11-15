@@ -24,6 +24,9 @@ import { pick, types } from '@react-native-documents/picker';
 import CustomerSelectionModal from './CustomerSelector';
 import SelectDistributor from './SelectDistributor';
 import AppText from "../../../components/AppText"
+import Toast from 'react-native-toast-message';
+import { Fonts } from '../../../utils/fontHelper';
+import BackButton from '../../../components/view/backButton';
 
 const UploadOrder = () => {
   const navigation = useNavigation();
@@ -32,9 +35,7 @@ const UploadOrder = () => {
 
   const [originalFile, setOriginalFile] = useState(null);
   const [templateFile, setTemplateFile] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [ocrComplete, setOcrComplete] = useState(false);
-  const [ocrTime, setOcrTime] = useState('');
+  const [isocr, setIsocr] = useState(false);
 
 
   const { distributor, customer } = route.params || {};
@@ -48,8 +49,6 @@ const UploadOrder = () => {
 
   const handleFileUpload = async (type) => {
     try {
-      console.log('handleFileUpload called');
-
       // ✅ use @react-native-documents/picker
       const [file] = await pick({ type: [types.allFiles] });
       console.log('Selected file:', file);
@@ -61,13 +60,21 @@ const UploadOrder = () => {
       const ext = file.name?.split('.').pop()?.toLowerCase();
 
       if (!allowedExtensions.includes(ext)) {
-        Alert.alert('Invalid file type', 'Only xls, xlsx, csv, txt, xlsb & pdf files are allowed.');
+        Toast.show({
+          type: 'error',
+          text1: 'Invalid file type',
+          text2: 'Only xls, xlsx, csv, txt, xlsb & pdf files are allowed.',
+        });
         return;
       }
 
       // Validate file size (5MB)
       if (file.size && file.size > 5 * 1024 * 1024) {
-        Alert.alert('Error', 'File size exceeds 5MB limit');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'File size exceeds 5MB limit',
+        });
         return;
       }
 
@@ -86,15 +93,22 @@ const UploadOrder = () => {
 
       // ✅ Keep your original logic unchanged
       if (type === 'original') {
+        setIsocr(true);
+        setTemplateFile(null);
         setOriginalFile(formattedFile);
-        processOCR();
       } else {
+        setIsocr(false);
+        setOriginalFile(null);
         setTemplateFile(formattedFile);
       }
 
     } catch (err) {
       console.error('File picker error:', err);
-      Alert.alert('Error', 'Failed to pick the file');
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid file',
+        text2: 'Failed to pick the file.',
+      });
     }
   };
 
@@ -113,51 +127,40 @@ const UploadOrder = () => {
 
     if (type === 'original') {
       setOriginalFile(file);
-      processOCR();
     } else {
       setTemplateFile(file);
     }
   };
 
-  const processOCR = () => {
-    setIsProcessing(true);
-    setOcrComplete(false);
 
-    // Simulate OCR processing
-    setTimeout(() => {
-      setIsProcessing(false);
-      setOcrComplete(true);
-      setOcrTime('02:15 Sec');
-    }, 2000);
-  };
 
   const handleCancelUpload = (type) => {
     if (type === 'original') {
       setOriginalFile(null);
-      setOcrComplete(false);
-      setOcrTime('');
     } else {
       setTemplateFile(null);
     }
   };
 
   const handleContinue = () => {
-    if (!originalFile && !templateFile || !templateFile) {
+    if (!originalFile && !templateFile) {
       // Alert.alert('Error', 'Please upload order file and select distributor');
       return;
     }
-    navigation.replace('ProductMapping', {
-      originalFile,
-      templateFile,
-      distributor: selectedDistributor,
-      customer: selectedCustomer
-    });
-    // navigation.push('ProductMapping', {
+    // navigation.replace('ProductMapping', {
     //   originalFile,
     //   templateFile,
     //   distributor: selectedDistributor,
-    //   customer: selectedCustomer
+    //   customer: selectedCustomer,
+    //   isOCR: isocr
     // });
+    navigation.push('ProductMapping', {
+      originalFile,
+      templateFile,
+      distributor: selectedDistributor,
+      customer: selectedCustomer,
+      isOCR: isocr
+    });
   };
 
 
@@ -247,22 +250,14 @@ const UploadOrder = () => {
 
             {/* OCR Status */}
             {/* {(isProcessing || ocrComplete) && ( */}
-            {originalFile && (
-              <View style={styles.ocrStatus}>
-                {isProcessing ? (
-                  <>
-                    <ActivityIndicator size="small" color={colors.primary} />
-                    <AppText style={styles.ocrText}>Reading file with OCR...</AppText>
-                  </>
-                ) : (
-                  <>
-                    <CustomCheckbox activeColor="#F7941E" size={15} title={<AppText style={styles.ocrText}>
-                      Read the file with OCR  |  02:15 Sec
-                    </AppText>} />
-
-                  </>
-                )}
+            {isocr && (
+              <View style={{ display: "flex", alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 10 }}>
+                {/* <ActivityIndicator size="small" color={colors.primary} /> */}
+                <CustomCheckbox checked={isocr} activeColor="#F7941E" size={15} title={<AppText style={styles.ocrText}>
+                  Read the file with OCR  |  02:15 Sec
+                </AppText>} />
               </View>
+
             )}
             {!originalFile && (
               <View style={{ height: 25 }}></View>
@@ -281,10 +276,10 @@ const UploadOrder = () => {
           <TouchableOpacity
             style={[
               styles.continueButton,
-              (!originalFile && !templateFile || !templateFile) && styles.disabledButton
+              (!originalFile && !templateFile) && styles.disabledButton
             ]}
             onPress={handleContinue}
-            disabled={!originalFile && !templateFile || !templateFile}
+            disabled={!originalFile && !templateFile}
           >
             <AppText style={styles.continueText}>Continue</AppText>
           </TouchableOpacity>
@@ -301,9 +296,7 @@ const UploadOrder = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
+       <BackButton/>
         <AppText style={styles.headerTitle}>Create Order</AppText>
       </View>
       <View style={styles.progressContainer}>
@@ -347,12 +340,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 12,
+    paddingLeft:23,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#333',
     marginLeft: 16,
+    fontFamily:Fonts.Black,
     textAlign: "center",
     width: "80%"
   },
@@ -376,13 +371,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+
   },
   activeStep: {
-    backgroundColor: colors.primary,
+    backgroundColor: "#F7941E",
     borderRadius: 16,
   },
   inactiveStep: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#909090',
   },
   stepNumber: {
     fontSize: 14,
@@ -390,11 +386,11 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   inactiveStepNumber: {
-    color: '#999',
+    color: 'white',
   },
   stepLabel: {
     fontSize: 16,
-    color: '#333',
+    color: '#9295A5',
   },
   activeStepLabel: {
     fontWeight: '600',
@@ -427,7 +423,8 @@ const styles = StyleSheet.create({
     color: '#909090',
     lineHeight: 20,
     marginBottom: 20,
-    fontWeight: 400
+    fontWeight: 400,
+    fontFamily:Fonts.Regular
   },
   distributorContainer: {
     marginBottom: 24,
@@ -466,15 +463,16 @@ const styles = StyleSheet.create({
   uploadTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#1D1D22',
     marginTop: 10,
     marginBottom: 5,
   },
   uploadSubtext: {
     fontSize: 12,
-    color: '#999',
+    color: '#909090',
     textAlign: 'center',
     lineHeight: 18,
+    fontFamily:Fonts.Regular
   },
   uploadedFileContainer: {
     flexDirection: 'row',
@@ -486,19 +484,20 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   fileName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: '#1D1D22',
     marginBottom: 4,
   },
   fileSize: {
     fontSize: 12,
-    color: '#666',
+    color: '#909090',
+    fontFamily:Fonts.Regular
   },
   cancelUpload: {
-    fontSize: 14,
+    fontSize: 12,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   ocrStatus: {
     flexDirection: 'row',
@@ -536,8 +535,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#D3D3D3',
   },
   continueText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily:Fonts.Black,
     color: '#fff',
   },
   filtersContainer: {
@@ -575,7 +575,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingHorizontal: 6,
     fontSize: 13,
-    color: "#777",
+    color:colors.secondaryText,
+    fontWeight:400,
+    fontFamily:Fonts.Regular
   },
   valueRow: {
     flexDirection: "row",
@@ -586,8 +588,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: "500",
-    color: "#2B2B2B",
-    fontWeight: 500
+    color:colors.primaryText,
+    fontWeight: 500,
+    fontFamily:Fonts.Regular
   },
 });
 

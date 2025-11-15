@@ -14,5 +14,7 @@ export const colors = {
     black: '#000000',
     gray: '#B2BEC3',
     lightGray: '#F0F3F4',
-    errorBackground: '#FEE'
+    errorBackground: '#FEE',
+    secondaryText:"#777777",
+    primaryText:"#2B2B2B"
 };
