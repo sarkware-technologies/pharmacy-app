@@ -18,8 +18,10 @@ import RegistrationType from '../screens/authorized/registration/RegistrationTyp
 import PrivateRegistrationForm from '../screens/authorized/registration/PrivateRegistration';
 import DoctorRegistrationForm from '../screens/authorized/registration/DoctorRegistrationForm';
 import GroupHospitalRegistrationForm from '../screens/authorized/registration/GroupHospitalRegistrationForm';
+import GovtHospitalRegistrationForm from '../screens/authorized/registration/GovtHospitalRegistrationForm';
 import RegistrationSuccess from '../screens/authorized/registration/RegistrationSuccess';
 import HospitalSelector from '../screens/authorized/registration/HospitalSelector';
+import DoctorSelector from '../screens/authorized/registration/DoctorSelector';
 import PharmacySelector from '../screens/authorized/registration/PharmacySelector';
 import PharmacyRetailerForm from '../screens/authorized/registration/PharmacyRetailer';
 import PharmacyWholesalerForm from '../screens/authorized/registration/PharmacyWholesaler';
@@ -293,11 +295,13 @@ const MainStack = () => (
     <Stack.Screen name="PrivateRegistrationForm" component={PrivateRegistrationForm} />
     <Stack.Screen name="DoctorRegistrationForm" component={DoctorRegistrationForm} />
     <Stack.Screen name="GroupHospitalRegistrationForm" component={GroupHospitalRegistrationForm} />
+    <Stack.Screen name="GovtHospitalRegistrationForm" component={GovtHospitalRegistrationForm} />
     <Stack.Screen name="PharmacyRetailerForm" component={PharmacyRetailerForm} />
     <Stack.Screen name="PharmacyWholesalerForm" component={PharmacyWholesalerForm} />
     <Stack.Screen name="PharmacyWholesalerRetailerForm" component={PharmacyWholesalerRetailerForm} />
     <Stack.Screen name="RegistrationSuccess" component={RegistrationSuccess} />
     <Stack.Screen name="HospitalSelector" component={HospitalSelector} />
+    <Stack.Screen name="DoctorSelector" component={DoctorSelector} />
     <Stack.Screen name="PharmacySelector" component={PharmacySelector} />
     {/* These are for the tab stacks - handled in BottomTabNavigator */}
     <Stack.Screen name="RateContractList" component={RateContractList} />

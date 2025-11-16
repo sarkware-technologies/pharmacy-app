@@ -57,11 +57,27 @@ const PrivateRegistrationForm = () => {
   const scrollViewRef = useRef(null);
   const otpRefs = useRef({});
 
-  // Get customerId for edit mode along with other params
-  const { type, typeName, typeId, category, categoryName, categoryId, subCategory, subCategoryName, subCategoryId, customerId } = route.params || {};
+  // Get all params including edit mode data
+  const { 
+    type, 
+    typeName, 
+    typeId, 
+    category, 
+    categoryName, 
+    categoryId, 
+    subCategory, 
+    subCategoryName, 
+    subCategoryId, 
+    customerId,
+    mode,
+    isEditMode,
+    editData,
+    customerData,
+    isStaging
+  } = route.params || {};
   
-  // Add isEditMode flag
-  const isEditMode = !!customerId;
+  // Determine if we're in edit mode - check multiple flags for backward compatibility
+  const inEditMode = mode === 'edit' || isEditMode || !!customerId;
   
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
@@ -116,11 +132,11 @@ const PrivateRegistrationForm = () => {
     selectedPharmacies: [],
     
     // Customer Group
-    customerGroup: 'X',
-    stockistSuggestion: '',
-    distributorCode: '',
-    stockistCity: '',
+    customerGroup: '9-DOCTOR SUPPLY',
   });
+
+  // State for managing stockists
+  const [stockists, setStockists] = useState([]);
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -195,6 +211,16 @@ const PrivateRegistrationForm = () => {
   const otpSlideAnim = useRef(new Animated.Value(-50)).current;
 
   useEffect(() => {
+    console.log('🚀 PrivateRegistration Form Mounted');
+    console.log('📦 Route Params:', {
+      mode,
+      isEditMode,
+      customerId,
+      hasEditData: !!editData,
+      hasCustomerData: !!customerData,
+      inEditMode,
+    });
+    
     // Entry animation
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -212,17 +238,135 @@ const PrivateRegistrationForm = () => {
     // Load initial data (states, license types, customer groups)
     loadInitialData();
 
-    // If in edit mode, fetch customer details
-    if (isEditMode && customerId) {
+    // EFFICIENT EDIT MODE HANDLING
+    // If editData is already provided (from onboard/edit button), use it directly
+    // This avoids an additional API call
+    if (inEditMode && editData) {
+      console.log('✅ Using pre-fetched edit data (efficient mode)');
+      console.log('📋 Edit Data Preview:', {
+        customerId: editData.customerId,
+        name: editData.name,
+        clinicName: editData.clinicName,
+        mobile: editData.mobile,
+        email: editData.email,
+      });
+      populateFormFromEditData(editData);
+    } 
+    // Fallback: If in edit mode but no editData provided, fetch from API
+    else if (inEditMode && customerId) {
+      console.log('⚠️ Fetching customer details from API (fallback mode)');
+      console.log('🆔 Customer ID:', customerId);
       fetchCustomerDetails();
+    } else {
+      console.log('🆕 Creating new registration (not edit mode)');
     }
   }, []);
+
+  // EFFICIENT: Populate form using pre-fetched and transformed data
+  const populateFormFromEditData = (data) => {
+    try {
+      console.log('🔍 Populating form with edit data:', JSON.stringify(data, null, 2));
+      
+      // Store original type data
+      if (customerData) {
+        console.log('📋 Setting original type data from customerData');
+        setOriginalTypeData({
+          typeId: customerData.typeId,
+          typeName: customerData.customerType,
+          categoryId: customerData.categoryId,
+          categoryName: customerData.customerCategory,
+          subCategoryId: customerData.subCategoryId,
+          subCategoryName: customerData.customerSubcategory,
+        });
+      }
+      
+      // Populate form data - Map from transformed data structure
+      const updatedFormData = {
+        // Registration details - from licences array
+        registrationNumber: data.licences?.[0]?.licenceNo || '',
+        registrationDate: data.licences?.[0]?.licenceValidUpto ? 
+          new Date(data.licences?.[0]?.licenceValidUpto).toLocaleDateString('en-IN') : '',
+        
+        // General details - from transformed flat structure
+        clinicName: data.clinicName || data.name || '',  // clinicName or fallback to name (customerName)
+        shortName: data.shortName || '',
+        address1: data.address1 || '',
+        address2: data.address2 || '',
+        address3: data.address3 || '',
+        address4: data.address4 || '',
+        pincode: data.pincode || '',
+        area: data.area || '',
+        city: data.cityName || '',
+        cityId: data.cityId || null,
+        state: data.stateName || '',
+        stateId: data.stateId || null,
+        ownerName: data.ownerName || '',
+        specialist: data.specialist || '',
+        
+        // Security details
+        mobileNumber: data.mobile || '',
+        emailAddress: data.email || '',
+        panNumber: data.panNumber || '',
+        gstNumber: data.gstNumber || '',
+        
+        // Customer group
+        customerGroup: data.customerGroupName || '9-DOCTOR SUPPLY',
+        
+        // Mark as buying entity
+        markAsBuyingEntity: data.isBuyer || false,
+        
+        // Mapping
+        selectedHospitals: data.hospitals || [],
+        selectedPharmacies: data.pharmacies || [],
+      };
+      
+      console.log('✅ Form data being set:', JSON.stringify(updatedFormData, null, 2));
+      setFormData(prev => ({
+        ...prev,
+        ...updatedFormData,
+      }));
+      
+      // Set verification status
+      console.log('🔐 Setting verification status:', {
+        mobile: data.isMobileVerified,
+        email: data.isEmailVerified,
+      });
+      setVerificationStatus({
+        mobile: data.isMobileVerified || false,
+        email: data.isEmailVerified || false,
+      });
+      
+      // Load cities if state is present
+      if (data.stateId) {
+        console.log('🌆 Loading cities for stateId:', data.stateId);
+        loadCities(data.stateId);
+      }
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Edit Mode',
+        text2: 'Customer data loaded successfully',
+        position: 'bottom',
+        visibilityTime: 2000,
+      });
+      
+      console.log('✨ Form population completed successfully');
+    } catch (error) {
+      console.error('❌ Error populating form from edit data:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to load customer data: ' + error.message,
+        position: 'bottom',
+      });
+    }
+  };
 
   // Function to fetch and populate customer details for editing
   const fetchCustomerDetails = async () => {
     setLoadingCustomerData(true);
     try {
-      const response = await customerAPI.getCustomerDetails(customerId);
+      const response = await customerAPI.getCustomerDetails(customerId, isStaging);
       
       if (response.success && response.data) {
         const customer = response.data;
@@ -298,6 +442,7 @@ const PrivateRegistrationForm = () => {
         let stockistSuggestion = '';
         let distributorCode = '';
         let stockistCity = '';
+
         if (customer.suggestedDistributors && customer.suggestedDistributors.length > 0) {
           const distributor = customer.suggestedDistributors[0];
           stockistSuggestion = distributor.distributorName || '';
@@ -441,6 +586,24 @@ const PrivateRegistrationForm = () => {
     }
 
     try {
+      // Load ALL cities initially (no state dependency)
+      setLoadingCities(true);
+      const citiesResponse = await customerAPI.getCities();
+      if (citiesResponse.success && citiesResponse.data && citiesResponse.data.cities) {
+        const _cities = citiesResponse.data.cities.map(city => ({
+          id: city.id,
+          name: city.cityName,
+          stateId: city.stateId
+        }));
+        setCities(_cities || []);
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error);
+    } finally {
+      setLoadingCities(false);
+    }
+
+    try {
       // Load customer groups
       const groupsResponse = await customerAPI.getCustomerGroups();
       if (groupsResponse.success && groupsResponse.data) {
@@ -514,30 +677,24 @@ const PrivateRegistrationForm = () => {
     }
   };
 
-  // Handle state selection
+  // Handle state selection - NO RESET of city/area
   const handleStateSelect = (state) => {
     setFormData(prev => ({ 
       ...prev, 
       stateId: state.id,
       state: state.name,
-      cityId: null,
-      city: '',
-      areaId: null,
-      area: ''
     }));
     setErrors(prev => ({ ...prev, state: null }));
-    setCities([]); // Clear cities
-    fetchCities(state.id); // Fetch cities for selected state
+    // Fetch cities for selected state (but don't clear existing selection)
+    fetchCities(state.id);
   };
 
-  // Handle city selection
+  // Handle city selection - NO RESET of area
   const handleCitySelect = (city) => {
     setFormData(prev => ({ 
       ...prev, 
       cityId: city.id,
       city: city.name,
-      areaId: null,
-      area: ''
     }));
     setErrors(prev => ({ ...prev, city: null }));
   };
@@ -769,6 +926,9 @@ const PrivateRegistrationForm = () => {
     if (!formData.pincode || formData.pincode.length !== 6) {
       newErrors.pincode = 'Valid 6-digit pincode is required';
     }
+    if (!formData.area || formData.area.trim().length === 0) {
+      newErrors.area = 'Area is required';
+    }
     if (!formData.cityId) {
       newErrors.city = 'City is required';
     }
@@ -867,7 +1027,7 @@ const PrivateRegistrationForm = () => {
             licenceValidUpto: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(), // 1 year validity
           }]
         },
-        // customerDocIds: docIds,
+        customerDocs: [],
         isBuyer: formData.markAsBuyingEntity,
         customerGroupId: getCustomerGroupId(formData.customerGroup),
         generalDetails: {
@@ -888,11 +1048,14 @@ const PrivateRegistrationForm = () => {
           panNumber: formData.panNumber || '',
           gstNumber: formData.gstNumber || '',
         },
-        suggestedDistributors: formData.stockistSuggestion ? [{
-          distributorCode: formData.distributorCode || '',
-          distributorName: formData.stockistSuggestion,
-          city: formData.stockistCity || formData.city,
-        }] : [],
+        ...(formData.stockists && formData.stockists.length > 0 && {
+          suggestedDistributors: formData.stockists.map(stockist => ({
+            "distributorCode": stockist.code,
+            "distributorName": stockist.name,
+            "city": stockist.city,
+            "customerId": stockist.name,
+          }))
+        })
       };
 
       // If editing, add the customerId to the payload
@@ -922,7 +1085,7 @@ const PrivateRegistrationForm = () => {
           navigation.goBack();
         } else {
           navigation.navigate('RegistrationSuccess', {
-            customerCode: response.data.code || `HOSP${response.data.id}`,
+            customerCode: response.data.id || `HOSP${response.data.id}`,
             customerId: response.data.id,
           });
         }
@@ -1085,25 +1248,25 @@ const PrivateRegistrationForm = () => {
         >          
           <ChevronLeft />
         </TouchableOpacity>
-        <AppText style={styles.headerTitle}>{isEditMode ? 'Edit Registration' : 'Registration'}</AppText>
+        <AppText style={styles.headerTitle}>{inEditMode ? 'Edit Registration' : 'Registration'}</AppText>
       </View>
 
       <View style={styles.typeHeader}>
         <View style={styles.typeTag}>
           <AppText style={styles.typeTagText}>
-            {isEditMode ? originalTypeData.typeName : (typeName || 'Hospital')}
+            {inEditMode ? (originalTypeData.typeName || typeName) : (typeName || 'Hospital')}
           </AppText>
         </View>        
         <ChevronRight height={10} />
         <View style={styles.typeTag}>
           <AppText style={styles.typeTagText}>
-            {isEditMode ? originalTypeData.categoryName : (categoryName || 'Private')}
+            {inEditMode ? (originalTypeData.categoryName || categoryName) : (categoryName || 'Private')}
           </AppText>
         </View>
         <ChevronRight height={10} />
         <View style={[styles.typeTag, styles.typeTagActive]}>
           <AppText style={[styles.typeTagText, styles.typeTagTextActive]}>
-            {isEditMode ? originalTypeData.subCategoryName : subCategoryName}
+            {inEditMode ? (originalTypeData.subCategoryName || subCategoryName) : subCategoryName}
           </AppText>
         </View>
       </View>
@@ -1154,8 +1317,13 @@ const PrivateRegistrationForm = () => {
                 onChangeText={(text) => setFormData(prev => ({ ...prev, registrationNumber: text }))}
                 error={errors.registrationNumber}
                 autoCapitalize="characters"
+                mandatory={true}
               />
 
+              <View style={styles.inputTextContainer}>
+                <AppText style={styles.inputLabel}>Registration Date</AppText>
+                <AppText style={styles.mandatoryIndicator}>*</AppText>
+              </View>
               <TouchableOpacity
                 style={[styles.input, errors.registrationDate && styles.inputError]}
                 onPress={() => setShowDatePicker(true)}
@@ -1205,6 +1373,7 @@ const PrivateRegistrationForm = () => {
                 value={formData.clinicName}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, clinicName: text }))}
                 error={errors.clinicName}
+                mandatory={true}
               />
 
               <CustomInput
@@ -1218,6 +1387,7 @@ const PrivateRegistrationForm = () => {
                 value={formData.address1}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, address1: text }))}
                 error={errors.address1}
+                mandatory={true}
               />
 
               <CustomInput
@@ -1245,9 +1415,52 @@ const PrivateRegistrationForm = () => {
                 keyboardType="numeric"
                 maxLength={6}
                 error={errors.pincode}
+                mandatory={true}
               />
 
-              {/* State Dropdown - Load this first */}
+              {/* Area Text Input - Independent selection */}
+              <CustomInput
+                placeholder="Enter Area"
+                value={formData.area}
+                onChangeText={(text) => {
+                  setFormData(prev => ({ ...prev, area: text }));
+                  setErrors(prev => ({ ...prev, area: null }));
+                }}
+                error={errors.area}
+                mandatory={true}
+              />
+
+              {/* City Dropdown - Independent selection */}
+              <View style={styles.inputTextContainer}>
+                <AppText style={styles.inputLabel}>City</AppText>
+                <AppText style={styles.mandatoryIndicator}>*</AppText>
+              </View>
+              <TouchableOpacity
+                style={[styles.input, errors.city && styles.inputError]}
+                onPress={() => !loadingCities && setShowCityModal(true)}
+                activeOpacity={0.7}
+                disabled={loadingCities}
+              >
+                {loadingCities ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
+                      {formData.city || 'Select City'}
+                    </AppText>
+                    <ArrowDown color='#999' />
+                  </>
+                )}
+              </TouchableOpacity>
+              {errors.city && (
+                <AppText style={styles.errorText}>{errors.city}</AppText>
+              )}
+
+              {/* State Dropdown - Independent selection */}
+              <View style={styles.inputTextContainer}>
+                <AppText style={styles.inputLabel}>State</AppText>
+                <AppText style={styles.mandatoryIndicator}>*</AppText>
+              </View>
               <TouchableOpacity
                 style={[styles.input, errors.state && styles.inputError]}
                 onPress={() => !loadingStates && setShowStateModal(true)}
@@ -1259,7 +1472,7 @@ const PrivateRegistrationForm = () => {
                 ) : (
                   <>
                     <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
-                      {formData.state || 'State'}
+                      {formData.state || 'Select State'}
                     </AppText>
                     <ArrowDown color='#999' />
                   </>
@@ -1267,53 +1480,6 @@ const PrivateRegistrationForm = () => {
               </TouchableOpacity>
               {errors.state && (
                 <AppText style={styles.errorText}>{errors.state}</AppText>
-              )}
-
-              {/* Area Dropdown */}
-              <TouchableOpacity
-                style={[styles.input]}
-                onPress={() => setShowAreaModal(true)}
-                activeOpacity={0.7}
-              >
-                <AppText style={formData.area ? styles.inputText : styles.placeholderText}>
-                  {formData.area || 'Area'}
-                </AppText>        
-                <ArrowDown color='#999' />
-              </TouchableOpacity>              
-
-              {/* City Dropdown - Only show after state is selected */}
-              <TouchableOpacity
-                style={[styles.input, errors.city && styles.inputError]}
-                onPress={() => {
-                  if (!formData.stateId) {
-                    Toast.show({
-                      type: 'info',
-                      text1: 'Select State First',
-                      text2: 'Please select a state to load cities',
-                    });
-                  } else if (!loadingCities) {
-                    setShowCityModal(true);
-                  }
-                }}
-                activeOpacity={0.7}
-                disabled={!formData.stateId || loadingCities}
-              >
-                {loadingCities ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <>
-                    <AppText style={[
-                      formData.city ? styles.inputText : styles.placeholderText,
-                      !formData.stateId && styles.disabledText
-                    ]}>
-                      {formData.city || (formData.stateId ? 'City' : 'Select state first')}
-                    </AppText>
-                    <ArrowDown color={formData.stateId ? '#999' : '#DDD'} />
-                  </>
-                )}
-              </TouchableOpacity>
-              {errors.city && (
-                <AppText style={styles.errorText}>{errors.city}</AppText>
               )}
             </View>
 
@@ -1676,21 +1842,34 @@ const PrivateRegistrationForm = () => {
 
               <AppText style={styles.sectionLabel}>Customer group</AppText>
               
-              <View style={styles.customerGroupContainer}>
+              <View style={styles.customerGroupGridContainer}>
                 {customerGroups.length > 0 ? (
                   customerGroups.map((group) => (
                     <TouchableOpacity
                       key={group.customerGroupId}
                       style={[
-                        styles.customerGroupButton,
-                        formData.customerGroup === group.customerGroupName && styles.customerGroupButtonActive,
+                        styles.radioButtonItem,
+                        group.customerGroupName !== "9-DOCTOR SUPPLY" && styles.radioButtonItemDisabled,
                       ]}
-                      onPress={() => setFormData(prev => ({ ...prev, customerGroup: group.customerGroupName }))}
-                      activeOpacity={0.7}
+                      onPress={() => {
+                        if (group.customerGroupName === "9-DOCTOR SUPPLY") {
+                          setFormData(prev => ({ ...prev, customerGroup: group.customerGroupName }));
+                        }
+                      }}
+                      disabled={group.customerGroupName !== "9-DOCTOR SUPPLY"}
+                      activeOpacity={group.customerGroupName === "9-DOCTOR SUPPLY" ? 0.7 : 1}
                     >
+                      <View style={[
+                        styles.radioButton,
+                        formData.customerGroup === group.customerGroupName && styles.radioButtonSelected,
+                      ]}>
+                        {formData.customerGroup === group.customerGroupName && (
+                          <View style={styles.radioButtonInner} />
+                        )}
+                      </View>
                       <AppText style={[
-                        styles.customerGroupButtonText,
-                        formData.customerGroup === group.customerGroupName && styles.customerGroupButtonTextActive,
+                        styles.radioButtonLabel,
+                        group.customerGroupName !== "9-DOCTOR SUPPLY" && styles.radioButtonLabelDisabled,
                       ]}>
                         {group.customerGroupName}
                       </AppText>
@@ -1698,19 +1877,32 @@ const PrivateRegistrationForm = () => {
                   ))
                 ) : (
                   // Fallback to static groups if API fails
-                  ['X', 'Y', 'Doctor Supply', '10+50', '12+60'].map((group) => (
+                  ['9-Doctor Supply', '10-VQ', '11-RFQ', '12-GOVT'].map((group) => (
                     <TouchableOpacity
                       key={group}
                       style={[
-                        styles.customerGroupButton,
-                        formData.customerGroup === group && styles.customerGroupButtonActive,
+                        styles.radioButtonItem,
+                        group !== '9-Doctor Supply' && styles.radioButtonItemDisabled,
                       ]}
-                      onPress={() => setFormData(prev => ({ ...prev, customerGroup: group }))}
-                      activeOpacity={0.7}
+                      onPress={() => {
+                        if (group === '9-Doctor Supply') {
+                          setFormData(prev => ({ ...prev, customerGroup: group }));
+                        }
+                      }}
+                      disabled={group !== '9-Doctor Supply'}
+                      activeOpacity={group === '9-Doctor Supply' ? 0.7 : 1}
                     >
+                      <View style={[
+                        styles.radioButton,
+                        formData.customerGroup === group && styles.radioButtonSelected,
+                      ]}>
+                        {formData.customerGroup === group && (
+                          <View style={styles.radioButtonInner} />
+                        )}
+                      </View>
                       <AppText style={[
-                        styles.customerGroupButtonText,
-                        formData.customerGroup === group && styles.customerGroupButtonTextActive,
+                        styles.radioButtonLabel,
+                        group !== '9-Doctor Supply' && styles.radioButtonLabelDisabled,
                       ]}>
                         {group}
                       </AppText>
@@ -1721,30 +1913,62 @@ const PrivateRegistrationForm = () => {
 
               <AppText style={styles.sectionLabel}>Stockist Suggestions <AppText style={styles.optional}>(Optional)</AppText></AppText>
               
-              <CustomInput
-                placeholder="Name of the Stockist"
-                value={formData.stockistSuggestion}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, stockistSuggestion: text }))}
-              />
+              {/* Stockist List */}
+              {stockists.map((stockist, index) => (
+                <View key={index} style={styles.stockistCard}>
+                  <View style={styles.stockistCardHeader}>
+                    <AppText style={styles.stockistCardTitle}>Stockist {index + 1}</AppText>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setStockists(prev => prev.filter((_, i) => i !== index));
+                      }}
+                      style={styles.deleteStockistButton}
+                    >
+                      <Icon name="trash-outline" size={20} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <CustomInput
+                    placeholder="Name of the stockist"
+                    value={stockist.name}
+                    onChangeText={(text) => {
+                      setStockists(prev => prev.map((s, i) => 
+                        i === index ? { ...s, name: text } : s
+                      ));
+                    }}
+                  />
 
-              <CustomInput
-                placeholder="Distributor Code"
-                value={formData.distributorCode}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, distributorCode: text }))}
-              />
+                  <CustomInput
+                    placeholder="Distributor Code"
+                    value={stockist.distributorCode}
+                    onChangeText={(text) => {
+                      setStockists(prev => prev.map((s, i) => 
+                        i === index ? { ...s, distributorCode: text } : s
+                      ));
+                    }}
+                  />
 
-              <CustomInput
-                placeholder="City"
-                value={formData.stockistCity}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, stockistCity: text }))}
-              />
+                  <CustomInput
+                    placeholder="City"
+                    value={stockist.city}
+                    onChangeText={(text) => {
+                      setStockists(prev => prev.map((s, i) => 
+                        i === index ? { ...s, city: text } : s
+                      ));
+                    }}
+                  />
+                </View>
+              ))}
 
+              {/* Add Stockist Button */}
               <TouchableOpacity
                 style={styles.addStockistButton}
-                onPress={() => Alert.alert('Add Stockist', 'Stockist addition will be available soon')}
+                onPress={() => {
+                  setStockists(prev => [...prev, { name: '', distributorCode: '', city: '' }]);
+                }}
                 activeOpacity={0.7}
               >        
-                <AppText style={styles.addStockistButtonText}>+ Add New Stockist</AppText>
+                <AppText style={styles.addStockistButtonText}>+ Add Stockist</AppText>
               </TouchableOpacity>
             </View>
 
@@ -1769,7 +1993,7 @@ const PrivateRegistrationForm = () => {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <AppText style={styles.registerButtonText}>
-                    {isEditMode ? 'Update' : 'Register'}
+                    {inEditMode ? 'Update' : 'Register'}
                   </AppText>
                 )}
               </TouchableOpacity>
@@ -1806,6 +2030,19 @@ const PrivateRegistrationForm = () => {
           setShowPharmacyModal(false);
         }}
       />
+
+      {/* Add New Doctor Modal */}
+      {/* <AddNewDoctorModal
+        visible={showDoctorModal}
+        onClose={() => setShowDoctorModal(false)}
+        onSubmit={(doctor) => {
+          setFormData(prev => ({
+            ...prev,
+            selectedDoctors: [...prev.selectedDoctors, doctor]
+          }));
+          setShowDoctorModal(false);
+        }}
+      /> */}
 
       {/* Dropdown Modals */}
       <DropdownModal
@@ -1986,6 +2223,22 @@ const styles = StyleSheet.create({
     marginTop: -12,
     marginBottom: 12,
     marginLeft: 4,
+  },
+  inputTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  mandatoryIndicator: {
+    fontSize: 16,
+    color: colors.error,
+    marginLeft: 4,
+    fontWeight: '600',
   },
   dropdown: {
     position: 'relative',
@@ -2258,6 +2511,72 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '500',
   },
+  customerGroupGridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  radioButtonItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '48%',
+    paddingVertical: 12,
+    paddingHorizontal: 0,
+    marginBottom: 16,
+  },
+  radioButtonItemDisabled: {
+    opacity: 0.5,
+  },
+  radioButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#CCC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  radioButtonSelected: {
+    borderColor: colors.primary,
+  },
+  radioButtonInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  },
+  radioButtonLabel: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  radioButtonLabelDisabled: {
+    color: '#999',
+  },
+  stockistCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+  },
+  stockistCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  stockistCardTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+  },
+  deleteStockistButton: {
+    padding: 4,
+  },
   addStockistButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2266,7 +2585,6 @@ const styles = StyleSheet.create({
   addStockistButtonText: {
     fontSize: 14,
     color: colors.primary,
-    marginLeft: 8,
     fontWeight: '500',
   },
   linkButton: {

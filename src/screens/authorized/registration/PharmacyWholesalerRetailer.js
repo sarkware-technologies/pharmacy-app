@@ -106,9 +106,9 @@ const PharmacyWholesalerRetailerForm = () => {
     // Mapping
     hospitalCode: '',
     hospitalName: '',
-    selectedCategory: '', // 'groupCorporateHospital', 'pharmacy', or ''
+    selectedCategory: '', // 'groupCorporateHospital', 'doctor', or ''
     selectedHospitals: [],
-    selectedPharmacies: [],
+    selectedDoctors: [],
     
     // Customer group
     customerGroupId: 1,
@@ -129,6 +129,9 @@ const PharmacyWholesalerRetailerForm = () => {
     pan: null,
     gst: null,
   });
+
+  // Uploaded documents with full details including docTypeId
+  const [uploadedDocs, setUploadedDocs] = useState([]);
 
   // Error state
   const [errors, setErrors] = useState({});
@@ -183,9 +186,7 @@ const PharmacyWholesalerRetailerForm = () => {
   // States and cities data
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
-  const [areas, setAreas] = useState([]);
   const [loadingCities, setLoadingCities] = useState(false);
-  const [loadingAreas, setLoadingAreas] = useState(false);
 
   // Dropdown modal states
   const [showStateModal, setShowStateModal] = useState(false);
@@ -293,12 +294,9 @@ const PharmacyWholesalerRetailerForm = () => {
       });
       setStates([]);
       setCities([]);
-      setAreas([]);
       setLoadingCities(false);
-      setLoadingAreas(false);
       setShowStateModal(false);
       setShowCityModal(false);
-      setShowAreaModal(false);
     };
   }, []);
 
@@ -382,24 +380,11 @@ const PharmacyWholesalerRetailerForm = () => {
     };
   }, [otpTimers, showOTP]);
 
-  // Load cities when state changes
+  // Load all cities on mount - independent selection
   useEffect(() => {
-    if (formData.stateId) {
-      loadCities(formData.stateId);
-      // Reset city and area when state changes
-      setFormData(prev => ({ ...prev, cityId: '', city: '', areaId: '', area: '' }));
-      setAreas([]);
-    }
-  }, [formData.stateId]);
+    loadCities();
+  }, []);
 
-  // Load areas when city changes
-  useEffect(() => {
-    if (formData.cityId) {
-      loadAreas(formData.cityId);
-      // Reset area when city changes
-      setFormData(prev => ({ ...prev, areaId: '', area: '' }));
-    }
-  }, [formData.cityId]);
 
   const loadStates = async () => {
     try {
@@ -422,17 +407,16 @@ const PharmacyWholesalerRetailerForm = () => {
     }
   };
 
-  const loadCities = async (stateId) => {
+  const loadCities = async () => {
     setLoadingCities(true);
     try {
-      const response = await customerAPI.getCities(stateId);
+      const response = await customerAPI.getCities();
       if (response.success && response.data) {
         const _cities = [];
         for (let i = 0; i < response.data.cities.length; i++) {
           _cities.push({ id: response.data.cities[i].id, name: response.data.cities[i].cityName });
         }
         setCities(_cities || []);
-        //setCities(response.data);
       }
     } catch (error) {
       console.error('Failed to load cities:', error);
@@ -446,30 +430,6 @@ const PharmacyWholesalerRetailerForm = () => {
     }
   };
 
-  const loadAreas = async (cityId) => {
-    setLoadingAreas(true);
-    try {
-      // Assuming there's an API endpoint for areas based on city
-      // For now, using mock data
-      const mockAreas = [
-        { id: 0, name: 'Vadgaonsheri'}, 
-  { id: 1, name: 'Kharadi'}, 
-  { id: 2, name: 'Viman Nagar'}, 
-  { id: 3, name: 'Kalyani Nagar'}, 
-  { id: 4, name: 'Koregaon Park'}
-      ];
-      setAreas(mockAreas);
-    } catch (error) {
-      console.error('Failed to load areas:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to load areas',
-      });
-    } finally {
-      setLoadingAreas(false);
-    }
-  };
 
   const handleVerify = async (field) => {
     // Validate the field before showing OTP
@@ -708,16 +668,14 @@ const PharmacyWholesalerRetailerForm = () => {
     if (!formData.pharmacyName) newErrors.pharmacyName = 'Pharmacy name is required';
     if (!formData.address1) newErrors.address1 = 'Address is required';
     if (!formData.pincode || formData.pincode.length !== 6) newErrors.pincode = 'Valid 6-digit pincode is required';
-    if (!formData.area) newErrors.area = 'Area is required';
     if (!formData.cityId) newErrors.cityId = 'City is required';
     if (!formData.stateId) newErrors.stateId = 'State is required';
     if (!formData.mobileNumber || formData.mobileNumber.length !== 10) newErrors.mobileNumber = 'Valid 10-digit mobile number is required';
     if (!verificationStatus.mobile) newErrors.mobileVerification = 'Mobile number verification is required';
+    if (!formData.address2) newErrors.address2 = 'Address 2 is required';
+    if (!formData.address3) newErrors.address3 = 'Address 3 is required';
     if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
       newErrors.panNumber = 'Valid PAN number is required (e.g., ABCDE1234F)';
-    }
-    if (!formData.gstNumber || !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9]{1}[A-Z]{1}[0-9]{1}$/.test(formData.gstNumber)) {
-      newErrors.gstNumber = 'Valid GST number is required (e.g., 27ABCDE1234F1Z5)';
     }
     
     setErrors(newErrors);
@@ -784,15 +742,7 @@ const PharmacyWholesalerRetailerForm = () => {
             }
           ]
         },
-        // customerDocIds: [
-        //   documentIds.license20,
-        //   documentIds.license21,
-        //   documentIds.license20b,
-        //   documentIds.license21b,
-        //   documentIds.pharmacyImage,
-        //   documentIds.pan,
-        //   documentIds.gst,
-        // ].filter(id => id !== null),
+        customerDocs: uploadedDocs,
         isBuyer: formData.isBuyer,
         customerGroupId: formData.customerGroupId,
         generalDetails: {
@@ -813,7 +763,14 @@ const PharmacyWholesalerRetailerForm = () => {
           panNumber: formData.panNumber,
           gstNumber: formData.gstNumber,
         },
-        suggestedDistributors: formData.suggestedDistributors
+        ...(formData.stockists && formData.stockists.length > 0 && {
+          suggestedDistributors: formData.stockists.map(stockist => ({
+            "distributorCode": stockist.code,
+            "distributorName": stockist.name,
+            "city": stockist.city,
+            "customerId": stockist.name,
+          }))
+        })
       };
 
       console.log('Registration data:', registrationData);
@@ -830,7 +787,7 @@ const PharmacyWholesalerRetailerForm = () => {
         // Navigate to success screen with registration details
         navigation.navigate('RegistrationSuccess', {
           type: 'pharmacy',
-          registrationCode: response.data?.code || response.data?.id || 'SUCCESS',
+          registrationCode: response.data?.id || response.data?.id || 'SUCCESS',
           customerId: response.data?.id,
         });
       } else {
@@ -928,9 +885,24 @@ const PharmacyWholesalerRetailerForm = () => {
     }
     setFormData(prev => ({ ...prev, [`${field}File`]: file }));
     setErrors(prev => ({ ...prev, [`${field}File`]: null }));
+    
+    // Add complete document object to uploaded list with docTypeId
+    if (file && file.id) {
+      const docObject = {
+        s3Path: file.s3Path || file.uri,
+        docTypeId: file.docTypeId,
+        fileName: file.fileName || file.name,
+        id: file.id
+      };
+      setUploadedDocs(prev => [...prev, docObject]);
+    }
   };
 
   const handleFileDelete = (field) => {
+    const file = formData[`${field}File`];
+    if (file && file.id) {
+      setUploadedDocs(prev => prev.filter(doc => doc.id !== file.id));
+    }
     setDocumentIds(prev => ({ ...prev, [field]: null }));
     setFormData(prev => ({ ...prev, [`${field}File`]: null }));
   };
@@ -1215,7 +1187,7 @@ const PharmacyWholesalerRetailerForm = () => {
               />
               
               <CustomInput
-                placeholder="Short Name"
+                placeholder="Enter OP, IP, Cathlab etc"
                 value={formData.shortName}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, shortName: text }))}
               />
@@ -1234,13 +1206,23 @@ const PharmacyWholesalerRetailerForm = () => {
               <CustomInput
                 placeholder="Address 2"
                 value={formData.address2}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, address2: text }))}
+                onChangeText={(text) => {
+                  setFormData(prev => ({ ...prev, address2: text }));
+                  setErrors(prev => ({ ...prev, address2: null }));
+                }}
+                mandatory={true}
+                error={errors.address2}
               />
               
               <CustomInput
                 placeholder="Address 3"
                 value={formData.address3}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, address3: text }))}
+                onChangeText={(text) => {
+                  setFormData(prev => ({ ...prev, address3: text }));
+                  setErrors(prev => ({ ...prev, address3: null }));
+                }}
+                mandatory={true}
+                error={errors.address3}
               />
               
               <CustomInput
@@ -1264,6 +1246,35 @@ const PharmacyWholesalerRetailerForm = () => {
                 error={errors.pincode}
               />
               
+              <CustomInput
+                placeholder="Enter Area"
+                value={formData.area}
+                onChangeText={(text) => {
+                  setFormData(prev => ({ ...prev, area: text }));
+                  setErrors(prev => ({ ...prev, area: null }));
+                }}
+                error={errors.area}
+                mandatory={true}
+              />
+              
+              <View style={styles.dropdownContainer}>
+                {formData.city && (
+                  <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+                    City<AppText style={{ color: colors.primary }}>*</AppText>
+                  </AppText>
+                )}
+                <TouchableOpacity 
+                  style={[styles.dropdown, errors.cityId && styles.inputError]}
+                  onPress={() => setShowCityModal(true)}
+                >
+                  <AppText style={[styles.dropdownText, !formData.city && styles.dropdownPlaceholder]}>
+                    {formData.city || 'City *'}
+                  </AppText>
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
+                </TouchableOpacity>
+                {errors.cityId && <AppText style={styles.errorText}>{errors.cityId}</AppText>}
+              </View>
+              
               <View style={styles.dropdownContainer}>
                 <AppText style={styles.inputLabel}>State*</AppText>
                 <TouchableOpacity 
@@ -1271,41 +1282,11 @@ const PharmacyWholesalerRetailerForm = () => {
                   onPress={() => setShowStateModal(true)}
                 >
                   <AppText style={[styles.dropdownText, !formData.state && styles.dropdownPlaceholder]}>
-                    {formData.state || 'Select State'}
+                    {formData.state || 'State *'}
                   </AppText>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.stateId && <AppText style={styles.errorText}>{errors.stateId}</AppText>}
-              </View>
-              
-              <View style={styles.dropdownContainer}>
-                <AppText style={styles.inputLabel}>City*</AppText>
-                <TouchableOpacity 
-                  style={[styles.dropdown, errors.cityId && styles.inputError]}
-                  onPress={() => formData.stateId && setShowCityModal(true)}
-                  disabled={!formData.stateId}
-                >
-                  <AppText style={[styles.dropdownText, !formData.city && styles.dropdownPlaceholder]}>
-                    {formData.city || 'Select City'}
-                  </AppText>
-                  <Icon name="arrow-drop-down" size={24} color={formData.stateId ? "#666" : "#ccc"} />
-                </TouchableOpacity>
-                {errors.cityId && <AppText style={styles.errorText}>{errors.cityId}</AppText>}
-              </View>
-              
-              <View style={styles.dropdownContainer}>
-                <AppText style={styles.inputLabel}>Area*</AppText>
-                <TouchableOpacity 
-                  style={[styles.dropdown, errors.area && styles.inputError]}
-                  onPress={() => formData.cityId && setShowAreaModal(true)}
-                  disabled={!formData.cityId}
-                >
-                  <AppText style={[styles.dropdownText, !formData.area && styles.dropdownPlaceholder]}>
-                    {formData.area || 'Select Area'}
-                  </AppText>
-                  <Icon name="arrow-drop-down" size={24} color={formData.cityId ? "#666" : "#ccc"} />
-                </TouchableOpacity>
-                {errors.area && <AppText style={styles.errorText}>{errors.area}</AppText>}
               </View>
             </View>
 
@@ -1447,7 +1428,6 @@ const PharmacyWholesalerRetailerForm = () => {
                 }}
                 autoCapitalize="characters"
                 maxLength={15}
-                mandatory={true}
                 error={errors.gstNumber}
               />
             </View>
@@ -1476,7 +1456,7 @@ const PharmacyWholesalerRetailerForm = () => {
                       <View style={styles.radioSelected} />
                     )}
                   </View>
-                  <AppText style={styles.radioLabel}>Group Corporate Hospital</AppText>
+                  <AppText style={styles.radioLabel}>Hospital</AppText>
                 </TouchableOpacity>
 
                 {/* Group Hospital Selector - Show when Group Corporate Hospital is selected */}
@@ -1531,74 +1511,86 @@ const PharmacyWholesalerRetailerForm = () => {
                   </>
                 )}
 
-                {/* Pharmacy Radio Button */}
+                {/* Doctor Radio Button */}
                 <TouchableOpacity
                   style={styles.radioOption}
                   onPress={() => {
                     setFormData(prev => ({ 
                       ...prev, 
-                      selectedCategory: formData.selectedCategory === 'pharmacy' ? '' : 'pharmacy',
-                      selectedPharmacies: formData.selectedCategory === 'pharmacy' ? [] : prev.selectedPharmacies
+                      selectedCategory: formData.selectedCategory === 'doctor' ? '' : 'doctor',
+                      selectedDoctors: formData.selectedCategory === 'doctor' ? [] : prev.selectedDoctors
                     }));
                   }}
                   activeOpacity={0.7}
                 >
                   <View style={styles.radioCircle}>
-                    {formData.selectedCategory === 'pharmacy' && (
+                    {formData.selectedCategory === 'doctor' && (
                       <View style={styles.radioSelected} />
                     )}
                   </View>
-                  <AppText style={styles.radioLabel}>Pharmacy</AppText>
+                  <AppText style={styles.radioLabel}>Doctor</AppText>
                 </TouchableOpacity>
-              </View>
 
-              {/* Pharmacy Selector - Show when Pharmacy is selected */}
-              {formData.selectedCategory === 'pharmacy' && (
-                <>
-                  <TouchableOpacity
-                    style={styles.selectorInput}
-                    onPress={() => {
-                      navigation.navigate('PharmacySelector', {
-                        selectedPharmacies: formData.selectedPharmacies,
-                        onSelect: (pharmacies) => {
-                          setFormData(prev => ({ ...prev, selectedPharmacies: pharmacies }));
+                {/* Doctor Selector - Show when Doctor is selected */}
+                {formData.selectedCategory === 'doctor' && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.selectorInput}
+                      onPress={() => {
+                        navigation.navigate('DoctorSelector', {
+                          selectedDoctors: formData.selectedDoctors,
+                          onSelect: (selectedDoctors) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              selectedDoctors: selectedDoctors
+                            }));
+                          }
+                        });
+                      }}
+                    >
+                      <AppText style={styles.selectorPlaceholder}>
+                        {formData.selectedDoctors.length > 0 
+                          ? `${formData.selectedDoctors.length} Doctor${formData.selectedDoctors.length !== 1 ? 's' : ''} selected`
+                          : 'Select Doctor'
                         }
-                      });
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <AppText style={styles.selectorPlaceholder}>Search pharmacy name/code</AppText>
-                    <Icon name="search" size={20} color="#999" />
-                  </TouchableOpacity>
-                  
-                  {/* Selected Pharmacies List */}
-                  {formData.selectedPharmacies.map((pharmacy) => (
-                    <View key={pharmacy.id} style={styles.selectedPharmacyItem}>
-                      <View style={styles.pharmacyInfo}>
-                        <AppText style={styles.pharmacyName}>{pharmacy.name}</AppText>
-                        <AppText style={styles.pharmacyCode}>{pharmacy.code}</AppText>
+                      </AppText>
+                      <Icon name="arrow-forward" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+
+                    {/* Add New Doctor Link */}
+                    <TouchableOpacity 
+                      style={styles.addNewLink}
+                      onPress={() => {
+                       
+                      }}
+                    >            
+                      <AppText style={styles.addNewLinkText}>+ Add New Doctor</AppText>
+                    </TouchableOpacity>
+
+                    {/* Selected Doctors List */}
+                    {formData.selectedDoctors.length > 0 && (
+                      <View style={styles.selectedItemsContainer}>
+                        <AppText style={styles.selectedItemsLabel}>Selected Doctors:</AppText>
+                        {formData.selectedDoctors.map((doctor, index) => (
+                          <View key={index} style={styles.selectedItemChip}>
+                            <AppText style={styles.selectedItemText}>{doctor.name}</AppText>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  selectedDoctors: prev.selectedDoctors.filter((_, i) => i !== index)
+                                }));
+                              }}
+                            >
+                              <Icon name="close" size={16} color="#999" />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
                       </View>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            selectedPharmacies: prev.selectedPharmacies.filter(p => p.id !== pharmacy.id)
-                          }));
-                        }}
-                      >                
-                        <Icon name="close" size={20} color={colors.error} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                  
-                  <TouchableOpacity 
-                    style={styles.addNewLink}
-                    onPress={() => setShowPharmacyModal(true)}
-                  >
-                    <AppText style={styles.addNewLinkText}>+ Add New Pharmacy</AppText>
-                  </TouchableOpacity>
-                </>
-              )}
+                    )}
+                  </>
+                )}
+              </View>
 
               <View style={styles.divider} />
               
@@ -1766,14 +1758,11 @@ const PharmacyWholesalerRetailerForm = () => {
         data={states}
         selectedId={formData.stateId}
         onSelect={(item) => {
-          setFormData(prev => ({ 
+          setFormData(prev => ({
             ...prev, 
-            stateId: item.id, 
+            stateId: item.id,
             state: item.name,
-            cityId: '',
-            city: '',
-            areaId: '',
-            area: ''
+            // Don't reset city and area - allow independent selection
           }));
           setErrors(prev => ({ ...prev, stateId: null }));
         }}
@@ -1791,30 +1780,13 @@ const PharmacyWholesalerRetailerForm = () => {
             ...prev, 
             cityId: item.id, 
             city: item.name,
-            areaId: '',
-            area: ''
+            // Don't reset area - allow independent selection
           }));
           setErrors(prev => ({ ...prev, cityId: null }));
         }}
         loading={loadingCities}
       />
 
-      <DropdownModal
-        visible={showAreaModal}
-        onClose={() => setShowAreaModal(false)}
-        title="Select Area"
-        data={areas}
-        selectedId={formData.areaId}
-        onSelect={(item) => {
-          setFormData(prev => ({ 
-            ...prev, 
-            areaId: item.id, 
-            area: item.name 
-          }));
-          setErrors(prev => ({ ...prev, area: null }));
-        }}
-        loading={loadingAreas}
-      />
 
       <Toast />
 
@@ -1958,6 +1930,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 8,
+  },
+  floatingLabel: {
+    position: 'absolute',
+    top: -8,
+    left: 12,
+    fontSize: 12,
+    fontWeight: '500',
+    backgroundColor: '#fff',
+    paddingHorizontal: 4,
+    zIndex: 1,
   },
   dropdownContainer: {
     marginBottom: 16,
@@ -2480,6 +2462,50 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     color: '#999999',
+  },
+  addNewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: 8,
+    marginBottom: 16,
+    backgroundColor: '#FFF5ED',
+  },
+  addNewButtonText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  selectedItemsContainer: {
+    marginBottom: 16,
+  },
+  selectedItemsLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  selectedItemChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF5ED',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  selectedItemText: {
+    fontSize: 13,
+    color: '#333',
+    fontWeight: '500',
+    flex: 1,
   },
 });
 

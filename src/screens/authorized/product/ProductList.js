@@ -11,14 +11,15 @@ import {
   RefreshControl,
   Modal,
   Animated,
-  Alert
+  Alert,
+  Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
-import { getProducts, updateProductStatus } from '../../../api/product';
+import { getProducts, updateProductStatus, getProductsByDistributorAndCustomer } from '../../../api/product';
 import {
   setProducts,
   addProducts,
@@ -39,6 +40,60 @@ import Filter from '../../../components/icons/Filter';
 import FilterModal from '../../../components/FilterModal';
 import {AppText,AppInput} from "../../../components"
 
+// Skeleton Loading Component
+const SkeletonProductCard = () => {
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmerAnim, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [shimmerAnim]);
+
+  const opacity = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.7],
+  });
+
+  return (
+    <Animated.View style={[styles.skeletonCard, { opacity }]}>
+      {/* Header with title and MOQ */}
+      <View style={styles.skeletonHeader}>
+        <View style={styles.skeletonTitleContainer}>
+          <View style={styles.skeletonTitle} />
+          <View style={[styles.skeletonTitle, { width: '60%', marginTop: 8 }]} />
+        </View>
+        <View style={styles.skeletonMOQ} />
+      </View>
+
+      {/* Price Row */}
+      <View style={styles.skeletonPriceRow}>
+        <View style={styles.skeletonPriceItem} />
+        <View style={styles.skeletonPriceItem} />
+        <View style={styles.skeletonPriceItem} />
+        <View style={styles.skeletonPriceItem} />
+      </View>
+
+      {/* Footer with status and contract */}
+      <View style={styles.skeletonFooter}>
+        <View style={styles.skeletonStatus} />
+        <View style={styles.skeletonContract} />
+      </View>
+    </Animated.View>
+  );
+};
+
 const ProductList = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
@@ -58,6 +113,9 @@ const ProductList = () => {
   const [hasMoreData, setHasMoreData] = useState(true);
   const [listError, setListError] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [pageSize] = useState(10);
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -94,19 +152,28 @@ const ProductList = () => {
     dispatch(setLoading(true));
     setListError(null);
     setAllProducts([]);
+    setCurrentPage(1);
 
     try {
-      const data = await getProducts(1, 20, searchText);
-      setAllProducts(data.products || []);
-      dispatch(setProducts(data.products || []));
-      dispatch(setPagination({
-        page: 1,
-        limit: 20,
-        total: data.total || 0
-      }));
+      // Use new rate contract API
+      const response = await getProductsByDistributorAndCustomer(1, pageSize);
+      
+      if (response?.rcDetails) {
+        const rcDetails = response.rcDetails || [];
+        const total = response.total || 0;
+        
+        setAllProducts(rcDetails);
+        setTotalRecords(total);
+        dispatch(setProducts(rcDetails));
+        dispatch(setPagination({
+          page: 1,
+          limit: pageSize,
+          total: total
+        }));
 
-      const totalLoaded = data.products?.length || 0;
-      setHasMoreData(totalLoaded < data.total);
+        const totalPages = Math.ceil(total / pageSize);
+        setHasMoreData(1 < totalPages);
+      }
     } catch (error) {
       console.error('Error loading products:', error);
       setListError(error.message || 'Failed to load products');
@@ -118,21 +185,36 @@ const ProductList = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     setListError(null);
+    setCurrentPage(1);
+    setAllProducts([]);  // Clear all products first
+    setTotalRecords(0);  // Reset total
 
     try {
-      const data = await getProducts(1, 20, searchText);
-      setAllProducts(data.products || []);
-      dispatch(setProducts(data.products || []));
-      dispatch(setPagination({
-        page: 1,
-        limit: 20,
-        total: data.total || 0
-      }));
+      // Fetch from page 1 from scratch
+      const response = await getProductsByDistributorAndCustomer(1, pageSize);
+      
+      if (response?.rcDetails) {
+        const rcDetails = response.rcDetails || [];
+        const total = response.total || 0;
+        
+        // Set fresh data
+        setAllProducts(rcDetails);
+        setTotalRecords(total);
+        dispatch(setProducts(rcDetails));
+        dispatch(setPagination({
+          page: 1,
+          limit: pageSize,
+          total: total
+        }));
 
-      const totalLoaded = data.products?.length || 0;
-      setHasMoreData(totalLoaded < data.total);
+        // Calculate pagination
+        const totalPages = Math.ceil(total / pageSize);
+        setHasMoreData(1 < totalPages);
+        
+        console.log('✅ Refresh complete - Page 1 loaded with', rcDetails.length, 'products');
+      }
     } catch (error) {
-      console.error('Error refreshing products:', error);
+      console.error('❌ Error refreshing products:', error);
       setListError(error.message || 'Failed to refresh products');
     } finally {
       setRefreshing(false);
@@ -142,34 +224,43 @@ const ProductList = () => {
   const handleLoadMore = async () => {
     if (loadingMore || !hasMoreData || loading || refreshing) return;
 
-    if (allProducts.length >= pagination.total) {
+    // Check if we've already loaded all records
+    if (allProducts.length >= totalRecords) {
       setHasMoreData(false);
       return;
     }
 
     setLoadingMore(true);
-    const nextPage = pagination.page + 1;
+    const nextPage = currentPage + 1;
 
     try {
-      const data = await getProducts(nextPage, 20, searchText);
-      const newProducts = data.products || [];
+      const response = await getProductsByDistributorAndCustomer(nextPage, pageSize);
+      
+      if (response?.rcDetails) {
+        const newProducts = response.rcDetails || [];
+        const total = response.total || 0;
 
-      if (newProducts.length > 0) {
-        const updatedList = [...allProducts, ...newProducts];
-        setAllProducts(updatedList);
-        dispatch(addProducts(newProducts));
-        dispatch(setPagination({
-          page: nextPage,
-          limit: 20,
-          total: data.total || 0
-        }));
+        if (newProducts.length > 0) {
+          const updatedList = [...allProducts, ...newProducts];
+          setAllProducts(updatedList);
+          dispatch(addProducts(newProducts));
+          setCurrentPage(nextPage);
+          dispatch(setPagination({
+            page: nextPage,
+            limit: pageSize,
+            total: total
+          }));
 
-        setHasMoreData(updatedList.length < data.total);
-      } else {
-        setHasMoreData(false);
+          // Calculate if there's more data
+          const totalPages = Math.ceil(total / pageSize);
+          setHasMoreData(nextPage < totalPages);
+        } else {
+          setHasMoreData(false);
+        }
       }
     } catch (error) {
       console.error('Error loading more products:', error);
+      setListError(error.message || 'Failed to load more products');
     } finally {
       setLoadingMore(false);
     }
@@ -188,14 +279,22 @@ const ProductList = () => {
     }, 500);
   };
 
-  const handleProductPress = (product) => {
+  const handleProductPress = (rateContractItem) => {
+    const productId = rateContractItem.productId || rateContractItem.id;
+    
     if (bulkEditMode) {
-      dispatch(toggleProductSelection(product.productId));
+      dispatch(toggleProductSelection(productId));
     } else {
-      dispatch(setSelectedProduct(product));      
+      // Pass both the rate contract item and product details
+      dispatch(setSelectedProduct(rateContractItem));      
       navigation.getParent()?.navigate('ProductStack', {
         screen: 'ProductDetail',
-        params: { product },
+        params: { 
+          product: rateContractItem,
+          rateContractData: rateContractItem,
+          productDetails: rateContractItem.productDetails,
+          customerDetails: rateContractItem.customerDetails,
+        },
       });
     }
   };
@@ -263,7 +362,10 @@ const ProductList = () => {
   };
 
   const renderProduct = ({ item }) => {
-    const isSelected = selectedProducts && selectedProducts.includes(item.productId);
+    // Handle both old product format and new rate contract format
+    const productId = item.productId || item.id;
+    const isSelected = selectedProducts && selectedProducts.includes(productId);
+    const productDetails = item.productDetails || item;
     
     return (
       <TouchableOpacity
@@ -274,7 +376,7 @@ const ProductList = () => {
         {bulkEditMode && (
           <View style={styles.checkboxContainer}>
             <TouchableOpacity 
-              onPress={() => dispatch(toggleProductSelection(item.productId))}
+              onPress={() => dispatch(toggleProductSelection(productId))}
               style={styles.checkbox}
             >
               <Icon 
@@ -289,34 +391,34 @@ const ProductList = () => {
         <View style={styles.cardHeader}>
           <View style={styles.productInfo}>
             <AppText style={styles.productName} numberOfLines={2}>
-              {item.productName}
+              {productDetails.productName}
             </AppText>
-            <AppText style={styles.productCode}>{item.productCode}</AppText>
+            <AppText style={styles.productCode}>{productDetails.productCode}</AppText>
           </View>
           <View style={styles.moqContainer}>
             <AppText style={styles.moqLabel}>MOQ</AppText>
-            <AppText style={styles.moqValue}>{item.moq || '50'}</AppText>
+            <AppText style={styles.moqValue}>{item.maxOrderQty || '50'}</AppText>
           </View>
         </View>
 
         <View style={styles.priceRow}>
           <View style={styles.priceItem}>
             <AppText style={styles.priceLabel}>PTS</AppText>
-            <AppText style={styles.priceValue}>{formatPrice(item.pts)}</AppText>
+            <AppText style={styles.priceValue}>{formatPrice(productDetails.pts)}</AppText>
           </View>
           <View style={styles.priceItem}>
             <AppText style={styles.priceLabel}>PTR</AppText>
-            <AppText style={styles.priceValue}>{formatPrice(item.ptr)}</AppText>
+            <AppText style={styles.priceValue}>{formatPrice(productDetails.ptr)}</AppText>
           </View>
           <View style={styles.priceItem}>
             <AppText style={styles.priceLabel}>Margin</AppText>
             <AppText style={styles.priceValue}>
-              {formatPrice(item.ptr - item.pts)}
+              {formatPrice((productDetails.ptr - productDetails.pts) || 0)}
             </AppText>
           </View>
           <View style={{ ...styles.priceItem, alignItems: 'flex-end'}}>
-            <AppText style={styles.priceLabel}>PTH</AppText>
-            <AppText style={styles.priceValue}>{formatPrice(item.mrp)}</AppText>
+            <AppText style={styles.priceLabel}>MRP</AppText>
+            <AppText style={styles.priceValue}>{formatPrice(productDetails.mrp)}</AppText>
           </View>
         </View>
 
@@ -324,24 +426,23 @@ const ProductList = () => {
           <TouchableOpacity
             style={[
               styles.statusBadge,
-              item.isActive ? styles.activeBadge : styles.inactiveBadge
+              item.status === 'ACTIVE' || item.isActive ? styles.activeBadge : styles.inactiveBadge
             ]}
-            onPress={() => handleToggleStatus(item)}
           >
             <AppText style={[
               styles.statusText,
-              item.isActive ? styles.activeText : styles.inactiveText
+              item.status === 'ACTIVE' || item.isActive ? styles.activeText : styles.inactiveText
             ]}>
-              {item.isActive ? 'ACTIVE' : 'IN-ACTIVE'}
+              {item.status || (item.isActive ? 'ACTIVE' : 'IN-ACTIVE')}
             </AppText>
           </TouchableOpacity>
 
           <View style={styles.quantityInfo}>
             <AppText style={styles.quantityText}>
-              Exausted /Max Qty
+              Rate Contract
             </AppText>
             <AppText style={styles.quantityValue}>
-              {item.exhaustedQty || '100'}/{item.maxQty || '200'}
+              {item.rateContractNum || 'N/A'}
             </AppText>
           </View>
         </View>
@@ -420,11 +521,14 @@ const ProductList = () => {
           },
         ]}
       >
-        {loading && allProducts.length === 0 ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <AppText style={styles.loadingText}>Loading products...</AppText>
-          </View>
+        {(loading || refreshing) && allProducts.length === 0 ? (
+          <FlatList
+            data={[1, 2, 3, 4, 5]}
+            renderItem={() => <SkeletonProductCard />}
+            keyExtractor={(item, index) => `skeleton-${index}`}
+            scrollEnabled={false}
+            contentContainerStyle={styles.skeletonContainer}
+          />
         ) : listError && allProducts.length === 0 ? (
           <View style={styles.errorContainer}>
             <Icon name="error-outline" size={60} color="#EF4444" />
@@ -764,6 +868,73 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
+  },
+  // Skeleton Loading Styles
+  skeletonContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  skeletonCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 4,
+    marginVertical: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  skeletonHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  skeletonTitleContainer: {
+    flex: 1,
+  },
+  skeletonTitle: {
+    height: 16,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 8,
+    width: '80%',
+  },
+  skeletonMOQ: {
+    height: 16,
+    width: 60,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 8,
+  },
+  skeletonPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: 12,
+  },
+  skeletonPriceItem: {
+    flex: 1,
+    height: 40,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 8,
+  },
+  skeletonFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  skeletonStatus: {
+    height: 28,
+    width: 80,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 6,
+  },
+  skeletonContract: {
+    height: 16,
+    width: 120,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 8,
   },
 });
 

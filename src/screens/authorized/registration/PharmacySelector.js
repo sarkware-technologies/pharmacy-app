@@ -11,6 +11,8 @@ import {
   StatusBar,
   Animated,
   FlatList,
+  ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -18,23 +20,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
 import {AppText,AppInput} from "../../../components"
-
-// Mock pharmacy data
-const MOCK_PHARMACIES = [
-  { id: 1, name: 'Sunlite Pharma Medicos 24/7', code: '10106555', city: 'Pune', state: 'Maharashtra', selected: true },
-  { id: 2, name: 'Wellness Forever', code: '10006565', city: 'Bengaluru', state: 'Karnataka', selected: true },
-  { id: 3, name: 'Alkem Laboratories', code: '10106555', city: 'Jaipur', state: 'Rajasthan', selected: true },
-  { id: 4, name: 'Safar Dang Pharmacy', code: '10006565', city: 'Pimpri', state: 'Maharashtra', selected: false },
-  { id: 5, name: "King's George Pharmacy", code: '10106555', city: 'Indira Nagar', state: 'UP', selected: false },
-  { id: 6, name: 'Naidu Pharmacy', code: '10006565', city: 'Hydrabad', state: 'Telangana', selected: false },
-  { id: 7, name: 'District Pharmacy', code: '10106555', city: 'Pune', state: 'Maharashtra', selected: false },
-  { id: 8, name: 'MGM Pharmacy', code: '10006565', city: 'Viman Nagar', state: 'Maharashtra', selected: false },
-  { id: 9, name: 'MMF Ratna Memorial Pharmacy', code: '10006565', city: 'Bengaluru', state: 'Karnataka', selected: false },
-  { id: 10, name: 'District Pharamcy', code: '10106555', city: 'Pune', state: 'Maharashtra', selected: false },
-];
-
-const STATES = ['All States', 'Maharashtra', 'Karnataka', 'Rajasthan', 'UP', 'Telangana'];
-const CITIES = ['All Cities', 'Pune', 'Bengaluru', 'Jaipur', 'Pimpri', 'Hydrabad', 'Viman Nagar', 'Indira Nagar'];
+import { customerAPI } from '../../../api/customer';
 
 const PharmacySelector = () => {
   const navigation = useNavigation();
@@ -42,14 +28,20 @@ const PharmacySelector = () => {
   const { onSelect, selectedPharmacies = [] } = route.params || {};
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedState, setSelectedState] = useState('4 States');
-  const [selectedCity, setSelectedCity] = useState('55 Cities');
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedItems, setSelectedItems] = useState(() => {
-    // Initialize with pre-selected pharmacies
-    const preSelected = MOCK_PHARMACIES.filter(p => p.selected);
-    return [...preSelected, ...selectedPharmacies];
-  });
+  const [selectedItems, setSelectedItems] = useState(selectedPharmacies || []);
+  
+  // Pharmacy data states
+  const [pharmaciesData, setPharmaciesData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Filter states
+  const [selectedStates, setSelectedStates] = useState([]);
+  const [selectedCities, setSelectedCities] = useState([]);
+  const [statesList, setStatesList] = useState([]);
+  const [citiesList, setCitiesList] = useState([]);
+  const [statesLoading, setStatesLoading] = useState(false);
+  const [citiesLoading, setCitiesLoading] = useState(false);
   
   // Filter dropdowns
   const [showStateDropdown, setShowStateDropdown] = useState(false);
@@ -76,12 +68,145 @@ const PharmacySelector = () => {
     ]).start();
   }, []);
 
+  // Fetch states and pharmacies on component mount
+  useEffect(() => {
+    fetchStates();
+    fetchPharmacies();
+  }, []);
+
+  // Fetch pharmacies when filters or search changes
+  useEffect(() => {
+    if (!loading) {
+      fetchPharmacies();
+    }
+  }, [selectedStates, selectedCities, searchQuery]);
+
+  // Fetch cities when state is selected
+  useEffect(() => {
+    if (selectedStates.length > 0) {
+      // Fetch cities for all selected states
+      fetchCitiesForStates(selectedStates);
+    } else {
+      setCitiesList([]);
+      setSelectedCities([]);
+    }
+  }, [selectedStates]);
+
+  const fetchPharmacies = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('PharmacySelector: Fetching pharmacies with filters...');
+      
+      // Build state and city IDs arrays
+      const stateIds = selectedStates.map(s => Number(s.id));
+      const cityIds = selectedCities.map(c => Number(c.id));
+      
+      console.log('PharmacySelector: Filter params - stateIds:', stateIds, 'cityIds:', cityIds, 'searchText:', searchQuery);
+      
+      // Call API with filters and search
+      const response = await customerAPI.getPharmaciesList(['PCM'], 1, 1, 20, stateIds, cityIds, searchQuery);
+      console.log('PharmacySelector: Pharmacies API response:', response);
+      
+      if (response?.data?.customers && Array.isArray(response.data.customers)) {
+        // Transform API response to match expected format
+        const transformedPharmacies = response.data.customers.map(customer => ({
+          id: customer.customerId,
+          name: customer.customerName,
+          code: customer.customerCode || customer.customerId,
+          city: customer.cityName || 'N/A',
+          state: customer.stateName || 'N/A',
+        }));
+        console.log('PharmacySelector: Transformed pharmacies:', transformedPharmacies.length, 'items');
+        setPharmaciesData(transformedPharmacies);
+      } else {
+        console.log('PharmacySelector: Invalid pharmacies response format');
+        setPharmaciesData([]);
+      }
+    } catch (err) {
+      console.error('PharmacySelector: Error fetching pharmacies:', err);
+      setError(err.message || 'Failed to load pharmacies');
+      setPharmaciesData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStates = async () => {
+    try {
+      setStatesLoading(true);
+      console.log('PharmacySelector: Fetching states...');
+      
+      const response = await customerAPI.getStatesList(1, 20);
+      console.log('PharmacySelector: States API response:', response);
+      
+      if (response?.data?.states && Array.isArray(response.data.states)) {
+        // Transform state response
+        const transformedStates = response.data.states.map(state => ({
+          id: state.id,
+          name: state.stateName,
+        }));
+        setStatesList(transformedStates);
+      } else {
+        setStatesList([]);
+      }
+    } catch (err) {
+      console.error('PharmacySelector: Error fetching states:', err);
+      setStatesList([]);
+    } finally {
+      setStatesLoading(false);
+    }
+  };
+
+  const fetchCitiesForStates = async (states) => {
+    try {
+      setCitiesLoading(true);
+      console.log('PharmacySelector: Fetching cities for states...');
+      
+      const response = await customerAPI.getCitiesList(1, 20);
+      console.log('PharmacySelector: Cities API response:', response);
+      
+      if (response?.data?.cities && Array.isArray(response.data.cities)) {
+        // Filter cities by all selected states and transform
+        const stateIds = states.map(s => Number(s.id));
+        const filteredCities = response.data.cities
+          .filter(city => stateIds.includes(Number(city.stateId)))
+          .map(city => ({
+            id: city.id,
+            name: city.cityName,
+          }));
+        setCitiesList(filteredCities);
+      } else {
+        setCitiesList([]);
+      }
+    } catch (err) {
+      console.error('PharmacySelector: Error fetching cities:', err);
+      setCitiesList([]);
+    } finally {
+      setCitiesLoading(false);
+    }
+  };
+
+  const handleStateToggle = (state) => {
+    const isSelected = selectedStates.some(s => s.id === state.id);
+    if (isSelected) {
+      setSelectedStates(selectedStates.filter(s => s.id !== state.id));
+    } else {
+      setSelectedStates([...selectedStates, state]);
+    }
+  };
+
+  const handleCityToggle = (city) => {
+    const isSelected = selectedCities.some(c => c.id === city.id);
+    if (isSelected) {
+      setSelectedCities(selectedCities.filter(c => c.id !== city.id));
+    } else {
+      setSelectedCities([...selectedCities, city]);
+    }
+  };
+
   const handleSearch = () => {
-    // Filter pharmacies based on search query
-    const filtered = MOCK_PHARMACIES.filter(pharmacy => 
-      pharmacy.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      pharmacy.code.includes(searchQuery)
-    );
+    // Search is handled by API call through useEffect
   };
 
   const handleTogglePharmacy = (pharmacy) => {
@@ -145,33 +270,103 @@ const PharmacySelector = () => {
         <AppText style={styles.headerTitle}>Select Pharmacy</AppText>
       </View>
 
-      {/* Filter Pills */}
+      {/* Filter Dropdowns Container */}
       <View style={styles.filterContainer}>
+        {/* State Dropdown */}
         <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setShowFilters(true)}
+          style={styles.filterDropdown}
+          onPress={() => setShowStateDropdown(!showStateDropdown)}
         >
-          <MaterialIcons name="filter-list" size={20} color={colors.primary} />
+          <AppText style={styles.filterDropdownText}>
+            {selectedStates.length > 0 ? `${selectedStates.length} State${selectedStates.length !== 1 ? 's' : ''}` : 'Select State'}
+          </AppText>
+          <Icon name={showStateDropdown ? 'chevron-up' : 'chevron-down'} size={16} color="#666" />
         </TouchableOpacity>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-          <TouchableOpacity
-            style={styles.filterPill}
-            onPress={() => setShowStateDropdown(!showStateDropdown)}
-          >
-            <AppText style={styles.filterPillText}>{selectedState}</AppText>
-            <Icon name="chevron-down" size={16} color="#666" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.filterPill}
-            onPress={() => setShowCityDropdown(!showCityDropdown)}
-          >
-            <AppText style={styles.filterPillText}>{selectedCity}</AppText>
-            <Icon name="chevron-down" size={16} color="#666" />
-          </TouchableOpacity>
-        </ScrollView>
+        {/* City Dropdown */}
+        <TouchableOpacity
+          style={styles.filterDropdown}
+          onPress={() => setShowCityDropdown(!showCityDropdown)}
+        >
+          <AppText style={styles.filterDropdownText}>
+            {selectedCities.length > 0 ? `${selectedCities.length} Cit${selectedCities.length !== 1 ? 'ies' : 'y'}` : 'Select City'}
+          </AppText>
+          <Icon name={showCityDropdown ? 'chevron-up' : 'chevron-down'} size={16} color="#666" />
+        </TouchableOpacity>
       </View>
+
+      {/* Overlay to close dropdowns when clicking outside */}
+      {(showStateDropdown || showCityDropdown) && (
+        <Pressable
+          style={styles.overlay}
+          onPress={() => {
+            setShowStateDropdown(false);
+            setShowCityDropdown(false);
+          }}
+        />
+      )}
+
+      {/* State Dropdown Menu - Absolute Positioned */}
+      {showStateDropdown && (
+        <View style={[styles.dropdownMenu, styles.stateDropdownMenu]}>
+          {statesLoading ? (
+            <View style={styles.dropdownLoading}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : statesList.length > 0 ? (
+            <ScrollView style={styles.dropdownScroll}>
+              {statesList.map(state => {
+                const isSelected = selectedStates.some(s => s.id === state.id);
+                return (
+                  <TouchableOpacity
+                    key={state.id}
+                    style={styles.dropdownItem}
+                    onPress={() => handleStateToggle(state)}
+                  >
+                    <View style={[styles.checkboxSmall, isSelected && styles.checkboxSmallSelected]}>
+                      {isSelected && <Icon name="checkmark" size={14} color="#fff" />}
+                    </View>
+                    <AppText style={styles.dropdownItemText}>{state.name}</AppText>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          ) : (
+            <AppText style={styles.dropdownItemText}>No states available</AppText>
+          )}
+        </View>
+      )}
+
+      {/* City Dropdown Menu - Absolute Positioned */}
+      {showCityDropdown && (
+        <View style={[styles.dropdownMenu, styles.cityDropdownMenu]}>
+          {citiesLoading ? (
+            <View style={styles.dropdownLoading}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : citiesList.length > 0 ? (
+            <ScrollView style={styles.dropdownScroll}>
+              {citiesList.map(city => {
+                const isSelected = selectedCities.some(c => c.id === city.id);
+                return (
+                  <TouchableOpacity
+                    key={city.id}
+                    style={styles.dropdownItem}
+                    onPress={() => handleCityToggle(city)}
+                  >
+                    <View style={[styles.checkboxSmall, isSelected && styles.checkboxSmallSelected]}>
+                      {isSelected && <Icon name="checkmark" size={14} color="#fff" />}
+                    </View>
+                    <AppText style={styles.dropdownItemText}>{city.name}</AppText>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          ) : (
+            <AppText style={styles.dropdownItemText}>No cities available</AppText>
+          )}
+        </View>
+      )}
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -187,27 +382,47 @@ const PharmacySelector = () => {
       </View>
 
       {/* Pharmacy List */}
-      <FlatList
-        data={searchQuery ? 
-          MOCK_PHARMACIES.filter(p => 
-            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.code.includes(searchQuery)
-          ) : MOCK_PHARMACIES
-        }
-        renderItem={renderPharmacyItem}
-        keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListFooterComponent={() => (
-          <TouchableOpacity
-            style={styles.addNewPharmacyButton}
-            onPress={handleAddNewPharmacy}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <AppText style={styles.loadingText}>Loading pharmacies...</AppText>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle" size={40} color="#EF4444" />
+          <AppText style={styles.errorText}>Error loading pharmacies</AppText>
+          <AppText style={styles.errorSubText}>{error}</AppText>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={fetchPharmacies}
           >
-            <Icon name="add" size={20} color={colors.primary} />
-            <AppText style={styles.addNewPharmacyText}>Add New Pharmacy</AppText>
+            <AppText style={styles.retryButtonText}>Retry</AppText>
           </TouchableOpacity>
-        )}
-      />
+        </View>
+      ) : (
+        <FlatList
+          data={pharmaciesData}
+          renderItem={renderPharmacyItem}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyContainer}>
+              <Icon name="search" size={40} color="#999" />
+              <AppText style={styles.emptyText}>No pharmacies found</AppText>
+            </View>
+          )}
+          // ListFooterComponent={() => (
+          //   <TouchableOpacity
+          //     style={styles.addNewPharmacyButton}
+          //     onPress={handleAddNewPharmacy}
+          //   >
+          //     <Icon name="add" size={20} color={colors.primary} />
+          //     <AppText style={styles.addNewPharmacyText}>Add New Pharmacy</AppText>
+          //   </TouchableOpacity>
+          // )}
+        />
+      )}
 
       {/* Bottom Button */}
       {selectedItems.length > 0 && (
@@ -248,38 +463,104 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9998,
+  },
   filterContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+    gap: 12,
+    zIndex: 100,
   },
-  filterButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFF5ED',
+  filterDropdown: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#999',
   },
-  filterScroll: {
+  filterDropdownText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
     flex: 1,
   },
-  filterPill: {
+  disabledText: {
+    color: '#999',
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    maxHeight: 250,
+    zIndex: 9999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 20,
+  },
+  stateDropdownMenu: {
+    top: 100,
+    left: 16,
+    right: 'auto',
+    width: '45%',
+  },
+  cityDropdownMenu: {
+    top: 100,
+    right: 16,
+    left: 'auto',
+    width: '45%',
+  },
+  dropdownScroll: {
+    maxHeight: 250,
+  },
+  dropdownLoading: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 20,
-    marginRight: 8,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
-  filterPillText: {
+  checkboxSmall: {
+    width: 18,
+    height: 18,
+    borderRadius: 3,
+    borderWidth: 1.5,
+    borderColor: '#DDD',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    backgroundColor: '#fff',
+  },
+  checkboxSmallSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  dropdownItemText: {
     fontSize: 14,
-    color: '#666',
-    marginRight: 4,
+    color: '#333',
+    flex: 1,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -377,6 +658,57 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 12,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#EF4444',
+    marginTop: 12,
+  },
+  errorSubText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 12,
   },
 });
 

@@ -50,6 +50,8 @@ import RejectCustomerModal from '../../../components/modals/RejectCustomerModal'
 import { customerAPI } from '../../../api/customer';
 import { SkeletonList } from '../../../components/SkeletonLoader';
 import {AppText,AppInput} from "../../../components"
+import Toast from 'react-native-toast-message';
+import { handleOnboardCustomer } from '../../../utils/customerNavigationHelper';
 
 const { width, height } = Dimensions.get('window');
 
@@ -190,7 +192,7 @@ const CustomerList = ({ navigation }) => {
     }, 500);
     
     return () => clearTimeout(delayDebounceFn);
-  }, [searchText, activeTab, dispatch]); // Removed filters dependency to prevent infinite loop
+  }, [searchText, dispatch]); // Only trigger on search text change, not on tab change
 
   // Refresh function
   const onRefresh = async () => {
@@ -367,7 +369,7 @@ const CustomerList = ({ navigation }) => {
       const parellGroupId = selectedCustomerForAction?.instance?.stepInstances[0]?.parallelGroup
       const stepOrderId = selectedCustomerForAction?.instance?.stepInstances[0]?.stepOrder
       
-      const actionData = {
+      const actionDataPyaload = {
         stepOrder: stepOrderId,
         parallelGroup: parellGroupId,
         actorId: actorId,
@@ -384,7 +386,7 @@ const CustomerList = ({ navigation }) => {
         }
       };
 
-      const response = await customerAPI.workflowAction(instanceId, actionData);
+      const response = await customerAPI.workflowAction(instanceId, actionDataPyaload);
       
       setApproveModalVisible(false);
       showToast(`Customer ${selectedCustomerForAction?.customerName} approved successfully!`, 'success');
@@ -424,7 +426,7 @@ const CustomerList = ({ navigation }) => {
       const parellGroupId = selectedCustomerForAction?.instance?.stepInstances[0]?.parallelGroup
       const stepOrderId = selectedCustomerForAction?.instance?.stepInstances[0]?.stepOrder
       
-      const actionData = {
+      const actionDataPyaload = {
         stepOrder: stepOrderId,
         parallelGroup: parellGroupId,
         actorId: actorId,
@@ -441,7 +443,7 @@ const CustomerList = ({ navigation }) => {
         }
       };
 
-      const response = await customerAPI.workflowAction(instanceId, actionData);
+      const response = await customerAPI.workflowAction(instanceId, actionDataPyaload);
       
       setRejectModalVisible(false);
       showToast(`Customer ${selectedCustomerForAction?.customerName} rejected!`, 'error');
@@ -884,7 +886,17 @@ const CustomerList = ({ navigation }) => {
               {item.statusName === 'NOT-ONBOARDED' && (
                 <TouchableOpacity 
                   style={styles.actionButton}
-                  onPress={() => navigation.navigate('PrivateRegistrationForm', { customerId: item.customerId || item.stgCustomerId })}
+                  onPress={() => {
+                    const customerId = item.customerId || item.stgCustomerId;
+                    const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
+                    handleOnboardCustomer(
+                      navigation,
+                      customerId,
+                      isStaging,
+                      customerAPI,
+                      (toastConfig) => Toast.show(toastConfig)
+                    );
+                  }}
                 >
                   <Edit color="#666" />
                 </TouchableOpacity>
@@ -893,7 +905,17 @@ const CustomerList = ({ navigation }) => {
               {item.statusName === 'APPROVED' && (
                 <TouchableOpacity 
                   style={styles.actionButton}
-                  onPress={() => navigation.navigate('PrivateRegistrationForm', { customerId: item.customerId || item.stgCustomerId })}
+                  onPress={() => {
+                    const customerId = item.customerId || item.stgCustomerId;
+                    const isStaging = false; // APPROVED items are not staging
+                    handleOnboardCustomer(
+                      navigation,
+                      customerId,
+                      isStaging,
+                      customerAPI,
+                      (toastConfig) => Toast.show(toastConfig)
+                    );
+                  }}
                 >
                   <Edit color="#666" />
                 </TouchableOpacity>
@@ -918,7 +940,7 @@ const CustomerList = ({ navigation }) => {
               <AppText style={styles.infoText}>{item.groupName}</AppText>
               <AppText style={styles.divider}>|</AppText>
               <AppText
-                style={[styles.infoText, { marginRight: 5, maxWidth: 100 }]} // limit width
+                style={[styles.infoText, { flex: 1, maxWidth: 80 }]}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
@@ -979,7 +1001,17 @@ const CustomerList = ({ navigation }) => {
           ) : item.statusName === 'NOT-ONBOARDED' ? (
             <TouchableOpacity 
               style={styles.onboardButton}
-              onPress={() => navigation.navigate('PrivateRegistrationForm', { customerId: item.customerId || item.stgCustomerId })}>
+              onPress={() => {
+                const customerId = item.customerId || item.stgCustomerId;
+                const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
+                handleOnboardCustomer(
+                  navigation,
+                  customerId,
+                  isStaging,
+                  customerAPI,
+                  (toastConfig) => Toast.show(toastConfig)
+                );
+              }}>
               <AppText style={styles.onboardButtonText}>Onboard</AppText>
             </TouchableOpacity>
           ) : null}
@@ -1565,15 +1597,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    flex: 1,
   },
   infoText: {
     fontSize: 13,
     color: '#666',
-    marginLeft: 6,
+    marginLeft: 4,
+    flexShrink: 1,
   },
   divider: {
     color: '#999',
-    marginHorizontal: 8,
+    marginHorizontal: 4,
   },
   infoIcon: {
     marginLeft: 4,

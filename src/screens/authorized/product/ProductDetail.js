@@ -18,46 +18,61 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
-import { getProductById, updateProductDiscount } from '../../../api/product';
+import { getProductById, updateProductDiscount, updateProductMargin } from '../../../api/product';
 import { updateProduct } from '../../../redux/slices/productSlice';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import {AppText,AppInput} from "../../../components"
+import Toast from 'react-native-toast-message';
+
 
 const ProductDetail = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useDispatch();
-  const { product } = route.params;
+  const { product, rateContractData, productDetails: passedProductDetails, customerDetails } = route.params;
+
+  // Extract product details from rate contract or use passed data
+  const productDetailsFromRC = passedProductDetails || product?.productDetails;
+  const customerDetailsFromRC = customerDetails || product?.customerDetails;
 
   const [activeTab, setActiveTab] = useState('details');
-  const [productDetails, setProductDetails] = useState(product);
+  const [productDetails, setProductDetails] = useState(productDetailsFromRC || product);
+  const [rateContractInfo, setRateContractInfo] = useState(rateContractData || product);
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [editMode, setEditMode] = useState(false);
   
-  // Discount values for editing
+  // Discount values for editing - from productDetails
   const [doctorDiscount, setDoctorDiscount] = useState(
-    product?.doctorMargin?.toString() || '10'
+    productDetailsFromRC?.doctorMargin?.toString() || product?.doctorMargin?.toString() || '5'
   );
   const [hospitalDiscount, setHospitalDiscount] = useState(
-    product?.hosptialMargin?.toString() || '15'
+    productDetailsFromRC?.hospitalMargin?.toString() || product?.hosptialMargin?.toString() || '10'
   );
 
   useEffect(() => {
-    fetchProductDetails();
-  }, [product.productId]);
+    // If we have product details from props, use them directly
+    if (productDetailsFromRC) {
+      setProductDetails(productDetailsFromRC);
+      setDoctorDiscount(productDetailsFromRC.doctorMargin?.toString() || '5');
+      setHospitalDiscount(productDetailsFromRC.hospitalMargin?.toString() || '10');
+    } else {
+      // Otherwise fetch from API
+      fetchProductDetails();
+    }
+  }, [product?.productId]);
 
   const fetchProductDetails = async () => {
     setLoading(true);
     try {
       const data = await getProductById(product.productId);
       setProductDetails(data);
-      setDoctorDiscount(data.doctorMargin?.toString() || '10');
-      setHospitalDiscount(data.hosptialMargin?.toString() || '15');
+      setDoctorDiscount(data.doctorMargin?.toString() || '5');
+      setHospitalDiscount(data.hospitalMargin?.toString() || '10');
     } catch (error) {
       console.error('Error fetching product details:', error);
       // Use existing product data if API fails
-      setProductDetails(product);
+      setProductDetails(productDetailsFromRC || product);
     } finally {
       setLoading(false);
     }
@@ -71,24 +86,38 @@ const ProductDetail = () => {
 
     setUpdating(true);
     try {
-      await updateProductDiscount(
-        productDetails.productId,
-        parseFloat(doctorDiscount),
-        parseFloat(hospitalDiscount)
-      );
+      const productId = productDetails.productId || product?.productId;
+      
+      // Call the margin update API
+      await updateProductMargin([
+        {
+          productId: productId,
+          hospitalMargin: parseFloat(hospitalDiscount),
+          doctorMargin: parseFloat(doctorDiscount)
+        }
+      ]);
 
       const updatedProduct = {
         ...productDetails,
         doctorMargin: parseFloat(doctorDiscount),
-        hosptialMargin: parseFloat(hospitalDiscount)
+        hospitalMargin: parseFloat(hospitalDiscount)
       };
 
       setProductDetails(updatedProduct);
       dispatch(updateProduct(updatedProduct));
       setEditMode(false);
-      Alert.alert('Success', 'Discount updated successfully');
+
+      Toast.show({
+            type: 'success',
+            text1: 'Discount updated successfully',
+        });
+      
     } catch (error) {
-      Alert.alert('Error', 'Failed to update discount');
+       Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: error.message || 'Failed to update discount',
+        });
     } finally {
       setUpdating(false);
     }
@@ -98,6 +127,93 @@ const ProductDetail = () => {
     if (!price && price !== 0) return '₹ 0.00';
     return `₹ ${(price / 100).toFixed(2)}`;
   };
+
+  const renderRateContractTab = () => (
+    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+      {/* Rate Contract Information */}
+      <View style={styles.section}>
+        <AppText style={styles.sectionTitle}>Rate Contract Details</AppText>
+        
+        <View style={styles.detailRow}>
+          <AppText style={styles.detailLabel}>Contract Number</AppText>
+          <AppText style={styles.detailValue}>{rateContractInfo?.rateContractNum || 'N/A'}</AppText>
+        </View>
+
+        <View style={{...styles.detailRow, marginTop: 10}}>
+          <AppText style={styles.detailLabel}>Status</AppText>
+          <AppText style={[styles.detailValue, { color: rateContractInfo?.status === 'ACTIVE' ? '#4CAF50' : '#FF9800' }]}>
+            {rateContractInfo?.status || 'N/A'}
+          </AppText>
+        </View>
+
+        <View style={{...styles.detailRow, marginTop: 10}}>
+          <AppText style={styles.detailLabel}>Start Date</AppText>
+          <AppText style={styles.detailValue}>
+            {rateContractInfo?.startDate ? new Date(rateContractInfo.startDate).toLocaleDateString() : 'N/A'}
+          </AppText>
+        </View>
+
+        <View style={{...styles.detailRow, marginTop: 10}}>
+          <AppText style={styles.detailLabel}>End Date</AppText>
+          <AppText style={styles.detailValue}>
+            {rateContractInfo?.endDate ? new Date(rateContractInfo.endDate).toLocaleDateString() : 'N/A'}
+          </AppText>
+        </View>
+
+        <View style={{...styles.detailRow, marginTop: 10}}>
+          <AppText style={styles.detailLabel}>Max Order Qty</AppText>
+          <AppText style={styles.detailValue}>{rateContractInfo?.maxOrderQty || 'N/A'}</AppText>
+        </View>
+
+        <View style={{...styles.detailRow, marginTop: 10}}>
+          <AppText style={styles.detailLabel}>Special Price</AppText>
+          <AppText style={styles.detailValue}>{rateContractInfo?.specialPrice || 'N/A'}</AppText>
+        </View>
+      </View>
+
+      {/* Customer Information */}
+      {customerDetailsFromRC && (
+        <View style={styles.section}>
+          <AppText style={styles.sectionTitle}>Customer Details</AppText>
+          
+          <View style={styles.detailRow}>
+            <AppText style={styles.detailLabel}>Customer Name</AppText>
+            <AppText style={styles.detailValue}>{customerDetailsFromRC?.customerName || 'N/A'}</AppText>
+          </View>
+
+          <View style={{...styles.detailRow, marginTop: 10}}>
+            <AppText style={styles.detailLabel}>Customer Type</AppText>
+            <AppText style={styles.detailValue}>{customerDetailsFromRC?.customerType || 'N/A'}</AppText>
+          </View>
+
+          <View style={{...styles.detailRow, marginTop: 10}}>
+            <AppText style={styles.detailLabel}>Category</AppText>
+            <AppText style={styles.detailValue}>{customerDetailsFromRC?.customerCategory || 'N/A'}</AppText>
+          </View>
+
+          <View style={{...styles.detailRow, marginTop: 10}}>
+            <AppText style={styles.detailLabel}>Email</AppText>
+            <AppText style={styles.detailValue}>{customerDetailsFromRC?.email || 'N/A'}</AppText>
+          </View>
+
+          <View style={{...styles.detailRow, marginTop: 10}}>
+            <AppText style={styles.detailLabel}>Mobile</AppText>
+            <AppText style={styles.detailValue}>{customerDetailsFromRC?.mobile || 'N/A'}</AppText>
+          </View>
+
+          <View style={{...styles.detailRow, marginTop: 10}}>
+            <AppText style={styles.detailLabel}>City</AppText>
+            <AppText style={styles.detailValue}>{customerDetailsFromRC?.cityName || 'N/A'}</AppText>
+          </View>
+
+          <View style={{...styles.detailRow, marginTop: 10}}>
+            <AppText style={styles.detailLabel}>State</AppText>
+            <AppText style={styles.detailValue}>{customerDetailsFromRC?.stateName || 'N/A'}</AppText>
+          </View>
+        </View>
+      )}
+    </ScrollView>
+  );
 
   const renderDetailsTab = () => (
     <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>

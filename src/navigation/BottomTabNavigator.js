@@ -82,7 +82,13 @@ const CustomerStack = () => {
     }}
   >
     <Stack.Screen name="CustomerList" component={CustomerList} />
-    <Stack.Screen name="CustomerDetail" component={CustomerDetail} />
+    <Stack.Screen 
+      name="CustomerDetail" 
+      component={CustomerDetail}
+      options={{
+        tabBarStyle: { display: 'none' }
+      }}
+    />
     <Stack.Screen name="CustomerSearch" component={CustomerSearch} />
   </Stack.Navigator>
 };
@@ -144,6 +150,16 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
   const [showMore, setShowMore] = useState(false);
   const insets = useSafeAreaInsets();
 
+  // Check if current route is CustomerDetail - if so, hide the tab bar
+  const currentRoute = state.routes[state.index];
+  const isCustomerDetailRoute = currentRoute?.state?.routes?.some(
+    (route) => route.name === 'CustomerDetail'
+  );
+
+  if (isCustomerDetailRoute) {
+    return null;
+  }
+
   return (
     <>
       <View
@@ -158,9 +174,12 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
             const { options } = descriptors[route.key];
             const label = options.tabBarLabel ?? route.name;
 
+            // Check if current route is DynamicTab (More menu items)
+            const isCurrentDynamicTab = state.routes[state.index]?.name === 'DynamicTab';
+
             const isFocused =
               route.name === 'More'
-                ? showMore // ✅ highlight More tab when modal is open
+                ? showMore || isCurrentDynamicTab // ✅ highlight More tab when modal is open OR when on DynamicTab
                 : state.index === state.routes.findIndex(
                   (r) => r.name === route.name
                 );

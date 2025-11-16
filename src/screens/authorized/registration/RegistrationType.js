@@ -163,10 +163,14 @@ const RegistrationType = () => {
 
       // Navigate to appropriate form based on selection
       if (selectedType.code === 'HOSP' && selectedCategory?.code === 'PRI' && 
-        (selectedSubCategory?.code === 'PCL' || selectedSubCategory?.code === 'PIH' || selectedSubCategory?.code === 'PGH')) {
+        (selectedSubCategory?.code === 'PCL' || selectedSubCategory?.code === 'PIH')) {
         navigation.navigate('PrivateRegistrationForm', navigationParams);
+      } else if (selectedType.code === 'HOSP' && selectedCategory?.code === 'PRI' && selectedSubCategory?.code === 'PGH') {
+        // Group Hospital/CBU
+        navigation.navigate('GroupHospitalRegistrationForm', navigationParams);
       } else if (selectedType.code === 'HOSP' && selectedCategory?.code === 'GOV') {
-        navigation.navigate('PrivateRegistrationForm', navigationParams);
+        // Government Hospital
+        navigation.navigate('GovtHospitalRegistrationForm', navigationParams);
       } else if (selectedType.code === 'DOCT') {
         navigation.navigate('DoctorRegistrationForm', navigationParams);
       } else if (selectedType.code === 'PCM' && selectedCategory?.code === 'OR') {
@@ -508,25 +512,25 @@ const styles = StyleSheet.create({
   },
   categoryButton: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E3E3E3',
     backgroundColor: '#FAFAFA',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    minHeight: 80,
   },
   selectedCategoryButton: {
     borderColor: colors.primary,
     backgroundColor: '#FFF5ED',
-    
   },
   categoryButtonText: {
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
-    verticalAlign: 'middle'    
+    fontWeight: '500',
   },
   selectedCategoryButtonText: {
     color: colors.primary,

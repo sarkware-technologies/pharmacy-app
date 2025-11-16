@@ -72,15 +72,9 @@ export const customerAPI = {
     // Get customer details by ID - UPDATED ENDPOINT
     getCustomerDetails: async (customerId, isStaging = false) => {
         try {
-            // Use different endpoint based on isStaging flag
-             const requestBody = {
-                isStaging
-            };
-            const endpoint = isStaging
-                ? `/user-management/customer/customer-by-id/${customerId}`
-                : `/user-management/customer/customer-by-id/${customerId}`;
-
-            const response = await apiClient.get(endpoint, requestBody);
+            // Add isStaging as query parameter
+            const endpoint = `/user-management/customer/customer-by-id/${customerId}?isStaging=${isStaging}`;
+            const response = await apiClient.get(endpoint);
             return response;
         } catch (error) {
             console.error('Error fetching customer details:', error);
@@ -127,7 +121,7 @@ export const customerAPI = {
             const endpoint = stateId
                 ? `/user-management/cities?stateId=${stateId}`
                 : '/user-management/cities';
-            const response = await apiClient.get('/user-management/cities');
+            const response = await apiClient.get(endpoint);
             return response;
         } catch (error) {
             console.error('Error fetching cities:', error);
@@ -301,6 +295,182 @@ export const customerAPI = {
             return response;
         } catch (error) {
             console.error('Error fetching customer divisions:', error);
+            throw error;
+        }
+    },
+
+    // Link divisions to customer
+    linkDivisions: async (customerId, divisionsData) => {
+        try {
+            const response = await apiClient.put(`/user-management/customer/link-divisions/${customerId}`, divisionsData);
+            return response;
+        } catch (error) {
+            console.error('Error linking divisions:', error);
+            throw error;
+        }
+    },
+
+    // Get all available divisions
+    getAllDivisions: async () => {
+        try {
+            const response = await apiClient.get('/user-management/divisions/list');
+            return response;
+        } catch (error) {
+            console.error('Error fetching all divisions:', error);
+            throw error;
+        }
+    },
+
+    // Get distributors list by division IDs
+    getDistributorsList: async (page = 1, limit = 20, divisionIds = [], stateId = 0, cityId = 0) => {
+        try {
+            let url = `/user-management/distributor/list?page=${page}&limit=${limit}&stateId=${stateId}&cityId=${cityId}`;
+            
+            // Add division IDs to query params
+            if (divisionIds && divisionIds.length > 0) {
+                divisionIds.forEach(divId => {
+                    url += `&divisionIds=${divId}`;
+                });
+            }
+            
+            const response = await apiClient.get(url);
+            return response;
+        } catch (error) {
+            console.error('Error fetching distributors list:', error);
+            throw error;
+        }
+    },
+
+    // Get linked distributors and divisions for a customer
+    getLinkedDistributorDivisions: async (customerId) => {
+        try {
+            const response = await apiClient.get(`/user-management/customer/linked-distributor-division/${customerId}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching linked distributor divisions:', error);
+            throw error;
+        }
+    },
+
+    // Link distributor and divisions to customer
+    linkDistributorDivisions: async (customerId, mappingsData) => {
+        try {
+            const response = await apiClient.put(`/user-management/customer/link-distributor-division/${customerId}`, mappingsData);
+            return response;
+        } catch (error) {
+            console.error('Error linking distributor divisions:', error);
+            throw error;
+        }
+    },
+
+    // Get pharmacies list with optional filters
+    getPharmaciesList: async (typeCode = ['PCM'], customerGroupId = 1, page = 1, limit = 20, stateIds = [], cityIds = [], searchText = '') => {
+        try {
+            const payload = {
+                typeCode,
+                customerGroupId,
+                page,
+                limit
+            };
+            
+            // Add optional filters if provided
+            if (stateIds && stateIds.length > 0) {
+                payload.stateIds = stateIds;
+            }
+            if (cityIds && cityIds.length > 0) {
+                payload.cityIds = cityIds;
+            }
+            if (searchText && searchText.trim().length > 0) {
+                payload.searchText = searchText.trim();
+            }
+            
+            const response = await apiClient.post('/user-management/customer/customers-list', payload);
+            return response;
+        } catch (error) {
+            console.error('Error fetching pharmacies list:', error);
+            throw error;
+        }
+    },
+
+    // Get states list
+    getStatesList: async (page = 1, limit = 20) => {
+        try {
+            const response = await apiClient.get(`/user-management/states?page=${page}&limit=${limit}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching states list:', error);
+            throw error;
+        }
+    },
+
+    // Get cities list
+    getCitiesList: async (page = 1, limit = 20) => {
+        try {
+            const response = await apiClient.get(`/user-management/cities?page=${page}&limit=${limit}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching cities list:', error);
+            throw error;
+        }
+    },
+
+    // Get hospitals list with filters
+    getHospitalsList: async (typeCode = ['HOSP'], customerGroupId = 4, page = 1, limit = 20, stateIds = [], cityIds = [], excludedStatusIds = [6, 10], categoryCode = ['PRI'], subCategoryCode = ['PCL', 'PIH'], searchText = '') => {
+        try {
+            const payload = {
+                typeCode,
+                customerGroupId,
+                excludedStatusIds,
+                categoryCode,
+                subCategoryCode,
+                page,
+                limit
+            };
+            
+            // Add optional filters if provided
+            if (stateIds && stateIds.length > 0) {
+                payload.stateIds = stateIds;
+            }
+            if (cityIds && cityIds.length > 0) {
+                payload.cityIds = cityIds;
+            }
+            if (searchText && searchText.trim().length > 0) {
+                payload.searchText = searchText.trim();
+            }
+            
+            const response = await apiClient.post('/user-management/customer/customers-list', payload);
+            return response;
+        } catch (error) {
+            console.error('Error fetching hospitals list:', error);
+            throw error;
+        }
+    },
+
+    // Get doctors list with filters
+    getDoctorsList: async (typeCode = ['DOCT'], customerGroupId = 1, page = 1, limit = 20, stateIds = [], cityIds = [], searchText = '') => {
+        try {
+            const payload = {
+                typeCode,
+                customerGroupId,
+                page,
+                limit
+            };
+            
+            // Add optional filters if provided
+            if (stateIds && stateIds.length > 0) {
+                payload.stateIds = stateIds;
+            }
+            if (cityIds && cityIds.length > 0) {
+                payload.cityIds = cityIds;
+            }
+            if (searchText && searchText.trim().length > 0) {
+                payload.searchText = searchText.trim();
+            }
+            
+            const response = await apiClient.post('/user-management/customer/customers-list', payload);
+            return response;
+        } catch (error) {
+            console.error('Error fetching doctors list:', error);
             throw error;
         }
     }

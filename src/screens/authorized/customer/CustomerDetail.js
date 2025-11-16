@@ -19,7 +19,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchCustomerDetails, clearSelectedCustomer } from '../../../redux/slices/customerSlice';
+import { fetchCustomerDetails, clearSelectedCustomer, fetchCustomersList, setCurrentCustomerId } from '../../../redux/slices/customerSlice';
 import { customerAPI } from '../../../api/customer';
 import LinkagedTab from './LinkagedTab';
 import { SkeletonDetailPage } from '../../../components/SkeletonLoader';
@@ -32,7 +32,12 @@ import Download from '../../../components/icons/Download';
 import AppText from "../../../components/AppText"
 
 import { Link } from '@react-navigation/native';
+import RejectCustomerModal from '../../../components/modals/RejectCustomerModal'; 
+import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModal';
+
 import CloseCircle from '../../../components/icons/CloseCircle';
+
+
 
 const { width } = Dimensions.get('window');
 
@@ -43,11 +48,17 @@ const CustomerDetail = ({ navigation, route }) => {
   const [activeTab, setActiveTab] = useState('details');
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
+  const [approveModalVisible, setApproveModalVisible] = useState(false);
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   
   // Get customer data from Redux
   const { selectedCustomer, detailsLoading, detailsError } = useSelector(
     (state) => state.customer
   );
+  
+  // Get logged in user
+  const { loggedInUser } = useSelector((state) => state.auth);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -62,6 +73,8 @@ const CustomerDetail = ({ navigation, route }) => {
     
     if (customerId) {
       console.log('Fetching customer details for:', { customerId, isStaging });
+      // Save customerId to Redux for use in LinkagedTab
+      dispatch(setCurrentCustomerId(customerId));
       dispatch(fetchCustomerDetails({
         customerId,
         isStaging
@@ -138,8 +151,10 @@ const CustomerDetail = ({ navigation, route }) => {
 
   // Get customer name for header
   const getCustomerName = () => {
-    if (selectedCustomer?.generalDetails?.ownerName) {
-      return `Dr. ${selectedCustomer.generalDetails.ownerName}`;
+    if(selectedCustomer?.clinicName ){
+      return selectedCustomer?.clinicName;
+    }else if (selectedCustomer?.generalDetails?.ownerName) {
+      return `${selectedCustomer.generalDetails.ownerName}`;  
     } else if (selectedCustomer?.generalDetails?.customerName) {
       return selectedCustomer.generalDetails.customerName;
     } else if (customer?.customerName) {
@@ -320,6 +335,97 @@ const CustomerDetail = ({ navigation, route }) => {
     }
   };
 
+  // Show toast notification
+  const showToast = (message, type = 'success') => {
+    Alert.alert(type === 'success' ? 'Success' : 'Error', message);
+  };
+
+  // Handle approve customer
+  const handleApproveConfirm = async (comment) => {
+    try {
+      setActionLoading(true);
+      const instanceId = selectedCustomer?.instaceId || selectedCustomer?.stgCustomerId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      const parallelGroupId = selectedCustomer?.instance?.stepInstances[0]?.parallelGroup;
+      const stepOrderId = selectedCustomer?.instance?.stepInstances[0]?.stepOrder;
+      
+      const actionDataPayload = {
+        stepOrder: stepOrderId,
+        parallelGroup: parallelGroupId,
+        actorId: actorId,
+        action: "APPROVE",
+        comments: comment || "Approved",
+        instanceId: instanceId,
+        actionData: {
+          field: "status",
+          newValue: "Approved"
+        },
+        dataChanges: {
+          previousStatus: "Pending",
+          newStatus: "Approved"
+        }
+      };
+
+      const response = await customerAPI.workflowAction(instanceId, actionDataPayload);
+      
+      setApproveModalVisible(false);
+      showToast(`Customer approved successfully!`, 'success');
+      
+      // Navigate back after approval
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
+    } catch (error) {
+      console.error('Error approving customer:', error);
+      showToast(`Failed to approve customer: ${error.message}`, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handle reject customer
+  const handleRejectConfirm = async (comment) => {
+    try {
+      setActionLoading(true);
+      const instanceId = selectedCustomer?.instaceId || selectedCustomer?.stgCustomerId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      const parallelGroupId = selectedCustomer?.instance?.stepInstances[0]?.parallelGroup;
+      const stepOrderId = selectedCustomer?.instance?.stepInstances[0]?.stepOrder;
+      
+      const actionDataPayload = {
+        stepOrder: stepOrderId,
+        parallelGroup: parallelGroupId,
+        actorId: actorId,
+        action: "REJECT",
+        comments: comment || "Rejected",
+        instanceId: instanceId,
+        actionData: {
+          field: "status",
+          newValue: "Rejected"
+        },
+        dataChanges: {
+          previousStatus: "Pending",
+          newStatus: "Rejected"
+        }
+      };
+
+      const response = await customerAPI.workflowAction(instanceId, actionDataPayload);
+      
+      setRejectModalVisible(false);
+      showToast(`Customer rejected!`, 'error');
+      
+      // Navigate back after rejection
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
+    } catch (error) {
+      console.error('Error rejecting customer:', error);
+      showToast(`Failed to reject customer: ${error.message}`, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
@@ -330,6 +436,26 @@ const CustomerDetail = ({ navigation, route }) => {
           <ChevronLeft color="#333" />
         </TouchableOpacity>
         <AppText style={styles.headerTitle}>{getCustomerName()}</AppText>
+        
+        {/* Approve/Reject buttons - only show on Details tab and if customer is PENDING with APPROVE action */}
+        {activeTab === 'details' && selectedCustomer?.statusName === 'PENDING' && selectedCustomer?.action === 'APPROVE' && (
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.approveHeaderButton}
+              onPress={() => setApproveModalVisible(true)}
+              disabled={actionLoading}
+            >
+              <AppText style={styles.approveHeaderButtonText}>Approve</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.rejectHeaderButton}
+              onPress={() => setRejectModalVisible(true)}
+              disabled={actionLoading}
+            >
+              <CloseCircle />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Tabs */}
@@ -571,7 +697,53 @@ const CustomerDetail = ({ navigation, route }) => {
 
       {activeTab === 'linkaged' && <LinkagedTab customerType={customerData.customerType} customerId={customerData.customerId} />}
 
+      {/* Action Buttons - Show only if customer is PENDING and not approved */}
+      {customer?.action === 'APPROVE' && (
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity 
+            style={styles.rejectButton}
+            onPress={() => setRejectModalVisible(true)}
+            disabled={actionLoading}
+          >
+            <Icon name="close-circle" size={20} color={colors.primary} />
+            <AppText style={styles.rejectButtonText}>Reject</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.approveButton}
+            onPress={() => setApproveModalVisible(true)}
+            disabled={actionLoading}
+          >
+            {actionLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Icon name="checkmark-circle" size={20} color="#fff" />
+                <AppText style={styles.approveButtonText}>Approve</AppText>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
       <DocumentModal />
+      
+      {/* Approve Modal */}
+      <ApproveCustomerModal
+        visible={approveModalVisible}
+        onClose={() => setApproveModalVisible(false)}
+        onConfirm={handleApproveConfirm}
+        title="Approve Customer"
+        actionType="approve"
+        loading={actionLoading}
+      />
+      
+      {/* Reject Modal */}
+      <RejectCustomerModal
+        visible={rejectModalVisible}
+        onClose={() => setRejectModalVisible(false)}
+        onConfirm={handleRejectConfirm}
+        loading={actionLoading}
+      />
       </View>
     </SafeAreaView>
   );
@@ -600,7 +772,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginRight: 'auto',
-    marginLeft: 15
+    marginLeft: 15,
+    flex: 1,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  approveHeaderButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+  },
+  approveHeaderButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  rejectHeaderButton: {
+    padding: 6,
   },
   tabContainer: {
     display: 'flex',
@@ -805,6 +997,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  rejectButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    backgroundColor: '#fff',
+    gap: 8,
+  },
+  rejectButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  approveButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    gap: 8,
+  },
+  approveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
 

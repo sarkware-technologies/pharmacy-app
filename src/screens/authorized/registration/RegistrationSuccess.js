@@ -13,6 +13,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
 import AppText from "../../../components/AppText"
+import SunLogo from '../../../components/icons/SunLogo';
 
 const { width } = Dimensions.get('window');
 
@@ -132,9 +133,7 @@ const RegistrationSuccess = () => {
             },
           ]}
         >
-          <View style={styles.logoCircle}>
-            <View style={styles.logoInnerCircle} />
-          </View>
+          <SunLogo width={80} height={80} />
         </Animated.View>
         
         {/* Success Icon */}

@@ -68,3 +68,34 @@ export const bulkUpdateProductDiscounts = async (productIds, doctorDiscount, hos
         throw error;
     }
 };
+
+export const getProductsByDistributorAndCustomer = async (pageNo = 1, pageSize = 10) => {
+    try {
+        const response = await apiClient.post(
+            '/rate-contract/rc/products-by-distributor-and-customer',
+            {
+                pageNo,
+                pageSize
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching products by distributor and customer:', error);
+        throw error;
+    }
+};
+
+export const updateProductMargin = async (productMargin) => {
+    try {
+        const response = await apiClient.patch(
+            '/catalog/products/margin',
+            {
+                productMargin
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error updating product margin:', error);
+        throw error;
+    }
+};

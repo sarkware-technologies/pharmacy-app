@@ -151,6 +151,7 @@ const initialState = {
   
   // Selected customer
   selectedCustomer: null,
+  currentCustomerId: null, // NEW: Store current customer ID for LinkagedTab
   
   // Loading states
   listLoading: false,
@@ -211,7 +212,11 @@ const customerSlice = createSlice({
     },
     clearSelectedCustomer: (state) => {
       state.selectedCustomer = null;
+      state.currentCustomerId = null; // NEW: Clear current customer ID
       state.detailsError = null;
+    },
+    setCurrentCustomerId: (state, action) => {
+      state.currentCustomerId = action.payload;
     },
     clearErrors: (state) => {
       state.listError = null;
@@ -445,6 +450,7 @@ export const {
   incrementPage,
   setLimit,
   clearSelectedCustomer,
+  setCurrentCustomerId,
   clearErrors,
   clearSuccessFlags,
   resetCustomersList
@@ -455,6 +461,7 @@ export const selectCustomers = (state) => state.customer.customers;
 export const selectCustomerTypes = (state) => state.customer.customerTypes;
 export const selectCustomerStatuses = (state) => state.customer.customerStatuses;
 export const selectFilters = (state) => state.customer.filters;
+export const selectCurrentCustomerId = (state) => state.customer.currentCustomerId;
 export const selectPagination = (state) => ({
   currentPage: state.customer.currentPage,
   totalPages: state.customer.totalPages,

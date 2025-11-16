@@ -22,6 +22,7 @@ import {
 } from '../../../components/OnboardConfirmModel';
 import { customerAPI } from '../../../api/customer';
 import { useSelector } from 'react-redux';
+import { selectCurrentCustomerId } from '../../../redux/slices/customerSlice';
 import {AppText,AppInput} from "../../../components"
 
 const { width } = Dimensions.get('window');
@@ -123,10 +124,12 @@ const mockFieldData = [
   { id: 5, name: 'Akshay Amanakar', code: 'SUN12345', designation: 'ASM' },
   { id: 6, name: 'Omkar Ankam', code: 'SUN12345', designation: 'Filed officer' },
   { id: 7, name: 'Vrushal Shinde', code: 'SUN12345', designation: 'Customer executive' },
+  { id: 8, name: 'Sagar Kadam', code: 'SUN12345', designation: 'Customer executive' },
+  { id: 9, name: 'Sanket Kulkarni', code: 'SUN12345', designation: 'Customer executive' },
 ];
 
 export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) => {
-  const [activeSubTab, setActiveSubTab] = useState('distributors');
+  const [activeSubTab, setActiveSubTab] = useState('divisions');
   const [activeDistributorTab, setActiveDistributorTab] = useState('preferred');
   const [showDivisionModal, setShowDivisionModal] = useState(false);
   const [selectedDivisions, setSelectedDivisions] = useState(mockDivisions.other.filter(d => d.selected));
@@ -135,6 +138,11 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
   
   // Get logged-in user data
   const loggedInUser = useSelector(state => state.auth.user);
+  
+  // Get customerId from Redux (set by CustomerDetail)
+  const reduxCustomerId = useSelector(selectCurrentCustomerId);
+  // Use Redux customerId if available, otherwise fall back to prop
+  const effectiveCustomerId = reduxCustomerId || customerId;
   
   // Modal states
   const [showApproveModal, setShowApproveModal] = useState(false);
@@ -146,13 +154,13 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
   // Customer Hierarchy states
   const [activeHierarchyTab, setActiveHierarchyTab] = useState('pharmacies');
   
-  // Toast states
+  // Toast states 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
 
   // Field team states
-  const [fieldTeamData, setFieldTeamData] = useState([]);
+  const [fieldTeamData, setFieldTeamData] = useState(mockFieldData);
   const [fieldTeamLoading, setFieldTeamLoading] = useState(false);
   const [fieldTeamError, setFieldTeamError] = useState(null);
 
@@ -173,6 +181,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
   const [otherDivisionsData, setOtherDivisionsData] = useState([]);
   const [divisionsLoading, setDivisionsLoading] = useState(false);
   const [divisionsError, setDivisionsError] = useState(null);
+  const [linkingDivisions, setLinkingDivisions] = useState(false);
 
   // Show toast notification
   const showToast = (message, type = 'success') => {
@@ -184,6 +193,62 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
       setToastVisible(false);
     }, 3000);
   };
+
+  // Fetch divisions data on component mount
+  useEffect(() => {
+    const fetchDivisionsData = async () => {
+      console.log('LinkagedTab: Fetching divisions for customerId:', effectiveCustomerId);
+      if (!effectiveCustomerId) {
+        console.log('LinkagedTab: No customerId provided, skipping divisions fetch');
+        return;
+      }
+      
+      try {
+        setDivisionsLoading(true);
+        setDivisionsError(null);
+        
+        // Fetch customer's linked divisions
+        console.log('LinkagedTab: Calling getCustomerDivisions API...');
+        const customerDivisionsResponse = await customerAPI.getCustomerDivisions(effectiveCustomerId);
+        console.log('LinkagedTab: Customer divisions API response:', customerDivisionsResponse);
+        
+        // Fetch all available divisions
+        console.log('LinkagedTab: Calling getAllDivisions API...');
+        const allDivisionsResponse = await customerAPI.getAllDivisions();
+        console.log('LinkagedTab: All divisions API response:', allDivisionsResponse);
+        
+        let openedDivisions = [];
+        let otherDivisions = [];
+        
+        // Process customer's linked divisions (opened)
+        if (customerDivisionsResponse?.data && Array.isArray(customerDivisionsResponse.data)) {
+          openedDivisions = customerDivisionsResponse.data;
+          console.log('LinkagedTab: Opened divisions:', openedDivisions.length);
+        }
+        
+        // Process all available divisions and filter out already linked ones
+        if (allDivisionsResponse?.data?.divisions && Array.isArray(allDivisionsResponse.data.divisions)) {
+          const linkedDivisionIds = openedDivisions.map(d => Number(d.divisionId));
+          otherDivisions = allDivisionsResponse.data.divisions.filter(
+            d => !linkedDivisionIds.includes(Number(d.divisionId))
+          );
+          console.log('LinkagedTab: Other divisions:', otherDivisions.length);
+        }
+        
+        setOpenedDivisionsData(openedDivisions);
+        setOtherDivisionsData(otherDivisions);
+      } catch (error) {
+        console.error('LinkagedTab: Error fetching divisions data:', error);
+        setDivisionsError(error.message);
+        setOtherDivisionsData([]);
+        setOpenedDivisionsData([]);
+      } finally {
+        setDivisionsLoading(false);
+      }
+    };
+
+    fetchDivisionsData();
+  }, [effectiveCustomerId]);
 
   // Fetch field team data on component mount
   useEffect(() => {
@@ -210,66 +275,81 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
     fetchFieldTeamData();
   }, []);
 
-  // Fetch distributors data on component mount
+  // Fetch preferred distributors when Preferred tab is active
   useEffect(() => {
-    const fetchDistributorsData = async () => {
+    const fetchPreferredDistributorsData = async () => {
+      if (activeDistributorTab !== 'preferred' || !effectiveCustomerId) {
+        return;
+      }
+
+      console.log('LinkagedTab: Fetching preferred distributors for customerId:', effectiveCustomerId);
+      
       try {
         setDistributorsLoading(true);
         setDistributorsError(null);
-        const response = await customerAPI.getDistributors(1, 20);
         
-        if (response?.data?.distributors) {
-          setAllDistributorsData(response.data.distributors);
-          // Initially, preferred distributors are empty (user will add from all)
-          setPreferredDistributorsData([]);
+        // Call API to get linked distributors and divisions
+        const response = await customerAPI.getLinkedDistributorDivisions(effectiveCustomerId);
+        console.log('LinkagedTab: Linked distributor divisions API response:', response);
+        
+        if (response?.data?.customer?.distributorDetails && Array.isArray(response.data.customer.distributorDetails)) {
+          console.log('LinkagedTab: Setting preferredDistributorsData with', response.data.customer.distributorDetails.length, 'distributors');
+          setPreferredDistributorsData(response.data.customer.distributorDetails);
         } else {
-          setAllDistributorsData([]);
+          console.log('LinkagedTab: Invalid preferred distributors response format');
           setPreferredDistributorsData([]);
         }
       } catch (error) {
-        console.error('Error fetching distributors data:', error);
+        console.error('LinkagedTab: Error fetching preferred distributors:', error);
         setDistributorsError(error.message);
-        setAllDistributorsData([]);
         setPreferredDistributorsData([]);
       } finally {
         setDistributorsLoading(false);
       }
     };
 
-    fetchDistributorsData();
-  }, []);
+    fetchPreferredDistributorsData();
+  }, [activeDistributorTab, effectiveCustomerId]);
 
-  // Fetch divisions data on component mount
+  // Fetch all distributors when All Distributors tab is active and opened divisions exist
   useEffect(() => {
-    const fetchDivisionsData = async () => {
-      if (!customerId) return;
+    const fetchDistributorsData = async () => {
+      if (activeDistributorTab !== 'all' || openedDivisionsData.length === 0) {
+        return;
+      }
+
+      console.log('LinkagedTab: Fetching distributors for divisions:', openedDivisionsData);
       
       try {
-        setDivisionsLoading(true);
-        setDivisionsError(null);
-        const response = await customerAPI.getCustomerDivisions(customerId);
+        setDistributorsLoading(true);
+        setDistributorsError(null);
         
-        if (response?.data && Array.isArray(response.data)) {
-          // All divisions from API go to "Other Division" initially
-          setOtherDivisionsData(response.data);
-          // Opened divisions start empty (user will move from other)
-          setOpenedDivisionsData([]);
+        // Get division IDs from opened divisions
+        const divisionIds = openedDivisionsData.map(d => Number(d.divisionId));
+        console.log('LinkagedTab: Division IDs for distributor query:', divisionIds);
+        
+        // Call API to get distributors
+        const response = await customerAPI.getDistributorsList(1, 20, divisionIds, 0, 0);
+        console.log('LinkagedTab: Distributors API response:', response);
+        
+        if (response?.data?.distributors && Array.isArray(response.data.distributors)) {
+          console.log('LinkagedTab: Setting allDistributorsData with', response.data.distributors.length, 'distributors');
+          setAllDistributorsData(response.data.distributors);
         } else {
-          setOtherDivisionsData([]);
-          setOpenedDivisionsData([]);
+          console.log('LinkagedTab: Invalid distributors response format');
+          setAllDistributorsData([]);
         }
       } catch (error) {
-        console.error('Error fetching divisions data:', error);
-        setDivisionsError(error.message);
-        setOtherDivisionsData([]);
-        setOpenedDivisionsData([]);
+        console.error('LinkagedTab: Error fetching distributors:', error);
+        setDistributorsError(error.message);
+        setAllDistributorsData([]);
       } finally {
-        setDivisionsLoading(false);
+        setDistributorsLoading(false);
       }
     };
 
-    fetchDivisionsData();
-  }, [customerId]);
+    fetchDistributorsData();
+  }, [activeDistributorTab, openedDivisionsData]);
 
   const handleApprove = (item) => {
     setSelectedItem(item);
@@ -393,13 +473,52 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
   };
 
   // Add distributor from "All" to "Preferred"
-  const handleAddDistributor = (distributor) => {
+  const handleAddDistributor = async (distributor) => {
     const alreadyExists = preferredDistributorsData.find(d => d.id === distributor.id);
-    if (!alreadyExists) {
-      setPreferredDistributorsData(prev => [...prev, distributor]);
-      showToast(`${distributor.name} added to preferred distributors!`, 'success');
-    } else {
+    if (alreadyExists) {
       showToast(`${distributor.name} is already in preferred distributors!`, 'error');
+      return;
+    }
+
+    try {
+      console.log('Adding distributor:', distributor.id);
+      
+      // Build the mapping payload with opened divisions
+      const mappingsPayload = {
+        mappings: [
+          {
+            distributorId: Number(distributor.id),
+            divisions: openedDivisionsData.map(d => ({
+              id: Number(d.divisionId),
+              isActive: true
+            })),
+            supplyModeId: 3,
+            margin: 1
+          }
+        ]
+      };
+
+      console.log('Link distributor payload:', mappingsPayload);
+      
+      // Call API to link distributor
+      const response = await customerAPI.linkDistributorDivisions(effectiveCustomerId, mappingsPayload);
+      console.log('Link distributor API response:', response);
+
+      // Add to preferred distributors locally
+      setPreferredDistributorsData(prev => [...prev, distributor]);
+      
+      showToast(`${distributor.name} added to preferred distributors!`, 'success');
+      
+      // Refresh preferred distributors list
+      if (effectiveCustomerId) {
+        const updatedResponse = await customerAPI.getLinkedDistributorDivisions(effectiveCustomerId);
+        if (updatedResponse?.data?.customer?.distributorDetails && Array.isArray(updatedResponse.data.customer.distributorDetails)) {
+          setPreferredDistributorsData(updatedResponse.data.customer.distributorDetails);
+        }
+      }
+    } catch (error) {
+      console.error('Error adding distributor:', error);
+      showToast(`Failed to add distributor: ${error.message}`, 'error');
     }
   };
 
@@ -493,6 +612,90 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
     setShowDivisionModal(false);
     
     showToast('Divisions linked successfully!', 'success');
+  };
+
+  // Handle continue button - link divisions via API
+  const handleLinkDivisionsAPI = async () => {
+    if (selectedDivisions.length === 0) {
+      showToast('Please select at least one division', 'error');
+      return;
+    }
+
+    try {
+      setLinkingDivisions(true);
+      
+      // Filter only divisions with divisionId and format for API
+      const validDivisions = selectedDivisions.filter(d => d.divisionId);
+      
+      if (validDivisions.length === 0) {
+        showToast('No valid divisions selected', 'error');
+        setLinkingDivisions(false);
+        return;
+      }
+
+      const divisionsPayload = {
+        divisions: validDivisions.map(division => ({
+          divisionId: Number(division.divisionId),
+          isActive: true
+        }))
+      };
+
+      console.log('Linking divisions with payload:', divisionsPayload);
+      
+      // Call API to link divisions
+      const response = await customerAPI.linkDivisions(effectiveCustomerId, divisionsPayload);
+      
+      console.log('Link divisions API response:', response);
+
+      // Move valid selected divisions to opened
+      setOpenedDivisionsData(prev => [...prev, ...validDivisions]);
+      
+      // Remove from other divisions
+      const selectedIds = validDivisions.map(d => d.divisionId);
+      setOtherDivisionsData(prev => prev.filter(d => !selectedIds.includes(d.divisionId)));
+      
+      // Clear selection
+      setSelectedDivisions([]);
+      
+      showToast('Divisions linked successfully!', 'success');
+      
+      // Refresh divisions data after linking
+      if (effectiveCustomerId) {
+        try {
+          // Fetch updated customer divisions (opened)
+          const customerDivisionsResponse = await customerAPI.getCustomerDivisions(effectiveCustomerId);
+          
+          // Fetch all available divisions
+          const allDivisionsResponse = await customerAPI.getAllDivisions();
+          
+          let updatedOpenedDivisions = [];
+          let updatedOtherDivisions = [];
+          
+          // Process customer's linked divisions (opened)
+          if (customerDivisionsResponse?.data && Array.isArray(customerDivisionsResponse.data)) {
+            updatedOpenedDivisions = customerDivisionsResponse.data;
+          }
+          
+          // Process all available divisions and filter out already linked ones
+          if (allDivisionsResponse?.data?.divisions && Array.isArray(allDivisionsResponse.data.divisions)) {
+            const linkedDivisionIds = updatedOpenedDivisions.map(d => Number(d.divisionId));
+            updatedOtherDivisions = allDivisionsResponse.data.divisions.filter(
+              d => !linkedDivisionIds.includes(Number(d.divisionId))
+            );
+          }
+          
+          setOpenedDivisionsData(updatedOpenedDivisions);
+          setOtherDivisionsData(updatedOtherDivisions);
+        } catch (error) {
+          console.error('Error refreshing divisions after linking:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error linking divisions:', error);
+      showToast(`Failed to link divisions: ${error.message}`, 'error');
+    } finally {
+      setLinkingDivisions(false);
+    }
   };
 
   const renderDistributorsTab = () => (
@@ -655,9 +858,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
             ))
           )}
 
-          <TouchableOpacity style={styles.linkButton}>
-            <AppText style={styles.linkButtonText}>Link Distributors</AppText>
-          </TouchableOpacity>
+
         </ScrollView>
       ) : (
         <ScrollView style={styles.scrollContent}>
@@ -755,83 +956,80 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
           <AppText style={styles.errorSubText}>{divisionsError}</AppText>
         </View>
       ) : (
-        <ScrollView style={styles.scrollContent}>
-          <View style={styles.divisionsContainer}>
-            <View style={styles.divisionColumn}>
-              <AppText style={styles.columnTitle}>Opened Division</AppText>
-              <AppText style={styles.columnSubtitle}>Name & Code</AppText>
-              
-              {openedDivisionsData.length === 0 ? (
-                <View style={styles.emptyDivisionContainer}>
-                  <AppText style={styles.emptyDivisionText}>No divisions opened yet</AppText>
-                </View>
-              ) : (
-                openedDivisionsData.map((division) => (
-                  <View key={division.divisionId} style={styles.divisionItem}>
-                    <View>
-                      <AppText style={styles.divisionName}>{division.divisionName}</AppText>
-                      <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
-                    </View>
-                    <TouchableOpacity 
-                      style={[styles.blockButton, styles.unblockButton]}
-                    >
-                      <Icon name="lock" size={16} color="#FF6B00" />
-                      <AppText style={styles.unblockText}>Unblock</AppText>
-                    </TouchableOpacity>
+        <>
+          <ScrollView style={styles.scrollContent}>
+            <View style={styles.divisionsContainer}>
+              <View style={styles.divisionColumn}>
+                <AppText style={styles.columnTitle}>Opened Division</AppText>
+                <AppText style={styles.columnSubtitle}>Name & Code</AppText>
+                
+                {openedDivisionsData.length === 0 ? (
+                  <View style={styles.emptyDivisionContainer}>
+                    <AppText style={styles.emptyDivisionText}>No divisions opened yet</AppText>
                   </View>
-                ))
-              )}
-            </View>
-
-            <View style={styles.divisionColumn}>
-              <View style={styles.columnHeader}>
-                <AppText style={styles.columnTitle}>Other Division</AppText>
-                <TouchableOpacity>
-                  <AppText style={styles.assignText}>Assign to Instra</AppText>
-                </TouchableOpacity>
+                ) : (
+                  openedDivisionsData.map((division) => (
+                    <View key={division.divisionId} style={styles.divisionItem}>
+                      <View>
+                        <AppText style={styles.divisionName}>{division.divisionName}</AppText>
+                        <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
+                      </View>
+                    </View>
+                  ))
+                )}
               </View>
-              <AppText style={styles.columnSubtitle}>Name & Code</AppText>
-              
-              {otherDivisionsData.length === 0 ? (
-                <View style={styles.emptyDivisionContainer}>
-                  <AppText style={styles.emptyDivisionText}>No other divisions available</AppText>
-                </View>
-              ) : (
-                otherDivisionsData.map((division) => (
-                  <TouchableOpacity 
-                    key={`other-${division.divisionId}`} 
-                    style={styles.checkboxItem}
-                    onPress={() => toggleOtherDivisionSelection(division)}
-                  >
-                    <View style={[styles.checkbox, selectedDivisions.find(d => d.divisionId === division.divisionId) && styles.checkboxSelected]}>
-                      {selectedDivisions.find(d => d.divisionId === division.divisionId) && (
-                        <Icon name="check" size={16} color="#fff" />
-                      )}
-                    </View>
-                    <View>
-                      <AppText style={styles.divisionName}>{division.divisionName}</AppText>
-                      <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
-                    </View>
+
+              <View style={styles.divisionColumn}>
+                <View style={styles.columnHeader}>
+                  <AppText style={styles.columnTitle}>Other Division</AppText>
+                  <TouchableOpacity>
+                    <AppText style={styles.assignText}>Assign to Instra</AppText>
                   </TouchableOpacity>
-                ))
-              )}
+                </View>
+                <AppText style={styles.columnSubtitle}>Name & Code</AppText>
+                
+                {otherDivisionsData.length === 0 ? (
+                  <View style={styles.emptyDivisionContainer}>
+                    <AppText style={styles.emptyDivisionText}>No other divisions available</AppText>
+                  </View>
+                ) : (
+                  otherDivisionsData.map((division) => (
+                    <TouchableOpacity 
+                      key={`other-${division.divisionId}`} 
+                      style={styles.checkboxItem}
+                      onPress={() => toggleOtherDivisionSelection(division)}
+                    >
+                      <View style={[styles.checkbox, selectedDivisions.find(d => d.divisionId === division.divisionId) && styles.checkboxSelected]}>
+                        {selectedDivisions.find(d => d.divisionId === division.divisionId) && (
+                          <Icon name="check" size={16} color="#fff" />
+                        )}
+                      </View>
+                      <View>
+                        <AppText style={styles.divisionName}>{division.divisionName}</AppText>
+                        <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
             </View>
+          </ScrollView>
+
+          {/* Sticky Continue Button at Bottom */}
+          <View style={styles.stickyButtonContainer}>
+            <TouchableOpacity 
+              style={[styles.continueButton, (linkingDivisions || selectedDivisions.length === 0) && styles.continueButtonDisabled]}
+              onPress={handleLinkDivisionsAPI}
+              disabled={linkingDivisions || selectedDivisions.length === 0}
+            >
+              {linkingDivisions ? (
+                <AppText style={styles.linkButtonText}>Linking...</AppText>
+              ) : (
+                <AppText style={styles.linkButtonText}>Continue</AppText>
+              )}
+            </TouchableOpacity>
           </View>
-
-          <TouchableOpacity 
-            style={styles.linkDivisionsButton}
-            onPress={() => setShowDivisionModal(true)}
-          >
-            <AppText style={styles.linkButtonText}>Link Divisions</AppText>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.continueButton}
-            onPress={() => console.log('Continue')}
-          >
-            <AppText style={styles.linkButtonText}>Continue</AppText>
-          </TouchableOpacity>
-        </ScrollView>
+        </>
       )}
     </View>
   );
@@ -881,8 +1079,14 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
       return (
         <View style={styles.tabContent}>
           <ScrollView style={styles.scrollContent}>
-            <AppText style={styles.hierarchyTitle}>Linked Pharmacies</AppText>
+            <View style={styles.emptyContainer}>
+              <Icon name="inbox" size={50} color="#999" />
+              <AppText style={styles.emptyText}>No data found</AppText>
+              <AppText style={styles.emptySubText}>Linked pharmacies will appear here</AppText>
+            </View>
             
+            {/* TODO: Will integrate with API later */}
+            {/* 
             <View style={styles.hierarchyHeader}>
               <AppText style={styles.hierarchyHeaderText}>Pharmacy Details</AppText>
               <AppText style={styles.hierarchyHeaderText}>Action</AppText>
@@ -911,6 +1115,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                 </View>
               </View>
             ))}
+            */}
           </ScrollView>
         </View>
       );
@@ -920,8 +1125,16 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
         return (
           <View style={styles.tabContent}>
             <ScrollView style={styles.scrollContent}>
+              <View style={styles.emptyContainer}>
+                <Icon name="inbox" size={50} color="#999" />
+                <AppText style={styles.emptyText}>No data found</AppText>
+                <AppText style={styles.emptySubText}>Linked pharmacies and doctors will appear here</AppText>
+              </View>
+
+              {/* TODO: Will integrate with API later */}
+              {/* 
               {/* Parent Hospital Info */}
-              <View style={styles.parentHospitalCard}>
+              {/* <View style={styles.parentHospitalCard}>
                 <AppText style={styles.parentLabel}>Group Hospital</AppText>
                 <AppText style={styles.parentTitle}>Parent Hospital</AppText>
                 <AppText style={styles.parentName}>
@@ -930,7 +1143,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
               </View>
 
               {/* Tabs for Linked Pharmacies and Doctors */}
-              <View style={styles.hierarchyTabs}>
+              {/* <View style={styles.hierarchyTabs}>
                 <TouchableOpacity
                   style={[styles.hierarchyTab, activeHierarchyTab === 'pharmacies' && styles.activeHierarchyTab]}
                   onPress={() => setActiveHierarchyTab('pharmacies')}
@@ -977,6 +1190,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                   </View>
                 </View>
               ))}
+              */}
             </ScrollView>
           </View>
         );
@@ -985,6 +1199,14 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
         return (
           <View style={styles.tabContent}>
             <ScrollView style={styles.scrollContent}>
+              <View style={styles.emptyContainer}>
+                <Icon name="inbox" size={50} color="#999" />
+                <AppText style={styles.emptyText}>No data found</AppText>
+                <AppText style={styles.emptySubText}>Child hospitals will appear here</AppText>
+              </View>
+
+              {/* TODO: Will integrate with API later */}
+              {/* 
               {mockLinkagedData.hospital.childHospitals.map((hospital) => (
                 <View key={hospital.id} style={styles.hospitalCard}>
                   <View style={styles.hospitalHeader}>
@@ -1015,7 +1237,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                   </TouchableOpacity>
 
                   {/* Tabs */}
-                  <View style={styles.hierarchyTabs}>
+                  {/* <View style={styles.hierarchyTabs}>
                     <TouchableOpacity style={[styles.hierarchyTab, styles.activeHierarchyTab]}>
                       <AppText style={[styles.hierarchyTabText, styles.activeHierarchyTabText]}>
                         Pharmacies
@@ -1058,6 +1280,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
                   </View>
                 </View>
               ))}
+              */}
             </ScrollView>
           </View>
         );
@@ -1114,16 +1337,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
     <View style={styles.container}>
       {/* Sub-tabs */}
       <View style={styles.subTabsContainer}>
-        <TouchableOpacity
-          style={[styles.subTab, activeSubTab === 'distributors' && styles.activeSubTab]}
-          onPress={() => setActiveSubTab('distributors')}
-        >
-          <Icon name="store" size={20} color={activeSubTab === 'distributors' ? '#FF6B00' : '#999'} />
-          <AppText style={[styles.subTabText, activeSubTab === 'distributors' && styles.activeSubTabText]}>
-            Distributors
-          </AppText>
-        </TouchableOpacity>
-
+        {/* Divisions Tab - Always visible */}
         <TouchableOpacity
           style={[styles.subTab, activeSubTab === 'divisions' && styles.activeSubTab]}
           onPress={() => setActiveSubTab('divisions')}
@@ -1134,16 +1348,31 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
           </AppText>
         </TouchableOpacity>
 
+        {/* Distributors Tab - Disabled if no opened divisions */}
         <TouchableOpacity
-          style={[styles.subTab, activeSubTab === 'field' && styles.activeSubTab]}
-          onPress={() => setActiveSubTab('field')}
+          style={[styles.subTab, activeSubTab === 'distributors' && styles.activeSubTab, openedDivisionsData.length === 0 && styles.disabledTab]}
+          onPress={() => openedDivisionsData.length > 0 && setActiveSubTab('distributors')}
+          disabled={openedDivisionsData.length === 0}
         >
-          <IconFeather name="users" size={20} color={activeSubTab === 'field' ? '#FF6B00' : '#999'} />
-          <AppText style={[styles.subTabText, activeSubTab === 'field' && styles.activeSubTabText]}>
+          <Icon name="store" size={20} color={openedDivisionsData.length > 0 ? (activeSubTab === 'distributors' ? '#FF6B00' : '#999') : '#CCC'} />
+          <AppText style={[styles.subTabText, activeSubTab === 'distributors' && styles.activeSubTabText, openedDivisionsData.length === 0 && styles.disabledTabText]}>
+            Distributors
+          </AppText>
+        </TouchableOpacity>
+
+        {/* Field Tab - Disabled if no opened divisions */}
+        <TouchableOpacity
+          style={[styles.subTab, activeSubTab === 'field' && styles.activeSubTab, openedDivisionsData.length === 0 && styles.disabledTab]}
+          onPress={() => openedDivisionsData.length > 0 && setActiveSubTab('field')}
+          disabled={openedDivisionsData.length === 0}
+        >
+          <IconFeather name="users" size={20} color={openedDivisionsData.length > 0 ? (activeSubTab === 'field' ? '#FF6B00' : '#999') : '#CCC'} />
+          <AppText style={[styles.subTabText, activeSubTab === 'field' && styles.activeSubTabText, openedDivisionsData.length === 0 && styles.disabledTabText]}>
             Field
           </AppText>
         </TouchableOpacity>
 
+        {/* Customer Hierarchy Tab - Always visible */}
         <TouchableOpacity
           style={[styles.subTab, activeSubTab === 'hierarchy' && styles.activeSubTab]}
           onPress={() => setActiveSubTab('hierarchy')}
@@ -1248,6 +1477,12 @@ const styles = StyleSheet.create({
   activeSubTabText: {
     color: '#FF6B00',
     fontWeight: '600',
+  },
+  disabledTab: {
+    opacity: 0.5,
+  },
+  disabledTabText: {
+    color: '#CCC',
   },
   tabContent: {
     flex: 1,
@@ -1537,14 +1772,15 @@ const styles = StyleSheet.create({
   },
   columnHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
+    gap: 12,
   },
   assignText: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#FF6B00',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   columnSubtitle: {
     fontSize: 12,
@@ -1990,6 +2226,16 @@ const styles = StyleSheet.create({
   emptyDivisionText: {
     fontSize: 14,
     color: '#999',
+  },
+  stickyButtonContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  continueButtonDisabled: {
+    opacity: 0.5,
   },
 });
 

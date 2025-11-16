@@ -20,16 +20,16 @@ import { colors } from '../../../styles/colors';
 import {AppText,AppInput} from "../../../components"
 import { customerAPI } from '../../../api/customer';
 
-const HospitalSelector = () => {
+const DoctorSelector = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { onSelect, selectedHospitals = [] } = route.params || {};
+  const { onSelect, selectedDoctors = [] } = route.params || {};
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItems, setSelectedItems] = useState(selectedHospitals || []);
+  const [selectedItems, setSelectedItems] = useState(selectedDoctors || []);
   
-  // Hospital data states
-  const [hospitalsData, setHospitalsData] = useState([]);
+  // Doctor data states
+  const [doctorsData, setDoctorsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -66,17 +66,20 @@ const HospitalSelector = () => {
     ]).start();
   }, []);
 
-  // Fetch states and hospitals on component mount
+  // Fetch states and doctors on component mount
   useEffect(() => {
     fetchStates();
-    fetchHospitals();
+    fetchDoctors();
   }, []);
 
-  // Fetch hospitals when filters or search changes
+  // Fetch doctors when filters or search changes
   useEffect(() => {
-    if (!loading) {
-      fetchHospitals();
-    }
+    // Debounce the API call to avoid too many requests
+    const timer = setTimeout(() => {
+      fetchDoctors();
+    }, 300);
+    
+    return () => clearTimeout(timer);
   }, [selectedStates, selectedCities, searchQuery]);
 
   // Fetch cities when state is selected
@@ -90,41 +93,45 @@ const HospitalSelector = () => {
     }
   }, [selectedStates]);
 
-  const fetchHospitals = async () => {
+  const fetchDoctors = async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('HospitalSelector: Fetching hospitals with filters...');
+      console.log('DoctorSelector: Fetching doctors with filters...');
       
-      // Build state and city IDs arrays
-      const stateIds = selectedStates.map(s => Number(s.id));
-      const cityIds = selectedCities.map(c => Number(c.id));
+      // Build state and city IDs arrays for filtering
+      const stateIds = selectedStates.length > 0 ? selectedStates.map(s => Number(s.id)) : [];
+      const cityIds = selectedCities.length > 0 ? selectedCities.map(c => Number(c.id)) : [];
       
-      console.log('HospitalSelector: Filter params - stateIds:', stateIds, 'cityIds:', cityIds, 'searchText:', searchQuery);
+      console.log('DoctorSelector: Filter params - stateIds:', stateIds, 'cityIds:', cityIds, 'searchText:', searchQuery);
       
-      // Call API with filters and search
-      const response = await customerAPI.getHospitalsList(['HOSP'], 4, 1, 20, stateIds, cityIds, [6, 10], ['PRI'], ['PCL', 'PIH'], searchQuery);
-      console.log('HospitalSelector: Hospitals API response:', response);
+      // Call API with doctor type code and filters
+      const response = await customerAPI.getDoctorsList(['DOCT'], 1, 1, 20, stateIds, cityIds, searchQuery);
+      console.log('DoctorSelector: Doctors API response:', response);
       
       if (response?.data?.customers && Array.isArray(response.data.customers)) {
         // Transform API response to match expected format
-        const transformedHospitals = response.data.customers.map(customer => ({
+        const transformedDoctors = response.data.customers.map(customer => ({
           id: customer.customerId,
           name: customer.customerName,
-          code: customer.customerCode || customer.customerId,
+          code: customer.customerCode || customer.sapCode || customer.customerId,
           city: customer.cityName || 'N/A',
           state: customer.stateName || 'N/A',
+          mobile: customer.mobile,
+          email: customer.email,
+          speciality: customer.customerCategory || 'General',
         }));
-        console.log('HospitalSelector: Transformed hospitals:', transformedHospitals.length, 'items');
-        setHospitalsData(transformedHospitals);
+        
+        console.log('DoctorSelector: Transformed doctors:', transformedDoctors.length, 'items');
+        setDoctorsData(transformedDoctors);
       } else {
-        console.log('HospitalSelector: Invalid hospitals response format');
-        setHospitalsData([]);
+        console.log('DoctorSelector: Invalid doctors response format');
+        setDoctorsData([]);
       }
     } catch (err) {
-      console.error('HospitalSelector: Error fetching hospitals:', err);
-      setError(err.message || 'Failed to load hospitals');
-      setHospitalsData([]);
+      console.error('DoctorSelector: Error fetching doctors:', err);
+      setError(err.message || 'Failed to load doctors');
+      setDoctorsData([]);
     } finally {
       setLoading(false);
     }
@@ -223,32 +230,36 @@ const HospitalSelector = () => {
     navigation.goBack();
   };
 
-  const handleAddNewHospital = () => {
-    // Navigate to add new hospital form
-    navigation.navigate('AddGroupHospital');
+  const handleAddNewDoctor = () => {
+    // Navigate to add new doctor form
+    navigation.navigate('AddNewDoctor');
   };
 
-  const renderHospitalItem = ({ item }) => {
-    const isSelected = selectedItems.some(hospital => hospital.id === item.id);
+  const renderDoctorItem = ({ item }) => {
+    const isSelected = selectedItems.some(doctor => doctor.id === item.id);
     
     return (
       <TouchableOpacity
-        style={styles.hospitalItem}
+        style={styles.doctorItem}
         onPress={() => handleToggleHospital(item)}
         activeOpacity={0.7}
       >
         <View style={styles.checkboxContainer}>
           <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-            {isSelected && <FilterCheck />}
+            {isSelected && <Icon name="checkmark" size={16} color="#fff" />}
           </View>
         </View>
         
-        <View style={styles.hospitalInfo}>
-          <AppText style={styles.hospitalName}>{item.name}</AppText>
-          <AppText style={styles.hospitalCode}>{item.code}</AppText>
+        <View style={styles.doctorInfo}>
+          <AppText style={styles.doctorName}>{item.name}</AppText>
+          <View style={styles.doctorDetails}>
+            <AppText style={styles.doctorCode}>{item.code}</AppText>
+            <AppText style={styles.doctorSpeciality}>{item.speciality}</AppText>
+          </View>
+          <AppText style={styles.doctorContact}>{item.mobile}</AppText>
         </View>
         
-        <AppText style={styles.hospitalCity}>{item.city}</AppText>
+        <AppText style={styles.doctorCity}>{item.state}</AppText>
       </TouchableOpacity>
     );
   };
@@ -256,16 +267,16 @@ const HospitalSelector = () => {
   const renderNoResults = () => (
     <View style={styles.noResultsContainer}>
       <Icon name="search-outline" size={60} color="#CCC" />
-      <AppText style={styles.noResultsTitle}>Hospital Not Found</AppText>
+      <AppText style={styles.noResultsTitle}>Doctor Not Found</AppText>
       <AppText style={styles.noResultsText}>
-        Hospital not found. You can add group hospital to continue.{'\n'}
-        Else try to search different hospital
+        Doctor not found. You can add new doctor to continue.{'\n'}
+        Else try to search different doctor
       </AppText>
       <TouchableOpacity
         style={styles.addNewButton}
-        onPress={handleAddNewHospital}
+        onPress={handleAddNewDoctor}
       >        
-        <AppText style={styles.addNewButtonText}>+Add New Group Hospital</AppText>
+        <AppText style={styles.addNewButtonText}>+ Add New Doctor</AppText>
       </TouchableOpacity>
     </View>
   );
@@ -282,7 +293,7 @@ const HospitalSelector = () => {
         >          
           <Icon name="close" size={24} color="#333" />
         </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Select Hospital</AppText>
+        <AppText style={styles.headerTitle}>Select Doctor</AppText>
       </View>
 
       {/* Filter Dropdowns Container */}
@@ -388,7 +399,7 @@ const HospitalSelector = () => {
         <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
         <AppInput
           style={styles.searchInput}
-          placeholder="Search by hospital name/code"
+          placeholder="Search by doctor name/code"
           value={searchQuery}
           onChangeText={setSearchQuery}
           onSubmitEditing={handleSearch}
@@ -396,35 +407,35 @@ const HospitalSelector = () => {
         />
       </View>
 
-      {/* Hospital List */}
+      {/* Doctor List */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <AppText style={styles.loadingText}>Loading hospitals...</AppText>
+          <AppText style={styles.loadingText}>Loading doctors...</AppText>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
           <Icon name="alert-circle" size={40} color="#EF4444" />
-          <AppText style={styles.errorText}>Error loading hospitals</AppText>
+          <AppText style={styles.errorText}>Error loading doctors</AppText>
           <AppText style={styles.errorSubText}>{error}</AppText>
           <TouchableOpacity 
             style={styles.retryButton}
-            onPress={fetchHospitals}
+            onPress={fetchDoctors}
           >
             <AppText style={styles.retryButtonText}>Retry</AppText>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
-          data={hospitalsData}
-          renderItem={renderHospitalItem}
+          data={doctorsData}
+          renderItem={renderDoctorItem}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <Icon name="search" size={40} color="#999" />
-              <AppText style={styles.emptyText}>No hospitals found</AppText>
+              <AppText style={styles.emptyText}>No doctors found</AppText>
             </View>
           )}
           // ListFooterComponent={() => (
@@ -592,7 +603,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 100,
   },
-  hospitalItem: {
+  doctorItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -616,22 +627,38 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  hospitalInfo: {
+  doctorInfo: {
     flex: 1,
   },
-  hospitalName: {
+  doctorName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#333',
   },
-  hospitalCode: {
+  doctorDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 8,
+  },
+  doctorCode: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  doctorSpeciality: {
     fontSize: 12,
     color: '#999',
-    marginTop: 2,
   },
-  hospitalCity: {
-    fontSize: 14,
+  doctorContact: {
+    fontSize: 12,
     color: '#666',
+    marginTop: 4,
+  },
+  doctorCity: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
   },
   loadingContainer: {
     flex: 1,
@@ -742,4 +769,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HospitalSelector;
+export default DoctorSelector;
