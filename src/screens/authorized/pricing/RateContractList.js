@@ -28,10 +28,11 @@ import Business from '../../../components/icons/Business';
 import AddrLine from '../../../components/icons/AddrLine';
 import PauseCircle from '../../../components/icons/PauseCircle';
 import {AppText,AppInput} from "../../../components"
+import PendingApproval from './PendingApproval/PendingApproval'
 
 const RateContractList = () => {
   const navigation = useNavigation();
-  const [activeTab, setActiveTab] = useState('Draft');
+  const [activeTab, setActiveTab] = useState('All');
   const [searchText, setSearchText] = useState('');
   const [filterVisible, setFilterVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState({
@@ -141,7 +142,7 @@ const RateContractList = () => {
     Draft: 10,
     'Expired RC': 5,
     'Inactive RC': 3,
-    'Pending Approval': 8,
+    'Pending Approval': 2000,
     Approved: 15,
     Rejected: 2,
     Cancelled: 1,
@@ -149,10 +150,11 @@ const RateContractList = () => {
     'Expiring Soon': 5,
   };
 
-  const tabs = ['All', 'Draft', 'Pending Approval', 'Expiring Soon', 'Expired RC', 'Reassigned'];
+  const tabs = ['All', 'Pending Approval', 'Draft', 'Expiring Soon', 'Expired RC', 'Reassigned'];
 
   const filteredContracts = rateContracts.filter(contract => {
-    if (activeTab !== 'All' && contract.status !== activeTab.toUpperCase()) {
+    if (activeTab !== 'All' && activeTab !== 'Pending Approval' && 
+        contract.status !== activeTab.toUpperCase().replace(' ', '_')) {
       return false;
     }
     if (searchText && !contract.customer.toLowerCase().includes(searchText.toLowerCase()) &&
@@ -351,6 +353,57 @@ const RateContractList = () => {
     </View>
   );
 
+  const renderContent = () => {
+    // Show PendingApproval component when Pending Approval tab is active
+    if (activeTab === 'Pending Approval') {
+      return <PendingApproval />;
+    }
+
+    // Otherwise show the regular RC list
+    return (
+      <>
+        <View style={styles.filterContainer}>
+          <TouchableOpacity style={styles.filterButton}>
+            <AppText style={styles.filterButtonText}>New Pricing(30)</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.filterButton, styles.activeFilterButton]}>
+            <AppText style={styles.activeFilterButtonText}>Multiple RC Found(50)</AppText>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Search color="#999" />
+            <AppInput
+              style={styles.searchInput}
+              placeholder="Search RC, customer name/code..."
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholderTextColor="#999"
+            />
+          </View>
+          <TouchableOpacity 
+            style={styles.searchFilterButton}
+            onPress={() => setFilterVisible(true)}
+          >                
+            <Filter color="#666" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.searchFilterButton}>
+            <Calendar />
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={filteredContracts}
+          renderItem={renderRateContract}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
+          scrollEnabled={false}
+        />
+      </>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
@@ -445,53 +498,17 @@ const RateContractList = () => {
             >
               <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
                 {tab}
+                {tab === 'Pending Approval' && ` (${statusCounts['Pending Approval']})`}
+                {tab === 'Draft' && ' (100)'}
               </AppText>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        <View style={styles.filterContainer}>
-          <TouchableOpacity style={styles.filterButton}>
-            <AppText style={styles.filterButtonText}>New Pricing(30)</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.filterButton, styles.activeFilterButton]}>
-            <AppText style={styles.activeFilterButtonText}>Multiple RC Found(50)</AppText>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.searchContainer}>
-            <View style={styles.searchBar}>
-            <Search color="#999" />
-            <AppInput
-                style={styles.searchInput}
-                placeholder="Search RC, customer name/code..."
-                value={searchText}
-                onChangeText={setSearchText}
-                placeholderTextColor="#999"
-            />
-            </View>
-            <TouchableOpacity 
-                style={styles.searchFilterButton}
-                onPress={() => setFilterVisible(true)}
-                >                
-                <Filter color="#666" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.searchFilterButton}>
-                <Calendar />
-            </TouchableOpacity>
-        </View>
-
-        <FlatList
-          data={filteredContracts}
-          renderItem={renderRateContract}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContent}
-          scrollEnabled={false}
-        />
+        {renderContent()}
       </ScrollView>
 
       {renderFilterModal()}
-
     </SafeAreaView>
   );
 };
