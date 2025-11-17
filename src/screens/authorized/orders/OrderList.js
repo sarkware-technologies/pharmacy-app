@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
-import { getCartDetails, getOrders } from '../../../api/orders';
+import { getCartDetails, getOrders, OrderAction } from '../../../api/orders';
 import Menu from '../../../components/icons/Menu';
 import AddrLine from '../../../components/icons/AddrLine';
 import Filter from '../../../components/icons/Filter';
@@ -73,7 +73,6 @@ const OrderList = () => {
   const getCartdetails = async () => {
     try {
       const response = await getCartDetails();
-      console.log(response);
 
       const cartDetails = response?.cartDetails ?? [];
       if (cartDetails.length > 0) {
@@ -93,16 +92,19 @@ const OrderList = () => {
   };
 
   useEffect(() => {
-    console.log(cartTotal, 89798789778)
     setCartCount(cartTotal);
   }, [cartTotal])
 
 
   // ✅ Main API function
   const loadOrders = async (isPaginating = false, resetPage) => {
+
     const pageNo = resetPage ?? page;
     if (isPaginating) setLoadingMore(true);
     else setLoading(true);
+    if (pageNo == 1) {
+      setOrders([]);
+    }
 
     try {
       const data = await getOrders({ page: pageNo, status: activeTab, search: searchText });
@@ -217,6 +219,79 @@ const OrderList = () => {
     }
   };
 
+  const checkAction = (instance) => {
+    let action = true;
+    if (instance && Object.keys(instance).length === 0) {
+      action = false;
+    }
+    else if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && instance?.stepInstances[0].stepInstanceStatus == "PENDING") {
+      action = true;
+    }
+    else if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && (instance?.stepInstances[0].stepInstanceStatus == "APPROVED" ||instance?.stepInstances[0].stepInstanceStatus == "APPROVE" ||instance?.stepInstances[0].stepInstanceStatus == "REJECT" || instance?.stepInstances[0].stepInstanceStatus == "REJECTED")) {
+      action = false;
+    }
+    else {
+      action = true
+    }
+    return action;
+  }
+
+  const actionToast = () => {
+    Toast.show({
+      type: 'error',
+      text1: 'Access denied',
+      text2: 'Current user dont have the access.',
+    });
+  }
+
+  const handleAction = async (type, instance, orderId) => {
+
+    if (instance && Object.keys(instance).length !== 0) {
+      if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && instance?.stepInstances[0].stepInstanceStatus == "PENDING") {
+        const payload = {
+          "stepOrder": instance?.stepInstances[0]?.stepOrder,
+          "parallelGroup": instance?.stepInstances[0]?.stepOrder,
+          "action": type,
+          "comments": "Approved after review",
+          "actorId": instance?.stepInstances[0]?.assignedUserId,
+          "dataChanges": {}
+        }
+        const response = await OrderAction(instance?.workflowInstance?.id, payload);
+        console.log(response);
+        if (response?.action == type) {
+          const orderlist = orders.map((e) => {
+            if (e.orderId !== orderId) return e;
+
+            return {
+              ...e,
+              instance: {
+                ...e.instance,
+                stepInstances: [
+                  {
+                    ...e.instance.stepInstances[0],
+                    stepInstanceStatus: type
+                  }
+                ]
+              }
+            };
+          });
+
+          setOrders(orderlist);
+
+        }
+      }
+    }
+    else {
+      Toast.show({
+        type: 'error',
+        text1: 'Data not fount',
+        text2: 'Instance is Missing',
+      });
+    }
+
+  }
+
+
   // ✅ Render each order item
   const renderOrder = ({ item }) => {
     const statusColors = getStatusColor(item.statusName);
@@ -227,66 +302,68 @@ const OrderList = () => {
     })}`;
 
     return (
-      <TouchableOpacity style={styles.orderCard} activeOpacity={0.7} onPress={() => navigation.push("OrderDetails", { orderId: item?.orderId })}>
-        <TouchableOpacity onPress={() => navigation.push("OrderDetails")}>
-          <View style={styles.orderHeader}>
-            <View style={styles.orderIdRow}>
-              <AppText style={styles.orderId}>{item.orderNo}</AppText>
-              <Icon name="chevron-right" size={20} color={colors.primary} />
-            </View>
-            <AppText style={styles.orderAmount}>
-              {formatPrice(parseFloat(item.netOrderValue || 0))}
-            </AppText>
-          </View>
-
-          <View style={styles.orderMeta}>
-            <AppText style={styles.orderDate}>{formattedDate}</AppText>
-            <AppText style={styles.skuCount}>
-              SKU : <AppText style={{ color: '#2B2B2B', fontFamily: Fonts.Bold }}>{item.skwCount ?? 0}</AppText>
-            </AppText>
-          </View>
-        </TouchableOpacity>
-        <View style={styles.customerSection}>
-          <View style={styles.customerInfo}>
-            <View style={styles.customerDetails}>
-              <View style={{ display: "flex", alignItems: "center", flexDirection: "row", gap: 4 }}>
-                <View style={{ backgroundColor: "#9C874333", width: 23, height: 22, paddingLeft: 0, borderRadius: "50%", display: 'flex', alignItems: "center", justifyContent: "center" }}>
-                  <AppText style={{ fontSize: 10, color: "#9C8743", fontFamily: Fonts.Regular }}>
-                    {getInitials(item.customerDetails?.customerName ?? '')}
-                  </AppText></View>
-                <AppText style={styles.customerName}>
-                  {item.customerDetails?.customerName}
-                </AppText>
+      <View style={styles.orderCard}>
+        <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.push("OrderDetails", { orderId: item?.orderId })}>
+          <TouchableOpacity onPress={() => navigation.push("OrderDetails", { orderId: item?.orderId })}>
+            <View style={styles.orderHeader}>
+              <View style={styles.orderIdRow}>
+                <AppText style={styles.orderId}>{item.orderNo}</AppText>
+                <Icon name="chevron-right" size={20} color={colors.primary} />
               </View>
-              <View style={styles.customerMeta}>
-                <AddrLine />
-                <View style={{ display: "flex", flexDirection: 'row', gap: 10, marginLeft: 5 }}>
-                  <AppText style={styles.customerMetaText}>
-                    {item.customerDetails?.customerId}
-                  </AppText>
-                  <AppText style={styles.customerMetaText}>
-                    | {item.customerDetails?.cityName} | Div:{' '}
-                  </AppText>
-                  <AppText style={styles.customerMetaText}>
-                    {item.divisionDetails?.divisionName}
-                  </AppText>
-                </View>
-              </View>
-              <AppText style={styles.pendingAction}>
-                Pending Action by:{' '}
-                <AppText style={{ color: '#222' }}>
-                  {item.pendingActionBy?.Username || 'N/A'}
-                </AppText>
+              <AppText style={styles.orderAmount}>
+                {formatPrice(parseFloat(item.netOrderValue || 0))}
               </AppText>
             </View>
-            <TouchableOpacity>
-              <Svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <Path d="M2.5 13.3907V14.2903C2.5 15.009 2.78548 15.6982 3.29365 16.2064C3.80181 16.7145 4.49103 17 5.20968 17H14.2419C14.9606 17 15.6498 16.7145 16.158 16.2064C16.6661 15.6982 16.9516 15.009 16.9516 14.2903V13.3871M9.72581 3V12.9355M9.72581 12.9355L12.8871 9.77419M9.72581 12.9355L6.56452 9.77419" stroke="#909090" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </Svg>
 
-            </TouchableOpacity>
+            <View style={styles.orderMeta}>
+              <AppText style={styles.orderDate}>{formattedDate}</AppText>
+              <AppText style={styles.skuCount}>
+                SKU : <AppText style={{ color: '#2B2B2B', fontFamily: Fonts.Bold }}>{item.skwCount ?? 0}</AppText>
+              </AppText>
+            </View>
+          </TouchableOpacity>
+          <View style={styles.customerSection}>
+            <View style={styles.customerInfo}>
+              <View style={styles.customerDetails}>
+                <View style={{ display: "flex", alignItems: "center", flexDirection: "row", gap: 4 }}>
+                  <View style={{ backgroundColor: "#9C874333", width: 23, height: 22, paddingLeft: 0, borderRadius: "50%", display: 'flex', alignItems: "center", justifyContent: "center" }}>
+                    <AppText style={{ fontSize: 10, color: "#9C8743", fontFamily: Fonts.Regular }}>
+                      {getInitials(item.customerDetails?.customerName ?? '')}
+                    </AppText></View>
+                  <AppText style={styles.customerName}>
+                    {item.customerDetails?.customerName}
+                  </AppText>
+                </View>
+                <View style={styles.customerMeta}>
+                  <AddrLine />
+                  <View style={{ display: "flex", flexDirection: 'row', gap: 10, marginLeft: 5 }}>
+                    <AppText style={styles.customerMetaText}>
+                      {item.customerDetails?.customerId}
+                    </AppText>
+                    <AppText style={styles.customerMetaText}>
+                      | {item.customerDetails?.cityName} | Div:{' '}
+                    </AppText>
+                    <AppText style={styles.customerMetaText}>
+                      {item.divisionDetails?.divisionName}
+                    </AppText>
+                  </View>
+                </View>
+                <AppText style={styles.pendingAction}>
+                  Pending Action by:{' '}
+                  <AppText style={{ color: '#222' }}>
+                    {item.pendingActionBy?.Username || 'N/A'}
+                  </AppText>
+                </AppText>
+              </View>
+              <TouchableOpacity>
+                <Svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <Path d="M2.5 13.3907V14.2903C2.5 15.009 2.78548 15.6982 3.29365 16.2064C3.80181 16.7145 4.49103 17 5.20968 17H14.2419C14.9606 17 15.6498 16.7145 16.158 16.2064C16.6661 15.6982 16.9516 15.009 16.9516 14.2903V13.3871M9.72581 3V12.9355M9.72581 12.9355L12.8871 9.77419M9.72581 12.9355L6.56452 9.77419" stroke="#909090" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </Svg>
+
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.orderFooter}>
           <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
@@ -294,8 +371,28 @@ const OrderList = () => {
               {item.statusName}
             </AppText>
           </View>
+          {checkAction(item?.instance) && (
+            <View style={{ display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", gap: 15 }}>
+              <TouchableOpacity onPress={() => !checkAction(item?.instance) ? actionToast() : handleAction("APPROVE", item?.instance, item.orderId)} disabled={!checkAction(item?.instance)} style={[{ backgroundColor: "#F7941E", display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, gap: 5 }, !checkAction(item?.instance) && { opacity: 0.5 }]}>
+                {/* <TouchableOpacity onPress={() => handleAction("APPROVE", item?.instance)} style={[{ backgroundColor: "#F7941E", display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, gap: 5 }, !checkAction(item?.instance) && { opacity: 0.5 }]}> */}
+                <Svg width="13" height="9" viewBox="0 0 13 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <Path d="M11.4167 0.75L4.08333 8.08333L0.75 4.75" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </Svg>
+                <AppText style={{ color: "white", fontSize: 14 }}>
+                  Confirm
+                </AppText>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => !checkAction(item?.instance) ? actionToast() : handleAction("REJECT", item?.instance, item.orderId)} disabled={!checkAction(item?.instance)} style={!checkAction(item?.instance) && { opacity: 0.5 }}>
+                <Svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <Path d="M13.75 13.75L7.75 7.75M7.75 13.75L13.75 7.75M20.75 10.75C20.75 5.227 16.273 0.75 10.75 0.75C5.227 0.75 0.75 5.227 0.75 10.75C0.75 16.273 5.227 20.75 10.75 20.75C16.273 20.75 20.75 16.273 20.75 10.75Z" stroke="#2B2B2B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </Svg>
+
+              </TouchableOpacity>
+            </View>
+
+          )}
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -394,7 +491,7 @@ const OrderList = () => {
               style={styles.searchInput}
               placeholder="Search customer name/code..."
               value={searchText}
-              onChangeText={setSearchText}
+              onChangeText={(e) => setSearchText(e)}
               placeholderTextColor="#999"
             />
           </View>

@@ -101,7 +101,7 @@ export const AddtoCart = async (cartItem) => {
 
 export const DeleteCart = async (cartId) => {
   try {
-    const response = await apiClient.delete(`/orders/cart/product`, { cartIds: cartId,isAll:true });
+    const response = await apiClient.delete(`/orders/cart/product`, { cartIds: cartId, isAll: true });
     return response.data;
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -176,6 +176,28 @@ export const OrderDetails = async (orderId) => {
 }
 
 
+
+
+export const DownloadTemplate = async () => {
+  try {
+    const response = await apiClient.get(`/orders/upload-order/template`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
+}
+
+
+export const OrderAction = async (workflowInstance,body) => {
+  try {
+    const response = await apiClient.post(`/approval/workflow-actions/${workflowInstance}`, body);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
+}
 
 
 

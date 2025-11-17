@@ -27,14 +27,25 @@ import ChevronRight from '../../../components/icons/ChevronRight';
 import Business from '../../../components/icons/Business';
 import AddrLine from '../../../components/icons/AddrLine';
 import PauseCircle from '../../../components/icons/PauseCircle';
-import {AppText,AppInput} from "../../../components"
-import PendingApproval from './PendingApproval/PendingApproval'
+import { AppText, AppInput } from "../../../components"
+import { getPriceSummary, getRCStatus } from "../../../api/rate-contract"
+import Svg, { Path } from 'react-native-svg';
+import {
+  AddProduct,
+  ProductSwapping,
+  UpdateDiscount,
+  UpdateSupplyMode,
+  QuotationGeneration,
+  CloseIcon
+} from "../../../components/icons/pricingIcon"
 
 const RateContractList = () => {
   const navigation = useNavigation();
-  const [activeTab, setActiveTab] = useState('All');
+  const [activeTab, setActiveTab] = useState('Active');
   const [searchText, setSearchText] = useState('');
   const [filterVisible, setFilterVisible] = useState(false);
+  const [showGroupupdate, setShowGroupupdate] = useState(false);
+
   const [selectedFilters, setSelectedFilters] = useState({
     status: ['Active', 'Draft', 'Expired RC', 'Inactive RC', 'Pending Approval', 'Approved', 'Rejected', 'Cancelled', 'Reassigned', 'Expiring Soon'],
     customerGroup: [],
@@ -43,126 +54,44 @@ const RateContractList = () => {
     city: [],
   });
 
+
+
+  useEffect(() => {
+    getRcStatus();
+    loadSummery();
+  }, [navigation])
+
+  const getRcStatus = async () => {
+    const response = await getRCStatus();
+    console.log(response?.allStatus, 6788798)
+
+    //   {
+    //     Active: 20,
+    //       Draft: 10,
+    //         'Expired RC': 5,
+    //           'Inactive RC': 3,
+    //             'Pending Approval': 8,
+    //               Approved: 15,
+    //                 Rejected: 2,
+    //                   Cancelled: 1,
+    //                     Reassigned: 4,
+    //                       'Expiring Soon': 5,
+    // };
+  }
+  const loadSummery = async () => {
+    console.log(347865387)
+    const response = await getPriceSummary();
+    if (response?.rcSummary) {
+      setRateContracts(response?.rcSummary);
+    }
+  }
   // Mock data for rate contracts
-  const [rateContracts] = useState([
-    {
-      id: 'SUNRC_1',
-      customer: 'Columbia Asia',
-      location: 'Pune',
-      productCount: 500,
-      status: 'DRAFT',
-      distributorCount: 4,
-      stockist: 10,
-      rfqDate: 'April 2028',
-      isMultiple: true,
-      count: 2,
-      code: '2536',
-    },
-    {
-      id: 'SUNRC_2',
-      customer: 'Agarwal Maternity General Hospital',
-      location: 'Pune',
-      productCount: 500,
-      status: 'ACTIVE',
-      distributorCount: 4,
-      stockist: 10,
-      vqDate: 'April 2028',
-      code: '2536',
-    },
-    {
-      id: 'SUNRC_3',
-      customer: 'Apollo Hospitals',
-      location: 'Mumbai',
-      productCount: 350,
-      status: 'PENDING APPROVAL',
-      distributorCount: 6,
-      stockist: 15,
-      rfqDate: 'March 2028',
-      code: '2537',
-    },
-    {
-      id: 'SUNRC_4',
-      customer: 'Fortis Healthcare',
-      location: 'Delhi',
-      productCount: 420,
-      status: 'EXPIRING SOON',
-      distributorCount: 5,
-      stockist: 12,
-      vqDate: 'February 2025',
-      code: '2538',
-    },
-    {
-      id: 'SUNRC_5',
-      customer: 'Max Healthcare',
-      location: 'Noida',
-      productCount: 280,
-      status: 'EXPIRED RC',
-      distributorCount: 3,
-      stockist: 8,
-      vqDate: 'January 2025',
-      code: '2539',
-    },
-    {
-      id: 'SUNRC_6',
-      customer: 'Ruby Hall Clinic',
-      location: 'Pune',
-      productCount: 320,
-      status: 'REJECTED',
-      distributorCount: 4,
-      stockist: 9,
-      rfqDate: 'March 2025',
-      code: '2540',
-    },
-    {
-      id: 'SUNRC_7',
-      customer: 'Narayana Health',
-      location: 'Bengaluru',
-      productCount: 450,
-      status: 'APPROVED',
-      distributorCount: 7,
-      stockist: 14,
-      vqDate: 'May 2028',
-      code: '2541',
-    },
-    {
-      id: 'SUNRC_8',
-      customer: 'AIIMS',
-      location: 'Delhi',
-      productCount: 600,
-      status: 'REASSIGNED',
-      distributorCount: 8,
-      stockist: 20,
-      rfqDate: 'April 2028',
-      code: '2542',
-    },
-  ]);
+  const [rateContracts, setRateContracts] = useState([]);
 
-  const statusCounts = {
-    Active: 20,
-    Draft: 10,
-    'Expired RC': 5,
-    'Inactive RC': 3,
-    'Pending Approval': 2000,
-    Approved: 15,
-    Rejected: 2,
-    Cancelled: 1,
-    Reassigned: 4,
-    'Expiring Soon': 5,
-  };
+  const [statusCounts, setStatusCounts] = useState();
 
-  const tabs = ['All', 'Pending Approval', 'Draft', 'Expiring Soon', 'Expired RC', 'Reassigned'];
+  const tabs = ['All', 'Draft', 'Pending Approval', 'Expiring Soon', 'Expired RC', 'Reassigned'];
 
-  const filteredContracts = rateContracts.filter(contract => {
-    if (activeTab !== 'All' && activeTab !== 'Pending Approval' && 
-        contract.status !== activeTab.toUpperCase().replace(' ', '_')) {
-      return false;
-    }
-    if (searchText && !contract.customer.toLowerCase().includes(searchText.toLowerCase()) &&
-        !contract.id.toLowerCase().includes(searchText.toLowerCase())) {
-      return false;
-    }
-    return true;
-  });
 
   const renderStatusBadge = (status) => {
     const statusBackgroundColors = {
@@ -199,10 +128,85 @@ const RateContractList = () => {
 
     return (
       <View style={[styles.statusBadge, { backgroundColor: statusBackgroundColors[status] || colors.gray }]}>
-        <AppText style={[ styles.statusText, { color : statusTextColors[status]} ]}>{status.replace('_', ' ')}</AppText>
+        <AppText style={[styles.statusText, { color: statusTextColors[status] }]}>{status.replace('_', ' ')}</AppText>
       </View>
     );
   };
+
+
+
+  // ✅ Modal for order creation
+  const renderCreateOrderModal = () => (
+    <Modal
+      visible={showGroupupdate}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowGroupupdate(false)}
+    >
+      <TouchableOpacity
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowGroupupdate(false)}
+      >
+        <View style={styles.createOrderModalContent}>
+          <View style={styles.modalHeader}>
+            <AppText style={styles.modalTitle}>Group Update</AppText>
+            <TouchableOpacity onPress={() => setShowGroupupdate(false)}>
+              <CloseIcon />
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={styles.orderTypeOption}
+          // onPress={() => handleCreateOrder('manual')}
+          >
+            <AddProduct />
+            <AppText style={styles.orderTypeText}>Add New Product</AppText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.orderTypeOption}
+          // onPress={() => handleCreateOrder('upload')}
+          >
+            <ProductSwapping />
+
+            <AppText style={styles.orderTypeText}>Product Swapping</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.orderTypeOption}
+          // onPress={() => handleCreateOrder('upload')}
+          >
+            <UpdateDiscount />
+
+            <AppText style={styles.orderTypeText}>Update Discount</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.orderTypeOption}
+          // onPress={() => handleCreateOrder('upload')}
+          >
+            <UpdateSupplyMode />
+
+            <AppText style={styles.orderTypeText}>Update Supply Mode</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.orderTypeOption}
+          // onPress={() => handleCreateOrder('upload')}
+          >
+            <QuotationGeneration />
+
+            <AppText style={styles.orderTypeText}>Quotation Generation</AppText>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+
+
+
+
+
+
+
+
 
   const renderFilterModal = () => (
     <Modal
@@ -283,12 +287,12 @@ const RateContractList = () => {
 
   const renderRateContract = ({ item }) => (
     <View style={styles.contractCard}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.contractHeader}
         onPress={() => navigation.navigate('RateContractDetail', { contract: item })}
       >
         <View style={styles.contractIdContainer}>
-          <AppText style={styles.contractId}>{item.id} <ChevronRight color={colors.primary} height={11} /></AppText>          
+          <AppText style={styles.contractId}>{item.id} <ChevronRight color={colors.primary} height={11} /></AppText>
         </View>
         <View style={styles.contractBadges}>
           {item.rfqDate && (
@@ -306,7 +310,7 @@ const RateContractList = () => {
           </AppText>
           {item.isMultiple && (
             <View style={styles.countBadge}>
-              <AppText style={styles.countText}>{item.count} <ArrowDown color={colors.primary} width={8} /></AppText>                            
+              <AppText style={styles.countText}>{item.count} <ArrowDown color={colors.primary} width={8} /></AppText>
             </View>
           )}
         </View>
@@ -314,7 +318,7 @@ const RateContractList = () => {
 
       <View style={styles.contractBody}>
         <AppText style={styles.customerName}>{item.customer}</AppText>
-        <View style={styles.contractInfo}>          
+        <View style={styles.contractInfo}>
           <AddrLine />
           <AppText style={styles.infoText}>
             {item.code} | {item.location} | Product Count: {item.productCount}
@@ -324,11 +328,11 @@ const RateContractList = () => {
         <View style={styles.distributorStockistRow}>
           <TouchableOpacity style={styles.distributorInfo}>
             <Business />
-            <AppText style={{...styles.infoText, color: '#202020' }}>Configure Distribution <ChevronRight height={8} /></AppText>                      
+            <AppText style={{ ...styles.infoText, color: '#202020' }}>Configure Distribution <ChevronRight height={8} /></AppText>
           </TouchableOpacity>
 
           <View style={styles.stockistInfo}>
-            <AppText style={styles.stockistText}>Stockist:<AppText style={{ color: '#202020', fontSize: 14, fontWeight: 'bold' }}>{item.stockist}</AppText></AppText>          
+            <AppText style={styles.stockistText}>Stockist:<AppText style={{ color: '#202020', fontSize: 14, fontWeight: 'bold' }}>{item.stockist}</AppText></AppText>
             <EyeOpen color={colors.primary} width={16} />
           </View>
         </View>
@@ -337,9 +341,9 @@ const RateContractList = () => {
       <View style={styles.contractFooter}>
         {renderStatusBadge(item.status)}
         {item.status === 'DRAFT' ? (
-          <TouchableOpacity style={styles.createButton}>            
+          <TouchableOpacity style={styles.createButton}>
             <AddCircle />
-            <AppText style={styles.createButtonText}>Create</AppText>  
+            <AppText style={styles.createButtonText}>Create</AppText>
             <ChevronRight height={11} />
           </TouchableOpacity>
         ) : (
@@ -353,15 +357,105 @@ const RateContractList = () => {
     </View>
   );
 
-  const renderContent = () => {
-    // Show PendingApproval component when Pending Approval tab is active
-    if (activeTab === 'Pending Approval') {
-      return <PendingApproval />;
-    }
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.openDrawer()}>
+          <Menu />
+        </TouchableOpacity>
+        <AppText style={styles.headerTitle}>Pricing</AppText>
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.groupUpdateButton} onPress={() => setShowGroupupdate(true)}>
+            <AppText style={styles.groupUpdateText}>GROUP UPDATE</AppText>
+            <ArrowDown color={colors.primary} width={10} />
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Bell />
+          </TouchableOpacity>
+        </View>
+      </View>
 
-    // Otherwise show the regular RC list
-    return (
-      <>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.statsContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.statCard}>
+              <AppText style={styles.statLabel}>Active</AppText>
+              <AppText style={[styles.statValue, { color: colors.success }]}>
+                {statusCounts?.Active}
+              </AppText>
+            </View>
+            <View style={styles.statCard}>
+              <AppText style={styles.statLabel}>Draft</AppText>
+              <AppText style={[styles.statValue, { color: colors.primary }]}>
+                {statusCounts?.Draft}
+              </AppText>
+            </View>
+            <View style={styles.statCard}>
+              <AppText style={styles.statLabel}>Expired RC</AppText>
+              <AppText style={[styles.statValue, { color: colors.error }]}>
+                {/* {statusCounts['Expired RC']} */}
+              </AppText>
+            </View>
+            <View style={styles.statCard}>
+              <AppText style={styles.statLabel}>Inactive RC</AppText>
+              <AppText style={[styles.statValue, { color: colors.gray }]}>
+                {/* {statusCounts['Inactive RC']} */}
+              </AppText>
+            </View>
+            <View style={styles.statCard}>
+              <AppText style={styles.statLabel}>Pending Approval</AppText>
+              <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
+                {/* {statusCounts['Pending Approval']} */}
+              </AppText>
+            </View>
+            <View style={styles.statCard}>
+              <AppText style={styles.statLabel}>Approved</AppText>
+              <AppText style={[styles.statValue, { color: colors.success }]}>
+                {statusCounts?.Approved}
+              </AppText>
+            </View>
+            <View style={styles.statCard}>
+              <AppText style={styles.statLabel}>Rejected</AppText>
+              <AppText style={[styles.statValue, { color: colors.error }]}>
+                {statusCounts?.Rejected}
+              </AppText>
+            </View>
+            <View style={styles.statCard}>
+              <AppText style={styles.statLabel}>Cancelled</AppText>
+              <AppText style={[styles.statValue, { color: colors.textSecondary }]}>
+                {statusCounts?.Cancelled}
+              </AppText>
+            </View>
+            <View style={styles.statCard}>
+              <AppText style={styles.statLabel}>Reassigned</AppText>
+              <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
+                {statusCounts?.Reassigned}
+              </AppText>
+            </View>
+            <View style={styles.statCard}>
+              <AppText style={styles.statLabel}>Expiring Soon</AppText>
+              <AppText style={[styles.statValue, { color: colors.primary }]}>
+                {/* {statusCounts['Expiring Soon']} */}
+              </AppText>
+            </View>
+          </ScrollView>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer}>
+          {tabs.map(tab => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tab, activeTab === tab && styles.activeTab]}
+              onPress={() => setActiveTab(tab)}
+            >
+              <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+                {tab}
+              </AppText>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
         <View style={styles.filterContainer}>
           <TouchableOpacity style={styles.filterButton}>
             <AppText style={styles.filterButtonText}>New Pricing(30)</AppText>
@@ -382,10 +476,10 @@ const RateContractList = () => {
               placeholderTextColor="#999"
             />
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.searchFilterButton}
             onPress={() => setFilterVisible(true)}
-          >                
+          >
             <Filter color="#666" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.searchFilterButton}>
@@ -394,121 +488,17 @@ const RateContractList = () => {
         </View>
 
         <FlatList
-          data={filteredContracts}
+          data={rateContracts}
           renderItem={renderRateContract}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContent}
           scrollEnabled={false}
         />
-      </>
-    );
-  };
-
-  return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.openDrawer()}>
-          <Menu />
-        </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Pricing</AppText>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.groupUpdateButton}>
-            <AppText style={styles.groupUpdateText}>GROUP UPDATE</AppText>
-            <ArrowDown color={colors.primary} width={10} />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Bell />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.statsContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Active</AppText>
-              <AppText style={[styles.statValue, { color: colors.success }]}>
-                {statusCounts.Active}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Draft</AppText>
-              <AppText style={[styles.statValue, { color: colors.primary }]}>
-                {statusCounts.Draft}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Expired RC</AppText>
-              <AppText style={[styles.statValue, { color: colors.error }]}>
-                {statusCounts['Expired RC']}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Inactive RC</AppText>
-              <AppText style={[styles.statValue, { color: colors.gray }]}>
-                {statusCounts['Inactive RC']}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Pending Approval</AppText>
-              <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
-                {statusCounts['Pending Approval']}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Approved</AppText>
-              <AppText style={[styles.statValue, { color: colors.success }]}>
-                {statusCounts.Approved}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Rejected</AppText>
-              <AppText style={[styles.statValue, { color: colors.error }]}>
-                {statusCounts.Rejected}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Cancelled</AppText>
-              <AppText style={[styles.statValue, { color: colors.textSecondary }]}>
-                {statusCounts.Cancelled}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Reassigned</AppText>
-              <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
-                {statusCounts.Reassigned}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Expiring Soon</AppText>
-              <AppText style={[styles.statValue, { color: colors.primary }]}>
-                {statusCounts['Expiring Soon']}
-              </AppText>
-            </View>
-          </ScrollView>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer}>
-          {tabs.map(tab => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tab, activeTab === tab && styles.activeTab]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                {tab}
-                {tab === 'Pending Approval' && ` (${statusCounts['Pending Approval']})`}
-                {tab === 'Draft' && ' (100)'}
-              </AppText>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {renderContent()}
       </ScrollView>
 
       {renderFilterModal()}
+      {renderCreateOrderModal()}
+
     </SafeAreaView>
   );
 };
@@ -524,7 +514,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff' 
+    backgroundColor: '#fff'
   },
   headerTitle: {
     fontSize: 20,
@@ -614,7 +604,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 0,
     gap: 12,
-    marginBottom: 15    
+    marginBottom: 15
   },
   filterButton: {
     paddingHorizontal: 16,
@@ -652,7 +642,7 @@ const styles = StyleSheet.create({
     color: '#333'
   },
   searchContainer: {
-    flexDirection: 'row',    
+    flexDirection: 'row',
     paddingBottom: 0,
     marginBottom: 15,
     backgroundColor: '#F8F9FA',
@@ -669,7 +659,7 @@ const styles = StyleSheet.create({
   },
   contractCard: {
     backgroundColor: colors.white,
-    marginBottom: 15,    
+    marginBottom: 15,
     borderRadius: 12
   },
   contractHeader: {
@@ -712,9 +702,9 @@ const styles = StyleSheet.create({
   },
   countBadge: {
     flexDirection: 'row',
-    alignItems: 'center',    
+    alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 4,    
+    paddingVertical: 4,
   },
   countText: {
     fontSize: 14,
@@ -733,8 +723,8 @@ const styles = StyleSheet.create({
   contractInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,   
-    marginBottom: 5 
+    gap: 8,
+    marginBottom: 5
   },
   infoText: {
     fontSize: 14,
@@ -744,7 +734,7 @@ const styles = StyleSheet.create({
   distributorStockistRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',        
+    justifyContent: 'space-between',
   },
   distributorInfo: {
     flexDirection: 'row',
@@ -766,7 +756,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingBottom: 15,    
+    paddingBottom: 15,
   },
   statusBadge: {
     paddingHorizontal: 15,
@@ -774,7 +764,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   statusText: {
-    fontSize: 12,    
+    fontSize: 12,
     fontWeight: '600',
   },
   createButton: {
@@ -906,6 +896,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 8,
   },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  createOrderModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 32,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: '#333' },
+  orderTypeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    paddingLeft: 30
+  },
+  orderTypeText: { fontSize: 16, color: '#333', marginLeft: 20 },
 });
 
 export default RateContractList;

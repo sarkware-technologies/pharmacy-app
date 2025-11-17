@@ -31,7 +31,7 @@ const AddToCartWidget = ({
           <View style={styles.quantityBox}>
             <TouchableOpacity
               style={styles.quantityButton}
-              onPress={() => handleQuantityChange(item, "minus")}
+              onPress={() => handleQuantityChange?.(item, "minus")}
             >
               <Icon name="remove" size={20} color={colors.primary} />
             </TouchableOpacity>
@@ -46,7 +46,7 @@ const AddToCartWidget = ({
 
             <TouchableOpacity
               style={styles.quantityButton}
-              onPress={() => handleQuantityChange(item, "plus")}
+              onPress={() => handleQuantityChange?.(item, "plus")}
             >
               <Icon name="add" size={20} color={colors.primary} />
             </TouchableOpacity>
@@ -54,7 +54,7 @@ const AddToCartWidget = ({
 
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => handleDelete(item)}
+            onPress={() => handleDelete?.(item)}
           >
             <Delete />
           </TouchableOpacity>
@@ -62,7 +62,7 @@ const AddToCartWidget = ({
       ) : (
         <TouchableOpacity
           style={styles.addToCartButton}
-          onPress={() => handleAddToCart(item)}
+          onPress={() => handleAddToCart?.(item)}
         >
           <AppText style={styles.addToCartText}>Add to cart</AppText>
 

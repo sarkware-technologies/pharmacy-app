@@ -111,7 +111,6 @@ const Cart = () => {
         setLoading(true);
       }
       const response = await getCartDetails();
-
       const cartDetails = response?.cartDetails ?? [];
       setOrderSummery(response?.summary)
       if (cartDetails.length > 0) {
@@ -119,11 +118,9 @@ const Cart = () => {
         setCartDetails(cartDetails);
         dispatch(setCartTotal(count));
       } else {
-        if (load) {
-          dispatch(setCartTotal(0));
-          setCartDetails([]);
-        }
-      }
+        setCartDetails([]);
+        dispatch(setCartTotal(0));
+      } 
     } catch (error) {
       dispatch(setCartTotal(0));
       ErrorMessage(error);
@@ -134,6 +131,7 @@ const Cart = () => {
       }, 300)
     }
   };
+
 
   const handleDelete = async (products) => {
     try {

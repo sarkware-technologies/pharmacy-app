@@ -17,9 +17,10 @@ import Animated from 'react-native-reanimated';
 import CustomCheckbox from '../../../components/view/checkbox';
 import AddToCartWidget from "../../../components/addToCart"
 import BackButton from "../../../components/view/backButton"
-import { OrderDetails } from '../../../api/orders';
+import { OrderAction, OrderDetails } from '../../../api/orders';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DropdownModal from "./../../../components/view/dropdownModel"
+import Toast from 'react-native-toast-message';
 
 const ClockIcon = () => (
   <Svg width="23" height="20" viewBox="0 0 23 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -97,22 +98,23 @@ const OrderDetailsScreen = () => {
   const [productList, setProductList] = useState([]);
   const [divisions, setDivisions] = useState([]);
   const [orderDetails, setOrderDetails] = useState();
-  const [selectedDivision, setSelectedDivision] = useState({key:"All",value:"All Div"});
+  const [selectedDivision, setSelectedDivision] = useState({ key: "All", value: "All Div" });
   const [showSelectDivisiton, setShowSelectDivisiton] = useState(false);
+  const [instance, setInstance] = useState();
 
   useEffect(() => {
     if (orderId) {
       fetchOrder();
     }
-  }, [orderId])
+  }, [])
   const fetchOrder = async () => {
     const response = await OrderDetails(orderId);
     if (response.orderData) {
       setOrderDetails(response.orderData);
       setProductList(response.orderData?.products);
       setDivisions(response.orderData?.distributorDetails?.[0]?.divisions || []);
+      setInstance(response?.orderData?.instance)
     }
-    console.log(response, 384975398)
   }
 
   const orderData = {
@@ -137,8 +139,61 @@ const OrderDetailsScreen = () => {
   };
 
 
+  const checkAction = () => {
+    let action = true;
+    if (instance && Object.keys(instance).length === 0) {
+      action = false;
+    }
+    else if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && instance?.stepInstances[0].stepInstanceStatus == "PENDING") {
+      action = true;
+    }
+    else if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && (instance?.stepInstances[0].stepInstanceStatus == "APPROVED" || instance?.stepInstances[0].stepInstanceStatus == "REJECTED")) {
+      action = false;
+    }
+    else {
+      action = true
+    }
+    return action;
+  }
 
 
+
+  const handleAction = async (type) => {
+    if (instance && Object.keys(instance).length !== 0) {
+      if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && instance?.stepInstances[0].stepInstanceStatus == "PENDING") {
+        const payload = {
+          "stepOrder": instance?.stepInstances[0]?.stepOrder,
+          "parallelGroup": instance?.stepInstances[0]?.stepOrder,
+          "action": type,
+          "comments": "Approved after review",
+          "actorId": instance?.stepInstances[0]?.assignedUserId,
+          "dataChanges": {}
+        }
+        const response = await OrderAction(instance?.workflowInstance?.id, payload);
+        Toast.show({
+          type: 'error',
+          text1: 'Data not fount',
+          text2: 'Instance is Missing',
+        });
+        fetchOrder();
+      }
+      else {
+        fetchOrder();
+        Toast.show({
+          type: 'error',
+          text1: 'Already Approved',
+          // text2: 'Instance is Missing',
+        });
+      }
+    }
+    else {
+      Toast.show({
+        type: 'error',
+        text1: 'Data not fount',
+        text2: 'Instance is Missing',
+      });
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -286,7 +341,7 @@ const OrderDetailsScreen = () => {
                 <TouchableOpacity style={styles.divDropdown} onPress={() => setShowSelectDivisiton(true)}>
                   <AppText style={styles.divDropdownText}>
                     {selectedDivision?.value}
-                    </AppText>
+                  </AppText>
                   <Svg width="7" height="4" viewBox="0 0 7 4" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <Path d="M6.08684 0C6.53229 0 6.75537 0.538571 6.44039 0.853553L3.6475 3.64645C3.45224 3.84171 3.13565 3.84171 2.94039 3.64645L0.147498 0.853552C-0.167485 0.53857 0.0555997 0 0.501052 0H6.08684Z" fill="#2B2B2B" />
                   </Svg>
@@ -376,27 +431,29 @@ const OrderDetailsScreen = () => {
       </ScrollView>
 
       {/* Bottom Actions */}
-      <View style={styles.bottomActions}>
-        <TouchableOpacity style={styles.holdButton}>
-          <HoldIcon />
-          <AppText style={styles.holdButtonText}>Hold</AppText>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.rejectButton}>
-          <Svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <Path d="M11.4333 11.4329L6.43331 6.43294M6.43331 11.4329L11.4333 6.43294M17.2666 8.93294C17.2666 4.33044 13.5358 0.599609 8.93331 0.599609C4.33081 0.599609 0.599976 4.33044 0.599976 8.93294C0.599976 13.5354 4.33081 17.2663 8.93331 17.2663C13.5358 17.2663 17.2666 13.5354 17.2666 8.93294Z" stroke="#F7941E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          </Svg>
+      {checkAction("HOLD") && (
 
-          <AppText style={styles.rejectButtonText}>Reject</AppText>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.approveButton}>
-          <Svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <Path d="M14.3333 1L5.16667 10.1667L1 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </Svg>
+        <View style={styles.bottomActions}>
+          <TouchableOpacity onPress={() => handleAction("HOLD")} style={[styles.holdButton, !checkAction("HOLD") && { opacity: 0.5 }]} disabled={!checkAction("HOLD")} >
+            <HoldIcon />
+            <AppText style={styles.holdButtonText}>Hold</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleAction("REJECT")} style={[styles.rejectButton, !checkAction("HOLD") && { opacity: 0.5 }]} disabled={!checkAction("REJECTED")}>
+            <Svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <Path d="M11.4333 11.4329L6.43331 6.43294M6.43331 11.4329L11.4333 6.43294M17.2666 8.93294C17.2666 4.33044 13.5358 0.599609 8.93331 0.599609C4.33081 0.599609 0.599976 4.33044 0.599976 8.93294C0.599976 13.5354 4.33081 17.2663 8.93331 17.2663C13.5358 17.2663 17.2666 13.5354 17.2666 8.93294Z" stroke="#F7941E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
 
-          <AppText style={styles.approveButtonText}>Confirm</AppText>
-        </TouchableOpacity>
-      </View>
+            <AppText style={styles.rejectButtonText}>Reject</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleAction("APPROVE")} style={[styles.approveButton, !checkAction("HOLD") && { opacity: 0.5 }]} disabled={!checkAction("CONFIRM")}>
+            <Svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <Path d="M14.3333 1L5.16667 10.1667L1 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+            <AppText style={styles.approveButtonText}>Confirm</AppText>
+          </TouchableOpacity>
+        </View>
 
+      )}
 
       <DropdownModal
         visible={showSelectDivisiton}
@@ -426,7 +483,7 @@ const OrderDetailsScreen = () => {
                   </AppText>
                 </View>
               ),
-              value: e?.divisionName 
+              value: e?.divisionName
             })),
         ]}
         enableSelectAll={true}

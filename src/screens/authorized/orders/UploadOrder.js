@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert
+  Alert,
+  Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -27,6 +28,8 @@ import AppText from "../../../components/AppText"
 import Toast from 'react-native-toast-message';
 import { Fonts } from '../../../utils/fontHelper';
 import BackButton from '../../../components/view/backButton';
+import { DownloadTemplate } from '../../../api/orders';
+import { ErrorMessage } from '../../../components/view/error';
 
 const UploadOrder = () => {
   const navigation = useNavigation();
@@ -147,21 +150,36 @@ const UploadOrder = () => {
       // Alert.alert('Error', 'Please upload order file and select distributor');
       return;
     }
-    // navigation.replace('ProductMapping', {
-    //   originalFile,
-    //   templateFile,
-    //   distributor: selectedDistributor,
-    //   customer: selectedCustomer,
-    //   isOCR: isocr
-    // });
-    navigation.push('ProductMapping', {
+    navigation.replace('ProductMapping', {
       originalFile,
       templateFile,
       distributor: selectedDistributor,
       customer: selectedCustomer,
       isOCR: isocr
     });
+    // navigation.push('ProductMapping', {
+    //   originalFile,
+    //   templateFile,
+    //   distributor: selectedDistributor,
+    //   customer: selectedCustomer,
+    //   isOCR: isocr
+    // });
   };
+
+
+  const handleDownloadTemplate = async () => {
+
+    try {
+      const response = await DownloadTemplate();
+      console.log(response,8798798)
+      if (response?.signedUrl) {
+        await Linking.openURL(response.signedUrl);
+      }
+    } catch (error) {
+      ErrorMessage(error);
+    }
+  };
+
 
 
   const renderUploadfile = () => {
@@ -288,15 +306,10 @@ const UploadOrder = () => {
     )
   }
 
-  const handleDownloadTemplate = () => {
-    // Handle template download
-    Alert.alert('Download', 'Template download initiated');
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-       <BackButton/>
+        <BackButton />
         <AppText style={styles.headerTitle}>Create Order</AppText>
       </View>
       <View style={styles.progressContainer}>
@@ -340,14 +353,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingLeft:23,
+    paddingLeft: 23,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: '#333',
     marginLeft: 16,
-    fontFamily:Fonts.Black,
+    fontFamily: Fonts.Black,
     textAlign: "center",
     width: "80%"
   },
@@ -424,7 +437,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 20,
     fontWeight: 400,
-    fontFamily:Fonts.Regular
+    fontFamily: Fonts.Regular
   },
   distributorContainer: {
     marginBottom: 24,
@@ -472,7 +485,7 @@ const styles = StyleSheet.create({
     color: '#909090',
     textAlign: 'center',
     lineHeight: 18,
-    fontFamily:Fonts.Regular
+    fontFamily: Fonts.Regular
   },
   uploadedFileContainer: {
     flexDirection: 'row',
@@ -492,7 +505,7 @@ const styles = StyleSheet.create({
   fileSize: {
     fontSize: 12,
     color: '#909090',
-    fontFamily:Fonts.Regular
+    fontFamily: Fonts.Regular
   },
   cancelUpload: {
     fontSize: 12,
@@ -537,7 +550,7 @@ const styles = StyleSheet.create({
   continueText: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily:Fonts.Black,
+    fontFamily: Fonts.Black,
     color: '#fff',
   },
   filtersContainer: {
@@ -575,9 +588,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingHorizontal: 6,
     fontSize: 13,
-    color:colors.secondaryText,
-    fontWeight:400,
-    fontFamily:Fonts.Regular
+    color: colors.secondaryText,
+    fontWeight: 400,
+    fontFamily: Fonts.Regular
   },
   valueRow: {
     flexDirection: "row",
@@ -588,9 +601,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: "500",
-    color:colors.primaryText,
+    color: colors.primaryText,
     fontWeight: 500,
-    fontFamily:Fonts.Regular
+    fontFamily: Fonts.Regular
   },
 });
 
