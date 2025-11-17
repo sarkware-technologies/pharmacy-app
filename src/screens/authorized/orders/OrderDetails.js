@@ -157,6 +157,23 @@ const OrderDetailsScreen = () => {
   }
 
 
+  const checkActionshow = () => {
+    let action = false;
+    if (instance && Object.keys(instance).length === 0) {
+      action = true;
+    }
+    else if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && instance?.stepInstances[0].stepInstanceStatus == "PENDING") {
+      action = true;
+    }
+    else if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && (instance?.stepInstances[0].stepInstanceStatus == "APPROVED" || instance?.stepInstances[0].stepInstanceStatus == "REJECTED")) {
+      action = false;
+    }
+    else {
+      action = false
+    }
+    return action;
+  }
+
 
   const handleAction = async (type) => {
     if (instance && Object.keys(instance).length !== 0) {
@@ -431,7 +448,7 @@ const OrderDetailsScreen = () => {
       </ScrollView>
 
       {/* Bottom Actions */}
-      {checkAction("HOLD") && (
+      {checkActionshow("HOLD") && (
 
         <View style={styles.bottomActions}>
           <TouchableOpacity onPress={() => handleAction("HOLD")} style={[styles.holdButton, !checkAction("HOLD") && { opacity: 0.5 }]} disabled={!checkAction("HOLD")} >
