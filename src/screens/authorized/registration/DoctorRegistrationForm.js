@@ -360,9 +360,7 @@ const DoctorRegistrationForm = () => {
     try {
       setLoadingOtp(prev => ({ ...prev, [field]: true }));
       
-      const payload = {
-        customerId: 1, // Using temporary customer ID as per curl
-      };
+      const payload = {};
 
       if (field === 'mobile') {
         payload.mobile = formData.mobileNumber;
@@ -469,9 +467,7 @@ const DoctorRegistrationForm = () => {
     try {
       setLoadingOtp(prev => ({ ...prev, [field]: true }));
       
-      const payload = {
-        customerId: 1, // Using temporary customer ID as per curl
-      };
+      const payload = {};
 
       if (field === 'mobile') {
         payload.mobile = formData.mobileNumber;
@@ -655,8 +651,16 @@ const DoctorRegistrationForm = () => {
     if (!formData.address1) {
       newErrors.address1 = 'Address is required';
     }
+    if (!formData.address2) {
+      newErrors.address2 = 'Address 2 is required';
+    }
+    if (!formData.address3) {
+      newErrors.address3 = 'Address 3 is required';
+    }
     if (!formData.pincode || formData.pincode.length !== 6) {
       newErrors.pincode = 'Valid 6-digit pincode is required';
+    } else if (/^0+$/.test(formData.pincode)) {
+      newErrors.pincode = 'Pincode cannot be all zeros';
     }
     if (!formData.area || formData.area.trim().length === 0) {
       newErrors.area = 'Area is required';
@@ -681,16 +685,22 @@ const DoctorRegistrationForm = () => {
     if (!verificationStatus.email) {
       newErrors.emailVerification = 'Email verification is required';
     }
-    if (!formData.panNumber || formData.panNumber.length !== 10) {
-      newErrors.panNumber = 'Valid PAN number is required';
+    if (!formData.panNumber || formData.panNumber.trim() === '') {
+      newErrors.panNumber = 'PAN number is required';
+    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+      newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
     }
-    if (!formData.gstNumber || formData.gstNumber.length !== 15) {
-      newErrors.gstNumber = 'Valid GST number is required';
+    // GST is optional - only validate if provided
+    if (formData.gstNumber && formData.gstNumber.trim() !== '') {    
+      if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.gstNumber)) {
+        newErrors.gstNumber = 'Invalid GST format (e.g., 27ASDSD1234F1Z5)';
+      }
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+
+  }
 
   const handleCancel = () => {
     setShowCancelModal(true);
@@ -906,24 +916,7 @@ const DoctorRegistrationForm = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >          
-          <ChevronLeft />
-        </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Registration</AppText>
-      </View>
-
-      <View style={styles.typeHeader}>
-        <View style={[styles.typeTag, styles.typeTagActive]}>
-          <AppText style={[styles.typeTagText, styles.typeTagTextActive]}>{typeName || 'Doctors'}</AppText>
-        </View>
-      </View>
-
+   
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -1044,7 +1037,7 @@ const DoctorRegistrationForm = () => {
                 errorMessage={errors.addressProofFile}
               />
 
-              <AppText style={[styles.sectionLabel, { marginTop: 20 }]}>Clinic image</AppText>
+              <AppText style={[styles.sectionLabel, { marginTop: 20 }]}>Clinic image<AppText style={styles.mandatoryIndicator}>*</AppText></AppText>
               
               <FileUploadComponent
                 placeholder="Upload Clinic Image"
@@ -1144,7 +1137,6 @@ const DoctorRegistrationForm = () => {
                 placeholder="Address 4"
                 value={formData.address4}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, address4: text }))}
-                mandatory={true}
               />
 
               <CustomInput
@@ -1212,10 +1204,9 @@ const DoctorRegistrationForm = () => {
               
               {/* Mobile Number with Verify */}
               <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-                <AppText style={styles.countryCode}>+91</AppText>
                 <AppInput
                   style={styles.inputField}
-                  placeholder="Mobile Number"
+                  placeholder="Mobile number*"
                   value={formData.mobileNumber}
                   onChangeText={(text) => {
                     if (/^\d{0,10}$/.test(text)) {
@@ -1228,7 +1219,6 @@ const DoctorRegistrationForm = () => {
                   placeholderTextColor="#999"
                   editable={!verificationStatus.mobile}
                 />
-                <AppText style={styles.mandatoryIndicator}>*</AppText>
                 <TouchableOpacity
                   style={[
                     styles.inlineVerifyButton,
@@ -1742,7 +1732,7 @@ const DoctorRegistrationForm = () => {
       </Modal>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -1795,7 +1785,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     paddingTop: 20,
   },
   section: {

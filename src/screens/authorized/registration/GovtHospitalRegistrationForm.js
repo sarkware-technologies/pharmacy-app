@@ -290,13 +290,13 @@ const GovtHospitalRegistrationForm = () => {
     };
   }, [otpTimers, showOTP]);
 
-  const handleVerify = (field) => {
+  const handleVerify = async (field) => {
     // Validate field before verification
-    if (field === 'mobile' && (!formData.mobileNumber || formData.mobileNumber.length !== 10)) {
+    if (field === 'mobile' && (!formData.mobileNumber || formData.mobileNumber.length !== 10 || !/^[6789]\d{9}$/.test(formData.mobileNumber))) {
       Toast.show({
         type: 'error',
         text1: 'Invalid Mobile',
-        text2: 'Please enter a valid 10-digit mobile number',
+        text2: 'Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9',
       });
       return;
     }
@@ -309,13 +309,59 @@ const GovtHospitalRegistrationForm = () => {
       return;
     }
 
-    // Auto-verify without OTP
-    setVerificationStatus(prev => ({ ...prev, [field]: true }));
-    Toast.show({
-      type: 'success',
-      text1: 'Verified',
-      text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
-    });
+    setLoadingOtp(prev => ({ ...prev, [field]: true }));
+    try {
+      // Reset OTP state before generating new OTP
+      setOtpValues(prev => ({ ...prev, [field]: ['', '', '', ''] }));
+      setOtpTimers(prev => ({ ...prev, [field]: 30 }));
+
+      const requestData = {
+        [field === 'mobile' ? 'mobile' : 'email']: 
+          field === 'mobile' ? formData.mobileNumber : formData.emailAddress
+      };
+
+      const response = await customerAPI.generateOTP(requestData);
+
+      if (response.success) {
+        setShowOTP(prev => ({ ...prev, [field]: true }));
+        
+        // If OTP is returned in response (for testing), auto-fill it
+        if (response.data && response.data.otp) {
+          const otpString = response.data.otp.toString();
+          const otpArray = otpString.split('').slice(0, 4);
+          setOtpValues(prev => ({
+            ...prev,
+            [field]: [...otpArray, ...Array(4 - otpArray.length).fill('')]
+          }));
+          
+          // Auto-submit OTP after a delay
+          setTimeout(() => {
+            handleOtpVerification(field, response.data.otp.toString());
+          }, 500);
+        }
+
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: `OTP sent to ${field}`,
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: response.message || 'Failed to generate OTP',
+        });
+      }
+    } catch (error) {
+      console.error('Error generating OTP:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to send OTP. Please try again.',
+      });
+    } finally {
+      setLoadingOtp(prev => ({ ...prev, [field]: false }));
+    }
   };
 
   const handleFileUpload = (field, file) => {
@@ -363,17 +409,50 @@ const GovtHospitalRegistrationForm = () => {
     }
   };
 
-  const handleOtpVerification = (field) => {
-    const otp = otpValues[field].join('');
-    if (otp === '1234') { // Mock verification
-      Alert.alert('Success', `${field} verified successfully!`);
-      setShowOTP(prev => ({ ...prev, [field]: false }));
-      setOtpValues(prev => ({
-        ...prev,
-        [field]: ['', '', '', '']
-      }));
-    } else {
-      Alert.alert('Error', 'Invalid OTP. Please try again.');
+  const handleOtpVerification = async (field, otp) => {
+    const otpValue = otp || otpValues[field].join('');
+    
+    setLoadingOtp(prev => ({ ...prev, [field]: true }));
+    try {
+      const requestData = {
+        [field === 'mobile' ? 'mobile' : 'email']: 
+          field === 'mobile' ? formData.mobileNumber : formData.emailAddress
+      };
+
+      const response = await customerAPI.validateOTP(otpValue, requestData);
+
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
+        });
+        
+        setShowOTP(prev => ({ ...prev, [field]: false }));
+        setVerificationStatus(prev => ({ ...prev, [field]: true }));
+        setOtpTimers(prev => ({ ...prev, [field]: 0 })); // Reset OTP timer
+        
+        // Reset OTP values for this field
+        setOtpValues(prev => ({
+          ...prev,
+          [field]: ['', '', '', '']
+        }));
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Invalid OTP',
+          text2: 'Please enter the correct OTP',
+        });
+      }
+    } catch (error) {
+      console.error('OTP validation error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to validate OTP. Please try again.',
+      });
+    } finally {
+      setLoadingOtp(prev => ({ ...prev, [field]: false }));
     }
   };
 
@@ -468,7 +547,7 @@ const GovtHospitalRegistrationForm = () => {
     if (!formData.address3 || formData.address3.trim().length === 0) {
       newErrors.address3 = 'Address 3 is required';
     }
-    if (!formData.pincode || formData.pincode.length !== 6) {
+    if (!formData.pincode || formData.pincode.length !== 6 || formData.pincode === '000000') {
       newErrors.pincode = 'Valid 6-digit pincode is required';
     }
     if (!formData.area || formData.area.trim().length === 0) {
@@ -487,6 +566,19 @@ const GovtHospitalRegistrationForm = () => {
     }
     if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
       newErrors.emailAddress = 'Valid email address is required';
+    }
+    // PAN validation
+    if (!formData.panNumber || formData.panNumber.trim() === '') {
+      newErrors.panNumber = 'PAN number is required';
+    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+      newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
+    }
+    
+    // GST is optional - only validate if provided
+    if (formData.gstNumber && formData.gstNumber.trim() !== '') {
+      if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.gstNumber)) {
+        newErrors.gstNumber = 'Invalid GST format (e.g., 27ASDSD1234F1Z5)';
+      }
     }
     
     // Mapping Details
@@ -714,9 +806,12 @@ const GovtHospitalRegistrationForm = () => {
         onPress={() => setShowDatePicker(true)}
         activeOpacity={0.7}
       >
-        <AppText style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
-          {formData.registrationDate || 'Registration date'}
-        </AppText>
+        <View style={styles.inputTextContainer}>
+          <AppText style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
+            {formData.registrationDate || 'Registration date'}
+          </AppText>
+          <AppText style={styles.inlineAsterisk}>*</AppText>
+        </View>
         <Calendar />
       </TouchableOpacity>
       {errors.registrationDate && (
@@ -763,7 +858,6 @@ const GovtHospitalRegistrationForm = () => {
         onChangeText={(text) => setFormData(prev => ({ ...prev, hospitalName: text }))}
         error={errors.hospitalName}
         mandatory={true}
-        autoFocus={true}
       />
 
       <CustomInput
@@ -883,10 +977,9 @@ const GovtHospitalRegistrationForm = () => {
       
       {/* Mobile Number with Verify */}
       <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-        <AppText style={styles.countryCode}>+91</AppText>
         <AppInput
           style={styles.inputField}
-          placeholder="Mobile number"
+          placeholder="Mobile number*"
           value={formData.mobileNumber}
           onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
           keyboardType="phone-pad"
@@ -1392,28 +1485,6 @@ const GovtHospitalRegistrationForm = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <ChevronLeft />
-        </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Registration</AppText>
-      </View>
-
-      {/* Type Header */}
-      <View style={styles.typeHeader}>
-        <View style={styles.typeTag}>
-          <AppText style={styles.typeTagText}>Hospital</AppText>
-        </View>
-        <ChevronRight />
-        <View style={styles.typeTag}>
-          <AppText style={styles.typeTagText}>Govt</AppText>
-        </View>
-      </View>
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -1565,11 +1636,38 @@ const GovtHospitalRegistrationForm = () => {
       <AddNewPharmacyModal
         visible={showAddPharmacyModal}
         onClose={() => setShowAddPharmacyModal(false)}
-        onAdd={(pharmacy) => {
+        onSubmit={(pharmacy) => {
+          console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
+          console.log('Full Response:', pharmacy);
+          console.log('Pharmacy ID:', pharmacy.id || pharmacy.customerId);
+          console.log('=== End Pharmacy Response ===');
+          
+          // Create pharmacy object for display
+          const newPharmacyItem = {
+            id: pharmacy.id || pharmacy.customerId,
+            name: pharmacy.pharmacyName || pharmacy.name,
+            code: pharmacy.code || ''
+          };
+          
+          // Add pharmacy to form data with mapping structure
           setFormData(prev => ({
             ...prev,
-            linkedPharmacies: [...prev.linkedPharmacies, pharmacy]
+            linkedPharmacies: [
+              ...(prev.linkedPharmacies || []),
+              newPharmacyItem
+            ],
+            mapping: {
+              ...prev.mapping,
+              pharmacy: [
+                ...(prev.mapping?.pharmacy || []),
+                {
+                  id: pharmacy.id || pharmacy.customerId,
+                  isNew: true
+                }
+              ]
+            }
           }));
+          
           setShowAddPharmacyModal(false);
         }}
       />
@@ -1615,7 +1713,7 @@ const styles = StyleSheet.create({
   typeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     paddingVertical: 12,
     backgroundColor: '#FAFAFA',
     borderBottomWidth: 1,
@@ -1640,7 +1738,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   stepIndicatorContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     paddingTop: 20,
     paddingBottom: 10,
   },
@@ -1695,11 +1793,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     paddingBottom: 100,
   },
   stepContent: {
-    paddingTop: 20,
+    paddingTop: 8,
   },
   stepTitle: {
     fontSize: 18,
@@ -2060,7 +2158,7 @@ const styles = StyleSheet.create({
   },
   bottomNavigation: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     paddingVertical: 16,
     backgroundColor: '#fff',
     borderTopWidth: 1,

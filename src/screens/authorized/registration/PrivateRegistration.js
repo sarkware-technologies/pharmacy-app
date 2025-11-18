@@ -743,6 +743,14 @@ const PrivateRegistrationForm = () => {
           });
           return;
         }
+        if (!/^[6-9]/.test(formData.mobileNumber)) {
+          Toast.show({
+            type: 'error',
+            text1: 'Invalid Mobile Number',
+            text2: 'Please enter valid 10-digit mobile number',
+          });
+          return;
+        }
         requestData.mobile = formData.mobileNumber;
       } else if (field === 'email') {
         if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
@@ -923,7 +931,7 @@ const PrivateRegistrationForm = () => {
     if (!formData.address1) {
       newErrors.address1 = 'Address is required';
     }
-    if (!formData.pincode || formData.pincode.length !== 6) {
+    if (!formData.pincode || formData.pincode.length !== 6 || formData.pincode === '000000') {
       newErrors.pincode = 'Valid 6-digit pincode is required';
     }
     if (!formData.area || formData.area.trim().length === 0) {
@@ -942,6 +950,20 @@ const PrivateRegistrationForm = () => {
     }
     if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
       newErrors.emailAddress = 'Valid email address is required';
+    }
+    
+    // PAN validation
+    if (!formData.panNumber || formData.panNumber.trim() == '') {
+      newErrors.panNumber = 'PAN number is required';
+    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+      newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
+    }
+    
+    // GST is optional - only validate if provided
+    if (formData.gstNumber && formData.gstNumber.trim() != '') {
+      if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.gstNumber)) {
+        newErrors.gstNumber = 'Invalid GST format (e.g., 27ASDSD1234F1Z5)';
+      }
     }
     
     // Verification validation - only for new registration
@@ -1239,37 +1261,6 @@ const PrivateRegistrationForm = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >          
-          <ChevronLeft />
-        </TouchableOpacity>
-        <AppText style={styles.headerTitle}>{inEditMode ? 'Edit Registration' : 'Registration'}</AppText>
-      </View>
-
-      <View style={styles.typeHeader}>
-        <View style={styles.typeTag}>
-          <AppText style={styles.typeTagText}>
-            {inEditMode ? (originalTypeData.typeName || typeName) : (typeName || 'Hospital')}
-          </AppText>
-        </View>        
-        <ChevronRight height={10} />
-        <View style={styles.typeTag}>
-          <AppText style={styles.typeTagText}>
-            {inEditMode ? (originalTypeData.categoryName || categoryName) : (categoryName || 'Private')}
-          </AppText>
-        </View>
-        <ChevronRight height={10} />
-        <View style={[styles.typeTag, styles.typeTagActive]}>
-          <AppText style={[styles.typeTagText, styles.typeTagTextActive]}>
-            {inEditMode ? (originalTypeData.subCategoryName || subCategoryName) : subCategoryName}
-          </AppText>
-        </View>
-      </View>
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -1297,7 +1288,7 @@ const PrivateRegistrationForm = () => {
               {/* Registration Certificate Upload */}
               <FileUploadComponent
                 placeholder="Upload registration certificate"
-                accept={['pdf']}
+                accept={['pdf', 'jpg', 'jpeg', 'png']}
                 maxSize={10 * 1024 * 1024} // 10MB
                 docType={DOC_TYPES.LICENSE_CERTIFICATE}        
                 initialFile={formData.licenseFile}
@@ -1320,18 +1311,17 @@ const PrivateRegistrationForm = () => {
                 mandatory={true}
               />
 
-              <View style={styles.inputTextContainer}>
-                <AppText style={styles.inputLabel}>Registration Date</AppText>
-                <AppText style={styles.mandatoryIndicator}>*</AppText>
-              </View>
               <TouchableOpacity
                 style={[styles.input, errors.registrationDate && styles.inputError]}
                 onPress={() => setShowDatePicker(true)}
                 activeOpacity={0.7}
               >
-                <AppText style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
-                  {formData.registrationDate || 'Registration Date'}
-                </AppText>        
+                <View style={styles.inputTextContainer}>
+                  <AppText style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
+                    {formData.registrationDate || 'Registration Date'}
+                  </AppText>
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                </View>
                 <Calendar />
               </TouchableOpacity>
               {errors.registrationDate && (
@@ -1489,14 +1479,17 @@ const PrivateRegistrationForm = () => {
               
               {/* Mobile Number with Verify */}
               <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-                <AppText style={styles.countryCode}>+91</AppText>
                 <AppInput
                   style={styles.inputField}
-                  placeholder="Mobile Number"
+                  placeholder="Mobile number*"
                   value={formData.mobileNumber}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
+                  onChangeText={(text) => {
+                    if (/^\d{0,10}$/.test(text)) {
+                      setFormData(prev => ({ ...prev, mobileNumber: text }));
+                      setErrors(prev => ({ ...prev, mobileNumber: null }));
+                    }
+                  }}
                   keyboardType="phone-pad"
-                  maxLength={10}
                   placeholderTextColor="#999"
                   editable={!verificationStatus.mobile || isEditMode}
                 />
@@ -1581,11 +1574,23 @@ const PrivateRegistrationForm = () => {
                   style={[styles.inputField, { flex: 1 }]}
                   placeholder="PAN Number"
                   value={formData.panNumber}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }))}
+                  onChangeText={(text) => {
+                    const upperText = text.toUpperCase();
+                    setFormData(prev => ({ ...prev, panNumber: upperText }));
+                    // Auto-verify if valid PAN format
+                    if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upperText)) {
+                      setVerificationStatus(prev => ({ ...prev, pan: true }));
+                    } else {
+                      setVerificationStatus(prev => ({ ...prev, pan: false }));
+                    }
+                  }}
                   autoCapitalize="characters"
                   maxLength={10}
                   placeholderTextColor="#999"
                 />
+                {verificationStatus.pan && (
+                  <AppText style={styles.verifiedText}>✓ Verified</AppText>
+                )}
                 <TouchableOpacity
                   style={styles.inlineVerifyButton}
                   onPress={() => {
@@ -2002,9 +2007,6 @@ const PrivateRegistrationForm = () => {
         </ScrollView>
       </KeyboardAvoidingView>
       
-      {/* Toast Component */}
-      <Toast />
-
       {/* Add New Hospital Modal */}
       <AddNewHospitalModal
         visible={showHospitalModal}
@@ -2023,10 +2025,37 @@ const PrivateRegistrationForm = () => {
         visible={showPharmacyModal}
         onClose={() => setShowPharmacyModal(false)}
         onSubmit={(pharmacy) => {
+          console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
+          console.log('Full Response:', pharmacy);
+          console.log('Pharmacy ID:', pharmacy.id || pharmacy.customerId);
+          console.log('=== End Pharmacy Response ===');
+          
+          // Create pharmacy object for display
+          const newPharmacyItem = {
+            id: pharmacy.id || pharmacy.customerId,
+            name: pharmacy.pharmacyName || pharmacy.name,
+            code: pharmacy.code || ''
+          };
+          
+          // Add pharmacy to form data with mapping structure
           setFormData(prev => ({
             ...prev,
-            selectedPharmacies: [...prev.selectedPharmacies, pharmacy]
+            selectedPharmacies: [
+              ...(prev.selectedPharmacies || []),
+              newPharmacyItem
+            ],
+            mapping: {
+              ...prev.mapping,
+              pharmacy: [
+                ...(prev.mapping?.pharmacy || []),
+                {
+                  id: pharmacy.id || pharmacy.customerId,
+                  isNew: true
+                }
+              ]
+            }
           }));
+          
           setShowPharmacyModal(false);
         }}
       />
@@ -2179,8 +2208,8 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: 0,
+    paddingTop: 8,
   },
   section: {
     marginBottom: 32,

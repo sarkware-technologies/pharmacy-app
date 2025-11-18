@@ -35,11 +35,12 @@ import Search from '../../../components/icons/Search';
 import CloseCircle from '../../../components/icons/CloseCircle';
 import { customerAPI } from '../../../api/customer';
 import {AppText,AppInput} from "../../../components"
+import AddNewHospitalModal from './AddNewHospitalModal';
+
 
 const { width, height } = Dimensions.get('window');
 
 // Mock data
-const MOCK_AREAS = ['Vadgaonsheri', 'Kharadi', 'Viman Nagar', 'Kalyani Nagar', 'Koregaon Park'];
 const MOCK_HOSPITALS = [
   { id: '1', name: 'Columbia Asia', code: '10106555', city: 'Pune' },
   { id: '2', name: 'Command', code: '10006565', city: 'Bengaluru' },
@@ -79,7 +80,9 @@ const GroupHospitalRegistrationForm = () => {
     pincode: '',
     area: '',
     city: '',
+    cityId: null,
     state: '',
+    stateId: null,
     
     // Security Details
     mobileNumber: '',
@@ -105,6 +108,7 @@ const GroupHospitalRegistrationForm = () => {
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
   
   // Document IDs for API submission
   const [documentIds, setDocumentIds] = useState({
@@ -162,18 +166,23 @@ const GroupHospitalRegistrationForm = () => {
         duration: 500,
         useNativeDriver: true,
       }),
-      Animated.spring(slideAnim, {
+      Animated.timing(slideAnim, {
         toValue: 0,
-        friction: 8,
-        tension: 40,
+        duration: 500,
         useNativeDriver: true,
       }),
     ]).start();
     
-    // Load states and customer groups on mount
-    loadStates();
-    loadCustomerGroups();
+    // Load initial data
+    loadInitialData();
   }, []);
+
+  const loadInitialData = async () => {
+    // Load states on mount
+    await loadStates();
+    // Load all cities on mount (independent of state)
+    await loadCities();
+  };
 
   const loadStates = async () => {
     setLoadingStates(true);
@@ -198,13 +207,8 @@ const GroupHospitalRegistrationForm = () => {
     }
   };
 
-  const loadCities = async (stateId) => {
-    if (!stateId) return;
-    
+  const loadCities = async (stateId = null) => {
     setLoadingCities(true);
-    setCities([]);
-    setFormData(prev => ({ ...prev, city: '', cityId: null }));
-    
     try {
       const response = await customerAPI.getCities(stateId);
       if (response.success && response.data) {
@@ -257,17 +261,94 @@ const GroupHospitalRegistrationForm = () => {
     };
   }, [otpTimers, showOTP]);
 
-  const handleVerify = (field) => {
-    setShowOTP(prev => ({ ...prev, [field]: true }));
-    setOtpTimers(prev => ({ ...prev, [field]: 30 }));
-    
-    // Animate OTP container
-    Animated.spring(otpSlideAnim, {
-      toValue: 0,
-      friction: 8,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
+  const handleVerify = async (field) => {
+    // Validate field before verification
+    if (field === 'mobile' && (!formData.mobileNumber || formData.mobileNumber.length !== 10)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Mobile',
+        text2: 'Please enter a valid 10-digit mobile number',
+      });
+      return;
+    }
+    if (field === 'mobile' && !/^[6-9]/.test(formData.mobileNumber)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Mobile',
+        text2: 'Please enter valid 10-digit mobile number',
+      });
+      return;
+    }
+    if (field === 'email' && (!formData.emailAddress || !formData.emailAddress.includes('@'))) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Email',
+        text2: 'Please enter a valid email address',
+      });
+      return;
+    }
+
+    setLoadingOtp(prev => ({ ...prev, [field]: true }));
+    try {
+      // Reset OTP state before generating new OTP
+      setOtpValues(prev => ({ ...prev, [field]: ['', '', '', ''] }));
+      setOtpTimers(prev => ({ ...prev, [field]: 30 }));
+
+      const requestData = {
+        [field === 'mobile' ? 'mobile' : 'email']: 
+          field === 'mobile' ? formData.mobileNumber : formData.emailAddress
+      };
+
+      const response = await customerAPI.generateOTP(requestData);
+
+      if (response.success) {
+        setShowOTP(prev => ({ ...prev, [field]: true }));
+        
+        // If OTP is returned in response (for testing), auto-fill it
+        if (response.data && response.data.otp) {
+          const otpString = response.data.otp.toString();
+          const otpArray = otpString.split('').slice(0, 4);
+          setOtpValues(prev => ({
+            ...prev,
+            [field]: [...otpArray, ...Array(4 - otpArray.length).fill('')]
+          }));
+          
+          // Auto-submit OTP after a delay
+          setTimeout(() => {
+            handleOtpVerification(field, response.data.otp.toString());
+          }, 500);
+        }
+
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: `OTP sent to ${field}`,
+        });
+
+        // Animate OTP container
+        Animated.spring(otpSlideAnim, {
+          toValue: 0,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }).start();
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: response.message || 'Failed to generate OTP',
+        });
+      }
+    } catch (error) {
+      console.error('Error generating OTP:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to send OTP. Please try again.',
+      });
+    } finally {
+      setLoadingOtp(prev => ({ ...prev, [field]: false }));
+    }
   };
 
   const handleFileUpload = (field, file) => {
@@ -315,17 +396,50 @@ const GroupHospitalRegistrationForm = () => {
     }
   };
 
-  const handleOtpVerification = (field) => {
-    const otp = otpValues[field].join('');
-    if (otp === '1234') { // Mock verification
-      Alert.alert('Success', `${field} verified successfully!`);
-      setShowOTP(prev => ({ ...prev, [field]: false }));
-      setOtpValues(prev => ({
-        ...prev,
-        [field]: ['', '', '', '']
-      }));
-    } else {
-      Alert.alert('Error', 'Invalid OTP. Please try again.');
+  const handleOtpVerification = async (field, otp) => {
+    const otpValue = otp || otpValues[field].join('');
+    
+    setLoadingOtp(prev => ({ ...prev, [field]: true }));
+    try {
+      const requestData = {
+        [field === 'mobile' ? 'mobile' : 'email']: 
+          field === 'mobile' ? formData.mobileNumber : formData.emailAddress
+      };
+
+      const response = await customerAPI.validateOTP(otpValue, requestData);
+
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
+        });
+        
+        setShowOTP(prev => ({ ...prev, [field]: false }));
+        setVerificationStatus(prev => ({ ...prev, [field]: true }));
+        setOtpTimers(prev => ({ ...prev, [field]: 0 })); // Reset OTP timer
+        
+        // Reset OTP values for this field
+        setOtpValues(prev => ({
+          ...prev,
+          [field]: ['', '', '', '']
+        }));
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Invalid OTP',
+          text2: 'Please enter the correct OTP',
+        });
+      }
+    } catch (error) {
+      console.error('OTP validation error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to validate OTP. Please try again.',
+      });
+    } finally {
+      setLoadingOtp(prev => ({ ...prev, [field]: false }));
     }
   };
 
@@ -411,7 +525,7 @@ const GroupHospitalRegistrationForm = () => {
     if (!formData.address1) {
       newErrors.address1 = 'Address is required';
     }
-    if (!formData.pincode || formData.pincode.length !== 6) {
+    if (!formData.pincode || formData.pincode.length !== 6 || formData.pincode === '000000') {
       newErrors.pincode = 'Valid 6-digit pincode is required';
     }
     if (!formData.city) {
@@ -427,6 +541,20 @@ const GroupHospitalRegistrationForm = () => {
     }
     if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
       newErrors.emailAddress = 'Valid email address is required';
+    }
+
+    // PAN validation
+    if (!formData.panNumber || formData.panNumber.trim() === '') {
+      newErrors.panNumber = 'PAN number is required';
+    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+      newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
+    }
+    
+    // GST is optional - only validate if provided
+    if (formData.gstNumber && formData.gstNumber.trim() !== '') {
+      if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.gstNumber)) {
+        newErrors.gstNumber = 'Invalid GST format (e.g., 27ASDSD1234F1Z5)';
+      }
     }
     
     setErrors(newErrors);
@@ -637,9 +765,12 @@ const GroupHospitalRegistrationForm = () => {
         onPress={() => setShowDatePicker(true)}
         activeOpacity={0.7}
       >
-        <AppText style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
-          {formData.registrationDate || 'Registration date'}
-        </AppText>
+        <View style={styles.inputTextContainer}>
+          <AppText style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
+            {formData.registrationDate || 'Registration date'}
+          </AppText>
+          <AppText style={styles.inlineAsterisk}>*</AppText>
+        </View>
         <Calendar />
       </TouchableOpacity>
       {errors.registrationDate && (
@@ -686,7 +817,6 @@ const GroupHospitalRegistrationForm = () => {
         onChangeText={(text) => setFormData(prev => ({ ...prev, hospitalName: text }))}
         error={errors.hospitalName}
         mandatory={true}
-        autoFocus={true}
       />
 
       <CustomInput
@@ -731,17 +861,17 @@ const GroupHospitalRegistrationForm = () => {
         mandatory={true}
       />
 
-      {/* Area Dropdown */}
-      <TouchableOpacity
-        style={[styles.input]}
-        onPress={() => setShowAreaModal(true)}
-        activeOpacity={0.7}
-      >
-        <AppText style={formData.area ? styles.inputText : styles.placeholderText}>
-          {formData.area || 'Area'}
-        </AppText>
-        <ArrowDown color='#999' />
-      </TouchableOpacity>
+      {/* Area Input */}
+      <CustomInput
+        placeholder="Enter Area"
+        value={formData.area}
+        onChangeText={(text) => {
+          setFormData(prev => ({ ...prev, area: text }));
+          setErrors(prev => ({ ...prev, area: null }));
+        }}
+        error={errors.area}
+        mandatory={true}
+      />
 
       {/* City Dropdown */}
       <TouchableOpacity
@@ -795,10 +925,9 @@ const GroupHospitalRegistrationForm = () => {
       
       {/* Mobile Number with Verify */}
       <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-        <AppText style={styles.countryCode}>+91</AppText>
         <AppInput
           style={styles.inputField}
-          placeholder="Mobile number"
+          placeholder="Mobile number*"
           value={formData.mobileNumber}
           onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
           keyboardType="phone-pad"
@@ -1079,7 +1208,7 @@ const GroupHospitalRegistrationForm = () => {
       {/* Add New Hospital Link */}
       <TouchableOpacity 
         style={styles.addNewLink}
-        onPress={() => Alert.alert('Add Hospital', 'Navigate to add new hospital')}
+        onPress={() => setShowAddHospitalModal(true)}
       >
         <AppText style={styles.addNewLinkText}>+ Add New Hospital</AppText>
       </TouchableOpacity>
@@ -1206,32 +1335,6 @@ const GroupHospitalRegistrationForm = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <ChevronLeft />
-        </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Registration</AppText>
-      </View>
-
-      {/* Type Header */}
-      <View style={styles.typeHeader}>
-        <View style={styles.typeTag}>
-          <AppText style={styles.typeTagText}>Hospital</AppText>
-        </View>
-        <ChevronRight />
-        <View style={styles.typeTag}>
-          <AppText style={styles.typeTagText}>Private</AppText>
-        </View>
-        <ChevronRight />
-        <View style={[styles.typeTag, styles.typeTagActive]}>
-          <AppText style={[styles.typeTagText, styles.typeTagTextActive]}>Group Hospital/CBU</AppText>
-        </View>
-      </View>
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -1305,15 +1408,15 @@ const GroupHospitalRegistrationForm = () => {
         onClose={() => setShowStateModal(false)}
         title="Select State"
         data={states}
-        selectedId={states.find(s => s.name === formData.stateName)?.id}
+        selectedId={states.find(s => s.name === formData.state)?.id}
         onSelect={(item) => {
           setFormData(prev => ({ 
             ...prev, 
-            stateName: item.stateName,
-            city: ''
+            stateId: item.id,
+            state: item.name,
+            // Don't reset city and cityId - allow independent selection
           }));
           setErrors(prev => ({ ...prev, state: null }));
-          loadCities(item.id);
         }}
         loading={loadingStates}
       />
@@ -1334,20 +1437,6 @@ const GroupHospitalRegistrationForm = () => {
         loading={loadingCities}
       />
 
-      <DropdownModal
-        visible={showAreaModal}
-        onClose={() => setShowAreaModal(false)}
-        title="Select Area"
-        data={MOCK_AREAS.map((area, index) => ({ id: index, name: area }))}
-        selectedId={MOCK_AREAS.indexOf(formData.area)}
-        onSelect={(item) => {
-          setFormData(prev => ({ 
-            ...prev, 
-            area: item.name
-          }));
-        }}
-        loading={false}
-      />
 
       <Modal
         visible={showCancelModal}
@@ -1383,7 +1472,7 @@ const GroupHospitalRegistrationForm = () => {
       </Modal>
 
       {/* Add New Hospital Modal */}
-      {/* <AddNewHospitalModal
+      <AddNewHospitalModal
         visible={showAddHospitalModal}
         onClose={() => setShowAddHospitalModal(false)}
         onAdd={(hospital) => {
@@ -1393,7 +1482,9 @@ const GroupHospitalRegistrationForm = () => {
           }));
           setShowAddHospitalModal(false);
         }}
-      /> */}
+      />
+
+      
 
       {/* Add New Doctor Modal */}
       {/* <AddNewDoctorModal
@@ -1436,7 +1527,7 @@ const styles = StyleSheet.create({
   typeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     paddingVertical: 12,
     backgroundColor: '#FAFAFA',
     borderBottomWidth: 1,
@@ -1461,7 +1552,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   stepIndicatorContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     paddingTop: 20,
     paddingBottom: 10,
   },
@@ -1516,11 +1607,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     paddingBottom: 100,
   },
   stepContent: {
-    paddingTop: 20,
+    paddingTop: 8,
   },
   stepTitle: {
     fontSize: 18,
@@ -1875,7 +1966,7 @@ const styles = StyleSheet.create({
   },
   bottomNavigation: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
+    paddingHorizontal: 8,
     paddingVertical: 16,
     backgroundColor: '#fff',
     borderTopWidth: 1,
@@ -2040,7 +2131,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 14,
     backgroundColor: '#FAFAFA',
   },
@@ -2064,7 +2155,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   hospitalContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#fff',
   },

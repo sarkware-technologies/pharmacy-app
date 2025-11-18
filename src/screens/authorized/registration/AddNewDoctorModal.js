@@ -1,5 +1,5 @@
 // Add
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -38,40 +38,46 @@ const MOCK_AREAS = [
   { id: 5, name: 'Sadar'},
 ];
 
-const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
-  const [pharmacyForm, setPharmacyForm] = useState({
-    licenseType: 'Only Retail', // 'Only Retail', 'Only Wholesaler', 'Retail Cum Wholesaler'
-    license20b: '',
-    license20bFile: null,
-    license20bExpiryDate: '',
-    license21b: '',
-    license21bFile: null,
-    license21bExpiryDate: '',
-    registrationDate: '',
-    pharmacyImageFile: null,
-    pharmacyName: '',
-    shortName: '',
-    ownerName: '',
+const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
+  const [doctorForm, setDoctorForm] = useState({
+    // License Details
+    clinicRegistrationCertificateFile: null,
+    clinicRegistrationNumber: '',
+    clinicRegistrationExpiryDate: '',
+    practiceLicenseFile: null,
+    practiceLicenseNumber: '',
+    practiceLicenseExpiryDate: '',
+    addressProofFile: null,
+    clinicImageFile: null,
+    
+    // General Details
+    doctorName: '',
+    speciality: '',
+    clinicName: '',
     address1: '',
     address2: '',
     address3: '',
     address4: '',
     pincode: '',
     area: '',
-    areaId: null,
     city: '',
     cityId: null,
     state: '',
     stateId: null,
+    
+    // Security Details
     mobileNumber: '',
     emailAddress: '',
     panFile: null,
     panNumber: '',
     gstFile: null,
     gstNumber: '',
+    
+    // Mapping
+    isWholesalerOnly: false,
   });
 
-  const [pharmacyErrors, setPharmacyErrors] = useState({});
+  const [doctorErrors, setDoctorErrors] = useState({});
   const [loading, setLoading] = useState(false);
   
   // Document IDs for uploaded files
@@ -85,6 +91,13 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
     mobile: false,
     email: false,
   });
+
+  // OTP states
+  const [showOTP, setShowOTP] = useState({ mobile: false, email: false });
+  const [otpValues, setOtpValues] = useState({ mobile: ['', '', '', ''], email: ['', '', '', ''] });
+  const [otpTimers, setOtpTimers] = useState({ mobile: 30, email: 30 });
+  const [loadingOtp, setLoadingOtp] = useState({ mobile: false, email: false });
+  const otpRefs = useRef({});
   
   // Date picker states
   const [showDatePicker, setShowDatePicker] = useState(null); // null, '20b', '21b', 'registration'
@@ -111,6 +124,26 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
     }
   }, [visible]);
 
+  // OTP Timer Effect
+  useEffect(() => {
+    const timers = {};
+    
+    Object.keys(otpTimers).forEach(key => {
+      if (showOTP[key] && otpTimers[key] > 0) {
+        timers[key] = setTimeout(() => {
+          setOtpTimers(prev => ({
+            ...prev,
+            [key]: prev[key] - 1,
+          }));
+        }, 1000);
+      }
+    });
+    
+    return () => {
+      Object.values(timers).forEach(timer => clearTimeout(timer));
+    };
+  }, [otpTimers, showOTP]);
+
   const loadStates = async () => {
     setLoadingStates(true);
     try {
@@ -135,12 +168,8 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
   };
 
   const loadCities = async (stateId) => {
-    if (!stateId) return;
-    
     setLoadingCities(true);
     setCities([]);
-    setPharmacyForm(prev => ({ ...prev, city: '', cityId: null, area: '', areaId: null }));
-    
     try {
       const response = await customerAPI.getCities(stateId);
       if (response.success && response.data) {
@@ -162,22 +191,6 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
     }
   };
 
-  const loadAreas = async (cityId) => {
-    if (!cityId) return;
-    
-    setLoadingAreas(true);
-    setAreas([]);
-    
-    try {
-      // Using mock data for areas
-      setAreas(MOCK_AREAS);
-    } catch (error) {
-      console.error('Error loading areas:', error);
-    } finally {
-      setLoadingAreas(false);
-    }
-  };
-
   const handleDateChange = (type, event, date) => {
     if (event.type === 'dismissed') {
       setShowDatePicker(null);
@@ -187,15 +200,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
     if (date) {
       const formattedDate = date.toLocaleDateString('en-IN');
       
-      if (type === '20b') {
+      if (type === 'clinicRegistration') {
         setSelectedDate20b(date);
-        setPharmacyForm(prev => ({ ...prev, license20bExpiryDate: formattedDate }));
-      } else if (type === '21b') {
+        setDoctorForm(prev => ({ ...prev, clinicRegistrationExpiryDate: formattedDate }));
+      } else if (type === 'practiceLicense') {
         setSelectedDate21b(date);
-        setPharmacyForm(prev => ({ ...prev, license21bExpiryDate: formattedDate }));
-      } else if (type === 'registration') {
-        setSelectedRegistrationDate(date);
-        setPharmacyForm(prev => ({ ...prev, registrationDate: formattedDate }));
+        setDoctorForm(prev => ({ ...prev, practiceLicenseExpiryDate: formattedDate }));
       }
     }
     
@@ -203,41 +213,46 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
   };
 
   const resetForm = () => {
-    setPharmacyForm({
-      licenseType: 'Only Retail',
-      license20b: '',
-      license20bFile: null,
-      license20bExpiryDate: '',
-      license21b: '',
-      license21bFile: null,
-      license21bExpiryDate: '',
-      registrationDate: '',
-      pharmacyImageFile: null,
-      pharmacyName: '',
-      shortName: '',
-      ownerName: '',
+    setDoctorForm({
+      // License Details
+      clinicRegistrationCertificateFile: null,
+      clinicRegistrationNumber: '',
+      clinicRegistrationExpiryDate: '',
+      practiceLicenseFile: null,
+      practiceLicenseNumber: '',
+      practiceLicenseExpiryDate: '',
+      addressProofFile: null,
+      clinicImageFile: null,
+      
+      // General Details
+      doctorName: '',
+      speciality: '',
+      clinicName: '',
       address1: '',
       address2: '',
       address3: '',
       address4: '',
       pincode: '',
       area: '',
-      areaId: null,
       city: '',
       cityId: null,
       state: '',
       stateId: null,
+      
+      // Security Details
       mobileNumber: '',
       emailAddress: '',
       panFile: null,
       panNumber: '',
       gstFile: null,
       gstNumber: '',
+      
+      // Mapping
+      isWholesalerOnly: false,
     });
-    setPharmacyErrors({});
+    setDoctorErrors({});
     setVerificationStatus({ mobile: false, email: false });
     setCities([]);
-    setAreas([]);
     setDocumentIds({});
     setUploadedDocs([]);
   };
@@ -255,17 +270,17 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
       };
       setUploadedDocs(prev => [...prev, docObject]);
     }
-    setPharmacyForm(prev => ({ ...prev, [`${field}File`]: file }));
-    setPharmacyErrors(prev => ({ ...prev, [`${field}File`]: null }));
+    setDoctorForm(prev => ({ ...prev, [`${field}File`]: file }));
+    setDoctorErrors(prev => ({ ...prev, [`${field}File`]: null }));
   };
 
   const handleFileDelete = (field) => {
-    const file = pharmacyForm[`${field}File`];
+    const file = doctorForm[`${field}File`];
     if (file && file.id) {
       setUploadedDocs(prev => prev.filter(doc => doc.id !== file.id));
     }
     setDocumentIds(prev => ({ ...prev, [field]: null }));
-    setPharmacyForm(prev => ({ ...prev, [`${field}File`]: null }));
+    setDoctorForm(prev => ({ ...prev, [`${field}File`]: null }));
   };
 
   const handleClose = () => {
@@ -273,121 +288,320 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
     onClose();
   };
 
+  const handleVerify = async (field) => {
+    // Validate the field before showing OTP
+    if (field === 'mobile' && (!doctorForm.mobileNumber || doctorForm.mobileNumber.length !== 10)) {
+      setDoctorErrors(prev => ({ ...prev, mobileNumber: 'Please enter valid 10-digit mobile number' }));
+      return;
+    }
+    if (field === 'email' && (!doctorForm.emailAddress || !doctorForm.emailAddress.includes('@'))) {
+      setDoctorErrors(prev => ({ ...prev, emailAddress: 'Please enter valid email address' }));
+      return;
+    }
+
+    setLoadingOtp(prev => ({ ...prev, [field]: true }));
+    try {
+      // Reset OTP state before generating new OTP
+      setOtpValues(prev => ({ ...prev, [field]: ['', '', '', ''] }));
+      setOtpTimers(prev => ({ ...prev, [field]: 30 }));
+
+      const requestData = {
+        [field === 'mobile' ? 'mobile' : 'email']: 
+          field === 'mobile' ? doctorForm.mobileNumber : doctorForm.emailAddress
+      };
+
+      const response = await customerAPI.generateOTP(requestData);
+
+      if (response.success) {
+        setShowOTP(prev => ({ ...prev, [field]: true }));
+        
+        // If OTP is returned in response (for testing), auto-fill it
+        if (response.data && response.data.otp) {
+          const otpString = response.data.otp.toString();
+          const otpArray = otpString.split('').slice(0, 4);
+          setOtpValues(prev => ({
+            ...prev,
+            [field]: [...otpArray, ...Array(4 - otpArray.length).fill('')]
+          }));
+          
+          // Auto-submit OTP after a delay
+          setTimeout(() => {
+            handleOtpVerification(field, response.data.otp.toString());
+          }, 500);
+        }
+
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: `OTP sent to ${field}`,
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: response.message || 'Failed to generate OTP',
+        });
+      }
+    } catch (error) {
+      console.error('Error generating OTP:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to send OTP. Please try again.',
+      });
+    } finally {
+      setLoadingOtp(prev => ({ ...prev, [field]: false }));
+    }
+  };
+
+  const handleOtpChange = (field, index, value) => {
+    if (value.length <= 1 && /^\d*$/.test(value)) {
+      const newOtpValues = { ...otpValues };
+      newOtpValues[field][index] = value;
+      setOtpValues(newOtpValues);
+      
+      // Auto focus next input
+      if (value && index < 3) {
+        const nextInput = otpRefs.current[`otp-${field}-${index + 1}`];
+        if (nextInput) nextInput.focus();
+      }
+      
+      // Check if OTP is complete (all 4 digits filled)
+      if (newOtpValues[field].every(v => v !== '')) {
+        const otp = newOtpValues[field].join('');
+        // Add a small delay to ensure state is updated
+        setTimeout(() => {
+          handleOtpVerification(field, otp);
+        }, 100);
+      }
+    }
+  };
+
+  const handleOtpVerification = async (field, otp) => {
+    const otpValue = otp || otpValues[field].join('');
+    
+    setLoadingOtp(prev => ({ ...prev, [field]: true }));
+    try {
+      const requestData = {
+        [field === 'mobile' ? 'mobile' : 'email']: 
+          field === 'mobile' ? doctorForm.mobileNumber : doctorForm.emailAddress
+      };
+
+      const response = await customerAPI.validateOTP(otpValue, requestData);
+
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
+        });
+        
+        setShowOTP(prev => ({ ...prev, [field]: false }));
+        setVerificationStatus(prev => ({ ...prev, [field]: true }));
+        setOtpTimers(prev => ({ ...prev, [field]: 0 })); // Reset OTP timer
+        
+        // Reset OTP values for this field
+        setOtpValues(prev => ({
+          ...prev,
+          [field]: ['', '', '', '']
+        }));
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Invalid OTP',
+          text2: 'Please enter the correct OTP',
+        });
+      }
+    } catch (error) {
+      console.error('OTP validation error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to validate OTP. Please try again.',
+      });
+    } finally {
+      setLoadingOtp(prev => ({ ...prev, [field]: false }));
+    }
+  };
+
+  const handleResendOTP = async (field) => {
+    setOtpTimers(prev => ({ ...prev, [field]: 30 }));
+    await handleVerify(field);
+  };
+
+  const renderOTPInput = (field) => {
+    if (!showOTP[field]) return null;
+    
+    return (
+      <View style={styles.otpContainer}>
+        <AppText style={styles.otpTitle}>Enter 4-digit OTP</AppText>
+        <View style={styles.otpInputContainer}>
+          {[0, 1, 2, 3].map(index => (
+            <AppInput
+              key={index}
+              ref={ref => otpRefs.current[`otp-${field}-${index}`] = ref}
+              style={styles.otpInput}
+              value={otpValues[field][index]}
+              onChangeText={(value) => handleOtpChange(field, index, value)}
+              keyboardType="numeric"
+              maxLength={1}
+              editable={!loadingOtp[field]}
+            />
+          ))}
+        </View>
+        <View style={styles.otpFooter}>
+          <AppText style={styles.otpTimer}>
+            {otpTimers[field] > 0 ? `Resend in ${otpTimers[field]}s` : ''}
+          </AppText>
+          {otpTimers[field] === 0 && (
+            <TouchableOpacity onPress={() => handleResendOTP(field)} disabled={loadingOtp[field]}>
+              <AppText style={styles.resendText}>Resend OTP</AppText>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  // Helper function to parse date string in DD/MM/YYYY format to ISO format
+  const parseDateToISO = (dateString) => {
+    if (!dateString) return new Date().toISOString();
+    try {
+      // Parse DD/MM/YYYY format
+      const parts = dateString.split('/');
+      if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+        const year = parseInt(parts[2], 10);
+        const date = new Date(year, month, day);
+        return date.toISOString();
+      }
+      return new Date().toISOString();
+    } catch (error) {
+      console.error('Error parsing date:', error);
+      return new Date().toISOString();
+    }
+  };
+
   const handleSubmit = async () => {
+    console.log('=== handleSubmit called ===');
+    console.log('Doctor Form:', doctorForm);
+    console.log('Document IDs:', documentIds);
+    console.log('Verification Status:', verificationStatus);
+
     // Comprehensive validation
     const newErrors = {};
-    
-    // License Type validation
-    if (!pharmacyForm.licenseType) {
-      newErrors.licenseType = 'License type is required';
+
+    // Clinic Registration Certificate validation
+    if (!doctorForm.clinicRegistrationCertificateFile && !documentIds.clinicRegistrationCertificate) {
+      newErrors.clinicRegistrationCertificateFile = 'Clinic Registration Certificate is required';
+    }
+    if (!doctorForm.clinicRegistrationNumber || doctorForm.clinicRegistrationNumber.trim() === '') {
+      newErrors.clinicRegistrationNumber = 'Clinic Registration Number is required';
+    }
+    if (!doctorForm.clinicRegistrationExpiryDate || doctorForm.clinicRegistrationExpiryDate.trim() === '') {
+      newErrors.clinicRegistrationExpiryDate = 'Clinic Registration Expiry Date is required';
     }
     
-    // 20B License validation
-    if (!pharmacyForm.license20bFile && !documentIds.license20b) {
-      newErrors.license20bFile = '20B license document is required';
+    // Practice License validation
+    if (!doctorForm.practiceLicenseFile && !documentIds.practiceLicense) {
+      newErrors.practiceLicenseFile = 'Practice License is required';
     }
-    if (!pharmacyForm.license20b || pharmacyForm.license20b.trim() === '') {
-      newErrors.license20b = '20B license number is required';
+    if (!doctorForm.practiceLicenseNumber || doctorForm.practiceLicenseNumber.trim() === '') {
+      newErrors.practiceLicenseNumber = 'Practice License Number is required';
     }
-    if (!pharmacyForm.license20bExpiryDate || pharmacyForm.license20bExpiryDate.trim() === '') {
-      newErrors.license20bExpiryDate = '20B expiry date is required';
-    }
-    
-    // 21B License validation
-    if (!pharmacyForm.license21bFile && !documentIds.license21b) {
-      newErrors.license21bFile = '21B license document is required';
-    }
-    if (!pharmacyForm.license21b || pharmacyForm.license21b.trim() === '') {
-      newErrors.license21b = '21B license number is required';
-    }
-    if (!pharmacyForm.license21bExpiryDate || pharmacyForm.license21bExpiryDate.trim() === '') {
-      newErrors.license21bExpiryDate = '21B expiry date is required';
+    if (!doctorForm.practiceLicenseExpiryDate || doctorForm.practiceLicenseExpiryDate.trim() === '') {
+      newErrors.practiceLicenseExpiryDate = 'Practice License Expiry Date is required';
     }
     
-    // Pharmacy Image validation
-    if (!pharmacyForm.pharmacyImageFile && !documentIds.pharmacyImage) {
-      newErrors.pharmacyImageFile = 'Pharmacy image is required';
+    // Clinic Image validation
+    if (!doctorForm.clinicImageFile && !documentIds.clinicImage) {
+      newErrors.clinicImageFile = 'Clinic Image is required';
     }
     
-    // Pharmacy Name validation
-    if (!pharmacyForm.pharmacyName || pharmacyForm.pharmacyName.trim() === '') {
-      newErrors.pharmacyName = 'Pharmacy name is required';
-    } else if (pharmacyForm.pharmacyName.trim().length < 3) {
-      newErrors.pharmacyName = 'Pharmacy name must be at least 3 characters';
+    // Doctor Name validation
+    if (!doctorForm.doctorName || doctorForm.doctorName.trim() === '') {
+      newErrors.doctorName = 'Doctor name is required';
+    } else if (doctorForm.doctorName.trim().length < 3) {
+      newErrors.doctorName = 'Doctor name must be at least 3 characters';
     }
     
-    // Owner Name validation
-    if (!pharmacyForm.ownerName || pharmacyForm.ownerName.trim() === '') {
-      newErrors.ownerName = 'Owner name is required';
+    // Speciality validation
+    if (!doctorForm.speciality || doctorForm.speciality.trim() === '') {
+      newErrors.speciality = 'Speciality is required';
     }
     
     // Address 1 validation
-    if (!pharmacyForm.address1 || pharmacyForm.address1.trim() === '') {
+    if (!doctorForm.address1 || doctorForm.address1.trim() === '') {
       newErrors.address1 = 'Address 1 is required';
     }
     
     // Pincode validation
-    if (!pharmacyForm.pincode || pharmacyForm.pincode.trim() === '') {
+    if (!doctorForm.pincode || doctorForm.pincode.trim() === '') {
       newErrors.pincode = 'Pincode is required';
-    } else if (!/^\d{6}$/.test(pharmacyForm.pincode)) {
+    } else if (!/^\d{6}$/.test(doctorForm.pincode)) {
       newErrors.pincode = 'Pincode must be 6 digits';
+    } else if (/^0+$/.test(doctorForm.pincode)) {
+      newErrors.pincode = 'Pincode cannot be all zeros';
     }
     
     // Area validation
-    if (!pharmacyForm.area || !pharmacyForm.areaId) {
+    if (!doctorForm.area || doctorForm.area.trim() === '') {
       newErrors.area = 'Area is required';
     }
     
     // City validation
-    if (!pharmacyForm.city || !pharmacyForm.cityId) {
+    if (!doctorForm.city || !doctorForm.cityId) {
       newErrors.city = 'City is required';
     }
     
     // State validation
-    if (!pharmacyForm.state || !pharmacyForm.stateId) {
+    if (!doctorForm.state || !doctorForm.stateId) {
       newErrors.state = 'State is required';
     }
     
     // Mobile Number validation
-    if (!pharmacyForm.mobileNumber || pharmacyForm.mobileNumber.trim() === '') {
+    if (!doctorForm.mobileNumber || doctorForm.mobileNumber.trim() === '') {
       newErrors.mobileNumber = 'Mobile number is required';
-    } else if (!/^\d{10}$/.test(pharmacyForm.mobileNumber)) {
+    } else if (!/^\d{10}$/.test(doctorForm.mobileNumber)) {
       newErrors.mobileNumber = 'Mobile number must be 10 digits';
     } else if (!verificationStatus.mobile) {
       newErrors.mobileVerification = 'Please verify mobile number';
     }
     
     // Email Address validation
-    if (!pharmacyForm.emailAddress || pharmacyForm.emailAddress.trim() === '') {
+    if (!doctorForm.emailAddress || doctorForm.emailAddress.trim() === '') {
       newErrors.emailAddress = 'Email address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pharmacyForm.emailAddress)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(doctorForm.emailAddress)) {
       newErrors.emailAddress = 'Please enter a valid email address';
     } else if (!verificationStatus.email) {
       newErrors.emailVerification = 'Please verify email address';
     }
     
     // PAN validation
-    if (!pharmacyForm.panFile && !documentIds.pan) {
+    if (!doctorForm.panFile && !documentIds.pan) {
       newErrors.panFile = 'PAN document is required';
     }
-    if (!pharmacyForm.panNumber || pharmacyForm.panNumber.trim() === '') {
+    if (!doctorForm.panNumber || doctorForm.panNumber.trim() === '') {
       newErrors.panNumber = 'PAN number is required';
-    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pharmacyForm.panNumber)) {
+    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(doctorForm.panNumber)) {
       newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
     }
     
     // GST validation
-    if (!pharmacyForm.gstFile && !documentIds.gst) {
+    if (!doctorForm.gstFile && !documentIds.gst) {
       newErrors.gstFile = 'GST document is required';
     }
-    if (!pharmacyForm.gstNumber || pharmacyForm.gstNumber.trim() === '') {
+    if (!doctorForm.gstNumber || doctorForm.gstNumber.trim() === '') {
       newErrors.gstNumber = 'GST number is required';
-    } else if (!/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(pharmacyForm.gstNumber)) {
+    } else if (!/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(doctorForm.gstNumber)) {
       newErrors.gstNumber = 'Invalid GST format';
     }
 
     if (Object.keys(newErrors).length > 0) {
-      setPharmacyErrors(newErrors);
+      console.log('=== Validation Errors ===');
+      console.log('Errors:', newErrors);
+      setDoctorErrors(newErrors);
       
       // Find the first error to show
       const firstErrorField = Object.keys(newErrors)[0];
@@ -402,44 +616,30 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
       return;
     }
 
+    console.log('=== Validation Passed - Calling API ===');
     setLoading(true);
 
     try {
-      // Determine categoryId and subCategoryId based on license type
-      let categoryId = 1;
-      let subCategoryId = 0;
-      
-      if (pharmacyForm.licenseType === 'Only Retail') {
-        categoryId = 1;
-        subCategoryId = 0;
-      } else if (pharmacyForm.licenseType === 'Only Wholesaler') {
-        categoryId = 2;
-        subCategoryId = 0;
-      } else if (pharmacyForm.licenseType === 'Retail Cum Wholesaler') {
-        categoryId = 3;
-        subCategoryId = 0;
-      }
-
-      // Prepare registration payload matching the API structure
+      // Prepare doctor registration payload matching the API structure
       const registrationData = {
-        typeId: 1,
-        categoryId: categoryId,
-        subCategoryId: subCategoryId,
+        typeId: 3,
+        categoryId: 0,
+        subCategoryId: 0,
         isMobileVerified: verificationStatus.mobile,
         isEmailVerified: verificationStatus.email,
         isExisting: false,
         licenceDetails: {
-          registrationDate: pharmacyForm.registrationDate ? new Date(pharmacyForm.registrationDate).toISOString() : new Date().toISOString(),
+          registrationDate: new Date().toISOString(),
           licence: [
             {
-              licenceTypeId: 1,
-              licenceNo: pharmacyForm.license20b,
-              licenceValidUpto: pharmacyForm.license20bExpiryDate ? new Date(pharmacyForm.license20bExpiryDate).toISOString() : new Date().toISOString(),
+              licenceTypeId: 6,
+              licenceNo: doctorForm.clinicRegistrationNumber,
+              licenceValidUpto: parseDateToISO(doctorForm.clinicRegistrationExpiryDate),
             },
             {
-              licenceTypeId: 3,
-              licenceNo: pharmacyForm.license21b,
-              licenceValidUpto: pharmacyForm.license21bExpiryDate ? new Date(pharmacyForm.license21bExpiryDate).toISOString() : new Date().toISOString(),
+              licenceTypeId: 7,
+              licenceNo: doctorForm.practiceLicenseNumber,
+              licenceValidUpto: parseDateToISO(doctorForm.practiceLicenseExpiryDate),
             }
           ]
         },
@@ -447,25 +647,25 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
         isBuyer: true,
         customerGroupId: 1,
         generalDetails: {
-          name: pharmacyForm.pharmacyName,
-          shortName: pharmacyForm.shortName || '',
-          address1: pharmacyForm.address1,
-          address2: pharmacyForm.address2 || '',
-          address3: pharmacyForm.address3 || '',
-          address4: pharmacyForm.address4 || '',
-          pincode: parseInt(pharmacyForm.pincode),
-          area: pharmacyForm.area || 'Default',
-          cityId: parseInt(pharmacyForm.cityId),
-          stateId: parseInt(pharmacyForm.stateId),
-          ownerName: pharmacyForm.ownerName || '',
-          clinicName: '',
-          specialist: '',
+          name: doctorForm.doctorName,
+          shortName: '',
+          address1: doctorForm.address1,
+          address2: doctorForm.address2 || '',
+          address3: doctorForm.address3 || '',
+          address4: doctorForm.address4 || '',
+          pincode: parseInt(doctorForm.pincode),
+          area: doctorForm.area,
+          cityId: parseInt(doctorForm.cityId),
+          stateId: parseInt(doctorForm.stateId),
+          ownerName: '',
+          clinicName: doctorForm.clinicName,
+          specialist: doctorForm.speciality,
         },
         securityDetails: {
-          mobile: pharmacyForm.mobileNumber,
-          email: pharmacyForm.emailAddress,
-          panNumber: pharmacyForm.panNumber,
-          gstNumber: pharmacyForm.gstNumber,
+          mobile: doctorForm.mobileNumber,
+          email: doctorForm.emailAddress,
+          panNumber: doctorForm.panNumber,
+          gstNumber: doctorForm.gstNumber,
         },
         suggestedDistributors: [{
           distributorCode: '',
@@ -474,27 +674,44 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
         }]
       };
 
-      console.log('Pharmacy registration payload:', registrationData);
+      console.log('Doctor registration payload:', registrationData);
+      console.log('=== Calling API: customerAPI.createCustomer ===');
 
       const response = await customerAPI.createCustomer(registrationData);
+      
+      console.log('=== API Response ===');
+      console.log('Response:', response);
       
       if (response.success) {
         Toast.show({
           type: 'success',
-          text1: 'Pharmacy Added',
-          text2: response.message || 'Pharmacy registered successfully',
+          text1: 'Doctor Added',
+          text2: response.message || 'Doctor registered successfully',
         });
 
-        // Pass the created pharmacy data back to parent
-        const newPharmacy = {
+        // Pass the created doctor data back to parent
+        const newDoctor = {
           id: response.data?.id || Date.now(),
-          name: pharmacyForm.pharmacyName,
-          code: response.data?.code || pharmacyForm.shortName,
-          ...pharmacyForm,
+          name: doctorForm.doctorName,
+          code: response.data?.code,
           customerId: response.data?.id,
+          stateId: doctorForm.stateId,
+          cityId: doctorForm.cityId,
+          area: doctorForm.area,
+          city: doctorForm.city,
+          state: doctorForm.state,
+          mobileNumber: doctorForm.mobileNumber,
+          emailAddress: doctorForm.emailAddress,
+          isNew: true,
+          ...response.data,
         };
 
-        onSubmit(newPharmacy);
+        // Call onAdd callback if provided, otherwise onSubmit
+        if (onAdd) {
+          onAdd(newDoctor);
+        } else if (onSubmit) {
+          onSubmit(newDoctor);
+        }
 
         // Reset and close
         resetForm();
@@ -503,15 +720,15 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
         Toast.show({
           type: 'error',
           text1: 'Registration Failed',
-          text2: response.details || 'Failed to register pharmacy. Please try again.',
+          text2: response.details || 'Failed to register doctor. Please try again.',
         });
       }
     } catch (error) {
-      console.error('Pharmacy registration error:', error);
+      console.error('Doctor registration error:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'An error occurred while registering the pharmacy. Please try again.',
+        text2: 'An error occurred while registering the doctor. Please try again.',
       });
     } finally {
       setLoading(false);
@@ -528,169 +745,136 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
       <SafeAreaView style={styles.modalContainer}>
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
           <View style={styles.modalHeader}>
-            <AppText style={styles.modalTitle}>Add Pharmacy Account</AppText>
+            <AppText style={styles.modalTitle}>Add Doctor account</AppText>
             <TouchableOpacity onPress={handleClose}>
               <AppText style={styles.modalCloseButton}>✕</AppText>
             </TouchableOpacity>
           </View>
 
           {/* License Details */}
-          <AppText style={styles.modalSectionLabel}>Licence Details <AppText style={styles.mandatory}>*</AppText></AppText>
+          <AppText style={styles.modalSectionLabel}>License Details <AppText style={styles.mandatory}>*</AppText></AppText>
           
-          {/* License Type Radio Buttons */}
-          <View style={styles.radioGroup}>
-            <TouchableOpacity 
-              style={styles.radioOption}
-              onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Only Retail' }))}
-            >
-              <View style={[styles.radioCircle, pharmacyForm.licenseType === 'Only Retail' && styles.radioCircleSelected]} />
-              <AppText style={styles.radioLabel}>Only Retail</AppText>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.radioOption}
-              onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Only Wholesaler' }))}
-            >
-              <View style={[styles.radioCircle, pharmacyForm.licenseType === 'Only Wholesaler' && styles.radioCircleSelected]} />
-              <AppText style={styles.radioLabel}>Only Wholesaler</AppText>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.radioOption}
-              onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Retail Cum Wholesaler' }))}
-            >
-              <View style={[styles.radioCircle, pharmacyForm.licenseType === 'Retail Cum Wholesaler' && styles.radioCircleSelected]} />
-              <AppText style={styles.radioLabel}>Retail Cum Wholesaler</AppText>
-            </TouchableOpacity>
-          </View>
-
-          {/* 20B License */}
-          <AppText style={styles.fieldLabel}>20B *</AppText>
+          {/* Clinic Registration Certificate */}
+          <AppText style={styles.fieldLabel}>Clinic Registration Certificate *</AppText>
           <FileUploadComponent
-            placeholder="Upload 20B license"
+            placeholder="Upload Certificate"
             accept={['pdf', 'jpg', 'png']}
             maxSize={10 * 1024 * 1024}
             docType={DOC_TYPES.LICENSE_20B}
-            initialFile={pharmacyForm.license20bFile}
-            onFileUpload={(file) => handleFileUpload('license20b', file)}
-            onFileDelete={() => handleFileDelete('license20b')}
-            errorMessage={pharmacyErrors.license20bFile}
+            initialFile={doctorForm.clinicRegistrationCertificateFile}
+            onFileUpload={(file) => handleFileUpload('clinicRegistrationCertificate', file)}
+            onFileDelete={() => handleFileDelete('clinicRegistrationCertificate')}
+            errorMessage={doctorErrors.clinicRegistrationCertificateFile}
           />
-          {pharmacyErrors.license20bFile && (
-            <AppText style={styles.errorText}>{pharmacyErrors.license20bFile}</AppText>
+          {doctorErrors.clinicRegistrationCertificateFile && (
+            <AppText style={styles.errorText}>{doctorErrors.clinicRegistrationCertificateFile}</AppText>
           )}
           
           <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.license20b ? 5 : 10 }, pharmacyErrors.license20b && styles.inputError]}
-            placeholder="Drug license number *"
+            style={[styles.modalInput, { marginBottom: doctorErrors.clinicRegistrationNumber ? 5 : 10 }, doctorErrors.clinicRegistrationNumber && styles.inputError]}
+            placeholder="Clinic Registration Number *"
             placeholderTextColor="#999"
-            value={pharmacyForm.license20b}
+            value={doctorForm.clinicRegistrationNumber}
             onChangeText={(text) => {
-              setPharmacyForm(prev => ({ ...prev, license20b: text }));
-              if (pharmacyErrors.license20b) {
-                setPharmacyErrors(prev => ({ ...prev, license20b: null }));
+              setDoctorForm(prev => ({ ...prev, clinicRegistrationNumber: text }));
+              if (doctorErrors.clinicRegistrationNumber) {
+                setDoctorErrors(prev => ({ ...prev, clinicRegistrationNumber: null }));
               }
             }}
           />
-          {pharmacyErrors.license20b && (
-            <AppText style={styles.errorText}>{pharmacyErrors.license20b}</AppText>
+          {doctorErrors.clinicRegistrationNumber && (
+            <AppText style={styles.errorText}>{doctorErrors.clinicRegistrationNumber}</AppText>
           )}
           
           <TouchableOpacity 
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.license20bExpiryDate ? 5 : 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, pharmacyErrors.license20bExpiryDate && styles.inputError]}
-            onPress={() => setShowDatePicker('20b')}
+            style={[styles.modalInput, { marginBottom: doctorErrors.clinicRegistrationExpiryDate ? 5 : 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, doctorErrors.clinicRegistrationExpiryDate && styles.inputError]}
+            onPress={() => setShowDatePicker('clinicRegistration')}
           >
-            <AppText style={[styles.dropdownPlaceholder, pharmacyForm.license20bExpiryDate && { color: '#333' }]}>
-              {pharmacyForm.license20bExpiryDate || 'Expiry date *'}
+            <AppText style={[styles.dropdownPlaceholder, doctorForm.clinicRegistrationExpiryDate && { color: '#333' }]}>
+              {doctorForm.clinicRegistrationExpiryDate || 'Expiry date *'}
             </AppText>
             <Icon name="calendar-today" size={20} color="#999" />
           </TouchableOpacity>
-          {pharmacyErrors.license20bExpiryDate && (
-            <AppText style={styles.errorText}>{pharmacyErrors.license20bExpiryDate}</AppText>
+          {doctorErrors.clinicRegistrationExpiryDate && (
+            <AppText style={styles.errorText}>{doctorErrors.clinicRegistrationExpiryDate}</AppText>
           )}
 
-          {/* 21B License */}
-          <AppText style={styles.fieldLabel}>21B *</AppText>
+          {/* Practice License */}
+          <AppText style={styles.fieldLabel}>Practice License *</AppText>
           <FileUploadComponent
-            placeholder="Upload 21B license"
+            placeholder="Upload License"
             accept={['pdf', 'jpg', 'png']}
             maxSize={10 * 1024 * 1024}
             docType={DOC_TYPES.LICENSE_21B}
-            initialFile={pharmacyForm.license21bFile}
-            onFileUpload={(file) => handleFileUpload('license21b', file)}
-            onFileDelete={() => handleFileDelete('license21b')}
-            errorMessage={pharmacyErrors.license21bFile}
+            initialFile={doctorForm.practiceLicenseFile}
+            onFileUpload={(file) => handleFileUpload('practiceLicense', file)}
+            onFileDelete={() => handleFileDelete('practiceLicense')}
+            errorMessage={doctorErrors.practiceLicenseFile}
           />
-          {pharmacyErrors.license21bFile && (
-            <AppText style={styles.errorText}>{pharmacyErrors.license21bFile}</AppText>
+          {doctorErrors.practiceLicenseFile && (
+            <AppText style={styles.errorText}>{doctorErrors.practiceLicenseFile}</AppText>
           )}
           
           <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.license21b ? 5 : 10 }, pharmacyErrors.license21b && styles.inputError]}
-            placeholder="Drug license number *"
+            style={[styles.modalInput, { marginBottom: doctorErrors.practiceLicenseNumber ? 5 : 10 }, doctorErrors.practiceLicenseNumber && styles.inputError]}
+            placeholder="Practice License Number *"
             placeholderTextColor="#999"
-            value={pharmacyForm.license21b}
+            value={doctorForm.practiceLicenseNumber}
             onChangeText={(text) => {
-              setPharmacyForm(prev => ({ ...prev, license21b: text }));
-              if (pharmacyErrors.license21b) {
-                setPharmacyErrors(prev => ({ ...prev, license21b: null }));
+              setDoctorForm(prev => ({ ...prev, practiceLicenseNumber: text }));
+              if (doctorErrors.practiceLicenseNumber) {
+                setDoctorErrors(prev => ({ ...prev, practiceLicenseNumber: null }));
               }
             }}
           />
-          {pharmacyErrors.license21b && (
-            <AppText style={styles.errorText}>{pharmacyErrors.license21b}</AppText>
+          {doctorErrors.practiceLicenseNumber && (
+            <AppText style={styles.errorText}>{doctorErrors.practiceLicenseNumber}</AppText>
           )}
           
           <TouchableOpacity 
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.license21bExpiryDate ? 5 : 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, pharmacyErrors.license21bExpiryDate && styles.inputError]}
-            onPress={() => setShowDatePicker('21b')}
+            style={[styles.modalInput, { marginBottom: doctorErrors.practiceLicenseExpiryDate ? 5 : 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, doctorErrors.practiceLicenseExpiryDate && styles.inputError]}
+            onPress={() => setShowDatePicker('practiceLicense')}
           >
-            <AppText style={[styles.dropdownPlaceholder, pharmacyForm.license21bExpiryDate && { color: '#333' }]}>
-              {pharmacyForm.license21bExpiryDate || 'Expiry date *'}
+            <AppText style={[styles.dropdownPlaceholder, doctorForm.practiceLicenseExpiryDate && { color: '#333' }]}>
+              {doctorForm.practiceLicenseExpiryDate || 'Expiry date *'}
             </AppText>
             <Icon name="calendar-today" size={20} color="#999" />
           </TouchableOpacity>
-          {pharmacyErrors.license21bExpiryDate && (
-            <AppText style={styles.errorText}>{pharmacyErrors.license21bExpiryDate}</AppText>
+          {doctorErrors.practiceLicenseExpiryDate && (
+            <AppText style={styles.errorText}>{doctorErrors.practiceLicenseExpiryDate}</AppText>
           )}
 
-          {/* Pharmacy Image */}
-          <AppText style={styles.fieldLabel}>Pharmacy Image *</AppText>
+          {/* Address Proof / Clinic Image */}
+          <AppText style={styles.fieldLabel}>Address Proof / Clinic Image *</AppText>
           <FileUploadComponent
             placeholder="Upload"
             accept={['jpg', 'png', 'jpeg']}
             maxSize={10 * 1024 * 1024}
             docType={DOC_TYPES.PHARMACY_IMAGE}
-            initialFile={pharmacyForm.pharmacyImageFile}
-            onFileUpload={(file) => handleFileUpload('pharmacyImage', file)}
-            onFileDelete={() => handleFileDelete('pharmacyImage')}
-            errorMessage={pharmacyErrors.pharmacyImageFile}
+            initialFile={doctorForm.clinicImageFile}
+            onFileUpload={(file) => handleFileUpload('clinicImage', file)}
+            onFileDelete={() => handleFileDelete('clinicImage')}
+            errorMessage={doctorErrors.clinicImageFile}
           />
-          {pharmacyErrors.pharmacyImageFile && (
-            <AppText style={styles.errorText}>{pharmacyErrors.pharmacyImageFile}</AppText>
+          {doctorErrors.clinicImageFile && (
+            <AppText style={styles.errorText}>{doctorErrors.clinicImageFile}</AppText>
           )}
 
           {/* Date Pickers */}
-          {showDatePicker === '20b' && (
+          {showDatePicker === 'clinicRegistration' && (
             <DateTimePicker
               value={selectedDate20b}
               mode="date"
               display="default"
-              onChange={(event, date) => handleDateChange('20b', event, date)}
+              onChange={(event, date) => handleDateChange('clinicRegistration', event, date)}
             />
           )}
-          {showDatePicker === '21b' && (
+          {showDatePicker === 'practiceLicense' && (
             <DateTimePicker
               value={selectedDate21b}
               mode="date"
               display="default"
-              onChange={(event, date) => handleDateChange('21b', event, date)}
-            />
-          )}
-          {showDatePicker === 'registration' && (
-            <DateTimePicker
-              value={selectedRegistrationDate}
-              mode="date"
-              display="default"
-              onChange={(event, date) => handleDateChange('registration', event, date)}
+              onChange={(event, date) => handleDateChange('practiceLicense', event, date)}
             />
           )}
 
@@ -698,193 +882,166 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
           <AppText style={styles.modalSectionLabel}>General Details <AppText style={styles.mandatory}>*</AppText></AppText>
           
           <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.pharmacyName ? 5 : 10 }, pharmacyErrors.pharmacyName && styles.inputError]}
-            placeholder="Name of the Pharmacy *"
+            style={[styles.modalInput, { marginBottom: doctorErrors.doctorName ? 5 : 10 }, doctorErrors.doctorName && styles.inputError]}
+            placeholder="Name of the Doctor *"
             placeholderTextColor="#999"
-            value={pharmacyForm.pharmacyName}
+            value={doctorForm.doctorName}
             onChangeText={(text) => {
-              setPharmacyForm(prev => ({ ...prev, pharmacyName: text }));
-              if (pharmacyErrors.pharmacyName) {
-                setPharmacyErrors(prev => ({ ...prev, pharmacyName: null }));
+              setDoctorForm(prev => ({ ...prev, doctorName: text }));
+              if (doctorErrors.doctorName) {
+                setDoctorErrors(prev => ({ ...prev, doctorName: null }));
               }
             }}
           />
-          {pharmacyErrors.pharmacyName && (
-            <AppText style={styles.errorText}>{pharmacyErrors.pharmacyName}</AppText>
+          {doctorErrors.doctorName && (
+            <AppText style={styles.errorText}>{doctorErrors.doctorName}</AppText>
           )}
           
           <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.ownerName ? 5 : 10 }, pharmacyErrors.ownerName && styles.inputError]}
-            placeholder="Name of the Owner *"
+            style={[styles.modalInput, { marginBottom: doctorErrors.speciality ? 5 : 10 }, doctorErrors.speciality && styles.inputError]}
+            placeholder="Speciality *"
             placeholderTextColor="#999"
-            value={pharmacyForm.ownerName}
+            value={doctorForm.speciality}
             onChangeText={(text) => {
-              setPharmacyForm(prev => ({ ...prev, ownerName: text }));
-              if (pharmacyErrors.ownerName) {
-                setPharmacyErrors(prev => ({ ...prev, ownerName: null }));
+              setDoctorForm(prev => ({ ...prev, speciality: text }));
+              if (doctorErrors.speciality) {
+                setDoctorErrors(prev => ({ ...prev, speciality: null }));
               }
             }}
           />
-          {pharmacyErrors.ownerName && (
-            <AppText style={styles.errorText}>{pharmacyErrors.ownerName}</AppText>
+          {doctorErrors.speciality && (
+            <AppText style={styles.errorText}>{doctorErrors.speciality}</AppText>
           )}
 
           <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
-            placeholder="Short Name (Optional)"
+            placeholder="Clinic Name"
             placeholderTextColor="#999"
-            value={pharmacyForm.shortName}
-            onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, shortName: text }))}
+            value={doctorForm.clinicName}
+            onChangeText={(text) => setDoctorForm(prev => ({ ...prev, clinicName: text }))}
           />
 
           <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.address1 ? 5 : 10 }, pharmacyErrors.address1 && styles.inputError]}
+            style={[styles.modalInput, { marginBottom: doctorErrors.address1 ? 5 : 10 }, doctorErrors.address1 && styles.inputError]}
             placeholder="Address 1 *"
             placeholderTextColor="#999"
-            value={pharmacyForm.address1}
+            value={doctorForm.address1}
             onChangeText={(text) => {
-              setPharmacyForm(prev => ({ ...prev, address1: text }));
-              if (pharmacyErrors.address1) {
-                setPharmacyErrors(prev => ({ ...prev, address1: null }));
+              setDoctorForm(prev => ({ ...prev, address1: text }));
+              if (doctorErrors.address1) {
+                setDoctorErrors(prev => ({ ...prev, address1: null }));
               }
             }}
           />
-          {pharmacyErrors.address1 && (
-            <AppText style={styles.errorText}>{pharmacyErrors.address1}</AppText>
+          {doctorErrors.address1 && (
+            <AppText style={styles.errorText}>{doctorErrors.address1}</AppText>
           )}
           
           <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Address 2"
             placeholderTextColor="#999"
-            value={pharmacyForm.address2}
-            onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address2: text }))}
+            value={doctorForm.address2}
+            onChangeText={(text) => setDoctorForm(prev => ({ ...prev, address2: text }))}
           />
 
           <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Address 3"
             placeholderTextColor="#999"
-            value={pharmacyForm.address3}
-            onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address3: text }))}
+            value={doctorForm.address3}
+            onChangeText={(text) => setDoctorForm(prev => ({ ...prev, address3: text }))}
           />
 
           <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
             placeholder="Address 4"
             placeholderTextColor="#999"
-            value={pharmacyForm.address4}
-            onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address4: text }))}
+            value={doctorForm.address4}
+            onChangeText={(text) => setDoctorForm(prev => ({ ...prev, address4: text }))}
           />
 
           <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.pincode ? 5 : 10 }, pharmacyErrors.pincode && styles.inputError]}
+            style={[styles.modalInput, { marginBottom: doctorErrors.pincode ? 5 : 10 }, doctorErrors.pincode && styles.inputError]}
             placeholder="Pincode *"
             placeholderTextColor="#999"
             keyboardType="numeric"
             maxLength={6}
-            value={pharmacyForm.pincode}
+            value={doctorForm.pincode}
             onChangeText={(text) => {
               if (/^\d{0,6}$/.test(text)) {
-                setPharmacyForm(prev => ({ ...prev, pincode: text }));
-                if (pharmacyErrors.pincode) {
-                  setPharmacyErrors(prev => ({ ...prev, pincode: null }));
+                setDoctorForm(prev => ({ ...prev, pincode: text }));
+                if (doctorErrors.pincode) {
+                  setDoctorErrors(prev => ({ ...prev, pincode: null }));
                 }
               }
             }}
           />
-          {pharmacyErrors.pincode && (
-            <AppText style={styles.errorText}>{pharmacyErrors.pincode}</AppText>
+          {doctorErrors.pincode && (
+            <AppText style={styles.errorText}>{doctorErrors.pincode}</AppText>
           )}
 
-          {/* Area, City, State Dropdowns */}
-          <TouchableOpacity 
-            style={[styles.dropdown, { marginBottom: pharmacyErrors.area ? 5 : 10 }, pharmacyErrors.area && styles.inputError]}
-            onPress={() => {
-              if (pharmacyForm.cityId) {
-                loadAreas(pharmacyForm.cityId);
-                setShowAreaModal(true);
-              } else {
-                Toast.show({
-                  type: 'info',
-                  text1: 'Select City First',
-                  text2: 'Please select a city before selecting area',
-                });
+          {/* Area - Input Field */}
+          <AppInput
+            style={[styles.modalInput, { marginBottom: doctorErrors.area ? 5 : 10 }, doctorErrors.area && styles.inputError]}
+            placeholder="Area *"
+            placeholderTextColor="#999"
+            value={doctorForm.area}
+            onChangeText={(text) => {
+              setDoctorForm(prev => ({ ...prev, area: text }));
+              if (doctorErrors.area) {
+                setDoctorErrors(prev => ({ ...prev, area: null }));
               }
             }}
-          >
-            <AppText style={[styles.dropdownPlaceholder, pharmacyForm.area && { color: '#333' }]}>
-              {pharmacyForm.area || 'Area *'}
-            </AppText>
-            <Icon name="arrow-drop-down" size={24} color="#999" />
-          </TouchableOpacity>
-          {pharmacyErrors.area && (
-            <AppText style={styles.errorText}>{pharmacyErrors.area}</AppText>
+          />
+          {doctorErrors.area && (
+            <AppText style={styles.errorText}>{doctorErrors.area}</AppText>
           )}
           
+          {/* City - Dropdown (Independent) */}
           <TouchableOpacity 
-            style={[styles.dropdown, { marginBottom: pharmacyErrors.city ? 5 : 10 }, pharmacyErrors.city && styles.inputError]}
+            style={[styles.dropdown, { marginBottom: doctorErrors.city ? 5 : 10 }, doctorErrors.city && styles.inputError]}
             onPress={() => {
-              if (pharmacyForm.stateId) {
-                loadCities(pharmacyForm.stateId);
-                setShowCityModal(true);
-              } else {
-                Toast.show({
-                  type: 'info',
-                  text1: 'Select State First',
-                  text2: 'Please select a state before selecting city',
-                });
-              }
+              loadCities(null);
+              setShowCityModal(true);
             }}
           >
-            <AppText style={[styles.dropdownPlaceholder, pharmacyForm.city && { color: '#333' }]}>
-              {pharmacyForm.city || 'City *'}
+            <AppText style={[styles.dropdownPlaceholder, doctorForm.city && { color: '#333' }]}>
+              {doctorForm.city || 'City *'}
             </AppText>
             <Icon name="arrow-drop-down" size={24} color="#999" />
           </TouchableOpacity>
-          {pharmacyErrors.city && (
-            <AppText style={styles.errorText}>{pharmacyErrors.city}</AppText>
+          {doctorErrors.city && (
+            <AppText style={styles.errorText}>{doctorErrors.city}</AppText>
           )}
 
+          {/* State - Dropdown (Independent) */}
           <TouchableOpacity 
-            style={[styles.dropdown, { marginBottom: pharmacyErrors.state ? 5 : 10 }, pharmacyErrors.state && styles.inputError]}
+            style={[styles.dropdown, { marginBottom: doctorErrors.state ? 5 : 10 }, doctorErrors.state && styles.inputError]}
             onPress={() => setShowStateModal(true)}
           >
-            <AppText style={[styles.dropdownPlaceholder, pharmacyForm.state && { color: '#333' }]}>
-              {pharmacyForm.state || 'State *'}
+            <AppText style={[styles.dropdownPlaceholder, doctorForm.state && { color: '#333' }]}>
+              {doctorForm.state || 'State *'}
             </AppText>
             <Icon name="arrow-drop-down" size={24} color="#999" />
           </TouchableOpacity>
-          {pharmacyErrors.state && (
-            <AppText style={styles.errorText}>{pharmacyErrors.state}</AppText>
+          {doctorErrors.state && (
+            <AppText style={styles.errorText}>{doctorErrors.state}</AppText>
           )}
 
           {/* Security Details */}
           <AppText style={styles.modalSectionLabel}>Security Details <AppText style={styles.mandatory}>*</AppText></AppText>
           <AppText style={styles.modalFieldLabel}>Mobile number <AppText style={styles.mandatory}>*</AppText></AppText>
-          <View style={[styles.inputWithButton, pharmacyErrors.mobileNumber && styles.inputError]}>
-            <AppText style={styles.countryCode}>+91</AppText>
+          <View style={[styles.inputWithButton, doctorErrors.mobileNumber && styles.inputError]}>
             <AppInput
               style={styles.inputField}
-              placeholder="Mobile Number"
-              value={pharmacyForm.mobileNumber}
+              placeholder="Mobile number*"
+              value={doctorForm.mobileNumber}
               onChangeText={(text) => {
                 if (/^\d{0,10}$/.test(text)) {
-                  setPharmacyForm(prev => ({ ...prev, mobileNumber: text }));
-                  if (pharmacyErrors.mobileNumber) {
-                    setPharmacyErrors(prev => ({ ...prev, mobileNumber: null, mobileVerification: null }));
-                  }
-                  // Auto verify when 10 digits entered
-                  if (text.length === 10) {
-                    setVerificationStatus(prev => ({ ...prev, mobile: true }));
-                    Toast.show({
-                      type: 'success',
-                      text1: 'Mobile Verified',
-                      text2: 'Mobile number auto-verified',
-                      position: 'bottom',
-                    });
-                  } else {
-                    setVerificationStatus(prev => ({ ...prev, mobile: false }));
+                  setDoctorForm(prev => ({ ...prev, mobileNumber: text }));
+                  if (doctorErrors.mobileNumber) {
+                    setDoctorErrors(prev => ({ ...prev, mobileNumber: null, mobileVerification: null }));
                   }
                 }
               }}
@@ -898,43 +1055,36 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
                 styles.inlineVerifyButton,
                 verificationStatus.mobile && styles.verifiedButton,
               ]}
-              disabled={true}
+              onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
+              disabled={verificationStatus.mobile || loadingOtp.mobile}
             >
-              <AppText style={[
-                styles.inlineVerifyText,
-                verificationStatus.mobile && styles.verifiedText
-              ]}>
-                {verificationStatus.mobile ? 'Verified' : 'Verify'}
-              </AppText>
+              {loadingOtp.mobile && !verificationStatus.mobile ? (
+                <ActivityIndicator size="small" color="#007AFF" />
+              ) : (
+                <AppText style={[
+                  styles.inlineVerifyText,
+                  verificationStatus.mobile && styles.verifiedText
+                ]}>
+                  {verificationStatus.mobile ? 'Verified' : 'Verify'}
+                </AppText>
+              )}
             </TouchableOpacity>
           </View>
-          {(pharmacyErrors.mobileNumber || pharmacyErrors.mobileVerification) && (
-            <AppText style={styles.errorText}>{pharmacyErrors.mobileNumber || pharmacyErrors.mobileVerification}</AppText>
+          {(doctorErrors.mobileNumber || doctorErrors.mobileVerification) && (
+            <AppText style={styles.errorText}>{doctorErrors.mobileNumber || doctorErrors.mobileVerification}</AppText>
           )}
+          {renderOTPInput('mobile')}
 
           <AppText style={styles.modalFieldLabel}>Email address <AppText style={styles.mandatory}>*</AppText></AppText>
-          <View style={[styles.inputWithButton, pharmacyErrors.emailAddress && styles.inputError]}>
+          <View style={[styles.inputWithButton, doctorErrors.emailAddress && styles.inputError]}>
             <AppInput
               style={[styles.inputField, { flex: 1 }]}
               placeholder="Email Address"
-              value={pharmacyForm.emailAddress}
+              value={doctorForm.emailAddress}
               onChangeText={(text) => {
-                setPharmacyForm(prev => ({ ...prev, emailAddress: text }));
-                if (pharmacyErrors.emailAddress) {
-                  setPharmacyErrors(prev => ({ ...prev, emailAddress: null, emailVerification: null }));
-                }
-                // Auto verify when valid email format
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (emailRegex.test(text)) {
-                  setVerificationStatus(prev => ({ ...prev, email: true }));
-                  Toast.show({
-                    type: 'success',
-                    text1: 'Email Verified',
-                    text2: 'Email address auto-verified',
-                    position: 'bottom',
-                  });
-                } else {
-                  setVerificationStatus(prev => ({ ...prev, email: false }));
+                setDoctorForm(prev => ({ ...prev, emailAddress: text }));
+                if (doctorErrors.emailAddress) {
+                  setDoctorErrors(prev => ({ ...prev, emailAddress: null, emailVerification: null }));
                 }
               }}
               keyboardType="email-address"
@@ -947,19 +1097,25 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
                 styles.inlineVerifyButton,
                 verificationStatus.email && styles.verifiedButton,
               ]}
-              disabled={true}
+              onPress={() => !verificationStatus.email && handleVerify('email')}
+              disabled={verificationStatus.email || loadingOtp.email}
             >
-              <AppText style={[
-                styles.inlineVerifyText,
-                verificationStatus.email && styles.verifiedText
-              ]}>
-                {verificationStatus.email ? 'Verified' : 'Verify'}
-              </AppText>
+              {loadingOtp.email && !verificationStatus.email ? (
+                <ActivityIndicator size="small" color="#007AFF" />
+              ) : (
+                <AppText style={[
+                  styles.inlineVerifyText,
+                  verificationStatus.email && styles.verifiedText
+                ]}>
+                  {verificationStatus.email ? 'Verified' : 'Verify'}
+                </AppText>
+              )}
             </TouchableOpacity>
           </View>
-          {(pharmacyErrors.emailAddress || pharmacyErrors.emailVerification) && (
-            <AppText style={styles.errorText}>{pharmacyErrors.emailAddress || pharmacyErrors.emailVerification}</AppText>
+          {(doctorErrors.emailAddress || doctorErrors.emailVerification) && (
+            <AppText style={styles.errorText}>{doctorErrors.emailAddress || doctorErrors.emailVerification}</AppText>
           )}
+          {renderOTPInput('email')}
 
           {/* PAN */}
           <AppText style={styles.modalFieldLabel}>Upload PAN <AppText style={styles.mandatory}>*</AppText></AppText>
@@ -968,31 +1124,31 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
             accept={['pdf', 'jpg', 'png']}
             maxSize={10 * 1024 * 1024}
             docType={DOC_TYPES.PAN}
-            initialFile={pharmacyForm.panFile}
+            initialFile={doctorForm.panFile}
             onFileUpload={(file) => handleFileUpload('pan', file)}
             onFileDelete={() => handleFileDelete('pan')}
-            errorMessage={pharmacyErrors.panFile}
+            errorMessage={doctorErrors.panFile}
           />
-          {pharmacyErrors.panFile && (
-            <AppText style={styles.errorText}>{pharmacyErrors.panFile}</AppText>
+          {doctorErrors.panFile && (
+            <AppText style={styles.errorText}>{doctorErrors.panFile}</AppText>
           )}
           
           <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.panNumber ? 5 : 10 }, pharmacyErrors.panNumber && styles.inputError]}
+            style={[styles.modalInput, { marginBottom: doctorErrors.panNumber ? 5 : 10 }, doctorErrors.panNumber && styles.inputError]}
             placeholder="PAN number *"
             placeholderTextColor="#999"
             maxLength={10}
             autoCapitalize="characters"
-            value={pharmacyForm.panNumber}
+            value={doctorForm.panNumber}
             onChangeText={(text) => {
-              setPharmacyForm(prev => ({ ...prev, panNumber: text.toUpperCase() }));
-              if (pharmacyErrors.panNumber) {
-                setPharmacyErrors(prev => ({ ...prev, panNumber: null }));
+              setDoctorForm(prev => ({ ...prev, panNumber: text.toUpperCase() }));
+              if (doctorErrors.panNumber) {
+                setDoctorErrors(prev => ({ ...prev, panNumber: null }));
               }
             }}
           />
-          {pharmacyErrors.panNumber && (
-            <AppText style={styles.errorText}>{pharmacyErrors.panNumber}</AppText>
+          {doctorErrors.panNumber && (
+            <AppText style={styles.errorText}>{doctorErrors.panNumber}</AppText>
           )}
 
           {/* GST */}
@@ -1002,31 +1158,31 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
             accept={['pdf', 'jpg', 'png']}
             maxSize={10 * 1024 * 1024}
             docType={DOC_TYPES.GST}
-            initialFile={pharmacyForm.gstFile}
+            initialFile={doctorForm.gstFile}
             onFileUpload={(file) => handleFileUpload('gst', file)}
             onFileDelete={() => handleFileDelete('gst')}
-            errorMessage={pharmacyErrors.gstFile}
+            errorMessage={doctorErrors.gstFile}
           />
-          {pharmacyErrors.gstFile && (
-            <AppText style={styles.errorText}>{pharmacyErrors.gstFile}</AppText>
+          {doctorErrors.gstFile && (
+            <AppText style={styles.errorText}>{doctorErrors.gstFile}</AppText>
           )}
           
           <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.gstNumber ? 5 : 10 }, pharmacyErrors.gstNumber && styles.inputError]}
+            style={[styles.modalInput, { marginBottom: doctorErrors.gstNumber ? 5 : 10 }, doctorErrors.gstNumber && styles.inputError]}
             placeholder="GST number *"
             placeholderTextColor="#999"
             maxLength={15}
             autoCapitalize="characters"
-            value={pharmacyForm.gstNumber}
+            value={doctorForm.gstNumber}
             onChangeText={(text) => {
-              setPharmacyForm(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
-              if (pharmacyErrors.gstNumber) {
-                setPharmacyErrors(prev => ({ ...prev, gstNumber: null }));
+              setDoctorForm(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
+              if (doctorErrors.gstNumber) {
+                setDoctorErrors(prev => ({ ...prev, gstNumber: null }));
               }
             }}
           />
-          {pharmacyErrors.gstNumber && (
-            <AppText style={styles.errorText}>{pharmacyErrors.gstNumber}</AppText>
+          {doctorErrors.gstNumber && (
+            <AppText style={styles.errorText}>{doctorErrors.gstNumber}</AppText>
           )}
 
           {/* Mapping Section */}
@@ -1083,17 +1239,11 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
                     <TouchableOpacity
                       style={styles.dropdownModalItem}
                       onPress={() => {
-                        setPharmacyForm(prev => ({
+                        setDoctorForm(prev => ({
                           ...prev,
                           state: item.name,
                           stateId: item.id,
-                          city: '',
-                          cityId: null,
-                          area: '',
-                          areaId: null,
                         }));
-                        setCities([]);
-                        setAreas([]);
                         setShowStateModal(false);
                       }}
                     >
@@ -1131,14 +1281,11 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
                     <TouchableOpacity
                       style={styles.dropdownModalItem}
                       onPress={() => {
-                        setPharmacyForm(prev => ({
+                        setDoctorForm(prev => ({
                           ...prev,
                           city: item.name,
                           cityId: item.id,
-                          area: '',
-                          areaId: null,
                         }));
-                        setAreas([]);
                         setShowCityModal(false);
                       }}
                     >
@@ -1176,7 +1323,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit }) => {
                     <TouchableOpacity
                       style={styles.dropdownModalItem}
                       onPress={() => {
-                        setPharmacyForm(prev => ({
+                        setDoctorForm(prev => ({
                           ...prev,
                           area: item.name,
                           areaId: item.id,
@@ -1459,6 +1606,95 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
     fontWeight: '600',
+  },
+  otpContainer: {
+    marginVertical: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  otpTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  otpInputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    gap: 8,
+  },
+  otpInput: {
+    flex: 1,
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    backgroundColor: '#FFF',
+  },
+  otpFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  otpTimer: {
+    fontSize: 12,
+    color: '#999',
+  },
+  resendText: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  inputWithButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.loginInputBorderColor,
+    borderRadius: 6,
+    backgroundColor: '#FAFAFA',
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    gap: 8,
+  },
+  countryCode: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
+  },
+  inputField: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: '#333',
+  },
+  inlineVerifyButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+    minWidth: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifiedButton: {
+    backgroundColor: '#10B981',
+  },
+  inlineVerifyText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  verifiedText: {
+    color: '#fff',
   },
 });
 

@@ -45,6 +45,56 @@ export const fetchCustomersList = createAsyncThunk(
   }
 );
 
+// NEW: Fetch tab counts from API - Direct API calls in thunk
+export const fetchTabCounts = createAsyncThunk(
+  'customer/fetchTabCounts',
+  async (_, { rejectWithValue }) => {
+    try {
+      const apiClient = require('../../api/apiClient').default;
+      
+      // Fetch counts for each tab in parallel
+      const [allResponse, stagingResponse] = await Promise.all([
+        apiClient.post('/user-management/customer/customers-list', { page: 1, limit: 1 }),
+        apiClient.post('/user-management/customer/customers-list/staging', { page: 1, limit: 1, statusIds: [5] })
+      ]);
+
+      // Debug: Log full responses
+      console.log('=== ALL RESPONSE ===');
+      console.log('Full Response:', allResponse);
+      console.log('Response Data:', allResponse?.data);
+      console.log('Response Data.data:', allResponse?.data?.data);
+      console.log('Total:', allResponse?.data?.total);
+      
+      console.log('=== STAGING RESPONSE ===');
+      console.log('Full Response:', stagingResponse);
+      console.log('Response Data:', stagingResponse?.data);
+      console.log('Response Data.data:', stagingResponse?.data?.data);
+      console.log('Total:', stagingResponse?.data.total);
+
+      // Extract totals from responses
+      const allCount = allResponse?.data?.total || 0;
+      const stagingCount = stagingResponse?.data?.total || 0;
+
+      console.log('✅ EXTRACTED COUNTS:', { allCount, stagingCount });
+
+      // Return counts mapped to tab names
+      const counts = {
+        all: allCount,
+        waitingForApproval: stagingCount,
+        notOnboarded: stagingCount,
+        unverified: 0,
+        rejected: 0
+      };
+      
+      console.log('✅ FINAL COUNTS TO RETURN:', counts);
+      return counts;
+    } catch (error) {
+      console.error('Error fetching tab counts:', error);
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 export const fetchCustomerDetails = createAsyncThunk(
   'customer/fetchDetails',
   async (params, { rejectWithValue }) => {
@@ -138,6 +188,13 @@ const initialState = {
   totalCustomers: 0,
   limit: 10,
   hasMore: true, // NEW: Track if more pages available
+  tabCounts: {
+    all: 0,
+    waitingForApproval: 0,
+    notOnboarded: 0,
+    unverified: 0,
+    rejected: 0
+  },
   
   // Filters
   filters: {
@@ -239,6 +296,11 @@ const customerSlice = createSlice({
       state.currentPage = 1;
       state.hasMore = true;
       state.listError = null;
+      state.listLoadingMore = false;
+      state.listLoading = false;
+    },
+    setTabCounts: (state, action) => {
+      state.tabCounts = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -318,6 +380,9 @@ const customerSlice = createSlice({
         // hasMore is true if: we got a full page AND there are more records beyond what we've loaded
         const totalLoadedSoFar = state.customers.length;
         state.hasMore = newCustomers.length === state.limit && totalLoadedSoFar < state.totalCustomers;
+        
+        // Don't reset tabCounts here - they are fetched separately via fetchTabCounts
+        // Keep existing tabCounts if they exist
       })
       .addCase(fetchCustomersList.rejected, (state, action) => {
         state.listLoading = false;
@@ -440,6 +505,20 @@ const customerSlice = createSlice({
         state.statesLoading = false;
         state.statesError = action.payload?.message || action.error.message;
       });
+
+    // Fetch Tab Counts
+    builder
+      .addCase(fetchTabCounts.pending, (state) => {
+        console.log('Fetching tab counts...');
+      })
+      .addCase(fetchTabCounts.fulfilled, (state, action) => {
+        console.log('Tab counts fulfilled:', action.payload);
+        state.tabCounts = action.payload || initialState.tabCounts;
+      })
+      .addCase(fetchTabCounts.rejected, (state, action) => {
+        console.error('Tab counts rejected:', action.payload);
+        // Keep existing tab counts on error
+      });
   }
 });
 
@@ -453,7 +532,8 @@ export const {
   setCurrentCustomerId,
   clearErrors,
   clearSuccessFlags,
-  resetCustomersList
+  resetCustomersList,
+  setTabCounts
 } = customerSlice.actions;
 
 // Selectors
@@ -462,6 +542,8 @@ export const selectCustomerTypes = (state) => state.customer.customerTypes;
 export const selectCustomerStatuses = (state) => state.customer.customerStatuses;
 export const selectFilters = (state) => state.customer.filters;
 export const selectCurrentCustomerId = (state) => state.customer.currentCustomerId;
+export const selectTabCounts = (state) => state.customer.tabCounts; 
+
 export const selectPagination = (state) => ({
   currentPage: state.customer.currentPage,
   totalPages: state.customer.totalPages,

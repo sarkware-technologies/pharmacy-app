@@ -207,13 +207,6 @@ export const handleOnboardCustomer = async (navigation, customerId, isStaging, c
       hasCustomerAPI: !!customerAPI,
     });
 
-    // Show loading indicator
-    showToast?.({
-      type: 'info',
-      text1: 'Loading',
-      text2: 'Fetching customer details...',
-    });
-
     // Fetch customer details
     console.log('📡 Fetching customer details from API...');
     const response = await customerAPI.getCustomerDetails(customerId, isStaging);

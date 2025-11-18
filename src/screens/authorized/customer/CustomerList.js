@@ -60,6 +60,7 @@ import {
   fetchCustomersList,
   fetchCustomerTypes,
   fetchCustomerStatuses,
+  fetchTabCounts, // NEW: Import fetchTabCounts action
   setFilters,
   selectCustomers,
   selectPagination,
@@ -67,7 +68,9 @@ import {
   selectCustomerStatuses,
   selectCustomerTypes,
   selectFilters,
-  resetCustomersList
+  resetCustomersList,
+  setTabCounts, // Import setTabCounts action
+  selectTabCounts, // Import selectTabCounts selector
 } from '../../../redux/slices/customerSlice';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import ChevronRight from '../../../components/icons/ChevronRight';
@@ -94,6 +97,19 @@ const CustomerList = ({ navigation }) => {
   const { currentPage, hasMore, limit } = pagination; // Add limit here
   const filters = useSelector(selectFilters); // Get filters from Redux
   const listError = useSelector(state => state.customer.error);
+  const tabCounts = useSelector(selectTabCounts); // Re-added tabCounts selector
+  
+  // Console log tab counts for debugging
+  useEffect(() => {
+    console.log('=== TAB COUNTS IN CUSTOMERLIST ===');
+    console.log('Tab Counts:', tabCounts);
+    console.log('All:', tabCounts.all);
+    console.log('Waiting for Approval:', tabCounts.waitingForApproval);
+    console.log('Not Onboarded:', tabCounts.notOnboarded);
+    console.log('Unverified:', tabCounts.unverified);
+    console.log('Rejected:', tabCounts.rejected);
+    console.log('====================================');
+  }, [tabCounts]);
   
   const [activeTab, setActiveTab] = useState('all');
   const [searchText, setSearchText] = useState('');
@@ -139,13 +155,17 @@ const CustomerList = ({ navigation }) => {
   const filteredCustomers = customers.filter((customer) => {
     if (activeTab === 'onboarded') {
       return customer.statusName === 'ACTIVE';
-    } else if (activeTab === 'waitingForApproval') {
+    } else if (activeTab === 'waitingForApproval' || activeTab === 'notOnboarded') {
+      // Use the same dataset for both tabs, based on PENDING status
       return customer.statusName === 'PENDING';
-    } else if (activeTab === 'notOnboarded') {
-      return customer.statusName === 'NOT-ONBOARDED';
     }
     return true;
   });
+
+  // Fetch tab counts on component mount
+  useEffect(() => {
+    dispatch(fetchTabCounts());
+  }, [dispatch]);
 
   // Fetch customers on mount and when tab changes
   useEffect(() => {
@@ -1274,7 +1294,7 @@ const CustomerList = ({ navigation }) => {
           onPress={() => setActiveTab('all')}
         >
           <AppText style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
-            All ({pagination.totalCustomers})
+            All ({tabCounts.all})
           </AppText>
         </TouchableOpacity>
         <TouchableOpacity
@@ -1282,7 +1302,7 @@ const CustomerList = ({ navigation }) => {
           onPress={() => setActiveTab('waitingForApproval')}
         >
           <AppText style={[styles.tabText, activeTab === 'waitingForApproval' && styles.activeTabText]}>
-            Waiting for Approval
+            Waiting for Approval ({tabCounts.waitingForApproval})
           </AppText>
         </TouchableOpacity>
         <TouchableOpacity
@@ -1290,7 +1310,7 @@ const CustomerList = ({ navigation }) => {
           onPress={() => setActiveTab('notOnboarded')}
         >
           <AppText style={[styles.tabText, activeTab === 'notOnboarded' && styles.activeTabText]}>
-            Not Onboarded
+            Not Onboarded ({tabCounts.notOnboarded})
           </AppText>
         </TouchableOpacity>
         <TouchableOpacity
@@ -1298,7 +1318,7 @@ const CustomerList = ({ navigation }) => {
           onPress={() => setActiveTab('unverified')}
         >
           <AppText style={[styles.tabText, activeTab === 'unverified' && styles.activeTabText]}>
-            Unverified
+            Unverified ({tabCounts.unverified})
           </AppText>
         </TouchableOpacity>
       </View>

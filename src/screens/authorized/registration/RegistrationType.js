@@ -22,6 +22,7 @@ import {
   selectCustomerTypes,
 } from '../../../redux/slices/customerSlice';
 import AppText from "../../../components/AppText"
+import RegistrationFormRouter from "../../../components/RegistrationFormRouter";
 
 const { width } = Dimensions.get('window');
 
@@ -40,6 +41,7 @@ const RegistrationType = () => {
   const [selectedType, setSelectedType] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState(null);
+  const [formSubmitted, setFormSubmitted] = useState(false);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -116,70 +118,77 @@ const RegistrationType = () => {
   }, [selectedCategory]);
 
   const handleTypeSelect = (type) => {
-    setSelectedType(type);
-    setSelectedCategory(null);
-    setSelectedSubCategory(null);
-    
-    // Reset animations for category and subcategory
-    categoryFadeAnim.setValue(0);
-    categorySlideAnim.setValue(30);
-    subCategoryFadeAnim.setValue(0);
-    subCategorySlideAnim.setValue(30);
+    // If clicking the same type, toggle it off (allow deselection)
+    if (selectedType?.id === type.id) {
+      setSelectedType(null);
+      setSelectedCategory(null);
+      setSelectedSubCategory(null);
+      setFormSubmitted(false);
+      
+      // Reset animations
+      categoryFadeAnim.setValue(0);
+      categorySlideAnim.setValue(30);
+      subCategoryFadeAnim.setValue(0);
+      subCategorySlideAnim.setValue(30);
+    } else {
+      // Different type selected
+      setSelectedType(type);
+      setSelectedCategory(null);
+      setSelectedSubCategory(null);
+      setFormSubmitted(false);
+      
+      // Reset animations for category and subcategory
+      categoryFadeAnim.setValue(0);
+      categorySlideAnim.setValue(30);
+      subCategoryFadeAnim.setValue(0);
+      subCategorySlideAnim.setValue(30);
+
+      // If type doesn't need category, mount form immediately
+      if (!type?.customerCategories?.length) {
+        setFormSubmitted(true);
+      }
+    }
   };
 
   const handleCategorySelect = (category) => {
-    setSelectedCategory(category);
-    setSelectedSubCategory(null);
-    
-    // Reset subcategory animation
-    subCategoryFadeAnim.setValue(0);
-    subCategorySlideAnim.setValue(30);
+    // If clicking the same category, toggle it off (allow deselection)
+    if (selectedCategory?.id === category.id) {
+      setSelectedCategory(null);
+      setSelectedSubCategory(null);
+      setFormSubmitted(false);
+      
+      // Reset subcategory animation
+      subCategoryFadeAnim.setValue(0);
+      subCategorySlideAnim.setValue(30);
+    } else {
+      // Different category selected
+      setSelectedCategory(category);
+      setSelectedSubCategory(null);
+      
+      // Reset subcategory animation
+      subCategoryFadeAnim.setValue(0);
+      subCategorySlideAnim.setValue(30);
+
+      // If category doesn't need subcategory, mount form immediately
+      if (!category?.customerSubcategories?.length) {
+        setFormSubmitted(true);
+      } else {
+        // Reset form submission if subcategory is needed
+        setFormSubmitted(false);
+      }
+    }
   };
 
   const handleSubCategorySelect = (subCategory) => {
-    setSelectedSubCategory(subCategory);
-  };
-
-  const handleContinue = () => {
-    if (selectedType && (!needsCategory() || (selectedCategory && (!needsSubCategory() || selectedSubCategory)))) {
-      // Navigate with the selected data
-      const navigationParams = {
-        type: selectedType.code,
-        typeName: selectedType.name,
-        typeId: selectedType.id,
-      };
-
-      if (selectedCategory) {
-        navigationParams.category = selectedCategory.code;
-        navigationParams.categoryName = selectedCategory.name;
-        navigationParams.categoryId = selectedCategory.id;
-      }
-
-      if (selectedSubCategory) {
-        navigationParams.subCategory = selectedSubCategory.code;
-        navigationParams.subCategoryName = selectedSubCategory.name;
-        navigationParams.subCategoryId = selectedSubCategory.id;
-      }
-
-      // Navigate to appropriate form based on selection
-      if (selectedType.code === 'HOSP' && selectedCategory?.code === 'PRI' && 
-        (selectedSubCategory?.code === 'PCL' || selectedSubCategory?.code === 'PIH')) {
-        navigation.navigate('PrivateRegistrationForm', navigationParams);
-      } else if (selectedType.code === 'HOSP' && selectedCategory?.code === 'PRI' && selectedSubCategory?.code === 'PGH') {
-        // Group Hospital/CBU
-        navigation.navigate('GroupHospitalRegistrationForm', navigationParams);
-      } else if (selectedType.code === 'HOSP' && selectedCategory?.code === 'GOV') {
-        // Government Hospital
-        navigation.navigate('GovtHospitalRegistrationForm', navigationParams);
-      } else if (selectedType.code === 'DOCT') {
-        navigation.navigate('DoctorRegistrationForm', navigationParams);
-      } else if (selectedType.code === 'PCM' && selectedCategory?.code === 'OR') {
-        navigation.navigate('PharmacyRetailerForm', navigationParams);
-      } else if (selectedType.code === 'PCM' && selectedCategory?.code === 'OW') {
-        navigation.navigate('PharmacyWholesalerForm', navigationParams);
-      } else if (selectedType.code === 'PCM' && selectedCategory?.code === 'RCW') {
-        navigation.navigate('PharmacyWholesalerRetailerForm', navigationParams);
-      }
+    // If clicking the same subcategory, toggle it off (allow deselection)
+    if (selectedSubCategory?.id === subCategory.id) {
+      setSelectedSubCategory(null);
+      setFormSubmitted(false);
+    } else {
+      // Different subcategory selected
+      setSelectedSubCategory(subCategory);
+      // Mount form immediately when subcategory is selected
+      setFormSubmitted(true);
     }
   };
 
@@ -197,6 +206,12 @@ const RegistrationType = () => {
 
   const getSubCategories = () => {
     return selectedCategory?.customerSubcategories || [];
+  };
+
+  // Helper function to clean up display names by removing "Private - " prefix
+  const cleanDisplayName = (name) => {
+    if (!name) return name;
+    return name.replace(/^Private\s*-\s*/i, '').trim();
   };
 
   const TypeButton = ({ type, isSelected }) => {
@@ -302,6 +317,7 @@ const RegistrationType = () => {
         <AppText style={styles.headerTitle}>Registration</AppText>
       </View>
 
+      {/* Selection Section - Always visible at top */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -400,39 +416,34 @@ const RegistrationType = () => {
                       styles.subCategoryButtonText,
                       selectedSubCategory?.id === subCat.id && styles.selectedSubCategoryButtonText,
                     ]}>
-                      {subCat.name}
+                      {cleanDisplayName(subCat.name)}
                     </AppText>
                   </TouchableOpacity>
                 ))}
               </View>
             </Animated.View>
           )}
+
+          {/* Dynamic Form Router - Shows below selections */}
+          {formSubmitted && selectedType && (
+            (!needsCategory() || selectedCategory) && 
+            (!needsSubCategory() || selectedSubCategory)
+          ) && (
+            <View style={styles.formSection}>
+              <RegistrationFormRouter
+                selectedType={selectedType}
+                selectedCategory={selectedCategory}
+                selectedSubCategory={selectedSubCategory}
+                navigation={navigation}
+                onChangeSelection={() => {
+                  // Go back to selection screen
+                  setFormSubmitted(false);
+                }}
+              />
+            </View>
+          )}
         </Animated.View>
       </ScrollView>
-
-      {/* Continue Button */}
-      {selectedType && (
-        (!needsCategory() || selectedCategory) && 
-        (!needsSubCategory() || selectedSubCategory)
-      ) && (
-        <Animated.View
-          style={[
-            styles.bottomContainer,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.continueButton}
-            onPress={handleContinue}
-            activeOpacity={0.8}
-          >
-            <AppText style={styles.continueButtonText}>Continue</AppText>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
     </SafeAreaView>
   );
 };
@@ -468,7 +479,13 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 12,
+  },
+  formSection: {
+    marginTop: -10,
+    marginBottom: 12,
+    flex: 1,
+    minHeight: 400,
   },
   sectionTitle: {
     fontSize: 18,
@@ -482,81 +499,92 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   typeContainer: {
+    flexDirection: 'row',
     gap: 12,
+    flexWrap: 'wrap',
   },
   typeButton: {
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E3E3E3',
     backgroundColor: '#FAFAFA',
-    marginBottom: 12,    
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   selectedTypeButton: {
     borderColor: colors.primary,
-    backgroundColor: '#FFF5ED',
+    backgroundColor: '#fef4e8',
   },
   typeButtonText: {
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
+    flexWrap: 'nowrap',
   },
   selectedTypeButtonText: {
-    color: colors.primary,
+    color: '#111',
     fontWeight: '500',
   },
   categoryContainer: {
     flexDirection: 'row',
     gap: 12,
+    flexWrap: 'wrap',
   },
   categoryButton: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E3E3E3',
     backgroundColor: '#FAFAFA',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 80,
   },
   selectedCategoryButton: {
     borderColor: colors.primary,
-    backgroundColor: '#FFF5ED',
+    backgroundColor: '#fef4e8',
   },
   categoryButtonText: {
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
     fontWeight: '500',
+    flexWrap: 'nowrap',
   },
   selectedCategoryButtonText: {
-    color: colors.primary,
+    color: '#111',
     fontWeight: '500',
   },
   subCategoryContainer: {
     gap: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   subCategoryButton: {
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E3E3E3',
     backgroundColor: '#FAFAFA',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   selectedSubCategoryButton: {
     borderColor: colors.primary,
-    backgroundColor: '#FFF5ED',
+    backgroundColor: '#fef4e8',
   },
   subCategoryButtonText: {
     fontSize: 14,
     color: '#666',
+    flexWrap: 'nowrap',
   },
   selectedSubCategoryButtonText: {
-    color: colors.primary,
+    color: '#111',
     fontWeight: '500',
   },
   bottomContainer: {

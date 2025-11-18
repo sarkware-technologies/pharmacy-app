@@ -128,7 +128,7 @@ const mockFieldData = [
   { id: 9, name: 'Sanket Kulkarni', code: 'SUN12345', designation: 'Customer executive' },
 ];
 
-export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) => {
+export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mappingData = null }) => {
   const [activeSubTab, setActiveSubTab] = useState('divisions');
   const [activeDistributorTab, setActiveDistributorTab] = useState('preferred');
   const [showDivisionModal, setShowDivisionModal] = useState(false);
@@ -153,6 +153,10 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
 
   // Customer Hierarchy states
   const [activeHierarchyTab, setActiveHierarchyTab] = useState('pharmacies');
+  const [hierarchyMappingData, setHierarchyMappingData] = useState(null);
+  const [expandedHospitals, setExpandedHospitals] = useState({});
+  const [expandedGroupHospitals, setExpandedGroupHospitals] = useState({});
+  const [activeGroupHospitalTab, setActiveGroupHospitalTab] = useState({});
   
   // Toast states 
   const [toastVisible, setToastVisible] = useState(false);
@@ -274,6 +278,34 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
 
     fetchFieldTeamData();
   }, []);
+
+  // Process and log mapping data from customer details API
+  useEffect(() => {
+    if (mappingData) {
+      console.log('=== MAPPING DATA RECEIVED IN LINKAGED TAB ===');
+      console.log('Full Mapping Data:', mappingData);
+      
+      // Log individual sections
+      console.log('--- Hospitals ---');
+      console.log('Hospitals:', mappingData.hospitals || []);
+      console.log('Hospital Count:', mappingData.hospitals?.length || 0);
+      
+      console.log('--- Doctors ---');
+      console.log('Doctors:', mappingData.doctors || []);
+      console.log('Doctor Count:', mappingData.doctors?.length || 0);
+      
+      console.log('--- Pharmacies ---');
+      console.log('Pharmacies:', mappingData.pharmacy || []);
+      console.log('Pharmacy Count:', mappingData.pharmacy?.length || 0);
+      
+      console.log('--- Group Hospitals ---');
+      console.log('Group Hospitals:', mappingData.groupHospitals || []);
+      console.log('Group Hospital Count:', mappingData.groupHospitals?.length || 0);
+      
+      // Store mapping data in state
+      setHierarchyMappingData(mappingData);
+    }
+  }, [mappingData]);
 
   // Fetch preferred distributors when Preferred tab is active
   useEffect(() => {
@@ -1074,217 +1106,497 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null }) =>
   );
 
   const renderCustomerHierarchyTab = () => {
-    // Different views based on customer type
-    if (customerType === 'Doctors') {
+    // Check if we have mapping data
+    if (!hierarchyMappingData) {
       return (
         <View style={styles.tabContent}>
           <ScrollView style={styles.scrollContent}>
             <View style={styles.emptyContainer}>
               <Icon name="inbox" size={50} color="#999" />
               <AppText style={styles.emptyText}>No data found</AppText>
-              <AppText style={styles.emptySubText}>Linked pharmacies will appear here</AppText>
+              <AppText style={styles.emptySubText}>Linked data will appear here</AppText>
             </View>
-            
-            {/* TODO: Will integrate with API later */}
-            {/* 
-            <View style={styles.hierarchyHeader}>
-              <AppText style={styles.hierarchyHeaderText}>Pharmacy Details</AppText>
-              <AppText style={styles.hierarchyHeaderText}>Action</AppText>
-            </View>
-
-            {mockLinkagedData.doctor.linkedPharmacies.map((pharmacy) => (
-              <View key={pharmacy.id} style={styles.hierarchyRow}>
-                <View style={styles.hierarchyInfo}>
-                  <AppText style={styles.hierarchyName}>{pharmacy.name}</AppText>
-                  <AppText style={styles.hierarchyCode}>{pharmacy.code} | {pharmacy.location}</AppText>
-                </View>
-                <View style={styles.hierarchyActions}>
-                  <TouchableOpacity 
-                    style={styles.approveButton}
-                    onPress={() => handleApprove(pharmacy)}
-                  >
-                    <Icon name="check" size={16} color="#fff" />
-                    <AppText style={styles.approveButtonText}>Approve</AppText>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.rejectButton}
-                    onPress={() => handleReject(pharmacy)}
-                  >
-                    <Icon name="close" size={20} color="#666" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-            */}
           </ScrollView>
         </View>
       );
-    } else if (customerType === 'Hospital') {
-      // Parent Hospital View
-      if (mockLinkagedData.hospital.parentHospital) {
+    }
+
+    // For Doctors - show linked pharmacies
+    if (customerType === 'Doctors') {
+      const linkedPharmacies = hierarchyMappingData?.pharmacy || [];
+      
+      if (linkedPharmacies.length === 0) {
         return (
           <View style={styles.tabContent}>
             <ScrollView style={styles.scrollContent}>
               <View style={styles.emptyContainer}>
                 <Icon name="inbox" size={50} color="#999" />
                 <AppText style={styles.emptyText}>No data found</AppText>
-                <AppText style={styles.emptySubText}>Linked pharmacies and doctors will appear here</AppText>
+                <AppText style={styles.emptySubText}>Linked pharmacies will appear here</AppText>
               </View>
+            </ScrollView>
+          </View>
+        );
+      }
 
-              {/* TODO: Will integrate with API later */}
-              {/* 
-              {/* Parent Hospital Info */}
-              {/* <View style={styles.parentHospitalCard}>
-                <AppText style={styles.parentLabel}>Group Hospital</AppText>
-                <AppText style={styles.parentTitle}>Parent Hospital</AppText>
-                <AppText style={styles.parentName}>
-                  {mockLinkagedData.hospital.parentHospital.name} | {mockLinkagedData.hospital.parentHospital.code}
-                </AppText>
-              </View>
-
-              {/* Tabs for Linked Pharmacies and Doctors */}
-              {/* <View style={styles.hierarchyTabs}>
-                <TouchableOpacity
-                  style={[styles.hierarchyTab, activeHierarchyTab === 'pharmacies' && styles.activeHierarchyTab]}
-                  onPress={() => setActiveHierarchyTab('pharmacies')}
-                >
-                  <AppText style={[styles.hierarchyTabText, activeHierarchyTab === 'pharmacies' && styles.activeHierarchyTabText]}>
-                    Linked Pharmacies
-                  </AppText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.hierarchyTab, activeHierarchyTab === 'doctors' && styles.activeHierarchyTab]}
-                  onPress={() => setActiveHierarchyTab('doctors')}
-                >
-                  <AppText style={[styles.hierarchyTabText, activeHierarchyTab === 'doctors' && styles.activeHierarchyTabText]}>
-                    Linked Doctors
-                  </AppText>
-                </TouchableOpacity>
-              </View>
-
+      return (
+        <View style={styles.tabContent}>
+          <ScrollView style={styles.scrollContent}>
+            <View style={styles.hierarchySection}>
+              <AppText style={styles.hierarchySectionTitle}>Linked Pharmacies</AppText>
+              
               <View style={styles.hierarchyHeader}>
                 <AppText style={styles.hierarchyHeaderText}>Pharmacy Details</AppText>
                 <AppText style={styles.hierarchyHeaderText}>Action</AppText>
               </View>
 
-              {mockLinkagedData.hospital.linkedPharmacies.map((pharmacy) => (
-                <View key={pharmacy.id} style={styles.hierarchyRow}>
+              {linkedPharmacies.map((pharmacy) => (
+                <View key={pharmacy.customerId} style={styles.hierarchyRow}>
                   <View style={styles.hierarchyInfo}>
-                    <AppText style={styles.hierarchyName}>{pharmacy.name}</AppText>
-                    <AppText style={styles.hierarchyCode}>{pharmacy.code} | {pharmacy.location}</AppText>
+                    <AppText style={styles.hierarchyName}>{pharmacy.customerName}</AppText>
+                    <AppText style={styles.hierarchyCode}>{pharmacy.customerCode} | {pharmacy.cityName}</AppText>
                   </View>
                   <View style={styles.hierarchyActions}>
                     <TouchableOpacity 
                       style={styles.approveButton}
                       onPress={() => handleApprove(pharmacy)}
                     >
-                      <Icon name="check" size={16} color="#fff" />
+                      <Icon name="check" size={14} color="#fff" />
                       <AppText style={styles.approveButtonText}>Approve</AppText>
                     </TouchableOpacity>
                     <TouchableOpacity 
                       style={styles.rejectButton}
                       onPress={() => handleReject(pharmacy)}
                     >
-                      <Icon name="close" size={20} color="#666" />
+                      <Icon name="close" size={18} color="#666" />
                     </TouchableOpacity>
                   </View>
                 </View>
               ))}
-              */}
-            </ScrollView>
-          </View>
-        );
-      } else {
-        // Child Hospitals View
+            </View>
+          </ScrollView>
+        </View>
+      );
+    } 
+    
+    // For Hospitals - show linked pharmacies and doctors
+    else if (customerType === 'Hospital') {
+      const linkedPharmacies = hierarchyMappingData?.pharmacy || [];
+      const linkedDoctors = hierarchyMappingData?.doctors || [];
+      const childHospitals = hierarchyMappingData?.hospitals || [];
+      const groupHospitals = hierarchyMappingData?.groupHospitals || [];
+
+      // If we have child hospitals, show the expandable design
+      if (childHospitals.length > 0) {
         return (
           <View style={styles.tabContent}>
             <ScrollView style={styles.scrollContent}>
-              <View style={styles.emptyContainer}>
-                <Icon name="inbox" size={50} color="#999" />
-                <AppText style={styles.emptyText}>No data found</AppText>
-                <AppText style={styles.emptySubText}>Child hospitals will appear here</AppText>
-              </View>
-
-              {/* TODO: Will integrate with API later */}
-              {/* 
-              {mockLinkagedData.hospital.childHospitals.map((hospital) => (
-                <View key={hospital.id} style={styles.hospitalCard}>
-                  <View style={styles.hospitalHeader}>
-                    <View>
-                      <AppText style={styles.hospitalName}>{hospital.name}</AppText>
-                      <AppText style={styles.hospitalCode}>{hospital.code} | {hospital.type}</AppText>
+              {childHospitals.map((hospital) => (
+                <View key={hospital.customerId} style={styles.hospitalCard}>
+                  {/* Hospital Header */}
+                  <View style={styles.hospitalCardHeader}>
+                    <View style={styles.hospitalCardInfo}>
+                      <AppText style={styles.hospitalCardName}>{hospital.customerName}</AppText>
+                      <AppText style={styles.hospitalCardCode}>{hospital.customerCode} | {hospital.cityName}</AppText>
                     </View>
-                    <View style={styles.hierarchyActions}>
+                    <View style={styles.hospitalCardActions}>
                       <TouchableOpacity 
                         style={styles.approveButton}
                         onPress={() => handleApprove(hospital)}
                       >
-                        <Icon name="check" size={16} color="#fff" />
+                        <Icon name="check" size={14} color="#fff" />
                         <AppText style={styles.approveButtonText}>Approve</AppText>
                       </TouchableOpacity>
                       <TouchableOpacity 
                         style={styles.rejectButton}
                         onPress={() => handleReject(hospital)}
                       >
-                        <Icon name="close" size={20} color="#666" />
+                        <Icon name="close" size={18} color="#666" />
                       </TouchableOpacity>
                     </View>
                   </View>
 
-                  <TouchableOpacity style={styles.expandButton}>
-                    <AppText style={styles.expandText}>Linked Pharmacies & Doctors</AppText>
-                    <IconMaterial name="keyboard-arrow-down" size={24} color="#666" />
+                  {/* Expandable Section */}
+                  <TouchableOpacity 
+                    style={styles.expandableHeader}
+                    onPress={() => setExpandedHospitals(prev => ({
+                      ...prev,
+                      [hospital.customerId]: !prev[hospital.customerId]
+                    }))}
+                  >
+                    <View style={styles.expandableContent}>
+                      <AppText style={styles.expandableText}>
+                        {linkedPharmacies.length > 0 && linkedDoctors.length > 0 
+                          ? 'Linked Pharmacies & Doctors' 
+                          : linkedPharmacies.length > 0 
+                          ? 'Linked Pharmacies' 
+                          : 'Linked Doctors'}
+                      </AppText>
+                    </View>
+                    <Icon 
+                      name={expandedHospitals[hospital.customerId] ? "chevron-up" : "chevron-down"} 
+                      size={20} 
+                      color="#666" 
+                    />
                   </TouchableOpacity>
 
-                  {/* Tabs */}
-                  {/* <View style={styles.hierarchyTabs}>
-                    <TouchableOpacity style={[styles.hierarchyTab, styles.activeHierarchyTab]}>
-                      <AppText style={[styles.hierarchyTabText, styles.activeHierarchyTabText]}>
-                        Pharmacies
-                      </AppText>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.hierarchyTab}>
-                      <AppText style={styles.hierarchyTabText}>Doctors</AppText>
-                    </TouchableOpacity>
-                  </View>
+                  {/* Expanded Content */}
+                  {expandedHospitals[hospital.customerId] && (
+                    <View style={styles.expandedContent}>
+                      {/* Linked Pharmacies */}
+                      {linkedPharmacies.length > 0 && (
+                        <View style={styles.linkedItemsSection}>
+                          <AppText style={styles.linkedItemsTitle}>Linked Pharmacies</AppText>
+                          {linkedPharmacies.map((pharmacy) => (
+                            <View key={pharmacy.customerId} style={styles.linkedItemRow}>
+                              <View style={styles.linkedItemInfo}>
+                                <AppText style={styles.linkedItemName}>{pharmacy.customerName}</AppText>
+                                <AppText style={styles.linkedItemCode}>{pharmacy.customerCode} | {pharmacy.cityName}</AppText>
+                              </View>
+                              <View style={styles.linkedItemActions}>
+                                <TouchableOpacity 
+                                  style={styles.approveButton}
+                                  onPress={() => handleApprove(pharmacy)}
+                                >
+                                  <Icon name="check" size={12} color="#fff" />
+                                  <AppText style={styles.approveButtonText}>Approve</AppText>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                  style={styles.rejectButton}
+                                  onPress={() => handleReject(pharmacy)}
+                                >
+                                  <Icon name="close" size={16} color="#666" />
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                      )}
 
-                  <View style={styles.linkedItemsContainer}>
-                    <View style={styles.hierarchyHeader}>
-                      <AppText style={styles.hierarchyHeaderText}>Pharmacy Details</AppText>
-                      <AppText style={styles.hierarchyHeaderText}>Action</AppText>
+                      {/* Linked Doctors */}
+                      {linkedDoctors.length > 0 && (
+                        <View style={styles.linkedItemsSection}>
+                          <AppText style={styles.linkedItemsTitle}>Linked Doctors</AppText>
+                          {linkedDoctors.map((doctor) => (
+                            <View key={doctor.customerId} style={styles.linkedItemRow}>
+                              <View style={styles.linkedItemInfo}>
+                                <AppText style={styles.linkedItemName}>{doctor.customerName}</AppText>
+                                <AppText style={styles.linkedItemCode}>{doctor.customerCode} | {doctor.cityName}</AppText>
+                              </View>
+                              <View style={styles.linkedItemActions}>
+                                <TouchableOpacity 
+                                  style={styles.approveButton}
+                                  onPress={() => handleApprove(doctor)}
+                                >
+                                  <Icon name="check" size={12} color="#fff" />
+                                  <AppText style={styles.approveButtonText}>Approve</AppText>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                  style={styles.rejectButton}
+                                  onPress={() => handleReject(doctor)}
+                                >
+                                  <Icon name="close" size={16} color="#666" />
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                      )}
                     </View>
-
-                    {mockLinkagedData.hospital.linkedPharmacies.map((pharmacy) => (
-                      <View key={`${hospital.id}-${pharmacy.id}`} style={styles.hierarchyRow}>
-                        <View style={styles.hierarchyInfo}>
-                          <AppText style={styles.hierarchyName}>{pharmacy.name}</AppText>
-                          <AppText style={styles.hierarchyCode}>{pharmacy.code} | {pharmacy.location}</AppText>
-                        </View>
-                        <View style={styles.hierarchyActions}>
-                          <TouchableOpacity 
-                            style={styles.approveButton}
-                            onPress={() => handleApprove(pharmacy)}
-                          >
-                            <Icon name="check" size={16} color="#fff" />
-                            <AppText style={styles.approveButtonText}>Approve</AppText>
-                          </TouchableOpacity>
-                          <TouchableOpacity 
-                            style={styles.rejectButton}
-                            onPress={() => handleReject(pharmacy)}
-                          >
-                            <Icon name="close" size={20} color="#666" />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
+                  )}
                 </View>
               ))}
-              */}
             </ScrollView>
           </View>
         );
       }
+
+      // If we have group hospitals, show accordion design
+      if (groupHospitals.length > 0) {
+        return (
+          <View style={styles.tabContent}>
+            <ScrollView style={styles.scrollContent}>
+              {groupHospitals.map((hospital) => (
+                <View key={hospital.customerId} style={styles.accordionCard}>
+                  {/* Hospital Header */}
+                  <TouchableOpacity 
+                    style={styles.accordionHeader}
+                    onPress={() => setExpandedGroupHospitals(prev => ({
+                      ...prev,
+                      [hospital.customerId]: !prev[hospital.customerId]
+                    }))}
+                  >
+                    <View style={styles.accordionHeaderInfo}>
+                      <AppText style={styles.accordionHospitalName}>{hospital.customerName}</AppText>
+                      <AppText style={styles.accordionHospitalCode}>{hospital.customerCode} | {hospital.cityName}</AppText>
+                      
+                      {expandedGroupHospitals[hospital.customerId] && (
+                        <View style={styles.accordionTabsContainer}>
+                          <TouchableOpacity
+                            style={[styles.accordionTab, activeGroupHospitalTab[hospital.customerId] === 'doctors' && styles.activeAccordionTab]}
+                            onPress={() => setActiveGroupHospitalTab(prev => ({
+                              ...prev,
+                              [hospital.customerId]: 'doctors'
+                            }))}
+                          >
+                            <AppText style={[styles.accordionTabText, activeGroupHospitalTab[hospital.customerId] === 'doctors' && styles.activeAccordionTabText]}>
+                              Doctors
+                            </AppText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.accordionTab, (!activeGroupHospitalTab[hospital.customerId] || activeGroupHospitalTab[hospital.customerId] === 'pharmacies') && styles.activeAccordionTab]}
+                            onPress={() => setActiveGroupHospitalTab(prev => ({
+                              ...prev,
+                              [hospital.customerId]: 'pharmacies'
+                            }))}
+                          >
+                            <AppText style={[styles.accordionTabText, (!activeGroupHospitalTab[hospital.customerId] || activeGroupHospitalTab[hospital.customerId] === 'pharmacies') && styles.activeAccordionTabText]}>
+                              Pharmacies
+                            </AppText>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.accordionHeaderActions}>
+                      <TouchableOpacity 
+                        style={styles.approveButton}
+                        onPress={() => handleApprove(hospital)}
+                      >
+                        <Icon name="check" size={14} color="#fff" />
+                        <AppText style={styles.approveButtonText}>Approve</AppText>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.rejectButton}
+                        onPress={() => handleReject(hospital)}
+                      >
+                        <Icon name="close" size={18} color="#666" />
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Expandable Content */}
+                  {expandedGroupHospitals[hospital.customerId] && (
+                    <View style={styles.accordionContent}>
+                      {/* Pharmacies Tab */}
+                      {(!activeGroupHospitalTab[hospital.customerId] || activeGroupHospitalTab[hospital.customerId] === 'pharmacies') && (
+                        <View style={styles.accordionItemsContainer}>
+                          {linkedPharmacies.length > 0 ? (
+                            <>
+                              <View style={styles.accordionItemsHeader}>
+                                <AppText style={styles.accordionItemsHeaderText}>Pharmacy Details</AppText>
+                                <AppText style={styles.accordionItemsHeaderText}>Action</AppText>
+                              </View>
+                              {linkedPharmacies.map((pharmacy, index) => (
+                                <View key={`${hospital.customerId}-pharmacy-${pharmacy.customerId}-${index}`} style={styles.accordionItemRow}>
+                                  <View style={styles.accordionItemInfo}>
+                                    <AppText style={styles.accordionItemName}>{pharmacy.customerName}</AppText>
+                                    <AppText style={styles.accordionItemCode}>{pharmacy.customerCode} | {pharmacy.cityName}</AppText>
+                                  </View>
+                                  <View style={styles.accordionItemActions}>
+                                    <TouchableOpacity 
+                                      style={styles.approveButton}
+                                      onPress={() => handleApprove(pharmacy)}
+                                    >
+                                      <Icon name="check" size={14} color="#fff" />
+                                      <AppText style={styles.approveButtonText}>Approve</AppText>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity 
+                                      style={styles.rejectButton}
+                                      onPress={() => handleReject(pharmacy)}
+                                    >
+                                      <Icon name="close" size={18} color="#666" />
+                                    </TouchableOpacity>
+                                  </View>
+                                </View>
+                              ))}
+                            </>
+                          ) : (
+                            <View style={styles.emptyAccordionContent}>
+                              <AppText style={styles.emptyAccordionText}>No pharmacies linked</AppText>
+                            </View>
+                          )}
+                        </View>
+                      )}
+
+                      {/* Doctors Tab */}
+                      {activeGroupHospitalTab[hospital.customerId] === 'doctors' && (
+                        <View style={styles.accordionItemsContainer}>
+                          {linkedDoctors.length > 0 ? (
+                            <>
+                              <View style={styles.accordionItemsHeader}>
+                                <AppText style={styles.accordionItemsHeaderText}>Doctor Details</AppText>
+                                <AppText style={styles.accordionItemsHeaderText}>Action</AppText>
+                              </View>
+                              {linkedDoctors.map((doctor, index) => (
+                                <View key={`${hospital.customerId}-doctor-${doctor.customerId}-${index}`} style={styles.accordionItemRow}>
+                                  <View style={styles.accordionItemInfo}>
+                                    <AppText style={styles.accordionItemName}>{doctor.customerName}</AppText>
+                                    <AppText style={styles.accordionItemCode}>{doctor.customerCode} | {doctor.cityName}</AppText>
+                                  </View>
+                                  <View style={styles.accordionItemActions}>
+                                    <TouchableOpacity 
+                                      style={styles.approveButton}
+                                      onPress={() => handleApprove(doctor)}
+                                    >
+                                      <Icon name="check" size={14} color="#fff" />
+                                      <AppText style={styles.approveButtonText}>Approve</AppText>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity 
+                                      style={styles.rejectButton}
+                                      onPress={() => handleReject(doctor)}
+                                    >
+                                      <Icon name="close" size={18} color="#666" />
+                                    </TouchableOpacity>
+                                  </View>
+                                </View>
+                              ))}
+                            </>
+                          ) : (
+                            <View style={styles.emptyAccordionContent}>
+                              <AppText style={styles.emptyAccordionText}>No doctors linked</AppText>
+                            </View>
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        );
+      }
+
+      // Check if we have any other data
+      const hasOtherData = linkedPharmacies.length > 0 || linkedDoctors.length > 0;
+
+      if (!hasOtherData) {
+        return (
+          <View style={styles.tabContent}>
+            <ScrollView style={styles.scrollContent}>
+              <View style={styles.emptyContainer}>
+                <Icon name="inbox" size={50} color="#999" />
+                <AppText style={styles.emptyText}>No data found</AppText>
+                <AppText style={styles.emptySubText}>Linked pharmacies, doctors and hospitals will appear here</AppText>
+              </View>
+            </ScrollView>
+          </View>
+        );
+      }
+
+      return (
+        <View style={styles.tabContent}>
+          <ScrollView style={styles.scrollContent}>
+            {/* Linked Pharmacies Section */}
+            {linkedPharmacies.length > 0 && (
+              <View style={styles.hierarchySection}>
+                <AppText style={styles.hierarchySectionTitle}>Linked Pharmacies</AppText>
+                
+                <View style={styles.hierarchyHeader}>
+                  <AppText style={styles.hierarchyHeaderText}>Pharmacy Details</AppText>
+                  <AppText style={styles.hierarchyHeaderText}>Action</AppText>
+                </View>
+
+                {linkedPharmacies.map((pharmacy) => (
+                  <View key={pharmacy.customerId} style={styles.hierarchyRow}>
+                    <View style={styles.hierarchyInfo}>
+                      <AppText style={styles.hierarchyName}>{pharmacy.customerName}</AppText>
+                      <AppText style={styles.hierarchyCode}>{pharmacy.customerCode} | {pharmacy.cityName}</AppText>
+                    </View>
+                    <View style={styles.hierarchyActions}>
+                      <TouchableOpacity 
+                        style={styles.approveButton}
+                        onPress={() => handleApprove(pharmacy)}
+                      >
+                        <Icon name="check" size={14} color="#fff" />
+                        <AppText style={styles.approveButtonText}>Approve</AppText>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.rejectButton}
+                        onPress={() => handleReject(pharmacy)}
+                      >
+                        <Icon name="close" size={18} color="#666" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Linked Doctors Section */}
+            {linkedDoctors.length > 0 && (
+              <View style={styles.hierarchySection}>
+                <AppText style={styles.hierarchySectionTitle}>Linked Doctors</AppText>
+                
+                <View style={styles.hierarchyHeader}>
+                  <AppText style={styles.hierarchyHeaderText}>Doctor Details</AppText>
+                  <AppText style={styles.hierarchyHeaderText}>Action</AppText>
+                </View>
+
+                {linkedDoctors.map((doctor) => (
+                  <View key={doctor.customerId} style={styles.hierarchyRow}>
+                    <View style={styles.hierarchyInfo}>
+                      <AppText style={styles.hierarchyName}>{doctor.customerName}</AppText>
+                      <AppText style={styles.hierarchyCode}>{doctor.customerCode} | {doctor.cityName}</AppText>
+                    </View>
+                    <View style={styles.hierarchyActions}>
+                      <TouchableOpacity 
+                        style={styles.approveButton}
+                        onPress={() => handleApprove(doctor)}
+                      >
+                        <Icon name="check" size={14} color="#fff" />
+                        <AppText style={styles.approveButtonText}>Approve</AppText>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.rejectButton}
+                        onPress={() => handleReject(doctor)}
+                      >
+                        <Icon name="close" size={18} color="#666" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Group Hospitals Section */}
+            {groupHospitals.length > 0 && (
+              <View style={styles.hierarchySection}>
+                <AppText style={styles.hierarchySectionTitle}>Group Hospitals</AppText>
+                
+                <View style={styles.hierarchyHeader}>
+                  <AppText style={styles.hierarchyHeaderText}>Hospital Details</AppText>
+                  <AppText style={styles.hierarchyHeaderText}>Action</AppText>
+                </View>
+
+                {groupHospitals.map((hospital) => (
+                  <View key={hospital.customerId} style={styles.hierarchyRow}>
+                    <View style={styles.hierarchyInfo}>
+                      <AppText style={styles.hierarchyName}>{hospital.customerName}</AppText>
+                      <AppText style={styles.hierarchyCode}>{hospital.customerCode} | {hospital.cityName}</AppText>
+                    </View>
+                    <View style={styles.hierarchyActions}>
+                      <TouchableOpacity 
+                        style={styles.approveButton}
+                        onPress={() => handleApprove(hospital)}
+                      >
+                        <Icon name="check" size={14} color="#fff" />
+                        <AppText style={styles.approveButtonText}>Approve</AppText>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.rejectButton}
+                        onPress={() => handleReject(hospital)}
+                      >
+                        <Icon name="close" size={18} color="#666" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      );
     }
 
     return null;
@@ -2236,6 +2548,313 @@ const styles = StyleSheet.create({
   },
   continueButtonDisabled: {
     opacity: 0.5,
+  },
+  // Hierarchy section styles
+  hierarchySection: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  hierarchySectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  hierarchyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  hierarchyHeaderText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666',
+    flex: 1,
+  },
+  hierarchyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  hierarchyInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  hierarchyName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 4,
+  },
+  hierarchyCode: {
+    fontSize: 12,
+    color: '#999',
+  },
+  hierarchyActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  approveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF6B00',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+  },
+  approveButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  rejectButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  // Hospital card styles (for expandable design)
+  hospitalCard: {
+    marginHorizontal: 12,
+    marginVertical: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    overflow: 'hidden',
+  },
+  hospitalCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  hospitalCardInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  hospitalCardName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  hospitalCardCode: {
+    fontSize: 12,
+    color: '#999',
+  },
+  hospitalCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  expandableHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#F9F9F9',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  expandableContent: {
+    flex: 1,
+  },
+  expandableText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
+  },
+  expandedContent: {
+    backgroundColor: '#FAFAFA',
+    paddingVertical: 8,
+  },
+  linkedItemsSection: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  linkedItemsTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  linkedItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    marginBottom: 4,
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  linkedItemInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  linkedItemName: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 2,
+  },
+  linkedItemCode: {
+    fontSize: 11,
+    color: '#999',
+  },
+  linkedItemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  // Accordion styles (for group hospitals)
+  accordionCard: {
+    marginHorizontal: 12,
+    marginVertical: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    overflow: 'hidden',
+  },
+  accordionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  accordionHeaderInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  accordionHospitalName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  accordionHospitalCode: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 8,
+  },
+  accordionTabsContainer: {
+    flexDirection: 'row',
+    marginTop: 8,
+    gap: 12,
+  },
+  accordionTab: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeAccordionTab: {
+    borderBottomColor: '#FF6B00',
+  },
+  accordionTabText: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '500',
+  },
+  activeAccordionTabText: {
+    color: '#FF6B00',
+    fontWeight: '600',
+  },
+  accordionHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  accordionContent: {
+    backgroundColor: '#FAFAFA',
+    paddingVertical: 12,
+  },
+  accordionItemsContainer: {
+    paddingHorizontal: 12,
+  },
+  accordionItemsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  accordionItemsHeaderText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666',
+    flex: 1,
+  },
+  accordionItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    marginBottom: 8,
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+  },
+  accordionItemInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  accordionItemName: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 2,
+  },
+  accordionItemCode: {
+    fontSize: 11,
+    color: '#999',
+  },
+  accordionItemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyAccordionContent: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  emptyAccordionText: {
+    fontSize: 12,
+    color: '#999',
   },
 });
 

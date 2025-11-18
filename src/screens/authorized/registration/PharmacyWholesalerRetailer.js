@@ -28,6 +28,8 @@ import ChevronLeft from '../../../components/icons/ChevronLeft';
 import ChevronRight from '../../../components/icons/ChevronRight';
 import { customerAPI } from '../../../api/customer';
 import {AppText,AppInput} from "../../../components"
+import AddNewHospitalModal from './AddNewHospitalModal';
+import AddNewDoctorModal from './AddNewDoctorModal';
 
 // Default document types for file uploads (will be updated from API for licenses)
 const DOC_TYPES = {
@@ -192,6 +194,8 @@ const PharmacyWholesalerRetailerForm = () => {
   const [showStateModal, setShowStateModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showAreaModal, setShowAreaModal] = useState(false);
+  const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
+  const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
 
   // Modal states for hospital and pharmacy selectors
   const [showHospitalModal, setShowHospitalModal] = useState(false);
@@ -437,6 +441,10 @@ const PharmacyWholesalerRetailerForm = () => {
       setErrors(prev => ({ ...prev, mobileNumber: 'Please enter valid 10-digit mobile number' }));
       return;
     }
+    if (field === 'mobile' && !/^[6-9]/.test(formData.mobileNumber)) {
+      setErrors(prev => ({ ...prev, mobileNumber: 'Please enter valid 10-digit mobile number' }));
+      return;
+    }
     if (field === 'email' && (!formData.emailAddress || !formData.emailAddress.includes('@'))) {
       setErrors(prev => ({ ...prev, emailAddress: 'Please enter valid email address' }));
       return;
@@ -445,7 +453,6 @@ const PharmacyWholesalerRetailerForm = () => {
     setLoadingOtp(prev => ({ ...prev, [field]: true }));
     try {
       const requestData = {
-        customerId: 1, // Using default customerId for now
         [field === 'mobile' ? 'mobile' : 'email']: 
           field === 'mobile' ? formData.mobileNumber : formData.emailAddress
       };
@@ -542,7 +549,6 @@ const PharmacyWholesalerRetailerForm = () => {
     setLoadingOtp(prev => ({ ...prev, [field]: true }));
     try {
       const requestData = {
-        customerId: 1,
         [field === 'mobile' ? 'mobile' : 'email']: 
           field === 'mobile' ? formData.mobileNumber : formData.emailAddress
       };
@@ -664,18 +670,22 @@ const PharmacyWholesalerRetailerForm = () => {
     if (!formData.license21b) newErrors.license21b = 'License 21B number is required';
     if (!documentIds.license21b) newErrors.license21bFile = 'License 21B upload is required';
     if (!formData.license21bExpiryDate) newErrors.license21bExpiryDate = 'License 21B expiry date is required';
-    if (!documentIds.pharmacyImage) newErrors.pharmacyImageFile = 'Pharmacy image is required';
-    if (!formData.pharmacyName) newErrors.pharmacyName = 'Pharmacy name is required';
-    if (!formData.address1) newErrors.address1 = 'Address is required';
-    if (!formData.pincode || formData.pincode.length !== 6) newErrors.pincode = 'Valid 6-digit pincode is required';
-    if (!formData.cityId) newErrors.cityId = 'City is required';
-    if (!formData.stateId) newErrors.stateId = 'State is required';
-    if (!formData.mobileNumber || formData.mobileNumber.length !== 10) newErrors.mobileNumber = 'Valid 10-digit mobile number is required';
-    if (!verificationStatus.mobile) newErrors.mobileVerification = 'Mobile number verification is required';
-    if (!formData.address2) newErrors.address2 = 'Address 2 is required';
-    if (!formData.address3) newErrors.address3 = 'Address 3 is required';
     if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
       newErrors.panNumber = 'Valid PAN number is required (e.g., ABCDE1234F)';
+    }
+    if (!formData.pincode || !/^\d{6}$/.test(formData.pincode) || formData.pincode === '000000') {
+      newErrors.pincode = 'Valid pincode is required (6 digits)';
+    }
+    if (!formData.area) newErrors.area = 'Area is required';
+    if (!formData.cityId) newErrors.cityId = 'City is required';
+    if (!formData.stateId) newErrors.stateId = 'State is required';
+    if (!formData.pharmacyName) newErrors.pharmacyName = 'Pharmacy name is required';
+    if (!formData.address1) newErrors.address1 = 'Address is required';
+    if (!formData.mobileNumber || !/^\d{10}$/.test(formData.mobileNumber)) {
+      newErrors.mobileNumber = 'Valid mobile number is required (10 digits)';
+    }
+    if (!formData.emailAddress || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress)) {
+      newErrors.emailAddress = 'Valid email address is required';
     }
     
     setErrors(newErrors);
@@ -936,27 +946,6 @@ const PharmacyWholesalerRetailerForm = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <ChevronLeft />
-        </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Registration</AppText>
-      </View>
-
-      <View style={styles.typeHeader}>
-        <View style={styles.typeTag}>
-          <AppText style={styles.typeTagText}>Pharmacy</AppText>
-        </View>        
-        <ChevronRight />        
-        <View style={[styles.typeTag, styles.typeTagActive]}>
-          <AppText style={[styles.typeTagText, styles.typeTagTextActive]}>{categoryName}</AppText>
-        </View>
-      </View>
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -1015,11 +1004,14 @@ const PharmacyWholesalerRetailerForm = () => {
                 onPress={() => openDatePicker('license20')}
                 activeOpacity={0.7}
               >
-                <AppText style={formData.license20ExpiryDate ? styles.dateText : styles.placeholderText}>
-                  {formData.license20ExpiryDate 
-                    ? new Date(formData.license20ExpiryDate).toLocaleDateString('en-IN')
-                    : 'Expiry Date*'}
-                </AppText>
+                <View style={styles.inputTextContainer}>
+                  <AppText style={formData.license20ExpiryDate ? styles.dateText : styles.placeholderText}>
+                    {formData.license20ExpiryDate 
+                      ? new Date(formData.license20ExpiryDate).toLocaleDateString('en-IN')
+                      : 'Expiry Date'}
+                  </AppText>
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                </View>
                 <Calendar />
               </TouchableOpacity>
               {errors.license20ExpiryDate && (
@@ -1059,11 +1051,14 @@ const PharmacyWholesalerRetailerForm = () => {
                 onPress={() => openDatePicker('license21')}
                 activeOpacity={0.7}
               >
-                <AppText style={formData.license21ExpiryDate ? styles.dateText : styles.placeholderText}>
-                  {formData.license21ExpiryDate 
-                    ? new Date(formData.license21ExpiryDate).toLocaleDateString('en-IN')
-                    : 'Expiry Date*'}
-                </AppText>
+                <View style={styles.inputTextContainer}>
+                  <AppText style={formData.license21ExpiryDate ? styles.dateText : styles.placeholderText}>
+                    {formData.license21ExpiryDate 
+                      ? new Date(formData.license21ExpiryDate).toLocaleDateString('en-IN')
+                      : 'Expiry Date'}
+                  </AppText>
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                </View>
                 <Calendar />
               </TouchableOpacity>
               {errors.license21ExpiryDate && (
@@ -1103,11 +1098,14 @@ const PharmacyWholesalerRetailerForm = () => {
                 onPress={() => openDatePicker('license20b')}
                 activeOpacity={0.7}
               >
-                <AppText style={formData.license20bExpiryDate ? styles.dateText : styles.placeholderText}>
-                  {formData.license20bExpiryDate 
-                    ? new Date(formData.license20bExpiryDate).toLocaleDateString('en-IN')
-                    : 'Expiry Date*'}
-                </AppText>
+                <View style={styles.inputTextContainer}>
+                  <AppText style={formData.license20bExpiryDate ? styles.dateText : styles.placeholderText}>
+                    {formData.license20bExpiryDate 
+                      ? new Date(formData.license20bExpiryDate).toLocaleDateString('en-IN')
+                      : 'Expiry Date'}
+                  </AppText>
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                </View>
                 <Calendar />
               </TouchableOpacity>
               {errors.license20bExpiryDate && (
@@ -1147,11 +1145,14 @@ const PharmacyWholesalerRetailerForm = () => {
                 onPress={() => openDatePicker('license21b')}
                 activeOpacity={0.7}
               >
-                <AppText style={formData.license21bExpiryDate ? styles.dateText : styles.placeholderText}>
-                  {formData.license21bExpiryDate 
-                    ? new Date(formData.license21bExpiryDate).toLocaleDateString('en-IN')
-                    : 'Expiry Date*'}
-                </AppText>
+                <View style={styles.inputTextContainer}>
+                  <AppText style={formData.license21bExpiryDate ? styles.dateText : styles.placeholderText}>
+                    {formData.license21bExpiryDate 
+                      ? new Date(formData.license21bExpiryDate).toLocaleDateString('en-IN')
+                      : 'Expiry Date'}
+                  </AppText>
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                </View>
                 <Calendar />
               </TouchableOpacity>
               {errors.license21bExpiryDate && (
@@ -1296,18 +1297,14 @@ const PharmacyWholesalerRetailerForm = () => {
               
               {/* Mobile Number with OTP Verification */}
               <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-                <AppText style={styles.countryCode}>+91</AppText>
                 <AppInput
                   style={styles.inputField}
-                  placeholder="Mobile Number"
+                  placeholder="Mobile number*"
                   value={formData.mobileNumber}
                   onChangeText={(text) => {
-                    if (/^\d*$/.test(text) && text.length <= 10) {
+                    if (/^\d{0,10}$/.test(text)) {
                       setFormData(prev => ({ ...prev, mobileNumber: text }));
                       setErrors(prev => ({ ...prev, mobileNumber: null }));
-                      if (verificationStatus.mobile) {
-                        setVerificationStatus(prev => ({ ...prev, mobile: false }));
-                      }
                     }
                   }}
                   keyboardType="phone-pad"
@@ -1396,18 +1393,33 @@ const PharmacyWholesalerRetailerForm = () => {
                 onFileDelete={() => handleFileDelete('pan')}
               />
               
-              <CustomInput
-                placeholder="PAN Number (e.g., ASDSD12345G)"
-                value={formData.panNumber}
-                onChangeText={(text) => {
-                  setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }));
-                  setErrors(prev => ({ ...prev, panNumber: null }));
-                }}
-                autoCapitalize="characters"
-                maxLength={10}
-                mandatory={true}
-                error={errors.panNumber}
-              />
+              <View style={[styles.input, errors.panNumber && styles.inputError, verificationStatus.pan && styles.verifiedInput]}>
+                <View style={styles.inputTextContainer}>
+                  <CustomInput
+                    placeholder="PAN Number (e.g., ASDSD12345G)"
+                    value={formData.panNumber}
+                    onChangeText={(text) => {
+                      const upperText = text.toUpperCase();
+                      setFormData(prev => ({ ...prev, panNumber: upperText }));
+                      setErrors(prev => ({ ...prev, panNumber: null }));
+                      // Auto-verify if valid PAN format
+                      if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upperText)) {
+                        setVerificationStatus(prev => ({ ...prev, pan: true }));
+                      } else {
+                        setVerificationStatus(prev => ({ ...prev, pan: false }));
+                      }
+                    }}
+                    autoCapitalize="characters"
+                    maxLength={10}
+                    mandatory={true}
+                    error={errors.panNumber}
+                    style={{ flex: 1 }}
+                  />
+                  {verificationStatus.pan && (
+                    <AppText style={styles.verifiedText}>✓ Verified</AppText>
+                  )}
+                </View>
+              </View>
               
               <FileUploadComponent
                 placeholder="Upload GST"
@@ -1504,9 +1516,9 @@ const PharmacyWholesalerRetailerForm = () => {
                     
                     <TouchableOpacity 
                       style={styles.addNewLink}
-                      onPress={() => setShowHospitalModal(true)}
+                      onPress={() => setShowAddHospitalModal(true)}
                     >            
-                      <AppText style={styles.addNewLinkText}>+ Add New Group Hospital</AppText>
+                      <AppText style={styles.addNewLinkText}>+ Add New Hospital</AppText>
                     </TouchableOpacity>
                   </>
                 )}
@@ -1561,7 +1573,7 @@ const PharmacyWholesalerRetailerForm = () => {
                     <TouchableOpacity 
                       style={styles.addNewLink}
                       onPress={() => {
-                       
+                        setShowAddDoctorModal(true);
                       }}
                     >            
                       <AppText style={styles.addNewLinkText}>+ Add New Doctor</AppText>
@@ -1652,7 +1664,7 @@ const PharmacyWholesalerRetailerForm = () => {
                 Add suggested stockists for this pharmacy
               </AppText>
               
-              {formData.stockists.map((stockist, index) => (
+              {formData?.stockists.map((stockist, index) => (
                 <View key={index} style={styles.stockistContainer}>
                   <View style={styles.stockistHeader}>
                     <AppText style={styles.stockistTitle}>Stockist {index + 1}</AppText>
@@ -1788,7 +1800,85 @@ const PharmacyWholesalerRetailerForm = () => {
       />
 
 
-      <Toast />
+      {/* Add New Hospital Modal */}
+      <AddNewHospitalModal
+        visible={showAddHospitalModal}
+        onClose={() => setShowAddHospitalModal(false)}
+        onAdd={(hospital) => {
+          // Console the raw response from AddNewHospitalModal
+          console.log('=== Hospital Response from AddNewHospitalModal ===');
+          console.log('Full Response:', hospital);
+          console.log('Hospital ID:', hospital.id || hospital.customerId);
+          console.log('=== End Hospital Response ===');
+          
+          // Extract hospital data for selectedHospitals
+          const hospitalData = {
+            id: hospital.id || hospital.customerId,
+            name: hospital.name || hospital.hospitalName,
+            code: hospital.code || hospital.shortName,
+            customerId: hospital.id || hospital.customerId,
+            stateId: hospital.stateId,
+            cityId: hospital.cityId,
+            area: hospital.area,
+            city: hospital.city,
+            state: hospital.state,
+            mobileNumber: hospital.mobileNumber,
+            emailAddress: hospital.emailAddress,
+            isNew: true,
+            ...hospital,
+          };
+          
+          console.log('=== Adding Hospital to selectedHospitals ===');
+          console.log('Hospital Data:', hospitalData);
+          console.log('=== End Hospital Data ===');
+          
+          setFormData(prev => ({
+            ...prev,
+            selectedHospitals: [...(prev.selectedHospitals || []), hospitalData]
+          }));
+          setShowAddHospitalModal(false);
+        }}
+      />
+
+      {/* Add New Doctor Modal */}
+      <AddNewDoctorModal
+        visible={showAddDoctorModal}
+        onClose={() => setShowAddDoctorModal(false)}
+        onAdd={(doctor) => {
+          // Console the raw response from AddNewDoctorModal
+          console.log('=== Doctor Response from AddNewDoctorModal ===');
+          console.log('Full Response:', doctor);
+          console.log('Doctor ID:', doctor.id || doctor.customerId);
+          console.log('=== End Doctor Response ===');
+          
+          // Extract doctor data for selectedDoctors
+          const doctorData = {
+            id: doctor.id || doctor.customerId,
+            name: doctor.name || doctor.pharmacyName,
+            code: doctor.code || doctor.shortName,
+            customerId: doctor.id || doctor.customerId,
+            stateId: doctor.stateId,
+            cityId: doctor.cityId,
+            area: doctor.area,
+            city: doctor.city,
+            state: doctor.state,
+            mobileNumber: doctor.mobileNumber,
+            emailAddress: doctor.emailAddress,
+            isNew: true,
+            ...doctor,
+          };
+          
+          console.log('=== Adding Doctor to selectedDoctors ===');
+          console.log('Doctor Data:', doctorData);
+          console.log('=== End Doctor Data ===');
+          
+          setFormData(prev => ({
+            ...prev,
+            selectedDoctors: [...(prev.selectedDoctors || []), doctorData]
+          }));
+          setShowAddDoctorModal(false);
+        }}
+      />
 
       {/* Cancel Confirmation Modal */}
       <Modal
@@ -1878,8 +1968,8 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 0,
+    paddingTop: 8,
   },
   section: {
     marginBottom: 32,

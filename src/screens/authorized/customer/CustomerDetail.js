@@ -695,7 +695,7 @@ const CustomerDetail = ({ navigation, route }) => {
         </ScrollView>
       )}
 
-      {activeTab === 'linkaged' && <LinkagedTab customerType={customerData.customerType} customerId={customerData.customerId} />}
+      {activeTab === 'linkaged' && <LinkagedTab customerType={customerData.customerType} customerId={customerData.customerId} mappingData={selectedCustomer?.mapping} />}
 
       {/* Action Buttons - Show only if customer is PENDING and not approved */}
       {customer?.action === 'APPROVE' && (

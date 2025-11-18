@@ -28,6 +28,8 @@ import ChevronLeft from '../../../components/icons/ChevronLeft';
 import ChevronRight from '../../../components/icons/ChevronRight';
 import { customerAPI } from '../../../api/customer';
 import {AppText,AppInput} from "../../../components"
+import AddNewHospitalModal from './AddNewHospitalModal';
+import AddNewDoctorModal from './AddNewDoctorModal';
 
 // Document types for file uploads
 const DOC_TYPES = {
@@ -159,6 +161,8 @@ const PharmacyWholesalerForm = () => {
   // Modal states for hospital and pharmacy selectors
   const [showHospitalModal, setShowHospitalModal] = useState(false);
   const [showPharmacyModal, setShowPharmacyModal] = useState(false);
+  const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
+  const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -331,6 +335,10 @@ const PharmacyWholesalerForm = () => {
       setErrors(prev => ({ ...prev, mobileNumber: 'Please enter valid 10-digit mobile number' }));
       return;
     }
+    if (field === 'mobile' && !/^[6-9]/.test(formData.mobileNumber)) {
+      setErrors(prev => ({ ...prev, mobileNumber: 'Please enter valid 10-digit mobile number' }));
+      return;
+    }
     if (field === 'email' && (!formData.emailAddress || !formData.emailAddress.includes('@'))) {
       setErrors(prev => ({ ...prev, emailAddress: 'Please enter valid email address' }));
       return;
@@ -344,9 +352,7 @@ const PharmacyWholesalerForm = () => {
     try {
       setLoadingOtp(prev => ({ ...prev, [field]: true }));
       
-      const payload = {
-        customerId: 1, // Using temporary customer ID as per curl
-      };
+      const payload = {};
 
       if (field === 'mobile') {
         payload.mobile = formData.mobileNumber;
@@ -453,9 +459,7 @@ const PharmacyWholesalerForm = () => {
     try {
       setLoadingOtp(prev => ({ ...prev, [field]: true }));
       
-      const payload = {
-        customerId: 1, // Using temporary customer ID as per curl
-      };
+      const payload = {};
 
       if (field === 'mobile') {
         payload.mobile = formData.mobileNumber;
@@ -618,17 +622,21 @@ const PharmacyWholesalerForm = () => {
     if (!formData.license21bExpiryDate) newErrors.license21bExpiryDate = 'License 21B expiry date is required';
     if (!formData.pharmacyImageFile) newErrors.pharmacyImageFile = 'Pharmacy image is required';
     if (!formData.pharmacyName) newErrors.pharmacyName = 'Pharmacy name is required';
-    if (!formData.address1) newErrors.address1 = 'Address is required';
-    if (!formData.pincode || formData.pincode.length !== 6) newErrors.pincode = 'Valid 6-digit pincode is required';
+    if (!formData.address1) newErrors.address1 = 'Address 1 is required';
+    if (!formData.address2) newErrors.address2 = 'Address 2 is required';
+    if (!formData.address3) newErrors.address3 = 'Address 3 is required';
+    if (!formData.pincode || !/^\d{6}$/.test(formData.pincode) || formData.pincode === '000000') newErrors.pincode = 'Valid 6-digit pincode is required';
     if (!formData.cityId) newErrors.city = 'City is required';
     if (!formData.stateId) newErrors.state = 'State is required';
-    if (!formData.panNumber || formData.panNumber.length !== 10) newErrors.panNumber = 'Valid PAN number is required';
+    if (!formData.panNumber || formData.panNumber.trim() === '') newErrors.panNumber = 'PAN number is required';
+    else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
     if (formData.gstNumber && !isValidGST(formData.gstNumber)) newErrors.gstNumber = 'GST number must be valid (e.g., 27ASDSD1234F1Z5)';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+// ...
   const handleCancel = () => {
     setShowCancelModal(true);
   };
@@ -843,27 +851,6 @@ const PharmacyWholesalerForm = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <ChevronLeft />
-        </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Registration</AppText>
-      </View>
-
-      <View style={styles.typeHeader}>
-        <View style={styles.typeTag}>
-          <AppText style={styles.typeTagText}>{typeName || 'Pharmacy'}</AppText>
-        </View>        
-        <ChevronRight height={10} />        
-        <View style={[styles.typeTag, styles.typeTagActive]}>
-          <AppText style={[styles.typeTagText, styles.typeTagTextActive]}>{categoryName}</AppText>
-        </View>
-      </View>
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -921,9 +908,12 @@ const PharmacyWholesalerForm = () => {
                 onPress={() => openDatePicker('license20b')}
                 activeOpacity={0.7}
               >
-                <AppText style={formData.license20bExpiryDate ? styles.dateText : styles.placeholderText}>
-                  {formatDate(formData.license20bExpiryDate) || 'Expiry Date*'}
-                </AppText>
+                <View style={styles.inputTextContainer}>
+                  <AppText style={formData.license20bExpiryDate ? styles.dateText : styles.placeholderText}>
+                    {formatDate(formData.license20bExpiryDate) || 'Expiry Date'}
+                  </AppText>
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                </View>
                 <Calendar />
               </TouchableOpacity>
               {errors.license20bExpiryDate && (
@@ -963,9 +953,12 @@ const PharmacyWholesalerForm = () => {
                 onPress={() => openDatePicker('license21b')}
                 activeOpacity={0.7}
               >
-                <AppText style={formData.license21bExpiryDate ? styles.dateText : styles.placeholderText}>
-                  {formatDate(formData.license21bExpiryDate) || 'Expiry Date*'}
-                </AppText>
+                <View style={styles.inputTextContainer}>
+                  <AppText style={formData.license21bExpiryDate ? styles.dateText : styles.placeholderText}>
+                    {formatDate(formData.license21bExpiryDate) || 'Expiry Date'}
+                  </AppText>
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                </View>
                 <Calendar />
               </TouchableOpacity>
               {errors.license21bExpiryDate && (
@@ -1114,10 +1107,9 @@ const PharmacyWholesalerForm = () => {
               
               {/* Mobile Number with OTP Verification */}
               <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-                <AppText style={styles.countryCode}>+91</AppText>
                 <AppInput
                   style={styles.inputField}
-                  placeholder="Mobile Number"
+                  placeholder="Mobile number*"
                   value={formData.mobileNumber}
                   onChangeText={(text) => {
                     if (/^\d{0,10}$/.test(text)) {
@@ -1214,18 +1206,33 @@ const PharmacyWholesalerForm = () => {
               />
               
               <AppText style={styles.inputLabel}>PAN Number<AppText style={{color: 'red'}}>*</AppText></AppText>
-              <CustomInput
-                placeholder="PAN Number (e.g., ASDSD12345G)"
-                value={formData.panNumber}
-                onChangeText={(text) => {
-                  setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }));
-                  setErrors(prev => ({ ...prev, panNumber: null }));
-                }}
-                autoCapitalize="characters"
-                maxLength={10}
-                mandatory={true}
-                error={errors.panNumber}
-              />
+              <View style={[styles.input, errors.panNumber && styles.inputError, verificationStatus.pan && styles.verifiedInput]}>
+                <View style={styles.inputTextContainer}>
+                  <CustomInput
+                    placeholder="PAN Number (e.g., ASDSD12345G)"
+                    value={formData.panNumber}
+                    onChangeText={(text) => {
+                      const upperText = text.toUpperCase();
+                      setFormData(prev => ({ ...prev, panNumber: upperText }));
+                      setErrors(prev => ({ ...prev, panNumber: null }));
+                      // Auto-verify if valid PAN format
+                      if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upperText)) {
+                        setVerificationStatus(prev => ({ ...prev, pan: true }));
+                      } else {
+                        setVerificationStatus(prev => ({ ...prev, pan: false }));
+                      }
+                    }}
+                    autoCapitalize="characters"
+                    maxLength={10}
+                    mandatory={true}
+                    error={errors.panNumber}
+                    style={{ flex: 1 }}
+                  />
+                  {verificationStatus.pan && (
+                    <AppText style={styles.verifiedText}>✓ Verified</AppText>
+                  )}
+                </View>
+              </View>
               
               <FileUploadComponent
                 placeholder="Upload GST (e.g., 27ASDSD1234F1Z5)"
@@ -1323,9 +1330,9 @@ const PharmacyWholesalerForm = () => {
                     
                     <TouchableOpacity 
                       style={styles.addNewLink}
-                      onPress={() => setShowHospitalModal(true)}
+                      onPress={() => setShowAddHospitalModal(true)}
                     >            
-                      <AppText style={styles.addNewLinkText}>+ Add New Group Hospital</AppText>
+                      <AppText style={styles.addNewLinkText}>+ Add New Hospital</AppText>
                     </TouchableOpacity>
                   </>
                 )}
@@ -1380,7 +1387,7 @@ const PharmacyWholesalerForm = () => {
                     <TouchableOpacity 
                       style={styles.addNewLink}
                       onPress={() => {
-                        
+                        setShowAddDoctorModal(true);
                       }}
                     >            
                       <AppText style={styles.addNewLinkText}>+ Add New Doctor</AppText>
@@ -1582,7 +1589,85 @@ const PharmacyWholesalerForm = () => {
       />
 
 
-      <Toast />
+      {/* Add New Hospital Modal */}
+      <AddNewHospitalModal
+        visible={showAddHospitalModal}
+        onClose={() => setShowAddHospitalModal(false)}
+        onAdd={(hospital) => {
+          // Console the raw response from AddNewHospitalModal
+          console.log('=== Hospital Response from AddNewHospitalModal ===');
+          console.log('Full Response:', hospital);
+          console.log('Hospital ID:', hospital.id || hospital.customerId);
+          console.log('=== End Hospital Response ===');
+          
+          // Extract hospital data for selectedHospitals
+          const hospitalData = {
+            id: hospital.id || hospital.customerId,
+            name: hospital.name || hospital.hospitalName,
+            code: hospital.code || hospital.shortName,
+            customerId: hospital.id || hospital.customerId,
+            stateId: hospital.stateId,
+            cityId: hospital.cityId,
+            area: hospital.area,
+            city: hospital.city,
+            state: hospital.state,
+            mobileNumber: hospital.mobileNumber,
+            emailAddress: hospital.emailAddress,
+            isNew: true,
+            ...hospital,
+          };
+          
+          console.log('=== Adding Hospital to selectedHospitals ===');
+          console.log('Hospital Data:', hospitalData);
+          console.log('=== End Hospital Data ===');
+          
+          setFormData(prev => ({
+            ...prev,
+            selectedHospitals: [...(prev.selectedHospitals || []), hospitalData]
+          }));
+          setShowAddHospitalModal(false);
+        }}
+      />
+
+      {/* Add New Doctor Modal */}
+      <AddNewDoctorModal
+        visible={showAddDoctorModal}
+        onClose={() => setShowAddDoctorModal(false)}
+        onAdd={(doctor) => {
+          // Console the raw response from AddNewDoctorModal
+          console.log('=== Doctor Response from AddNewDoctorModal ===');
+          console.log('Full Response:', doctor);
+          console.log('Doctor ID:', doctor.id || doctor.customerId);
+          console.log('=== End Doctor Response ===');
+          
+          // Extract doctor data for selectedDoctors
+          const doctorData = {
+            id: doctor.id || doctor.customerId,
+            name: doctor.name || doctor.pharmacyName,
+            code: doctor.code || doctor.shortName,
+            customerId: doctor.id || doctor.customerId,
+            stateId: doctor.stateId,
+            cityId: doctor.cityId,
+            area: doctor.area,
+            city: doctor.city,
+            state: doctor.state,
+            mobileNumber: doctor.mobileNumber,
+            emailAddress: doctor.emailAddress,
+            isNew: true,
+            ...doctor,
+          };
+          
+          console.log('=== Adding Doctor to selectedDoctors ===');
+          console.log('Doctor Data:', doctorData);
+          console.log('=== End Doctor Data ===');
+          
+          setFormData(prev => ({
+            ...prev,
+            selectedDoctors: [...(prev.selectedDoctors || []), doctorData]
+          }));
+          setShowAddDoctorModal(false);
+        }}
+      />
 
       {/* Cancel Confirmation Modal */}
       <Modal
@@ -1617,6 +1702,82 @@ const PharmacyWholesalerForm = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Add New Hospital Modal */}
+      <AddNewHospitalModal
+        visible={showAddHospitalModal}
+        onClose={() => setShowAddHospitalModal(false)}
+        onAdd={(hospital) => {
+          console.log('=== Hospital Response from AddNewHospitalModal ===');
+          console.log('Full Response:', hospital);
+          console.log('Hospital ID:', hospital.id || hospital.customerId);
+          console.log('=== End Hospital Response ===');
+          
+          const hospitalData = {
+            id: hospital.id || hospital.customerId,
+            name: hospital.name || hospital.hospitalName,
+            code: hospital.code || hospital.shortName,
+            customerId: hospital.id || hospital.customerId,
+            stateId: hospital.stateId,
+            cityId: hospital.cityId,
+            area: hospital.area,
+            city: hospital.city,
+            state: hospital.state,
+            mobileNumber: hospital.mobileNumber,
+            emailAddress: hospital.emailAddress,
+            isNew: true,
+            ...hospital,
+          };
+          
+          console.log('=== Adding Hospital to selectedHospitals ===');
+          console.log('Hospital Data:', hospitalData);
+          console.log('=== End Hospital Data ===');
+          
+          setFormData(prev => ({
+            ...prev,
+            selectedHospitals: [...(prev.selectedHospitals || []), hospitalData]
+          }));
+          setShowAddHospitalModal(false);
+        }}
+      />
+
+      {/* Add New Doctor Modal */}
+      <AddNewDoctorModal
+        visible={showAddDoctorModal}
+        onClose={() => setShowAddDoctorModal(false)}
+        onAdd={(doctor) => {
+          console.log('=== Doctor Response from AddNewDoctorModal ===');
+          console.log('Full Response:', doctor);
+          console.log('Doctor ID:', doctor.id || doctor.customerId);
+          console.log('=== End Doctor Response ===');
+          
+          const doctorData = {
+            id: doctor.id || doctor.customerId,
+            name: doctor.name || doctor.doctorName,
+            code: doctor.code || doctor.shortName,
+            customerId: doctor.id || doctor.customerId,
+            stateId: doctor.stateId,
+            cityId: doctor.cityId,
+            area: doctor.area,
+            city: doctor.city,
+            state: doctor.state,
+            mobileNumber: doctor.mobileNumber,
+            emailAddress: doctor.emailAddress,
+            isNew: true,
+            ...doctor,
+          };
+          
+          console.log('=== Adding Doctor to selectedDoctors ===');
+          console.log('Doctor Data:', doctorData);
+          console.log('=== End Doctor Data ===');
+          
+          setFormData(prev => ({
+            ...prev,
+            selectedDoctors: [...(prev.selectedDoctors || []), doctorData]
+          }));
+          setShowAddDoctorModal(false);
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -1671,8 +1832,8 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 0,
+    paddingTop: 8,
   },
   section: {
     marginBottom: 32,

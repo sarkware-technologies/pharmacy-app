@@ -473,6 +473,33 @@ export const customerAPI = {
             console.error('Error fetching doctors list:', error);
             throw error;
         }
+    },
+
+    // NEW: Get tab counts for all tabs
+    getTabCounts: async () => {
+        try {
+            // Fetch counts for each tab in parallel
+            const [allResponse, stagingResponse] = await Promise.all([
+                apiClient.post('/user-management/customer/customers-list', { page: 1, limit: 1 }),
+                apiClient.post('/user-management/customer/customers-list/staging', { page: 1, limit: 1, statusIds: [5] })
+            ]);
+
+            // Extract totals from responses
+            const allCount = allResponse.data?.data?.total || 0;
+            const stagingCount = stagingResponse.data?.data?.total || 0;
+
+            // Return counts mapped to tab names
+            return {
+                all: allCount,
+                waitingForApproval: stagingCount,
+                notOnboarded: stagingCount, // Same as waiting for approval (both use staging endpoint)
+                unverified: 0, // Can be fetched separately if needed
+                rejected: 0 // Can be fetched separately if needed
+            };
+        } catch (error) {
+            console.error('Error fetching tab counts:', error);
+            throw error;
+        }
     }
 
 };
