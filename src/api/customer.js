@@ -30,32 +30,35 @@ export const customerAPI = {
         page = 1,
         limit = 10,
         searchText = '',
-        typeCode = '',
+        typeCode = [],
         statusCode = '',
         cityIds = [],
-        categoryCode = '',
-        subCategoryCode = '',
+        categoryCode = [],
+        subCategoryCode = [],
         statusIds = [],
         isStaging = false, // NEW: Flag to determine which endpoint to use
+        sortBy = '',
+        sortDirection = 'ASC'
     } = {}) => {
         try {
-            // Build request body dynamically
+            // Build request body with all required fields (matching curl format)
             const requestBody = {
+                typeCode: Array.isArray(typeCode) ? typeCode : [],
+                categoryCode: Array.isArray(categoryCode) ? categoryCode : [],
+                subCategoryCode: Array.isArray(subCategoryCode) ? subCategoryCode : [],
+                statusIds: Array.isArray(statusIds) ? statusIds : [],
                 page,
-                limit
+                limit,
+                sortBy: sortBy || '',
+                sortDirection: sortDirection || 'ASC'
             };
 
             // Add optional filters only if they have values
             if (searchText) requestBody.searchText = searchText;
-            if (typeCode) requestBody.typeCode = typeCode;
             if (statusCode) requestBody.statusCode = statusCode;
             if (cityIds && cityIds.length > 0) requestBody.cityIds = cityIds;
-            if (categoryCode) requestBody.categoryCode = categoryCode;
-            if (subCategoryCode) requestBody.subCategoryCode = subCategoryCode;
-            if (statusIds && statusIds.length) requestBody.statusIds = statusIds;
-            if (typeCode) requestBody.typeCode = typeCode;
 
-            // Use different endpoint based on isStaging flag
+            // Use staging endpoint for staging requests, main endpoint otherwise
             const endpoint = isStaging 
                 ? '/user-management/customer/customers-list/staging'
                 : '/user-management/customer/customers-list';

@@ -52,41 +52,49 @@ export const fetchTabCounts = createAsyncThunk(
     try {
       const apiClient = require('../../api/apiClient').default;
       
-      // Fetch counts for each tab in parallel
-      const [allResponse, stagingResponse] = await Promise.all([
-        apiClient.post('/user-management/customer/customers-list', { page: 1, limit: 1 }),
-        apiClient.post('/user-management/customer/customers-list/staging', { page: 1, limit: 1, statusIds: [5] })
+      // Fetch counts for each tab in parallel with correct statusIds
+      const [allResponse, waitingForApprovalResponse, notOnboardedResponse, unverifiedResponse, rejectedResponse] = await Promise.all([
+        apiClient.post('/user-management/customer/customers-list', { 
+          typeCode: [], categoryCode: [], subCategoryCode: [], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 
+        }),
+        apiClient.post('/user-management/customer/customers-list/staging', { 
+          typeCode: [], categoryCode: [], subCategoryCode: [], statusIds: [5], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 
+        }),
+        apiClient.post('/user-management/customer/customers-list', { 
+          typeCode: [], categoryCode: [], subCategoryCode: [], statusIds: [18], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 
+        }),
+        apiClient.post('/user-management/customer/customers-list', { 
+          typeCode: [], categoryCode: [], subCategoryCode: [], statusIds: [19], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 
+        }),
+        apiClient.post('/user-management/customer/customers-list', { 
+          typeCode: [], categoryCode: [], subCategoryCode: [], statusIds: [6], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 
+        })
       ]);
-
-      // Debug: Log full responses
-      console.log('=== ALL RESPONSE ===');
-      console.log('Full Response:', allResponse);
-      console.log('Response Data:', allResponse?.data);
-      console.log('Response Data.data:', allResponse?.data?.data);
-      console.log('Total:', allResponse?.data?.total);
-      
-      console.log('=== STAGING RESPONSE ===');
-      console.log('Full Response:', stagingResponse);
-      console.log('Response Data:', stagingResponse?.data);
-      console.log('Response Data.data:', stagingResponse?.data?.data);
-      console.log('Total:', stagingResponse?.data.total);
 
       // Extract totals from responses
       const allCount = allResponse?.data?.total || 0;
-      const stagingCount = stagingResponse?.data?.total || 0;
+      const waitingForApprovalCount = waitingForApprovalResponse?.data?.total || 0;
+      const notOnboardedCount = notOnboardedResponse?.data?.total || 0;
+      const unverifiedCount = unverifiedResponse?.data?.total || 0;
+      const rejectedCount = rejectedResponse?.data?.total || 0;
 
-      console.log('✅ EXTRACTED COUNTS:', { allCount, stagingCount });
+      console.log('✅ TAB COUNTS FETCHED:', { 
+        all: allCount, 
+        waitingForApproval: waitingForApprovalCount,
+        notOnboarded: notOnboardedCount,
+        unverified: unverifiedCount,
+        rejected: rejectedCount
+      });
 
       // Return counts mapped to tab names
       const counts = {
         all: allCount,
-        waitingForApproval: stagingCount,
-        notOnboarded: stagingCount,
-        unverified: 0,
-        rejected: 0
+        waitingForApproval: waitingForApprovalCount,
+        notOnboarded: notOnboardedCount,
+        unverified: unverifiedCount,
+        rejected: rejectedCount
       };
       
-      console.log('✅ FINAL COUNTS TO RETURN:', counts);
       return counts;
     } catch (error) {
       console.error('Error fetching tab counts:', error);

@@ -151,6 +151,10 @@ const CustomerList = ({ navigation }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  
+  // Tab scroll ref for centering active tab
+  const tabScrollRef = useRef(null);
+  const tabRefs = useRef({});
 
   const filteredCustomers = customers.filter((customer) => {
     if (activeTab === 'onboarded') {
@@ -162,6 +166,18 @@ const CustomerList = ({ navigation }) => {
     return true;
   });
 
+  // Map tab to statusIds
+  const getStatusIdsForTab = (tab) => {
+    const statusMap = {
+      'all': [0],
+      'waitingForApproval': [5],
+      'notOnboarded': [18],
+      'unverified': [19],
+      'rejected': [6]
+    };
+    return statusMap[tab] || [0];
+  };
+
   // Fetch tab counts on component mount
   useEffect(() => {
     dispatch(fetchTabCounts());
@@ -172,14 +188,27 @@ const CustomerList = ({ navigation }) => {
     const initializeData = async () => {    
       dispatch(resetCustomersList());  
       // Fetch customers based on active tab
-      const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
-      dispatch(fetchCustomersList({
-        page: 1,
-        limit: 10,
-        isLoadMore: false,
-        isStaging: isStaging,
-        ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
-      }));
+      // For 'all' and 'waitingForApproval', use original logic
+      // For other tabs, use statusIds
+      if (activeTab === 'all' || activeTab === 'waitingForApproval') {
+        const isStaging = activeTab === 'waitingForApproval';
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: 10,
+          isLoadMore: false,
+          isStaging: isStaging,
+          ...(isStaging && { statusIds: [5] })
+        }));
+      } else {
+        // For unverified, rejected, notOnboarded use new statusIds
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: 10,
+          isLoadMore: false,
+          statusIds: statusIds
+        }));
+      }
       
       // Only fetch these on initial mount
       if (activeTab === 'all') {
@@ -195,20 +224,36 @@ const CustomerList = ({ navigation }) => {
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       dispatch(resetCustomersList());
-      const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
-      dispatch(fetchCustomersList({
-        page: 1,
-        limit: 10,
-        searchText: searchText,
-        typeCode: selectedFilters.typeCode,
-        categoryCode: selectedFilters.categoryCode,
-        subCategoryCode: selectedFilters.subCategoryCode,
-        statusId: selectedFilters.statusId,
-        cityIds: selectedFilters.cityIds,
-        isLoadMore: false,
-        isStaging: isStaging,
-        ...(isStaging && { statusIds: [5] }) 
-      }));
+      if (activeTab === 'all' || activeTab === 'waitingForApproval') {
+        const isStaging = activeTab === 'waitingForApproval';
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: 10,
+          searchText: searchText,
+          typeCode: selectedFilters.typeCode,
+          categoryCode: selectedFilters.categoryCode,
+          subCategoryCode: selectedFilters.subCategoryCode,
+          statusId: selectedFilters.statusId,
+          cityIds: selectedFilters.cityIds,
+          isLoadMore: false,
+          isStaging: isStaging,
+          ...(isStaging && { statusIds: [5] })
+        }));
+      } else {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: 10,
+          searchText: searchText,
+          typeCode: selectedFilters.typeCode,
+          categoryCode: selectedFilters.categoryCode,
+          subCategoryCode: selectedFilters.subCategoryCode,
+          statusId: selectedFilters.statusId,
+          cityIds: selectedFilters.cityIds,
+          isLoadMore: false,
+          statusIds: statusIds
+        }));
+      }
     }, 500);
     
     return () => clearTimeout(delayDebounceFn);
@@ -218,15 +263,26 @@ const CustomerList = ({ navigation }) => {
   const onRefresh = async () => {
     setIsRefreshing(true);
     dispatch(resetCustomersList());
-    const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
-    await dispatch(fetchCustomersList({
-      page: 1,
-      limit: 10,
-      ...filters,
-      isLoadMore: false,
-      isStaging: isStaging,
-      ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
-    }));
+    if (activeTab === 'all' || activeTab === 'waitingForApproval') {
+      const isStaging = activeTab === 'waitingForApproval';
+      await dispatch(fetchCustomersList({
+        page: 1,
+        limit: 10,
+        ...filters,
+        isLoadMore: false,
+        isStaging: isStaging,
+        ...(isStaging && { statusIds: [5] })
+      }));
+    } else {
+      const statusIds = getStatusIdsForTab(activeTab);
+      await dispatch(fetchCustomersList({
+        page: 1,
+        limit: 10,
+        ...filters,
+        isLoadMore: false,
+        statusIds: statusIds
+      }));
+    }
     setIsRefreshing(false);
   };
 
@@ -237,16 +293,28 @@ const CustomerList = ({ navigation }) => {
     }
 
     const nextPage = currentPage + 1;
-    const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
     
-    const requestParams = {
-      page: nextPage,
-      limit: limit || 10,
-      ...filters,
-      isLoadMore: true, // This tells the slice to append, not replace
-      isStaging: isStaging,
-      ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
-    };
+    let requestParams;
+    if (activeTab === 'all' || activeTab === 'waitingForApproval') {
+      const isStaging = activeTab === 'waitingForApproval';
+      requestParams = {
+        page: nextPage,
+        limit: limit || 10,
+        ...filters,
+        isLoadMore: true,
+        isStaging: isStaging,
+        ...(isStaging && { statusIds: [5] })
+      };
+    } else {
+      const statusIds = getStatusIdsForTab(activeTab);
+      requestParams = {
+        page: nextPage,
+        limit: limit || 10,
+        ...filters,
+        isLoadMore: true,
+        statusIds: statusIds
+      };
+    }
     
     dispatch(fetchCustomersList(requestParams));
   }, [dispatch, currentPage, hasMore, listLoadingMore, listLoading, limit, filters, activeTab]);
@@ -297,6 +365,22 @@ const CustomerList = ({ navigation }) => {
     setTimeout(() => {
       setToastVisible(false);
     }, 3000);
+  };
+
+  // Handle tab press with centering
+  const handleTabPress = (tabName) => {
+    setActiveTab(tabName);
+    
+    // Scroll the tab into center view after a small delay to ensure layout is ready
+    setTimeout(() => {
+      if (tabRefs.current[tabName] && tabScrollRef.current) {
+        tabRefs.current[tabName].measureInWindow((x, y, width, height) => {
+          const screenWidth = Dimensions.get('window').width;
+          const centerOffset = x + width / 2 - screenWidth / 2;
+          tabScrollRef.current?.scrollTo({ x: centerOffset, animated: true });
+        });
+      }
+    }, 100);
   };
 
   // Fetch customer documents
@@ -1288,40 +1372,59 @@ const CustomerList = ({ navigation }) => {
       </View>
 
       {/* Tabs */}
-      <View style={styles.tabContainer}>
+      <ScrollView 
+        ref={tabScrollRef}
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        style={styles.tabContainer}
+        scrollEventThrottle={16}
+      >
         <TouchableOpacity
+          ref={(ref) => tabRefs.current['all'] = ref}
           style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-          onPress={() => setActiveTab('all')}
+          onPress={() => handleTabPress('all')}
         >
           <AppText style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
             All ({tabCounts.all})
           </AppText>
         </TouchableOpacity>
         <TouchableOpacity
+          ref={(ref) => tabRefs.current['waitingForApproval'] = ref}
           style={[styles.tab, activeTab === 'waitingForApproval' && styles.activeTab]}
-          onPress={() => setActiveTab('waitingForApproval')}
+          onPress={() => handleTabPress('waitingForApproval')}
         >
           <AppText style={[styles.tabText, activeTab === 'waitingForApproval' && styles.activeTabText]}>
             Waiting for Approval ({tabCounts.waitingForApproval})
           </AppText>
         </TouchableOpacity>
         <TouchableOpacity
+          ref={(ref) => tabRefs.current['notOnboarded'] = ref}
           style={[styles.tab, activeTab === 'notOnboarded' && styles.activeTab]}
-          onPress={() => setActiveTab('notOnboarded')}
+          onPress={() => handleTabPress('notOnboarded')}
         >
           <AppText style={[styles.tabText, activeTab === 'notOnboarded' && styles.activeTabText]}>
             Not Onboarded ({tabCounts.notOnboarded})
           </AppText>
         </TouchableOpacity>
         <TouchableOpacity
+          ref={(ref) => tabRefs.current['unverified'] = ref}
           style={[styles.tab, activeTab === 'unverified' && styles.activeTab]}
-          onPress={() => setActiveTab('unverified')}
+          onPress={() => handleTabPress('unverified')}
         >
           <AppText style={[styles.tabText, activeTab === 'unverified' && styles.activeTabText]}>
             Unverified ({tabCounts.unverified})
           </AppText>
         </TouchableOpacity>
-      </View>
+        <TouchableOpacity
+          ref={(ref) => tabRefs.current['rejected'] = ref}
+          style={[styles.tab, activeTab === 'rejected' && styles.activeTab]}
+          onPress={() => handleTabPress('rejected')}
+        >
+          <AppText style={[styles.tabText, activeTab === 'rejected' && styles.activeTabText]}>
+            Rejected ({tabCounts.rejected})
+          </AppText>
+        </TouchableOpacity>
+      </ScrollView>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -1514,18 +1617,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   tabContainer: {
-    flexDirection: 'row',
     backgroundColor: '#fff',
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+    maxHeight: 55,
+    flexGrow: 0,
   },
   tab: {
     paddingVertical: 12,
-    paddingHorizontal: 8,
-    marginRight: 24,
+    paddingHorizontal: 12,
+    marginRight: 16,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
+    justifyContent: 'center',
+    whiteSpace: 'nowrap',
   },
   activeTab: {
     borderBottomColor: colors.primary,
@@ -1540,8 +1646,9 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     flexDirection: 'row',
-    padding: 16,
-    paddingBottom: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingBottom: 8,
     backgroundColor: '#F8F9FA',
     alignItems: 'center',
     gap: 12,
