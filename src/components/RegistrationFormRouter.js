@@ -45,9 +45,14 @@ const RegistrationFormRouter = ({
 
     // Pharmacy/Chemist/Medical Store forms
     if (typeName?.includes('pharmacy') || typeName?.includes('chemist') || typeName?.includes('medical')) {
-      // Map to pharmacy forms based on category/subcategory
-      // For now, return PharmacyRetailer as default
-      return 'PharmacyRetailer';
+      console.log(categoryName, "categoryNamecategoryNamecategoryName")
+      if (categoryName == 'only retail') {
+        return 'PharmacyRetailer';
+      } else if (categoryName == 'only wholesaler') {
+        return 'PharmacyWholesaler';
+      } else if (categoryName == 'retail cum wholesaler') {
+        return 'PharmacyWholesalerRetailer';
+      }
     }
 
     // Hospital forms
@@ -59,7 +64,6 @@ const RegistrationFormRouter = ({
         if (subCategoryName?.includes('group')) {
           return 'GroupHospitalRegistrationForm';
         }
-        // For clinic, individual, default to PrivateRegistration
         return 'PrivateRegistration';
       }
       // Default hospital form
