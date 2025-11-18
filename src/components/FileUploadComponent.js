@@ -532,8 +532,8 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: 14,
-    color: colors.primary,
-    fontWeight: '500',
+    color: colors.text,
+    fontWeight: 'normal',
     flex: 1,
     textAlign: 'left',
   },

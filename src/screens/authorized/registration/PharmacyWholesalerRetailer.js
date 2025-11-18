@@ -968,12 +968,12 @@ const PharmacyWholesalerRetailerForm = () => {
           >           
 
             {/* License Details Section */}
-            <View style={styles.section}>
+            <View style={[styles.section, styles.sectionTopSpacing]}>
               <AppText style={styles.sectionTitle}>License Details <AppText style={{color: 'red'}}>*</AppText></AppText>
 
               {/* 20 License */}
               <View style={styles.licenseRow}>
-                <AppText style={styles.licenseNumber}>20  <AppText style={{color: 'red'}}>*</AppText></AppText>
+                <AppText style={styles.licenseNumber}>20<AppText style={{color: 'red'}}>*</AppText></AppText>
                 <Icon name="info-outline" size={16} color={colors.textSecondary} />
               </View>
               
@@ -1019,8 +1019,8 @@ const PharmacyWholesalerRetailerForm = () => {
               )}
 
               {/* 21 License */}
-              <View style={styles.licenseRow}>
-                <AppText style={styles.licenseNumber}>21  <AppText style={{color: 'red'}}>*</AppText></AppText>
+<View style={[styles.licenseRow, { marginTop: 20 }]}>
+                <AppText style={styles.licenseNumber}>21<AppText style={{color: 'red'}}>*</AppText></AppText>
                 <Icon name="info-outline" size={16} color={colors.textSecondary} />
               </View>
               
@@ -1066,7 +1066,8 @@ const PharmacyWholesalerRetailerForm = () => {
               )}
               
               {/* 20B License */}
-              <View style={styles.licenseRow}>
+          <View style={[styles.licenseRow, { marginTop: 20 }]}>
+          
                 <AppText style={styles.licenseNumber}>20B <AppText style={{color: 'red'}}>*</AppText></AppText>
                 <Icon name="info-outline" size={16} color={colors.textSecondary} />
               </View>
@@ -1113,7 +1114,8 @@ const PharmacyWholesalerRetailerForm = () => {
               )}
 
               {/* 21B License */}
-              <View style={styles.licenseRow}>
+             <View style={[styles.licenseRow, { marginTop: 20 }]}>
+             
                 <AppText style={styles.licenseNumber}>21B  <AppText style={{color: 'red'}}>*</AppText></AppText>
                 <Icon name="info-outline" size={16} color={colors.textSecondary} />
               </View>
@@ -1158,10 +1160,14 @@ const PharmacyWholesalerRetailerForm = () => {
               {errors.license21bExpiryDate && (
                 <AppText style={styles.errorText}>{errors.license21bExpiryDate}</AppText>
               )}
+ </View>
+
+   <View style={styles.section}>
+              <AppText style={styles.sectionSubTitle}>Pharmacy Image<AppText style={{ color: 'red' }}>*</AppText></AppText>
 
               {/* Pharmacy Image */}
               <FileUploadComponent
-                placeholder="Pharmacy Image"
+                placeholder="Upload"
                 accept={['jpg', 'png', 'jpeg']}
                 maxSize={10 * 1024 * 1024}
                 docType={DOC_TYPES.PHARMACY_IMAGE}
@@ -1174,7 +1180,7 @@ const PharmacyWholesalerRetailerForm = () => {
 
             {/* General Details Section */}
             <View style={styles.section}>
-              <AppText style={styles.sectionTitle}>General Details*</AppText>
+              <AppText style={styles.sectionTitle}>General Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
               
               <CustomInput
                 placeholder="Name of the Pharmacy"
@@ -1277,7 +1283,7 @@ const PharmacyWholesalerRetailerForm = () => {
               </View>
               
               <View style={styles.dropdownContainer}>
-                <AppText style={styles.inputLabel}>State*</AppText>
+                {/* <AppText style={styles.inputLabel}>State*</AppText> */}
                 <TouchableOpacity 
                   style={[styles.dropdown, errors.stateId && styles.inputError]}
                   onPress={() => setShowStateModal(true)}
@@ -1293,7 +1299,7 @@ const PharmacyWholesalerRetailerForm = () => {
 
             {/* Security Details Section */}
             <View style={styles.section}>
-              <AppText style={styles.sectionTitle}>Security Details*</AppText>
+              <AppText style={styles.sectionTitle}>Security Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
               
               {/* Mobile Number with OTP Verification */}
               <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
@@ -1396,7 +1402,7 @@ const PharmacyWholesalerRetailerForm = () => {
               <View style={[styles.input, errors.panNumber && styles.inputError, verificationStatus.pan && styles.verifiedInput]}>
                 <View style={styles.inputTextContainer}>
                   <CustomInput
-                    placeholder="PAN Number (e.g., ASDSD12345G)"
+                    placeholder="PAN number"
                     value={formData.panNumber}
                     onChangeText={(text) => {
                       const upperText = text.toUpperCase();
@@ -1432,7 +1438,7 @@ const PharmacyWholesalerRetailerForm = () => {
               />
               
               <CustomInput
-                placeholder="GST Number (e.g., 27ASDSD1234F1Z5)"
+                placeholder="GST number"
                 value={formData.gstNumber}
                 onChangeText={(text) => {
                   setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
@@ -1448,9 +1454,12 @@ const PharmacyWholesalerRetailerForm = () => {
             <View style={styles.section}>
               <AppText style={styles.sectionTitle}>Mapping</AppText>
               
-              <AppText style={styles.sectionLabel}>Select category <AppText style={styles.optional}>(Optional)</AppText></AppText>
+              {/* <AppText style={styles.sectionLabel}>Select category <AppText style={styles.optional}>(Optional)</AppText></AppText> */}
               
               <View style={styles.categoryOptions}>
+
+                                <View style={styles.radioButtonContainer}>
+                
                 {/* Group Corporate Hospital Radio Button */}
                 <TouchableOpacity
                   style={styles.radioOption}
@@ -1471,6 +1480,27 @@ const PharmacyWholesalerRetailerForm = () => {
                   <AppText style={styles.radioLabel}>Hospital</AppText>
                 </TouchableOpacity>
 
+
+                      {/* Doctor Radio Button */}
+                <TouchableOpacity
+                  style={styles.radioOption}
+                  onPress={() => {
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      selectedCategory: formData.selectedCategory === 'doctor' ? '' : 'doctor',
+                      selectedDoctors: formData.selectedCategory === 'doctor' ? [] : prev.selectedDoctors
+                    }));
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.radioCircle}>
+                    {formData.selectedCategory === 'doctor' && (
+                      <View style={styles.radioSelected} />
+                    )}
+                  </View>
+                  <AppText style={styles.radioLabel}>Doctor</AppText>
+                </TouchableOpacity>
+</View>
                 {/* Group Hospital Selector - Show when Group Corporate Hospital is selected */}
                 {formData.selectedCategory === 'groupCorporateHospital' && (
                   <>
@@ -1523,25 +1553,7 @@ const PharmacyWholesalerRetailerForm = () => {
                   </>
                 )}
 
-                {/* Doctor Radio Button */}
-                <TouchableOpacity
-                  style={styles.radioOption}
-                  onPress={() => {
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      selectedCategory: formData.selectedCategory === 'doctor' ? '' : 'doctor',
-                      selectedDoctors: formData.selectedCategory === 'doctor' ? [] : prev.selectedDoctors
-                    }));
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.radioCircle}>
-                    {formData.selectedCategory === 'doctor' && (
-                      <View style={styles.radioSelected} />
-                    )}
-                  </View>
-                  <AppText style={styles.radioLabel}>Doctor</AppText>
-                </TouchableOpacity>
+          
 
                 {/* Doctor Selector - Show when Doctor is selected */}
                 {formData.selectedCategory === 'doctor' && (
@@ -1660,9 +1672,9 @@ const PharmacyWholesalerRetailerForm = () => {
                 <AppText style={styles.optionalText}> (Optional)</AppText>
               </AppText>
               
-              <AppText style={styles.helperText}>
+              {/* <AppText style={styles.helperText}>
                 Add suggested stockists for this pharmacy
-              </AppText>
+              </AppText> */}
               
               {formData?.stockists.map((stockist, index) => (
                 <View key={index} style={styles.stockistContainer}>
@@ -1973,9 +1985,18 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 32,
+  },  sectionTopSpacing:{
+    marginTop: 32,
+
   },
   sectionTitle: {
     fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+  },
+   sectionSubTitle: {
+    fontSize: 17,
     fontWeight: '600',
     color: '#333',
     marginBottom: 16,
@@ -2006,7 +2027,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
   },
   dateText: {
     fontSize: 16,
@@ -2043,7 +2064,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
   },
   dropdownText: {
     fontSize: 14,
@@ -2405,12 +2426,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   // New styles for category selection
+
+  
+  customerGroupContainer: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 16,
+  },
+  stockistContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },  stockistHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  stockistTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
   sectionLabel: {
     fontSize: 16,
     fontWeight: '500',
     color: '#333',
     marginBottom: 12,
   },
+
   optional: {
     fontSize: 14,
     fontWeight: '400',
@@ -2423,7 +2468,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    marginBottom: 8,
+    // marginBottom: 8,
   },
   radioCircle: {
     width: 20,
@@ -2532,12 +2577,12 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   radioGroupContainer: {
-    marginVertical: 12,
+    // marginVertical: 12,
   },
   radioRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 0,
   },
   radioOptionFlex: {
     flex: 1,
@@ -2597,6 +2642,23 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
+  inputTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  inlineAsterisk: {
+    color: 'red',
+    fontSize: 16,
+    marginLeft: 2,
+  },
+
+  radioButtonContainer: {
+    flexDirection: 'row',
+    gap: 50,
+    flex: 1,
+    marginBottom:16
+  }
 });
 
 export default PharmacyWholesalerRetailerForm;

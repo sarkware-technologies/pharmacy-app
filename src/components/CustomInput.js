@@ -195,8 +195,7 @@ const styles = StyleSheet.create({
     input: {
         flex: 1,
         fontSize: 16,
-        color: colors.text,
-    },
+        color: colors.text    },
     inputWithIcon: {
         paddingLeft: 0,
     },
@@ -205,7 +204,9 @@ const styles = StyleSheet.create({
     },
     asterisk: {
         color: 'red',
-        fontSize: 12,
+        fontSize: 16,
+        marginLeft: 2,
+
     },
     errorText: {
         color: colors.error,
