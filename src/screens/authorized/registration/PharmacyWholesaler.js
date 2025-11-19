@@ -1085,10 +1085,13 @@ const PharmacyWholesalerForm = () => {
                   onPress={() => setShowCityModal(true)}
                 //disabled={!formData.stateId}
                 >
-                  <AppText style={[styles.dropdownText, !formData.city && styles.dropdownPlaceholder]}>
-                    {formData.city || 'City *'}
-                  </AppText>
-                  <Icon name="arrow-drop-down" size={24} color={formData.stateId ? "#666" : "#ccc"} />
+                 <View style={styles.inputTextContainer}>
+                                           <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
+                                             {formData.city || 'City'}
+                                           </AppText>
+                                           <AppText style={styles.inlineAsterisk}>*</AppText>
+                                         </View>
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.city && <AppText style={styles.errorText}>{errors.city}</AppText>}
               </View>
@@ -1100,9 +1103,12 @@ const PharmacyWholesalerForm = () => {
                   style={[styles.dropdown, errors.state && styles.inputError]}
                   onPress={() => setShowStateModal(true)}
                 >
-                  <AppText style={[styles.dropdownText, !formData.state && styles.dropdownPlaceholder]}>
-                    {formData.state || 'State *'}
-                  </AppText>
+                     <View style={styles.inputTextContainer}>
+                                               <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
+                                                 {formData.state || 'State'}
+                                               </AppText>
+                                               <AppText style={styles.inlineAsterisk}>*</AppText>
+                                             </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.state && <AppText style={styles.errorText}>{errors.state}</AppText>}
@@ -1146,7 +1152,13 @@ const PharmacyWholesalerForm = () => {
                       styles.inlineVerifyText,
                       verificationStatus.mobile && styles.verifiedText
                     ]}>
-                      {verificationStatus.mobile ? 'Verified' : 'Verify'}
+                      {verificationStatus.mobile ? (
+                                             'Verified'
+                                           ) : (
+                                             <>
+                                               Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                                             </>
+                                           )}
                     </AppText>
                   )}
                 </TouchableOpacity>
@@ -1190,7 +1202,13 @@ const PharmacyWholesalerForm = () => {
                       styles.inlineVerifyText,
                       verificationStatus.email && styles.verifiedText
                     ]}>
-                      {verificationStatus.email ? 'Verified' : 'Verify'}
+                       {verificationStatus.email ? (
+                                              'Verified'
+                                            ) : (
+                                              <>
+                                                Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                                              </>
+                                            )}
                     </AppText>
                   )}
                 </TouchableOpacity>
@@ -1211,10 +1229,12 @@ const PharmacyWholesalerForm = () => {
                 initialFile={formData.panFile}
                 onFileUpload={(file) => handleFileUpload('panFile', file)}
                 onFileDelete={() => handleFileDelete('panFile')}
+                                mandatory={true}
+
               />
 
               {/* <AppText style={styles.inputLabel}>PAN Number<AppText style={{color: 'red'}}>*</AppText></AppText> */}
-              <View style={[styles.input, errors.panNumber && styles.inputError, verificationStatus.pan && styles.verifiedInput]}>
+              {/* <View style={[styles.input, errors.panNumber && styles.inputError, verificationStatus.pan && styles.verifiedInput]}>
                 <View style={styles.inputTextContainer}>
                   <CustomInput
                     placeholder="PAN number"
@@ -1240,7 +1260,28 @@ const PharmacyWholesalerForm = () => {
                     <AppText style={styles.verifiedText}>✓ Verified</AppText>
                   )}
                 </View>
-              </View>
+              </View> */}
+
+
+               <View style={styles.inputWithButton}>
+                        <AppInput
+                          style={[styles.inputField, { flex: 1 }]}
+                          placeholder="PAN Number*"
+                          value={formData.panNumber}
+                          onChangeText={(text) => setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }))}
+                          autoCapitalize="characters"
+                          maxLength={10}
+                          placeholderTextColor="#999"
+                        />
+                        <TouchableOpacity
+                          style={styles.inlineVerifyButton}
+                          onPress={() => {
+                            Alert.alert('PAN Verification', 'PAN verified successfully!');
+                          }}
+                        >
+                          <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
+                        </TouchableOpacity>
+                      </View>
 
               <FileUploadComponent
                 placeholder="Upload GST"
@@ -1795,7 +1836,10 @@ const PharmacyWholesalerForm = () => {
           setShowAddDoctorModal(false);
         }}
       />
+          <Text>Test</Text>
+
     </SafeAreaView>
+
   );
 };
 
@@ -1969,7 +2013,7 @@ const styles = StyleSheet.create({
   inlineVerifyButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#FFF5ED',
+    // backgroundColor: '#FFF5ED',
     borderRadius: 16,
   },
   verifiedButton: {

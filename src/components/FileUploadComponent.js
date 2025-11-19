@@ -39,6 +39,7 @@ const FileUploadComponent = ({
   showPreview = true,
   style,
   errorMessage,
+  mandatory=false
 }) => {
   const [file, setFile] = useState(initialFile);
   const [loading, setLoading] = useState(false);
@@ -471,7 +472,8 @@ const FileUploadComponent = ({
                 activeOpacity={0.7}
                 disabled={disabled}
               >
-                <AppText style={styles.placeholderText}>{placeholder}</AppText>
+                <AppText style={styles.placeholderText}>{placeholder}{mandatory && <AppText style={styles.asterisk}>*</AppText>}</AppText>
+
                 <Upload color={colors.primary} />
               </TouchableOpacity>
             )}
@@ -502,6 +504,13 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
   },
+
+   asterisk: {
+        color: 'red',
+        fontSize: 16,
+        marginLeft: 2,
+
+    },
   uploadContainer: {
     borderWidth: 1.5,
     borderColor: colors.primary,

@@ -1274,9 +1274,12 @@ const PharmacyWholesalerRetailerForm = () => {
                   style={[styles.dropdown, errors.cityId && styles.inputError]}
                   onPress={() => setShowCityModal(true)}
                 >
-                  <AppText style={[styles.dropdownText, !formData.city && styles.dropdownPlaceholder]}>
-                    {formData.city || 'City *'}
-                  </AppText>
+                   <View style={styles.inputTextContainer}>
+                                          <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
+                                            {formData.city || 'City'}
+                                          </AppText>
+                                          <AppText style={styles.inlineAsterisk}>*</AppText>
+                                        </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.cityId && <AppText style={styles.errorText}>{errors.cityId}</AppText>}
@@ -1288,9 +1291,12 @@ const PharmacyWholesalerRetailerForm = () => {
                   style={[styles.dropdown, errors.stateId && styles.inputError]}
                   onPress={() => setShowStateModal(true)}
                 >
-                  <AppText style={[styles.dropdownText, !formData.state && styles.dropdownPlaceholder]}>
-                    {formData.state || 'State *'}
-                  </AppText>
+                    <View style={styles.inputTextContainer}>
+                                                <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
+                                                  {formData.state || 'State'}
+                                                </AppText>
+                                                <AppText style={styles.inlineAsterisk}>*</AppText>
+                                              </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.stateId && <AppText style={styles.errorText}>{errors.stateId}</AppText>}
@@ -1302,6 +1308,8 @@ const PharmacyWholesalerRetailerForm = () => {
               <AppText style={styles.sectionTitle}>Security Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
               
               {/* Mobile Number with OTP Verification */}
+          
+
               <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
                 <AppInput
                   style={styles.inputField}
@@ -1317,7 +1325,9 @@ const PharmacyWholesalerRetailerForm = () => {
                   maxLength={10}
                   placeholderTextColor="#999"
                   editable={!verificationStatus.mobile}
+                  mandatory={true}
                 />
+
                 <TouchableOpacity
                   style={[
                     styles.inlineVerifyButton,
@@ -1333,7 +1343,14 @@ const PharmacyWholesalerRetailerForm = () => {
                       styles.inlineVerifyText,
                       verificationStatus.mobile && styles.verifiedText
                     ]}>
-                      {verificationStatus.mobile ? 'Verified' : 'Verify'}
+
+                      {verificationStatus.mobile ? (
+                        'Verified'
+                      ) : (
+                        <>
+                          Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                        </>
+                      )}
                     </AppText>
                   )}
                 </TouchableOpacity>
@@ -1375,11 +1392,19 @@ const PharmacyWholesalerRetailerForm = () => {
                   {loadingOtp.email && !verificationStatus.email ? (
                     <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
-                    <AppText style={[
-                      styles.inlineVerifyText,
-                      verificationStatus.email && styles.verifiedText
-                    ]}>
-                      {verificationStatus.email ? 'Verified' : 'Verify'}
+                   <AppText
+                      style={[
+                        styles.inlineVerifyText,
+                        verificationStatus.email && styles.verifiedText
+                      ]}
+                    >
+                      {verificationStatus.email ? (
+                        'Verified'
+                      ) : (
+                        <>
+                          Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                        </>
+                      )}
                     </AppText>
                   )}
                 </TouchableOpacity>
@@ -1397,9 +1422,10 @@ const PharmacyWholesalerRetailerForm = () => {
                 initialFile={formData.panFile}
                 onFileUpload={(file) => handleFileUpload('pan', file)}
                 onFileDelete={() => handleFileDelete('pan')}
+                mandatory={true}
               />
               
-              <View style={[styles.input, errors.panNumber && styles.inputError, verificationStatus.pan && styles.verifiedInput]}>
+              {/* <View style={[styles.input, errors.panNumber && styles.inputError, verificationStatus.pan && styles.verifiedInput]}>
                 <View style={styles.inputTextContainer}>
                   <CustomInput
                     placeholder="PAN number"
@@ -1425,8 +1451,26 @@ const PharmacyWholesalerRetailerForm = () => {
                     <AppText style={styles.verifiedText}>✓ Verified</AppText>
                   )}
                 </View>
-              </View>
-              
+              </View> */}
+               <View style={styles.inputWithButton}>
+                        <AppInput
+                          style={[styles.inputField, { flex: 1 }]}
+                          placeholder="PAN Number*"
+                          value={formData.panNumber}
+                          onChangeText={(text) => setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }))}
+                          autoCapitalize="characters"
+                          maxLength={10}
+                          placeholderTextColor="#999"
+                        />
+                        <TouchableOpacity
+                          style={styles.inlineVerifyButton}
+                          onPress={() => {
+                            Alert.alert('PAN Verification', 'PAN verified successfully!');
+                          }}
+                        >
+                          <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
+                        </TouchableOpacity>
+                      </View>
               <FileUploadComponent
                 placeholder="Upload GST"
                 accept={['pdf', 'jpg', 'png']}
@@ -2102,7 +2146,7 @@ const styles = StyleSheet.create({
   inlineVerifyButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#FFF5ED',
+    // backgroundColor: '#FFF5ED',
     borderRadius: 16,
     minWidth: 70,
     alignItems: 'center',

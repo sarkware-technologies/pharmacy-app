@@ -1520,7 +1520,13 @@ const PrivateRegistrationForm = () => {
                     styles.inlineVerifyText,
                     verificationStatus.mobile && styles.verifiedText
                   ]}>
-                    {verificationStatus.mobile ? 'Verified' : 'Verify'}
+                      {verificationStatus.mobile ? (
+                                           'Verified'
+                                         ) : (
+                                           <>
+                                             Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                                           </>
+                                         )}
                   </AppText>
                 </TouchableOpacity>
               </View>
@@ -1556,7 +1562,13 @@ const PrivateRegistrationForm = () => {
                     styles.inlineVerifyText,
                     verificationStatus.email && styles.verifiedText
                   ]}>
-                    {verificationStatus.email ? 'Verified' : 'Verify'}
+                       {verificationStatus.email ? (
+                                            'Verified'
+                                          ) : (
+                                            <>
+                                              Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                                            </>
+                                          )}
                   </AppText>
                 </TouchableOpacity>
               </View>
@@ -1581,6 +1593,8 @@ const PrivateRegistrationForm = () => {
                 onFileDelete={() => {
                   setFormData(prev => ({ ...prev, panFile: null }));
                 }}
+                                  mandatory={true}
+
               />
 
               {/* PAN Number with Verify - No OTP, just API verification */}
@@ -1617,7 +1631,7 @@ const PrivateRegistrationForm = () => {
                     });
                   }}
                 >
-                  <AppText style={styles.inlineVerifyText}>Verify</AppText>
+                          <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
                 </TouchableOpacity>
               </View>
               {errors.panNumber && (
@@ -2342,7 +2356,7 @@ const styles = StyleSheet.create({
   inlineVerifyButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#FFF5ED',
+    // backgroundColor: '#FFF5ED',
     borderRadius: 16,
   },
   inlineVerifyText: {

@@ -1174,9 +1174,12 @@ const DoctorRegistrationForm = () => {
                   style={[styles.dropdown, errors.city && styles.inputError]}
                   onPress={() => setShowCityModal(true)}
                 >
-                  <AppText style={[styles.dropdownText, !formData.city && styles.dropdownPlaceholder]}>
-                    {formData.city || 'City*'}
-                  </AppText>
+              <View style={styles.inputTextContainer}>
+                                                        <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
+                                                          {formData.city || 'City'}
+                                                        </AppText>
+                                                        <AppText style={styles.inlineAsterisk}>*</AppText>
+                                                      </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.city && <AppText style={styles.errorText}>{errors.city}</AppText>}
@@ -1189,9 +1192,12 @@ const DoctorRegistrationForm = () => {
                   style={[styles.dropdown, errors.state && styles.inputError]}
                   onPress={() => setShowStateModal(true)}
                 >
-                  <AppText style={[styles.dropdownText, !formData.state && styles.dropdownPlaceholder]}>
-                    {formData.state || 'State*'}
-                  </AppText>
+                        <View style={styles.inputTextContainer}>
+                                                                <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
+                                                                  {formData.state || 'State'}
+                                                                </AppText>
+                                                                <AppText style={styles.inlineAsterisk}>*</AppText>
+                                                              </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.state && <AppText style={styles.errorText}>{errors.state}</AppText>}
@@ -1218,6 +1224,7 @@ const DoctorRegistrationForm = () => {
                   maxLength={10}
                   placeholderTextColor="#999"
                   editable={!verificationStatus.mobile}
+                  mandatory={true}
                 />
                 <TouchableOpacity
                   style={[
@@ -1235,7 +1242,13 @@ const DoctorRegistrationForm = () => {
                       styles.inlineVerifyText,
                       verificationStatus.mobile && styles.verifiedText
                     ]}>
-                      {verificationStatus.mobile ? 'Verified' : 'Verify'}
+                      {verificationStatus.mobile ? (
+                                             'Verified'
+                                           ) : (
+                                             <>
+                                               Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                                             </>
+                                           )}
                     </AppText>
                   )}
                 </TouchableOpacity>
@@ -1280,7 +1293,13 @@ const DoctorRegistrationForm = () => {
                       styles.inlineVerifyText,
                       verificationStatus.email && styles.verifiedText
                     ]}>
-                      {verificationStatus.email ? 'Verified' : 'Verify'}
+                       {verificationStatus.email ? (
+                                              'Verified'
+                                            ) : (
+                                              <>
+                                                Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                                              </>
+                                            )}
                     </AppText>
                   )}
                 </TouchableOpacity>
@@ -1302,10 +1321,12 @@ const DoctorRegistrationForm = () => {
                 initialFile={formData.panFile}
                 onFileUpload={(file) => handleFileUpload('panFile', file)}
                 onFileDelete={() => handleFileDelete('panFile')}
+                                mandatory={true}
+
               />
 
               {/* PAN Number */}
-              <CustomInput
+              {/* <CustomInput
                 placeholder="PAN Number"
                 value={formData.panNumber}
                 onChangeText={(text) => {
@@ -1316,7 +1337,27 @@ const DoctorRegistrationForm = () => {
                 maxLength={10}
                 mandatory={true}
                 error={errors.panNumber}
-              />
+              /> */}
+
+               <View style={styles.inputWithButton}>
+                        <AppInput
+                          style={[styles.inputField, { flex: 1 }]}
+                          placeholder="PAN Number*"
+                          value={formData.panNumber}
+                          onChangeText={(text) => setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }))}
+                          autoCapitalize="characters"
+                          maxLength={10}
+                          placeholderTextColor="#999"
+                        />
+                        <TouchableOpacity
+                          style={styles.inlineVerifyButton}
+                          onPress={() => {
+                            Alert.alert('PAN Verification', 'PAN verified successfully!');
+                          }}
+                        >
+                          <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
+                        </TouchableOpacity>
+                      </View>
 
               {/* GST Upload */}
               <FileUploadComponent
@@ -1871,7 +1912,7 @@ const styles = StyleSheet.create({
   inlineVerifyButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#FFF5ED',
+    // backgroundColor: '#FFF5ED',
     borderRadius: 16,
   },
   verifiedButton: {

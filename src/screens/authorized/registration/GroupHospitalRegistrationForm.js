@@ -950,7 +950,7 @@ const GroupHospitalRegistrationForm = () => {
           style={styles.inlineVerifyButton}
           onPress={() => handleVerify('mobile')}
         >
-          <AppText style={styles.inlineVerifyText}>Verify</AppText>
+                          <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
         </TouchableOpacity>
       </View>
       {errors.mobileNumber && (
@@ -974,7 +974,7 @@ const GroupHospitalRegistrationForm = () => {
           style={styles.inlineVerifyButton}
           onPress={() => handleVerify('email')}
         >
-          <AppText style={styles.inlineVerifyText}>Verify</AppText>
+                          <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
         </TouchableOpacity>
       </View>
       {errors.emailAddress && (
@@ -992,6 +992,8 @@ const GroupHospitalRegistrationForm = () => {
         onFileUpload={(file) => handleFileUpload('pan', file)}
         onFileDelete={() => handleFileDelete('pan')}
         errorMessage={errors.panFile}
+        mandatory={true}
+
       />
 
       {/* PAN Number */}
@@ -1011,7 +1013,7 @@ const GroupHospitalRegistrationForm = () => {
             Alert.alert('PAN Verification', 'PAN verified successfully!');
           }}
         >
-          <AppText style={styles.inlineVerifyText}>Verify</AppText>
+                          <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
         </TouchableOpacity>
       </View>
 
@@ -1748,7 +1750,7 @@ const styles = StyleSheet.create({
   inlineVerifyButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#FFF5ED',
+    // backgroundColor: '#FFF5ED',
     borderRadius: 16,
   },
   inlineVerifyText: {
