@@ -58,6 +58,9 @@ import ClaimDetails from '../screens/authorized/chargeback/ClaimDetails';
 import NetRateListing from '../screens/authorized/netrate/NetRateListing';
 import InvoiceDetails from '../screens/authorized/netrate/InvoiceDetails';
 
+// Customer Screens
+import CustomerSearch from '../screens/authorized/customer/CustomerSearch';
+
 // Main Navigation
 import BottomTabNavigator from './BottomTabNavigator';
 
@@ -262,6 +265,35 @@ const NetrateStack = () => (
   </Stack.Navigator>
 );
 
+// Customer Stack - WITHOUT bottom tabs (for search screen)
+const CustomerStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+      cardStyleInterpolator: ({ current, layouts }) => {
+        return {
+          cardStyle: {
+            transform: [
+              {
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              },
+            ],
+            opacity: current.progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 1],
+            }),
+          },
+        };
+      },
+    }}
+  >
+    <Stack.Screen name="CustomerSearchMain" component={CustomerSearch} />
+  </Stack.Navigator>
+);
+
 // Main Stack (includes drawer and all navigation flows)
 const MainStack = () => (
   <Stack.Navigator
@@ -317,6 +349,8 @@ const MainStack = () => (
     <Stack.Screen name="ChargebackStack" component={ChargebackStack} />
     {/* Netrate Stack - opens without bottom tabs */}
     <Stack.Screen name="NetrateStack" component={NetrateStack} />
+    {/* Customer Stack - opens without bottom tabs */}
+    <Stack.Screen name="CustomerStack" component={CustomerStack} />
   </Stack.Navigator>
 );
 

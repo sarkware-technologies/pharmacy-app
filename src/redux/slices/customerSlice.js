@@ -52,7 +52,6 @@ export const fetchTabCounts = createAsyncThunk(
     try {
       const apiClient = require('../../api/apiClient').default;
       
-      // Fetch counts for each tab in parallel with correct statusIds
       const [allResponse, waitingForApprovalResponse, notOnboardedResponse, unverifiedResponse, rejectedResponse] = await Promise.all([
         apiClient.post('/user-management/customer/customers-list', { 
           typeCode: [], categoryCode: [], subCategoryCode: [], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 

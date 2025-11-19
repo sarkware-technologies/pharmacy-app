@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     content: {
-        flex: 1,
+        width: '100%',
         alignItems: 'center',
     },
     logoContainer: {

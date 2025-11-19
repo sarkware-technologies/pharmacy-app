@@ -42,13 +42,13 @@ const FilterModal = ({ visible, onClose, onApply }) => {
   const slideAnim = useRef(new Animated.Value(height)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   
-  const [activeSection, setActiveSection] = useState('category');
+  const [activeSection, setActiveSection] = useState('customerGroup');
   const [searchQuery, setSearchQuery] = useState('');
   
   const [filters, setFilters] = useState({
-    category: [],
-    subCategory: [],
+    customerGroup: [], 
     status: [],
+    category: [],
     state: [],
     city: [],
   });
@@ -143,9 +143,9 @@ const FilterModal = ({ visible, onClose, onApply }) => {
   const statusOptions = customerStatuses.map(s => s.name);
 
   const filterSections = [
-    { id: 'category', label: 'Category', hasSearch: false },
-    { id: 'subCategory', label: 'Sub-Category', hasSearch: false },
+    { id: 'customerGroup', label: 'Customer Group', hasSearch: false },
     { id: 'status', label: 'Status', hasSearch: false },
+    { id: 'category', label: 'Category', hasSearch: false },
     { id: 'state', label: 'State', hasSearch: true },
     { id: 'city', label: 'City', hasSearch: true },
   ];
@@ -222,30 +222,84 @@ const FilterModal = ({ visible, onClose, onApply }) => {
   };
 
   const toggleFilter = (type, value) => {
-    setFilters(prev => {
-      const current = prev[type];
-      const index = current.indexOf(value);
-      
-      if (index > -1) {
-        // Remove if exists
-        return {
-          ...prev,
-          [type]: current.filter(item => item !== value),
-        };
+    if (value === 'All') {
+      if (type === 'customerGroup') {
+        const allGroups = customerTypes.map(t => t.name).filter(option => !option.toLowerCase().includes('private'));
+        setFilters(prev => {
+          if (prev[type].includes('All')) {
+            return { ...prev, [type]: [] };
+          } else {
+            return { ...prev, [type]: ['All', ...allGroups], category: [] };
+          }
+        });
+      } else if (type === 'category') {
+        const categoriesForSelectedGroups = getCategoriesForSelectedGroups();
+        setFilters(prev => {
+          if (prev[type].includes('All')) {
+            return { ...prev, [type]: [] };
+          } else {
+            return { ...prev, [type]: ['All', ...categoriesForSelectedGroups] };
+          }
+        });
       } else {
-        // Add if not exists
-        return {
-          ...prev,
-          [type]: [...current, value],
-        };
+        setFilters(prev => {
+          if (prev[type].includes('All')) {
+            return { ...prev, [type]: [] };
+          } else {
+            return { ...prev, [type]: ['All'] };
+          }
+        });
       }
-    });
+    } else {
+      setFilters(prev => {
+        const current = prev[type];
+        const index = current.indexOf(value);
+        
+        if (index > -1) {
+          // Remove if exists
+          const updated = current.filter(item => item !== value);
+          if (updated.includes('All')) {
+            return { ...prev, [type]: updated.filter(item => item !== 'All') };
+          }
+          if (type === 'customerGroup') {
+            const categoriesForSelectedGroups = getCategoriesForSelectedGroups();
+            return { ...prev, [type]: updated, category: categoriesForSelectedGroups };
+          }
+          return { ...prev, [type]: updated };
+        } else {
+          // Add if not exists
+          const updated = [...current, value];
+          
+          if (type === 'customerGroup') {
+            const allGroups = customerTypes.map(t => t.name).filter(option => !option.toLowerCase().includes('private'));
+            if (updated.length === allGroups.length) {
+              const categoriesForSelectedGroups = getCategoriesForSelectedGroups();
+              return { ...prev, [type]: ['All', ...updated], category: categoriesForSelectedGroups };
+            }
+            const categoriesForSelectedGroups = getCategoriesForSelectedGroups();
+            return { ...prev, [type]: updated, category: categoriesForSelectedGroups };
+          } else if (type === 'category') {
+            const categoriesForSelectedGroups = getCategoriesForSelectedGroups();
+            if (updated.length === categoriesForSelectedGroups.length) {
+              return { ...prev, [type]: ['All', ...updated] };
+            }
+            return { ...prev, [type]: updated };
+          } else {
+            const allOptions = getFilterData().filter(item => item !== 'All');
+            if (updated.length === allOptions.length) {
+              return { ...prev, [type]: ['All', ...updated] };
+            }
+            return { ...prev, [type]: updated };
+          }
+        }
+      });
+    }
   };
 
   const clearFilters = () => {
     setFilters({
+      customerGroup: [],
       category: [],
-      subCategory: [],
       status: [],
       state: [],
       city: [],
@@ -257,23 +311,41 @@ const FilterModal = ({ visible, onClose, onApply }) => {
     handleClose();
   };
 
+  // Get categories based on selected customer groups
+  const getCategoriesForSelectedGroups = () => {
+    const selectedGroups = filters.customerGroup;
+    const categories = new Set(); // Declare categories Set
+    
+    if (selectedGroups.length === 0) {
+      return [];
+    }
+    
+    selectedGroups.forEach(groupName => {
+      const group = customerTypes.find(t => t.name === groupName);
+      if (group?.customerCategories) {
+        group.customerCategories.forEach(cat => {
+          if (!cat.name.includes('/') && !cat.name.includes('-')) {
+            categories.add(cat.name);
+          }
+        });
+      }
+    });
+    
+    return Array.from(categories);
+  };
+
   const getFilterData = () => {
     switch (activeSection) {
-      case 'category':
-        // Get categories from API only
-        const categories = ['All'];
-        customerTypes.forEach(type => {
-          categories.push(type.name);
-        });
-        return categories;
-      case 'subCategory':
-        return subCategories;
+      case 'customerGroup':
+        return ['All', ...customerTypes.map(t => t.name).filter(option => option !== 'Private')];
       case 'status':
-        return statusOptions;
+        return ['All', ...statusOptions.filter(option => option !== 'Private')];
+      case 'category':
+        return ['All', ...getCategoriesForSelectedGroups()];
       case 'state':
-        return states.map(s => s.stateName);
+        return ['All', ...states.map(s => s.stateName)];
       case 'city':
-        return availableCities.length > 0 ? availableCities : [];
+        return ['All', ...availableCities.length > 0 ? availableCities : []];
       default:
         return [];
     }
@@ -397,7 +469,7 @@ const FilterModal = ({ visible, onClose, onApply }) => {
                           <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
                             {isChecked && <FilterCheck width={12} height={12} color="#fff" />}
                           </View>
-                          <AppText style={[styles.optionText, isChecked && styles.optionTextChecked]}>
+                          <AppText style={[styles.optionText, isChecked && styles.optionTextChecked, { flexWrap: 'wrap' }]}>
                             {item}
                           </AppText>
                         </TouchableOpacity>
@@ -527,7 +599,7 @@ const styles = StyleSheet.create({
   },
   optionItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: 12,
     paddingHorizontal: 4,
   },
@@ -548,6 +620,8 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 15,
     color: '#333',
+    flex: 1,
+    flexWrap: 'wrap',
   },
   optionTextChecked: {
     color: colors.primary,

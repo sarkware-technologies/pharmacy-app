@@ -14,50 +14,27 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import {AppText,AppInput} from "../../../components"
+import { fetchCustomersList, resetCustomersList, selectCustomers, selectLoadingStates } from '../../../redux/slices/customerSlice';
+import { SkeletonList } from '../../../components/SkeletonLoader';
+import FilterModal from '../../../components/FilterModal';
 
 const CustomerSearch = ({ navigation }) => {
+  const dispatch = useDispatch();
+  const customers = useSelector(selectCustomers);
+  const { listLoading } = useSelector(selectLoadingStates);
+  
   const [searchText, setSearchText] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [recentSearches, setRecentSearches] = useState([
-    'Jahangir General Hospital',
-    'Dr. Sudhakar Joshi',
-    'Pune Hospitals',
-  ]);
+  const [recentSearches, setRecentSearches] = useState([]);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-50)).current;
   const searchBarScale = useRef(new Animated.Value(0.95)).current;
-
-  // Mock data for search
-  const allCustomers = [
-    {
-      id: '1',
-      name: 'Jahangir General Hospital',
-      code: '3595',
-      location: 'Pune',
-      type: '11-RFQ',
-      category: 'Hospital',
-    },
-    {
-      id: '2',
-      name: 'Jahangir Bone General Hospital',
-      code: '3594',
-      location: 'Pune',
-      type: '11-RFQ',
-      category: 'Hospital',
-    },
-    {
-      id: '3',
-      name: 'Jahangir Maternity General Hospital',
-      code: '3593',
-      location: 'Pune',
-      type: '11-RFQ',
-      category: 'Hospital',
-    },
-  ];
 
   useEffect(() => {
     // Entrance animations
@@ -108,14 +85,17 @@ const CustomerSearch = ({ navigation }) => {
         }),
       ]).start();
 
-      // Filter results based on search text
-      const filtered = allCustomers.filter(customer =>
-        customer.name.toLowerCase().includes(text.toLowerCase()) ||
-        customer.code.includes(text)
-      );
-      setSearchResults(filtered);
+      // Call API with search text
+      dispatch(resetCustomersList());
+      dispatch(fetchCustomersList({
+        page: 1,
+        limit: 20,
+        searchText: text,
+        isLoadMore: false,
+      }));
     } else {
       setSearchResults([]);
+      dispatch(resetCustomersList());
     }
   };
 
@@ -141,64 +121,44 @@ const CustomerSearch = ({ navigation }) => {
   };
 
   const renderSearchResult = ({ item, index }) => {
-    const itemAnim = useRef(new Animated.Value(0)).current;
-    
-    useEffect(() => {
-      Animated.timing(itemAnim, {
-        toValue: 1,
-        duration: 300,
-        delay: index * 50,
-        useNativeDriver: true,
-      }).start();
-    }, []);
+    const handleViewDetails = () => {
+      navigation.navigate('CustomerDetail', { customer: item });
+    };
 
     return (
-      <Animated.View
+      <View
         style={[
           styles.resultItem,
           {
-            opacity: itemAnim,
-            transform: [
-              {
-                translateX: itemAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-30, 0],
-                }),
-              },
-            ],
+            opacity: 1,
           },
         ]}
       >
         <TouchableOpacity
-          onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
+          onPress={handleViewDetails}
           activeOpacity={0.7}
         >
           <View style={styles.resultContent}>
-            <AppText style={styles.resultName}>{item.name}</AppText>
+            <AppText style={styles.resultName}>{item.customerName || item.name}</AppText>
             <Icon name="chevron-forward" size={20} color="#999" />
           </View>
           <View style={styles.resultMeta}>
             <Icon name="qr-code-outline" size={14} color="#999" />
-            <AppText style={styles.resultMetaText}>{item.code}</AppText>
+            <AppText style={styles.resultMetaText}>{item.customerCode || item.code}</AppText>
             <AppText style={styles.divider}>|</AppText>
-            <AppText style={styles.resultMetaText}>{item.location}</AppText>
+            <AppText style={styles.resultMetaText}>{item.cityName || item.location}</AppText>
             <AppText style={styles.divider}>|</AppText>
-            <AppText style={styles.resultMetaText}>{item.type}</AppText>
-            <AppText style={styles.divider}>|</AppText>
-            <AppText style={styles.resultMetaText}>{item.category}</AppText>
+            <AppText style={styles.resultMetaText}>{item.statusName || item.type}</AppText>
             <Icon name="information-circle" size={14} color="#999" style={styles.infoIcon} />
           </View>
           <View style={styles.resultActions}>
             <Icon name="call-outline" size={16} color="#999" />
-            <AppText style={styles.contactText}>9080807070</AppText>
+            <AppText style={styles.contactText}>{item.mobile || 'N/A'}</AppText>
             <Icon name="mail-outline" size={16} color="#999" style={styles.mailIcon} />
-            <AppText style={styles.contactText}>Sudhakarjoshi123@gmail.com</AppText>
+            <AppText style={styles.contactText}>{item.email || 'N/A'}</AppText>
           </View>
-          <TouchableOpacity style={styles.onboardButton}>
-            <AppText style={styles.onboardButtonText}>Onboard</AppText>
-          </TouchableOpacity>
         </TouchableOpacity>
-      </Animated.View>
+      </View>
     );
   };
 
@@ -238,14 +198,14 @@ const CustomerSearch = ({ navigation }) => {
           },
         ]}
       >
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Icon name="chevron-back" size={28} color={colors.primary} />
-        </TouchableOpacity>
-        
         <View style={styles.searchBar}>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Icon name="chevron-back" size={24} color={colors.primary} />
+          </TouchableOpacity>
+          
           <AppInput
             ref={searchInputRef}
             style={styles.searchInput}
@@ -261,6 +221,7 @@ const CustomerSearch = ({ navigation }) => {
               onPress={() => {
                 setSearchText('');
                 setSearchResults([]);
+                dispatch(resetCustomersList());
               }}
               style={styles.clearButton}
             >
@@ -269,7 +230,10 @@ const CustomerSearch = ({ navigation }) => {
           )}
         </View>
         
-        <TouchableOpacity style={styles.filterButton}>
+        <TouchableOpacity 
+          style={styles.filterButton}
+          onPress={() => setFilterModalVisible(true)}
+        >
           <Icon name="options-outline" size={24} color="#666" />
         </TouchableOpacity>
       </Animated.View>
@@ -301,16 +265,18 @@ const CustomerSearch = ({ navigation }) => {
       )}
 
       {/* Search Results */}
-      {searchText.length > 0 && searchResults.length > 0 ? (
+      {searchText.length > 0 && listLoading ? (
+        <SkeletonList items={5} />
+      ) : searchText.length > 0 && customers.length > 0 ? (
         <FlatList
-          data={searchResults}
+          data={customers}
           renderItem={renderSearchResult}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.customerId || item.stgCustomerId || item.id}
           contentContainerStyle={styles.resultsList}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         />
-      ) : searchText.length > 0 && searchResults.length === 0 ? (
+      ) : searchText.length > 0 && customers.length === 0 && !listLoading ? (
         <View style={styles.noResults}>
           <Icon name="search-outline" size={60} color="#DDD" />
           <AppText style={styles.noResultsText}>No results found for "{searchText}"</AppText>
@@ -331,6 +297,16 @@ const CustomerSearch = ({ navigation }) => {
           </TouchableOpacity>
         </View>)}
       </KeyboardAvoidingView>
+
+      {/* Filter Modal */}
+      <FilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        onApplyFilters={(filters) => {
+          // Handle filter application
+          setFilterModalVisible(false);
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -342,17 +318,19 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff'
+    paddingVertical: 16,
+    paddingTop: 20,
+    backgroundColor: '#fff',
+    gap: 12,
   },
   backButton: {
-    marginRight: 12,
+    padding: 4,
   },
   searchBar: {
     flex: 1,
@@ -361,12 +339,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     borderRadius: 8,
     paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingLeft: 12,
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 10,
-    fontSize: 15,
+    paddingVertical: 0,
+    fontSize: 14,
     color: '#333',
+    height: 20,
   },
   clearButton: {
     padding: 4,

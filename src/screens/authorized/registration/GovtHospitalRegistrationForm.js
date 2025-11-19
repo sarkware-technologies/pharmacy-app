@@ -972,6 +972,7 @@ const GovtHospitalRegistrationForm = () => {
     </Animated.View>
   );
 
+  // === FIXED: removed stray text node between Animated.View and View here ===
   const renderSecurityDetails = () => (
     <Animated.View
       style={[
@@ -981,7 +982,8 @@ const GovtHospitalRegistrationForm = () => {
           transform: [{ translateY: slideAnim }],
         },
       ]}
-    >                        <View style={styles.section}>
+    >
+      <View style={styles.section}>
 
         <AppText style={styles.stepTitle}>Security Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
 
@@ -1447,15 +1449,21 @@ const GovtHospitalRegistrationForm = () => {
 
 
       {/* Stockist Suggestions */}
-      <AppText style={styles.sectionLabel}>
-        Stockist Suggestions <AppText style={styles.optional}>(Optional)</AppText>
-      </AppText>
+      <View style={styles.sectionLabelContainer}>
+        <AppText style={styles.sectionLabel}>Stockist Suggestions <AppText style={styles.optional}>(Optional)</AppText> </AppText>
+       
+      </View>
 
       {/* Stockist List */}
       {stockists.map((stockist, index) => (
         <View key={index} style={styles.stockistCard}>
           <View style={styles.stockistCardHeader}>
-            <AppText style={styles.stockistCardTitle}>Stockist {index + 1}</AppText>
+            <View>
+              <AppText style={styles.stockistCardTitle}>Stockist</AppText>
+            </View>
+            <View>
+              <AppText style={styles.stockistCardIndex}>{index + 1}</AppText>
+            </View>
             <TouchableOpacity
               onPress={() => {
                 setStockists(prev => prev.filter((_, i) => i !== index));
@@ -1833,6 +1841,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+    paddingLeft: 12,
   },
   input: {
     flexDirection: 'row',
@@ -2475,8 +2486,8 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: colors.primary,
-  },
-  radioButtonLabel: {
+  }, 
+ radioButtonLabel: {
     fontSize: 14,
     color: '#333',
     fontWeight: '500',

@@ -374,9 +374,9 @@ const CustomerList = ({ navigation }) => {
     // Scroll the tab into center view after a small delay to ensure layout is ready
     setTimeout(() => {
       if (tabRefs.current[tabName] && tabScrollRef.current) {
-        tabRefs.current[tabName].measureInWindow((x, y, width, height) => {
+        tabRefs.current[tabName].measureInWindow((x, y, w, h) => {
           const screenWidth = Dimensions.get('window').width;
-          const centerOffset = x + width / 2 - screenWidth / 2;
+          const centerOffset = x + w / 2 - screenWidth / 2;
           tabScrollRef.current?.scrollTo({ x: centerOffset, animated: true });
         });
       }
@@ -697,269 +697,109 @@ const CustomerList = ({ navigation }) => {
       case 'NOT ONBOARDED':
         return '#F57C00';
       default:
-        return '#757575';
+        return '#666';
     }
   };
 
   const handleApplyFilters = (filters) => {
-    let typeCode = '';
-    let categoryCode = '';
-    let subCategoryCode = '';
+    let typeCode = [];
+    let categoryCode = [];
+    let subCategoryCode = [];
     let statusIds = [];
+    let stateIds = [];
+    let cityIds = [];
     
-    // Handle category (customer type) - uses actual API code
+    // Handle customerGroup (customer type) - map to typeCode array
+    if (filters.customerGroup && filters.customerGroup.length > 0 && !filters.customerGroup.includes('All')) {
+      typeCode = filters.customerGroup
+        .map(groupName => {
+          const type = customerTypes.find(t => t.name === groupName);
+          return type?.code;
+        })
+        .filter(code => code !== undefined);
+    }
+    
+    // Handle category - map to categoryCode array
     if (filters.category && filters.category.length > 0 && !filters.category.includes('All')) {
-      const selectedType = customerTypes.find(type => type.name === filters.category[0]);
-      if (selectedType) {
-        typeCode = selectedType.code; // "PCM", "HOSP", "DOCT"
-      }
-    }
-    
-    // Handle subcategory - uses actual API codes
-    if (filters.subCategory && filters.subCategory.length > 0 && typeCode) {
-      const selectedSubCatName = filters.subCategory[0];
-      const selectedType = customerTypes.find(type => type.code === typeCode);
-      
-      if (selectedType?.customerCategories) {
-        // Check if it's a category
-        const category = selectedType.customerCategories.find(cat => cat.name === selectedSubCatName);
-        if (category) {
-          categoryCode = category.code; // "OR", "OW", "RCW", "PRI", "GOV"
-        } else {
-          // Check if it's a subcategory
-          selectedType.customerCategories.forEach(cat => {
-            const subCategory = cat.customerSubcategories?.find(subCat => subCat.name === selectedSubCatName);
-            if (subCategory) {
-              categoryCode = cat.code;
-              subCategoryCode = subCategory.code; // "PCL", "PIH", "PGH"
+      categoryCode = filters.category
+        .map(catName => {
+          // Search for category code in all customer types
+          for (let type of customerTypes) {
+            if (type?.customerCategories) {
+              const category = type.customerCategories.find(cat => cat.name === catName);
+              if (category) {
+                return category.code; // "OW", "OR", "RCW", "GOV", "PRI"
+              }
             }
-          });
-        }
-      }
+          }
+          return undefined;
+        })
+        .filter(code => code !== undefined);
     }
     
-    // Handle status - uses actual API IDs
-    if (filters.status && filters.status.length > 0) {
+    // Handle subCategory - map to subCategoryCode array
+    if (filters.subCategory && filters.subCategory.length > 0) {
+      subCategoryCode = filters.subCategory
+        .map(subCatName => {
+          // Search for subcategory code in all customer types
+          for (let type of customerTypes) {
+            if (type?.customerCategories) {
+              for (let cat of type.customerCategories) {
+                const subCat = cat.customerSubcategories?.find(s => s.name === subCatName);
+                if (subCat) {
+                  return subCat.code; // "PCL", "PIH", "PGH"
+                }
+              }
+            }
+          }
+          return undefined;
+        })
+        .filter(code => code !== undefined);
+    }
+    
+    // Handle status - map to statusIds array
+    if (filters.status && filters.status.length > 0 && !filters.status.includes('All')) {
       statusIds = filters.status
         .map(statusName => customerStatuses.find(s => s.name === statusName)?.id)
-        .filter(id => id !== undefined); // [1, 2, 3, 4]
+        .filter(id => id !== undefined);
     }
     
-    // Handle cities - uses actual API IDs
-    const cityIds = filters.city && filters.city.length > 0
-      ? filters.city
-          .map(cityName => cities.find(c => c.cityName === cityName)?.id)
-          .filter(id => id !== undefined)
-      : [];
+    // Handle state - map to stateIds array
+    if (filters.state && filters.state.length > 0 && !filters.state.includes('All')) {
+      stateIds = filters.state
+        .map(stateName => states.find(s => s.stateName === stateName)?.id)
+        .filter(id => id !== undefined);
+    }
     
-    // Apply filters matching your Redux structure
+    // Handle city - map to cityIds array
+    if (filters.city && filters.city.length > 0 && !filters.city.includes('All')) {
+      cityIds = filters.city
+        .map(cityName => cities.find(c => c.cityName === cityName)?.id)
+        .filter(id => id !== undefined);
+    }
+    
+    // Build API payload matching the format
     const filterParams = {
-      searchText: searchText || '',
-      typeCode,
-      categoryCode,
-      subCategoryCode,
-      statusId: statusIds,
-      cityIds,
+      typeCode: typeCode.length > 0 ? typeCode : [],
+      categoryCode: categoryCode.length > 0 ? categoryCode : [],
+      subCategoryCode: subCategoryCode.length > 0 ? subCategoryCode : [],
+      statusIds: statusIds.length > 0 ? statusIds : [],
+      stateIds: stateIds.length > 0 ? stateIds : [],
+      cityIds: cityIds.length > 0 ? cityIds : [],
+      page: 1,
+      limit: 10,
+      sortBy: '',
+      sortDirection: 'ASC',
     };
     
     dispatch(setFilters(filterParams));
     const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
     dispatch(fetchCustomersList({
-      page: 1,
-      limit: 10,
       ...filterParams,
       isStaging: isStaging,
-      ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
+      ...(isStaging && { statusIds: [5] })
     }));
-    
     setFilterModalVisible(false);
-  };
-
-  // Add onRetry function
-  const onRetry = () => {
-    dispatch(resetCustomersList());
-    const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
-    dispatch(fetchCustomersList({
-      page: 1,
-      limit: 10,
-      ...filters,
-      isLoadMore: false,
-      isStaging: isStaging,
-      ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
-    }));
-  };
-
-  // Document Download Modal for individual customer
-  const DocumentModal = () => {
-    const slideAnim = useRef(new Animated.Value(height * 0.5)).current;
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-      if (documentModalVisible) {
-        slideAnim.setValue(height * 0.5);
-        fadeAnim.setValue(0);
-        Animated.parallel([
-          Animated.spring(slideAnim, {
-            toValue: 0,
-            friction: 8,
-            tension: 40,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }
-    }, [documentModalVisible]);
-
-    const handleClose = () => {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: height * 0.5,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setDocumentModalVisible(false);
-        setSelectedCustomer(null);
-      });
-    };
-
-    const documents = [
-      { name: 'Registration Certificate', icon: 'document-attach-outline' },
-      { name: 'Practice License', icon: 'document-outline' },
-      { name: 'Address Proof', icon: 'location-outline' },
-      { name: 'Image', icon: 'image-outline' },
-    ];
-
-    return (
-      <Modal
-        visible={documentModalVisible}
-        transparent
-        animationType="none"
-        onRequestClose={handleClose}
-      >
-        <Animated.View 
-          style={[
-            styles.documentModalOverlay,
-            {
-              opacity: fadeAnim,
-            },
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.documentOverlayTouch}
-            activeOpacity={1}
-            onPress={handleClose}
-          />
-          
-          <Animated.View
-            style={[
-              styles.documentModalContent,
-              {
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            <View style={styles.documentModalHeader}>
-              <AppText style={styles.documentModalTitle}>Click to download documents</AppText>
-              <TouchableOpacity onPress={handleClose}>
-                <CloseCircle />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView 
-              style={styles.documentList}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* GST and PAN special row at the top */}
-              <View style={styles.topDocumentRow}>
-                <TouchableOpacity 
-                  style={styles.topDocumentItem}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    console.log(`Download GST for ${selectedCustomer?.customerName}`);
-                  }}
-                >
-                  <View style={styles.topDocumentContent}>
-                    <Document />
-                    <AppText style={styles.topDocumentName}>GST</AppText>
-                  </View>
-                  <TouchableOpacity 
-                    style={styles.eyeIconButton}
-                    onPress={() => {
-                      console.log(`Preview GST for ${selectedCustomer?.customerName}`);
-                    }}
-                  >
-                    <EyeOpen width={18} color={colors.primary} />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={styles.topDocumentItem}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    console.log(`Download PAN for ${selectedCustomer?.customerName}`);
-                  }}
-                >
-                  <View style={styles.topDocumentContent}>
-                    <Document />
-                    <AppText style={styles.topDocumentName}>PAN</AppText>
-                  </View>
-                  <TouchableOpacity 
-                    style={styles.eyeIconButton}
-                    onPress={() => {
-                      console.log(`Preview PAN for ${selectedCustomer?.customerName}`);
-                    }}
-                  >
-                    <EyeOpen width={18} color={colors.primary} />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.otherDocContainer}>
-              {/* Other documents */}
-              {documents.map((doc, index) => (
-                <View 
-                  key={index} 
-                  style={styles.documentItemNew}
-                >
-                  <TouchableOpacity 
-                    style={styles.documentRowContent}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      console.log(`Download ${doc.name} for ${selectedCustomer?.customerName}`);
-                    }}
-                  >
-                    <View style={styles.documentLeftSection}>
-                      <Document />
-                      <AppText style={styles.documentName}>{doc.name}</AppText>
-                    </View>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.eyeIconButton}
-                    onPress={() => {
-                      console.log(`Preview ${doc.name} for ${selectedCustomer?.customerName}`);
-                    }}
-                  >
-                    <EyeOpen width={18} color={colors.primary} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              </View>
-            </ScrollView>
-          </Animated.View>
-        </Animated.View>
-      </Modal>
-    );
   };
 
   const renderCustomerItem = ({ item, index }) => {
@@ -1428,16 +1268,14 @@ const CustomerList = ({ navigation }) => {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
+        <TouchableOpacity 
+          style={styles.searchBar}
+          onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerSearchMain' })}
+          activeOpacity={0.7}
+        >
           <Search color="#999" />
-          <AppInput
-            style={styles.searchInput}
-            placeholder="Search by customer name/code"
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholderTextColor="#999"
-          />
-        </View>
+          <AppText style={styles.searchPlaceholder}>Search by customer name/code</AppText>
+        </TouchableOpacity>
         <TouchableOpacity 
           style={styles.filterButton}
           onPress={() => setFilterModalVisible(true)}
@@ -1468,7 +1306,7 @@ const CustomerList = ({ navigation }) => {
               ? 'Server is currently unavailable. Please check your connection and try again.'
               : listError || 'Something went wrong. Please try again.'}
           </AppText>
-          <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+          <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
             <Refresh size={20} color="#fff" />
             <AppText style={styles.retryButtonText}>Retry</AppText>
           </TouchableOpacity>
@@ -1660,13 +1498,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 16,
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
     fontSize: 14,
     color: '#333',
+  },
+  searchPlaceholder: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#999',
   },
   filterButton: {
     padding: 16,

@@ -146,7 +146,7 @@ const ForgotPasswordScreen = () => {
                 setTimeout(() => {
                     setIsLoading(false);
                     dispatch(requestPasswordReset({ mobileNumber }));
-                    navigation.navigate('ForgotPasswordOTP', { mobileNumber });
+                    navigation.navigate('SetNewPassword', { mobileNumber });
                 }, 500);
             });
         }
