@@ -738,7 +738,9 @@ const GroupHospitalRegistrationForm = () => {
         },
       ]}
     >
-      <AppText style={styles.stepTitle}>License Details*</AppText>
+                        <View style={[styles.section, styles.sectionTopSpacing]}>
+      
+      <AppText style={styles.stepTitle}>License Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
       
       <FileUploadComponent
         placeholder="Upload registration certificate"
@@ -776,9 +778,10 @@ const GroupHospitalRegistrationForm = () => {
       {errors.registrationDate && (
         <AppText style={styles.errorText}>{errors.registrationDate}</AppText>
       )}
-
+     <AppText style={styles.sectionSubTitle}>Image<AppText style={{ color: 'red' }}>*</AppText> <Icon name="information-circle-outline" size={16} color="#999" />
+              </AppText>
       <FileUploadComponent
-        placeholder="Upload hospital image"
+        placeholder="Upload"
         accept={['jpg', 'png', 'jpeg']}
         maxSize={10 * 1024 * 1024}
         docType={DOC_TYPES.HOSPITAL_IMAGE}
@@ -796,6 +799,8 @@ const GroupHospitalRegistrationForm = () => {
           onChange={handleDateChange}
         />
       )}
+
+      </View>
     </Animated.View>
   );
 
@@ -809,7 +814,10 @@ const GroupHospitalRegistrationForm = () => {
         },
       ]}
     >
-      <AppText style={styles.stepTitle}>General Details*</AppText>
+
+                              <View style={styles.section}>
+
+      <AppText style={styles.stepTitle}>General Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
       
       <CustomInput
         placeholder="Hospital name"
@@ -908,6 +916,8 @@ const GroupHospitalRegistrationForm = () => {
       {errors.state && (
         <AppText style={styles.errorText}>{errors.state}</AppText>
       )}
+
+      </View>
     </Animated.View>
   );
 
@@ -921,7 +931,8 @@ const GroupHospitalRegistrationForm = () => {
         },
       ]}
     >
-      <AppText style={styles.stepTitle}>Security Details*</AppText>
+      <View style={styles.section}>
+      <AppText style={styles.stepTitle}>Security Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
       
       {/* Mobile Number with Verify */}
       <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
@@ -934,7 +945,7 @@ const GroupHospitalRegistrationForm = () => {
           maxLength={10}
           placeholderTextColor="#999"
         />
-        <AppText style={styles.mandatoryIndicator}>*</AppText>
+        {/* <AppText style={styles.mandatoryIndicator}>*</AppText> */}
         <TouchableOpacity
           style={styles.inlineVerifyButton}
           onPress={() => handleVerify('mobile')}
@@ -951,14 +962,14 @@ const GroupHospitalRegistrationForm = () => {
       <View style={[styles.inputWithButton, errors.emailAddress && styles.inputError]}>
         <AppInput
           style={[styles.inputField, { flex: 1 }]}
-          placeholder="Email address"
+          placeholder="Email address*"
           value={formData.emailAddress}
           onChangeText={(text) => setFormData(prev => ({ ...prev, emailAddress: text }))}
           keyboardType="email-address"
           autoCapitalize="none"
           placeholderTextColor="#999"
         />
-        <AppText style={styles.mandatoryIndicator}>*</AppText>
+        {/* <AppText style={styles.mandatoryIndicator}>*</AppText> */}
         <TouchableOpacity
           style={styles.inlineVerifyButton}
           onPress={() => handleVerify('email')}
@@ -973,7 +984,7 @@ const GroupHospitalRegistrationForm = () => {
 
       {/* Upload PAN */}
       <FileUploadComponent
-        placeholder="Upload PAN (e.g., ASDSD12345G)"
+        placeholder="Upload PAN"
         accept={['pdf', 'jpg', 'png']}
         maxSize={10 * 1024 * 1024}
         docType={DOC_TYPES.PAN}
@@ -987,7 +998,7 @@ const GroupHospitalRegistrationForm = () => {
       <View style={styles.inputWithButton}>
         <AppInput
           style={[styles.inputField, { flex: 1 }]}
-          placeholder="PAN Number (e.g., ASDSD12345G)"
+          placeholder="PAN Number*"
           value={formData.panNumber}
           onChangeText={(text) => setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }))}
           autoCapitalize="characters"
@@ -1006,7 +1017,7 @@ const GroupHospitalRegistrationForm = () => {
 
       {/* Upload GST */}
       <FileUploadComponent
-        placeholder="Upload GST (e.g., 27ASDSD1234F1Z5)"
+        placeholder="Upload GST"
         accept={['pdf', 'jpg', 'png']}
         maxSize={10 * 1024 * 1024}
         docType={DOC_TYPES.GST}
@@ -1018,7 +1029,7 @@ const GroupHospitalRegistrationForm = () => {
 
       {/* GST Number Input */}
       <CustomInput
-        placeholder="GST Number (e.g., 27ASDSD1234F1Z5)"
+        placeholder="GST Number"
         value={formData.gstNumber}
         onChangeText={(text) => {
           setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
@@ -1028,6 +1039,7 @@ const GroupHospitalRegistrationForm = () => {
         maxLength={15}
         error={errors.gstNumber}
       />
+      </View>
     </Animated.View>
   );
 
@@ -1041,6 +1053,8 @@ const GroupHospitalRegistrationForm = () => {
         },
       ]}
     >
+
+      <View style={styles.section}>
       <AppText style={styles.stepTitle}>Mapping</AppText>
       
       {/* Mark as Buying Entity Switch */}
@@ -1066,12 +1080,12 @@ const GroupHospitalRegistrationForm = () => {
         </TouchableOpacity>
       </View>
 
-      <AppText style={styles.sectionLabel}>
-        Select category <AppText style={styles.optional}>(Optional)</AppText>
+      <AppText style={styles.sectionTitle}>
+        Select category
       </AppText>
       
       {/* Link Child Hospital */}
-      <AppText style={styles.subsectionLabel}>Link child hospital <Icon name="information-circle-outline" size={16} color="#999" /></AppText>
+      <AppText style={styles.subsectionLabel}>Link child hospital<AppText style={{ color: 'red' }}>*</AppText><Icon name="information-circle-outline" size={16} color="#999" /></AppText>
       
       {/* Hospital Selector Dropdown */}
       <TouchableOpacity 
@@ -1213,7 +1227,8 @@ const GroupHospitalRegistrationForm = () => {
         <AppText style={styles.addNewLinkText}>+ Add New Hospital</AppText>
       </TouchableOpacity>
 
-      <View style={styles.divider} />
+      {/* <View style={styles.divider} /> */}
+            <View style={styles.customerGroupContainer}>
 
       {/* Customer Group - Radio Buttons Grid */}
       <AppText style={styles.sectionLabel}>Customer group</AppText>
@@ -1266,7 +1281,7 @@ const GroupHospitalRegistrationForm = () => {
           ))
         )}
       </View>
-
+ </View>
       {/* Stockist Suggestions */}
       <AppText style={styles.sectionLabel}>
         Stockist Suggestions <AppText style={styles.optional}>(Optional)</AppText>
@@ -1329,6 +1344,7 @@ const GroupHospitalRegistrationForm = () => {
       >
         <AppText style={styles.addStockistButtonText}>+ Add Stockist</AppText>
       </TouchableOpacity>
+      </View>
     </Animated.View>
   );
 
@@ -1629,7 +1645,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
   },
   inputError: {
     borderColor: colors.error,
@@ -1641,6 +1657,22 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 16,
     color: '#999',
+  },
+    inputTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  mandatoryIndicator: {
+    fontSize: 16,
+    color: colors.error,
+    marginLeft: 4,
+    fontWeight: '600',
   },
   errorText: {
     color: colors.error,
@@ -1770,10 +1802,13 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   switchContainer: {
-    flexDirection: 'row',
+   flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 24,
+    backgroundColor:"#F8F9FA",
+    padding:16,
+    borderRadius: 8,
   },
   switchLabel: {
     fontSize: 16,
@@ -1798,6 +1833,26 @@ const styles = StyleSheet.create({
   },
   switchThumbActive: {
     transform: [{ translateX: 20 }],
+  },
+     sectionSubTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+  },section: {
+    marginBottom: 32,
+  },
+  
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 20,
+  },
+
+   sectionTopSpacing: {
+    marginTop: 32,
+
   },
   sectionLabel: {
     fontSize: 16,
@@ -1904,10 +1959,14 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   customerGroupContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20,
+   // flexDirection: 'row',
+    // flexWrap: 'wrap',
+    // gap: 8,
+    // marginBottom: 20,
+     backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom:30
   },
   customerGroupButton: {
     paddingHorizontal: 16,
@@ -1932,12 +1991,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   stockistCard: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     padding: 16,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
   },
   stockistCardHeader: {
     flexDirection: 'row',
@@ -2205,7 +2261,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    // marginBottom: 20,
   },
   radioGridItem: {
     width: '48%',
@@ -2213,7 +2269,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 0,
-    marginBottom: 16,
+    // marginBottom: 16,
   },
   radioButton: {
     width: 24,
@@ -2240,6 +2296,20 @@ const styles = StyleSheet.create({
     color: '#333',
     fontWeight: '500',
   },
+
+  
+   inlineAsterisk: {
+    color: 'red',
+    fontSize: 16,
+    marginLeft: 2,
+  },
+
+  radioButtonContainer: {
+    flexDirection: 'row',
+    gap: 50,
+    flex: 1,
+    marginBottom: 16
+  }
 });
 
 export default GroupHospitalRegistrationForm;

@@ -1282,8 +1282,8 @@ const PrivateRegistrationForm = () => {
             ]}
           >
             {/* License Details Section */}
-            <View style={styles.section}>
-              <AppText style={styles.sectionTitle}>License Details*</AppText>
+                  <View style={[styles.section, styles.sectionTopSpacing]}>
+              <AppText style={styles.sectionTitle}>License Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
               
               {/* Registration Certificate Upload */}
               <FileUploadComponent
@@ -1328,6 +1328,9 @@ const PrivateRegistrationForm = () => {
                 <AppText style={styles.errorText}>{errors.registrationDate}</AppText>
               )}
 
+              <AppText style={styles.sectionSubTitle}>Image<AppText style={{ color: 'red' }}>*</AppText> <Icon name="information-circle-outline" size={16} color="#999" />
+              </AppText>
+
               <FileUploadComponent
                   placeholder="Upload"
                   accept={['jpg', 'jpeg', 'png']}
@@ -1356,7 +1359,7 @@ const PrivateRegistrationForm = () => {
 
             {/* General Details Section */}
             <View style={styles.section}>
-              <AppText style={styles.sectionTitle}>General Details*</AppText>
+              <AppText style={styles.sectionTitle}>General Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
               
               <CustomInput
                 placeholder="Hospital/Clinic Name"
@@ -1422,8 +1425,8 @@ const PrivateRegistrationForm = () => {
 
               {/* City Dropdown - Independent selection */}
               <View style={styles.inputTextContainer}>
-                <AppText style={styles.inputLabel}>City</AppText>
-                <AppText style={styles.mandatoryIndicator}>*</AppText>
+                {/* <AppText style={styles.inputLabel}>City</AppText> */}
+                {/* <AppText style={styles.mandatoryIndicator}>*</AppText> */}
               </View>
               <TouchableOpacity
                 style={[styles.input, errors.city && styles.inputError]}
@@ -1435,9 +1438,14 @@ const PrivateRegistrationForm = () => {
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <>
-                    <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
-                      {formData.city || 'Select City'}
-                    </AppText>
+                  <View style={styles.inputTextContainer}>
+                            <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
+                              {formData.city || 'City'}
+                            </AppText>
+                            <AppText style={styles.inlineAsterisk}>*</AppText>
+                          </View>
+
+                    
                     <ArrowDown color='#999' />
                   </>
                 )}
@@ -1448,8 +1456,8 @@ const PrivateRegistrationForm = () => {
 
               {/* State Dropdown - Independent selection */}
               <View style={styles.inputTextContainer}>
-                <AppText style={styles.inputLabel}>State</AppText>
-                <AppText style={styles.mandatoryIndicator}>*</AppText>
+                {/* <AppText style={styles.inputLabel}>State</AppText> */}
+                {/* <AppText style={styles.mandatoryIndicator}>*</AppText> */}
               </View>
               <TouchableOpacity
                 style={[styles.input, errors.state && styles.inputError]}
@@ -1461,9 +1469,16 @@ const PrivateRegistrationForm = () => {
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <>
-                    <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
-                      {formData.state || 'Select State'}
-                    </AppText>
+                    {/* <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
+                      {formData.state || 'State'}
+                    </AppText> */}
+
+                     <View style={styles.inputTextContainer}>
+                              <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
+                                {formData.state || 'State'}
+                              </AppText>
+                              <AppText style={styles.inlineAsterisk}>*</AppText>
+                            </View>
                     <ArrowDown color='#999' />
                   </>
                 )}
@@ -1475,7 +1490,7 @@ const PrivateRegistrationForm = () => {
 
             {/* Security Details Section */}
             <View style={styles.section}>
-              <AppText style={styles.sectionTitle}>Security Details*</AppText>
+              <AppText style={styles.sectionTitle}>Security Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
               
               {/* Mobile Number with Verify */}
               <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
@@ -1521,7 +1536,7 @@ const PrivateRegistrationForm = () => {
               <View style={[styles.inputWithButton, errors.emailAddress && styles.inputError]}>
                 <AppInput
                   style={[styles.inputField, { flex: 1 }]}
-                  placeholder="Email Address"
+                  placeholder="Email Address*"
                   value={formData.emailAddress}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, emailAddress: text }))}
                   keyboardType="email-address"
@@ -1572,7 +1587,7 @@ const PrivateRegistrationForm = () => {
               <View style={styles.inputWithButton}>
                 <AppInput
                   style={[styles.inputField, { flex: 1 }]}
-                  placeholder="PAN Number"
+                  placeholder="PAN Number*"
                   value={formData.panNumber}
                   onChangeText={(text) => {
                     const upperText = text.toUpperCase();
@@ -1610,7 +1625,7 @@ const PrivateRegistrationForm = () => {
               )}
 
               {/* Fetch GST from PAN Link */}
-              <TouchableOpacity 
+              {/* <TouchableOpacity 
                 style={styles.linkButton}
                 onPress={() => {
                   Toast.show({
@@ -1623,7 +1638,7 @@ const PrivateRegistrationForm = () => {
                 }}
               >
                 <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               {/* GST Upload */}
               <FileUploadComponent
@@ -1686,8 +1701,8 @@ const PrivateRegistrationForm = () => {
                 </TouchableOpacity>
               </View>
 
-              <AppText style={styles.sectionLabel}>Select category <AppText style={styles.optional}>(Optional)</AppText></AppText>
-              
+              <AppText style={styles.sectionTitle}>Select category <AppText style={styles.optional}>(Optional)</AppText></AppText>
+
               <View style={styles.categoryOptions}>
                 <TouchableOpacity
                   style={[
@@ -1711,7 +1726,7 @@ const PrivateRegistrationForm = () => {
                       <AppText style={styles.checkboxTick}>✓</AppText>
                     )}
                   </View>
-                  <AppText style={styles.checkboxLabel}>Group Corporate Hospital</AppText>
+                  <AppText style={styles.checkboxLabel}>Group Corporate Hospital<Icon name="information-circle-outline" size={16} color="#999" /></AppText>
                 </TouchableOpacity>
 
                  {/* Group Hospital Selector - Show when Group Corporate Hospital is selected */}
@@ -1789,7 +1804,7 @@ const PrivateRegistrationForm = () => {
                       <AppText style={styles.checkboxTick}>✓</AppText>
                     )}
                   </View>
-                  <AppText style={styles.checkboxLabel}>Pharmacy</AppText>
+                  <AppText style={styles.checkboxLabel}>Pharmacy<Icon name="information-circle-outline" size={16} color="#999" /></AppText>
                 </TouchableOpacity>
               </View>
 
@@ -1843,7 +1858,8 @@ const PrivateRegistrationForm = () => {
                 </>
               )}
 
-              <View style={styles.divider} />
+              {/* <View style={styles.divider} /> */}
+            <View style={styles.customerGroupContainer}>
 
               <AppText style={styles.sectionLabel}>Customer group</AppText>
               
@@ -1915,8 +1931,8 @@ const PrivateRegistrationForm = () => {
                   ))
                 )}
               </View>
-
-              <AppText style={styles.sectionLabel}>Stockist Suggestions <AppText style={styles.optional}>(Optional)</AppText></AppText>
+   </View>
+              <AppText style={styles.sectionTitle}>Stockist Suggestions <AppText style={styles.optional}>(Optional)</AppText></AppText>
               
               {/* Stockist List */}
               {stockists.map((stockist, index) => (
@@ -2214,11 +2230,18 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 32,
   },
+  
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
     marginBottom: 20,
+  },
+    sectionSubTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
   },
   input: {
     flexDirection: 'row',
@@ -2230,7 +2253,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
   },
   inputError: {
     borderColor: colors.error,
@@ -2379,10 +2402,13 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   switchContainer: {
-    flexDirection: 'row',
+     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 24,
+    backgroundColor:"#F8F9FA",
+    padding:16,
+    borderRadius: 8,
   },
   switchLabel: {
     fontSize: 16,
@@ -2407,6 +2433,11 @@ const styles = StyleSheet.create({
   },
   switchThumbActive: {
     transform: [{ translateX: 20 }],
+  },
+  
+  sectionTopSpacing: {
+    marginTop: 32,
+
   },
   sectionLabel: {
     fontSize: 16,
@@ -2515,10 +2546,14 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   customerGroupContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20,
+   // flexDirection: 'row',
+    // flexWrap: 'wrap',
+    // gap: 8,
+    // marginBottom: 20,
+     backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom:30
   },
   customerGroupButton: {
     paddingHorizontal: 16,
@@ -2544,7 +2579,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    // marginBottom: 20,
   },
   radioButtonItem: {
     flexDirection: 'row',
@@ -2552,7 +2587,7 @@ const styles = StyleSheet.create({
     width: '48%',
     paddingVertical: 12,
     paddingHorizontal: 0,
-    marginBottom: 16,
+    // marginBottom: 16,
   },
   radioButtonItemDisabled: {
     opacity: 0.5,
@@ -2585,12 +2620,9 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   stockistCard: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     padding: 16,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
   },
   stockistCardHeader: {
     flexDirection: 'row',
@@ -3013,6 +3045,18 @@ const styles = StyleSheet.create({
   modalLoader: {
     paddingVertical: 50,
   },
+   inlineAsterisk: {
+    color: 'red',
+    fontSize: 16,
+    marginLeft: 2,
+  },
+
+  radioButtonContainer: {
+    flexDirection: 'row',
+    gap: 50,
+    flex: 1,
+    marginBottom: 16
+  }
 });
 
 export default PrivateRegistrationForm;

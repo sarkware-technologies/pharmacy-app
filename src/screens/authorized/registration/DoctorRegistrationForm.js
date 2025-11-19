@@ -937,13 +937,13 @@ const DoctorRegistrationForm = () => {
             ]}
           >
             {/* License Details Section */}
-            <View style={styles.section}>
+            <View style={[styles.section, styles.sectionTopSpacing]}>
               <AppText style={styles.sectionTitle}>License Details<AppText style={styles.mandatoryIndicator}>*</AppText></AppText>
               
               <AppText style={styles.sectionLabel}>Clinic registration<AppText style={styles.mandatoryIndicator}>*</AppText></AppText>
               
               <FileUploadComponent
-                placeholder="Upload Clinic Registration Certificate"
+                placeholder="Upload Certificate"
                 accept={['pdf', 'jpg', 'png']}
                 maxSize={10 * 1024 * 1024}
                 docType={licenseTypes.CLINIC_REGISTRATION?.docTypeId || DOC_TYPES.CLINIC_REGISTRATION}
@@ -966,7 +966,7 @@ const DoctorRegistrationForm = () => {
               />
 
               <TouchableOpacity
-                style={[styles.input, errors.clinicRegistrationDate && styles.inputError]}
+                style={[styles.datePickerInput, errors.clinicRegistrationDate && styles.inputError]}
                 onPress={() => openDatePicker('clinicRegistration')}
                 activeOpacity={0.7}
               >
@@ -985,7 +985,7 @@ const DoctorRegistrationForm = () => {
               <AppText style={[styles.sectionLabel, { marginTop: 20 }]}>Practice license<AppText style={styles.mandatoryIndicator}>*</AppText></AppText>
               
               <FileUploadComponent
-                placeholder="Upload Practice License"
+                placeholder="Upload"
                 accept={['pdf', 'jpg', 'png']}
                 maxSize={10 * 1024 * 1024}
                 docType={licenseTypes.PRACTICE_LICENSE?.docTypeId || DOC_TYPES.PRACTICE_LICENSE}
@@ -1008,7 +1008,7 @@ const DoctorRegistrationForm = () => {
               />
 
               <TouchableOpacity
-                style={[styles.input, errors.practiceLicenseDate && styles.inputError]}
+                style={[styles.datePickerInput, errors.practiceLicenseDate && styles.inputError]}
                 onPress={() => openDatePicker('practiceLicense')}
                 activeOpacity={0.7}
               >
@@ -1027,7 +1027,7 @@ const DoctorRegistrationForm = () => {
               <AppText style={[styles.sectionLabel, { marginTop: 20 }]}>Address proof<AppText style={styles.mandatoryIndicator}>*</AppText></AppText>
               
               <FileUploadComponent
-                placeholder="Upload Address Proof"
+                placeholder="Upload Electricity/Telephone bill"
                 accept={['pdf', 'jpg', 'png']}
                 maxSize={10 * 1024 * 1024}
                 docType={DOC_TYPES.ADDRESS_PROOF}
@@ -1040,7 +1040,7 @@ const DoctorRegistrationForm = () => {
               <AppText style={[styles.sectionLabel, { marginTop: 20 }]}>Clinic image<AppText style={styles.mandatoryIndicator}>*</AppText></AppText>
               
               <FileUploadComponent
-                placeholder="Upload Clinic Image"
+                placeholder="Upload"
                 accept={['jpg', 'png', 'jpeg']}
                 maxSize={5 * 1024 * 1024}
                 docType={DOC_TYPES.CLINIC_IMAGE}
@@ -1169,13 +1169,13 @@ const DoctorRegistrationForm = () => {
 
               {/* City Dropdown */}
               <View style={styles.dropdownContainer}>
-                <AppText style={styles.inputLabel}>City<AppText style={{color: 'red'}}>*</AppText></AppText>
+                {/* <AppText style={styles.inputLabel}>City<AppText style={{color: 'red'}}>*</AppText></AppText> */}
                 <TouchableOpacity 
                   style={[styles.dropdown, errors.city && styles.inputError]}
                   onPress={() => setShowCityModal(true)}
                 >
                   <AppText style={[styles.dropdownText, !formData.city && styles.dropdownPlaceholder]}>
-                    {formData.city || 'Select City'}
+                    {formData.city || 'City*'}
                   </AppText>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -1184,13 +1184,13 @@ const DoctorRegistrationForm = () => {
 
               {/* State Dropdown */}
               <View style={styles.dropdownContainer}>
-                <AppText style={styles.inputLabel}>State<AppText style={{color: 'red'}}>*</AppText></AppText>
+                {/* <AppText style={styles.inputLabel}>State<AppText style={{color: 'red'}}>*</AppText></AppText> */}
                 <TouchableOpacity 
                   style={[styles.dropdown, errors.state && styles.inputError]}
                   onPress={() => setShowStateModal(true)}
                 >
                   <AppText style={[styles.dropdownText, !formData.state && styles.dropdownPlaceholder]}>
-                    {formData.state || 'Select State'}
+                    {formData.state || 'State*'}
                   </AppText>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -1252,7 +1252,7 @@ const DoctorRegistrationForm = () => {
               <View style={[styles.inputWithButton, errors.emailAddress && styles.inputError]}>
                 <AppInput
                   style={[styles.inputField, { flex: 1 }]}
-                  placeholder="Email Address"
+                  placeholder="Email Address*"
                   value={formData.emailAddress}
                   onChangeText={(text) => {
                     setFormData(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
@@ -1263,7 +1263,7 @@ const DoctorRegistrationForm = () => {
                   placeholderTextColor="#999"
                   editable={!verificationStatus.email}
                 />
-                <AppText style={styles.mandatoryIndicator}>*</AppText>
+                {/* <AppText style={styles.mandatoryIndicator}>*</AppText> */}
                 <TouchableOpacity
                   style={[
                     styles.inlineVerifyButton,
@@ -1295,7 +1295,7 @@ const DoctorRegistrationForm = () => {
 
               {/* PAN Upload */}
               <FileUploadComponent
-                placeholder="Upload PAN Card"
+                placeholder="Upload PAN"
                 accept={['pdf', 'jpg', 'png']}
                 maxSize={5 * 1024 * 1024}
                 docType={DOC_TYPES.PAN}
@@ -1306,7 +1306,7 @@ const DoctorRegistrationForm = () => {
 
               {/* PAN Number */}
               <CustomInput
-                placeholder="PAN Number (e.g., ASDSD12345G)"
+                placeholder="PAN Number"
                 value={formData.panNumber}
                 onChangeText={(text) => {
                   setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }));
@@ -1320,7 +1320,7 @@ const DoctorRegistrationForm = () => {
 
               {/* GST Upload */}
               <FileUploadComponent
-                placeholder="Upload GST Certificate"
+                placeholder="Upload GST"
                 accept={['pdf', 'jpg', 'png']}
                 maxSize={5 * 1024 * 1024}
                 docType={DOC_TYPES.GST}
@@ -1330,7 +1330,7 @@ const DoctorRegistrationForm = () => {
               />
 
               <CustomInput
-                placeholder="GST Number (e.g., 27ASDSD1234F1Z5)"
+                placeholder="GST number"
                 value={formData.gstNumber}
                 onChangeText={(text) => {
                   setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
@@ -1345,7 +1345,7 @@ const DoctorRegistrationForm = () => {
 
             {/* Mapping Section */}
             <View style={styles.section}>
-              <AppText style={styles.sectionTitle}>Mapping</AppText>
+              <AppText style={styles.sectionTitle}>Mapping  <AppText style={styles.optionalText}> (Optional)</AppText></AppText>
               
               <View style={styles.switchContainer}>
                 <AppText style={styles.switchLabel}>Mark as buying entity</AppText>
@@ -1369,9 +1369,9 @@ const DoctorRegistrationForm = () => {
                 </TouchableOpacity>
               </View>
 
-              <AppText style={styles.sectionLabel}>Select category <AppText style={styles.optional}>(Optional)</AppText></AppText>
+              {/* <AppText style={styles.sectionLabel}>Select category <AppText style={styles.optional}>(Optional)</AppText></AppText> */}
               
-              <View style={styles.categoryOptions}>
+              <View style={[styles.categoryOptions, styles.radioButtonContainer]}>
                 <TouchableOpacity
                   style={[
                     styles.radioButton,
@@ -1506,7 +1506,8 @@ const DoctorRegistrationForm = () => {
                 </>
               )}
 
-              <View style={styles.divider} />
+              {/* <View style={styles.divider} /> */}
+            <View style={styles.customerGroupContainer}>
               
               <AppText style={styles.customerGroupLabel}>Customer group</AppText>
               <View style={styles.radioGroupContainer}>
@@ -1553,6 +1554,8 @@ const DoctorRegistrationForm = () => {
                   </TouchableOpacity>
                 </View>
               </View>
+           </View>
+
             </View>
 
             {/* Stockist Suggestions Section */}
@@ -1562,9 +1565,9 @@ const DoctorRegistrationForm = () => {
                 <AppText style={styles.optionalText}> (Optional)</AppText>
               </AppText>
               
-              <AppText style={styles.helperText}>
+              {/* <AppText style={styles.helperText}>
                 Add suggested stockists for this doctor
-              </AppText>
+              </AppText> */}
               
               {formData.stockists.map((stockist, index) => (
                 <View key={index} style={styles.stockistContainer}>
@@ -1791,11 +1794,21 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 32,
   },
+  sectionTopSpacing: {
+    marginTop: 32,
+
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  sectionSubTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
   },
   sectionLabel: {
     fontSize: 16,
@@ -1925,6 +1938,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 24,
+    backgroundColor:"#F8F9FA",
+    padding:16,
+    borderRadius: 8,
+
   },
   switchLabel: {
     fontSize: 16,
@@ -1963,6 +1980,12 @@ const styles = StyleSheet.create({
   categoryOptions: {
     marginBottom: 20,
   },
+    radioButtonContainer: {
+    flexDirection: 'row',
+    gap: 50,
+    flex: 1,
+    marginBottom: 16
+  },
   radioButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1989,10 +2012,13 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   customerGroupContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20,
+    // flexDirection: 'row',
+    // flexWrap: 'wrap',
+    // gap: 8,
+    // marginBottom: 20,
+     backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 16,
   },
   customerGroupButton: {
     paddingHorizontal: 16,
@@ -2084,7 +2110,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   stockistContainer: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
@@ -2280,6 +2306,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
+  datePickerInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.loginInputBorderColor,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#333',
+  },
   // New dropdown and radio styles
   dropdownContainer: {
     marginBottom: 16,
@@ -2293,7 +2335,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
   },
   dropdownText: {
     fontSize: 14,
@@ -2313,18 +2355,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   radioGroupContainer: {
-    marginVertical: 12,
+    // marginVertical: 12,
   },
   radioRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    // marginBottom: 12,
   },
   radioOption: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    marginBottom: 8,
+    // marginBottom: 8,
   },
   radioOptionFlex: {
     flex: 1,
@@ -2360,6 +2402,19 @@ const styles = StyleSheet.create({
   disabledText: {
     color: '#999999',
   },
+
+  inlineAsterisk: {
+    color: 'red',
+    fontSize: 16,
+    marginLeft: 2,
+  },
+
+  radioButtonContainer: {
+    flexDirection: 'row',
+    gap: 50,
+    flex: 1,
+    marginBottom: 16
+  }
 });
 
 export default DoctorRegistrationForm;

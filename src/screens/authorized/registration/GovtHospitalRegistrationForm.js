@@ -767,7 +767,10 @@ const GovtHospitalRegistrationForm = () => {
         },
       ]}
     >
-      <AppText style={styles.stepTitle}>License Details*</AppText>
+
+                  <View style={[styles.section, styles.sectionTopSpacing]}>
+      
+      <AppText style={styles.stepTitle}>License Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
       
       <FileUploadComponent
         placeholder="Upload Govt. Establishment Order"
@@ -786,7 +789,7 @@ const GovtHospitalRegistrationForm = () => {
         onChangeText={(text) => setFormData(prev => ({ ...prev, registrationNumber: text }))}
         error={errors.registrationNumber}
         autoCapitalize="characters"
-        mandatory={true}
+        mandatory={false}
       />
 
       <CustomInput
@@ -798,19 +801,19 @@ const GovtHospitalRegistrationForm = () => {
         }}
         error={errors.nin}
         autoCapitalize="characters"
-        mandatory={true}
+        mandatory={false}
       />
 
       <TouchableOpacity
-        style={[styles.input, errors.registrationDate && styles.inputError]}
+        style={[styles.datePickerInput, errors.registrationDate && styles.inputError]}
         onPress={() => setShowDatePicker(true)}
         activeOpacity={0.7}
       >
         <View style={styles.inputTextContainer}>
           <AppText style={formData.registrationDate ? styles.inputText : styles.placeholderText}>
-            {formData.registrationDate || 'Registration date'}
+            {formData.registrationDate || 'Legal Start Date'}
           </AppText>
-          <AppText style={styles.inlineAsterisk}>*</AppText>
+          {/* <AppText style={styles.inlineAsterisk}>*</AppText> */}
         </View>
         <Calendar />
       </TouchableOpacity>
@@ -819,7 +822,7 @@ const GovtHospitalRegistrationForm = () => {
       )}
 
       <FileUploadComponent
-        placeholder="Upload hospital image"
+        placeholder="Official Letter on Dept. Letterhead"
         accept={['jpg', 'png', 'jpeg']}
         maxSize={10 * 1024 * 1024}
         docType={DOC_TYPES.HOSPITAL_IMAGE}
@@ -837,6 +840,8 @@ const GovtHospitalRegistrationForm = () => {
           onChange={handleDateChange}
         />
       )}
+
+      </View>
     </Animated.View>
   );
 
@@ -850,7 +855,9 @@ const GovtHospitalRegistrationForm = () => {
         },
       ]}
     >
-      <AppText style={styles.stepTitle}>General Details*</AppText>
+                        <View style={styles.section}>
+
+      <AppText style={styles.stepTitle}>General Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
       
       <CustomInput
         placeholder="Hospital name"
@@ -935,7 +942,7 @@ const GovtHospitalRegistrationForm = () => {
           <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
             {formData.city || 'City'}
           </AppText>
-          <AppText style={styles.mandatoryIndicator}>*</AppText>
+          <AppText style={styles.inlineAsterisk}>*</AppText>
         </View>
         <ArrowDown color='#999' />
       </TouchableOpacity>
@@ -953,13 +960,15 @@ const GovtHospitalRegistrationForm = () => {
           <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
             {formData.state || 'State'}
           </AppText>
-          <AppText style={styles.mandatoryIndicator}>*</AppText>
+          <AppText style={styles.inlineAsterisk}>*</AppText>
         </View>
         <ArrowDown color='#999' />
       </TouchableOpacity>
       {errors.state && (
         <AppText style={styles.errorText}>{errors.state}</AppText>
       )}
+
+      </View>
     </Animated.View>
   );
 
@@ -972,8 +981,9 @@ const GovtHospitalRegistrationForm = () => {
           transform: [{ translateY: slideAnim }],
         },
       ]}
-    >
-      <AppText style={styles.stepTitle}>Security Details*</AppText>
+    >                        <View style={styles.section}>
+
+      <AppText style={styles.stepTitle}>Security Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
       
       {/* Mobile Number with Verify */}
       <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
@@ -986,7 +996,7 @@ const GovtHospitalRegistrationForm = () => {
           maxLength={10}
           placeholderTextColor="#999"
         />
-        <AppText style={styles.mandatoryIndicator}>*</AppText>
+        {/* <AppText style={styles.mandatoryIndicator}>*</AppText> */}
         <TouchableOpacity
           style={[styles.inlineVerifyButton, verificationStatus.mobile && styles.verifiedButton]}
           onPress={() => handleVerify('mobile')}
@@ -1006,14 +1016,14 @@ const GovtHospitalRegistrationForm = () => {
       <View style={[styles.inputWithButton, errors.emailAddress && styles.inputError]}>
         <AppInput
           style={[styles.inputField, { flex: 1 }]}
-          placeholder="Email address"
+          placeholder="Email address*"
           value={formData.emailAddress}
           onChangeText={(text) => setFormData(prev => ({ ...prev, emailAddress: text }))}
           keyboardType="email-address"
           autoCapitalize="none"
           placeholderTextColor="#999"
         />
-        <AppText style={styles.mandatoryIndicator}>*</AppText>
+        {/* <AppText style={styles.mandatoryIndicator}>*</AppText> */}
         <TouchableOpacity
           style={[styles.inlineVerifyButton, verificationStatus.email && styles.verifiedButton]}
           onPress={() => handleVerify('email')}
@@ -1031,7 +1041,7 @@ const GovtHospitalRegistrationForm = () => {
 
       {/* Upload PAN */}
       <FileUploadComponent
-        placeholder="Upload PAN (e.g., ASDSD12345G)"
+        placeholder="Upload PAN"
         accept={['pdf', 'jpg', 'png']}
         maxSize={10 * 1024 * 1024}
         docType={DOC_TYPES.PAN}
@@ -1045,7 +1055,7 @@ const GovtHospitalRegistrationForm = () => {
       <View style={styles.inputWithButton}>
         <AppInput
           style={[styles.inputField, { flex: 1 }]}
-          placeholder="PAN Number (e.g., ASDSD12345G)"
+          placeholder="PAN Number*"
           value={formData.panNumber}
           onChangeText={(text) => setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }))}
           autoCapitalize="characters"
@@ -1064,7 +1074,7 @@ const GovtHospitalRegistrationForm = () => {
 
       {/* Upload GST */}
       <FileUploadComponent
-        placeholder="Upload GST (e.g., 27ASDSD1234F1Z5)"
+        placeholder="Upload GST"
         accept={['pdf', 'jpg', 'png']}
         maxSize={10 * 1024 * 1024}
         docType={DOC_TYPES.GST}
@@ -1076,7 +1086,7 @@ const GovtHospitalRegistrationForm = () => {
 
       {/* GST Number Input */}
       <CustomInput
-        placeholder="GST Number (e.g., 27ASDSD1234F1Z5)"
+        placeholder="GST Number"
         value={formData.gstNumber}
         onChangeText={(text) => {
           setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
@@ -1086,6 +1096,8 @@ const GovtHospitalRegistrationForm = () => {
         maxLength={15}
         error={errors.gstNumber}
       />
+
+      </View>
     </Animated.View>
   );
 
@@ -1124,14 +1136,14 @@ const GovtHospitalRegistrationForm = () => {
         </TouchableOpacity>
       </View>
 
-      <AppText style={styles.sectionLabel}>
-        Select category <AppText style={styles.optional}>(Optional)</AppText>
+      <AppText style={styles.stepTitle}>
+        Select category 
       </AppText>
       
       {/* Link Child Hospital */}
       <View style={styles.inputTextContainer}>
-        <AppText style={styles.subsectionLabel}>Link child hospital <Icon name="information-circle-outline" size={16} color="#999" /></AppText>
-        <AppText style={styles.mandatoryIndicator}>*</AppText>
+        <AppText style={styles.subsectionLabel}>Link hospital<AppText style={styles.inlineAsterisk}>*</AppText>
+ <Icon name="information-circle-outline" size={16} color="#999" /></AppText>
       </View>
       
       {/* Hospital Selector Dropdown */}
@@ -1278,7 +1290,7 @@ const GovtHospitalRegistrationForm = () => {
         <AppText style={styles.addNewLinkText}>+ Add New Hospital</AppText>
       </TouchableOpacity>
 
-      <View style={styles.divider} />
+      {/* <View style={styles.divider} /> */}
 
       {/* Pharmacy Selection */}
       <AppText style={styles.sectionLabel}>Pharmacy</AppText>
@@ -1339,8 +1351,8 @@ const GovtHospitalRegistrationForm = () => {
         <AppText style={styles.addNewLinkText}>+ Add New Pharmacy</AppText>
       </TouchableOpacity>
 
-      <View style={styles.divider} />
-
+      {/* <View style={styles.divider} /> */}
+            <View style={styles.customerGroupContainer}>
       {/* Customer Group - Radio Buttons Grid */}
       <AppText style={styles.sectionLabel}>Customer group</AppText>
       
@@ -1416,6 +1428,9 @@ const GovtHospitalRegistrationForm = () => {
           })
         )}
       </View>
+ </View>
+
+
 
       {/* Stockist Suggestions */}
       <AppText style={styles.sectionLabel}>
@@ -1815,7 +1830,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
   },
   inputError: {
     borderColor: colors.error,
@@ -1966,6 +1981,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 24,
+    backgroundColor:"#F8F9FA",
+    padding:16,
+    borderRadius: 8,
   },
   switchLabel: {
     fontSize: 16,
@@ -1991,6 +2009,15 @@ const styles = StyleSheet.create({
   switchThumbActive: {
     transform: [{ translateX: 20 }],
   },
+
+    section: {
+    marginBottom: 32,
+  },
+
+  sectionTopSpacing: {
+    marginTop: 32,
+
+  },
   sectionLabel: {
     fontSize: 16,
     fontWeight: '500',
@@ -1998,11 +2025,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   subsectionLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 16,
+    color: '#333',
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    fontWeight:"500"
   },
   optional: {
     fontSize: 14,
@@ -2076,7 +2104,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    marginBottom: 8,
+    marginBottom: 20,
   },
   addNewLinkText: {
     fontSize: 14,
@@ -2095,11 +2123,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textDecorationLine: 'underline',
   },
-  customerGroupContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20,
+ 
+   customerGroupContainer: {
+    // flexDirection: 'row',
+    // flexWrap: 'wrap',
+    // gap: 8,
+    // marginBottom: 20,
+     backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom:30
+
+
   },
   customerGroupButton: {
     paddingHorizontal: 16,
@@ -2124,12 +2159,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   stockistCard: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    // borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
+    // borderWidth: 1,
+    // borderColor: '#E8E8E8',
   },
   stockistCardHeader: {
     flexDirection: 'row',
@@ -2397,7 +2432,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    // marginBottom: 20,
   },
   radioGridItem: {
     width: '48%',
@@ -2405,7 +2440,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 0,
-    marginBottom: 16,
+    // marginBottom: 16,
   },
   radioButton: {
     width: 24,
@@ -2490,6 +2525,45 @@ const styles = StyleSheet.create({
   pharmacyCode: {
     fontSize: 12,
     color: '#999',
+  }
+
+  ,
+  inlineAsterisk: {
+    color: 'red',
+    fontSize: 16,
+    marginLeft: 2,
+  },
+
+  radioButtonContainer: {
+    flexDirection: 'row',
+    gap: 50,
+    flex: 1,
+    marginBottom: 16
+  }, inputTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  inlineAsterisk: {
+    color: 'red',
+    fontSize: 16,
+    marginLeft: 2,
+  },
+  datePickerInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.loginInputBorderColor,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#333',
   },
 });
 

@@ -1068,7 +1068,7 @@ const PharmacyWholesalerRetailerForm = () => {
               {/* 20B License */}
           <View style={[styles.licenseRow, { marginTop: 20 }]}>
           
-                <AppText style={styles.licenseNumber}>20B <AppText style={{color: 'red'}}>*</AppText></AppText>
+                <AppText style={styles.licenseNumber}>20B<AppText style={{color: 'red'}}>*</AppText></AppText>
                 <Icon name="info-outline" size={16} color={colors.textSecondary} />
               </View>
               
@@ -1116,7 +1116,7 @@ const PharmacyWholesalerRetailerForm = () => {
               {/* 21B License */}
              <View style={[styles.licenseRow, { marginTop: 20 }]}>
              
-                <AppText style={styles.licenseNumber}>21B  <AppText style={{color: 'red'}}>*</AppText></AppText>
+                <AppText style={styles.licenseNumber}>21B <AppText style={{color: 'red'}}>*</AppText></AppText>
                 <Icon name="info-outline" size={16} color={colors.textSecondary} />
               </View>
               
@@ -1616,7 +1616,9 @@ const PharmacyWholesalerRetailerForm = () => {
                 )}
               </View>
 
-              <View style={styles.divider} />
+              {/* <View style={styles.divider} /> */}
+
+                            <View style={styles.customerGroupContainer}>
               
               <AppText style={styles.customerGroupLabel}>Customer group</AppText>
               <View style={styles.radioGroupContainer}>
@@ -1663,6 +1665,8 @@ const PharmacyWholesalerRetailerForm = () => {
                   </TouchableOpacity>
                 </View>
               </View>
+
+ </View>
             </View>
 
             {/* Stockist Suggestions Section */}
@@ -2433,6 +2437,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
   },
+  
+  
   stockistContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,

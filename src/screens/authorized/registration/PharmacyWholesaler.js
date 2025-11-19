@@ -876,7 +876,7 @@ const PharmacyWholesalerForm = () => {
             {/* License Details Section */}
             <View style={[styles.section, styles.sectionTopSpacing]}>
 
-              <AppText style={styles.sectionTitle}>License Details <AppText style={{ color: 'red' }}>*</AppText></AppText>
+              <AppText style={styles.sectionTitle}>License Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
 
               {/* 20B License */}
               <View style={styles.licenseRow}>
@@ -1163,7 +1163,7 @@ const PharmacyWholesalerForm = () => {
               <View style={[styles.inputWithButton, errors.emailAddress && styles.inputError]}>
                 <AppInput
                   style={[styles.inputField, { flex: 1 }]}
-                  placeholder="Email Address"
+                  placeholder="Email Address*"
                   value={formData.emailAddress}
                   onChangeText={(text) => {
                     setFormData(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
