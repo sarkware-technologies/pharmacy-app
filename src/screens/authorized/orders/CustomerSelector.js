@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Modal,
@@ -14,7 +13,10 @@ import Svg, { Path, Circle } from 'react-native-svg';
 import FilterModal from '../../../components/FilterModal';
 import { customerAPI } from '../../../api/customer';
 import { FlatList } from 'react-native-gesture-handler';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from "../../../components"
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../../../styles/colors';
+import { Fonts } from '../../../utils/fontHelper';
 
 // Icon Components
 const CloseIcon = () => (
@@ -49,6 +51,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
       setLoading(false)
       setShowCustomerList(false);
       setSearchText('');
+      loadCustomers(1, searchText);
     }
   }, [visible]);
   const [showCustomerList, setShowCustomerList] = useState(false);
@@ -66,6 +69,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
     const delayDebounce = setTimeout(() => {
       if (showCustomerList) {
         setPage(1);
+        setHasMore(true);
         setCustomers([]);
         loadCustomers(1, searchText);
       }
@@ -114,7 +118,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
 
   const loadCustomers = async (currentPage = 1, query = '') => {
 
-    if (loading || !hasMore) return;
+    if (loading || !hasMore && currentPage != 1) return;
     setLoading(true);
     try {
       const response = await customerAPI.getCustomersList({
@@ -130,7 +134,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
       setCustomers(prev => currentPage === 1 ? newCustomers : [...prev, ...newCustomers]);
 
       // Handle pagination
-      if (newCustomers.length < 20) {
+      if (newCustomers.length == 0) {
         setHasMore(false);
       } else {
         setHasMore(true);
@@ -262,7 +266,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
                 <AppInput
                   style={styles.searchInput}
                   placeholder="Search by customer name/code"
-                  placeholderTextColor="#999"
+                  placeholderTextColor="#777777"
                   value={searchText}
                   onChangeText={setSearchText}
                 />
@@ -299,6 +303,16 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
                   loadCustomers(nextPage, searchText);
                 }
               }}
+              ListEmptyComponent={() =>
+                !loading ? (
+                  <View style={{ paddingTop: 50, alignItems: "center" }}>
+                    <AppText style={{ fontSize: 16, color: "#999" }}>
+                      No customers found
+                    </AppText>
+                  </View>
+                ) : null
+              }
+
               ListFooterComponent={() =>
                 loading ? (
                   <View style={{ paddingVertical: 20, alignItems: 'center' }}>
@@ -403,7 +417,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#000',
+    color: colors.primaryText,
   },
   content: {
     flex: 1,
@@ -471,8 +485,9 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
-    color: '#333',
+    fontSize: 14,
+    color: '#777777',
+    fontFamily: Fonts.Regular
   },
   tableHeader: {
     flexDirection: 'row',
@@ -502,18 +517,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   customerName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.primaryText,
     marginBottom: 4,
+    fontFamily: Fonts.Regular
   },
   customerId: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: 12,
+    color: colors.secondaryText,
+    fontWeight: '400',
+
   },
   customerCity: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
+    color: colors.primaryText,
+    fontWeight: '400',
+    marginBottom: 4,
+    fontFamily: Fonts.Regular
   },
 });
 

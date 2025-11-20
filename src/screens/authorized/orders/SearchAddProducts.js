@@ -25,7 +25,8 @@ import Delete from '../../../components/icons/Delete';
 import { setCartDetails } from "../../../redux/slices/orderSlice"
 import CustomerSelectionModal from './CustomerSelector';
 import SelectDistributor from './SelectDistributor';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from "../../../components"
+import { Fonts } from '../../../utils/fontHelper';
 
 const SearchAddProducts = () => {
   const route = useRoute();
@@ -200,7 +201,7 @@ const SearchAddProducts = () => {
     try {
       const payload = {
         cfaId: product?.productDetails?.cfaId,
-        customerId: product?.customerDetails?.customerId ? parseInt(product?.customerDetails?.customerId) : selectedCustomer?.customerId,
+        customerId: product?.customerDetails?.customerId ? parseInt(product?.customerDetails?.customerId) : parseInt(selectedCustomer?.customerId),
         distributorId: 4,
         divisionId: product?.productDetails?.divisionId,
         modifiedBy: 4,
@@ -425,7 +426,7 @@ const SearchAddProducts = () => {
           <Icon name="search" size={20} color="#999" />
           <AppInput
             style={styles.searchInput}
-            placeholder="Search by product name"
+            placeholder="Search & add Product"
             value={searchText}
             onChangeText={setSearchText}
             placeholderTextColor="#777777"
@@ -435,7 +436,7 @@ const SearchAddProducts = () => {
       <View style={{ paddingHorizontal: 16, borderRadius: 10 }}>
         <View style={{ backgroundColor: "#FFFFFF", overflow: "hidden", borderRadius: 10 }}>
           <TouchableOpacity style={styles.selectAllRow}>
-            <CustomCheckbox size={20} title='Select all' textStyle={{ fontSize: 14 }} />
+            <CustomCheckbox size={20} title='Select all' textStyle={{ fontSize: 14,fontWeight:600 }} />
           </TouchableOpacity>
           <FlatList
             data={products}
@@ -496,8 +497,9 @@ const styles = StyleSheet.create({
     left: 14,
     backgroundColor: "#fff",
     paddingHorizontal: 6,
-    fontSize: 13,
+    fontSize: 12,
     color: "#777",
+    fontFamily: Fonts.Regular
   },
   valueRow: {
     flexDirection: "row",
@@ -521,12 +523,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingBottom: 6,
+    paddingBottom: 3,
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: colors.primaryText,
     marginLeft: 16,
     flex: 1,
   },
@@ -577,9 +579,9 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 12,
-    color: colors.primary,
     textAlign: 'center',
-    color: "#F7941E"
+    color: "#F7941E",
+    fontFamily: Fonts.Regular
   },
   filtersContainer: {
     flexDirection: 'row',
@@ -630,7 +632,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     marginLeft: 8,
-    fontSize: 14,
+    fontSize: 15,
     color: '#333',
   },
   selectAllRow: {
@@ -694,13 +696,14 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: colors.primaryText,
   },
   productId: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 11,
+    color: colors.secondaryText,
     marginBottom: 12,
-    paddingRight: 20
+    paddingRight: 20,
+    fontFamily:Fonts.Regular
   },
   productMetrics: {
     flexDirection: 'row',
@@ -714,12 +717,13 @@ const styles = StyleSheet.create({
   },
   metricLabel: {
     fontSize: 10,
-    color: '#999',
+    color: colors.secondaryText,
+    fontFamily:Fonts.Regular,
     marginBottom: 2,
   },
   metricValue: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: 12,
+    color: colors.secondaryText,
     fontWeight: '500',
   },
   moqRow: {
@@ -743,7 +747,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   statusBadge: {
-    backgroundColor: '#e1f2eb',
+    backgroundColor: '#1695601A',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 8,
@@ -751,6 +755,8 @@ const styles = StyleSheet.create({
   staus: {
     color: "#169560",
     fontWeight: 700,
+    fontSize:12,
+    letterSpacing:1
 
   },
   addToCartButton: {
@@ -758,7 +764,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.primary,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: 6,
     gap: 6,
     alignItems: "center",

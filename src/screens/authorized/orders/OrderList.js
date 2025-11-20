@@ -33,6 +33,7 @@ import { AppText, AppInput } from "../../../components"
 import { Fonts } from "../../../utils/fontHelper"
 import { formatPrice, getInitials } from "../../../utils/getInitials"
 import Svg, { Path } from 'react-native-svg';
+import ModalClose from "../../../components/icons/modalClose"
 
 const OrderList = () => {
   const navigation = useNavigation();
@@ -227,7 +228,7 @@ const OrderList = () => {
     else if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && instance?.stepInstances[0].stepInstanceStatus == "PENDING") {
       action = true;
     }
-    else if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && (instance?.stepInstances[0].stepInstanceStatus == "APPROVED" ||instance?.stepInstances[0].stepInstanceStatus == "APPROVE" ||instance?.stepInstances[0].stepInstanceStatus == "REJECT" || instance?.stepInstances[0].stepInstanceStatus == "REJECTED")) {
+    else if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && (instance?.stepInstances[0].stepInstanceStatus == "APPROVED" || instance?.stepInstances[0].stepInstanceStatus == "APPROVE" || instance?.stepInstances[0].stepInstanceStatus == "REJECT" || instance?.stepInstances[0].stepInstanceStatus == "REJECTED")) {
       action = false;
     }
     else {
@@ -413,7 +414,7 @@ const OrderList = () => {
           <View style={styles.modalHeader}>
             <AppText style={styles.modalTitle}>Create New Order</AppText>
             <TouchableOpacity onPress={() => setShowCreateOrderModal(false)}>
-              <Icon name="close" size={24} color="#333" />
+            <ModalClose/>
             </TouchableOpacity>
           </View>
 
@@ -421,7 +422,10 @@ const OrderList = () => {
             style={styles.orderTypeOption}
             onPress={() => handleCreateOrder('manual')}
           >
-            <Icon name="search" size={24} color="#666" />
+            <Svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <Path d="M16.75 16.75L12.8896 12.8896M12.8896 12.8896C13.5499 12.2293 14.0737 11.4453 14.4311 10.5826C14.7885 9.71978 14.9724 8.79507 14.9724 7.86121C14.9724 6.92735 14.7885 6.00264 14.4311 5.13987C14.0737 4.2771 13.5499 3.49316 12.8896 2.83283C12.2293 2.17249 11.4453 1.64868 10.5826 1.29131C9.71978 0.933937 8.79507 0.75 7.86121 0.75C6.92735 0.75 6.00264 0.933937 5.13987 1.29131C4.2771 1.64868 3.49316 2.17249 2.83283 2.83283C1.49921 4.16644 0.75 5.9752 0.75 7.86121C0.75 9.74722 1.49921 11.556 2.83283 12.8896C4.16644 14.2232 5.9752 14.9724 7.86121 14.9724C9.74722 14.9724 11.556 14.2232 12.8896 12.8896Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+
             <AppText style={styles.orderTypeText}>Manual Order</AppText>
           </TouchableOpacity>
 
@@ -429,7 +433,10 @@ const OrderList = () => {
             style={styles.orderTypeOption}
             onPress={() => handleCreateOrder('upload')}
           >
-            <Icon name="upload" size={24} color="#666" />
+            <Svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <Path d="M0.75 12.2206V13.9853C0.75 14.4533 0.934374 14.9022 1.26256 15.2331C1.59075 15.5641 2.03587 15.75 2.5 15.75H13C13.4641 15.75 13.9092 15.5641 14.2374 15.2331C14.5656 14.9022 14.75 14.4533 14.75 13.9853V12.2206M3.375 5.16176L7.75 0.75M7.75 0.75L12.125 5.16176M7.75 0.75V11.3382" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+
             <AppText style={styles.orderTypeText}>Upload Order</AppText>
           </TouchableOpacity>
         </View>
@@ -513,7 +520,7 @@ const OrderList = () => {
             style={{ marginBottom: 100 }}
             data={orders}
             renderItem={renderOrder}
-            keyExtractor={(item) => item.orderId.toString()}
+            keyExtractor={(item, i) => i.toString()}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             onEndReached={handleLoadMore}
@@ -545,6 +552,11 @@ const OrderList = () => {
           onClose={() => setShowDistributorModal(false)}
           onSelect={handleDistributorSelect}
           customerId={selectedCustomer?.customerId}
+          selectedCustomer={selectedCustomer}
+          changeCustomer={() => {
+            setShowDistributorModal(false)
+            setShowCustomerModal(true)
+          }}
         />
         <CustomerSelectionModal
           visible={showCustomerModal}
@@ -670,15 +682,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  modalTitle: { fontSize: 18, fontWeight: '600', color: '#333' },
+  modalTitle: { fontSize: 20, fontWeight: 700, color: colors.primaryText },
   orderTypeOption: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    // borderBottomWidth: 1,
+    // borderBottomColor: '#F0F0F0',
   },
-  orderTypeText: { fontSize: 16, color: '#333', marginLeft: 16 },
+  orderTypeText: { fontSize: 20, color: colors.primaryText, marginLeft: 16 },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',

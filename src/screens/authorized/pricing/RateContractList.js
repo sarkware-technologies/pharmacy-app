@@ -38,13 +38,20 @@ import {
   QuotationGeneration,
   CloseIcon
 } from "../../../components/icons/pricingIcon"
+import { Fonts } from '../../../utils/fontHelper';
 
 const RateContractList = () => {
   const navigation = useNavigation();
-  const [activeTab, setActiveTab] = useState('Active');
+  const [activeTab, setActiveTab] = useState('All');
   const [searchText, setSearchText] = useState('');
   const [filterVisible, setFilterVisible] = useState(false);
   const [showGroupupdate, setShowGroupupdate] = useState(false);
+
+  const [page, setPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
 
   const [selectedFilters, setSelectedFilters] = useState({
     status: ['Active', 'Draft', 'Expired RC', 'Inactive RC', 'Pending Approval', 'Approved', 'Rejected', 'Cancelled', 'Reassigned', 'Expiring Soon'],
@@ -57,34 +64,95 @@ const RateContractList = () => {
 
 
   useEffect(() => {
+    setPage(1);
     getRcStatus();
-    loadSummery();
+    loadSummery(1, true);
   }, [navigation])
 
   const getRcStatus = async () => {
     const response = await getRCStatus();
-    console.log(response?.allStatus, 6788798)
+    // console.log(response?.allStatus, 678898)
+    const status = {
+      Active: 0,
+      Draft: 0,
+      Expired: 0,
+      Inactive: 0,
+      Pending_Approval: 0,
+      Approved: 0,
+      Rejected: 0,
+      Cancelled: 0,
+      Reassigned: 0,
+      Expiring_Soon: 0,
+    };
+    if (response?.allStatus) {
+      response?.allStatus.forEach(element => {
+        // switch(e)
+        switch (element?.status) {
+          case "ACTIVE":
+            status.Active = element?.statusCount;
+          case "APPROVED":
+            status.Approved = element?.statusCount;
+          case "INACTIVE":
+            status.Inactive = element?.statusCount;
+          case "EXPIRED":
+            status.Expired = element?.statusCount;
+        }
+      });
 
-    //   {
-    //     Active: 20,
-    //       Draft: 10,
-    //         'Expired RC': 5,
-    //           'Inactive RC': 3,
-    //             'Pending Approval': 8,
-    //               Approved: 15,
-    //                 Rejected: 2,
-    //                   Cancelled: 1,
-    //                     Reassigned: 4,
-    //                       'Expiring Soon': 5,
-    // };
-  }
-  const loadSummery = async () => {
-    console.log(347865387)
-    const response = await getPriceSummary();
-    if (response?.rcSummary) {
-      setRateContracts(response?.rcSummary);
     }
+    setStatusCounts(status);
+
+
+
   }
+  const loadSummery = async (pageNumber = 1, isRefresh = false) => {
+    const response = await getPriceSummary({ page: pageNumber });
+
+    const data = response?.rcSummary ?? [];
+
+    if (isRefresh) {
+      setRateContracts(data);          // replace
+    } else {
+      setRateContracts(prev => [...prev, ...data]); // append
+    }
+
+    // if less data returned → no more pages
+    if (data.length === 0 || data.length < 10) {
+      setHasMore(false);
+    } else {
+      setHasMore(true);
+    }
+  };
+
+  const onRefresh = async () => {
+    getRcStatus();
+    setRefreshing(true);
+    setPage(1);
+    await loadSummery(1, true);
+    setRefreshing(false);
+  };
+
+
+  const loadMoreData = async () => {
+    if (isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+
+    const next = page + 1;
+    setPage(next);
+
+    await loadSummery(next);
+
+    setIsLoadingMore(false);
+  };
+
+  useEffect(() => {
+    getRcStatus();
+    loadSummery(1, true);    // initial load
+  }, [navigation]);
+
+
+
   // Mock data for rate contracts
   const [rateContracts, setRateContracts] = useState([]);
 
@@ -95,8 +163,8 @@ const RateContractList = () => {
 
   const renderStatusBadge = (status) => {
     const statusBackgroundColors = {
-      ACTIVE: '#E8F4EF',
-      DRAFT: '#F7F1E8',
+      ACTIVE: '#E8F5F0',
+      DRAFT: '#f7f1e8',
       'EXPIRED RC': '#FBEAEA',
       EXPIRED: '#FBEAEA',
       'INACTIVE RC': '#F7F9F9',
@@ -227,8 +295,8 @@ const RateContractList = () => {
           <ScrollView style={styles.filterScroll}>
             <View style={styles.filterSection}>
               <AppText style={styles.filterSectionTitle}>Status</AppText>
-              {selectedFilters.status.map((status) => (
-                <TouchableOpacity key={status} style={styles.filterOption}>
+              {selectedFilters.status.map((status, i) => (
+                <TouchableOpacity key={i + status} style={styles.filterOption} >
                   <Icon name="check-box" size={24} color={colors.primary} />
                   <AppText style={styles.filterOptionText}>{status}</AppText>
                 </TouchableOpacity>
@@ -292,7 +360,8 @@ const RateContractList = () => {
         onPress={() => navigation.navigate('RateContractDetail', { contract: item })}
       >
         <View style={styles.contractIdContainer}>
-          <AppText style={styles.contractId}>{item.id} <ChevronRight color={colors.primary} height={11} /></AppText>
+          <AppText style={styles.contractId}>{item?.rateContractNum}</AppText>
+          <ChevronRight color={colors.primary} height={11} />
         </View>
         <View style={styles.contractBadges}>
           {item.rfqDate && (
@@ -306,7 +375,7 @@ const RateContractList = () => {
             </View>
           )}
           <AppText style={styles.dateText}>
-            {item.rfqDate || item.vqDate}
+            {item?.startDate || item.vqDate}
           </AppText>
           {item.isMultiple && (
             <View style={styles.countBadge}>
@@ -317,22 +386,38 @@ const RateContractList = () => {
       </TouchableOpacity>
 
       <View style={styles.contractBody}>
-        <AppText style={styles.customerName}>{item.customer}</AppText>
+        <View style={{ display: "flex", flexDirection: "row", gap: 10, justifyContent: "space-between", alignItems: "center" }}>
+          <AppText style={styles.customerName}>{item?.customerName}</AppText>
+          <View style={{ display: "flex", flexDirection: "row", gap: 10, alignItems: "center" }}>
+            <TouchableOpacity>
+              <Svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <Path d="M6.19417 7.54261C6.05324 7.68356 5.94147 7.8509 5.86525 8.03507C5.78904 8.21924 5.74988 8.41663 5.75 8.61595V10.7509H7.89833C8.30083 10.7509 8.6875 10.5909 8.9725 10.3059L15.3058 3.96928C15.4471 3.8284 15.5591 3.66104 15.6356 3.47679C15.712 3.29253 15.7514 3.09501 15.7514 2.89553C15.7514 2.69605 15.712 2.49852 15.6356 2.31427C15.5591 2.13002 15.4471 1.96266 15.3058 1.82178L14.68 1.19595C14.5391 1.05459 14.3717 0.942441 14.1874 0.865916C14.003 0.789391 13.8054 0.75 13.6058 0.75C13.4063 0.75 13.2086 0.789391 13.0243 0.865916C12.84 0.942441 12.6726 1.05459 12.5317 1.19595L6.19417 7.54261Z" stroke="#909090" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <Path d="M15.75 8.25113C15.75 11.787 15.75 13.5545 14.6517 14.6528C13.5533 15.7511 11.785 15.7511 8.25 15.7511C4.715 15.7511 2.94667 15.7511 1.84833 14.6528C0.75 13.5545 0.75 11.7861 0.75 8.25113C0.75 4.71613 0.75 2.9478 1.84833 1.84946C2.94667 0.751129 4.715 0.751129 8.25 0.751129" stroke="#909090" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <Svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <Path d="M0.75 11.1407V12.0403C0.75 12.759 1.03548 13.4482 1.54365 13.9564C2.05181 14.4645 2.74103 14.75 3.45968 14.75H12.4919C13.2106 14.75 13.8998 14.4645 14.408 13.9564C14.9161 13.4482 15.2016 12.759 15.2016 12.0403V11.1371M7.97581 0.75V10.6855M7.97581 10.6855L11.1371 7.52419M7.97581 10.6855L4.81452 7.52419" stroke="#909090" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+            </TouchableOpacity>
+          </View>
+
+        </View>
         <View style={styles.contractInfo}>
           <AddrLine />
           <AppText style={styles.infoText}>
-            {item.code} | {item.location} | Product Count: {item.productCount}
+            {item?.stationCode} | {item?.cityName} | Product Count: {item?.productCount}
           </AppText>
         </View>
 
         <View style={styles.distributorStockistRow}>
           <TouchableOpacity style={styles.distributorInfo}>
             <Business />
-            <AppText style={{ ...styles.infoText, color: '#202020' }}>Configure Distribution <ChevronRight height={8} /></AppText>
+            <AppText style={{ ...styles.infoText, color: '#2B2B2B', fontFamily: Fonts.Bold, fontWeight: 600 }}>Configure Distribution <ChevronRight height={8} /></AppText>
           </TouchableOpacity>
 
           <View style={styles.stockistInfo}>
-            <AppText style={styles.stockistText}>Stockist:<AppText style={{ color: '#202020', fontSize: 14, fontWeight: 'bold' }}>{item.stockist}</AppText></AppText>
+            <AppText style={styles.stockistText}>Stockist:<AppText style={{ color: '#202020', fontSize: 14, fontWeight: 'bold' }}>{item.stockist ?? '-'}</AppText></AppText>
             <EyeOpen color={colors.primary} width={16} />
           </View>
         </View>
@@ -376,125 +461,146 @@ const RateContractList = () => {
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.statsContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Active</AppText>
-              <AppText style={[styles.statValue, { color: colors.success }]}>
-                {statusCounts?.Active}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Draft</AppText>
-              <AppText style={[styles.statValue, { color: colors.primary }]}>
-                {statusCounts?.Draft}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Expired RC</AppText>
-              <AppText style={[styles.statValue, { color: colors.error }]}>
-                {/* {statusCounts['Expired RC']} */}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Inactive RC</AppText>
-              <AppText style={[styles.statValue, { color: colors.gray }]}>
-                {/* {statusCounts['Inactive RC']} */}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Pending Approval</AppText>
-              <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
-                {/* {statusCounts['Pending Approval']} */}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Approved</AppText>
-              <AppText style={[styles.statValue, { color: colors.success }]}>
-                {statusCounts?.Approved}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Rejected</AppText>
-              <AppText style={[styles.statValue, { color: colors.error }]}>
-                {statusCounts?.Rejected}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Cancelled</AppText>
-              <AppText style={[styles.statValue, { color: colors.textSecondary }]}>
-                {statusCounts?.Cancelled}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Reassigned</AppText>
-              <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
-                {statusCounts?.Reassigned}
-              </AppText>
-            </View>
-            <View style={styles.statCard}>
-              <AppText style={styles.statLabel}>Expiring Soon</AppText>
-              <AppText style={[styles.statValue, { color: colors.primary }]}>
-                {/* {statusCounts['Expiring Soon']} */}
-              </AppText>
-            </View>
-          </ScrollView>
-        </View>
+      <FlatList
+        data={rateContracts}
+        renderItem={renderRateContract}
+        keyExtractor={(item, index) => item.id?.toString() + index.toString()}
+        contentContainerStyle={{backgroundColor: "#F6F6F6", padding: 15 }}
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer}>
-          {tabs.map(tab => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tab, activeTab === tab && styles.activeTab]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                {tab}
-              </AppText>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        // 🔥 Pull to refresh works now
+        refreshing={refreshing}
+        onRefresh={onRefresh}
 
-        <View style={styles.filterContainer}>
-          <TouchableOpacity style={styles.filterButton}>
-            <AppText style={styles.filterButtonText}>New Pricing(30)</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.filterButton, styles.activeFilterButton]}>
-            <AppText style={styles.activeFilterButtonText}>Multiple RC Found(50)</AppText>
-          </TouchableOpacity>
-        </View>
+        // 🔥 Pagination
+        onEndReachedThreshold={0.5}
+        onEndReached={loadMoreData}
+        stickyHeaderIndices={[0]}
+        // 🔥 Everything above list moved here
+        ListHeaderComponent={
+          <>
+            <View style={styles.content}>
+              <View style={styles.statsContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.statCard}>
+                    <AppText style={styles.statLabel}>Active</AppText>
+                    <AppText style={[styles.statValue, { color: "#169560" }]}>
+                      {statusCounts?.Active}
+                    </AppText>
+                  </View>
+                  <View style={styles.statCard}>
+                    <AppText style={styles.statLabel}>Draft</AppText>
+                    <AppText style={[styles.statValue, { color: "#AE7017" }]}>
+                      {statusCounts?.Draft}
+                    </AppText>
+                  </View>
+                  <View style={styles.statCard}>
+                    <AppText style={styles.statLabel}>Expired RC</AppText>
+                    <AppText style={[styles.statValue, { color: "#909090" }]}>
+                      {statusCounts?.Draft}
+                    </AppText>
+                  </View>
+                  <View style={styles.statCard}>
+                    <AppText style={styles.statLabel}>Inactive RC</AppText>
+                    <AppText style={[styles.statValue, { color: colors.gray }]}>
+                      {statusCounts?.Inactive}
+                    </AppText>
+                  </View>
+                  <View style={styles.statCard}>
+                    <AppText style={styles.statLabel}>Pending Approval</AppText>
+                    <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
+                      {statusCounts?.Pending_Approval}
+                    </AppText>
+                  </View>
+                  <View style={styles.statCard}>
+                    <AppText style={styles.statLabel}>Approved</AppText>
+                    <AppText style={[styles.statValue, { color: colors.success }]}>
+                      {statusCounts?.Approved}
+                    </AppText>
+                  </View>
+                  <View style={styles.statCard}>
+                    <AppText style={styles.statLabel}>Rejected</AppText>
+                    <AppText style={[styles.statValue, { color: colors.error }]}>
+                      {statusCounts?.Rejected}
+                    </AppText>
+                  </View>
+                  <View style={styles.statCard}>
+                    <AppText style={styles.statLabel}>Cancelled</AppText>
+                    <AppText style={[styles.statValue, { color: colors.textSecondary }]}>
+                      {statusCounts?.Cancelled}
+                    </AppText>
+                  </View>
+                  <View style={styles.statCard}>
+                    <AppText style={styles.statLabel}>Reassigned</AppText>
+                    <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
+                      {statusCounts?.Reassigned}
+                    </AppText>
+                  </View>
+                  <View style={styles.statCard}>
+                    <AppText style={styles.statLabel}>Expiring Soon</AppText>
+                    <AppText style={[styles.statValue, { color: colors.primary }]}>
+                      {statusCounts?.Expiring_Soon}
+                    </AppText>
+                  </View>
+                </ScrollView>
+              </View>
 
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Search color="#999" />
-            <AppInput
-              style={styles.searchInput}
-              placeholder="Search RC, customer name/code..."
-              value={searchText}
-              onChangeText={setSearchText}
-              placeholderTextColor="#999"
-            />
-          </View>
-          <TouchableOpacity
-            style={styles.searchFilterButton}
-            onPress={() => setFilterVisible(true)}
-          >
-            <Filter color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.searchFilterButton}>
-            <Calendar />
-          </TouchableOpacity>
-        </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer}>
+                {tabs.map((tab, i) => (
+                  <TouchableOpacity
+                    key={i + tab}
+                    style={[styles.tab, activeTab === tab && styles.activeTab]}
+                    onPress={() => setActiveTab(tab)}
+                  >
+                    <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+                      {tab}
+                    </AppText>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-        <FlatList
-          data={rateContracts}
-          renderItem={renderRateContract}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContent}
-          scrollEnabled={false}
-        />
-      </ScrollView>
+              <View style={styles.filterContainer}>
+                <TouchableOpacity style={styles.filterButton}>
+                  <AppText style={styles.filterButtonText}>New Pricing(30)</AppText>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.filterButton, styles.activeFilterButton]}>
+                  <AppText style={styles.activeFilterButtonText}>Multiple RC Found(50)</AppText>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.searchContainer}>
+                <View style={styles.searchBar}>
+                  <Search color="#999" />
+                  <AppInput
+                    style={styles.searchInput}
+                    placeholder="Search RC, customer name/code..."
+                    value={searchText}
+                    onChangeText={setSearchText}
+                    placeholderTextColor="#777777"
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.searchFilterButton}
+                  onPress={() => setFilterVisible(true)}
+                >
+                  <Filter color="#666" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.searchFilterButton}>
+                  <Calendar />
+                </TouchableOpacity>
+              </View>
+
+            </View>
+          </>
+        }
+
+        ListFooterComponent={
+          isLoadingMore ? (
+            <AppText style={{ textAlign: "center", padding: 10 }}>
+              Loading more...
+            </AppText>
+          ) : null
+        }
+      />
 
       {renderFilterModal()}
       {renderCreateOrderModal()}
@@ -506,7 +612,8 @@ const RateContractList = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "#F6F6F6",
+    paddingBottom:20
   },
   header: {
     flexDirection: 'row',
@@ -545,8 +652,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 15,
-    backgroundColor: '#F6F6F6'
+    backgroundColor: '#F6F6F6',
+    zIndex: 100
   },
   statsContainer: {
     margin: -15,
@@ -564,32 +671,36 @@ const styles = StyleSheet.create({
     borderColor: '#EDEDED',
     borderRadius: 12,
     backgroundColor: colors.white,
-    minWidth: 100,
+    minWidth: 90,
   },
   statLabel: {
     fontSize: 14,
-    color: '#202020',
+    color: colors.primaryText,
+    fontFamily: Fonts.Regular,
+    fontWeight: 400
   },
   statValue: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: 700,
+    fontFamily: Fonts.Bold,
     color: colors.text,
     marginTop: 4,
   },
   tabContainer: {
     margin: -15,
     marginTop: 0,
-    marginBottom: 15,
+    marginBottom: 13,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    paddingHorizontal: 10,
   },
   tab: {
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
   activeTab: {
-    borderBottomWidth: 2,
+    borderBottomWidth: 3,
     borderBottomColor: colors.primary,
   },
   tabText: {
@@ -597,33 +708,41 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   activeTabText: {
-    color: colors.primary,
-    fontWeight: '600',
+    color: "#F7941E",
+    fontWeight: 700,
+    fontSize: 16,
   },
   filterContainer: {
     flexDirection: 'row',
     padding: 0,
     gap: 12,
-    marginBottom: 15
+    marginBottom: 13
   },
   filterButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 0.5,
+    borderColor: "#909090",
+    backgroundColor: "#FFFFFF"
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
+    fontFamily: Fonts.Regular,
+    fontWeight: 400,
+    color: "#909090"
   },
   activeFilterButton: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: "#fff4e8",
+    borderColor: "#F7941E",
+    borderWidth: 0.5,
+    color: colors.primaryText
   },
   activeFilterButtonText: {
     fontSize: 14,
-    color: colors.white,
+    color: !colors.white,
+    fontWeight: 600
   },
 
   searchBar: {
@@ -638,8 +757,10 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     marginLeft: 8,
-    fontSize: 14,
-    color: '#333'
+    fontSize: 15,
+    color: '#777777',
+    fontFamily: Fonts.Regular,
+    fontWeight: 400
   },
   searchContainer: {
     flexDirection: 'row',
@@ -655,7 +776,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff'
   },
   listContent: {
-    paddingBottom: 80,
+    // paddingBottom: 30,
   },
   contractCard: {
     backgroundColor: colors.white,
@@ -677,8 +798,9 @@ const styles = StyleSheet.create({
   },
   contractId: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    fontWeight: '700',
+    color: colors.primaryText,
+    marginRight: 6
   },
   contractBadges: {
     flexDirection: 'row',
@@ -699,6 +821,7 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 14,
     color: colors.textSecondary,
+    fontFamily: Fonts.Regular
   },
   countBadge: {
     flexDirection: 'row',
@@ -716,8 +839,8 @@ const styles = StyleSheet.create({
   },
   customerName: {
     fontSize: 16,
-    fontWeight: '500',
-    color: colors.text,
+    fontWeight: 600,
+    color: colors.primaryText,
     marginBottom: 8,
   },
   contractInfo: {
@@ -730,6 +853,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     flex: 1,
+    fontFamily: Fonts.Regular,
+    fontWeight: 400
   },
   distributorStockistRow: {
     flexDirection: 'row',
@@ -750,6 +875,7 @@ const styles = StyleSheet.create({
   stockistText: {
     fontSize: 14,
     color: colors.textSecondary,
+    fontWeight: 600
   },
   contractFooter: {
     flexDirection: 'row',
@@ -759,13 +885,14 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   statusBadge: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 8,
   },
   statusText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: 700,
+    fontFamily: Fonts.Black,
   },
   createButton: {
     flexDirection: 'row',
@@ -774,7 +901,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: '#2B2B2B',
   },
   createButtonText: {
@@ -789,7 +916,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: '#2B2B2B',
   },
   suspendButtonText: {
@@ -814,12 +941,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: "#F7941E",
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: "#F7941E",
   },
   filterScroll: {
     padding: 16,
