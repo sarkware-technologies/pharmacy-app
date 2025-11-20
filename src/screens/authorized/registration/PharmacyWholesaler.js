@@ -2017,7 +2017,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   verifiedButton: {
-    backgroundColor: '#E8F5E9',
+    // backgroundColor: '#E8F5E9',
   },
   disabledButton: {
     opacity: 0.6,
@@ -2028,7 +2028,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   verifiedText: {
-    color: '#4CAF50',
+    color: colors.primary,
   },
   inputError: {
     borderColor: colors.error,

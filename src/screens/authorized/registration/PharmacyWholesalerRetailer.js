@@ -2152,7 +2152,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   verifiedButton: {
-    backgroundColor: '#E8F5E9',
+    // backgroundColor: '#E8F5E9',
   },
   inlineVerifyText: {
     fontSize: 13,
@@ -2160,7 +2160,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   verifiedText: {
-    color: '#4CAF50',
+    color: colors.primary,
   },
   inputError: {
     borderColor: colors.error,
