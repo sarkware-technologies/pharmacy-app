@@ -1636,6 +1636,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 20,
+     borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+    paddingLeft: 12,
   },
   input: {
     flexDirection: 'row',
@@ -1850,6 +1853,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 20,
+ 
   },
 
    sectionTopSpacing: {

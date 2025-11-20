@@ -1528,7 +1528,7 @@ const PharmacyWholesalerForm = () => {
 
             {/* Stockist Suggestions Section */}
             <View style={styles.section}>
-              <AppText style={styles.sectionTitle}>
+              <AppText style={styles.sectionSubTitle}>
                 Stockist Suggestions
                 <AppText style={styles.optionalText}> (Optional)</AppText>
               </AppText>
@@ -1909,6 +1909,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 16,
+     borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+    paddingLeft: 12,
   },
   sectionSubTitle: {
     fontSize: 17,

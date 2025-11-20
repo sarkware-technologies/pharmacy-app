@@ -1715,7 +1715,7 @@ const PrivateRegistrationForm = () => {
                 </TouchableOpacity>
               </View>
 
-              <AppText style={styles.sectionTitle}>Select category <AppText style={styles.optional}>(Optional)</AppText></AppText>
+              <AppText style={styles.sectionSubTitle}>Select category <AppText style={styles.optional}>(Optional)</AppText></AppText>
 
               <View style={styles.categoryOptions}>
                 <TouchableOpacity
@@ -1946,7 +1946,7 @@ const PrivateRegistrationForm = () => {
                 )}
               </View>
    </View>
-              <AppText style={styles.sectionTitle}>Stockist Suggestions <AppText style={styles.optional}>(Optional)</AppText></AppText>
+              <AppText style={styles.sectionSubTitle}>Stockist Suggestions <AppText style={styles.optional}>(Optional)</AppText></AppText>
               
               {/* Stockist List */}
               {stockists.map((stockist, index) => (
@@ -2250,6 +2250,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 20,
+     borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+    paddingLeft: 12,
   },
     sectionSubTitle: {
     fontSize: 16,
