@@ -109,7 +109,7 @@ const CustomInput = ({
         }),
         color: floatingLabelAnim.interpolate({
             inputRange: [0, 1],
-            outputRange: [colors.gray, colors.gray],
+            outputRange: [colors.gray, colors.primary],
         }),
         fontFamily: "Lato-Bold",
     
