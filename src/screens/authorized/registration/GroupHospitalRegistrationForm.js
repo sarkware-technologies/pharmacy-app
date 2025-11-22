@@ -932,115 +932,119 @@ const GroupHospitalRegistrationForm = () => {
       ]}
     >
       <View style={styles.section}>
-      <AppText style={styles.stepTitle}>Security Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
-      
-      {/* Mobile Number with Verify */}
-      <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-        <AppInput
-          style={styles.inputField}
-          placeholder="Mobile number*"
-          value={formData.mobileNumber}
-          onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
-          keyboardType="phone-pad"
-          maxLength={10}
-          placeholderTextColor="#999"
-        />
-        {/* <AppText style={styles.mandatoryIndicator}>*</AppText> */}
-        <TouchableOpacity
-          style={styles.inlineVerifyButton}
-          onPress={() => handleVerify('mobile')}
-        >
-                          <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
-        </TouchableOpacity>
-      </View>
-      {errors.mobileNumber && (
-        <AppText style={styles.errorText}>{errors.mobileNumber}</AppText>
-      )}
-      {renderOTPInput('mobile')}
+        <AppText style={styles.stepTitle}>Security Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
 
-      {/* Email Address with Verify */}
-      <View style={[styles.inputWithButton, errors.emailAddress && styles.inputError]}>
-        <AppInput
-          style={[styles.inputField, { flex: 1 }]}
-          placeholder="Email address*"
+        {/* Mobile Number with Verify */}
+      
+
+
+         <CustomInput
+                      placeholder="Mobile number"
+            value={formData.mobileNumber}
+            onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
+            keyboardType="phone-pad"
+            maxLength={10}
+                        mandatory
+        
+                        rightComponent={
+                           <TouchableOpacity
+            style={styles.inlineVerifyButton}
+            onPress={() => handleVerify('mobile')}
+          >
+            <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
+          </TouchableOpacity>
+                        }
+                      />
+        {errors.mobileNumber && (
+          <AppText style={styles.errorText}>{errors.mobileNumber}</AppText>
+        )}
+        {renderOTPInput('mobile')}
+
+        {/* Email Address with Verify */}
+
+
+        <CustomInput
+          placeholder="Email address"
           value={formData.emailAddress}
           onChangeText={(text) => setFormData(prev => ({ ...prev, emailAddress: text }))}
           keyboardType="email-address"
           autoCapitalize="none"
-          placeholderTextColor="#999"
+          mandatory
+
+          rightComponent={
+            <TouchableOpacity
+              style={styles.inlineVerifyButton}
+              onPress={() => handleVerify('email')}
+            >
+              <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
+            </TouchableOpacity>
+          }
         />
-        {/* <AppText style={styles.mandatoryIndicator}>*</AppText> */}
-        <TouchableOpacity
-          style={styles.inlineVerifyButton}
-          onPress={() => handleVerify('email')}
-        >
-                          <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
-        </TouchableOpacity>
-      </View>
-      {errors.emailAddress && (
-        <AppText style={styles.errorText}>{errors.emailAddress}</AppText>
-      )}
-      {renderOTPInput('email')}
+        {errors.emailAddress && (
+          <AppText style={styles.errorText}>{errors.emailAddress}</AppText>
+        )}
+        {renderOTPInput('email')}
 
-      {/* Upload PAN */}
-      <FileUploadComponent
-        placeholder="Upload PAN"
-        accept={['pdf', 'jpg', 'png']}
-        maxSize={10 * 1024 * 1024}
-        docType={DOC_TYPES.PAN}
-        initialFile={formData.panFile}
-        onFileUpload={(file) => handleFileUpload('pan', file)}
-        onFileDelete={() => handleFileDelete('pan')}
-        errorMessage={errors.panFile}
-        mandatory={true}
+        {/* Upload PAN */}
+        <FileUploadComponent
+          placeholder="Upload PAN"
+          accept={['pdf', 'jpg', 'png']}
+          maxSize={10 * 1024 * 1024}
+          docType={DOC_TYPES.PAN}
+          initialFile={formData.panFile}
+          onFileUpload={(file) => handleFileUpload('pan', file)}
+          onFileDelete={() => handleFileDelete('pan')}
+          errorMessage={errors.panFile}
+          mandatory={true}
 
-      />
+        />
 
-      {/* PAN Number */}
-      <View style={styles.inputWithButton}>
-        <AppInput
-          style={[styles.inputField, { flex: 1 }]}
-          placeholder="PAN Number*"
+        {/* PAN Number */}
+
+
+        <CustomInput
+          placeholder="PAN Number"
           value={formData.panNumber}
           onChangeText={(text) => setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }))}
           autoCapitalize="characters"
           maxLength={10}
-          placeholderTextColor="#999"
+          mandatory
+          rightComponent={
+            <TouchableOpacity
+              style={styles.inlineVerifyButton}
+              onPress={() => {
+                Alert.alert('PAN Verification', 'PAN verified successfully!');
+              }}
+            >
+              <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
+            </TouchableOpacity>
+          }
         />
-        <TouchableOpacity
-          style={styles.inlineVerifyButton}
-          onPress={() => {
-            Alert.alert('PAN Verification', 'PAN verified successfully!');
+
+        {/* Upload GST */}
+        <FileUploadComponent
+          placeholder="Upload GST"
+          accept={['pdf', 'jpg', 'png']}
+          maxSize={10 * 1024 * 1024}
+          docType={DOC_TYPES.GST}
+          initialFile={formData.gstFile}
+          onFileUpload={(file) => handleFileUpload('gst', file)}
+          onFileDelete={() => handleFileDelete('gst')}
+          errorMessage={errors.gstFile}
+        />
+
+        {/* GST Number Input */}
+        <CustomInput
+          placeholder="GST Number"
+          value={formData.gstNumber}
+          onChangeText={(text) => {
+            setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
+            setErrors(prev => ({ ...prev, gstNumber: null }));
           }}
-        >
-                          <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
-        </TouchableOpacity>
-      </View>
-
-      {/* Upload GST */}
-      <FileUploadComponent
-        placeholder="Upload GST"
-        accept={['pdf', 'jpg', 'png']}
-        maxSize={10 * 1024 * 1024}
-        docType={DOC_TYPES.GST}
-        initialFile={formData.gstFile}
-        onFileUpload={(file) => handleFileUpload('gst', file)}
-        onFileDelete={() => handleFileDelete('gst')}
-        errorMessage={errors.gstFile}
-      />
-
-      {/* GST Number Input */}
-      <CustomInput
-        placeholder="GST Number"
-        value={formData.gstNumber}
-        onChangeText={(text) => {
-          setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
-          setErrors(prev => ({ ...prev, gstNumber: null }));
-        }}
-        autoCapitalize="characters"
-        maxLength={15}
-        error={errors.gstNumber}
-      />
+          autoCapitalize="characters"
+          maxLength={15}
+          error={errors.gstNumber}
+        />
       </View>
     </Animated.View>
   );
@@ -1389,13 +1393,13 @@ const GroupHospitalRegistrationForm = () => {
       </KeyboardAvoidingView>
 
       {/* Bottom Navigation */}
-      <View style={styles.bottomNavigation}>
+      <View style={styles.actionButtons}>
         <TouchableOpacity
-          style={styles.backStepButton}
+          style={styles.cancelButton}
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}
         >
-          <AppText style={styles.backStepButtonText}>Cancel</AppText>
+          <AppText style={styles.cancelButtonText}>Cancel</AppText>
         </TouchableOpacity>
         
         <Animated.View
@@ -1405,7 +1409,7 @@ const GroupHospitalRegistrationForm = () => {
           ]}
         >
           <TouchableOpacity
-            style={styles.nextStepButton}
+                      style={[styles.registerButton, loading && styles.disabledButton]}
             onPress={handleNextStep}
             activeOpacity={0.8}
             disabled={loading}
@@ -1413,11 +1417,12 @@ const GroupHospitalRegistrationForm = () => {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <AppText style={styles.nextStepButtonText}>Register</AppText>
+              <AppText style={styles.registerButtonText}>Register</AppText>
             )}
           </TouchableOpacity>
         </Animated.View>
       </View>
+
 
       {/* Cancel Confirmation Modal */}
       {/* Dropdown Modals */}
@@ -1626,7 +1631,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 0,
-    paddingBottom: 100,
+    paddingBottom: 0,
   },
   stepContent: {
     paddingTop: 8,
@@ -1661,7 +1666,7 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: 16,
-    color: '#999',
+    color: colors.gray,
   },
     inputTextContainer: {
     flexDirection: 'row',
@@ -2027,12 +2032,17 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   bottomNavigation: {
-    flexDirection: 'row',
-    paddingHorizontal: 8,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    // flexDirection: 'row',
+    // paddingHorizontal: 8,
+    // paddingVertical: 16,
+    // backgroundColor: '#fff',
+    // borderTopWidth: 1,
+    // borderTopColor: '#F0F0F0',
+    // gap: 12,
+
+        flexDirection: 'row',
+    marginTop: 24,
+    marginBottom: 32,
     gap: 12,
   },
   backStepButton: {
@@ -2055,6 +2065,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   nextStepButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+  },
+
+
+   actionButtons: {
+    flexDirection: 'row',
+    marginTop: 24,
+    marginBottom: 32,
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  registerButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  registerButtonText: {
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',

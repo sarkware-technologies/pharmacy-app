@@ -27,6 +27,7 @@ const CustomInput = ({
     error = null,
     maxLength,
     style,
+    rightComponent = null,
     ...props
 }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -110,6 +111,8 @@ const CustomInput = ({
             inputRange: [0, 1],
             outputRange: [colors.gray, colors.primary],
         }),
+        fontFamily: "Lato-Bold",
+    
     };
 
     return (
@@ -159,6 +162,12 @@ const CustomInput = ({
                         {!showPassword ? <InputEyeClose /> : <InputEyeOpen />}
                     </TouchableOpacity>
                 )}
+
+                {rightComponent && (
+    <View style={styles.rightComponentContainer}>
+        {rightComponent}
+    </View>
+)}
             </View>
             {error && (
                 <AppText style={styles.errorText}>{error}</AppText>
@@ -214,6 +223,13 @@ const styles = StyleSheet.create({
         marginTop: 4,
         marginLeft: 4,
     },
+
+    rightComponentContainer: {
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+}
+
 });
 
 export default CustomInput;

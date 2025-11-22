@@ -988,66 +988,94 @@ const GovtHospitalRegistrationForm = () => {
         <AppText style={styles.stepTitle}>Security Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
 
         {/* Mobile Number with Verify */}
-        <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-          <AppInput
-            style={styles.inputField}
-            placeholder="Mobile number*"
-            value={formData.mobileNumber}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
-            keyboardType="phone-pad"
-            maxLength={10}
-            placeholderTextColor="#999"
-          />
-          {/* <AppText style={styles.mandatoryIndicator}>*</AppText> */}
-          <TouchableOpacity
-            style={[styles.inlineVerifyButton, verificationStatus.mobile && styles.verifiedButton]}
-            onPress={() => handleVerify('mobile')}
-            disabled={verificationStatus.mobile}
-          >
-            <AppText style={[styles.inlineVerifyText, verificationStatus.mobile && styles.verifiedText]}>
-               {verificationStatus.mobile ? (
-                                     'Verified'
-                                   ) : (
-                                     <>
-                                       Verify<AppText style={styles.inlineAsterisk}>*</AppText>
-                                     </>
-                                   )}
-            </AppText>
-          </TouchableOpacity>
-        </View>
+    <CustomInput
+                placeholder="Mobile Number"
+                value={formData.mobileNumber}
+                onChangeText={(text) => {
+                  if (/^\d{0,10}$/.test(text)) {
+                    setFormData(prev => ({ ...prev, mobileNumber: text }));
+                    setErrors(prev => ({ ...prev, mobileNumber: null }));
+                  }
+                }}
+                maxLength={10}
+                keyboardType="phone-pad"
+                mandatory
+                editable={!verificationStatus.mobile}
+
+                rightComponent={
+                  <TouchableOpacity
+                    style={[
+                      styles.inlineVerifyButton,
+                      verificationStatus.mobile && styles.verifiedButton
+                    ]}
+                    onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
+                    disabled={verificationStatus.mobile || loadingOtp.mobile}
+                  >
+                    {loadingOtp.mobile && !verificationStatus.mobile ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <AppText style={[
+                        styles.inlineVerifyText,
+                        verificationStatus.mobile && styles.verifiedText
+                      ]}>
+                        {verificationStatus.mobile ? (
+                          'Verified'
+                        ) : (
+                          <>
+                            Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                          </>
+                        )}
+                      </AppText>
+                    )}
+                  </TouchableOpacity>
+                }
+              />
         {errors.mobileNumber && (
           <AppText style={styles.errorText}>{errors.mobileNumber}</AppText>
         )}
         {renderOTPInput('mobile')}
 
         {/* Email Address with Verify */}
-        <View style={[styles.inputWithButton, errors.emailAddress && styles.inputError]}>
-          <AppInput
-            style={[styles.inputField, { flex: 1 }]}
-            placeholder="Email address*"
-            value={formData.emailAddress}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, emailAddress: text }))}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholderTextColor="#999"
-          />
-          {/* <AppText style={styles.mandatoryIndicator}>*</AppText> */}
-          <TouchableOpacity
-            style={[styles.inlineVerifyButton, verificationStatus.email && styles.verifiedButton]}
-            onPress={() => handleVerify('email')}
-            disabled={verificationStatus.email}
-          >
-            <AppText style={[styles.inlineVerifyText, verificationStatus.email && styles.verifiedText]}>
-               {verificationStatus.email ? (
-                                     'Verified'
-                                   ) : (
-                                     <>
-                                       Verify<AppText style={styles.inlineAsterisk}>*</AppText>
-                                     </>
-                                   )}
-            </AppText>
-          </TouchableOpacity>
-        </View>
+       <CustomInput
+                placeholder="Email Address"
+                value={formData.emailAddress}
+                onChangeText={(text) => {
+                  setFormData(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
+                  setErrors(prev => ({ ...prev, emailAddress: null }));
+                }}
+                keyboardType="email-address"
+                mandatory
+                editable={!verificationStatus.email}
+
+                rightComponent={
+                  <TouchableOpacity
+                    style={[
+                      styles.inlineVerifyButton,
+                      verificationStatus.email && styles.verifiedButton,
+                      loadingOtp.email && styles.disabledButton
+                    ]}
+                    onPress={() => !verificationStatus.email && !loadingOtp.email && handleVerify('email')}
+                    disabled={verificationStatus.email || loadingOtp.email}
+                  >
+                    {loadingOtp.email && !verificationStatus.email ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <AppText style={[
+                        styles.inlineVerifyText,
+                        verificationStatus.email && styles.verifiedText
+                      ]}>
+                        {verificationStatus.email ? (
+                          'Verified'
+                        ) : (
+                          <>
+                            Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                          </>
+                        )}
+                      </AppText>
+                    )}
+                  </TouchableOpacity>
+                }
+              />
         {errors.emailAddress && (
           <AppText style={styles.errorText}>{errors.emailAddress}</AppText>
         )}
@@ -1068,25 +1096,35 @@ const GovtHospitalRegistrationForm = () => {
         />
 
         {/* PAN Number */}
-        <View style={styles.inputWithButton}>
-          <AppInput
-            style={[styles.inputField, { flex: 1 }]}
-            placeholder="PAN Number*"
-            value={formData.panNumber}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }))}
-            autoCapitalize="characters"
-            maxLength={10}
-            placeholderTextColor="#999"
-          />
-          <TouchableOpacity
-            style={styles.inlineVerifyButton}
-            onPress={() => {
-              Alert.alert('PAN Verification', 'PAN verified successfully!');
-            }}
-          >
-                          <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
-          </TouchableOpacity>
-        </View>
+       <CustomInput
+                placeholder="PAN Number"
+                value={formData.panNumber}
+                onChangeText={(text) => {
+                  const upperText = text.toUpperCase();
+                  setFormData(prev => ({ ...prev, panNumber: upperText }));
+                  setErrors(prev => ({ ...prev, panNumber: null }));
+                  // Auto-verify if valid PAN format
+                  if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upperText)) {
+                    setVerificationStatus(prev => ({ ...prev, pan: true }));
+                  } else {
+                    setVerificationStatus(prev => ({ ...prev, pan: false }));
+                  }
+                }}
+                autoCapitalize="characters"
+                maxLength={10} mandatory
+                editable={!verificationStatus.pan}
+
+                rightComponent={
+                  <TouchableOpacity
+                    style={styles.inlineVerifyButton}
+                    onPress={() => {
+                      Alert.alert('PAN Verification', 'PAN verified successfully!');
+                    }}
+                  >
+                    <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
+                  </TouchableOpacity>
+                }
+              />
 
         {/* Upload GST */}
         <FileUploadComponent
@@ -1558,13 +1596,13 @@ const GovtHospitalRegistrationForm = () => {
       </KeyboardAvoidingView>
 
       {/* Bottom Navigation */}
-      <View style={styles.bottomNavigation}>
+      <View style={styles.actionButtons}>
         <TouchableOpacity
-          style={styles.backStepButton}
+          style={styles.cancelButton}
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}
         >
-          <AppText style={styles.backStepButtonText}>Cancel</AppText>
+          <AppText style={styles.cancelButtonText}>Cancel</AppText>
         </TouchableOpacity>
 
         <Animated.View
@@ -1574,19 +1612,21 @@ const GovtHospitalRegistrationForm = () => {
           ]}
         >
           <TouchableOpacity
-            style={styles.nextStepButton}
-            onPress={handleNextStep}
+  style={[styles.registerButton, loading && styles.disabledButton]}            onPress={handleNextStep}
             activeOpacity={0.8}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <AppText style={styles.nextStepButtonText}>Register</AppText>
+              <AppText style={styles.registerButtonText}>Register</AppText>
             )}
           </TouchableOpacity>
         </Animated.View>
       </View>
+
+
+       
 
       {/* Cancel Confirmation Modal */}
       {/* Dropdown Modals */}
@@ -1831,7 +1871,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 0,
-    paddingBottom: 100,
+    paddingBottom: 0,
   },
   stepContent: {
     paddingTop: 8,
@@ -1866,7 +1906,7 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: 16,
-    color: '#999',
+    color: colors.gray,
   },
   errorText: {
     color: colors.error,
@@ -2245,6 +2285,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   nextStepButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+  },
+
+
+  
+   actionButtons: {
+    flexDirection: 'row',
+    marginTop: 24,
+    marginBottom: 32,
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  registerButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  registerButtonText: {
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',

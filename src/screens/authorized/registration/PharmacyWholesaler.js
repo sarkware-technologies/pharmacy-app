@@ -820,7 +820,7 @@ const PharmacyWholesalerForm = () => {
                   <TouchableOpacity
                     style={[
                       styles.modalItem,
-                      selectedId === item.id && styles.modalItemSelected
+                      selectedId == item.id && styles.modalItemSelected
                     ]}
                     onPress={() => {
                       onSelect(item);
@@ -829,18 +829,15 @@ const PharmacyWholesalerForm = () => {
                   >
                     <AppText style={[
                       styles.modalItemText,
-                      selectedId === item.id && styles.modalItemTextSelected
+                      selectedId == item.id && styles.modalItemTextSelected
                     ]}>
-                      {item.name || item.label}
+                      {item.name}
                     </AppText>
-                    {selectedId === item.id && (
+                    {selectedId == item.id && (
                       <Icon name="check" size={20} color={colors.primary} />
                     )}
                   </TouchableOpacity>
                 )}
-                ListEmptyComponent={
-                  <AppText style={styles.emptyText}>No items available</AppText>
-                }
                 style={styles.modalList}
               />
             )}
@@ -849,7 +846,6 @@ const PharmacyWholesalerForm = () => {
       </Modal>
     );
   };
-
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
@@ -1085,12 +1081,12 @@ const PharmacyWholesalerForm = () => {
                   onPress={() => setShowCityModal(true)}
                 //disabled={!formData.stateId}
                 >
-                 <View style={styles.inputTextContainer}>
-                                           <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
-                                             {formData.city || 'City'}
-                                           </AppText>
-                                           <AppText style={styles.inlineAsterisk}>*</AppText>
-                                         </View>
+                  <View style={styles.inputTextContainer}>
+                    <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
+                      {formData.city || 'City'}
+                    </AppText>
+                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                  </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.city && <AppText style={styles.errorText}>{errors.city}</AppText>}
@@ -1103,12 +1099,12 @@ const PharmacyWholesalerForm = () => {
                   style={[styles.dropdown, errors.state && styles.inputError]}
                   onPress={() => setShowStateModal(true)}
                 >
-                     <View style={styles.inputTextContainer}>
-                                               <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
-                                                 {formData.state || 'State'}
-                                               </AppText>
-                                               <AppText style={styles.inlineAsterisk}>*</AppText>
-                                             </View>
+                  <View style={styles.inputTextContainer}>
+                    <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
+                      {formData.state || 'State'}
+                    </AppText>
+                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                  </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.state && <AppText style={styles.errorText}>{errors.state}</AppText>}
@@ -1120,8 +1116,8 @@ const PharmacyWholesalerForm = () => {
               <AppText style={styles.sectionTitle}>Security Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
 
               {/* Mobile Number with OTP Verification */}
-              <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}>
-                <AppInput
+              {/* <View style={[styles.inputWithButton, errors.mobileNumber && styles.inputError]}> */}
+              {/* <AppInput
                   style={styles.inputField}
                   placeholder="Mobile number*"
                   value={formData.mobileNumber}
@@ -1161,8 +1157,53 @@ const PharmacyWholesalerForm = () => {
                                            )}
                     </AppText>
                   )}
-                </TouchableOpacity>
-              </View>
+                </TouchableOpacity> */}
+
+              <CustomInput
+                placeholder="Mobile Number"
+                value={formData.mobileNumber}
+                onChangeText={(text) => {
+                  if (/^\d{0,10}$/.test(text)) {
+                    setFormData(prev => ({ ...prev, mobileNumber: text }));
+                    setErrors(prev => ({ ...prev, mobileNumber: null }));
+                  }
+                }}
+                maxLength={10}
+                keyboardType="phone-pad"
+                mandatory
+                editable={!verificationStatus.mobile}
+
+                rightComponent={
+                  <TouchableOpacity
+                    style={[
+                      styles.inlineVerifyButton,
+                      verificationStatus.mobile && styles.verifiedButton,
+                      loadingOtp.mobile && styles.disabledButton
+                    ]}
+                    onPress={() => !verificationStatus.mobile && !loadingOtp.mobile && handleVerify('mobile')}
+                    disabled={verificationStatus.mobile || loadingOtp.mobile}
+                  >
+                    {loadingOtp.mobile && !verificationStatus.mobile ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <AppText style={[
+                        styles.inlineVerifyText,
+                        verificationStatus.mobile && styles.verifiedText
+                      ]}>
+                        {verificationStatus.mobile ? (
+                          'Verified'
+                        ) : (
+                          <>
+                            Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                          </>
+                        )}
+                      </AppText>
+                    )}
+                  </TouchableOpacity>
+                }
+              />
+
+              {/* </View> */}
               {errors.mobileNumber && (
                 <AppText style={styles.errorText}>{errors.mobileNumber}</AppText>
               )}
@@ -1172,47 +1213,52 @@ const PharmacyWholesalerForm = () => {
               {renderOTPInput('mobile')}
 
               {/* Email Address with OTP Verification */}
-              <View style={[styles.inputWithButton, errors.emailAddress && styles.inputError]}>
-                <AppInput
-                  style={[styles.inputField, { flex: 1 }]}
-                  placeholder="Email Address*"
-                  value={formData.emailAddress}
-                  onChangeText={(text) => {
-                    setFormData(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
-                    setErrors(prev => ({ ...prev, emailAddress: null }));
-                  }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholderTextColor="#999"
-                  editable={!verificationStatus.email}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.inlineVerifyButton,
-                    verificationStatus.email && styles.verifiedButton,
-                    loadingOtp.email && styles.disabledButton
-                  ]}
-                  onPress={() => !verificationStatus.email && !loadingOtp.email && handleVerify('email')}
-                  disabled={verificationStatus.email || loadingOtp.email}
-                >
-                  {loadingOtp.email && !verificationStatus.email ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  ) : (
-                    <AppText style={[
-                      styles.inlineVerifyText,
-                      verificationStatus.email && styles.verifiedText
-                    ]}>
-                       {verificationStatus.email ? (
-                                              'Verified'
-                                            ) : (
-                                              <>
-                                                Verify<AppText style={styles.inlineAsterisk}>*</AppText>
-                                              </>
-                                            )}
-                    </AppText>
-                  )}
-                </TouchableOpacity>
-              </View>
+
+
+
+              <CustomInput
+                placeholder="Email Address"
+                value={formData.emailAddress}
+                onChangeText={(text) => {
+                  setFormData(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
+                  setErrors(prev => ({ ...prev, emailAddress: null }));
+                }}
+                keyboardType="email-address"
+                mandatory
+                editable={!verificationStatus.email}
+
+                rightComponent={
+                  <TouchableOpacity
+                    style={[
+                      styles.inlineVerifyButton,
+                      verificationStatus.email && styles.verifiedButton,
+                      loadingOtp.email && styles.disabledButton
+                    ]}
+                    onPress={() => !verificationStatus.email && !loadingOtp.email && handleVerify('email')}
+                    disabled={verificationStatus.email || loadingOtp.email}
+                  >
+                    {loadingOtp.email && !verificationStatus.email ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <AppText style={[
+                        styles.inlineVerifyText,
+                        verificationStatus.email && styles.verifiedText
+                      ]}>
+                        {verificationStatus.email ? (
+                          'Verified'
+                        ) : (
+                          <>
+                            Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                          </>
+                        )}
+                      </AppText>
+                    )}
+                  </TouchableOpacity>
+                }
+              />
+
+
+
               {errors.emailAddress && (
                 <AppText style={styles.errorText}>{errors.emailAddress}</AppText>
               )}
@@ -1229,59 +1275,44 @@ const PharmacyWholesalerForm = () => {
                 initialFile={formData.panFile}
                 onFileUpload={(file) => handleFileUpload('panFile', file)}
                 onFileDelete={() => handleFileDelete('panFile')}
-                                mandatory={true}
+                mandatory={true}
 
               />
 
-              {/* <AppText style={styles.inputLabel}>PAN Number<AppText style={{color: 'red'}}>*</AppText></AppText> */}
-              {/* <View style={[styles.input, errors.panNumber && styles.inputError, verificationStatus.pan && styles.verifiedInput]}>
-                <View style={styles.inputTextContainer}>
-                  <CustomInput
-                    placeholder="PAN number"
-                    value={formData.panNumber}
-                    onChangeText={(text) => {
-                      const upperText = text.toUpperCase();
-                      setFormData(prev => ({ ...prev, panNumber: upperText }));
-                      setErrors(prev => ({ ...prev, panNumber: null }));
-                      // Auto-verify if valid PAN format
-                      if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upperText)) {
-                        setVerificationStatus(prev => ({ ...prev, pan: true }));
-                      } else {
-                        setVerificationStatus(prev => ({ ...prev, pan: false }));
-                      }
-                    }}
-                    autoCapitalize="characters"
-                    maxLength={10}
-                    mandatory={true}
-                    error={errors.panNumber}
-                    style={{ flex: 1 }}
-                  />
-                  {verificationStatus.pan && (
-                    <AppText style={styles.verifiedText}>✓ Verified</AppText>
-                  )}
-                </View>
-              </View> */}
+
+              <CustomInput
+                placeholder="PAN Number"
+                value={formData.panNumber}
+                onChangeText={(text) => {
+                  const upperText = text.toUpperCase();
+                  setFormData(prev => ({ ...prev, panNumber: upperText }));
+                  setErrors(prev => ({ ...prev, panNumber: null }));
+                  // Auto-verify if valid PAN format
+                  if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upperText)) {
+                    setVerificationStatus(prev => ({ ...prev, pan: true }));
+                  } else {
+                    setVerificationStatus(prev => ({ ...prev, pan: false }));
+                  }
+                }}
+                autoCapitalize="characters"
+                maxLength={10} mandatory
+                editable={!verificationStatus.pan}
+
+                rightComponent={
+                <TouchableOpacity
+                  style={styles.inlineVerifyButton}
+                  onPress={() => {
+                    Alert.alert('PAN Verification', 'PAN verified successfully!');
+                  }}
+                >
+                  <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
+                </TouchableOpacity>
+                }
+              />
 
 
-               <View style={styles.inputWithButton}>
-                        <AppInput
-                          style={[styles.inputField, { flex: 1 }]}
-                          placeholder="PAN Number*"
-                          value={formData.panNumber}
-                          onChangeText={(text) => setFormData(prev => ({ ...prev, panNumber: text.toUpperCase() }))}
-                          autoCapitalize="characters"
-                          maxLength={10}
-                          placeholderTextColor="#999"
-                        />
-                        <TouchableOpacity
-                          style={styles.inlineVerifyButton}
-                          onPress={() => {
-                            Alert.alert('PAN Verification', 'PAN verified successfully!');
-                          }}
-                        >
-                          <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
-                        </TouchableOpacity>
-                      </View>
+
+
 
               <FileUploadComponent
                 placeholder="Upload GST"
@@ -1477,53 +1508,53 @@ const PharmacyWholesalerForm = () => {
               {/* <View style={styles.divider} /> */}
               <View style={styles.customerGroupContainer}>
 
-              <AppText style={styles.sectionLabel}>Customer Group</AppText>
+                <AppText style={styles.sectionLabel}>Customer Group</AppText>
 
-              <View style={styles.radioGroupContainer}>
-                <View style={styles.radioRow}>
-                  <TouchableOpacity
-                    style={[styles.radioOption, styles.radioOptionFlex]}
-                    onPress={() => setFormData(prev => ({ ...prev, customerGroupId: 1 }))}
-                  >
-                    <View style={styles.radioCircle}>
-                      {formData.customerGroupId === 1 && (
-                        <View style={styles.radioSelected} />
-                      )}
-                    </View>
-                    <AppText style={styles.radioText}>9 Doctor Supply</AppText>
-                  </TouchableOpacity>
+                <View style={styles.radioGroupContainer}>
+                  <View style={styles.radioRow}>
+                    <TouchableOpacity
+                      style={[styles.radioOption, styles.radioOptionFlex]}
+                      onPress={() => setFormData(prev => ({ ...prev, customerGroupId: 1 }))}
+                    >
+                      <View style={styles.radioCircle}>
+                        {formData.customerGroupId === 1 && (
+                          <View style={styles.radioSelected} />
+                        )}
+                      </View>
+                      <AppText style={styles.radioText}>9 Doctor Supply</AppText>
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={[styles.radioOption, styles.radioOptionFlex, styles.disabledOption]}
-                    disabled={true}
-                  >
-                    <View style={[styles.radioCircle, styles.disabledRadio]}>
-                    </View>
-                    <AppText style={[styles.radioText, styles.disabledText]}>10 VQ</AppText>
-                  </TouchableOpacity>
-                </View>
+                    <TouchableOpacity
+                      style={[styles.radioOption, styles.radioOptionFlex, styles.disabledOption]}
+                      disabled={true}
+                    >
+                      <View style={[styles.radioCircle, styles.disabledRadio]}>
+                      </View>
+                      <AppText style={[styles.radioText, styles.disabledText]}>10 VQ</AppText>
+                    </TouchableOpacity>
+                  </View>
 
-                <View style={styles.radioRow}>
-                  <TouchableOpacity
-                    style={[styles.radioOption, styles.radioOptionFlex, styles.disabledOption]}
-                    disabled={true}
-                  >
-                    <View style={[styles.radioCircle, styles.disabledRadio]}>
-                    </View>
-                    <AppText style={[styles.radioText, styles.disabledText]}>11 RFQ</AppText>
-                  </TouchableOpacity>
+                  <View style={styles.radioRow}>
+                    <TouchableOpacity
+                      style={[styles.radioOption, styles.radioOptionFlex, styles.disabledOption]}
+                      disabled={true}
+                    >
+                      <View style={[styles.radioCircle, styles.disabledRadio]}>
+                      </View>
+                      <AppText style={[styles.radioText, styles.disabledText]}>11 RFQ</AppText>
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={[styles.radioOption, styles.radioOptionFlex, styles.disabledOption]}
-                    disabled={true}
-                  >
-                    <View style={[styles.radioCircle, styles.disabledRadio]}>
-                    </View>
-                    <AppText style={[styles.radioText, styles.disabledText]}>12 GOVT</AppText>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.radioOption, styles.radioOptionFlex, styles.disabledOption]}
+                      disabled={true}
+                    >
+                      <View style={[styles.radioCircle, styles.disabledRadio]}>
+                      </View>
+                      <AppText style={[styles.radioText, styles.disabledText]}>12 GOVT</AppText>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
- </View>
             </View>
 
             {/* Stockist Suggestions Section */}
@@ -1632,6 +1663,7 @@ const PharmacyWholesalerForm = () => {
       <DropdownModal
         visible={showCityModal}
         onClose={() => setShowCityModal(false)}
+        title="Select City"
         data={cities}
         selectedId={formData.cityId}
         onSelect={(item) => {
@@ -1836,7 +1868,6 @@ const PharmacyWholesalerForm = () => {
           setShowAddDoctorModal(false);
         }}
       />
-          <Text>Test</Text>
 
     </SafeAreaView>
 
@@ -1890,7 +1921,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 0,
   },
   content: {
     paddingHorizontal: 0,
@@ -1909,7 +1940,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 16,
-     borderLeftWidth: 4,
+    borderLeftWidth: 4,
     borderLeftColor: colors.primary,
     paddingLeft: 12,
   },
@@ -1953,7 +1984,7 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: 16,
-    color: '#999',
+    color: colors.gray
   },
   inputLabel: {
     fontSize: 14,
@@ -2115,7 +2146,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
 
-   customerGroupContainer: {
+  customerGroupContainer: {
     backgroundColor: '#F8F9FA',
     borderRadius: 8,
     padding: 16,
@@ -2196,7 +2227,7 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    // alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
@@ -2206,8 +2237,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  modalLoader: {
-    paddingVertical: 50,
+  modalList: {
+    paddingHorizontal: 16,
   },
   modalItem: {
     flexDirection: 'row',
@@ -2230,8 +2261,8 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '500',
   },
-  modalList: {
-    paddingHorizontal: 16,
+  modalLoader: {
+    paddingVertical: 50,
   },
   emptyText: {
     textAlign: 'center',
@@ -2267,14 +2298,14 @@ const styles = StyleSheet.create({
     color: '#FF6B6B',
     fontWeight: 'bold',
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 24,
-  },
+  // modalTitle: {
+  //   fontSize: 18,
+  //   fontWeight: '600',
+  //   color: '#333',
+  //   textAlign: 'center',
+  //   marginBottom: 24,
+  //   lineHeight: 24,
+  // },
   modalButtonContainer: {
     flexDirection: 'row',
     gap: 12,
@@ -2501,6 +2532,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+
   },
   inlineAsterisk: {
     color: 'red',
