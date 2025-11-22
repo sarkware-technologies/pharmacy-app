@@ -13,8 +13,8 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Svg, { Path } from 'react-native-svg';
-import { getProducts } from '../../../api/product';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from "../../../components"
+import { getProducts } from '../../../api/orders';
 
 const { height } = Dimensions.get('window');
 
@@ -22,7 +22,9 @@ export const SearchProductModal = ({
   visible,
   onClose,
   onSelectProduct,
-  onSearchChange
+  onSearchChange,
+  customerId,
+  distributorId
 }) => {
 
   const [search, setSearch] = useState("");
@@ -51,23 +53,36 @@ export const SearchProductModal = ({
 
     setIsLoading(true);
     try {
-      if (query != '') {
-        const response = await getProducts(pageNumber, 20, query);
-        const newProducts = response?.products || [];
+      // if (query != '') {
 
-        if (pageNumber === 1) {
-          setProducts(newProducts);
-        } else {
-          setProducts(prev => [...prev, ...newProducts]);
-        }
+      const params = {
+        distributorIds: [distributorId],
+        customerIds: [customerId],
+        page: pageNumber,
+        limit: 20,
+        search: query,
+      };
+      const response = await getProducts(params);
 
-        // if less than 20, no more pages
-        setHasMore(newProducts.length === 20);
+
+      const newProducts = (response?.rcDetails || []).map(item => ({
+        ...item,
+        ...(item.productDetails || {}),
+      }));
+
+      if (pageNumber === 1) {
+        setProducts(newProducts);
+      } else {
+        setProducts(prev => [...prev, ...newProducts]);
       }
-      else {
-        setHasMore(true);
-        setProducts([]);
-      }
+
+      // if less than 20, no more pages
+      setHasMore(newProducts.length === 20);
+      // }
+      // else {
+      //   setHasMore(true);
+      //   setProducts([]);
+      // }
     } catch (e) {
       console.log("Error fetching products:", e);
     } finally {
@@ -101,43 +116,43 @@ export const SearchProductModal = ({
   };
 
   const renderProduct = ({ item }) => (
-      <TouchableOpacity
+    <TouchableOpacity
       style={styles.productCard}
-        onPress={() => handleSelectProduct(item)}
-      >
-        <View style={styles.productContent}>
-          <View style={styles.productHeader}>
-            <View>
-              <AppText style={styles.productName}>
-                {item.productName
-                  ?.split(' ')
-                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                  .join(' ')}
-              </AppText>
-              <AppText style={styles.productCode}>{item.productCode}</AppText>
-            </View>
-            <View style={styles.metricColumn}>
-              <AppText style={styles.metricLabel}>PTH</AppText>
-              <AppText style={styles.metricValue}>₹ {item.pth ?? '-'}</AppText>
-            </View>
+      onPress={() => handleSelectProduct(item)}
+    >
+      <View style={styles.productContent}>
+        <View style={styles.productHeader}>
+          <View>
+            <AppText style={styles.productName}>
+              {item.productName
+                ?.split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ')}
+            </AppText>
+            <AppText style={styles.productCode}>{item.productCode}</AppText>
           </View>
-
-          <View style={styles.productMetrics}>
-            <View style={styles.metricColumn}>
-              <AppText style={styles.metricLabel}>PTR</AppText>
-              <AppText style={styles.metricValue}>₹ {item.ptr}</AppText>
-            </View>
-            <View style={styles.metricColumn}>
-              <AppText style={styles.metricLabel}>Margin</AppText>
-              <AppText style={styles.metricValue}>{item.packing ?? '-'}</AppText>
-            </View>
-            <View style={styles.metricColumn}>
-              <AppText style={styles.metricLabel}>MOQ</AppText>
-              <AppText style={[styles.metricValue,{textAlign:"right"}]}>{item.moq ?? '-'}</AppText>
-            </View>
+          <View style={styles.metricColumn}>
+            <AppText style={styles.metricLabel}>PTH</AppText>
+            <AppText style={styles.metricValue}>₹ {item.mrp ?? '-'}</AppText>
           </View>
         </View>
-      </TouchableOpacity>
+
+        <View style={styles.productMetrics}>
+          <View style={styles.metricColumn}>
+            <AppText style={styles.metricLabel}>PTR</AppText>
+            <AppText style={styles.metricValue}>₹ {item.ptr}</AppText>
+          </View>
+          <View style={styles.metricColumn}>
+            <AppText style={styles.metricLabel}>Margin</AppText>
+            <AppText style={styles.metricValue}>{item.packing ?? '-'}</AppText>
+          </View>
+          <View style={styles.metricColumn}>
+            <AppText style={styles.metricLabel}>MOQ</AppText>
+            <AppText style={[styles.metricValue, { textAlign: "right" }]}>{item.moq ?? '-'}</AppText>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 
   return (

@@ -312,7 +312,6 @@ const SearchAddProducts = () => {
         quantity,
       };
     })
-    console.log(product, 392874928)
     setProducts(product);
   }
 

@@ -69,21 +69,40 @@ export const bulkUpdateProductDiscounts = async (productIds, doctorDiscount, hos
     }
 };
 
-export const getProductsByDistributorAndCustomer = async (pageNo = 1, pageSize = 10) => {
+export const getProductsByDistributorAndCustomer = async (
+    pageNo = 1,
+    pageSize = 10,
+    search = "",
+    customerIds = [],
+    distributorIds = []
+) => {
     try {
+        const payload = {
+            pageNo,
+            pageSize,
+        };
+
+        if (customerIds?.length > 0) payload.customerIds = customerIds;
+        if (distributorIds?.length > 0) payload.distributorIds = distributorIds;
+
+        const trimmedSearch = search?.trim();
+        if (trimmedSearch) payload.search = trimmedSearch;
+
         const response = await apiClient.post(
-            '/rate-contract/rc/products-by-distributor-and-customer',
-            {
-                pageNo,
-                pageSize
-            }
+            "/rate-contract/rc/products-by-distributor-and-customer",
+            payload
         );
+
         return response.data;
     } catch (error) {
-        console.error('Error fetching products by distributor and customer:', error);
+        console.error(
+            "Error fetching products by distributor and customer:",
+            error
+        );
         throw error;
     }
 };
+
 
 export const updateProductMargin = async (productMargin) => {
     try {

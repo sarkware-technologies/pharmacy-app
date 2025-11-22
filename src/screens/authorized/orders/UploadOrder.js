@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,7 @@ import AppText from "../../../components/AppText"
 import Toast from 'react-native-toast-message';
 import { Fonts } from '../../../utils/fontHelper';
 import BackButton from '../../../components/view/backButton';
-import { DownloadTemplate } from '../../../api/orders';
+import { DownloadTemplate, UploadTemplateOrder } from '../../../api/orders';
 import { ErrorMessage } from '../../../components/view/error';
 
 const UploadOrder = () => {
@@ -48,6 +48,10 @@ const UploadOrder = () => {
 
   const [showDistributorselection, setShowSelectdistributor] = useState(false);
   const [showCustomerselection, setShowCustomerselection] = useState(false);
+
+  const [timer, setTimer] = useState(0);
+  const timerRef = useRef(null);
+
 
 
   const handleFileUpload = async (type) => {
@@ -145,25 +149,41 @@ const UploadOrder = () => {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!originalFile && !templateFile) {
       // Alert.alert('Error', 'Please upload order file and select distributor');
       return;
     }
-    navigation.replace('ProductMapping', {
-      originalFile,
-      templateFile,
-      distributor: selectedDistributor,
-      customer: selectedCustomer,
-      isOCR: isocr
-    });
-    // navigation.push('ProductMapping', {
-    //   originalFile,
-    //   templateFile,
-    //   distributor: selectedDistributor,
-    //   customer: selectedCustomer,
-    //   isOCR: isocr
-    // });
+
+    try {
+
+      if (originalFile || templateFile) {
+        const fileUpload = await UploadTemplateOrder(originalFile ?? templateFile, parseInt(selectedCustomer?.customerId), selectedDistributor?.id, "UPLOAD", isocr);
+        console.log(fileUpload?.status, "Upload file response")
+        if (fileUpload?.poFileProducts) {
+          const updatedProducts = fileUpload.poFileProducts.map(element => ({
+            ...element,
+            isMapped: !!element.mappingData?.[0]?.mappedProductId ? 1 : 0,
+            ...element.mappingData?.[0]
+          }));
+          // console.log(updatedProducts, 239847928)
+          navigation.replace('ProductMapping', {
+            uploadproducts: updatedProducts,
+            distributor: selectedDistributor,
+            customer: selectedCustomer,
+          });
+        }
+
+      }
+    }
+    catch (error) {
+      if (error?.status == 400) {
+        ErrorMessage(error);
+      }
+    }
+    finally {
+    }
+
   };
 
 
@@ -171,7 +191,7 @@ const UploadOrder = () => {
 
     try {
       const response = await DownloadTemplate();
-      console.log(response,8798798)
+      console.log(response, 8798798)
       if (response?.signedUrl) {
         await Linking.openURL(response.signedUrl);
       }
@@ -332,13 +352,21 @@ const UploadOrder = () => {
         setSelectedCustomer(e)
         setSelectedDistributor(null)
         setShowCustomerselection(false)
-      }} visible={showCustomerselection} onClose={() => setShowCustomerselection(false)} />
+      }} visible={showCustomerselection}
+        onClose={() => setShowCustomerselection(false)}
+        showFilter={showCustomerselection}
+      />
 
 
-      <SelectDistributor customerId={selectedCustomer?.customerId} onSelect={(e) => {
-        setSelectedDistributor(e)
-        setShowSelectdistributor(false)
-      }} visible={showDistributorselection} onClose={() => setShowSelectdistributor(false)} />
+      <SelectDistributor
+        customerId={selectedCustomer?.customerId}
+        onSelect={(e) => {
+          setSelectedDistributor(e)
+          setShowSelectdistributor(false)
+        }} visible={showDistributorselection} onClose={() => setShowSelectdistributor(false)}
+        selectedCustomer={selectedCustomer}
+
+      />
     </SafeAreaView>
   );
 };

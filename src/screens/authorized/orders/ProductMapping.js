@@ -51,7 +51,6 @@ const ProductMapping = () => {
     setProductMapping(true)
   }
 
-
   const [showExitModal, setShowExitModal] = useState(false);
 
   useEffect(() => {
@@ -66,49 +65,16 @@ const ProductMapping = () => {
     return unsubscribe;
   }, [navigation, showExitModal]);
 
-
-
-
-
-  const { originalFile, templateFile, distributor, customer, isOCR } = route.params || {};
+  const { distributor, customer, uploadproducts } = route.params || {};
   const [selectedDistributor, setSelectedDistributor] = useState(distributor);
   const [selectedCustomer, setSelectedCustomer] = useState(customer);
 
   useEffect(() => {
-    // Simulate product mapping process
-    loadMappedProducts();
+    setProducts(uploadproducts);
     setShowExitModal(false);
   }, []);
 
-  const loadMappedProducts = async () => {
 
-    try {
-      setIsLoading(true);
-
-      if (originalFile || templateFile) {
-        const fileUpload = await UploadTemplateOrder(originalFile ?? templateFile, parseInt(selectedCustomer?.customerId), selectedDistributor?.id, "UPLOAD", isOCR);
-        console.log(fileUpload, "Upload file response")
-        if (fileUpload?.poFileProducts) {
-          const updatedProducts = fileUpload.poFileProducts.map(element => ({
-            ...element,
-            isMapped: !!element.mappingData?.[0]?.mappedProductId ? 1 : 0,
-            ...element.mappingData?.[0]
-          }));
-
-          setProducts(updatedProducts);
-        }
-
-      }
-    }
-    catch (e) {
-      console.log(e)
-      ErrorMessage(e);
-    }
-    finally {
-      setIsLoading(false);
-    }
-
-  };
 
   const showToast = () => {
     Toast.show({
@@ -172,44 +138,9 @@ const ProductMapping = () => {
         navigation.removeListener('beforeRemove');
         navigation.replace('Cart');
       }, 100);
-
-
-      // const nonmapped = getFilteredProducts("Mapped");
-      // const mappedProduct = nonmapped.map((product) => {
-      //   return {
-      //     cfaId: product?.cfaId ?? 0,
-      //     customerId: selectedCustomer ? parseInt(selectedCustomer?.customerId) : undefined,
-      //     distributorId: selectedCustomer ? selectedDistributor?.id : undefined,
-      //     divisionId: product?.divisionId ?? 0,
-      //     modifiedBy: product?.modifiedBy,
-      //     createdBy: product?.createdBy,
-      //     principalId: 1,
-      //     productId: product?.productId,
-      //     qty: product?.uploadedQty ? parseInt(product?.uploadedQty) : 1
-      //   }
-      // })
-
-      // const addtocart = await AddtoCart(mappedProduct);
-
-      // if (addtocart && addtocart.message != "Invalid product code") {
-      //   setShowExitModal(true);
-      //   setTimeout(() => {
-      //     navigation.removeListener('beforeRemove');
-      //     navigation.replace('Cart');
-      //   }, 100);
-      // }
-      // else {
-      //   setShowConfirmModal(false);
-      //   Toast.show({
-      //     type: 'error',
-      //     text1: 'Failed to add',
-      //     text2: addtocart.message,
-      //   });
-      // }
     }
     catch (e) {
       setShowConfirmModal(false);
-      // ErrorMessage(e);
     }
 
   }
@@ -238,6 +169,7 @@ const ProductMapping = () => {
 
   const hanldeMapping = async (product) => {
     try {
+      console.log(product, 23948273)
       if (product) {
         const response = await UploadProductMapping({
           customerId: selectedCustomer?.customerId,
@@ -413,10 +345,44 @@ const ProductMapping = () => {
           <AppText style={[styles.stepLabel, styles.inactiveStepLabel]}>Products Mapping</AppText>
         </View>
       </View>
-      <View style={styles.mappingComplete}>
-        <Icon name="check-circle" size={16} color="#169560" />
-        <AppText style={styles.mappingCompleteText}>Mapping Complete</AppText>
-      </View>
+      {activeTab === "All" &&
+        (getFilteredProducts("All")?.length == getFilteredProducts("Mapped")?.length ? (
+          <View style={styles.mappingComplete}>
+            <Icon name="check-circle" size={16} color="#169560" />
+            <AppText style={styles.mappingCompleteText}>Mapping Complete</AppText>
+          </View>
+        ) : (
+
+          <View style={styles.mappingComplete}>
+            <AppText style={[styles.mappingCompleteText, { color: "gray" }]}>{getFilteredProducts("Mapped")?.length} products mapped, {getFilteredProducts("Non-Mapped")?.length} products not mapped</AppText>
+          </View>
+
+        ))}
+
+      {activeTab === "Mapped" &&
+        (getFilteredProducts("All")?.length == getFilteredProducts("Mapped")?.length ? (
+          <View style={styles.mappingComplete}>
+            <Icon name="check-circle" size={16} color="#169560" />
+            <AppText style={styles.mappingCompleteText}>Mapping Complete</AppText>
+          </View>
+        ) : (
+          <View style={styles.mappingComplete}>
+            <Icon name="check-circle" size={16} color="#169560" />
+            <AppText style={styles.mappingCompleteText}>{getFilteredProducts("Mapped")?.length} products mapped</AppText>
+          </View>
+        ))}
+
+      {activeTab === "Non-Mapped" &&
+        (getFilteredProducts("All")?.length == getFilteredProducts("Mapped")?.length ? (
+          <View style={styles.mappingComplete}>
+            <Icon name="check-circle" size={16} color="#169560" />
+            <AppText style={styles.mappingCompleteText}>0 products unmapped</AppText>
+          </View>
+        ) : (
+          <View style={styles.mappingComplete}>
+            <AppText style={[styles.mappingCompleteText,{color:"red"}]}>{getFilteredProducts("Non-Mapped")?.length} products unmapped</AppText>
+          </View>
+        ))}
 
       <View style={{ flex: 1, padding: 15, backgroundColor: "#F6F6F6" }}>
         <View style={{ backgroundColor: "#FFF", borderRadius: 12, flex: 1, overflow: "hidden" }}>
@@ -522,7 +488,11 @@ const ProductMapping = () => {
         visible={productMapping} onClose={() => {
           setProductMapping(false)
           setMappingProduct(null)
-        }} />
+        }}
+        customerId={selectedCustomer?.customerId}
+        distributorId={selectedDistributor?.id}
+
+      />
     </SafeAreaView>
   );
 };
@@ -764,7 +734,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.secondaryText,
     marginBottom: 2,
-    fontFamily:Fonts.Regular
+    fontFamily: Fonts.Regular
   },
   metricValue: {
     fontSize: 12,
