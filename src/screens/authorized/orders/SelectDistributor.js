@@ -26,7 +26,7 @@ const SelectDistributor = ({ visible, onClose, onSelect, customerId, selectedCus
     if (visible) {
       loadDistributors();
     }
-  }, [visible]);
+  }, [visible,customerId]);
 
   const loadDistributors = async () => {
     try {
@@ -91,7 +91,7 @@ const SelectDistributor = ({ visible, onClose, onSelect, customerId, selectedCus
 
           <View style={styles.selectedContainer}>
             <View style={styles.selectedCustomer}>
-              <View style={{ gap: 5, }}>
+              <View style={{ gap: 5, width: "80%" }}>
                 <AppText style={styles.selectedCustomer_title}>
                   Selected Hospital
                 </AppText>
@@ -102,8 +102,8 @@ const SelectDistributor = ({ visible, onClose, onSelect, customerId, selectedCus
                   {selectedCustomer?.customerCode} | {selectedCustomer?.cityName}
                 </AppText>
               </View>
-              <View>
-                <TouchableOpacity style={{ flexDirection: "row", gap: 5, display: "flex", alignItems: "center" }} onPress={() => changeCustomer()}>
+              <View style={{ width: "20%", alignItems: "flex-end" }}>
+                <TouchableOpacity style={{ flexDirection: "row", gap: 5, display: "flex", alignItems: "center" }} onPress={() => changeCustomer?.()}>
                   <AppText style={{ color: "#F7941E", fontWeight: 900, fontFamily: Fonts.Black }}>
                     Change
                   </AppText>

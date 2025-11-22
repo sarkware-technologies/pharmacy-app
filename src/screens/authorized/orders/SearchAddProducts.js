@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,7 @@ import CustomerSelectionModal from './CustomerSelector';
 import SelectDistributor from './SelectDistributor';
 import { AppText, AppInput } from "../../../components"
 import { Fonts } from '../../../utils/fontHelper';
+import AddToCartWidget from '../../../components/addToCart';
 
 const SearchAddProducts = () => {
   const route = useRoute();
@@ -39,6 +40,7 @@ const SearchAddProducts = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(customer);
 
   const [products, setProducts] = useState([]);
+  const [tempProduct, setTempProduct] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -47,15 +49,19 @@ const SearchAddProducts = () => {
   const [showDistributorselection, setShowSelectdistributor] = useState(false);
   const [showCustomerselection, setShowCustomerselection] = useState(false);
   const [cartCount, setCartCount] = useState(0);
-  const [loadingProductId, setLoadingProductId] = useState(null);
+  const isFirstLoad = useRef(true);
+  const [loadingProduct, setLoadingProduct] = useState("");
+ 
+
+  const [cartDetail, setCartDetail] = useState([]);
+
 
   // Debounce timer for search
   const [searchTimer, setSearchTimer] = useState(null);
 
   useEffect(() => {
     getCartdetails();
-
-  }, [selectedDistributor, selectedCustomer])
+  }, [])
 
   const getCartdetails = async () => {
     try {
@@ -71,7 +77,6 @@ const SearchAddProducts = () => {
         setCartCount(0);
       }
     } catch (error) {
-      console.error("Error fetching cart details:", error);
       dispatch(setCartTotal(0));
       ErrorMessage()
     }
@@ -93,14 +98,15 @@ const SearchAddProducts = () => {
       initialQuantities[item.id] = item.quantity;
     });
     setQuantities(initialQuantities);
+    setCartDetail(cart);
   }, [cart]);
 
-  useEffect(() => {
-    loadProducts(1, searchText, true);
-  }, [selectedDistributor, selectedCustomer]);
+
 
   // ✅ Debounced Search Effect
   useEffect(() => {
+    if (isFirstLoad.current) return;  // ⛔ ignore on first render
+
     if (searchTimer) clearTimeout(searchTimer);
     const timer = setTimeout(() => {
       loadProducts(1, searchText, true);
@@ -112,41 +118,56 @@ const SearchAddProducts = () => {
   // ✅ Fetch paginated products
   const loadProducts = useCallback(
     async (pageNumber = 1, search = '', replace = false) => {
+      if (pageNumber == 1) setTempProduct([]);
+
       if (loading || (!hasMore && !replace)) return;
-      setLoading(true);
-      try {
-        const params = {
-          // distributorIds: selectedDistributor?.id,
-          distributorIds: [4],
-          customerIds: [parseInt(selectedCustomer?.customerId)],
-          page: pageNumber,
-          limit: 10,
-          search,
-        };
-        const res = await getProducts(params);
+      if (selectedDistributor?.id && selectedCustomer?.customerId) {
+        setLoading(true);
+        try {
+          const params = {
+            distributorIds: [selectedDistributor?.id],
+            customerIds: [parseInt(selectedCustomer?.customerId)],
+            page: pageNumber,
+            limit: 10,
+            search,
+          };
+          const res = await getProducts(params);
 
-        // 🧩 Safely extract array
-        const data = res?.rcDetails ?? [];
-        console.log(res, 'fetched products');
-        console.log(data, 'fetched products');
-        if (data.length === 0) {
-          setHasMore(false);
-        }
+          const data = res?.rcDetails ?? [];
+          if (data.length === 0) {
+            setHasMore(false);
+          }
+          else {
+            setHasMore(true)
+          }
 
-        if (replace) {
-          setProducts(data);
-        } else {
-          setProducts(prev => [...prev, ...data]);
+          if (replace) {
+            setTempProduct(data);
+          } else {
+            setTempProduct(prev => [...prev, ...data]);
+          }
+        } catch (error) {
+          console.error('Error loading products:', error);
+        } finally {
+          setTimeout(() => {
+            setLoading(false);
+          }, 100)
         }
-      } catch (error) {
-        console.error('Error loading products:', error);
-      } finally {
-        setLoading(false);
+      }
+      else {
+        setTempProduct([])
       }
     },
-    [selectedDistributor, selectedCustomer, hasMore, loading]
+    [hasMore, loading]
   );
 
+  useEffect(() => {
+    if (selectedDistributor?.id && selectedCustomer?.customerId) {
+      isFirstLoad.current = false;
+      setPage(1);
+      loadProducts(1, searchText, true);
+    }
+  }, [selectedDistributor, selectedCustomer]);
 
   // ✅ Handle pagination scroll
   const handleLoadMore = () => {
@@ -158,11 +179,10 @@ const SearchAddProducts = () => {
   };
 
   const handleQuantityChange = async (product, event) => {
-    console.log(product, 98989998)
     try {
+      setLoadingProduct(product?.id);
       const minQTY = product?.productDetails.packing ? parseInt(product?.productDetails.packing) : 1
       const updateQTY = product?.quantity + (event === 'plus' ? +minQTY : -minQTY);
-      setLoadingProductId(product?.productDetails?.productId);
       if (updateQTY > 0) {
         const increasesQTY = await IncreaseQTY(
           product?.cartIds,
@@ -176,7 +196,7 @@ const SearchAddProducts = () => {
               quantity: item.id === product.id ? increasesQTY?.qty : item?.quantity,
             };
           })
-          setProducts(list);
+          setTempProduct(list);
         }
       }
       else {
@@ -190,7 +210,7 @@ const SearchAddProducts = () => {
     finally {
       getCartdetails();
       setTimeout(() => {
-        setLoadingProductId(null);
+        setLoadingProduct(null);
       }, 300)
 
     }
@@ -199,10 +219,11 @@ const SearchAddProducts = () => {
 
   const handleAddToCart = async (product) => {
     try {
+      setLoadingProduct(product?.id);
       const payload = {
         cfaId: product?.productDetails?.cfaId,
         customerId: product?.customerDetails?.customerId ? parseInt(product?.customerDetails?.customerId) : parseInt(selectedCustomer?.customerId),
-        distributorId: 4,
+        distributorId: selectedDistributor?.id,
         divisionId: product?.productDetails?.divisionId,
         modifiedBy: 4,
         createdBy: 4,
@@ -213,7 +234,6 @@ const SearchAddProducts = () => {
       const addtocart = await AddtoCart([payload]);
 
       if (addtocart) {
-        console.log(addtocart?.[0]?.id, 89876)
         const list = products.map(item => {
           return {
             ...item,
@@ -222,13 +242,16 @@ const SearchAddProducts = () => {
             cartIds: item.id === product.id ? addtocart?.[0]?.id ?? item.cartIds : item.cartIds,
           };
         })
-        setProducts(list);
+        setTempProduct(list);
       }
     }
     catch (error) {
 
     }
     finally {
+      setTimeout(() => {
+        setLoadingProduct(null);
+      }, 300)
       getCartdetails();
     }
   };
@@ -250,7 +273,7 @@ const SearchAddProducts = () => {
             cartIds: item.id === product.id ? null : item.cartIds,
           };
         })
-        setProducts(list);
+        setTempProduct(list);
       }
 
     }
@@ -261,6 +284,50 @@ const SearchAddProducts = () => {
     }
 
   }
+
+
+  const LoadQTY = (list) => {
+    const product = list.map(prod => {
+      let isInCart = false;
+      let quantity = 0;
+
+      for (const dist of cartDetail || []) {
+        for (const p of dist.products || []) {
+          if (
+            p.customerId == selectedCustomer?.customerId &&
+            p.distributorId == selectedDistributor?.id &&
+            p.productId == prod.productDetails?.productId
+          ) {
+            isInCart = true;
+            quantity = p.qty;
+            break;
+          }
+        }
+        if (isInCart) break;
+      }
+
+      return {
+        ...prod,
+        isInCart,
+        quantity,
+      };
+    })
+    console.log(product, 392874928)
+    setProducts(product);
+  }
+
+  useEffect(() => {
+    LoadQTY(tempProduct)
+  }, [
+    cartDetail,
+    selectedCustomer?.customerId,
+    selectedDistributor?.id,
+    tempProduct
+  ]);
+
+
+
+
 
   const renderProduct = ({ item, index }) => {
     const quantity = item?.quantity || 0;
@@ -280,6 +347,7 @@ const SearchAddProducts = () => {
           <CustomCheckbox containerStyle={{ alignItems: "flex-start" }} size={20} title={<AppText style={styles.productName}>{item?.productDetails?.productName ? item?.productDetails?.productName.toUpperCase() : ''}</AppText>} checkboxStyle={{ marginTop: 2 }} />
           <View style={{ marginLeft: 29, marginTop: 0 }}>
             <AppText style={styles.productId}>{item.id}</AppText>
+            <AppText style={styles.productId}>{item.productId}-{selectedCustomer?.customerId}-{selectedDistributor?.id}</AppText>
           </View>
 
           <View style={styles.productMetrics}>
@@ -317,10 +385,10 @@ const SearchAddProducts = () => {
               <AppText style={styles.staus}>ACTIVE</AppText>
             </View>
             <View style={{ height: 45 }}>
-              {item.isInCart ? (
+              <AddToCartWidget loading={loadingProduct == item?.id} isInCart={item.isInCart} quantity={quantity} item={item} handleQuantityChange={handleQuantityChange} handleAddToCart={handleAddToCart} />
+              {/* {item.isInCart ? (
                 <View style={styles.quantityControls}>
                   <View style={styles.quantityBox}>
-                    {/* border: 1px solid #F7941E1A */}
                     <TouchableOpacity
                       style={styles.quantityButton}
                       onPress={() => handleQuantityChange(item, 'minus')}
@@ -357,7 +425,7 @@ const SearchAddProducts = () => {
                     <Path fill-rule="evenodd" clip-rule="evenodd" d="M6.66667 13.3333C10.3487 13.3333 13.3333 10.3487 13.3333 6.66667C13.3333 2.98467 10.3487 0 6.66667 0C2.98467 0 0 2.98467 0 6.66667C0 10.3487 2.98467 13.3333 6.66667 13.3333ZM6.98 4.31333C7.07375 4.2197 7.20083 4.16711 7.33333 4.16711C7.46583 4.16711 7.59292 4.2197 7.68667 4.31333L9.68667 6.31333C9.7803 6.40708 9.83289 6.53417 9.83289 6.66667C9.83289 6.79917 9.7803 6.92625 9.68667 7.02L7.68667 9.02C7.64089 9.06912 7.58569 9.10853 7.52436 9.13585C7.46303 9.16318 7.39682 9.17788 7.32968 9.17906C7.26255 9.18025 7.19586 9.1679 7.1336 9.14275C7.07134 9.1176 7.01479 9.08017 6.96731 9.03269C6.91983 8.98521 6.8824 8.92866 6.85725 8.8664C6.8321 8.80414 6.81975 8.73745 6.82094 8.67032C6.82212 8.60318 6.83682 8.53697 6.86415 8.47564C6.89147 8.41431 6.93088 8.35911 6.98 8.31333L8.12667 7.16667H4C3.86739 7.16667 3.74021 7.11399 3.64645 7.02022C3.55268 6.92645 3.5 6.79927 3.5 6.66667C3.5 6.53406 3.55268 6.40688 3.64645 6.31311C3.74021 6.21935 3.86739 6.16667 4 6.16667H8.12667L6.98 5.02C6.88637 4.92625 6.83377 4.79917 6.83377 4.66667C6.83377 4.53417 6.88637 4.40708 6.98 4.31333Z" fill="white" />
                   </Svg>
                 </TouchableOpacity>
-              )}
+              )} */}
             </View>
           </View>
         </View>
@@ -436,32 +504,72 @@ const SearchAddProducts = () => {
       <View style={{ paddingHorizontal: 16, borderRadius: 10 }}>
         <View style={{ backgroundColor: "#FFFFFF", overflow: "hidden", borderRadius: 10 }}>
           <TouchableOpacity style={styles.selectAllRow}>
-            <CustomCheckbox size={20} title='Select all' textStyle={{ fontSize: 14,fontWeight:600 }} />
+            <CustomCheckbox size={20} title='Select all' textStyle={{ fontSize: 14, fontWeight: 600 }} />
           </TouchableOpacity>
-          <FlatList
-            data={products}
-            renderItem={renderProduct}
-            keyExtractor={item => item.id.toString()}
-            contentContainerStyle={{ paddingBottom: 160 }}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.2}
-            showsVerticalScrollIndicator={false}
-            ListFooterComponent={<View style={{ height: 220 }} />}
-          />
+          {loading && products.length === 0 ? (
+            <View style={{ height: "100%", paddingTop: 120, alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={products}
+              renderItem={renderProduct}
+              keyExtractor={(item, i) => i + item.id.toString()}
+              contentContainerStyle={{ paddingBottom: 160 }}
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.2}
+              showsVerticalScrollIndicator={false}
+              ListFooterComponent={
+                (!loading && hasMore) ? (
+                  <View style={{ height: 400 }}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  </View>
+                ) : (
+                  <View style={{ height: 220 }} />
+                )
+              }
 
+              ListEmptyComponent={
+                <View>
+                  {(!loading && selectedDistributor?.id) && (
+                    <View style={{ paddingVertical: 40, alignItems: "center" }}>
+                      <AppText style={{ fontSize: 16, color: "#666" }}>
+                        No products found
+                      </AppText>
+                    </View>
+                  )}
+                  {(!loading && !selectedDistributor?.id) && (
+                    <View style={{ paddingVertical: 40, alignItems: "center" }}>
+                      <AppText style={{ fontSize: 16, color: "#ee0000ff" }}>
+                        Select Distributor
+                      </AppText>
+                    </View>
+                  )}
+                </View>
+
+              }
+            />
+          )}
         </View>
       </View>
       <CustomerSelectionModal onSelectCustomer={(e) => {
         setSelectedCustomer(e)
         setSelectedDistributor(null)
         setShowCustomerselection(false)
-      }} visible={showCustomerselection} onClose={() => setShowCustomerselection(false)} />
+      }} visible={showCustomerselection} onClose={() => setShowCustomerselection(false)}
+        showFilter={true}
+      />
 
 
       <SelectDistributor customerId={selectedCustomer?.customerId} onSelect={(e) => {
         setSelectedDistributor(e)
         setShowSelectdistributor(false)
-      }} visible={showDistributorselection} onClose={() => setShowSelectdistributor(false)} />
+      }} visible={showDistributorselection} onClose={() => setShowSelectdistributor(false)}
+        selectedCustomer={selectedCustomer}
+        changeCustomer={() => setShowCustomerselection(true)}
+
+
+      />
     </SafeAreaView>
   );
 };
@@ -703,7 +811,7 @@ const styles = StyleSheet.create({
     color: colors.secondaryText,
     marginBottom: 12,
     paddingRight: 20,
-    fontFamily:Fonts.Regular
+    fontFamily: Fonts.Regular
   },
   productMetrics: {
     flexDirection: 'row',
@@ -718,7 +826,7 @@ const styles = StyleSheet.create({
   metricLabel: {
     fontSize: 10,
     color: colors.secondaryText,
-    fontFamily:Fonts.Regular,
+    fontFamily: Fonts.Regular,
     marginBottom: 2,
   },
   metricValue: {
@@ -755,8 +863,8 @@ const styles = StyleSheet.create({
   staus: {
     color: "#169560",
     fontWeight: 700,
-    fontSize:12,
-    letterSpacing:1
+    fontSize: 12,
+    letterSpacing: 1
 
   },
   addToCartButton: {

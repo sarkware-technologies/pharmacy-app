@@ -1,27 +1,23 @@
+/** FULL WORKING FILTER MODAL WITH BACKEND CITY FILTERING **/
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
-  Text,
-  StyleSheet,
   Modal,
   TouchableOpacity,
   ScrollView,
   Animated,
-  TextInput,
   Dimensions,
   Keyboard,
+  StyleSheet,
 } from 'react-native';
 
-import { colors } from '../styles/colors';
 import { useSelector, useDispatch } from 'react-redux';
 import apiClient from '../api/apiClient';
-import {AppText,AppInput} from "."
-
+import { AppText, AppInput } from ".";
 import CloseCircle from './icons/CloseCircle';
-import Search from './icons/Search';
-import FilterCheck from './icons/FilterCheck';
+import ModalClose from './icons/modalClose';
 
-// Import Redux selectors
 import {
   selectCustomerTypes,
   selectCustomerStatuses,
@@ -29,133 +25,125 @@ import {
   fetchCustomerStatuses,
 } from '../redux/slices/customerSlice';
 
-const { height, width } = Dimensions.get('window');
+import { SafeAreaView } from 'react-native-safe-area-context';
+import CustomCheckbox from './view/checkbox';
+import { Fonts } from '../utils/fontHelper';
+import Svg, { Path } from 'react-native-svg';
+import { colors } from '../styles/colors';
 
-const FilterModal = ({ visible, onClose, onApply }) => {
-  const dispatch = useDispatch();
-  
-  // Get data from Redux
-  const customerTypes = useSelector(selectCustomerTypes) || [];
-  const customerStatuses = useSelector(selectCustomerStatuses) || [];
-  
-  // All hooks must be at the top
-  const slideAnim = useRef(new Animated.Value(height)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  
-  const [activeSection, setActiveSection] = useState('customerGroup');
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const [filters, setFilters] = useState({
-    customerGroup: [], 
+const { height } = Dimensions.get('window');
+
+const FilterModal = ({
+  title = "Filters",
+  visible,
+  onClose,
+  onApply,
+  sections = ["customerGroup", "status", "category", "state", "city"],
+  searchable = ["state", "city"],
+  selected = {
+    customerGroup: [],
     status: [],
     category: [],
     state: [],
     city: [],
+  },
+}) => {
+
+  const dispatch = useDispatch();
+
+  const customerTypes = useSelector(selectCustomerTypes) || [];
+  const customerStatuses = useSelector(selectCustomerStatuses) || [];
+
+  const slideAnim = useRef(new Animated.Value(height)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [activeSection, setActiveSection] = useState(sections && sections.length ? sections[0] : '');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  const [filters, setFilters] = useState({
+    customerGroup: selected?.customerGroup ?? [],
+    status: selected?.status ?? [],
+    category: selected?.category ?? [],
+    state: selected?.state ?? [],
+    city: selected?.city ?? [],
   });
+  useEffect(() => {
+    if (selected?.customerGroup?.length || selected?.status?.length || selected?.category?.length || selected?.state?.length || selected?.city?.length)
+      setFilters({
+        customerGroup: selected.customerGroup ?? [],
+        status: selected.status ?? [],
+        category: selected.category ?? [],
+        state: selected.state ?? [],
+        city: selected.city ?? [],
+      });
+  }, [selected]);
 
-  const [availableCities, setAvailableCities] = useState([]);
+
   const [states, setStates] = useState([]);
-  const [cities, setCities] = useState([]);
+  const [availableCities, setAvailableCities] = useState([]);
 
-  // Fetch data when component mounts
+  /** FETCH STATES */
+  const fetchStates = async () => {
+    try {
+      const res = await apiClient.get('/user-management/states?page=1&limit=50');
+      if (res.data?.states) setStates(res.data.states);
+    } catch (err) {
+      console.error("States fetch error", err);
+    }
+  };
+
+  /** FETCH CITIES BASED ON STATE IDs */
+  const fetchCitiesByStates = async (stateIds) => {
+    try {
+      const res = await apiClient.get(
+        `/user-management/cities?page=1&limit=500&stateIds=${stateIds.join(",")}`
+      );
+      if (res.data?.cities) setAvailableCities(res.data.cities);
+    } catch (err) {
+      console.error("City fetch error", err);
+    }
+  };
+
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+
+  /** INITIAL FETCH */
   useEffect(() => {
     dispatch(fetchCustomerTypes());
     dispatch(fetchCustomerStatuses());
     fetchStates();
-    fetchCities();
   }, [dispatch]);
 
-  // Fetch states from API
-  const fetchStates = async () => {
-    try {
-      const response = await apiClient.get('/user-management/states?page=1&limit=50');
-      if (response.data?.states) {
-        setStates(response.data.states);
-      }
-    } catch (error) {
-      console.error('Error fetching states:', error);
-    }
-  };
-
-  // Fetch cities from API  
-  const fetchCities = async () => {
-    try {
-      const response = await apiClient.get('/user-management/cities?page=1&limit=500');
-      if (response.data?.cities) {
-        setCities(response.data.cities);
-      }
-    } catch (error) {
-      console.error('Error fetching cities:', error);
-    }
-  };
-
-  // Get subcategories dynamically based on selected categories
-  const getSubCategories = () => {
-    const selectedCategories = filters.category;
-    const subCats = [];
-    
-    if (selectedCategories.includes('All') || selectedCategories.length === 0) {
-      // Show all subcategories
-      customerTypes.forEach(type => {
-        type.customerCategories?.forEach(cat => {
-          if (cat.customerSubcategories?.length > 0) {
-            cat.customerSubcategories.forEach(subCat => {
-              if (!subCats.find(sc => sc.name === subCat.name)) {
-                subCats.push(subCat.name);
-              }
-            });
-          } else {
-            if (!subCats.includes(cat.name)) {
-              subCats.push(cat.name);
-            }
-          }
-        });
-      });
-    } else {
-      // Show subcategories for selected categories
-      selectedCategories.forEach(selectedCat => {
-        const type = customerTypes.find(t => 
-          t.name === selectedCat || 
-          selectedCat.includes(t.name.split('/')[0]) // Handle "Pharmacy/Chemist/Medical store"
-        );
-        if (type?.customerCategories) {
-          type.customerCategories.forEach(cat => {
-            if (cat.customerSubcategories?.length > 0) {
-              cat.customerSubcategories.forEach(subCat => {
-                if (!subCats.includes(subCat.name)) {
-                  subCats.push(subCat.name);
-                }
-              });
-            } else {
-              if (!subCats.includes(cat.name)) {
-                subCats.push(cat.name);
-              }
-            }
-          });
-        }
-      });
-    }
-  
-    return subCats;
-  };
-
-  const subCategories = getSubCategories();
-  const statusOptions = customerStatuses.map(s => s.name);
-
-  const filterSections = [
-    { id: 'customerGroup', label: 'Customer Group', hasSearch: false },
-    { id: 'status', label: 'Status', hasSearch: false },
-    { id: 'category', label: 'Category', hasSearch: false },
-    { id: 'state', label: 'State', hasSearch: true },
-    { id: 'city', label: 'City', hasSearch: true },
-  ];
-
+  /** FETCH CITIES WHEN STATE CHANGES */
   useEffect(() => {
+    if (filters.state.length > 0) {
+      fetchCitiesByStates(filters.state);
+    } else {
+      setAvailableCities([]);
+      setFilters(prev => ({ ...prev, city: [] }));
+    }
+  }, [filters.state]);
+
+  /** OPEN & CLOSE ANIMATION */
+  useEffect(() => {
+    setActiveSection(sections && sections.length ? sections[0] : '')
     if (visible) {
-      // Reset animation values before opening
       slideAnim.setValue(height);
       fadeAnim.setValue(0);
-      
+
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -170,39 +158,9 @@ const FilterModal = ({ visible, onClose, onApply }) => {
         }),
       ]).start();
     } else {
-      // Reset search when modal closes
       setSearchQuery('');
     }
-  }, [visible, slideAnim, fadeAnim]);
-
-  useEffect(() => {
-    // Update available cities when states are selected
-    const selectedStates = filters.state;
-    if (selectedStates.length > 0) {
-      // Get state IDs from selected state names
-      const selectedStateIds = states
-        .filter(state => selectedStates.includes(state.stateName))
-        .map(state => state.id);
-      
-      // Filter cities based on selected states
-      const filteredCities = cities.filter(city => 
-        selectedStateIds.includes(city.stateId?.toString())
-      );
-      setAvailableCities(filteredCities.map(c => c.cityName));
-      
-      // Remove any selected cities that are no longer available
-      const availableCityNames = filteredCities.map(c => c.cityName);
-      const updatedCityFilters = filters.city.filter(city => 
-        availableCityNames.includes(city)
-      );
-      if (updatedCityFilters.length !== filters.city.length) {
-        setFilters(prev => ({ ...prev, city: updatedCityFilters }));
-      }
-    } else {
-      setAvailableCities([]);
-      setFilters(prev => ({ ...prev, city: [] }));
-    }
-  }, [filters.state, states, cities]);
+  }, [visible]);
 
   const handleClose = () => {
     Animated.parallel([
@@ -216,86 +174,130 @@ const FilterModal = ({ visible, onClose, onApply }) => {
         duration: 200,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      onClose();
-    });
+    ]).start(onClose);
   };
 
-  const toggleFilter = (type, value) => {
-    if (value === 'All') {
-      if (type === 'customerGroup') {
-        const allGroups = customerTypes.map(t => t.name).filter(option => !option.toLowerCase().includes('private'));
-        setFilters(prev => {
-          if (prev[type].includes('All')) {
-            return { ...prev, [type]: [] };
-          } else {
-            return { ...prev, [type]: ['All', ...allGroups], category: [] };
-          }
-        });
-      } else if (type === 'category') {
-        const categoriesForSelectedGroups = getCategoriesForSelectedGroups();
-        setFilters(prev => {
-          if (prev[type].includes('All')) {
-            return { ...prev, [type]: [] };
-          } else {
-            return { ...prev, [type]: ['All', ...categoriesForSelectedGroups] };
-          }
-        });
-      } else {
-        setFilters(prev => {
-          if (prev[type].includes('All')) {
-            return { ...prev, [type]: [] };
-          } else {
-            return { ...prev, [type]: ['All'] };
-          }
-        });
-      }
-    } else {
-      setFilters(prev => {
-        const current = prev[type];
-        const index = current.indexOf(value);
-        
-        if (index > -1) {
-          // Remove if exists
-          const updated = current.filter(item => item !== value);
-          if (updated.includes('All')) {
-            return { ...prev, [type]: updated.filter(item => item !== 'All') };
-          }
-          if (type === 'customerGroup') {
-            const categoriesForSelectedGroups = getCategoriesForSelectedGroups();
-            return { ...prev, [type]: updated, category: categoriesForSelectedGroups };
-          }
-          return { ...prev, [type]: updated };
-        } else {
-          // Add if not exists
-          const updated = [...current, value];
-          
-          if (type === 'customerGroup') {
-            const allGroups = customerTypes.map(t => t.name).filter(option => !option.toLowerCase().includes('private'));
-            if (updated.length === allGroups.length) {
-              const categoriesForSelectedGroups = getCategoriesForSelectedGroups();
-              return { ...prev, [type]: ['All', ...updated], category: categoriesForSelectedGroups };
-            }
-            const categoriesForSelectedGroups = getCategoriesForSelectedGroups();
-            return { ...prev, [type]: updated, category: categoriesForSelectedGroups };
-          } else if (type === 'category') {
-            const categoriesForSelectedGroups = getCategoriesForSelectedGroups();
-            if (updated.length === categoriesForSelectedGroups.length) {
-              return { ...prev, [type]: ['All', ...updated] };
-            }
-            return { ...prev, [type]: updated };
-          } else {
-            const allOptions = getFilterData().filter(item => item !== 'All');
-            if (updated.length === allOptions.length) {
-              return { ...prev, [type]: ['All', ...updated] };
-            }
-            return { ...prev, [type]: updated };
-          }
+  /** SUBCATEGORY LOGIC */
+  const getCategoriesForSelectedGroups = () => {
+    const selectedGroups = filters.customerGroup;
+    const categories = new Set();
+
+    selectedGroups.forEach(groupName => {
+      const group = customerTypes.find(t => t.name === groupName);
+      group?.customerCategories?.forEach(cat => {
+        if (!cat.name.includes('/') && !cat.name.includes('-')) {
+          categories.add(cat.name);
         }
       });
+    });
+
+    return Array.from(categories);
+  };
+
+  /** FILTER DATA PROVIDER */
+  const getFilterData = () => {
+    switch (activeSection) {
+      case 'customerGroup':
+        return ['All', ...customerTypes.map(t => t.name)];
+      case 'status':
+        return ['All', ...customerStatuses.map(s => s.name)];
+      case 'category':
+        return ['All', ...getCategoriesForSelectedGroups()];
+      case 'state':
+        return ['All', ...states.map(s => ({ id: s.id, name: s.stateName }))];
+      case 'city':
+        return ['All', ...availableCities.map(c => ({ id: c.id, name: c.cityName }))];
+      default:
+        return [];
     }
   };
 
+  const rawList = getFilterData();
+
+  const filteredData = rawList.filter(item => {
+    const name = typeof item === "string" ? item : item.name;
+    return name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  /** TOGGLE FILTER LOGIC */
+  const toggleFilter = (type, value) => {
+    const isState = type === "state";
+    const isCity = type === "city";
+
+    const optionValue = typeof value === "string" ? value : value.id;
+
+    /** SELECT ALL */
+    if (value === "All") {
+      setFilters(prev => {
+        if (isState) {
+          const all = states.map(s => s.id);
+          return prev.state.length === all.length ? { ...prev, state: [] } : { ...prev, state: all };
+        }
+
+        if (isCity) {
+          const all = availableCities.map(c => c.id);
+          return prev.city.length === all.length ? { ...prev, city: [] } : { ...prev, city: all };
+        }
+
+        if (type === "customerGroup") {
+          const all = customerTypes.map(t => t.name);
+          return prev.customerGroup.length === all.length
+            ? { ...prev, customerGroup: [], category: [] }
+            : { ...prev, customerGroup: all, category: getCategoriesForSelectedGroups() };
+        }
+
+        if (type === "category") {
+          const cats = getCategoriesForSelectedGroups();
+          return prev.category.length === cats.length
+            ? { ...prev, category: [] }
+            : { ...prev, category: cats };
+        }
+
+        const all = getFilterData().filter(i => i !== "All");
+        return prev[type].length === all.length ? { ...prev, [type]: [] } : { ...prev, [type]: all };
+      });
+      return;
+    }
+
+    /** NORMAL SELECT/UNSELECT */
+    setFilters(prev => {
+      const current = prev[type];
+      const exists = current.includes(optionValue);
+
+      let updated = exists
+        ? current.filter(i => i !== optionValue)
+        : [...current, optionValue];
+
+      if (isState) {
+        const all = states.map(s => s.id);
+        return updated.length === all.length ? { ...prev, state: all } : { ...prev, state: updated };
+      }
+
+      if (isCity) {
+        const all = availableCities.map(c => c.id);
+        return updated.length === all.length ? { ...prev, city: all } : { ...prev, city: updated };
+      }
+
+      if (type === "customerGroup") {
+        const all = customerTypes.map(t => t.name);
+        return updated.length === all.length
+          ? { ...prev, customerGroup: all, category: getCategoriesForSelectedGroups() }
+          : { ...prev, customerGroup: updated, category: getCategoriesForSelectedGroups() };
+      }
+
+      if (type === "category") {
+        const cats = getCategoriesForSelectedGroups();
+        return updated.length === cats.length
+          ? { ...prev, category: cats }
+          : { ...prev, category: updated };
+      }
+
+      const all = getFilterData().filter(i => i !== "All");
+      return updated.length === all.length ? { ...prev, [type]: all } : { ...prev, [type]: updated };
+    });
+  };
+
+  /** CLEAR FILTERS */
   const clearFilters = () => {
     setFilters({
       customerGroup: [],
@@ -304,97 +306,76 @@ const FilterModal = ({ visible, onClose, onApply }) => {
       state: [],
       city: [],
     });
+    onApply({
+      customerGroup: [],
+      category: [],
+      status: [],
+      state: [],
+      city: [],
+    });
+    handleClose();
+
   };
 
+  /** APPLY FILTERS */
   const applyFilters = () => {
     onApply(filters);
     handleClose();
   };
 
-  // Get categories based on selected customer groups
-  const getCategoriesForSelectedGroups = () => {
-    const selectedGroups = filters.customerGroup;
-    const categories = new Set(); // Declare categories Set
-    
-    if (selectedGroups.length === 0) {
-      return [];
-    }
-    
-    selectedGroups.forEach(groupName => {
-      const group = customerTypes.find(t => t.name === groupName);
-      if (group?.customerCategories) {
-        group.customerCategories.forEach(cat => {
-          if (!cat.name.includes('/') && !cat.name.includes('-')) {
-            categories.add(cat.name);
-          }
-        });
-      }
-    });
-    
-    return Array.from(categories);
+  const allSectionConfig = {
+    customerGroup: { label: "Customer Group" },
+    status: { label: "Status" },
+    category: { label: "Category" },
+    state: { label: "State" },
+    city: { label: "City" },
   };
 
-  const getFilterData = () => {
-    switch (activeSection) {
-      case 'customerGroup':
-        return ['All', ...customerTypes.map(t => t.name).filter(option => option !== 'Private')];
-      case 'status':
-        return ['All', ...statusOptions.filter(option => option !== 'Private')];
-      case 'category':
-        return ['All', ...getCategoriesForSelectedGroups()];
-      case 'state':
-        return ['All', ...states.map(s => s.stateName)];
-      case 'city':
-        return ['All', ...availableCities.length > 0 ? availableCities : []];
-      default:
-        return [];
-    }
-  };
+  const filterSections = sections.map((id) => ({
+    id,
+    label: allSectionConfig[id].label,
+    hasSearch: searchable.includes(id),
+  }));
 
-  const filteredData = getFilterData().filter(item =>
-    item.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const currentSection = filterSections.find(s => s.id === activeSection);
 
-  return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="none"
-      onRequestClose={handleClose}
-      statusBarTranslucent={true}
-      presentationStyle="overFullScreen"
-    >
-      <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
-        <TouchableOpacity 
-          style={styles.backgroundTouch}
-          activeOpacity={1}
-          onPress={handleClose}
-        />
-        
-        <Animated.View 
-          style={[
-            styles.modalContent,
-            {
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          <View style={styles.modalHeader}>
-            <AppText style={styles.modalTitle}>Filters</AppText>
-            <TouchableOpacity onPress={handleClose}>
-              <CloseCircle />
-            </TouchableOpacity>
-          </View>
+  const isDisabledClear = Object.values(filters || {}).every(
+    (arr) => !arr || arr.length === 0
+  );
 
-          <View style={styles.splitContainer}>
-            {/* Left Panel - Filter Types */}
-            <View style={styles.leftPanel}>
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {filterSections.map((section) => {
-                  const count = filters[section.id].length;
-                  return (
+  console.log( Object.values(filters || {}).every(
+    (arr) => !arr || arr.length === 0
+  ),987492387)
+
+  return (
+    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
+      <SafeAreaView style={styles.container}>
+        <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
+          <TouchableOpacity style={styles.backgroundTouch} onPress={handleClose} />
+
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                height: keyboardVisible ? "100%" : "90%",
+                transform: [{ translateY: slideAnim }],
+              }
+            ]}
+          >
+            {/* HEADER */}
+            <View style={styles.modalHeader}>
+              <AppText style={styles.modalTitle}>{title}</AppText>
+              <TouchableOpacity onPress={handleClose}>
+                <ModalClose />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.splitContainer}>
+              {/* LEFT MENU */}
+              <View style={styles.leftPanel}>
+                <ScrollView>
+                  {filterSections.map((section) => (
                     <TouchableOpacity
                       key={section.id}
                       style={[
@@ -412,92 +393,143 @@ const FilterModal = ({ visible, onClose, onApply }) => {
                           activeSection === section.id && styles.leftMenuTextActive,
                         ]}
                       >
-                        {section.label} {count > 0 && `(${count})`}
+                        {section.label}{" "}
+                        {filters[section.id].length > 0 && `(${filters[section.id].length})`}
                       </AppText>
                     </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Right Panel - Filter Options */}
-            <View style={styles.rightPanel}>
-              <View style={styles.rightContent}>
-                {/* Search Bar */}
-                {currentSection?.hasSearch && (
-                  <View style={styles.searchContainer}>
-                    <Search />
-                    <AppInput
-                      style={styles.searchInput}
-                      placeholder={`Search ${currentSection.label.toLowerCase()}...`}
-                      value={searchQuery}
-                      onChangeText={setSearchQuery}
-                      placeholderTextColor="#999"
-                    />
-                    {searchQuery.length > 0 && (
-                      <TouchableOpacity onPress={() => setSearchQuery('')}>
-                        <CloseCircle width={16} height={16} />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-
-                {/* Options List */}
-                <ScrollView 
-                  style={styles.optionsList} 
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  {activeSection === 'city' && filters.state.length === 0 ? (
-                    <AppText style={styles.noResults}>Please select a state first</AppText>
-                  ) : filteredData.length === 0 ? (
-                    <AppText style={styles.noResults}>No results found</AppText>
-                  ) : (
-                    filteredData.map((item, index) => {
-                      const isChecked = filters[activeSection].includes(item);
-                      return (
-                        <TouchableOpacity
-                          key={index}
-                          style={styles.optionItem}
-                          onPress={() => {
-                            Keyboard.dismiss();
-                            toggleFilter(activeSection, item);
-                          }}
-                        >
-                          <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
-                            {isChecked && <FilterCheck width={12} height={12} color="#fff" />}
-                          </View>
-                          <AppText style={[styles.optionText, isChecked && styles.optionTextChecked, { flexWrap: 'wrap' }]}>
-                            {item}
-                          </AppText>
-                        </TouchableOpacity>
-                      );
-                    })
-                  )}
+                  ))}
                 </ScrollView>
               </View>
-            </View>
-          </View>
 
-          {/* Footer Buttons */}
-          <View style={styles.modalFooter}>
-            <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
-              <AppText style={styles.clearButtonText}>Clear</AppText>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
-              <AppText style={styles.applyButtonText}>Apply</AppText>
-            </TouchableOpacity>
-          </View>
+              <View style={styles.divider} />
+
+              {/* RIGHT PANEL */}
+              <View style={styles.rightPanel}>
+                <View style={styles.rightContent}>
+
+                  {/* SEARCH BAR */}
+                  {currentSection?.hasSearch && (
+                    <View style={styles.searchContainer}>
+                      <Svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <Path d="M9.09533 9.11333L11.1487 11.1667M10.5 5.5C10.5 6.82608 9.97322 8.09785 9.03553 9.03553C8.09785 9.97322 6.82608 10.5 5.5 10.5C4.17392 10.5 2.90215 9.97322 1.96447 9.03553C1.02678 8.09785 0.5 6.82608 0.5 5.5C0.5 4.17392 1.02678 2.90215 1.96447 1.96447C2.90215 1.02678 4.17392 0.5 5.5 0.5C6.82608 0.5 8.09785 1.02678 9.03553 1.96447C9.97322 2.90215 10.5 4.17392 10.5 5.5Z" stroke="#777777" strokeLinecap="round" strokeLinejoin="round" />
+                      </Svg>
+
+                      <AppInput
+                        style={styles.searchInput}
+                        placeholder={`Search ${currentSection.label.toLowerCase()}...`}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholderTextColor="#999"
+                      />
+
+                      {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery('')}>
+                          <CloseCircle width={16} height={16} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+
+                  {/* OPTIONS */}
+                  {/* OPTIONS */}
+                  <ScrollView style={styles.optionsList} keyboardShouldPersistTaps="handled">
+                    {activeSection === "city" && filters.state.length === 0 ? (
+                      <AppText style={styles.noResults}>Please select a state first</AppText>
+                    ) : filteredData.length === 0 || rawList.length <= 1 ? (
+                      // rawList.length <= 1 means only "All" exists (i.e. nothing to list)
+                      <AppText style={styles.noResults}>No results found</AppText>
+                    ) : (
+                      <View style={{ gap: 10 }}>
+                        {/*
+        Only filter out "All" when rawList indicates the list is empty.
+        Keep "All" when there are real items to select.
+      */}
+                        {filteredData
+                          .filter(item => !(rawList.length <= 1 && item === "All"))
+                          .map((item, index) => {
+                            const val = typeof item === "string" ? item : item.id;
+                            const label = typeof item === "string" ? item : item.name;
+
+                            const isChecked =
+                              label === "All"
+                                ? (
+                                  activeSection === "state"
+                                    ? filters.state.length === states.length
+                                    : activeSection === "city"
+                                      ? filters.city.length === availableCities.length
+                                      : activeSection === "customerGroup"
+                                        ? filters.customerGroup.length === customerTypes.length
+                                        : activeSection === "category"
+                                          ? filters.category.length === getCategoriesForSelectedGroups().length
+                                          : filters[activeSection].length === (rawList.length - 1)
+                                )
+                                : filters[activeSection].includes(val);
+
+                            return (
+                              <CustomCheckbox
+                                key={index}
+                                checked={isChecked}
+                                checkboxStyle={{ marginRight: 5 }}
+                                size={16}
+                                borderWidth={1}
+                                activeColor="#F7941E"
+                                checkIcon={
+                                  <Svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <Path d="M8.25 0.75L3.09375 5.90625L0.75 3.5625" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                  </Svg>
+
+                                }
+                                title={
+                                  <AppText
+                                    style={[
+                                      styles.checkboxStyle,
+                                      styles.optionItem,
+                                      isChecked && styles.activeText,
+                                    ]}
+                                  >
+                                    {label}
+                                  </AppText>
+                                }
+                                onChange={() => {
+                                  Keyboard.dismiss();
+                                  toggleFilter(activeSection, item);
+                                }}
+                              />
+                            );
+                          })}
+                      </View>
+                    )}
+                  </ScrollView>
+
+
+                </View>
+              </View>
+            </View>
+
+            {/* FOOTER */}
+            <View style={styles.modalFooter}>
+              <TouchableOpacity disabled={isDisabledClear} style={[styles.clearButton,isDisabledClear&&{opacity:0.5}]} onPress={clearFilters}>
+                <AppText style={styles.clearButtonText}>Clear filter</AppText>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
+                <AppText style={styles.applyButtonText}>Apply filter</AppText>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
+      </SafeAreaView>
     </Modal>
   );
 };
 
+
 // KEEPING YOUR EXACT ORIGINAL STYLES - NOT CHANGING ANYTHING
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    // backgroundColor: '#FFF',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -514,7 +546,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    height: height * 0.8,  // Fixed height at 90% of screen
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
@@ -552,17 +583,18 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
   },
   leftMenuItemActive: {
-    backgroundColor: '#fff',
-    borderLeftColor: colors.primary,
+    backgroundColor: '#fef4e8',
+    // borderLeftColor: colors.primary,
   },
   leftMenuText: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#666',
     fontWeight: '400',
+    fontFamily: Fonts.Regular
   },
   leftMenuTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   divider: {
     width: 1,
@@ -579,29 +611,32 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
     marginHorizontal: 16,
     marginBottom: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 8,
+    borderColor: '#EDEDED',
+    borderWidth: 1,
+
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
-    fontSize: 14,
-    color: '#333',
+    fontSize: 12,
+    color: colors.secondaryText,
     padding: 0,
+    fontWeight: 400,
+    fontFamily: Fonts.Regular
   },
   optionsList: {
     flex: 1,
     paddingHorizontal: 16,
   },
   optionItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 12,
     paddingHorizontal: 4,
+    width: "100%",
+    justifyContent: "center",
   },
   checkbox: {
     width: 20,
@@ -651,7 +686,7 @@ const styles = StyleSheet.create({
   },
   clearButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.primary,
   },
   applyButton: {
@@ -663,9 +698,23 @@ const styles = StyleSheet.create({
   },
   applyButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#fff',
   },
+  checkboxStyle: {
+    color: colors.secondaryText,
+    fontWeight: 400,
+    fontSize: 14,
+    fontFamily: Fonts.Regular,
+    width: "100%",
+
+  },
+  activeText: {
+    color: colors.primaryText,
+    fontWeight: 600,
+    fontFamily: Fonts.Bold
+  }
 });
 
 export default FilterModal;
+

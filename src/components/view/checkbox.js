@@ -14,6 +14,8 @@ export default function CustomCheckbox({
   disabled = false,
   disabledColor = "#E5E5E5",
   size = 18,
+  borderWidth = 2,
+  checkIcon = "✓"
 }) {
   const [internalChecked, setInternalChecked] = useState(false);
   const checked = controlledChecked ?? internalChecked;
@@ -50,13 +52,14 @@ export default function CustomCheckbox({
             width: size,
             height: size,
             borderRadius: size / 4,
+            borderWidth: borderWidth,
           },
           checkboxStyle,
         ]}
       >
         {checked && !disabled && (
           <AppText style={[styles.checkMark, { fontSize: size - 8 }]}>
-            ✓
+            {checkIcon}
           </AppText>
         )}
       </View>
@@ -72,7 +75,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   checkbox: {
-    borderWidth: 2,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 8,

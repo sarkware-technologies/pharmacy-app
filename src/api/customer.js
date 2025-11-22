@@ -36,6 +36,7 @@ export const customerAPI = {
         categoryCode = [],
         subCategoryCode = [],
         statusIds = [],
+        stateIds=[],
         isStaging = false, // NEW: Flag to determine which endpoint to use
         sortBy = '',
         sortDirection = 'ASC'
@@ -57,6 +58,7 @@ export const customerAPI = {
             if (searchText) requestBody.searchText = searchText;
             if (statusCode) requestBody.statusCode = statusCode;
             if (cityIds && cityIds.length > 0) requestBody.cityIds = cityIds;
+            if (stateIds && stateIds.length > 0) requestBody.stateIds = stateIds;
 
             // Use staging endpoint for staging requests, main endpoint otherwise
             const endpoint = isStaging 

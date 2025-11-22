@@ -38,24 +38,29 @@ const SearchIcon = () => (
   </Svg>
 );
 
-const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
+const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer, showFilter = false }) => {
   const [selectedFilters, setSelectedFilters] = useState({
-    states: 0,
-    cities: 0,
-    contract: 0,
-    type: ''
+    stateIds: [],
+    cityIds: [],
   });
   useEffect(() => {
+    console.log(987987987,Object.values(selectedFilters || {}).every((arr) => !arr || arr.length === 0))
     if (visible) {
       setHasMore(true)
       setLoading(false)
-      setShowCustomerList(false);
+      if (Object.values(selectedFilters || {}).every((arr) => !arr || arr.length === 0)) {
+        setShowCustomerList(showFilter);
+      }
+      else{
+        setShowCustomerList(true);
+      }
       setSearchText('');
-      loadCustomers(1, searchText);
+      loadCustomers(1, searchText, selectedFilters);
     }
   }, [visible]);
   const [showCustomerList, setShowCustomerList] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
+
 
   const [customers, setCustomers] = useState([]);
   const [page, setPage] = useState(1);
@@ -63,15 +68,13 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
 
-
-
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (showCustomerList) {
         setPage(1);
         setHasMore(true);
         setCustomers([]);
-        loadCustomers(1, searchText);
+        loadCustomers(1, searchText, selectedFilters);
       }
     }, 500);
 
@@ -99,12 +102,11 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
   };
 
   const handleApplyFilters = (filter) => {
+    console.log(filter, 987429387)
 
     setSelectedFilters({
-      states: filter?.state?.length ?? 0,
-      cities: filter?.city?.length ?? 0,
-      contract: filter?.category?.length ?? 0,
-      type: filter?.status?.length ? filter?.status[0] : ''
+      stateIds: filter?.state ?? [],
+      cityIds: filter?.city ?? [],
     });
 
     setShowFilterModal(false);
@@ -112,11 +114,14 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
     setPage(1);
     setCustomers([]);
     setHasMore(true);
-    loadCustomers(1, searchText);
+    loadCustomers(1, searchText, {
+      stateIds: filter?.state ?? [],
+      cityIds: filter?.city ?? [],
+    });
   }
 
 
-  const loadCustomers = async (currentPage = 1, query = '') => {
+  const loadCustomers = async (currentPage = 1, query = '', filter) => {
 
     if (loading || !hasMore && currentPage != 1) return;
     setLoading(true);
@@ -127,7 +132,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
         searchText: query,
         // statusIds: [2],
         // typeCode: "DOCT"
-        // filters: selectedFilters, // if API supports filters
+        ...(filter?.cityIds?.length && { cityIds: filter?.cityIds }), ...(filter?.stateIds?.length && { stateIds: filter?.stateIds })
       });
 
       const newCustomers = response?.data?.customers || [];
@@ -220,25 +225,26 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
                     <Circle cx="17" cy="7" r="6.25" fill="#FF7E00" stroke="white" strokeWidth="1.5" />
                   </Svg>
                 </TouchableOpacity>
-                {selectedFilters.states > 0 && (
+
+                {selectedFilters.stateIds && selectedFilters.stateIds.length > 0 && (
                   <TouchableOpacity style={styles.chip} onPress={() => setShowFilterModal(true)}>
-                    <AppText style={styles.chipText}>{selectedFilters.states} States</AppText>
+                    <AppText style={styles.chipText}>{selectedFilters?.stateIds.length} States</AppText>
                     <Svg width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <Path d="M1.00198 0C0.111077 0 -0.335089 1.07714 0.294875 1.70711L2.88066 4.29289C3.27119 4.68342 3.90435 4.68342 4.29488 4.29289L6.88066 1.70711C7.51063 1.07714 7.06446 0 6.17355 0L1.00198 0Z" fill="#2B2B2B" />
                     </Svg>
                   </TouchableOpacity>
                 )}
 
-                {selectedFilters.cities > 0 && (
+                {selectedFilters.cityIds && selectedFilters.cityIds.length > 0 && (
                   <TouchableOpacity style={styles.chip} onPress={() => setShowFilterModal(true)}>
-                    <AppText style={styles.chipText}>{selectedFilters.cities} Cities</AppText>
+                    <AppText style={styles.chipText}>{selectedFilters?.cityIds.length} Cities</AppText>
                     <Svg width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <Path d="M1.00198 0C0.111077 0 -0.335089 1.07714 0.294875 1.70711L2.88066 4.29289C3.27119 4.68342 3.90435 4.68342 4.29488 4.29289L6.88066 1.70711C7.51063 1.07714 7.06446 0 6.17355 0L1.00198 0Z" fill="#2B2B2B" />
                     </Svg>
 
                   </TouchableOpacity>
                 )}
-                {selectedFilters.contract > 0 && (
+                {/* {selectedFilters?.contract > 0 && (
                   <TouchableOpacity style={styles.chip} onPress={() => setShowFilterModal(true)}>
                     <AppText style={styles.chipText}>{selectedFilters.contract}-Contract</AppText>
                     <Svg width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -248,7 +254,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
                   </TouchableOpacity>
                 )}
 
-                {selectedFilters.type !== '' && (
+                {selectedFilters?.type !== '' && (
                   <TouchableOpacity style={styles.chip} onPress={() => setShowFilterModal(true)}>
                     <AppText style={styles.chipText}>{selectedFilters.type}</AppText>
                     <Svg width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -256,7 +262,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
                     </Svg>
 
                   </TouchableOpacity>
-                )}
+                )} */}
 
               </ScrollView>
 
@@ -300,7 +306,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
                 if (!loading && hasMore) {
                   const nextPage = page + 1;
                   setPage(nextPage);
-                  loadCustomers(nextPage, searchText);
+                  loadCustomers(nextPage, searchText, selectedFilters);
                 }
               }}
               ListEmptyComponent={() =>
@@ -334,6 +340,12 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer }) => {
           visible={showFilterModal}
           onClose={() => setShowFilterModal(false)}
           onApply={(e) => { handleApplyFilters(e); }}
+          title='Search by filters'
+          sections={["state", "city"]}
+          selected={{
+            city: selectedFilters?.cityIds,
+            state: selectedFilters?.stateIds,
+          }}
         />
       </SafeAreaView>
     </Modal>

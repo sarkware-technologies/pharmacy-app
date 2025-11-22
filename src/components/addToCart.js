@@ -30,8 +30,9 @@ const AddToCartWidget = ({
         <View style={styles.quantityControls}>
           <View style={styles.quantityBox}>
             <TouchableOpacity
+              disabled={loading}
               style={styles.quantityButton}
-              onPress={() => handleQuantityChange?.(item, "minus")}
+              onPress={() => !loading ? handleQuantityChange?.(item, "minus") : null}
             >
               <Icon name="remove" size={20} color={colors.primary} />
             </TouchableOpacity>
@@ -45,26 +46,31 @@ const AddToCartWidget = ({
             </AppText>
 
             <TouchableOpacity
+              disabled={loading}
               style={styles.quantityButton}
-              onPress={() => handleQuantityChange?.(item, "plus")}
+              onPress={() => !loading ? handleQuantityChange?.(item, "plus") : null}
             >
               <Icon name="add" size={20} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity
+            disabled={loading}
             style={styles.deleteButton}
-            onPress={() => handleDelete?.(item)}
+            onPress={() => !loading ? handleDelete?.(item) : null}
           >
             <Delete />
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity
-          style={styles.addToCartButton}
-          onPress={() => handleAddToCart?.(item)}
+          disabled={loading}
+          style={[styles.addToCartButton, loading && { opacity: 0.8 }]}
+          onPress={() => !loading ? handleAddToCart?.(item) : null}
         >
-          <AppText style={styles.addToCartText}>Add to cart</AppText>
+          <View style={{ flexDirection: "row" }}>
+            <AppText style={styles.addToCartText}>Add to cart </AppText>
+          </View>
 
           <Svg
             width="14"
@@ -79,6 +85,10 @@ const AddToCartWidget = ({
               fill="white"
             />
           </Svg>
+          {loading && (
+            <ActivityIndicator size="small" color={"white"} />
+
+          )}
         </TouchableOpacity>
       )}
     </View>
