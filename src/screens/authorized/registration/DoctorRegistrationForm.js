@@ -1154,7 +1154,7 @@ const DoctorRegistrationForm = () => {
                       setErrors(prev => ({ ...prev, state: null }));
                       
                       // Load cities for the matched state
-                      loadCities(matchedState.id);
+                      //loadCities(matchedState.id);
                     }
                   }
                   
