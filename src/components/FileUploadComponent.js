@@ -1,3 +1,5 @@
+/* eslint-disable react/no-unstable-nested-components */
+/* eslint-disable no-undef */
 // src/components/FileUploadComponent.js
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -29,7 +31,7 @@ const { width } = Dimensions.get('window');
 const FileUploadComponent = ({
   placeholder = 'Upload file',
   accept = ['pdf', 'jpg', 'jpeg', 'png'], // Accepted file extensions
-  maxSize = 10 * 1024 * 1024, // 5MB default
+  maxSize = 15 * 1024 * 1024, 
   onFileUpload,
   onFileDelete,
   initialFile = null, // { fileName: '', s3Path: '' }
@@ -39,7 +41,8 @@ const FileUploadComponent = ({
   showPreview = true,
   style,
   errorMessage,
-  mandatory=false
+  mandatory=false,
+  onOcrDataExtracted, // Callback for OCR extracted data (PAN/GST numbers)
 }) => {
   const [file, setFile] = useState(initialFile);
   const [loading, setLoading] = useState(false);
@@ -76,6 +79,7 @@ const FileUploadComponent = ({
         }),
       ]).start();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file]);
 
   const handleSelectFile = async () => {
@@ -212,6 +216,10 @@ const FileUploadComponent = ({
     setLoading(true);
 
     try {
+      // Determine if OCR is required based on docType
+      // PAN = 7, GST = 2
+      const isOcrRequired = docType === 7 || docType === 2;
+
       // Create FormData
       const formData = new FormData();
       formData.append('files', {
@@ -233,7 +241,7 @@ const FileUploadComponent = ({
       // Make the API call with proper headers for multipart/form-data
       const token = await apiClient.getToken();
 
-      const response = await fetch(`${BASE_URL}/user-management/customer/upload-docs?isStaging=true`, {
+      const response = await fetch(`${BASE_URL}/user-management/customer/upload-docs?isStaging=true&isOcrRequired=${isOcrRequired}`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -257,9 +265,33 @@ const FileUploadComponent = ({
 
         setFile(fileData);
 
-        // Callback to parent
+        // Callback to parent with file data
         if (onFileUpload) {
           onFileUpload(fileData);
+        }
+
+        // If OCR data is present, send it to parent via callback
+        if (isOcrRequired && onOcrDataExtracted) {
+          const ocrData = {};
+          
+          // Extract PAN number if present
+          if (uploadedFile.PANNumber) {
+            ocrData.panNumber = uploadedFile.PANNumber;
+            ocrData.panVerificationData = uploadedFile.verificationData;
+            ocrData.isPanValid = uploadedFile.isValid;
+          }
+          
+          // Extract GST number if present
+          if (uploadedFile.GSTNumber) {
+            ocrData.gstNumber = uploadedFile.GSTNumber;
+            ocrData.gstVerificationData = uploadedFile.verificationData;
+            ocrData.isGstValid = uploadedFile.isValid;
+          }
+          
+          // Send extracted data to parent
+          if (Object.keys(ocrData).length > 0) {
+            onOcrDataExtracted(ocrData);
+          }
         }
 
         // Success animation

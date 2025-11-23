@@ -66,12 +66,14 @@ const PharmacySelector = () => {
         useNativeDriver: true,
       }),
     ]).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch states and pharmacies on component mount
   useEffect(() => {
     fetchStates();
     fetchPharmacies();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch pharmacies when filters or search changes
@@ -79,6 +81,7 @@ const PharmacySelector = () => {
     if (!loading) {
       fetchPharmacies();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStates, selectedCities, searchQuery]);
 
   // Fetch cities when state is selected

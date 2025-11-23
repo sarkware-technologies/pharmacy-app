@@ -18,7 +18,9 @@ import { colors } from '../../../styles/colors';
 import Toast from 'react-native-toast-message';
 import { customerAPI } from '../../../api/customer';
 import FileUploadComponent from '../../../components/FileUploadComponent';
-import {AppText,AppInput} from "../../../components"
+import AddressInputWithLocation from '../../../components/AddressInputWithLocation';
+import CustomInput from '../../../components/CustomInput';
+import {AppText,AppInput} from "../../../components";
 
 const DOC_TYPES = {
   LICENSE_20B: 3,
@@ -43,7 +45,7 @@ const MOCK_AREAS = [
   { id: 5, name: 'Sadar'},
 ];
 
-const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
+const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorName }) => {
   const [pharmacyForm, setPharmacyForm] = useState({
     licenseType: 'Only Retail', // 'Only Retail', 'Only Wholesaler', 'Retail Cum Wholesaler'
     license20b: '',
@@ -88,6 +90,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
   const [verificationStatus, setVerificationStatus] = useState({
     mobile: false,
     email: false,
+    pan: false,
   });
 
   // License types state
@@ -164,6 +167,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
   
     useEffect(() => {
       loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
   const loadStates = async () => {
@@ -279,7 +283,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
       gstNumber: '',
     });
     setPharmacyErrors({});
-    setVerificationStatus({ mobile: false, email: false });
+    setVerificationStatus({ mobile: false, email: false, pan: false });
     setCities([]);
     setAreas([]);
     setDocumentIds({});
@@ -379,7 +383,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to send OTP. Please try again.',
+        text2: error.response?.data?.message || error.message || 'Failed to send OTP. Please try again.',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -441,7 +445,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
         Toast.show({
           type: 'error',
           text1: 'Invalid OTP',
-          text2: 'Please enter the correct OTP',
+          text2: response.message || 'Please enter the correct OTP',
         });
       }
     } catch (error) {
@@ -449,7 +453,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to validate OTP. Please try again.',
+        text2: error.response?.data?.message || error.message || 'Failed to validate OTP. Please try again.',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -591,10 +595,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
     // Pincode validation
     if (!pharmacyForm.pincode || pharmacyForm.pincode.trim() === '') {
       newErrors.pincode = 'Pincode is required';
-    } else if (!/^\d{6}$/.test(pharmacyForm.pincode)) {
-      newErrors.pincode = 'Pincode must be 6 digits';
-    } else if (pharmacyForm.pincode === '000000') {
-      newErrors.pincode = 'Pincode cannot be all zeros';
+    } else if (!/^[1-9]\d{5}$/.test(pharmacyForm.pincode)) {
+      newErrors.pincode = 'Valid 6-digit pincode is required';
     }
     
     // Area validation
@@ -801,48 +803,61 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
       onRequestClose={handleClose}
     >
       <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <Icon name="close" size={24} color="#333" />
+          </TouchableOpacity>
+          <AppText style={styles.modalTitle}>Add Pharmacy Account</AppText>
+        </View>
+        
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.modalHeader}>
-            <AppText style={styles.modalTitle}>Add Pharmacy Account</AppText>
-            <TouchableOpacity onPress={handleClose}>
-              <AppText style={styles.modalCloseButton}>✕</AppText>
-            </TouchableOpacity>
-          </View>
-
           {/* License Details */}
-          <AppText style={styles.modalSectionLabel}>Licence Details <AppText style={styles.mandatory}>*</AppText></AppText>
+          <AppText style={styles.modalSectionLabel}>License Details<AppText style={styles.mandatory}>*</AppText></AppText>
           
           {/* License Type Radio Buttons */}
           <View style={styles.radioGroup}>
-            <TouchableOpacity 
-              style={styles.radioOption}
-              onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Only Retail' }))}
-            >
-              <View style={[styles.radioCircle, pharmacyForm.licenseType === 'Only Retail' && styles.radioCircleSelected]} />
-              <AppText style={styles.radioLabel}>Only Retail</AppText>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.radioOption}
-              onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Only Wholesaler' }))}
-            >
-              <View style={[styles.radioCircle, pharmacyForm.licenseType === 'Only Wholesaler' && styles.radioCircleSelected]} />
-              <AppText style={styles.radioLabel}>Only Wholesaler</AppText>
-            </TouchableOpacity>
+            <View style={styles.radioRow}>
+              <TouchableOpacity 
+                style={styles.radioOption}
+                onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Only Retail' }))}
+              >
+                <View style={[styles.radioCircle, pharmacyForm.licenseType === 'Only Retail' && styles.radioCircleSelected]}>
+                  {pharmacyForm.licenseType === 'Only Retail' && <View style={styles.radioInnerCircle} />}
+                </View>
+                <AppText style={styles.radioLabel}>Only Retail</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.radioOption}
+                onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Only Wholesaler' }))}
+              >
+                <View style={[styles.radioCircle, pharmacyForm.licenseType === 'Only Wholesaler' && styles.radioCircleSelected]}>
+                  {pharmacyForm.licenseType === 'Only Wholesaler' && <View style={styles.radioInnerCircle} />}
+                </View>
+                <AppText style={styles.radioLabel}>Only Wholesaler</AppText>
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity 
               style={styles.radioOption}
               onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Retail Cum Wholesaler' }))}
             >
-              <View style={[styles.radioCircle, pharmacyForm.licenseType === 'Retail Cum Wholesaler' && styles.radioCircleSelected]} />
+              <View style={[styles.radioCircle, pharmacyForm.licenseType === 'Retail Cum Wholesaler' && styles.radioCircleSelected]}>
+                {pharmacyForm.licenseType === 'Retail Cum Wholesaler' && <View style={styles.radioInnerCircle} />}
+              </View>
               <AppText style={styles.radioLabel}>Retail Cum Wholesaler</AppText>
             </TouchableOpacity>
           </View>
 
           {/* 20B License */}
-          <AppText style={styles.fieldLabel}>20B *</AppText>
+          <View style={styles.labelWithIcon}>
+            <AppText style={styles.fieldLabel}>20 *</AppText>
+            <TouchableOpacity>
+              <Icon name="info-outline" size={20} color="#999" style={styles.infoIcon} />
+            </TouchableOpacity>
+          </View>
           <FileUploadComponent
-            placeholder="Upload 20B license"
+            placeholder="Upload 20 license"
             accept={['pdf', 'jpg', 'png']}
-            maxSize={10 * 1024 * 1024}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.LICENSE_20B}
             initialFile={pharmacyForm.license20bFile}
             onFileUpload={(file) => handleFileUpload('license20b', file)}
@@ -853,10 +868,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             <AppText style={styles.errorText}>{pharmacyErrors.license20bFile}</AppText>
           )}
           
-          <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.license20b ? 5 : 10 }, pharmacyErrors.license20b && styles.inputError]}
-            placeholder="Drug license number *"
-            placeholderTextColor="#999"
+          <CustomInput
+            placeholder="Drug license number"
             value={pharmacyForm.license20b}
             onChangeText={(text) => {
               setPharmacyForm(prev => ({ ...prev, license20b: text }));
@@ -864,10 +877,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
                 setPharmacyErrors(prev => ({ ...prev, license20b: null }));
               }
             }}
+            mandatory={true}
+            error={pharmacyErrors.license20b}
           />
-          {pharmacyErrors.license20b && (
-            <AppText style={styles.errorText}>{pharmacyErrors.license20b}</AppText>
-          )}
           
           <TouchableOpacity 
             style={[styles.modalInput, { marginBottom: pharmacyErrors.license20bExpiryDate ? 5 : 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, pharmacyErrors.license20bExpiryDate && styles.inputError]}
@@ -883,11 +895,16 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
           )}
 
           {/* 21B License */}
-          <AppText style={styles.fieldLabel}>21B *</AppText>
+          <View style={styles.labelWithIcon}>
+            <AppText style={styles.fieldLabel}>21 *</AppText>
+            <TouchableOpacity>
+              <Icon name="info-outline" size={20} color="#999" style={styles.infoIcon} />
+            </TouchableOpacity>
+          </View>
           <FileUploadComponent
-            placeholder="Upload 21B license"
+            placeholder="Upload 21 license"
             accept={['pdf', 'jpg', 'png']}
-            maxSize={10 * 1024 * 1024}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.LICENSE_21B}
             initialFile={pharmacyForm.license21bFile}
             onFileUpload={(file) => handleFileUpload('license21b', file)}
@@ -898,10 +915,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
             <AppText style={styles.errorText}>{pharmacyErrors.license21bFile}</AppText>
           )}
           
-          <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.license21b ? 5 : 10 }, pharmacyErrors.license21b && styles.inputError]}
-            placeholder="Drug license number *"
-            placeholderTextColor="#999"
+          <CustomInput
+            placeholder="Drug license number"
             value={pharmacyForm.license21b}
             onChangeText={(text) => {
               setPharmacyForm(prev => ({ ...prev, license21b: text }));
@@ -909,10 +924,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
                 setPharmacyErrors(prev => ({ ...prev, license21b: null }));
               }
             }}
+            mandatory={true}
+            error={pharmacyErrors.license21b}
           />
-          {pharmacyErrors.license21b && (
-            <AppText style={styles.errorText}>{pharmacyErrors.license21b}</AppText>
-          )}
           
           <TouchableOpacity 
             style={[styles.modalInput, { marginBottom: pharmacyErrors.license21bExpiryDate ? 5 : 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, pharmacyErrors.license21bExpiryDate && styles.inputError]}
@@ -932,7 +946,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
           <FileUploadComponent
             placeholder="Upload"
             accept={['jpg', 'png', 'jpeg']}
-            maxSize={10 * 1024 * 1024}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.PHARMACY_IMAGE}
             initialFile={pharmacyForm.pharmacyImageFile}
             onFileUpload={(file) => handleFileUpload('pharmacyImage', file)}
@@ -972,10 +986,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
           {/* General Details */}
           <AppText style={styles.modalSectionLabel}>General Details <AppText style={styles.mandatory}>*</AppText></AppText>
           
-          <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.pharmacyName ? 5 : 10 }, pharmacyErrors.pharmacyName && styles.inputError]}
-            placeholder="Name of the Pharmacy *"
-            placeholderTextColor="#999"
+          <CustomInput
+            placeholder="Name of the Pharmacy"
             value={pharmacyForm.pharmacyName}
             onChangeText={(text) => {
               setPharmacyForm(prev => ({ ...prev, pharmacyName: text }));
@@ -983,15 +995,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
                 setPharmacyErrors(prev => ({ ...prev, pharmacyName: null }));
               }
             }}
+            mandatory={true}
+            error={pharmacyErrors.pharmacyName}
           />
-          {pharmacyErrors.pharmacyName && (
-            <AppText style={styles.errorText}>{pharmacyErrors.pharmacyName}</AppText>
-          )}
           
-          <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.ownerName ? 5 : 10 }, pharmacyErrors.ownerName && styles.inputError]}
-            placeholder="Name of the Owner *"
-            placeholderTextColor="#999"
+          <CustomInput
+            placeholder="Enter OP, IP, Cathlab etc"
             value={pharmacyForm.ownerName}
             onChangeText={(text) => {
               setPharmacyForm(prev => ({ ...prev, ownerName: text }));
@@ -999,23 +1008,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
                 setPharmacyErrors(prev => ({ ...prev, ownerName: null }));
               }
             }}
-          />
-          {pharmacyErrors.ownerName && (
-            <AppText style={styles.errorText}>{pharmacyErrors.ownerName}</AppText>
-          )}
-
-          <AppInput
-            style={[styles.modalInput, { marginBottom: 10 }]}
-            placeholder="Short Name (Optional)"
-            placeholderTextColor="#999"
-            value={pharmacyForm.shortName}
-            onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, shortName: text }))}
+            mandatory={false}
+            error={pharmacyErrors.ownerName}
           />
 
-          <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.address1 ? 5 : 10 }, pharmacyErrors.address1 && styles.inputError]}
-            placeholder="Address 1 *"
-            placeholderTextColor="#999"
+          <AddressInputWithLocation
+            label="Address 1"
             value={pharmacyForm.address1}
             onChangeText={(text) => {
               setPharmacyForm(prev => ({ ...prev, address1: text }));
@@ -1023,41 +1021,117 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
                 setPharmacyErrors(prev => ({ ...prev, address1: null }));
               }
             }}
+            placeholder="Address 1 "
+            error={pharmacyErrors.address1}
+            mandatory={true}
+            onLocationSelect={(locationData) => {
+              console.log('Location selected:', locationData);
+              
+              // Update address field with full address
+              setPharmacyForm(prev => ({ ...prev, address1: locationData.address }));
+              
+              // Split address by commas for other address fields
+              const addressParts = locationData.address.split(',').map(part => part.trim());
+              const filteredParts = addressParts.filter(part => 
+                part.toLowerCase() !== 'india' && 
+                part !== locationData.pincode
+              );
+              
+              // Update pincode
+              if (locationData.pincode) {
+                setPharmacyForm(prev => ({ ...prev, pincode: locationData.pincode }));
+                setPharmacyErrors(prev => ({ ...prev, pincode: null }));
+              }
+              
+              // Update area
+              if (locationData.area) {
+                setPharmacyForm(prev => ({ ...prev, area: locationData.area }));
+                setPharmacyErrors(prev => ({ ...prev, area: null }));
+              }
+              
+              // Match and update state
+              if (locationData.state && states.length > 0) {
+                const matchedState = states.find(s => 
+                  s.name.toLowerCase().includes(locationData.state.toLowerCase()) ||
+                  locationData.state.toLowerCase().includes(s.name.toLowerCase())
+                );
+                if (matchedState) {
+                  setPharmacyForm(prev => ({
+                    ...prev,
+                    state: matchedState.name,
+                    stateId: matchedState.id,
+                  }));
+                  setPharmacyErrors(prev => ({ ...prev, state: null }));
+                  
+                  // Load cities for the matched state
+                  loadCities(matchedState.id);
+                }
+              }
+              
+              // Match and update city (after a short delay to ensure cities are loaded)
+              if (locationData.city) {
+                setTimeout(() => {
+                  const matchedCity = cities.find(c => 
+                    c.name.toLowerCase().includes(locationData.city.toLowerCase()) ||
+                    locationData.city.toLowerCase().includes(c.name.toLowerCase())
+                  );
+                  if (matchedCity) {
+                    setPharmacyForm(prev => ({
+                      ...prev,
+                      city: matchedCity.name,
+                      cityId: matchedCity.id,
+                    }));
+                    setPharmacyErrors(prev => ({ ...prev, city: null }));
+                  }
+                }, 500);
+              }
+              
+              // Fill remaining address fields
+              if (filteredParts.length > 1) {
+                setPharmacyForm(prev => ({ ...prev, address2: filteredParts[1] || '' }));
+              }
+              if (filteredParts.length > 2) {
+                setPharmacyForm(prev => ({ ...prev, address3: filteredParts[2] || '' }));
+              }
+              if (filteredParts.length > 3) {
+                setPharmacyForm(prev => ({ ...prev, address4: filteredParts[3] || '' }));
+              }
+              
+              // Clear all address field errors
+              setPharmacyErrors(prev => ({
+                ...prev,
+                address1: null,
+                address2: null,
+                address3: null,
+                address4: null,
+                pincode: null,
+                area: null,
+                city: null,
+                state: null,
+              }));
+            }}
           />
-          {pharmacyErrors.address1 && (
-            <AppText style={styles.errorText}>{pharmacyErrors.address1}</AppText>
-          )}
           
-          <AppInput
-            style={[styles.modalInput, { marginBottom: 10 }]}
+          <CustomInput
             placeholder="Address 2"
-            placeholderTextColor="#999"
             value={pharmacyForm.address2}
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address2: text }))}
           />
 
-          <AppInput
-            style={[styles.modalInput, { marginBottom: 10 }]}
+          <CustomInput
             placeholder="Address 3"
-            placeholderTextColor="#999"
             value={pharmacyForm.address3}
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address3: text }))}
           />
 
-          <AppInput
-            style={[styles.modalInput, { marginBottom: 10 }]}
+          <CustomInput
             placeholder="Address 4"
-            placeholderTextColor="#999"
             value={pharmacyForm.address4}
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address4: text }))}
           />
 
-          <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.pincode ? 5 : 10 }, pharmacyErrors.pincode && styles.inputError]}
-            placeholder="Pincode *"
-            placeholderTextColor="#999"
-            keyboardType="numeric"
-            maxLength={6}
+          <CustomInput
+            placeholder="Pincode"
             value={pharmacyForm.pincode}
             onChangeText={(text) => {
               if (/^\d{0,6}$/.test(text)) {
@@ -1067,16 +1141,15 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
                 }
               }
             }}
+            keyboardType="numeric"
+            maxLength={6}
+            mandatory={true}
+            error={pharmacyErrors.pincode}
           />
-          {pharmacyErrors.pincode && (
-            <AppText style={styles.errorText}>{pharmacyErrors.pincode}</AppText>
-          )}
 
           {/* Area - Text Input */}
-          <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.area ? 5 : 10 }, pharmacyErrors.area && styles.inputError]}
-            placeholder="Area *"
-            placeholderTextColor="#999"
+          <CustomInput
+            placeholder="Area"
             value={pharmacyForm.area}
             onChangeText={(text) => {
               setPharmacyForm(prev => ({ ...prev, area: text }));
@@ -1084,176 +1157,206 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
                 setPharmacyErrors(prev => ({ ...prev, area: null }));
               }
             }}
+            mandatory={true}
+            error={pharmacyErrors.area}
           />
-          {pharmacyErrors.area && (
-            <AppText style={styles.errorText}>{pharmacyErrors.area}</AppText>
-          )}
           
           {/* City Dropdown */}
-          <TouchableOpacity 
-            style={[styles.dropdown, { marginBottom: pharmacyErrors.city ? 5 : 10 }, pharmacyErrors.city && styles.inputError]}
+          <TouchableOpacity
+            activeOpacity={0.7}
             onPress={() => {
-              loadCities(pharmacyForm.stateId);
+              loadCities();
               setShowCityModal(true);
             }}
           >
-            <AppText style={[styles.dropdownPlaceholder, pharmacyForm.city && { color: '#333' }]}>
-              {pharmacyForm.city || 'City *'}
-            </AppText>
-            <Icon name="arrow-drop-down" size={24} color="#999" />
+            <CustomInput
+              placeholder="City"
+              value={pharmacyForm.city}
+              onChangeText={() => {}}
+              mandatory={true}
+              error={pharmacyErrors.city}
+              editable={false}
+              pointerEvents="none"
+              rightComponent={
+                <Icon name="arrow-drop-down" size={24} color="#999" />
+              }
+            />
           </TouchableOpacity>
-          {pharmacyErrors.city && (
-            <AppText style={styles.errorText}>{pharmacyErrors.city}</AppText>
-          )}
 
           {/* State Dropdown */}
-          <TouchableOpacity 
-            style={[styles.dropdown, { marginBottom: pharmacyErrors.state ? 5 : 10 }, pharmacyErrors.state && styles.inputError]}
+          <TouchableOpacity
+            activeOpacity={0.7}
             onPress={() => setShowStateModal(true)}
           >
-            <AppText style={[styles.dropdownPlaceholder, pharmacyForm.state && { color: '#333' }]}>
-              {pharmacyForm.state || 'State *'}
-            </AppText>
-            <Icon name="arrow-drop-down" size={24} color="#999" />
+            <CustomInput
+              placeholder="State"
+              value={pharmacyForm.state}
+              onChangeText={() => {}}
+              mandatory={true}
+              error={pharmacyErrors.state}
+              editable={false}
+              pointerEvents="none"
+              rightComponent={
+                <Icon name="arrow-drop-down" size={24} color="#999" />
+              }
+            />
           </TouchableOpacity>
-          {pharmacyErrors.state && (
-            <AppText style={styles.errorText}>{pharmacyErrors.state}</AppText>
-          )}
 
           {/* Security Details */}
           <AppText style={styles.modalSectionLabel}>Security Details <AppText style={styles.mandatory}>*</AppText></AppText>
-          <AppText style={styles.modalFieldLabel}>Mobile number <AppText style={styles.mandatory}>*</AppText></AppText>
-          <View style={[styles.inputWithButton, pharmacyErrors.mobileNumber && styles.inputError]}>
-            <AppInput
-              style={styles.inputField}
-              placeholder="Mobile number*"
-              value={pharmacyForm.mobileNumber}
-              onChangeText={(text) => {
-                if (/^\d{0,10}$/.test(text)) {
-                  setPharmacyForm(prev => ({ ...prev, mobileNumber: text }));
-                  if (pharmacyErrors.mobileNumber) {
-                    setPharmacyErrors(prev => ({ ...prev, mobileNumber: null, mobileVerification: null }));
-                  }
+          <CustomInput
+            placeholder="Mobile number"
+            value={pharmacyForm.mobileNumber}
+            onChangeText={(text) => {
+              if (/^\d{0,10}$/.test(text)) {
+                setPharmacyForm(prev => ({ ...prev, mobileNumber: text }));
+                if (pharmacyErrors.mobileNumber) {
+                  setPharmacyErrors(prev => ({ ...prev, mobileNumber: null, mobileVerification: null }));
                 }
-              }}
-              keyboardType="phone-pad"
-              maxLength={10}
-              placeholderTextColor="#999"
-              editable={!verificationStatus.mobile}
-            />
-            <TouchableOpacity
-              style={[
-                styles.inlineVerifyButton,
-                verificationStatus.mobile && styles.verifiedButton,
-              ]}
-              onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
-              disabled={verificationStatus.mobile || loadingOtp.mobile}
-            >
-              <AppText style={[
-                styles.inlineVerifyText,
-                verificationStatus.mobile && styles.verifiedText
-              ]}>
-                {verificationStatus.mobile ? 'Verified' : 'Verify'}
-              </AppText>
-            </TouchableOpacity>
-          </View>
-          {(pharmacyErrors.mobileNumber || pharmacyErrors.mobileVerification) && (
-            <AppText style={styles.errorText}>{pharmacyErrors.mobileNumber || pharmacyErrors.mobileVerification}</AppText>
-          )}
+              }
+            }}
+            keyboardType="phone-pad"
+            maxLength={10}
+            mandatory={true}
+            editable={!verificationStatus.mobile}
+            error={pharmacyErrors.mobileNumber || pharmacyErrors.mobileVerification}
+            rightComponent={
+              <TouchableOpacity
+                style={styles.inlineVerifyButton}
+                onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
+                disabled={verificationStatus.mobile || loadingOtp.mobile}
+              >
+                <AppText style={styles.inlineVerifyText}>
+                  {verificationStatus.mobile ? 'Verified' : 'Verify'}
+                </AppText>
+              </TouchableOpacity>
+            }
+          />
 
-          <AppText style={styles.modalFieldLabel}>Email address <AppText style={styles.mandatory}>*</AppText></AppText>
-          <View style={[styles.inputWithButton, pharmacyErrors.emailAddress && styles.inputError]}>
-            <AppInput
-              style={[styles.inputField, { flex: 1 }]}
-              placeholder="Email Address"
-              value={pharmacyForm.emailAddress}
-              onChangeText={(text) => {
-                setPharmacyForm(prev => ({ ...prev, emailAddress: text }));
-                if (pharmacyErrors.emailAddress) {
-                  setPharmacyErrors(prev => ({ ...prev, emailAddress: null, emailVerification: null }));
-                }
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholderTextColor="#999"
-              editable={!verificationStatus.email}
-            />
-            <TouchableOpacity
-              style={[
-                styles.inlineVerifyButton,
-                verificationStatus.email && styles.verifiedButton,
-              ]}
-              onPress={() => !verificationStatus.email && handleVerify('email')}
-              disabled={verificationStatus.email || loadingOtp.email}
-            >
-              <AppText style={[
-                styles.inlineVerifyText,
-                verificationStatus.email && styles.verifiedText
-              ]}>
-                {verificationStatus.email ? 'Verified' : 'Verify'}
-              </AppText>
-            </TouchableOpacity>
-          </View>
-          {(pharmacyErrors.emailAddress || pharmacyErrors.emailVerification) && (
-            <AppText style={styles.errorText}>{pharmacyErrors.emailAddress || pharmacyErrors.emailVerification}</AppText>
-          )}
+          <CustomInput
+            placeholder="Email Address"
+            value={pharmacyForm.emailAddress}
+            onChangeText={(text) => {
+              setPharmacyForm(prev => ({ ...prev, emailAddress: text }));
+              if (pharmacyErrors.emailAddress) {
+                setPharmacyErrors(prev => ({ ...prev, emailAddress: null, emailVerification: null }));
+              }
+            }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            mandatory={true}
+            editable={!verificationStatus.email}
+            error={pharmacyErrors.emailAddress || pharmacyErrors.emailVerification}
+            rightComponent={
+              <TouchableOpacity
+                style={styles.inlineVerifyButton}
+                onPress={() => !verificationStatus.email && handleVerify('email')}
+                disabled={verificationStatus.email || loadingOtp.email}
+              >
+                <AppText style={styles.inlineVerifyText}>
+                  {verificationStatus.email ? 'Verified' : 'Verify'}
+                </AppText>
+              </TouchableOpacity>
+            }
+          />
 
           {/* PAN */}
           <AppText style={styles.modalFieldLabel}>Upload PAN <AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
             placeholder="Upload PAN"
-            accept={['pdf', 'jpg', 'png']}
-            maxSize={10 * 1024 * 1024}
+            accept={['pdf', 'jpg', 'png', 'jpeg']}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.PAN}
             initialFile={pharmacyForm.panFile}
             onFileUpload={(file) => handleFileUpload('pan', file)}
             onFileDelete={() => handleFileDelete('pan')}
             errorMessage={pharmacyErrors.panFile}
+            onOcrDataExtracted={(ocrData) => {
+              console.log('PAN OCR Data:', ocrData);
+              if (ocrData.panNumber) {
+                setPharmacyForm(prev => ({ ...prev, panNumber: ocrData.panNumber }));
+                setVerificationStatus(prev => ({ ...prev, pan: true }));
+              }
+            }}
           />
           {pharmacyErrors.panFile && (
             <AppText style={styles.errorText}>{pharmacyErrors.panFile}</AppText>
           )}
           
-          <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.panNumber ? 5 : 10 }, pharmacyErrors.panNumber && styles.inputError]}
-            placeholder="PAN number *"
-            placeholderTextColor="#999"
-            maxLength={10}
-            autoCapitalize="characters"
+          <CustomInput
+            placeholder="PAN number"
             value={pharmacyForm.panNumber}
             onChangeText={(text) => {
-              setPharmacyForm(prev => ({ ...prev, panNumber: text.toUpperCase() }));
+              const upperText = text.toUpperCase();
+              setPharmacyForm(prev => ({ ...prev, panNumber: upperText }));
               if (pharmacyErrors.panNumber) {
                 setPharmacyErrors(prev => ({ ...prev, panNumber: null }));
               }
             }}
+            maxLength={10}
+            autoCapitalize="characters"
+            mandatory={true}
+            error={pharmacyErrors.panNumber}
+            editable={!verificationStatus.pan}
+            rightComponent={
+              <TouchableOpacity
+                style={[
+                  styles.inlineVerifyButton,
+                  verificationStatus.pan && styles.verifiedButton
+                ]}
+                onPress={() => {
+                  if (!verificationStatus.pan) {
+                    // Verify PAN format
+                    if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pharmacyForm.panNumber)) {
+                      setVerificationStatus(prev => ({ ...prev, pan: true }));
+                     
+                    } else {
+                      Alert.alert('Invalid PAN', 'Please enter a valid PAN number');
+                    }
+                  }
+                }}
+                disabled={verificationStatus.pan}
+              >
+                <AppText style={[
+                  styles.inlineVerifyText,
+                  verificationStatus.pan && styles.verifiedText
+                ]}>
+                  {verificationStatus.pan ? (
+                    'Verified'
+                  ) : (
+                    <>
+                      Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                    </>
+                  )}
+                </AppText>
+              </TouchableOpacity>
+            }
           />
-          {pharmacyErrors.panNumber && (
-            <AppText style={styles.errorText}>{pharmacyErrors.panNumber}</AppText>
-          )}
 
           {/* GST */}
           <AppText style={styles.modalFieldLabel}>Upload GST <AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
             placeholder="Upload GST"
-            accept={['pdf', 'jpg', 'png']}
-            maxSize={10 * 1024 * 1024}
+            accept={['pdf', 'jpg', 'png', 'jpeg']}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.GST}
             initialFile={pharmacyForm.gstFile}
             onFileUpload={(file) => handleFileUpload('gst', file)}
             onFileDelete={() => handleFileDelete('gst')}
             errorMessage={pharmacyErrors.gstFile}
+            onOcrDataExtracted={(ocrData) => {
+              console.log('GST OCR Data:', ocrData);
+              if (ocrData.gstNumber) {
+                setPharmacyForm(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
+              }
+            }}
           />
           {pharmacyErrors.gstFile && (
             <AppText style={styles.errorText}>{pharmacyErrors.gstFile}</AppText>
           )}
           
-          <AppInput
-            style={[styles.modalInput, { marginBottom: pharmacyErrors.gstNumber ? 5 : 10 }, pharmacyErrors.gstNumber && styles.inputError]}
-            placeholder="GST number *"
-            placeholderTextColor="#999"
-            maxLength={15}
-            autoCapitalize="characters"
+          <CustomInput
+            placeholder="GST number"
             value={pharmacyForm.gstNumber}
             onChangeText={(text) => {
               setPharmacyForm(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
@@ -1261,20 +1364,27 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
                 setPharmacyErrors(prev => ({ ...prev, gstNumber: null }));
               }
             }}
+            maxLength={15}
+            autoCapitalize="characters"
+            mandatory={true}
+            error={pharmacyErrors.gstNumber}
           />
-          {pharmacyErrors.gstNumber && (
-            <AppText style={styles.errorText}>{pharmacyErrors.gstNumber}</AppText>
-          )}
 
           {/* Mapping Section */}
           <AppText style={styles.modalSectionLabel}>Mapping</AppText>
-          <AppText style={styles.modalFieldLabel}>Doctor</AppText>
-          <View style={[styles.doctorBox, { marginBottom: 20 }]}>
-            <AppText style={styles.doctorBoxText}>Doctors will appear here after adding</AppText>
+          <AppText style={styles.modalFieldLabel}>{hospitalName ? 'Hospital' : 'Doctor'}</AppText>
+          <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
+            <AppText style={styles.mappingNameText}>{hospitalName || doctorName || 'Name will appear here'}</AppText>
           </View>
 
           {/* Action Buttons */}
           <View style={styles.modalActionButtons}>
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={handleClose}
+            >
+              <AppText style={styles.cancelButtonText}>Cancel</AppText>
+            </TouchableOpacity>
             <TouchableOpacity 
               style={styles.submitButton}
               onPress={handleSubmit}
@@ -1285,12 +1395,6 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit }) => {
               ) : (
                 <AppText style={styles.submitButtonText}>Submit</AppText>
               )}
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.cancelButton}
-              onPress={handleClose}
-            >
-              <AppText style={styles.cancelButtonText}>Cancel</AppText>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -1436,20 +1540,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  modalContent: {
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
     alignItems: 'center',
-    marginBottom: 24,
+    justifyContent: 'center',
+    marginRight: 16,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#1A1A1A',
+  },
+  modalContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 0,
   },
   modalCloseButton: {
     fontSize: 24,
@@ -1457,11 +1571,15 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
   modalSectionLabel: {
-    fontSize: 13,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: '#1A1A1A',
     marginTop: 16,
-    marginBottom: 10,
+    marginBottom: 12,
+    paddingLeft: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF8C42',
+    marginLeft: -16,
   },
   modalFieldLabel: {
     fontSize: 13,
@@ -1494,39 +1612,58 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   radioGroup: {
-    flexDirection: 'row',
-    gap: 10,
+    flexDirection: 'column',
+    gap: 12,
     marginBottom: 16,
-    flexWrap: 'wrap',
+  },
+  radioRow: {
+    flexDirection: 'row',
+    gap: 24,
   },
   radioOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: 10,
   },
   radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     borderWidth: 2,
-    borderColor: colors.primary,
-    marginRight: 8,
+    borderColor: '#D1D5DB',
+    marginRight: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioCircleSelected: {
-    backgroundColor: colors.primary,
+    borderColor: '#FF8C42',
+    backgroundColor: 'transparent',
+  },
+  radioInnerCircle: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF8C42',
   },
   radioLabel: {
-    fontSize: 13,
-    color: '#333',
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '400',
   },
   fieldLabel: {
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '500',
     color: '#666',
     marginBottom: 6,
     marginTop: 4,
+  },
+  labelWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  infoIcon: {
+    marginLeft: 8,
   },
   fieldRow: {
     flexDirection: 'row',
@@ -1632,21 +1769,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: '#fff',
     borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.primary,
     marginLeft: 8,
   },
-  verifiedButton: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
-  },
   inlineVerifyText: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.primary,
     fontWeight: '600',
-  },
-  verifiedText: {
-    color: '#fff',
   },
   doctorBox: {
     backgroundColor: '#F5F5F5',
@@ -1662,6 +1790,19 @@ const styles = StyleSheet.create({
   doctorBoxText: {
     fontSize: 13,
     color: '#999',
+  },
+  mappingNameBox: {
+    padding: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.loginInputBorderColor,
+    backgroundColor: '#F5F5F5',
+    minHeight: 50,
+  },
+  mappingNameText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '400',
   },
   modalActionButtons: {
     flexDirection: 'row',

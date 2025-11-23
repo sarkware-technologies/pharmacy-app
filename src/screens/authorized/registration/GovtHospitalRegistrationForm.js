@@ -1,3 +1,4 @@
+/* eslint-disable no-dupe-keys */
 // src/screens/authorized/registration/GovtHospitalRegistrationForm.js
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -26,6 +27,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import { colors } from '../../../styles/colors';
 import CustomInput from '../../../components/CustomInput';
+import AddressInputWithLocation from '../../../components/AddressInputWithLocation';
 import FileUploadComponent from '../../../components/FileUploadComponent';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import ChevronRight from '../../../components/icons/ChevronRight';
@@ -112,7 +114,7 @@ const GovtHospitalRegistrationForm = () => {
     // Mapping
     markAsBuyingEntity: false,
     linkedHospitals: [],
-    customerGroup: '12-GOVT',
+    customerGroupId: 12,
   });
 
   // State for managing stockists
@@ -201,6 +203,7 @@ const GovtHospitalRegistrationForm = () => {
     // Load states and customer groups on mount
     loadStates();
     loadCustomerGroups();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load cities when state changes - NO RESET
@@ -547,7 +550,7 @@ const GovtHospitalRegistrationForm = () => {
     if (!formData.address3 || formData.address3.trim().length === 0) {
       newErrors.address3 = 'Address 3 is required';
     }
-    if (!formData.pincode || formData.pincode.length !== 6 || formData.pincode === '000000') {
+    if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode)) {
       newErrors.pincode = 'Valid 6-digit pincode is required';
     }
     if (!formData.area || formData.area.trim().length === 0) {
@@ -679,8 +682,8 @@ const GovtHospitalRegistrationForm = () => {
 
         navigation.navigate('RegistrationSuccess', {
           type: 'hospital',
-          registrationCode: response.data?.id || response.data?.id || 'SUCCESS',
-          customerId: response?.data?.id,
+          registrationCode: response.data?.data?.id || response.data?.id || 'SUCCESS',
+          customerId: response?.data?.data?.id,
         });
       } else {
         Toast.show({
@@ -775,7 +778,7 @@ const GovtHospitalRegistrationForm = () => {
         <FileUploadComponent
           placeholder="Upload Govt. Establishment Order"
           accept={['pdf', 'jpg', 'png']}
-          maxSize={10 * 1024 * 1024}
+          maxSize={15 * 1024 * 1024}
           docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
           initialFile={formData.registrationCertificateFile}
           onFileUpload={(file) => handleFileUpload('registrationCertificate', file)}
@@ -824,7 +827,7 @@ const GovtHospitalRegistrationForm = () => {
         <FileUploadComponent
           placeholder="Official Letter on Dept. Letterhead"
           accept={['jpg', 'png', 'jpeg']}
-          maxSize={10 * 1024 * 1024}
+          maxSize={15 * 1024 * 1024}
           docType={DOC_TYPES.HOSPITAL_IMAGE}
           initialFile={formData.hospitalImageFile}
           onFileUpload={(file) => handleFileUpload('hospitalImage', file)}
@@ -873,12 +876,34 @@ const GovtHospitalRegistrationForm = () => {
           onChangeText={(text) => setFormData(prev => ({ ...prev, shortName: text }))}
         />
 
-        <CustomInput
+        <AddressInputWithLocation
           placeholder="Address 1"
           value={formData.address1}
           onChangeText={(text) => setFormData(prev => ({ ...prev, address1: text }))}
           error={errors.address1}
           mandatory={true}
+          onLocationSelect={(locationData) => {
+            const addressParts = locationData.address.split(',').map(part => part.trim());
+            const extractedPincode = locationData.pincode || '';
+            const filteredParts = addressParts.filter(part => {
+              return !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india';
+            });
+            const matchedState = states.find(s => s.name.toLowerCase() === locationData.state.toLowerCase());
+            const matchedCity = cities.find(c => c.name.toLowerCase() === locationData.city.toLowerCase());
+            setFormData(prev => ({
+              ...prev,
+              address1: filteredParts[0] || '',
+              address2: filteredParts[1] || '',
+              address3: filteredParts[2] || '',
+              address4: filteredParts.slice(3).join(', ') || '',
+              pincode: extractedPincode,
+              area: locationData.area || '',
+              ...(matchedState && { stateId: matchedState.id, state: matchedState.name }),
+              ...(matchedCity && { cityId: matchedCity.id, city: matchedCity.name }),
+            }));
+            if (matchedState) loadCities(matchedState.id);
+            setErrors(prev => ({ ...prev, address1: null, address2: null, address3: null, address4: null, pincode: null, area: null, city: null, state: null }));
+          }}
         />
 
         <CustomInput
@@ -1084,15 +1109,22 @@ const GovtHospitalRegistrationForm = () => {
         {/* Upload PAN */}
         <FileUploadComponent
           placeholder="Upload PAN"
-          accept={['pdf', 'jpg', 'png']}
-          maxSize={10 * 1024 * 1024}
+          accept={['pdf', 'jpg', 'png', 'jpeg']}
+          maxSize={15 * 1024 * 1024}
           docType={DOC_TYPES.PAN}
           initialFile={formData.panFile}
           onFileUpload={(file) => handleFileUpload('pan', file)}
           onFileDelete={() => handleFileDelete('pan')}
           errorMessage={errors.panFile}
-                          mandatory={true}
-
+          mandatory={true}
+          onOcrDataExtracted={(ocrData) => {
+            console.log('PAN OCR Data:', ocrData);
+            if (ocrData.panNumber) {
+              setFormData(prev => ({ ...prev, panNumber: ocrData.panNumber }));
+              // Auto-verify when PAN is populated from OCR
+              setVerificationStatus(prev => ({ ...prev, pan: true }));
+            }
+          }}
         />
 
         {/* PAN Number */}
@@ -1103,12 +1135,6 @@ const GovtHospitalRegistrationForm = () => {
                   const upperText = text.toUpperCase();
                   setFormData(prev => ({ ...prev, panNumber: upperText }));
                   setErrors(prev => ({ ...prev, panNumber: null }));
-                  // Auto-verify if valid PAN format
-                  if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upperText)) {
-                    setVerificationStatus(prev => ({ ...prev, pan: true }));
-                  } else {
-                    setVerificationStatus(prev => ({ ...prev, pan: false }));
-                  }
                 }}
                 autoCapitalize="characters"
                 maxLength={10} mandatory
@@ -1116,12 +1142,35 @@ const GovtHospitalRegistrationForm = () => {
 
                 rightComponent={
                   <TouchableOpacity
-                    style={styles.inlineVerifyButton}
+                    style={[
+                      styles.inlineVerifyButton,
+                      verificationStatus.pan && styles.verifiedButton
+                    ]}
                     onPress={() => {
-                      Alert.alert('PAN Verification', 'PAN verified successfully!');
+                      if (!verificationStatus.pan) {
+                        // Verify PAN format
+                        if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+                          setVerificationStatus(prev => ({ ...prev, pan: true }));
+                         
+                        } else {
+                          Alert.alert('Invalid PAN', 'Please enter a valid PAN number');
+                        }
+                      }
                     }}
+                    disabled={verificationStatus.pan}
                   >
-                    <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
+                    <AppText style={[
+                      styles.inlineVerifyText,
+                      verificationStatus.pan && styles.verifiedText
+                    ]}>
+                      {verificationStatus.pan ? (
+                        'Verified'
+                      ) : (
+                        <>
+                          Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                        </>
+                      )}
+                    </AppText>
                   </TouchableOpacity>
                 }
               />
@@ -1129,13 +1178,22 @@ const GovtHospitalRegistrationForm = () => {
         {/* Upload GST */}
         <FileUploadComponent
           placeholder="Upload GST"
-          accept={['pdf', 'jpg', 'png']}
-          maxSize={10 * 1024 * 1024}
+          accept={['pdf', 'jpg', 'png', 'jpeg']}
+          maxSize={15 * 1024 * 1024}
           docType={DOC_TYPES.GST}
           initialFile={formData.gstFile}
           onFileUpload={(file) => handleFileUpload('gst', file)}
           onFileDelete={() => handleFileDelete('gst')}
           errorMessage={errors.gstFile}
+          onOcrDataExtracted={(ocrData) => {
+            console.log('GST OCR Data:', ocrData);
+            if (ocrData.gstNumber) {
+              setFormData(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
+              if (ocrData.isGstValid) {
+                setVerificationStatus(prev => ({ ...prev, gst: true }));
+              }
+            }
+          }}
         />
 
         {/* GST Number Input */}
@@ -1143,10 +1201,13 @@ const GovtHospitalRegistrationForm = () => {
           placeholder="GST Number"
           value={formData.gstNumber}
           onChangeText={(text) => {
-            setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
+            // Allow only letters and numbers - remove any special characters
+            const filtered = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+            setFormData(prev => ({ ...prev, gstNumber: filtered }));
             setErrors(prev => ({ ...prev, gstNumber: null }));
           }}
           autoCapitalize="characters"
+          keyboardType="default"
           maxLength={15}
           error={errors.gstNumber}
         />
@@ -1411,76 +1472,41 @@ const GovtHospitalRegistrationForm = () => {
         <AppText style={styles.sectionLabel}>Customer group</AppText>
 
         <View style={styles.radioGridContainer}>
-          {customerGroups.length > 0 ? (
-            customerGroups
-              .filter(group => ['9-DOCTOR SUPPLY', '10-VQ', '11-RFQ', '12-GOVT'].includes(group.customerGroupName))
-              .map((group) => {
-                const isDisabled = group.customerGroupName !== '12-GOVT';
-                return (
-                  <TouchableOpacity
-                    key={group.customerGroupId}
-                    style={[styles.radioGridItem, isDisabled && styles.radioGridItemDisabled]}
-                    onPress={() => {
-                      if (!isDisabled) {
-                        setFormData(prev => ({ ...prev, customerGroup: group.customerGroupName }));
-                      }
-                    }}
-                    activeOpacity={isDisabled ? 0.5 : 0.7}
-                    disabled={isDisabled}
-                  >
-                    <View style={[
-                      styles.radioButton,
-                      isDisabled && styles.radioButtonDisabled,
-                      formData.customerGroup === group.customerGroupName && styles.radioButtonSelected,
-                    ]}>
-                      {formData.customerGroup === group.customerGroupName && (
-                        <View style={styles.radioButtonInner} />
-                      )}
-                    </View>
-                    <AppText style={[
-                      styles.radioButtonLabel,
-                      isDisabled && styles.radioButtonLabelDisabled,
-                    ]}>
-                      {group.customerGroupName}
-                    </AppText>
-                  </TouchableOpacity>
-                );
-              })
-          ) : (
-            // Fallback if API data not available
-            ['9-DOCTOR SUPPLY', '10-VQ', '11-RFQ', '12-GOVT'].map((group) => {
-              const isDisabled = group !== '12-GOVT';
-              return (
-                <TouchableOpacity
-                  key={group}
-                  style={[styles.radioGridItem, isDisabled && styles.radioGridItemDisabled]}
-                  onPress={() => {
-                    if (!isDisabled) {
-                      setFormData(prev => ({ ...prev, customerGroup: group }));
-                    }
-                  }}
-                  activeOpacity={isDisabled ? 0.5 : 0.7}
-                  disabled={isDisabled}
-                >
-                  <View style={[
-                    styles.radioButton,
-                    isDisabled && styles.radioButtonDisabled,
-                    formData.customerGroup === group && styles.radioButtonSelected,
-                  ]}>
-                    {formData.customerGroup === group && (
-                      <View style={styles.radioButtonInner} />
-                    )}
-                  </View>
-                  <AppText style={[
-                    styles.radioButtonLabel,
-                    isDisabled && styles.radioButtonLabelDisabled,
-                  ]}>
-                    {group}
-                  </AppText>
-                </TouchableOpacity>
-              );
-            })
-          )}
+          {['9 Doctor Supply', '10 VQ', '11 RFQ', '12 GOVT'].map((group, index) => {
+            const groupId = index + 9; // 9, 10, 11, 12
+            const isDisabled = group !== '12 GOVT';
+            const isSelected = formData.customerGroupId === groupId;
+            
+            return (
+              <TouchableOpacity
+                key={group}
+                style={[styles.radioGridItem, isDisabled && styles.radioGridItemDisabled]}
+                onPress={() => {
+                  if (!isDisabled) {
+                    setFormData(prev => ({ ...prev, customerGroupId: groupId }));
+                  }
+                }}
+                activeOpacity={isDisabled ? 0.5 : 0.7}
+                disabled={isDisabled}
+              >
+                <View style={[
+                  styles.radioButton,
+                  isDisabled && styles.radioButtonDisabled,
+                  isSelected && styles.radioButtonSelected,
+                ]}>
+                  {isSelected && (
+                    <View style={styles.radioButtonInner} />
+                  )}
+                </View>
+                <AppText style={[
+                  styles.radioButtonLabel,
+                  isDisabled && styles.radioButtonLabelDisabled,
+                ]}>
+                  {group}
+                </AppText>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -1699,6 +1725,7 @@ const GovtHospitalRegistrationForm = () => {
       {/* Add New Hospital Modal */}
       <AddNewHospitalModal
         visible={showAddHospitalModal}
+        pharmacyName={formData.hospitalName}
         onClose={() => setShowAddHospitalModal(false)}
         onAdd={(hospital) => {
           setFormData(prev => ({
@@ -1713,6 +1740,7 @@ const GovtHospitalRegistrationForm = () => {
       <AddNewPharmacyModal
         visible={showAddPharmacyModal}
         onClose={() => setShowAddPharmacyModal(false)}
+        hospitalName={formData.hospitalName}
         onSubmit={(pharmacy) => {
           console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
           console.log('Full Response:', pharmacy);

@@ -1,3 +1,4 @@
+/* eslint-disable no-dupe-keys */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -21,7 +22,8 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import { colors } from '../../../styles/colors';
-import CustomInput from '../../../components/CustomInput';
+import { CustomInput } from '../../../components';
+import AddressInputWithLocation from '../../../components/AddressInputWithLocation';
 import FileUploadComponent from '../../../components/FileUploadComponent';
 import Calendar from '../../../components/icons/Calendar';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
@@ -30,6 +32,7 @@ import { customerAPI } from '../../../api/customer';
 import { AppText, AppInput } from "../../../components"
 import AddNewHospitalModal from './AddNewHospitalModal';
 import AddNewDoctorModal from './AddNewDoctorModal';
+import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 
 // Default document types for file uploads (will be updated from API for licenses)
 const DOC_TYPES = {
@@ -219,6 +222,7 @@ const PharmacyRegistrationForm = () => {
       // Mark component as unmounted
       isMounted.current = false;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadInitialData = async () => {
@@ -892,7 +896,7 @@ const PharmacyRegistrationForm = () => {
               <FileUploadComponent
                 placeholder="Upload 20 license"
                 accept={['pdf', 'jpg', 'png']}
-                maxSize={10 * 1024 * 1024} // 10MB
+                maxSize={15 * 1024 * 1024} // 15MB
                 docType={licenseTypes.LICENSE_20?.docTypeId || 3}
                 initialFile={formData.license20File}
                 onFileUpload={(file) => handleFileUpload('license20', file)}
@@ -939,7 +943,7 @@ const PharmacyRegistrationForm = () => {
               <FileUploadComponent
                 placeholder="Upload 21 license"
                 accept={['pdf', 'jpg', 'png']}
-                maxSize={10 * 1024 * 1024} // 10MB
+                maxSize={15 * 1024 * 1024} // 15MB
                 docType={licenseTypes.LICENSE_21?.docTypeId || 5}
                 initialFile={formData.license21File}
                 onFileUpload={(file) => handleFileUpload('license21', file)}
@@ -986,7 +990,7 @@ const PharmacyRegistrationForm = () => {
               <FileUploadComponent
                 placeholder="Upload"
                 accept={['jpg', 'png', 'jpeg']}
-                maxSize={10 * 1024 * 1024} // 10MB
+                maxSize={15 * 1024 * 1024} // 15MB
                 docType={DOC_TYPES.PHARMACY_IMAGE}
                 initialFile={formData.pharmacyImageFile}
                 onFileUpload={(file) => handleFileUpload('pharmacyImage', file)}
@@ -1016,7 +1020,7 @@ const PharmacyRegistrationForm = () => {
                 onChangeText={(text) => setFormData(prev => ({ ...prev, shortName: text }))}
               />
 
-              <CustomInput
+              <AddressInputWithLocation
                 placeholder="Address 1"
                 value={formData.address1}
                 onChangeText={(text) => {
@@ -1025,6 +1029,28 @@ const PharmacyRegistrationForm = () => {
                 }}
                 mandatory={true}
                 error={errors.address1}
+                onLocationSelect={(locationData) => {
+                  const addressParts = locationData.address.split(',').map(part => part.trim());
+                  const extractedPincode = locationData.pincode || '';
+                  const filteredParts = addressParts.filter(part => {
+                    return !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india';
+                  });
+                  const matchedState = states.find(s => s.name.toLowerCase() === locationData.state.toLowerCase());
+                  const matchedCity = cities.find(c => c.name.toLowerCase() === locationData.city.toLowerCase());
+                  setFormData(prev => ({
+                    ...prev,
+                    address1: filteredParts[0] || '',
+                    address2: filteredParts[1] || '',
+                    address3: filteredParts[2] || '',
+                    address4: filteredParts.slice(3).join(', ') || '',
+                    pincode: extractedPincode,
+                    area: locationData.area || '',
+                    ...(matchedState && { stateId: matchedState.id, state: matchedState.name }),
+                    ...(matchedCity && { cityId: matchedCity.id, city: matchedCity.name }),
+                  }));
+                  if (matchedState) loadCities(matchedState.id);
+                  setErrors(prev => ({ ...prev, address1: null, address2: null, address3: null, address4: null, pincode: null, area: null, city: null, state: null }));
+                }}
               />
 
               <CustomInput
@@ -1226,14 +1252,20 @@ const PharmacyRegistrationForm = () => {
 
               <FileUploadComponent
                 placeholder="Upload PAN"
-                accept={['pdf', 'jpg', 'png']}
-                maxSize={10 * 1024 * 1024} // 10MB
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
+                maxSize={15 * 1024 * 1024} // 15MB
                 docType={DOC_TYPES.PAN_CARD}
                 initialFile={formData.panFile}
                 onFileUpload={(file) => handleFileUpload('pan', file)}
                 onFileDelete={() => handleFileDelete('pan')}
                 mandatory={true}
-
+                onOcrDataExtracted={(ocrData) => {
+                  console.log('PAN OCR Data:', ocrData);
+                  if (ocrData.panNumber) {
+                    setFormData(prev => ({ ...prev, panNumber: ocrData.panNumber }));
+                    setVerificationStatus(prev => ({ ...prev, pan: true }));
+                  }
+                }}
               />
 
 
@@ -1245,12 +1277,6 @@ const PharmacyRegistrationForm = () => {
                   const upperText = text.toUpperCase();
                   setFormData(prev => ({ ...prev, panNumber: upperText }));
                   setErrors(prev => ({ ...prev, panNumber: null }));
-                  // Auto-verify if valid PAN format
-                  if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upperText)) {
-                    setVerificationStatus(prev => ({ ...prev, pan: true }));
-                  } else {
-                    setVerificationStatus(prev => ({ ...prev, pan: false }));
-                  }
                 }}
                 autoCapitalize="characters"
                 maxLength={10} mandatory
@@ -1258,12 +1284,35 @@ const PharmacyRegistrationForm = () => {
 
                 rightComponent={
                   <TouchableOpacity
-                    style={styles.inlineVerifyButton}
+                    style={[
+                      styles.inlineVerifyButton,
+                      verificationStatus.pan && styles.verifiedButton
+                    ]}
                     onPress={() => {
-                      Alert.alert('PAN Verification', 'PAN verified successfully!');
+                      if (!verificationStatus.pan) {
+                        // Verify PAN format
+                        if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+                          setVerificationStatus(prev => ({ ...prev, pan: true }));
+                         
+                        } else {
+                          Alert.alert('Invalid PAN', 'Please enter a valid PAN number');
+                        }
+                      }
                     }}
+                    disabled={verificationStatus.pan}
                   >
-                    <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
+                    <AppText style={[
+                      styles.inlineVerifyText,
+                      verificationStatus.pan && styles.verifiedText
+                    ]}>
+                      {verificationStatus.pan ? (
+                        'Verified'
+                      ) : (
+                        <>
+                          Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                        </>
+                      )}
+                    </AppText>
                   </TouchableOpacity>
                 }
               />
@@ -1272,22 +1321,34 @@ const PharmacyRegistrationForm = () => {
 
               <FileUploadComponent
                 placeholder="Upload GST"
-                accept={['pdf', 'jpg', 'png']}
-                maxSize={10 * 1024 * 1024} // 10MB
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
+                maxSize={15 * 1024 * 1024} // 15MB
                 docType={DOC_TYPES.GST_CERTIFICATE}
                 initialFile={formData.gstFile}
                 onFileUpload={(file) => handleFileUpload('gst', file)}
                 onFileDelete={() => handleFileDelete('gst')}
+                onOcrDataExtracted={(ocrData) => {
+                  console.log('GST OCR Data:', ocrData);
+                  if (ocrData.gstNumber) {
+                    setFormData(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
+                    if (ocrData.isGstValid) {
+                      setVerificationStatus(prev => ({ ...prev, gst: true }));
+                    }
+                  }
+                }}
               />
 
               <CustomInput
                 placeholder="GST number"
                 value={formData.gstNumber}
                 onChangeText={(text) => {
-                  setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
+                  // Allow only letters and numbers - remove any special characters
+                  const filtered = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+                  setFormData(prev => ({ ...prev, gstNumber: filtered }));
                   setErrors(prev => ({ ...prev, gstNumber: null }));
                 }}
                 autoCapitalize="characters"
+                keyboardType="default"
                 maxLength={15}
                 error={errors.gstNumber}
               />
@@ -1409,6 +1470,10 @@ const PharmacyRegistrationForm = () => {
                         navigation.navigate('DoctorSelector', {
                           selectedDoctors: formData.selectedDoctors,
                           onSelect: (selectedDoctors) => {
+                            console.log('=== Doctors Selected from DoctorSelector ===');
+                            console.log('Selected Doctors:', selectedDoctors);
+                            console.log('First Doctor:', selectedDoctors[0]);
+                            console.log('=== End Doctors Selection ===');
                             setFormData(prev => ({
                               ...prev,
                               selectedDoctors: selectedDoctors
@@ -1420,13 +1485,36 @@ const PharmacyRegistrationForm = () => {
                       <AppText style={styles.selectorPlaceholder}>
                         {formData.selectedDoctors.length > 0
                           ? `${formData.selectedDoctors.length} Doctor${formData.selectedDoctors.length !== 1 ? 's' : ''} selected`
-                          : 'Select Doctor'
+                          : 'Search doctor name/code'
                         }
                       </AppText>
-                      <Icon name="arrow-forward" size={20} color={colors.primary} />
+                      <Icon name="arrow-drop-down" size={24} color="#666" />
                     </TouchableOpacity>
 
-                    {/* Add New Doctor Link */}
+                   
+
+                    {/* Selected Doctors List */}
+                    {formData.selectedDoctors.length > 0 && (
+                      <View style={styles.selectedItemsContainer}>
+                        {formData.selectedDoctors.map((doctor, index) => (
+                          <View key={doctor.id || index} style={styles.selectedItemChip}>
+                             <AppText style={styles.addNewDoctorLink}>{ doctor.name || doctor.customerName || `Doctor ${index + 1}` }  </AppText>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  selectedDoctors: prev.selectedDoctors.filter((_, i) => i !== index)
+                                }));
+                              }}
+                            >
+                              <DoctorDeleteIcon />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                     {/* Add New Doctor Link */}
                     <TouchableOpacity
                       style={styles.addNewLink}
                       onPress={() => {
@@ -1436,27 +1524,7 @@ const PharmacyRegistrationForm = () => {
                       <AppText style={styles.addNewLinkText}>+ Add New Doctor</AppText>
                     </TouchableOpacity>
 
-                    {/* Selected Doctors List */}
-                    {formData.selectedDoctors.length > 0 && (
-                      <View style={styles.selectedItemsContainer}>
-                        <AppText style={styles.selectedItemsLabel}>Selected Doctors:</AppText>
-                        {formData.selectedDoctors.map((doctor, index) => (
-                          <View key={index} style={styles.selectedItemChip}>
-                            <AppText style={styles.selectedItemText}>{doctor.name}</AppText>
-                            <TouchableOpacity
-                              onPress={() => {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  selectedDoctors: prev.selectedDoctors.filter((_, i) => i !== index)
-                                }));
-                              }}
-                            >
-                              <Icon name="close" size={16} color="#999" />
-                            </TouchableOpacity>
-                          </View>
-                        ))}
-                      </View>
-                    )}
+
                   </>
                 )}
               </View>
@@ -1646,6 +1714,7 @@ const PharmacyRegistrationForm = () => {
       <AddNewHospitalModal
         visible={showAddHospitalModal}
         onClose={() => setShowAddHospitalModal(false)}
+        pharmacyName={formData.pharmacyName}
         onAdd={(hospital) => {
           // Console the raw response from AddNewHospitalModal
           console.log('=== Hospital Response from AddNewHospitalModal ===');
@@ -1686,6 +1755,7 @@ const PharmacyRegistrationForm = () => {
       <AddNewDoctorModal
         visible={showAddDoctorModal}
         onClose={() => setShowAddDoctorModal(false)}
+        pharmacyName={formData.pharmacyName}
         onAdd={(doctor) => {
           // Console the raw response from AddNewDoctorModal
           console.log('=== Doctor Response from AddNewDoctorModal ===');
@@ -2401,11 +2471,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  selectedItemsContainer: {
+   selectedItemsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
     flex: 1,
+    marginBottom: 16,
   },
   selectedItemTag: {
     flexDirection: 'row',
@@ -2535,7 +2606,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
   },
-  selectedItemChip: {
+   selectedItemChip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -2545,7 +2616,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginBottom: 6,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: "#ccc",
   },
   selectedItemText: {
     fontSize: 13,
@@ -2553,7 +2624,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
-
+ addNewDoctorLink: {
+    fontSize: 14,
+    color: "#555",
+    fontWeight: '500',
+  },
   inputTextContainer: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,3 +1,4 @@
+/* eslint-disable no-dupe-keys */
 // Add
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -19,7 +20,8 @@ import { colors } from '../../../styles/colors';
 import Toast from 'react-native-toast-message';
 import { customerAPI } from '../../../api/customer';
 import FileUploadComponent from '../../../components/FileUploadComponent';
-import {AppText,AppInput} from "../../../components"
+import AddressInputWithLocation from '../../../components/AddressInputWithLocation';
+import { AppText, AppInput, CustomInput } from "../../../components"
 
 const DOC_TYPES = {
   LICENSE_20B: 3,
@@ -38,7 +40,7 @@ const MOCK_AREAS = [
   { id: 5, name: 'Sadar'},
 ];
 
-const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
+const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) => {
   const [doctorForm, setDoctorForm] = useState({
     // License Details
     clinicRegistrationCertificateFile: null,
@@ -90,6 +92,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
   const [verificationStatus, setVerificationStatus] = useState({
     mobile: false,
     email: false,
+    pan: false,
   });
 
   // OTP states
@@ -251,7 +254,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
       isWholesalerOnly: false,
     });
     setDoctorErrors({});
-    setVerificationStatus({ mobile: false, email: false });
+    setVerificationStatus({ mobile: false, email: false, pan: false });
     setCities([]);
     setDocumentIds({});
     setUploadedDocs([]);
@@ -347,7 +350,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to send OTP. Please try again.',
+        text2: error.response?.data?.message || error.message || 'Failed to send OTP. Please try again.',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -409,7 +412,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
         Toast.show({
           type: 'error',
           text1: 'Invalid OTP',
-          text2: 'Please enter the correct OTP',
+          text2: response.message || 'Please enter the correct OTP',
         });
       }
     } catch (error) {
@@ -417,7 +420,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to validate OTP. Please try again.',
+        text2: error.response?.data?.message || error.message || 'Failed to validate OTP. Please try again.',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -539,10 +542,8 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
     // Pincode validation
     if (!doctorForm.pincode || doctorForm.pincode.trim() === '') {
       newErrors.pincode = 'Pincode is required';
-    } else if (!/^\d{6}$/.test(doctorForm.pincode)) {
-      newErrors.pincode = 'Pincode must be 6 digits';
-    } else if (/^0+$/.test(doctorForm.pincode)) {
-      newErrors.pincode = 'Pincode cannot be all zeros';
+    } else if (!/^[1-9]\d{5}$/.test(doctorForm.pincode)) {
+      newErrors.pincode = 'Valid 6-digit pincode is required';
     }
     
     // Area validation
@@ -745,10 +746,10 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
       <SafeAreaView style={styles.modalContainer}>
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
           <View style={styles.modalHeader}>
-            <AppText style={styles.modalTitle}>Add Doctor account</AppText>
-            <TouchableOpacity onPress={handleClose}>
-              <AppText style={styles.modalCloseButton}>✕</AppText>
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+              <Icon name="close" size={24} color="#333" />
             </TouchableOpacity>
+            <AppText style={styles.modalTitle}>Add Doctor Account</AppText>
           </View>
 
           {/* License Details */}
@@ -759,7 +760,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
           <FileUploadComponent
             placeholder="Upload Certificate"
             accept={['pdf', 'jpg', 'png']}
-            maxSize={10 * 1024 * 1024}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.LICENSE_20B}
             initialFile={doctorForm.clinicRegistrationCertificateFile}
             onFileUpload={(file) => handleFileUpload('clinicRegistrationCertificate', file)}
@@ -804,7 +805,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
           <FileUploadComponent
             placeholder="Upload License"
             accept={['pdf', 'jpg', 'png']}
-            maxSize={10 * 1024 * 1024}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.LICENSE_21B}
             initialFile={doctorForm.practiceLicenseFile}
             onFileUpload={(file) => handleFileUpload('practiceLicense', file)}
@@ -849,7 +850,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
           <FileUploadComponent
             placeholder="Upload"
             accept={['jpg', 'png', 'jpeg']}
-            maxSize={10 * 1024 * 1024}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.PHARMACY_IMAGE}
             initialFile={doctorForm.clinicImageFile}
             onFileUpload={(file) => handleFileUpload('clinicImage', file)}
@@ -921,10 +922,8 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
             onChangeText={(text) => setDoctorForm(prev => ({ ...prev, clinicName: text }))}
           />
 
-          <AppInput
-            style={[styles.modalInput, { marginBottom: doctorErrors.address1 ? 5 : 10 }, doctorErrors.address1 && styles.inputError]}
-            placeholder="Address 1 *"
-            placeholderTextColor="#999"
+          <AddressInputWithLocation
+            label="Address 1"
             value={doctorForm.address1}
             onChangeText={(text) => {
               setDoctorForm(prev => ({ ...prev, address1: text }));
@@ -932,10 +931,75 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
                 setDoctorErrors(prev => ({ ...prev, address1: null }));
               }
             }}
+            placeholder="Address 1 *"
+            error={doctorErrors.address1}
+            mandatory={true}
+            onLocationSelect={(locationData) => {
+              console.log('Location selected:', locationData);
+              
+              // Update address field
+              setDoctorForm(prev => ({ ...prev, address1: locationData.address }));
+              
+              // Update pincode
+              if (locationData.pincode) {
+                setDoctorForm(prev => ({ ...prev, pincode: locationData.pincode }));
+                setDoctorErrors(prev => ({ ...prev, pincode: null }));
+              }
+              
+              // Update area
+              if (locationData.area) {
+                setDoctorForm(prev => ({ ...prev, area: locationData.area }));
+                setDoctorErrors(prev => ({ ...prev, area: null }));
+              }
+              
+              // Match and update state
+              if (locationData.state && states.length > 0) {
+                const matchedState = states.find(s => 
+                  s.name.toLowerCase().includes(locationData.state.toLowerCase()) ||
+                  locationData.state.toLowerCase().includes(s.name.toLowerCase())
+                );
+                if (matchedState) {
+                  setDoctorForm(prev => ({
+                    ...prev,
+                    state: matchedState.name,
+                    stateId: matchedState.id,
+                  }));
+                  setDoctorErrors(prev => ({ ...prev, state: null }));
+                  
+                  // Load cities for the matched state
+                  loadCities(matchedState.id);
+                }
+              }
+              
+              // Match and update city (after a short delay to ensure cities are loaded)
+              if (locationData.city) {
+                setTimeout(() => {
+                  const matchedCity = cities.find(c => 
+                    c.name.toLowerCase().includes(locationData.city.toLowerCase()) ||
+                    locationData.city.toLowerCase().includes(c.name.toLowerCase())
+                  );
+                  if (matchedCity) {
+                    setDoctorForm(prev => ({
+                      ...prev,
+                      city: matchedCity.name,
+                      cityId: matchedCity.id,
+                    }));
+                    setDoctorErrors(prev => ({ ...prev, city: null }));
+                  }
+                }, 500);
+              }
+              
+              // Clear errors
+              setDoctorErrors(prev => ({
+                ...prev,
+                address1: null,
+                pincode: null,
+                area: null,
+                city: null,
+                state: null,
+              }));
+            }}
           />
-          {doctorErrors.address1 && (
-            <AppText style={styles.errorText}>{doctorErrors.address1}</AppText>
-          )}
           
           <AppInput
             style={[styles.modalInput, { marginBottom: 10 }]}
@@ -998,40 +1062,53 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
             <AppText style={styles.errorText}>{doctorErrors.area}</AppText>
           )}
           
-          {/* City - Dropdown (Independent) */}
-          <TouchableOpacity 
-            style={[styles.dropdown, { marginBottom: doctorErrors.city ? 5 : 10 }, doctorErrors.city && styles.inputError]}
-            onPress={() => {
-              loadCities(null);
-              setShowCityModal(true);
-            }}
-          >
-            <AppText style={[styles.dropdownPlaceholder, doctorForm.city && { color: '#333' }]}>
-              {doctorForm.city || 'City *'}
-            </AppText>
-            <Icon name="arrow-drop-down" size={24} color="#999" />
-          </TouchableOpacity>
-          {doctorErrors.city && (
-            <AppText style={styles.errorText}>{doctorErrors.city}</AppText>
-          )}
+          {/* City - Dropdown with Floating Label */}
+          <View style={{ marginBottom: 10 }}>
+            <TouchableOpacity
+              style={[styles.dropdown, doctorErrors.city && styles.inputError]}
+              onPress={() => {
+                loadCities(null);
+                setShowCityModal(true);
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                {doctorForm.city && (
+                  <AppText style={styles.floatingLabel}>City *</AppText>
+                )}
+                <AppText style={[styles.dropdownText, !doctorForm.city && styles.dropdownPlaceholder]}>
+                  {doctorForm.city || 'City *'}
+                </AppText>
+              </View>
+              <Icon name="arrow-drop-down" size={24} color="#999" />
+            </TouchableOpacity>
+            {doctorErrors.city && (
+              <AppText style={styles.errorText}>{doctorErrors.city}</AppText>
+            )}
+          </View>
 
-          {/* State - Dropdown (Independent) */}
-          <TouchableOpacity 
-            style={[styles.dropdown, { marginBottom: doctorErrors.state ? 5 : 10 }, doctorErrors.state && styles.inputError]}
-            onPress={() => setShowStateModal(true)}
-          >
-            <AppText style={[styles.dropdownPlaceholder, doctorForm.state && { color: '#333' }]}>
-              {doctorForm.state || 'State *'}
-            </AppText>
-            <Icon name="arrow-drop-down" size={24} color="#999" />
-          </TouchableOpacity>
-          {doctorErrors.state && (
-            <AppText style={styles.errorText}>{doctorErrors.state}</AppText>
-          )}
+          {/* State - Dropdown with Floating Label */}
+          <View style={{ marginBottom: 10 }}>
+            <TouchableOpacity
+              style={[styles.dropdown, doctorErrors.state && styles.inputError]}
+              onPress={() => setShowStateModal(true)}
+            >
+              <View style={{ flex: 1 }}>
+                {doctorForm.state && (
+                  <AppText style={styles.floatingLabel}>State *</AppText>
+                )}
+                <AppText style={[styles.dropdownText, !doctorForm.state && styles.dropdownPlaceholder]}>
+                  {doctorForm.state || 'State *'}
+                </AppText>
+              </View>
+              <Icon name="arrow-drop-down" size={24} color="#999" />
+            </TouchableOpacity>
+            {doctorErrors.state && (
+              <AppText style={styles.errorText}>{doctorErrors.state}</AppText>
+            )}
+          </View>
 
           {/* Security Details */}
           <AppText style={styles.modalSectionLabel}>Security Details <AppText style={styles.mandatory}>*</AppText></AppText>
-          <AppText style={styles.modalFieldLabel}>Mobile number <AppText style={styles.mandatory}>*</AppText></AppText>
           <View style={[styles.inputWithButton, doctorErrors.mobileNumber && styles.inputError]}>
             <AppInput
               style={styles.inputField}
@@ -1051,23 +1128,13 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
               editable={!verificationStatus.mobile}
             />
             <TouchableOpacity
-              style={[
-                styles.inlineVerifyButton,
-                verificationStatus.mobile && styles.verifiedButton,
-              ]}
+              style={styles.inlineVerifyButton}
               onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
               disabled={verificationStatus.mobile || loadingOtp.mobile}
             >
-              {loadingOtp.mobile && !verificationStatus.mobile ? (
-                <ActivityIndicator size="small" color="#007AFF" />
-              ) : (
-                <AppText style={[
-                  styles.inlineVerifyText,
-                  verificationStatus.mobile && styles.verifiedText
-                ]}>
-                  {verificationStatus.mobile ? 'Verified' : 'Verify'}
-                </AppText>
-              )}
+              <AppText style={styles.inlineVerifyText}>
+                {verificationStatus.mobile ? 'Verified' : 'Verify'}
+              </AppText>
             </TouchableOpacity>
           </View>
           {(doctorErrors.mobileNumber || doctorErrors.mobileVerification) && (
@@ -1075,7 +1142,6 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
           )}
           {renderOTPInput('mobile')}
 
-          <AppText style={styles.modalFieldLabel}>Email address <AppText style={styles.mandatory}>*</AppText></AppText>
           <View style={[styles.inputWithButton, doctorErrors.emailAddress && styles.inputError]}>
             <AppInput
               style={[styles.inputField, { flex: 1 }]}
@@ -1093,23 +1159,13 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
               editable={!verificationStatus.email}
             />
             <TouchableOpacity
-              style={[
-                styles.inlineVerifyButton,
-                verificationStatus.email && styles.verifiedButton,
-              ]}
+              style={styles.inlineVerifyButton}
               onPress={() => !verificationStatus.email && handleVerify('email')}
               disabled={verificationStatus.email || loadingOtp.email}
             >
-              {loadingOtp.email && !verificationStatus.email ? (
-                <ActivityIndicator size="small" color="#007AFF" />
-              ) : (
-                <AppText style={[
-                  styles.inlineVerifyText,
-                  verificationStatus.email && styles.verifiedText
-                ]}>
-                  {verificationStatus.email ? 'Verified' : 'Verify'}
-                </AppText>
-              )}
+              <AppText style={styles.inlineVerifyText}>
+                {verificationStatus.email ? 'Verified' : 'Verify'}
+              </AppText>
             </TouchableOpacity>
           </View>
           {(doctorErrors.emailAddress || doctorErrors.emailVerification) && (
@@ -1121,47 +1177,92 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
           <AppText style={styles.modalFieldLabel}>Upload PAN <AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
             placeholder="Upload PAN"
-            accept={['pdf', 'jpg', 'png']}
-            maxSize={10 * 1024 * 1024}
+            accept={['pdf', 'jpg', 'png', 'jpeg']}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.PAN}
             initialFile={doctorForm.panFile}
             onFileUpload={(file) => handleFileUpload('pan', file)}
             onFileDelete={() => handleFileDelete('pan')}
             errorMessage={doctorErrors.panFile}
+            onOcrDataExtracted={(ocrData) => {
+              console.log('PAN OCR Data:', ocrData);
+              if (ocrData.panNumber) {
+                setDoctorForm(prev => ({ ...prev, panNumber: ocrData.panNumber }));
+                setVerificationStatus(prev => ({ ...prev, pan: true }));
+              }
+            }}
           />
           {doctorErrors.panFile && (
             <AppText style={styles.errorText}>{doctorErrors.panFile}</AppText>
           )}
           
-          <AppInput
-            style={[styles.modalInput, { marginBottom: doctorErrors.panNumber ? 5 : 10 }, doctorErrors.panNumber && styles.inputError]}
-            placeholder="PAN number *"
-            placeholderTextColor="#999"
-            maxLength={10}
-            autoCapitalize="characters"
+          <CustomInput
+            placeholder="PAN number"
             value={doctorForm.panNumber}
             onChangeText={(text) => {
-              setDoctorForm(prev => ({ ...prev, panNumber: text.toUpperCase() }));
+              const upperText = text.toUpperCase();
+              setDoctorForm(prev => ({ ...prev, panNumber: upperText }));
               if (doctorErrors.panNumber) {
                 setDoctorErrors(prev => ({ ...prev, panNumber: null }));
               }
             }}
+            maxLength={10}
+            autoCapitalize="characters"
+            mandatory={true}
+            error={doctorErrors.panNumber}
+            editable={!verificationStatus.pan}
+            rightComponent={
+              <TouchableOpacity
+                style={[
+                  styles.inlineVerifyButton,
+                  verificationStatus.pan && styles.verifiedButton
+                ]}
+                onPress={() => {
+                  if (!verificationStatus.pan) {
+                    // Verify PAN format
+                    if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(doctorForm.panNumber)) {
+                      setVerificationStatus(prev => ({ ...prev, pan: true }));
+                     
+                    } else {
+                      Alert.alert('Invalid PAN', 'Please enter a valid PAN number');
+                    }
+                  }
+                }}
+                disabled={verificationStatus.pan}
+              >
+                <AppText style={[
+                  styles.inlineVerifyText,
+                  verificationStatus.pan && styles.verifiedText
+                ]}>
+                  {verificationStatus.pan ? (
+                    'Verified'
+                  ) : (
+                    <>
+                      Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                    </>
+                  )}
+                </AppText>
+              </TouchableOpacity>
+            }
           />
-          {doctorErrors.panNumber && (
-            <AppText style={styles.errorText}>{doctorErrors.panNumber}</AppText>
-          )}
 
           {/* GST */}
           <AppText style={styles.modalFieldLabel}>Upload GST <AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
             placeholder="Upload GST"
-            accept={['pdf', 'jpg', 'png']}
-            maxSize={10 * 1024 * 1024}
+            accept={['pdf', 'jpg', 'png', 'jpeg']}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.GST}
             initialFile={doctorForm.gstFile}
             onFileUpload={(file) => handleFileUpload('gst', file)}
             onFileDelete={() => handleFileDelete('gst')}
             errorMessage={doctorErrors.gstFile}
+            onOcrDataExtracted={(ocrData) => {
+              console.log('GST OCR Data:', ocrData);
+              if (ocrData.gstNumber) {
+                setDoctorForm(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
+              }
+            }}
           />
           {doctorErrors.gstFile && (
             <AppText style={styles.errorText}>{doctorErrors.gstFile}</AppText>
@@ -1187,9 +1288,9 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd }) => {
 
           {/* Mapping Section */}
           <AppText style={styles.modalSectionLabel}>Mapping</AppText>
-          <AppText style={styles.modalFieldLabel}>Doctor</AppText>
-          <View style={[styles.doctorBox, { marginBottom: 20 }]}>
-            <AppText style={styles.doctorBoxText}>Doctors will appear here after adding</AppText>
+          <AppText style={styles.modalFieldLabel}>Only Wholesaler</AppText>
+          <View style={[styles.mappingPharmacyBox, { marginBottom: 20 }]}>
+            <AppText style={styles.mappingPharmacyText}>{pharmacyName || 'Pharmacy name will appear here'}</AppText>
           </View>
 
           {/* Action Buttons */}
@@ -1351,30 +1452,35 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 0,
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  closeButton: {
+    marginRight: 12,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#333',
-  },
-  modalCloseButton: {
-    fontSize: 24,
-    color: '#999',
-    fontWeight: '300',
+    color: '#1A1A1A',
+    flex: 1,
   },
   modalSectionLabel: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#1A1A1A',
     marginTop: 16,
-    marginBottom: 10,
+    marginBottom: 12,
+    paddingLeft: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF8C42',
+    marginLeft: -16,
   },
   modalFieldLabel: {
     fontSize: 13,
@@ -1545,21 +1651,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: '#fff',
     borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.primary,
     marginLeft: 8,
   },
-  verifiedButton: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
-  },
   inlineVerifyText: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.primary,
     fontWeight: '600',
-  },
-  verifiedText: {
-    color: '#fff',
   },
   doctorBox: {
     backgroundColor: '#F5F5F5',
@@ -1575,6 +1672,19 @@ const styles = StyleSheet.create({
   doctorBoxText: {
     fontSize: 13,
     color: '#999',
+  },
+  mappingPharmacyBox: {
+    padding: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.loginInputBorderColor,
+    backgroundColor: '#F5F5F5',
+    minHeight: 50,
+  },
+  mappingPharmacyText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '400',
   },
   modalActionButtons: {
     flexDirection: 'row',
@@ -1695,6 +1805,19 @@ const styles = StyleSheet.create({
   },
   verifiedText: {
     color: '#fff',
+  },
+  floatingLabel: {
+    position: 'absolute',
+    top: 4,
+    left: 0,
+    fontSize: 10,
+    color: '#999',
+    fontWeight: '500',
+  },
+  dropdownText: {
+    fontSize: 13,
+    color: '#333',
+    paddingTop: 8,
   },
 });
 

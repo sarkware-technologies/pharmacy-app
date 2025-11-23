@@ -52,6 +52,7 @@ const CustomInput = ({
                 useNativeDriver: true,
             }),
         ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -63,6 +64,7 @@ const CustomInput = ({
                 useNativeDriver: false,
             }).start();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value]);
 
     // Handle focus/blur for floating label

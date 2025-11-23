@@ -48,7 +48,7 @@ const App = () => {
                     </View>
                 )}
             </View>
-            <Toast />
+            <Toast topOffset={60} />
         </Provider>
     );
 };

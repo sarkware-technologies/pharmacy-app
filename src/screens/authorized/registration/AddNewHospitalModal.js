@@ -1,3 +1,4 @@
+/* eslint-disable no-dupe-keys */
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -18,6 +19,8 @@ import { colors } from '../../../styles/colors';
 import Toast from 'react-native-toast-message';
 import { customerAPI } from '../../../api/customer';
 import FileUploadComponent from '../../../components/FileUploadComponent';
+import AddressInputWithLocation from '../../../components/AddressInputWithLocation';
+import CustomInput from '../../../components/CustomInput';
 import {AppText,AppInput} from "../../../components"
 
 const DOC_TYPES = {
@@ -28,9 +31,10 @@ const DOC_TYPES = {
 };
 
 
-const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, categoryId, subCategoryId }) => {
+const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, categoryId, subCategoryId, pharmacyName }) => {
   const [hospitalForm, setHospitalForm] = useState({
-    licenseType: 'Individual Hospital',
+    category: 'Private',
+    subCategory: 'Individual Hospital',
     registrationCertificate: '',
     registrationNumber: '',
     registrationDate: '',
@@ -60,6 +64,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
   const [verificationStatus, setVerificationStatus] = useState({
     mobile: false,
     email: false,
+    pan: false,
   });
 
   // Date picker
@@ -123,6 +128,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
   useEffect(() => {
     loadInitialData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadStates = async () => {
@@ -184,7 +190,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
   const resetForm = () => {
     setHospitalForm({
-      licenseType: 'Individual Hospital',
+      category: 'Private',
+      subCategory: 'Individual Hospital',
       registrationCertificate: '',
       registrationNumber: '',
       registrationDate: '',
@@ -202,7 +209,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       state: '',
       stateId: null,
       mobileNumber: '',
-      emailAddress: 'sddivya123@gmail.com',
+      emailAddress: '',
       panFile: null,
       panNumber: '',
       gstFile: null,
@@ -212,7 +219,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     setCities([]);
     setDocumentIds({});
     setUploadedDocs([]);
-    setVerificationStatus({ mobile: false, email: false });
+    setVerificationStatus({ mobile: false, email: false, pan: false });
     setSelectedDate(new Date());
   };
 
@@ -284,7 +291,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to send OTP. Please try again.',
+        text2: error.response?.data?.message || error.message || 'Failed to send OTP. Please try again.',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -346,7 +353,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         Toast.show({
           type: 'error',
           text1: 'Invalid OTP',
-          text2: 'Please enter the correct OTP',
+          text2: response.message || 'Please enter the correct OTP',
         });
       }
     } catch (error) {
@@ -354,7 +361,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to validate OTP. Please try again.',
+        text2: error.response?.data?.message || error.message || 'Failed to validate OTP. Please try again.',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -475,8 +482,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     // Pincode validation
     if (!hospitalForm.pincode || hospitalForm.pincode.trim() === '') {
       newErrors.pincode = 'Pincode is required';
-    } else if (!/^\d{6}$/.test(hospitalForm.pincode)) {
-      newErrors.pincode = 'Pincode must be 6 digits';
+    } else if (!/^[1-9]\d{5}$/.test(hospitalForm.pincode)) {
+      newErrors.pincode = 'Valid 6-digit pincode is required';
     }
     
     // Area validation
@@ -551,8 +558,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     setLoading(true);
 
     try {
-      // Determine subCategoryId based on license type
-      const subCatId = hospitalForm.licenseType === 'Clinic' ? 3 : 1;
+      // Determine subCategoryId based on sub category
+      const subCatId = hospitalForm.subCategory === 'Clinic' ? 3 : 1;
 
       // Prepare registration payload matching the API structure
       const registrationData = {
@@ -662,39 +669,65 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       onRequestClose={handleClose}
     >
       <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <Icon name="close" size={20} color="#666" />
+          </TouchableOpacity>
+          <AppText style={styles.modalTitle}>Add Hospital account</AppText>
+        </View>
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.modalHeader}>
-            <AppText style={styles.modalTitle}>Add Hospital Account</AppText>
-            <TouchableOpacity onPress={handleClose}>
-              <AppText style={styles.modalCloseButton}>✕</AppText>
+
+          {/* Category Section */}
+          <AppText style={styles.categoryLabel}>Category <AppText style={styles.categoryPlaceholder}>(Select Any One)</AppText></AppText>
+          <View style={styles.radioGroupHorizontal}>
+            <TouchableOpacity 
+              style={styles.radioOptionHorizontal}
+              onPress={() => setHospitalForm(prev => ({ ...prev, category: 'Private' }))}
+            >
+              <View style={[styles.radioCircle, hospitalForm.category === 'Private' && styles.radioCircleSelected]}>
+                {hospitalForm.category === 'Private' && <View style={styles.radioInner} />}
+              </View>
+              <AppText style={styles.radioLabel}>Private</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.radioOptionHorizontal}
+              onPress={() => setHospitalForm(prev => ({ ...prev, category: 'Govt' }))}
+            >
+              <View style={[styles.radioCircle, hospitalForm.category === 'Govt' && styles.radioCircleSelected]}>
+                {hospitalForm.category === 'Govt' && <View style={styles.radioInner} />}
+              </View>
+              <AppText style={styles.radioLabel}>Govt</AppText>
             </TouchableOpacity>
           </View>
 
-          {/* License Details */}
-          <AppText style={styles.modalSectionLabel}>Licence Details <AppText style={styles.mandatory}>*</AppText></AppText>
-          <View style={styles.radioGroup}>
+          {/* Sub Category Section */}
+          <AppText style={styles.categoryLabel}>Sub Category <AppText style={styles.categoryPlaceholder}>(Select Any One)</AppText></AppText>
+          <View style={styles.radioGroupHorizontal}>
             <TouchableOpacity 
-              style={styles.radioOption}
-              onPress={() => setHospitalForm(prev => ({ ...prev, licenseType: 'Clinic' }))}
+              style={styles.radioOptionHorizontal}
+              onPress={() => setHospitalForm(prev => ({ ...prev, subCategory: 'Clinic' }))}
             >
-              <View style={[styles.radioCircle, hospitalForm.licenseType === 'Clinic' && styles.radioCircleSelected]} />
-              <AppText style={styles.radioLabel}>Clinic</AppText>
+              <View style={[styles.radioCircle, hospitalForm.subCategory === 'Clinic' && styles.radioCircleSelected]}>
+                {hospitalForm.subCategory === 'Clinic' && <View style={styles.radioInner} />}
+              </View>
+              <AppText style={styles.radioLabel}>Clinics</AppText>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.radioOption}
-              onPress={() => setHospitalForm(prev => ({ ...prev, licenseType: 'Individual Hospital' }))}
+              style={styles.radioOptionHorizontal}
+              onPress={() => setHospitalForm(prev => ({ ...prev, subCategory: 'Individual Hospital' }))}
             >
-              <View style={[styles.radioCircle, hospitalForm.licenseType === 'Individual Hospital' && styles.radioCircleSelected]} />
+              <View style={[styles.radioCircle, hospitalForm.subCategory === 'Individual Hospital' && styles.radioCircleSelected]}>
+                {hospitalForm.subCategory === 'Individual Hospital' && <View style={styles.radioInner} />}
+              </View>
               <AppText style={styles.radioLabel}>Individual Hospital</AppText>
             </TouchableOpacity>
           </View>
 
           {/* Registration Certificate */}
-          <AppText style={styles.modalFieldLabel}>Registration Certificate <AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
-            placeholder="Upload registration certificate"
+            placeholder="Registration Certificate *"
             accept={['pdf', 'jpg', 'png']}
-            maxSize={10 * 1024 * 1024}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
             initialFile={hospitalForm.registrationCertificate}
             onFileUpload={(file) => handleFileUpload('registrationCertificate', file)}
@@ -704,10 +737,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           {hospitalErrors.registrationCertificate && (
             <AppText style={styles.errorText}>{hospitalErrors.registrationCertificate}</AppText>
           )}
-          <AppInput
-            style={[styles.modalInput, { marginBottom: hospitalErrors.registrationNumber ? 5 : 10 }, hospitalErrors.registrationNumber && styles.inputError]}
-            placeholder="Registration Number *"
-            placeholderTextColor="#999"
+          <CustomInput
+            placeholder="Registration Number"
             value={hospitalForm.registrationNumber}
             onChangeText={(text) => {
               setHospitalForm(prev => ({ ...prev, registrationNumber: text }));
@@ -715,10 +746,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 setHospitalErrors(prev => ({ ...prev, registrationNumber: null }));
               }
             }}
+            mandatory={true}
+            error={hospitalErrors.registrationNumber}
           />
-          {hospitalErrors.registrationNumber && (
-            <AppText style={styles.errorText}>{hospitalErrors.registrationNumber}</AppText>
-          )}
           <TouchableOpacity 
             style={[styles.modalInput, { marginBottom: hospitalErrors.registrationDate ? 5 : 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, hospitalErrors.registrationDate && styles.inputError]}
             onPress={() => setShowDatePicker(true)}
@@ -741,11 +771,10 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           )}
 
           {/* Image */}
-          <AppText style={styles.modalFieldLabel}>Image <AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
-            placeholder="Upload Hospital Image"
+            placeholder="Hospital Image *"
             accept={['jpg', 'png', 'jpeg']}
-            maxSize={10 * 1024 * 1024}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.HOSPITAL_IMAGE}
             initialFile={hospitalForm.image}
             onFileUpload={(file) => handleFileUpload('image', file)}
@@ -758,10 +787,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
           {/* General Details */}
           <AppText style={styles.modalSectionLabel}>General Details <AppText style={styles.mandatory}>*</AppText></AppText>
-          <AppInput
-            style={[styles.modalInput, { marginBottom: hospitalErrors.hospitalName ? 5 : 10 }, hospitalErrors.hospitalName && styles.inputError]}
-            placeholder="Enter hospital name *"
-            placeholderTextColor="#999"
+          <CustomInput
+            placeholder="Hospital name"
             value={hospitalForm.hospitalName}
             onChangeText={(text) => {
               setHospitalForm(prev => ({ ...prev, hospitalName: text }));
@@ -769,23 +796,18 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 setHospitalErrors(prev => ({ ...prev, hospitalName: null }));
               }
             }}
+            mandatory={true}
+            error={hospitalErrors.hospitalName}
           />
-          {hospitalErrors.hospitalName && (
-            <AppText style={styles.errorText}>{hospitalErrors.hospitalName}</AppText>
-          )}
 
-          <AppInput
-            style={[styles.modalInput, { marginBottom: 10 }]}
-            placeholder="Enter short name"
-            placeholderTextColor="#999"
+          <CustomInput
+            placeholder="Short name"
             value={hospitalForm.shortName}
             onChangeText={(text) => setHospitalForm(prev => ({ ...prev, shortName: text }))}
           />
 
-          <AppInput
-            style={[styles.modalInput, { marginBottom: hospitalErrors.address1 ? 5 : 10 }, hospitalErrors.address1 && styles.inputError]}
-            placeholder="Address 1 *"
-            placeholderTextColor="#999"
+          <AddressInputWithLocation
+            label="Address 1"
             value={hospitalForm.address1}
             onChangeText={(text) => {
               setHospitalForm(prev => ({ ...prev, address1: text }));
@@ -793,39 +815,94 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 setHospitalErrors(prev => ({ ...prev, address1: null }));
               }
             }}
+            placeholder="Address 1 *"
+            error={hospitalErrors.address1}
+            mandatory={true}
+            onLocationSelect={(locationData) => {
+              console.log('Location selected:', locationData);
+              
+              // Update address field with full address
+              setHospitalForm(prev => ({ ...prev, address1: locationData.address }));
+              
+              // Update pincode
+              if (locationData.pincode) {
+                setHospitalForm(prev => ({ ...prev, pincode: locationData.pincode }));
+                setHospitalErrors(prev => ({ ...prev, pincode: null }));
+              }
+              
+              // Update area
+              if (locationData.area) {
+                setHospitalForm(prev => ({ ...prev, area: locationData.area }));
+                setHospitalErrors(prev => ({ ...prev, area: null }));
+              }
+              
+              // Match and update state
+              if (locationData.state && states.length > 0) {
+                const matchedState = states.find(s => 
+                  s.name.toLowerCase().includes(locationData.state.toLowerCase()) ||
+                  locationData.state.toLowerCase().includes(s.name.toLowerCase())
+                );
+                if (matchedState) {
+                  setHospitalForm(prev => ({
+                    ...prev,
+                    state: matchedState.name,
+                    stateId: matchedState.id,
+                  }));
+                  setHospitalErrors(prev => ({ ...prev, state: null }));
+                  loadCities(matchedState.id);
+                }
+              }
+              
+              // Match and update city
+              if (locationData.city) {
+                setTimeout(() => {
+                  const matchedCity = cities.find(c => 
+                    c.name.toLowerCase().includes(locationData.city.toLowerCase()) ||
+                    locationData.city.toLowerCase().includes(c.name.toLowerCase())
+                  );
+                  if (matchedCity) {
+                    setHospitalForm(prev => ({
+                      ...prev,
+                      city: matchedCity.name,
+                      cityId: matchedCity.id,
+                    }));
+                    setHospitalErrors(prev => ({ ...prev, city: null }));
+                  }
+                }, 500);
+              }
+              
+              // Clear all address field errors
+              setHospitalErrors(prev => ({
+                ...prev,
+                address1: null,
+                pincode: null,
+                area: null,
+                city: null,
+                state: null,
+              }));
+            }}
           />
-          {hospitalErrors.address1 && (
-            <AppText style={styles.errorText}>{hospitalErrors.address1}</AppText>
-          )}
 
-          <AppInput
-            style={[styles.modalInput, { marginBottom: 10 }]}
+          <CustomInput
             placeholder="Address 2"
-            placeholderTextColor="#999"
             value={hospitalForm.address2}
             onChangeText={(text) => setHospitalForm(prev => ({ ...prev, address2: text }))}
           />
 
-          <AppInput
-            style={[styles.modalInput, { marginBottom: 10 }]}
+          <CustomInput
             placeholder="Address 3"
-            placeholderTextColor="#999"
             value={hospitalForm.address3}
             onChangeText={(text) => setHospitalForm(prev => ({ ...prev, address3: text }))}
           />
 
-          <AppInput
-            style={[styles.modalInput, { marginBottom: 10 }]}
+          <CustomInput
             placeholder="Address 4"
-            placeholderTextColor="#999"
             value={hospitalForm.address4}
             onChangeText={(text) => setHospitalForm(prev => ({ ...prev, address4: text }))}
           />
 
-          <AppInput
-            style={[styles.modalInput, { marginBottom: hospitalErrors.pincode ? 5 : 10 }, hospitalErrors.pincode && styles.inputError]}
-            placeholder="Pincode *"
-            placeholderTextColor="#999"
+          <CustomInput
+            placeholder="Pincode"
             keyboardType="numeric"
             maxLength={6}
             value={hospitalForm.pincode}
@@ -837,189 +914,208 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 }
               }
             }}
+            mandatory={true}
+            error={hospitalErrors.pincode}
           />
-          {hospitalErrors.pincode && (
-            <AppText style={styles.errorText}>{hospitalErrors.pincode}</AppText>
-          )}
 
-          <AppInput
-            style={[styles.modalInput, { marginBottom: hospitalErrors.area ? 5 : 10 }, hospitalErrors.area && styles.inputError]}
-            placeholder="Enter Area *"
-            placeholderTextColor="#999"
+          <CustomInput
+            placeholder="Area"
             value={hospitalForm.area}
             onChangeText={(text) => {
               setHospitalForm(prev => ({ ...prev, area: text }));
               setHospitalErrors(prev => ({ ...prev, area: null }));
             }}
+            mandatory={true}
+            error={hospitalErrors.area}
           />
-          {hospitalErrors.area && (
-            <AppText style={styles.errorText}>{hospitalErrors.area}</AppText>
-          )}
 
-          <TouchableOpacity 
-            style={[styles.dropdown, { marginBottom: hospitalErrors.city ? 5 : 10 }, hospitalErrors.city && styles.inputError]}
+          <TouchableOpacity
+            activeOpacity={0.7}
             onPress={() => setShowCityModal(true)}
           >
-            <AppText style={[styles.dropdownPlaceholder, hospitalForm.city && { color: '#333' }]}>
-              {hospitalForm.city || 'City *'}
-            </AppText>
-            <Icon name="arrow-drop-down" size={24} color="#999" />
+            <CustomInput
+              placeholder="City"
+              value={hospitalForm.city}
+              onChangeText={() => {}}
+              mandatory={true}
+              error={hospitalErrors.city}
+              editable={false}
+              pointerEvents="none"
+              rightComponent={
+                <Icon name="arrow-drop-down" size={24} color="#999" />
+              }
+            />
           </TouchableOpacity>
-          {hospitalErrors.city && (
-            <AppText style={styles.errorText}>{hospitalErrors.city}</AppText>
-          )}
 
-          <TouchableOpacity 
-            style={[styles.dropdown, { marginBottom: hospitalErrors.state ? 5 : 10 }, hospitalErrors.state && styles.inputError]}
+          <TouchableOpacity
+            activeOpacity={0.7}
             onPress={() => setShowStateModal(true)}
           >
-            <AppText style={[styles.dropdownPlaceholder, hospitalForm.state && { color: '#333' }]}>
-              {hospitalForm.state || 'State *'}
-            </AppText>
-            <Icon name="arrow-drop-down" size={24} color="#999" />
+            <CustomInput
+              placeholder="State"
+              value={hospitalForm.state}
+              onChangeText={() => {}}
+              mandatory={true}
+              error={hospitalErrors.state}
+              editable={false}
+              pointerEvents="none"
+              rightComponent={
+                <Icon name="arrow-drop-down" size={24} color="#999" />
+              }
+            />
           </TouchableOpacity>
-          {hospitalErrors.state && (
-            <AppText style={styles.errorText}>{hospitalErrors.state}</AppText>
-          )}
 
           {/* Security Details */}
           <AppText style={styles.modalSectionLabel}>Security Details <AppText style={styles.mandatory}>*</AppText></AppText>
-          <AppText style={styles.modalFieldLabel}>Mobile number <AppText style={styles.mandatory}>*</AppText></AppText>
-          <View style={[styles.inputWithButton, hospitalErrors.mobileNumber && styles.inputError]}>
-            <AppInput
-              style={styles.inputField}
-              placeholder="Mobile number*"
-              value={hospitalForm.mobileNumber}
-              onChangeText={(text) => {
-                if (/^\d{0,10}$/.test(text)) {
-                  setHospitalForm(prev => ({ ...prev, mobileNumber: text }));
-                  if (hospitalErrors.mobileNumber) {
-                    setHospitalErrors(prev => ({ ...prev, mobileNumber: null, mobileVerification: null }));
-                  }
+          <CustomInput
+            placeholder="Mobile number"
+            value={hospitalForm.mobileNumber}
+            onChangeText={(text) => {
+              if (/^\d{0,10}$/.test(text)) {
+                setHospitalForm(prev => ({ ...prev, mobileNumber: text }));
+                if (hospitalErrors.mobileNumber) {
+                  setHospitalErrors(prev => ({ ...prev, mobileNumber: null, mobileVerification: null }));
                 }
-              }}
-              keyboardType="phone-pad"
-              maxLength={10}
-              placeholderTextColor="#999"
-              editable={!verificationStatus.mobile}
-            />
-            <TouchableOpacity
-              style={[
-                styles.inlineVerifyButton,
-                verificationStatus.mobile && styles.verifiedButton,
-              ]}
-              onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
-              disabled={verificationStatus.mobile || loadingOtp.mobile}
-            >
-              {loadingOtp.mobile && !verificationStatus.mobile ? (
-                <ActivityIndicator size="small" color="#007AFF" />
-              ) : (
-                <AppText style={[
-                  styles.inlineVerifyText,
-                  verificationStatus.mobile && styles.verifiedText
-                ]}>
+              }
+            }}
+            keyboardType="phone-pad"
+            maxLength={10}
+            editable={!verificationStatus.mobile}
+            mandatory={true}
+            error={hospitalErrors.mobileNumber || hospitalErrors.mobileVerification}
+            rightComponent={
+              <TouchableOpacity
+                style={styles.inlineVerifyButton}
+                onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
+                disabled={verificationStatus.mobile || loadingOtp.mobile}
+              >
+                <AppText style={styles.inlineVerifyText}>
                   {verificationStatus.mobile ? 'Verified' : 'Verify'}
                 </AppText>
-              )}
-            </TouchableOpacity>
-          </View>
-          {(hospitalErrors.mobileNumber || hospitalErrors.mobileVerification) && (
-            <AppText style={styles.errorText}>{hospitalErrors.mobileNumber || hospitalErrors.mobileVerification}</AppText>
-          )}
+              </TouchableOpacity>
+            }
+          />
           {renderOTPInput('mobile')}
 
-          <AppText style={styles.modalFieldLabel}>Email address <AppText style={styles.mandatory}>*</AppText></AppText>
-          <View style={[styles.inputWithButton, hospitalErrors.emailAddress && styles.inputError]}>
-            <AppInput
-              style={[styles.inputField, { flex: 1 }]}
-              placeholder="Email Address"
-              value={hospitalForm.emailAddress}
-              onChangeText={(text) => {
-                setHospitalForm(prev => ({ ...prev, emailAddress: text }));
-                if (hospitalErrors.emailAddress) {
-                  setHospitalErrors(prev => ({ ...prev, emailAddress: null, emailVerification: null }));
-                }
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholderTextColor="#999"
-              editable={!verificationStatus.email}
-            />
-            <TouchableOpacity
-              style={[
-                styles.inlineVerifyButton,
-                verificationStatus.email && styles.verifiedButton,
-              ]}
-              onPress={() => !verificationStatus.email && handleVerify('email')}
-              disabled={verificationStatus.email || loadingOtp.email}
-            >
-              {loadingOtp.email && !verificationStatus.email ? (
-                <ActivityIndicator size="small" color="#007AFF" />
-              ) : (
-                <AppText style={[
-                  styles.inlineVerifyText,
-                  verificationStatus.email && styles.verifiedText
-                ]}>
+          <CustomInput
+            placeholder="Email Address"
+            value={hospitalForm.emailAddress}
+            onChangeText={(text) => {
+              setHospitalForm(prev => ({ ...prev, emailAddress: text }));
+              if (hospitalErrors.emailAddress) {
+                setHospitalErrors(prev => ({ ...prev, emailAddress: null, emailVerification: null }));
+              }
+            }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            editable={!verificationStatus.email}
+            mandatory={true}
+            error={hospitalErrors.emailAddress || hospitalErrors.emailVerification}
+            rightComponent={
+              <TouchableOpacity
+                style={styles.inlineVerifyButton}
+                onPress={() => !verificationStatus.email && handleVerify('email')}
+                disabled={verificationStatus.email || loadingOtp.email}
+              >
+                <AppText style={styles.inlineVerifyText}>
                   {verificationStatus.email ? 'Verified' : 'Verify'}
                 </AppText>
-              )}
-            </TouchableOpacity>
-          </View>
-          {(hospitalErrors.emailAddress || hospitalErrors.emailVerification) && (
-            <AppText style={styles.errorText}>{hospitalErrors.emailAddress || hospitalErrors.emailVerification}</AppText>
-          )}
+              </TouchableOpacity>
+            }
+          />
           {renderOTPInput('email')}
 
-          <AppText style={styles.modalFieldLabel}>Upload PAN <AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
-            placeholder="Upload PAN"
-            accept={['pdf', 'jpg', 'png']}
-            maxSize={10 * 1024 * 1024}
+            placeholder="Upload PAN *"
+            accept={['pdf', 'jpg', 'png', 'jpeg']}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.PAN}
             initialFile={hospitalForm.panFile}
             onFileUpload={(file) => handleFileUpload('pan', file)}
             onFileDelete={() => handleFileDelete('pan')}
             errorMessage={hospitalErrors.panFile}
+            onOcrDataExtracted={(ocrData) => {
+              console.log('PAN OCR Data:', ocrData);
+              if (ocrData.panNumber) {
+                setHospitalForm(prev => ({ ...prev, panNumber: ocrData.panNumber }));
+                setVerificationStatus(prev => ({ ...prev, pan: true }));
+              }
+            }}
           />
           {hospitalErrors.panFile && (
             <AppText style={styles.errorText}>{hospitalErrors.panFile}</AppText>
           )}
-          <AppInput
-            style={[styles.modalInput, { marginBottom: hospitalErrors.panNumber ? 5 : 10 }, hospitalErrors.panNumber && styles.inputError]}
-            placeholder="PAN number *"
-            placeholderTextColor="#999"
+          <CustomInput
+            placeholder="PAN number"
             maxLength={10}
             autoCapitalize="characters"
             value={hospitalForm.panNumber}
             onChangeText={(text) => {
-              setHospitalForm(prev => ({ ...prev, panNumber: text.toUpperCase() }));
+              const upperText = text.toUpperCase();
+              setHospitalForm(prev => ({ ...prev, panNumber: upperText }));
               if (hospitalErrors.panNumber) {
                 setHospitalErrors(prev => ({ ...prev, panNumber: null }));
               }
             }}
+            mandatory={true}
+            error={hospitalErrors.panNumber}
+            editable={!verificationStatus.pan}
+            rightComponent={
+              <TouchableOpacity
+                style={[
+                  styles.inlineVerifyButton,
+                  verificationStatus.pan && styles.verifiedButton
+                ]}
+                onPress={() => {
+                  if (!verificationStatus.pan) {
+                    // Verify PAN format
+                    if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(hospitalForm.panNumber)) {
+                      setVerificationStatus(prev => ({ ...prev, pan: true }));
+                     
+                    } else {
+                      Alert.alert('Invalid PAN', 'Please enter a valid PAN number');
+                    }
+                  }
+                }}
+                disabled={verificationStatus.pan}
+              >
+                <AppText style={[
+                  styles.inlineVerifyText,
+                  verificationStatus.pan && styles.verifiedText
+                ]}>
+                  {verificationStatus.pan ? (
+                    'Verified'
+                  ) : (
+                    <>
+                      Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                    </>
+                  )}
+                </AppText>
+              </TouchableOpacity>
+            }
           />
-          {hospitalErrors.panNumber && (
-            <AppText style={styles.errorText}>{hospitalErrors.panNumber}</AppText>
-          )}
 
-          <AppText style={styles.modalFieldLabel}>Upload GST <AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
-            placeholder="Upload GST"
-            accept={['pdf', 'jpg', 'png']}
-            maxSize={10 * 1024 * 1024}
+            placeholder="Upload GST *"
+            accept={['pdf', 'jpg', 'png', 'jpeg']}
+            maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.GST}
             initialFile={hospitalForm.gstFile}
             onFileUpload={(file) => handleFileUpload('gst', file)}
             onFileDelete={() => handleFileDelete('gst')}
             errorMessage={hospitalErrors.gstFile}
+            onOcrDataExtracted={(ocrData) => {
+              console.log('GST OCR Data:', ocrData);
+              if (ocrData.gstNumber) {
+                setHospitalForm(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
+              }
+            }}
           />
           {hospitalErrors.gstFile && (
             <AppText style={styles.errorText}>{hospitalErrors.gstFile}</AppText>
           )}
-          <AppInput
-            style={[styles.modalInput, { marginBottom: hospitalErrors.gstNumber ? 5 : 10 }, hospitalErrors.gstNumber && styles.inputError]}
-            placeholder="GST number *"
-            placeholderTextColor="#999"
+          <CustomInput
+            placeholder="GST number"
             maxLength={15}
             autoCapitalize="characters"
             value={hospitalForm.gstNumber}
@@ -1029,16 +1125,15 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 setHospitalErrors(prev => ({ ...prev, gstNumber: null }));
               }
             }}
+            mandatory={true}
+            error={hospitalErrors.gstNumber}
           />
-          {hospitalErrors.gstNumber && (
-            <AppText style={styles.errorText}>{hospitalErrors.gstNumber}</AppText>
-          )}
 
           {/* Mapping Section */}
           <AppText style={styles.modalSectionLabel}>Mapping</AppText>
-          <AppText style={styles.modalFieldLabel}>Doctor</AppText>
-          <View style={[styles.doctorBox, { marginBottom: 20 }]}>
-            <AppText style={styles.doctorBoxText}>Doctors will appear here after adding</AppText>
+          <AppText style={styles.modalFieldLabel}>Only Wholesaler</AppText>
+          <View style={[styles.mappingPharmacyBox, { marginBottom: 20 }]}>
+            <AppText style={styles.mappingPharmacyText}>{pharmacyName || 'Pharmacy name will appear here'}</AppText>
           </View>
 
           {/* Action Buttons */}
@@ -1161,18 +1256,28 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 0,
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#1A1A1A',
   },
   modalCloseButton: {
     fontSize: 24,
@@ -1180,11 +1285,15 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
   modalSectionLabel: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#1A1A1A',
     marginTop: 16,
-    marginBottom: 10,
+    marginBottom: 12,
+    paddingLeft: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF8C42',
+    marginLeft: -16,
   },
   modalFieldLabel: {
     fontSize: 13,
@@ -1196,25 +1305,54 @@ const styles = StyleSheet.create({
   mandatory: {
     color: colors.error,
   },
+  categoryLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  categoryPlaceholder: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#999',
+  },
   radioGroup: {
     marginBottom: 12,
+  },
+  radioGroupHorizontal: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    gap: 24,
   },
   radioOption: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
   },
+  radioOptionHorizontal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   radioCircle: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: colors.primary,
-    marginRight: 12,
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   radioCircleSelected: {
-    backgroundColor: colors.primary,
     borderColor: colors.primary,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
   },
   radioLabel: {
     fontSize: 14,
@@ -1383,6 +1521,19 @@ const styles = StyleSheet.create({
     color: '#999',
     fontStyle: 'italic',
   },
+  mappingPharmacyBox: {
+    padding: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.loginInputBorderColor,
+    backgroundColor: '#F5F5F5',
+    minHeight: 50,
+  },
+  mappingPharmacyText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '400',
+  },
   modalActionButtons: {
     flexDirection: 'row',
     gap: 10,
@@ -1484,24 +1635,16 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   inlineVerifyButton: {
-    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 6,
-    backgroundColor: colors.primary,
-    minWidth: 70,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  verifiedButton: {
-    backgroundColor: '#10B981',
+    paddingVertical: 6,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    marginLeft: 8,
   },
   inlineVerifyText: {
-    fontSize: 12,
-    color: '#fff',
+    fontSize: 13,
+    color: colors.primary,
     fontWeight: '600',
-  },
-  verifiedText: {
-    color: '#fff',
   },
 });
 

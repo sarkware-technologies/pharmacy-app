@@ -436,26 +436,6 @@ const CustomerDetail = ({ navigation, route }) => {
           <ChevronLeft color="#333" />
         </TouchableOpacity>
         <AppText style={styles.headerTitle}>{getCustomerName()}</AppText>
-        
-        {/* Approve/Reject buttons - only show on Details tab and if customer is PENDING with APPROVE action */}
-        {activeTab === 'details' && selectedCustomer?.statusName === 'PENDING' && selectedCustomer?.action === 'APPROVE' && (
-          <View style={styles.headerActions}>
-            <TouchableOpacity 
-              style={styles.approveHeaderButton}
-              onPress={() => setApproveModalVisible(true)}
-              disabled={actionLoading}
-            >
-              <AppText style={styles.approveHeaderButtonText}>Approve</AppText>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.rejectHeaderButton}
-              onPress={() => setRejectModalVisible(true)}
-              disabled={actionLoading}
-            >
-              <CloseCircle />
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
 
       {/* Tabs */}
@@ -697,8 +677,8 @@ const CustomerDetail = ({ navigation, route }) => {
 
       {activeTab === 'linkaged' && <LinkagedTab customerType={customerData.customerType} customerId={customerData.customerId} mappingData={selectedCustomer?.mapping} />}
 
-      {/* Action Buttons - Show only if customer is PENDING and not approved */}
-      {customer?.action === 'APPROVE' && (
+      {/* Action Buttons - Show only on Details tab and if customer action is APPROVE */}
+      {activeTab === 'details' && customer?.action === 'APPROVE' && (
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity 
             style={styles.rejectButton}

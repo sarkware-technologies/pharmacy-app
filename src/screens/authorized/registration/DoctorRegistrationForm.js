@@ -24,6 +24,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import { colors } from '../../../styles/colors';
 import CustomInput from '../../../components/CustomInput';
+import AddressInputWithLocation from '../../../components/AddressInputWithLocation';
 import FileUploadComponent from '../../../components/FileUploadComponent';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import Calendar from '../../../components/icons/Calendar';
@@ -232,6 +233,7 @@ const DoctorRegistrationForm = () => {
       setOtpTimers({ mobile: 30, email: 30 });
       setVerificationStatus({ mobile: false, email: false, pan: false, gst: false });
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load states and customer groups on mount
@@ -343,7 +345,7 @@ const DoctorRegistrationForm = () => {
 
   const handleVerify = async (field) => {
     // Validate the field before showing OTP
-    if (field === 'mobile' && (!formData.mobileNumber || formData.mobileNumber.length !== 10)) {
+    if (field === 'mobile' && (!formData.mobileNumber || formData.mobileNumber.length !== 10 || !/^[6789]\d{9}$/.test(formData.mobileNumber))) {
       setErrors(prev => ({ ...prev, mobileNumber: 'Please enter valid 10-digit mobile number' }));
       return;
     }
@@ -436,7 +438,7 @@ const DoctorRegistrationForm = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to send OTP. Please try again.',
+        text2: error.response?.data?.message || error.message || 'Failed to send OTP. Please try again.',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -502,7 +504,7 @@ const DoctorRegistrationForm = () => {
         Toast.show({
           type: 'error',
           text1: 'Error',
-          text2: 'Invalid OTP. Please try again.',
+          text2: response.message || 'Invalid OTP. Please try again.',
         });
       }
     } catch (error) {
@@ -510,7 +512,7 @@ const DoctorRegistrationForm = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to verify OTP. Please try again.',
+        text2: error.response?.data?.message || error.message || 'Failed to verify OTP. Please try again.',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -657,7 +659,7 @@ const DoctorRegistrationForm = () => {
     if (!formData.address3) {
       newErrors.address3 = 'Address 3 is required';
     }
-    if (!formData.pincode || formData.pincode.length !== 6) {
+    if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode)) {
       newErrors.pincode = 'Valid 6-digit pincode is required';
     } else if (/^0+$/.test(formData.pincode)) {
       newErrors.pincode = 'Pincode cannot be all zeros';
@@ -765,11 +767,6 @@ const DoctorRegistrationForm = () => {
           panNumber: formData.panNumber,
           gstNumber: formData.gstNumber,
         },
-        mapping: {
-          hospitalIds: formData.selectedHospital ? [{ id: formData.selectedHospital.id, isNew: false }] : [],
-          pharmacyIds: formData.selectedPharmacies.map(p => ({ id: p.id, isNew: false })),
-          markAsBuyingEntity: formData.markAsBuyingEntity,
-        },
         ...(formData.stockists && formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({
             "distributorCode": stockist.code,
@@ -792,8 +789,8 @@ const DoctorRegistrationForm = () => {
         // Navigate to success screen with registration details
         navigation.navigate('RegistrationSuccess', {
           type: 'doctor',
-          registrationCode: response.data?.id || response.data?.id || 'SUCCESS',
-          customerId: response.data?.id,
+          registrationCode: response.data?.data?.id || response.data?.data?.id || 'SUCCESS',
+          customerId: response.data?.data?.id,
           codeType: 'Doctor',
         });
       } else {
@@ -945,7 +942,7 @@ const DoctorRegistrationForm = () => {
               <FileUploadComponent
                 placeholder="Upload Certificate"
                 accept={['pdf', 'jpg', 'png']}
-                maxSize={10 * 1024 * 1024}
+                maxSize={15 * 1024 * 1024}
                 docType={licenseTypes.CLINIC_REGISTRATION?.docTypeId || DOC_TYPES.CLINIC_REGISTRATION}
                 initialFile={formData.clinicRegistrationFile}
                 onFileUpload={(file) => handleFileUpload('clinicRegistrationFile', file)}
@@ -987,7 +984,7 @@ const DoctorRegistrationForm = () => {
               <FileUploadComponent
                 placeholder="Upload"
                 accept={['pdf', 'jpg', 'png']}
-                maxSize={10 * 1024 * 1024}
+                maxSize={15 * 1024 * 1024}
                 docType={licenseTypes.PRACTICE_LICENSE?.docTypeId || DOC_TYPES.PRACTICE_LICENSE}
                 initialFile={formData.practiceLicenseFile}
                 onFileUpload={(file) => handleFileUpload('practiceLicenseFile', file)}
@@ -1028,8 +1025,8 @@ const DoctorRegistrationForm = () => {
 
               <FileUploadComponent
                 placeholder="Upload Electricity/Telephone bill"
-                accept={['pdf', 'jpg', 'png']}
-                maxSize={10 * 1024 * 1024}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
+                maxSize={15 * 1024 * 1024}
                 docType={DOC_TYPES.ADDRESS_PROOF}
                 initialFile={formData.addressProofFile}
                 onFileUpload={(file) => handleFileUpload('addressProofFile', file)}
@@ -1042,7 +1039,7 @@ const DoctorRegistrationForm = () => {
               <FileUploadComponent
                 placeholder="Upload"
                 accept={['jpg', 'png', 'jpeg']}
-                maxSize={5 * 1024 * 1024}
+                maxSize={15 * 1024 * 1024}
                 docType={DOC_TYPES.CLINIC_IMAGE}
                 initialFile={formData.clinicImageFile}
                 onFileUpload={(file) => handleFileUpload('clinicImageFile', file)}
@@ -1108,7 +1105,7 @@ const DoctorRegistrationForm = () => {
                 mandatory={true}
               />
 
-              <CustomInput
+              <AddressInputWithLocation
                 placeholder="Address 1"
                 value={formData.address1}
                 onChangeText={(text) => {
@@ -1117,6 +1114,92 @@ const DoctorRegistrationForm = () => {
                 }}
                 error={errors.address1}
                 mandatory={true}
+                onLocationSelect={(locationData) => {
+                  console.log('Location selected:', locationData);
+                  
+                  // Update address field
+                  setFormData(prev => ({ ...prev, address1: locationData.address }));
+                  
+                  // Split address by commas for other address fields
+                  const addressParts = locationData.address.split(',').map(part => part.trim());
+                  const filteredParts = addressParts.filter(part => 
+                    part.toLowerCase() !== 'india' && 
+                    part !== locationData.pincode
+                  );
+                  
+                  // Update pincode
+                  if (locationData.pincode) {
+                    setFormData(prev => ({ ...prev, pincode: locationData.pincode }));
+                    setErrors(prev => ({ ...prev, pincode: null }));
+                  }
+                  
+                  // Update area
+                  if (locationData.area) {
+                    setFormData(prev => ({ ...prev, area: locationData.area }));
+                    setErrors(prev => ({ ...prev, area: null }));
+                  }
+                  
+                  // Match and update state
+                  if (locationData.state && states.length > 0) {
+                    const matchedState = states.find(s => 
+                      s.name.toLowerCase().includes(locationData.state.toLowerCase()) ||
+                      locationData.state.toLowerCase().includes(s.name.toLowerCase())
+                    );
+                    if (matchedState) {
+                      setFormData(prev => ({
+                        ...prev,
+                        state: matchedState.name,
+                        stateId: matchedState.id,
+                      }));
+                      setErrors(prev => ({ ...prev, state: null }));
+                      
+                      // Load cities for the matched state
+                      loadCities(matchedState.id);
+                    }
+                  }
+                  
+                  // Match and update city (after a short delay to ensure cities are loaded)
+                  if (locationData.city) {
+                    setTimeout(() => {
+                      const matchedCity = cities.find(c => 
+                        c.name.toLowerCase().includes(locationData.city.toLowerCase()) ||
+                        locationData.city.toLowerCase().includes(c.name.toLowerCase())
+                      );
+                      if (matchedCity) {
+                        setFormData(prev => ({
+                          ...prev,
+                          city: matchedCity.name,
+                          cityId: matchedCity.id,
+                        }));
+                        setErrors(prev => ({ ...prev, city: null }));
+                      }
+                    }, 500);
+                  }
+                  
+                  // Fill remaining address fields
+                  if (filteredParts.length > 1) {
+                    setFormData(prev => ({ ...prev, address2: filteredParts[1] || '' }));
+                  }
+                  if (filteredParts.length > 2) {
+                    setFormData(prev => ({ ...prev, address3: filteredParts[2] || '' }));
+                  }
+                  if (filteredParts.length > 3) {
+                    setFormData(prev => ({ ...prev, address4: filteredParts[3] || '' }));
+                  }
+                  
+                  // Clear all address field errors
+                  setErrors(prev => ({
+                    ...prev,
+                    address1: null,
+                    address2: null,
+                    address3: null,
+                    address4: null,
+                    pincode: null,
+                    area: null,
+                    city: null,
+                    state: null,
+                  }));
+                }}
               />
 
               <CustomInput
@@ -1308,21 +1391,24 @@ const DoctorRegistrationForm = () => {
               )}
               {renderOTPInput('email')}
 
-              {/* PAN Upload */}
               <FileUploadComponent
                 placeholder="Upload PAN"
-                accept={['pdf', 'jpg', 'png']}
-                maxSize={5 * 1024 * 1024}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
+                maxSize={15 * 1024 * 1024}
                 docType={DOC_TYPES.PAN}
                 initialFile={formData.panFile}
                 onFileUpload={(file) => handleFileUpload('panFile', file)}
                 onFileDelete={() => handleFileDelete('panFile')}
                 mandatory={true}
-
+                onOcrDataExtracted={(ocrData) => {
+                  console.log('PAN OCR Data:', ocrData);
+                  if (ocrData.panNumber) {
+                    setFormData(prev => ({ ...prev, panNumber: ocrData.panNumber }));
+                    // Auto-verify when PAN is populated from OCR
+                    setVerificationStatus(prev => ({ ...prev, pan: true }));
+                  }
+                }}
               />
-
-              {/* PAN Number */}
-
 
               <CustomInput
                 placeholder="PAN Number"
@@ -1331,25 +1417,43 @@ const DoctorRegistrationForm = () => {
                   const upperText = text.toUpperCase();
                   setFormData(prev => ({ ...prev, panNumber: upperText }));
                   setErrors(prev => ({ ...prev, panNumber: null }));
-                  // Auto-verify if valid PAN format
-                  if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upperText)) {
-                    setVerificationStatus(prev => ({ ...prev, pan: true }));
-                  } else {
-                    setVerificationStatus(prev => ({ ...prev, pan: false }));
-                  }
                 }}
                 autoCapitalize="characters"
-                maxLength={10} mandatory
+                maxLength={10}
+                mandatory
                 editable={!verificationStatus.pan}
-
+                error={errors.panNumber}
                 rightComponent={
                   <TouchableOpacity
-                    style={styles.inlineVerifyButton}
+                    style={[
+                      styles.inlineVerifyButton,
+                      verificationStatus.pan && styles.verifiedButton
+                    ]}
                     onPress={() => {
-                      Alert.alert('PAN Verification', 'PAN verified successfully!');
+                      if (!verificationStatus.pan) {
+                        // Verify PAN format
+                        if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+                          setVerificationStatus(prev => ({ ...prev, pan: true }));
+                         
+                        } else {
+                          Alert.alert('Invalid PAN', 'Please enter a valid PAN number');
+                        }
+                      }
                     }}
+                    disabled={verificationStatus.pan}
                   >
-                    <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
+                    <AppText style={[
+                      styles.inlineVerifyText,
+                      verificationStatus.pan && styles.verifiedText
+                    ]}>
+                      {verificationStatus.pan ? (
+                        'Verified'
+                      ) : (
+                        <>
+                          Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                        </>
+                      )}
+                    </AppText>
                   </TouchableOpacity>
                 }
               />
@@ -1357,22 +1461,35 @@ const DoctorRegistrationForm = () => {
               {/* GST Upload */}
               <FileUploadComponent
                 placeholder="Upload GST"
-                accept={['pdf', 'jpg', 'png']}
-                maxSize={5 * 1024 * 1024}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
+                maxSize={15 * 1024 * 1024}
                 docType={DOC_TYPES.GST}
                 initialFile={formData.gstFile}
                 onFileUpload={(file) => handleFileUpload('gstFile', file)}
                 onFileDelete={() => handleFileDelete('gstFile')}
+                onOcrDataExtracted={(ocrData) => {
+                  console.log('GST OCR Data:', ocrData);
+                  if (ocrData.gstNumber) {
+                    setFormData(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
+                    // Auto-verify if valid GST
+                    if (ocrData.isGstValid) {
+                      setVerificationStatus(prev => ({ ...prev, gst: true }));
+                    }
+                  }
+                }}
               />
 
               <CustomInput
                 placeholder="GST number"
                 value={formData.gstNumber}
                 onChangeText={(text) => {
-                  setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
+                  // Allow only letters and numbers - remove any special characters
+                  const filtered = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+                  setFormData(prev => ({ ...prev, gstNumber: filtered }));
                   setErrors(prev => ({ ...prev, gstNumber: null }));
                 }}
                 autoCapitalize="characters"
+                keyboardType="default"
                 maxLength={15}
                 mandatory={true}
                 error={errors.gstNumber}
@@ -1708,6 +1825,7 @@ const DoctorRegistrationForm = () => {
       <AddNewHospitalModal
         visible={showHospitalModal}
         onClose={() => setShowHospitalModal(false)}
+        pharmacyName={formData.doctorName}
         onSubmit={(hospital) => {
           setShowHospitalModal(false);
           // Handle hospital submission if needed
@@ -1723,6 +1841,8 @@ const DoctorRegistrationForm = () => {
       <AddNewPharmacyModal
         visible={showPharmacyModal}
         onClose={() => setShowPharmacyModal(false)}
+        pharmacyName={formData.doctorName}
+        doctorName={formData.doctorName}
         onSubmit={(pharmacy) => {
           setShowPharmacyModal(false);
           // Handle pharmacy submission if needed
@@ -2441,19 +2561,6 @@ const styles = StyleSheet.create({
   disabledText: {
     color: '#999999',
   },
-
-  inlineAsterisk: {
-    color: 'red',
-    fontSize: 16,
-    marginLeft: 2,
-  },
-
-  radioButtonContainer: {
-    flexDirection: 'row',
-    gap: 50,
-    flex: 1,
-    marginBottom: 16
-  }
 });
 
 export default DoctorRegistrationForm;
