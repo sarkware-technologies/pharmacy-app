@@ -81,7 +81,10 @@ const DoctorRegistrationForm = () => {
   const route = useRoute();
 
   // Get registration type data from route params
-  const { type, typeName, typeId, category, categoryName, categoryId, subCategory, subCategoryName, subCategoryId } = route.params || {};
+  const { 
+    type, typeName, typeId, category, categoryName, categoryId, subCategory, subCategoryName, subCategoryId,
+    mode, isEditMode, customerId, customerData, editData 
+  } = route.params || {};
 
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
@@ -342,6 +345,151 @@ const DoctorRegistrationForm = () => {
       Object.values(timers).forEach(timer => clearTimeout(timer));
     };
   }, [otpTimers, showOTP]);
+
+  // Handle Edit Mode - Populate form with existing customer data
+  useEffect(() => {
+    if (isEditMode && customerData && editData) {
+      console.log('📝 Populating form in EDIT mode');
+      console.log('Customer Data:', customerData);
+      console.log('Edit Data:', editData);
+
+      // Find license details
+      const clinicLicense = customerData.licenceDetails?.licence?.find(l => l.licenceTypeCode === 'REG' || l.docTypeId === 8);
+      const practiceLicense = customerData.licenceDetails?.licence?.find(l => l.licenceTypeCode === 'PRLIC' || l.docTypeId === 10);
+
+      // Find document files
+      const clinicRegDoc = customerData.docType?.find(d => d.doctypeId === '8');
+      const practiceLicDoc = customerData.docType?.find(d => d.doctypeId === '10');
+      const addressProofDoc = customerData.docType?.find(d => d.doctypeId === '11');
+      const clinicImageDoc = customerData.docType?.find(d => d.doctypeId === '1');
+      const panDoc = customerData.docType?.find(d => d.doctypeId === '7');
+      const gstDoc = customerData.docType?.find(d => d.doctypeId === '2');
+
+      // Format dates from ISO to DD/MM/YYYY
+      const formatDate = (isoDate) => {
+        if (!isoDate) return '';
+        const date = new Date(isoDate);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      };
+
+      // Populate form data
+      setFormData(prev => ({
+        ...prev,
+        // License Details
+        clinicRegistrationNumber: clinicLicense?.licenceNo || '',
+        clinicRegistrationDate: formatDate(clinicLicense?.licenceValidUpto) || '',
+        clinicRegistrationFile: clinicRegDoc ? {
+          uri: clinicRegDoc.s3Path,
+          name: clinicRegDoc.fileName,
+          type: clinicRegDoc.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+          id: clinicRegDoc.docId,
+          s3Path: clinicRegDoc.s3Path,
+          docTypeId: clinicRegDoc.doctypeId,
+        } : null,
+
+        practiceLicenseNumber: practiceLicense?.licenceNo || '',
+        practiceLicenseDate: formatDate(practiceLicense?.licenceValidUpto) || '',
+        practiceLicenseFile: practiceLicDoc ? {
+          uri: practiceLicDoc.s3Path,
+          name: practiceLicDoc.fileName,
+          type: practiceLicDoc.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+          id: practiceLicDoc.docId,
+          s3Path: practiceLicDoc.s3Path,
+          docTypeId: practiceLicDoc.doctypeId,
+        } : null,
+
+        addressProofFile: addressProofDoc ? {
+          uri: addressProofDoc.s3Path,
+          name: addressProofDoc.fileName,
+          type: addressProofDoc.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+          id: addressProofDoc.docId,
+          s3Path: addressProofDoc.s3Path,
+          docTypeId: addressProofDoc.doctypeId,
+        } : null,
+
+        clinicImageFile: clinicImageDoc ? {
+          uri: clinicImageDoc.s3Path,
+          name: clinicImageDoc.fileName,
+          type: 'image/jpeg',
+          id: clinicImageDoc.docId,
+          s3Path: clinicImageDoc.s3Path,
+          docTypeId: clinicImageDoc.doctypeId,
+        } : null,
+
+        // General Details
+        doctorName: customerData.generalDetails?.customerName || '',
+        speciality: customerData.generalDetails?.specialist || '',
+        clinicName: customerData.generalDetails?.clinicName || '',
+        address1: customerData.generalDetails?.address1 || '',
+        address2: customerData.generalDetails?.address2 || '',
+        address3: customerData.generalDetails?.address3 || '',
+        address4: customerData.generalDetails?.address4 || '',
+        pincode: customerData.generalDetails?.pincode ? String(customerData.generalDetails.pincode) : '',
+        area: customerData.generalDetails?.area || '',
+        city: customerData.generalDetails?.cityName || '',
+        cityId: customerData.generalDetails?.cityId || null,
+        state: customerData.generalDetails?.stateName || '',
+        stateId: customerData.generalDetails?.stateId || null,
+
+        // Security Details
+        mobileNumber: customerData.securityDetails?.mobile || '',
+        emailAddress: customerData.securityDetails?.email || '',
+        panNumber: customerData.securityDetails?.panNumber || '',
+        gstNumber: customerData.securityDetails?.gstNumber || '',
+
+        panFile: panDoc ? {
+          uri: panDoc.s3Path,
+          name: panDoc.fileName,
+          type: panDoc.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+          id: panDoc.docId,
+          s3Path: panDoc.s3Path,
+          docTypeId: panDoc.doctypeId,
+        } : null,
+
+        gstFile: gstDoc ? {
+          uri: gstDoc.s3Path,
+          name: gstDoc.fileName,
+          type: gstDoc.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+          id: gstDoc.docId,
+          s3Path: gstDoc.s3Path,
+          docTypeId: gstDoc.doctypeId,
+        } : null,
+
+        // Group Details
+        customerGroup: customerData.groupDetails?.customerGroupId || null,
+
+        // Mapping
+        selectedHospitals: customerData.mapping?.hospitals || [],
+        selectedPharmacies: customerData.mapping?.pharmacy || [],
+
+        // Suggested Distributors
+        suggestedDistributors: customerData.suggestedDistributors || [{ distributorName: '', distributorCode: '', city: '' }],
+      }));
+
+      // Set verification status if already verified
+      setVerificationStatus({
+        mobile: customerData.isMobileVerified || false,
+        email: customerData.isEmailVerified || false,
+        pan: !!customerData.securityDetails?.panNumber,
+        gst: !!customerData.securityDetails?.gstNumber,
+      });
+
+      // Set uploaded docs for submission
+      const allDocs = [];
+      if (clinicRegDoc) allDocs.push({ s3Path: clinicRegDoc.s3Path, docTypeId: clinicRegDoc.doctypeId, fileName: clinicRegDoc.fileName, id: clinicRegDoc.docId });
+      if (practiceLicDoc) allDocs.push({ s3Path: practiceLicDoc.s3Path, docTypeId: practiceLicDoc.doctypeId, fileName: practiceLicDoc.fileName, id: practiceLicDoc.docId });
+      if (addressProofDoc) allDocs.push({ s3Path: addressProofDoc.s3Path, docTypeId: addressProofDoc.doctypeId, fileName: addressProofDoc.fileName, id: addressProofDoc.docId });
+      if (clinicImageDoc) allDocs.push({ s3Path: clinicImageDoc.s3Path, docTypeId: clinicImageDoc.doctypeId, fileName: clinicImageDoc.fileName, id: clinicImageDoc.docId });
+      if (panDoc) allDocs.push({ s3Path: panDoc.s3Path, docTypeId: panDoc.doctypeId, fileName: panDoc.fileName, id: panDoc.docId });
+      if (gstDoc) allDocs.push({ s3Path: gstDoc.s3Path, docTypeId: gstDoc.doctypeId, fileName: gstDoc.fileName, id: gstDoc.docId });
+      setUploadedDocs(allDocs);
+
+      console.log('✅ Form populated successfully for edit mode');
+    }
+  }, [isEditMode, customerData, editData]);
 
   const handleVerify = async (field) => {
     // Validate the field before showing OTP
@@ -617,6 +765,77 @@ const DoctorRegistrationForm = () => {
     setFormData(prev => ({ ...prev, [field]: null }));
   };
 
+  // Handle OCR extracted data for clinic/practice license uploads
+  const handleLicenseOcrData = (ocrData) => {
+    console.log('OCR Data Received:', ocrData);
+    
+    const updates = {};
+    
+    // Populate clinic name if available
+    if (ocrData.clinicName && !formData.clinicName) {
+      updates.clinicName = ocrData.clinicName;
+    }
+    
+    // Populate address fields if available
+    if (ocrData.address && !formData.address1) {
+      updates.address1 = ocrData.address;
+    }
+    
+    // Populate registration/license number if available
+    if (ocrData.registrationNumber && !formData.clinicRegistrationNumber) {
+      updates.clinicRegistrationNumber = ocrData.registrationNumber;
+    } else if (ocrData.licenseNumber) {
+      if (!formData.clinicRegistrationNumber) {
+        updates.clinicRegistrationNumber = ocrData.licenseNumber;
+      } else if (!formData.practiceLicenseNumber) {
+        updates.practiceLicenseNumber = ocrData.licenseNumber;
+      }
+    }
+    
+    // Populate registration/issue date if available
+    if (ocrData.issueDate && !formData.clinicRegistrationDate) {
+      const parts = ocrData.issueDate.split('-');
+      if (parts.length === 3) {
+        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
+        updates.clinicRegistrationDate = formattedDate;
+      }
+    }
+    
+    // Populate expiry date if available
+    if (ocrData.expiryDate && !formData.practiceLicenseExpiryDate) {
+      const parts = ocrData.expiryDate.split('-');
+      if (parts.length === 3) {
+        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
+        updates.practiceLicenseExpiryDate = formattedDate;
+      }
+    }
+    
+    // Populate location fields if available
+    if (ocrData.city && !formData.city) {
+      updates.city = ocrData.city;
+    }
+    if (ocrData.state && !formData.state) {
+      updates.state = ocrData.state;
+    }
+    if (ocrData.pincode && !formData.pincode) {
+      updates.pincode = ocrData.pincode;
+    }
+    if (ocrData.area && !formData.area) {
+      updates.area = ocrData.area;
+    }
+    
+    // Apply all updates at once
+    if (Object.keys(updates).length > 0) {
+      setFormData(prev => ({ ...prev, ...updates }));
+      const errorUpdates = {};
+      Object.keys(updates).forEach(key => {
+        errorUpdates[key] = null;
+      });
+      setErrors(prev => ({ ...prev, ...errorUpdates }));
+    }
+  };
+
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -789,8 +1008,8 @@ const DoctorRegistrationForm = () => {
         // Navigate to success screen with registration details
         navigation.navigate('RegistrationSuccess', {
           type: 'doctor',
-          registrationCode: response.data?.data?.id || response.data?.data?.id || 'SUCCESS',
-          customerId: response.data?.data?.id,
+          registrationCode: response.data?.id || response.data?.data?.id || 'SUCCESS',
+          customerId: response.data?.id,
           codeType: 'Doctor',
         });
       } else {
@@ -947,6 +1166,7 @@ const DoctorRegistrationForm = () => {
                 initialFile={formData.clinicRegistrationFile}
                 onFileUpload={(file) => handleFileUpload('clinicRegistrationFile', file)}
                 onFileDelete={() => handleFileDelete('clinicRegistrationFile')}
+                onOcrDataExtracted={handleLicenseOcrData}
                 errorMessage={errors.clinicRegistrationFile}
               />
 
@@ -989,6 +1209,7 @@ const DoctorRegistrationForm = () => {
                 initialFile={formData.practiceLicenseFile}
                 onFileUpload={(file) => handleFileUpload('practiceLicenseFile', file)}
                 onFileDelete={() => handleFileDelete('practiceLicenseFile')}
+                onOcrDataExtracted={handleLicenseOcrData}
                 errorMessage={errors.practiceLicenseFile}
               />
 

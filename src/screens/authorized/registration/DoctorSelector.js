@@ -64,12 +64,14 @@ const DoctorSelector = () => {
         useNativeDriver: true,
       }),
     ]).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch states and doctors on component mount
   useEffect(() => {
     fetchStates();
     fetchDoctors();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch doctors when filters or search changes
@@ -80,6 +82,7 @@ const DoctorSelector = () => {
     }, 300);
     
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStates, selectedCities, searchQuery]);
 
   // Fetch cities when state is selected

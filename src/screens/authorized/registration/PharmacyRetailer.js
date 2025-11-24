@@ -105,7 +105,7 @@ const PharmacyRegistrationForm = () => {
     // Mapping
     hospitalCode: '',
     hospitalName: '',
-    selectedCategory: '', // 'groupCorporateHospital', 'doctor', or ''
+    selectedCategory: 'groupCorporateHospital', // 'groupCorporateHospital', 'doctor', or ''
     selectedHospitals: [],
     selectedDoctors: [],
 
@@ -859,6 +859,70 @@ const PharmacyRegistrationForm = () => {
     setFormData(prev => ({ ...prev, [`${field}File`]: null }));
   };
 
+  // Handle OCR extracted data for license uploads
+  const handleLicenseOcrData = (ocrData) => {
+    console.log('OCR Data Received:', ocrData);
+    
+    const updates = {};
+    
+    // Populate pharmacy name if available
+    if (ocrData.pharmacyName && !formData.pharmacyName) {
+      updates.pharmacyName = ocrData.pharmacyName;
+    }
+    
+    // Populate address fields if available
+    if (ocrData.address && !formData.address1) {
+      updates.address1 = ocrData.address;
+    }
+    
+    // Populate license number if available and field is empty
+    if (ocrData.licenseNumber) {
+      if (!formData.license20) {
+        updates.license20 = ocrData.licenseNumber;
+      } else if (!formData.license21) {
+        updates.license21 = ocrData.licenseNumber;
+      }
+    }
+    
+    // Populate location fields if available
+    if (ocrData.city && !formData.city) {
+      updates.city = ocrData.city;
+    }
+    if (ocrData.state && !formData.state) {
+      updates.state = ocrData.state;
+    }
+    if (ocrData.pincode && !formData.pincode) {
+      updates.pincode = ocrData.pincode;
+    }
+    if (ocrData.area && !formData.area) {
+      updates.area = ocrData.area;
+    }
+    
+    // Populate expiry date if available
+    if (ocrData.expiryDate) {
+      const parts = ocrData.expiryDate.split('-');
+      if (parts.length === 3) {
+        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
+        if (!formData.license20ExpiryDate) {
+          updates.license20ExpiryDate = formattedDate;
+        } else if (!formData.license21ExpiryDate) {
+          updates.license21ExpiryDate = formattedDate;
+        }
+      }
+    }
+    
+    // Apply all updates at once
+    if (Object.keys(updates).length > 0) {
+      setFormData(prev => ({ ...prev, ...updates }));
+      const errorUpdates = {};
+      Object.keys(updates).forEach(key => {
+        errorUpdates[key] = null;
+      });
+      setErrors(prev => ({ ...prev, ...errorUpdates }));
+    }
+  };
+
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
@@ -901,6 +965,7 @@ const PharmacyRegistrationForm = () => {
                 initialFile={formData.license20File}
                 onFileUpload={(file) => handleFileUpload('license20', file)}
                 onFileDelete={() => handleFileDelete('license20')}
+                onOcrDataExtracted={handleLicenseOcrData}
                 errorMessage={errors.license20File}
               />
 
@@ -948,6 +1013,7 @@ const PharmacyRegistrationForm = () => {
                 initialFile={formData.license21File}
                 onFileUpload={(file) => handleFileUpload('license21', file)}
                 onFileDelete={() => handleFileDelete('license21')}
+                onOcrDataExtracted={handleLicenseOcrData}
                 errorMessage={errors.license21File}
               />
 
@@ -1423,24 +1489,11 @@ const PharmacyRegistrationForm = () => {
                       activeOpacity={0.7}
                     >
                       {formData.selectedHospitals && formData.selectedHospitals.length > 0 ? (
-                        <View style={styles.selectedItemsContainer}>
-                          {formData.selectedHospitals.map((hospital, index) => (
-                            <View key={hospital.id} style={styles.selectedItemTag}>
-                              <AppText style={styles.selectedItemTagText}>{hospital.name}</AppText>
-                              <TouchableOpacity
-                                onPress={(e) => {
-                                  e.stopPropagation();
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    selectedHospitals: prev.selectedHospitals.filter(h => h.id !== hospital.id)
-                                  }));
-                                }}
-                                style={styles.removeTagButton}
-                              >
-                                <AppText style={styles.removeTagText}>×</AppText>
-                              </TouchableOpacity>
-                            </View>
-                          ))}
+                        <View style={styles.hospitalDropdownContainer}>
+                          <AppText style={styles.hospitalDropdownText}>
+                            {formData.selectedHospitals.map(h => h.name).join(', ')}
+                          </AppText>
+                          <Icon name="arrow-drop-down" size={24} color="#666" />
                         </View>
                       ) : (
                         <>
@@ -1602,17 +1655,17 @@ const PharmacyRegistrationForm = () => {
                     </TouchableOpacity>
                   </View>
                   <CustomInput
-                    placeholder="Name of the Stockist"
+                    placeholder={`Name of the Stockist ${index + 1}`}
                     value={stockist.name}
                     onChangeText={(text) => handleStockistChange(index, 'name', text)}
                   />
                   <CustomInput
-                    placeholder="Distributor Code"
+                    placeholder={`Distributor Code`}
                     value={stockist.code}
                     onChangeText={(text) => handleStockistChange(index, 'code', text)}
                   />
                   <CustomInput
-                    placeholder="City"
+                    placeholder={`City`}
                     value={stockist.city}
                     onChangeText={(text) => handleStockistChange(index, 'city', text)}
                   />
@@ -2500,6 +2553,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.primary,
     fontWeight: 'bold',
+  },
+  hospitalDropdownContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  hospitalDropdownText: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
   },
   selectorInput: {
     flexDirection: 'row',

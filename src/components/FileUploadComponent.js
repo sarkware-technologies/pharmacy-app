@@ -217,8 +217,8 @@ const FileUploadComponent = ({
 
     try {
       // Determine if OCR is required based on docType
-      // PAN = 7, GST = 2
-      const isOcrRequired = docType === 7 || docType === 2;
+      // PAN = 7, GST = 2/8, License 20B = 4, License 21B = 6, Registration Certificate = 8, Clinic Registration = 10
+      const isOcrRequired = docType === 7 || docType === 2 || docType === 4 || docType === 6 || docType === 8 || docType === 10;
 
       // Create FormData
       const formData = new FormData();
@@ -286,6 +286,53 @@ const FileUploadComponent = ({
             ocrData.gstNumber = uploadedFile.GSTNumber;
             ocrData.gstVerificationData = uploadedFile.verificationData;
             ocrData.isGstValid = uploadedFile.isValid;
+          }
+          
+          // Extract License/Registration details if present
+          if (uploadedFile.PharmacyName) {
+            ocrData.pharmacyName = uploadedFile.PharmacyName;
+          }
+          if (uploadedFile.HospitalName) {
+            ocrData.hospitalName = uploadedFile.HospitalName;
+          }
+          if (uploadedFile.ClinicName) {
+            ocrData.clinicName = uploadedFile.ClinicName;
+          }
+          if (uploadedFile.PharmacyAddress) {
+            ocrData.address = uploadedFile.PharmacyAddress;
+          }
+          if (uploadedFile.HospitalAddress) {
+            ocrData.address = uploadedFile.HospitalAddress;
+          }
+          if (uploadedFile.ClinicAddress) {
+            ocrData.address = uploadedFile.ClinicAddress;
+          }
+          if (uploadedFile.LicenseNumber) {
+            ocrData.licenseNumber = uploadedFile.LicenseNumber;
+          }
+          if (uploadedFile.RegistrationNumber) {
+            ocrData.registrationNumber = uploadedFile.RegistrationNumber;
+          }
+          if (uploadedFile.IssueDate) {
+            ocrData.issueDate = uploadedFile.IssueDate;
+          }
+          if (uploadedFile.ExpiryDate) {
+            ocrData.expiryDate = uploadedFile.ExpiryDate;
+          }
+          if (uploadedFile.City) {
+            ocrData.city = uploadedFile.City;
+          }
+          if (uploadedFile.State) {
+            ocrData.state = uploadedFile.State;
+          }
+          if (uploadedFile.Pincode) {
+            ocrData.pincode = uploadedFile.Pincode;
+          }
+          if (uploadedFile.Area) {
+            ocrData.area = uploadedFile.Area;
+          }
+          if (uploadedFile.isValid !== undefined) {
+            ocrData.isValid = uploadedFile.isValid;
           }
           
           // Send extracted data to parent

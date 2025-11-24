@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unstable-nested-components */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -20,6 +21,7 @@ import {AppText,AppInput} from "../../../components"
 import { fetchCustomersList, resetCustomersList, selectCustomers, selectLoadingStates } from '../../../redux/slices/customerSlice';
 import { SkeletonList } from '../../../components/SkeletonLoader';
 import FilterModal from '../../../components/FilterModal';
+import CustomerSearchResultsIcon from '../../../components/icons/CustomerSearchResultsIcon';
 
 const CustomerSearch = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -62,6 +64,7 @@ const CustomerSearch = ({ navigation }) => {
     setTimeout(() => {
       searchInputRef.current?.focus();
     }, 300);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const searchInputRef = useRef(null);
@@ -122,43 +125,98 @@ const CustomerSearch = ({ navigation }) => {
 
   const renderSearchResult = ({ item, index }) => {
     const handleViewDetails = () => {
+      console.log('Navigating to CustomerDetail with customer:', item);
       navigation.navigate('CustomerDetail', { customer: item });
     };
 
+    // Get status badge color and text based on item.statusName
+    const getStatusStyle = () => {
+      const status = item.statusName?.toUpperCase();
+      switch (status) {
+        case 'ACTIVE':
+          return { bg: '#E8F5E9', text: '#2E7D32', label: 'Active' };
+        case 'LOCKED':
+        case 'BLOCKED':
+          return { bg: '#FFEBEE', text: '#C62828', label: 'Blocked' };
+        case 'PENDING':
+          return { bg: '#FFF3E0', text: '#E65100', label: 'Pending' };
+        case 'NOT-ONBOARDED':
+          return { bg: '#E3F2FD', text: '#1565C0', label: 'Not Onboarded' };
+        case 'UN-VERIFIED':
+          return { bg: '#F3E5F5', text: '#7B1FA2', label: 'Un-Verified' };
+        case 'REJECTED':
+          return { bg: '#FFEBEE', text: '#C62828', label: 'Rejected' };
+        case 'APPROVED':
+          return { bg: '#E8F5E9', text: '#2E7D32', label: 'Approved' };
+        default:
+          return status ? { bg: '#F5F5F5', text: '#666', label: status } : null;
+      }
+    };
+
+    // Get action badge color and text based on item.action
+    const getActionStyle = () => {
+      const action = item.action?.toUpperCase();
+      switch (action) {
+        case 'APPROVE':
+          return { bg: '#E8F5E9', text: '#2E7D32', label: 'Approve' };
+        case 'REJECT':
+          return { bg: '#FFEBEE', text: '#C62828', label: 'Reject' };
+        case 'BLOCK':
+          return { bg: '#FFF3E0', text: '#E65100', label: 'Block' };
+        case 'ACCEPT':
+          return { bg: '#E3F2FD', text: '#1565C0', label: 'Accept' };
+        default:
+          return null;
+      }
+    };
+
+    const statusStyle = getStatusStyle();
+    const actionStyle = getActionStyle();
+
     return (
-      <View
+      <TouchableOpacity
         style={[
           styles.resultItem,
           {
             opacity: 1,
           },
         ]}
+        onPress={handleViewDetails}
+        activeOpacity={0.7}
       >
-        <TouchableOpacity
-          onPress={handleViewDetails}
-          activeOpacity={0.7}
-        >
-          <View style={styles.resultContent}>
-            <AppText style={styles.resultName}>{item.customerName || item.name}</AppText>
+        <View style={styles.resultContent}>
+          <AppText style={styles.resultName}>{item.customerName || item.name}</AppText>
+          <View style={styles.resultRightContent}>
+            {statusStyle && (
+              <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                <AppText style={[styles.statusBadgeText, { color: statusStyle.text }]}>
+                  {statusStyle.label}
+                </AppText>
+              </View>
+            )}
+            {actionStyle && (
+              <View style={[styles.actionBadge, { backgroundColor: actionStyle.bg }]}>
+                <AppText style={[styles.actionBadgeText, { color: actionStyle.text }]}>
+                  {actionStyle.label}
+                </AppText>
+              </View>
+            )}
             <Icon name="chevron-forward" size={20} color="#999" />
           </View>
-          <View style={styles.resultMeta}>
-            <Icon name="qr-code-outline" size={14} color="#999" />
-            <AppText style={styles.resultMetaText}>{item.customerCode || item.code}</AppText>
-            <AppText style={styles.divider}>|</AppText>
-            <AppText style={styles.resultMetaText}>{item.cityName || item.location}</AppText>
-            <AppText style={styles.divider}>|</AppText>
-            <AppText style={styles.resultMetaText}>{item.statusName || item.type}</AppText>
-            <Icon name="information-circle" size={14} color="#999" style={styles.infoIcon} />
-          </View>
-          <View style={styles.resultActions}>
-            <Icon name="call-outline" size={16} color="#999" />
-            <AppText style={styles.contactText}>{item.mobile || 'N/A'}</AppText>
-            <Icon name="mail-outline" size={16} color="#999" style={styles.mailIcon} />
-            <AppText style={styles.contactText}>{item.email || 'N/A'}</AppText>
-          </View>
-        </TouchableOpacity>
-      </View>
+        </View>
+        <View style={styles.resultMeta}>
+          <Icon name="qr-code-outline" size={14} color="#999" />
+          <AppText style={styles.resultMetaText}>{item.customerCode || item.code}</AppText>
+          <AppText style={styles.divider}>|</AppText>
+          <AppText style={styles.resultMetaText}>{item.cityName || item.location}</AppText>
+        </View>
+        <View style={styles.resultActions}>
+          <Icon name="call-outline" size={16} color="#999" />
+          <AppText style={styles.contactText}>{item.mobile || 'N/A'}</AppText>
+          <Icon name="mail-outline" size={16} color="#999" style={styles.mailIcon} />
+          <AppText style={styles.contactText}>{item.email || 'N/A'}</AppText>
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -172,7 +230,7 @@ const CustomerSearch = ({ navigation }) => {
         },
       ]}
     >
-      <Icon name="search" size={60} color="#DDD" />
+      <CustomerSearchResultsIcon />
       <AppText style={styles.emptyStateText}>Searched results will display here</AppText>
     </Animated.View>
   );
@@ -402,11 +460,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  resultRightContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  actionBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  actionBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
   resultName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
     flex: 1,
+    marginRight: 8,
   },
   resultMeta: {
     flexDirection: 'row',

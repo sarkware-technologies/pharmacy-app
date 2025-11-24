@@ -1140,8 +1140,8 @@ const PrivateRegistrationForm = () => {
           navigation.goBack();
         } else {
           navigation.navigate('RegistrationSuccess', {
-            customerCode: response?.data?.data?.id || `HOSP ${response.data.id}`,
-            customerId: response?.data?.data?.id,
+            customerCode: response?.data?.id || `HOSP ${response.data.id}`,
+            customerId: response?.data?.id,
           });
         }
       } else {
@@ -1331,6 +1331,47 @@ const PrivateRegistrationForm = () => {
                 }}
                 onFileDelete={() => {
                   setFormData(prev => ({ ...prev, licenseFile: null }));
+                }}
+                onOcrDataExtracted={(ocrData) => {
+                  console.log('OCR Data Received:', ocrData);
+                  const updates = {};
+                  
+                  if (ocrData.hospitalName && !formData.clinicName) {
+                    updates.clinicName = ocrData.hospitalName;
+                  }
+                  if (ocrData.address && !formData.address1) {
+                    updates.address1 = ocrData.address;
+                  }
+                  if (ocrData.registrationNumber && !formData.registrationNumber) {
+                    updates.registrationNumber = ocrData.registrationNumber;
+                  }
+                  if (ocrData.issueDate && !formData.registrationDate) {
+                    const parts = ocrData.issueDate.split('-');
+                    if (parts.length === 3) {
+                      updates.registrationDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    }
+                  }
+                  if (ocrData.city && !formData.city) {
+                    updates.city = ocrData.city;
+                  }
+                  if (ocrData.state && !formData.state) {
+                    updates.state = ocrData.state;
+                  }
+                  if (ocrData.pincode && !formData.pincode) {
+                    updates.pincode = ocrData.pincode;
+                  }
+                  if (ocrData.area && !formData.area) {
+                    updates.area = ocrData.area;
+                  }
+                  
+                  if (Object.keys(updates).length > 0) {
+                    setFormData(prev => ({ ...prev, ...updates }));
+                    const errorUpdates = {};
+                    Object.keys(updates).forEach(key => {
+                      errorUpdates[key] = null;
+                    });
+                    setErrors(prev => ({ ...prev, ...errorUpdates }));
+                  }
                 }}
                 errorMessage={errors.licenseFile}
               />

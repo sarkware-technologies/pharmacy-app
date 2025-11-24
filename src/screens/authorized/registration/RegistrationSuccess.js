@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import React, { useEffect, useRef } from 'react';
 import {
   View,
@@ -20,7 +21,33 @@ const { width } = Dimensions.get('window');
 const RegistrationSuccess = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { customerCode, codeType } = route.params || { customerCode: 'HSP12345', codeType: 'Customer' };
+  const { 
+    customerCode, 
+    registrationCode, 
+    codeType, 
+    type 
+  } = route.params || { customerCode: 'HSP12345', codeType: 'Customer' };
+  
+  // Determine the display code and label based on registration type
+  const code = registrationCode || customerCode || 'HSP12345';
+  
+  // Determine the code label based on type
+  const getCodeLabel = () => {
+    if (codeType) return codeType;
+    
+    switch(type) {
+      case 'hospital':
+        return 'Group Hospital';
+      case 'doctor':
+        return 'Doctor';
+      case 'pharmacy':
+        return 'Pharmacy';
+      default:
+        return 'Customer';
+    }
+  };
+  
+  const codeLabel = getCodeLabel();
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -94,6 +121,7 @@ const RegistrationSuccess = () => {
         }),
       ])
     ).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   const handleOkay = () => {
@@ -245,7 +273,7 @@ const RegistrationSuccess = () => {
             It will take upto 24 hours to approved, if we found{'\n'}
             any issue our team will get back to you
           </AppText>
-          <AppText style={styles.customerCode}>{codeType || 'Customer'} Code: {customerCode}</AppText>
+          <AppText style={styles.customerCode}>{codeLabel} Code: {code}</AppText>
         </Animated.View>
         
         {/* Spacer */}

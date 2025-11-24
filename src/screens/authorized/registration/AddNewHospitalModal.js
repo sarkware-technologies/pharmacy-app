@@ -59,6 +59,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     gstNumber: '',
     isBuyer: true,
     selectedDoctors: [],
+    stockistName: '',
+    stockistCode: '',
+    stockistCity: '',
   });
 
   const [verificationStatus, setVerificationStatus] = useState({
@@ -214,6 +217,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       panNumber: '',
       gstFile: null,
       gstNumber: '',
+      stockistName: '',
+      stockistCode: '',
+      stockistCity: '',
     });
     setHospitalErrors({});
     setCities([]);
@@ -442,11 +448,6 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     // Validate mandatory fields
     const newErrors = {};
     
-    // License Type validation
-    if (!hospitalForm.licenseType) {
-      newErrors.licenseType = 'License type is required';
-    }
-    
     // Registration Certificate validation
     if (!hospitalForm.registrationCertificate && !documentIds.registrationCertificate) {
       newErrors.registrationCertificate = 'Registration certificate is required';
@@ -603,13 +604,13 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           panNumber: hospitalForm.panNumber,
           gstNumber: hospitalForm.gstNumber,
         },
-        suggestedDistributors: [
+        suggestedDistributors: hospitalForm.stockistName || hospitalForm.stockistCode || hospitalForm.stockistCity ? [
           {
-            distributorCode: '',
-            distributorName: '',
-            city: ''
+            distributorCode: hospitalForm.stockistCode || '',
+            distributorName: hospitalForm.stockistName || '',
+            city: hospitalForm.stockistCity || ''
           }
-        ]
+        ] : []
       };
 
       console.log('Hospital registration payload:', registrationData);
@@ -723,9 +724,11 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             </TouchableOpacity>
           </View>
 
+          <AppText style={styles.modalSectionLabel}>License Details <AppText style={styles.mandatory}>*</AppText></AppText>
+
           {/* Registration Certificate */}
           <FileUploadComponent
-            placeholder="Registration Certificate *"
+            placeholder="Upload registration certificate *"
             accept={['pdf', 'jpg', 'png']}
             maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
@@ -738,7 +741,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             <AppText style={styles.errorText}>{hospitalErrors.registrationCertificate}</AppText>
           )}
           <CustomInput
-            placeholder="Registration Number"
+            placeholder="Upload registration number"
             value={hospitalForm.registrationNumber}
             onChangeText={(text) => {
               setHospitalForm(prev => ({ ...prev, registrationNumber: text }));
@@ -771,8 +774,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           )}
 
           {/* Image */}
+          <AppText style={styles.modalFieldLabelImage}>Image <AppText style={styles.mandatory}>*</AppText> </AppText>
           <FileUploadComponent
-            placeholder="Hospital Image *"
+            placeholder="Uplaod *"
             accept={['jpg', 'png', 'jpeg']}
             maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.HOSPITAL_IMAGE}
@@ -815,7 +819,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 setHospitalErrors(prev => ({ ...prev, address1: null }));
               }
             }}
-            placeholder="Address 1 *"
+            placeholder="Address 1 "
             error={hospitalErrors.address1}
             mandatory={true}
             onLocationSelect={(locationData) => {
@@ -849,7 +853,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                     stateId: matchedState.id,
                   }));
                   setHospitalErrors(prev => ({ ...prev, state: null }));
-                  loadCities(matchedState.id);
+                 // loadCities(matchedState.id);
                 }
               }
               
@@ -1136,6 +1140,24 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             <AppText style={styles.mappingPharmacyText}>{pharmacyName || 'Pharmacy name will appear here'}</AppText>
           </View>
 
+          {/* Add Stockist Section (Optional) */}
+          <AppText style={styles.modalSectionLabel}>Add Stockist (Optional)</AppText>
+          <CustomInput
+            placeholder="Name of the Stockist"
+            value={hospitalForm.stockistName}
+            onChangeText={(text) => setHospitalForm(prev => ({ ...prev, stockistName: text }))}
+          />
+          <CustomInput
+            placeholder="Distributor Code"
+            value={hospitalForm.stockistCode}
+            onChangeText={(text) => setHospitalForm(prev => ({ ...prev, stockistCode: text }))}
+          />
+          <CustomInput
+            placeholder="City"
+            value={hospitalForm.stockistCity}
+            onChangeText={(text) => setHospitalForm(prev => ({ ...prev, stockistCity: text }))}
+          />
+
           {/* Action Buttons */}
           <View style={styles.modalActionButtons}>
             <TouchableOpacity 
@@ -1285,7 +1307,7 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
   modalSectionLabel: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#1A1A1A',
     marginTop: 16,
@@ -1300,6 +1322,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
     marginTop: 12,
+    marginBottom: 6,
+  },
+  modalFieldLabelImage: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginTop: 12,
+    marginLeft: 4,
     marginBottom: 6,
   },
   mandatory: {

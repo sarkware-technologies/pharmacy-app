@@ -393,6 +393,61 @@ const GovtHospitalRegistrationForm = () => {
     setFormData(prev => ({ ...prev, [`${field}File`]: null }));
   };
 
+  // Handle OCR extracted data for registration certificate uploads
+  const handleRegistrationOcrData = (ocrData) => {
+    console.log('OCR Data Received:', ocrData);
+    
+    const updates = {};
+    
+    // Populate hospital name if available
+    if (ocrData.hospitalName && !formData.hospitalName) {
+      updates.hospitalName = ocrData.hospitalName;
+    }
+    
+    // Populate address fields if available
+    if (ocrData.address && !formData.address1) {
+      updates.address1 = ocrData.address;
+    }
+    
+    // Populate registration number if available
+    if (ocrData.registrationNumber && !formData.registrationNumber) {
+      updates.registrationNumber = ocrData.registrationNumber;
+    }
+    
+    // Populate registration date if available
+    if (ocrData.issueDate && !formData.registrationDate) {
+      const parts = ocrData.issueDate.split('-');
+      if (parts.length === 3) {
+        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
+        updates.registrationDate = formattedDate;
+      }
+    }
+    
+    // Populate location fields if available
+    if (ocrData.city && !formData.city) {
+      updates.city = ocrData.city;
+    }
+    if (ocrData.state && !formData.state) {
+      updates.state = ocrData.state;
+    }
+    if (ocrData.pincode && !formData.pincode) {
+      updates.pincode = ocrData.pincode;
+    }
+    if (ocrData.area && !formData.area) {
+      updates.area = ocrData.area;
+    }
+    
+    // Apply all updates at once
+    if (Object.keys(updates).length > 0) {
+      setFormData(prev => ({ ...prev, ...updates }));
+      const errorUpdates = {};
+      Object.keys(updates).forEach(key => {
+        errorUpdates[key] = null;
+      });
+      setErrors(prev => ({ ...prev, ...errorUpdates }));
+    }
+  };
+
   const handleOtpChange = (field, index, value) => {
     if (value.length <= 1 && /^\d*$/.test(value)) {
       const newOtpValues = { ...otpValues };
@@ -669,11 +724,12 @@ const GovtHospitalRegistrationForm = () => {
         })
       };
 
-      console.log('Registration data:', registrationData);
-
       const response = await customerAPI.createCustomer(registrationData);
 
       if (response.success) {
+
+        console.log('Registration successful:', response?.data?.id);
+
         Toast.show({
           type: 'success',
           text1: 'Registration Successful',
@@ -682,8 +738,8 @@ const GovtHospitalRegistrationForm = () => {
 
         navigation.navigate('RegistrationSuccess', {
           type: 'hospital',
-          registrationCode: response.data?.data?.id || response.data?.id || 'SUCCESS',
-          customerId: response?.data?.data?.id,
+          registrationCode: response.data?.id || response.data?.id || 'SUCCESS',
+          customerId: response?.data?.id,
         });
       } else {
         Toast.show({
@@ -783,6 +839,7 @@ const GovtHospitalRegistrationForm = () => {
           initialFile={formData.registrationCertificateFile}
           onFileUpload={(file) => handleFileUpload('registrationCertificate', file)}
           onFileDelete={() => handleFileDelete('registrationCertificate')}
+          onOcrDataExtracted={handleRegistrationOcrData}
           errorMessage={errors.registrationCertificateFile}
         />
 

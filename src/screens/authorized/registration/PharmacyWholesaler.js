@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unstable-nested-components */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -100,7 +101,7 @@ const PharmacyWholesalerForm = () => {
     // Mapping
     hospitalCode: '',
     hospitalName: '',
-    selectedCategory: '', // 'groupCorporateHospital', 'doctor', or ''
+    selectedCategory: 'groupCorporateHospital', // 'groupCorporateHospital', 'doctor', or ''
     selectedHospitals: [],
     selectedDoctors: [],
 
@@ -635,6 +636,74 @@ const PharmacyWholesalerForm = () => {
     setFormData(prev => ({ ...prev, [field]: null }));
   };
 
+  // Handle OCR extracted data for license uploads
+  const handleLicenseOcrData = (ocrData) => {
+    console.log('OCR Data Received:', ocrData);
+    
+    const updates = {};
+    
+    // Populate pharmacy name if available
+    if (ocrData.pharmacyName && !formData.pharmacyName) {
+      updates.pharmacyName = ocrData.pharmacyName;
+    }
+    
+    // Populate address fields if available
+    if (ocrData.address && !formData.address1) {
+      updates.address1 = ocrData.address;
+    }
+    
+    // Populate license number if available and field is empty
+    if (ocrData.licenseNumber) {
+      // Determine which license field to populate based on which file was just uploaded
+      // This is a simplified approach - you may need to pass additional context
+      if (!formData.license20b) {
+        updates.license20b = ocrData.licenseNumber;
+      } else if (!formData.license21b) {
+        updates.license21b = ocrData.licenseNumber;
+      }
+    }
+    
+    // Populate location fields if available
+    if (ocrData.city && !formData.city) {
+      updates.city = ocrData.city;
+    }
+    if (ocrData.state && !formData.state) {
+      updates.state = ocrData.state;
+    }
+    if (ocrData.pincode && !formData.pincode) {
+      updates.pincode = ocrData.pincode;
+    }
+    if (ocrData.area && !formData.area) {
+      updates.area = ocrData.area;
+    }
+    
+    // Populate expiry date if available
+    if (ocrData.expiryDate) {
+      // Convert date format from DD-MM-YYYY to required format
+      const parts = ocrData.expiryDate.split('-');
+      if (parts.length === 3) {
+        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
+        if (!formData.license20bExpiryDate) {
+          updates.license20bExpiryDate = formattedDate;
+        } else if (!formData.license21bExpiryDate) {
+          updates.license21bExpiryDate = formattedDate;
+        }
+      }
+    }
+    
+    // Apply all updates at once
+    if (Object.keys(updates).length > 0) {
+      setFormData(prev => ({ ...prev, ...updates }));
+      // Clear errors for auto-populated fields
+      const errorUpdates = {};
+      Object.keys(updates).forEach(key => {
+        errorUpdates[key] = null;
+      });
+      setErrors(prev => ({ ...prev, ...errorUpdates }));
+    }
+  };
+
+
   // GST validation function
   const isValidGST = gst => {
     // GST format: 2 digits (state code) + 10 alphanumeric + 1 letter + 1 digit + 1 letter = 15 characters
@@ -956,6 +1025,7 @@ const PharmacyWholesalerForm = () => {
                 initialFile={formData.license20bFile}
                 onFileUpload={file => handleFileUpload('license20bFile', file)}
                 onFileDelete={() => handleFileDelete('license20bFile')}
+                onOcrDataExtracted={handleLicenseOcrData}
                 errorMessage={errors.license20bFile}
               />
 
@@ -1018,6 +1088,7 @@ const PharmacyWholesalerForm = () => {
                 initialFile={formData.license21bFile}
                 onFileUpload={file => handleFileUpload('license21bFile', file)}
                 onFileDelete={() => handleFileDelete('license21bFile')}
+                onOcrDataExtracted={handleLicenseOcrData}
                 errorMessage={errors.license21bFile}
               />
 
@@ -1615,34 +1686,11 @@ const PharmacyWholesalerForm = () => {
                     >
                       {formData.selectedHospitals &&
                       formData.selectedHospitals.length > 0 ? (
-                        <View style={styles.selectedItemsContainer}>
-                          {formData.selectedHospitals.map(hospital => (
-                            <View
-                              key={hospital.id}
-                              style={styles.selectedItemTag}
-                            >
-                              <AppText style={styles.selectedItemTagText}>
-                                {hospital.name}
-                              </AppText>
-                              <TouchableOpacity
-                                onPress={e => {
-                                  e.stopPropagation();
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    selectedHospitals:
-                                      prev.selectedHospitals.filter(
-                                        h => h.id !== hospital.id,
-                                      ),
-                                  }));
-                                }}
-                                style={styles.removeTagButton}
-                              >
-                                <AppText style={styles.removeTagText}>
-                                  ×
-                                </AppText>
-                              </TouchableOpacity>
-                            </View>
-                          ))}
+                        <View style={styles.hospitalDropdownContainer}>
+                          <AppText style={styles.hospitalDropdownText}>
+                            {formData.selectedHospitals.map(h => h.name).join(', ')}
+                          </AppText>
+                          <Icon name="arrow-drop-down" size={24} color="#666" />
                         </View>
                       ) : (
                         <>
@@ -1828,21 +1876,21 @@ const PharmacyWholesalerForm = () => {
                     </TouchableOpacity>
                   </View>
                   <CustomInput
-                    placeholder="Name of the Stockist"
+                    placeholder={`Name of the Stockist ${index + 1}`}
                     value={stockist.name}
                     onChangeText={text =>
                       handleStockistChange(index, 'name', text)
                     }
                   />
                   <CustomInput
-                    placeholder="Distributor Code"
+                    placeholder={`Distributor Code`}
                     value={stockist.code}
                     onChangeText={text =>
                       handleStockistChange(index, 'code', text)
                     }
                   />
                   <CustomInput
-                    placeholder="City"
+                    placeholder={`City`}
                     value={stockist.city}
                     onChangeText={text =>
                       handleStockistChange(index, 'city', text)
@@ -2325,7 +2373,7 @@ const styles = StyleSheet.create({
   stockistContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    padding: 16,
+    padding: 0,
     marginBottom: 16,
   },
   stockistHeader: {
@@ -2338,6 +2386,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#333',
+    visibility: 'hidden !important',
   },
   addMoreButton: {
     paddingVertical: 8,
@@ -2566,6 +2615,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.primary,
     fontWeight: 'bold',
+  },
+  hospitalDropdownContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  hospitalDropdownText: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
   },
   selectorInput: {
     flexDirection: 'row',
