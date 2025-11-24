@@ -582,6 +582,7 @@ const FileUploadComponent = ({
 const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
+
   },
 
    asterisk: {
@@ -600,10 +601,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     minHeight: 56,
     justifyContent: 'center',
+
   },
   uploadContainerWithFile: {
     borderWidth: 0,
     backgroundColor: '#FFF5ED',
+            
   },
   uploadContainerError: {
     borderColor: colors.error,
@@ -624,6 +627,8 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
     flex: 1,
     textAlign: 'left',
+            
+
   },
   fileSelectedContainer: {
     flexDirection: 'row',
@@ -655,7 +660,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.error,
     marginTop: 4,
-    marginLeft: 4,
+    marginLeft: 4,  
+    fontFamily: "Lato-Bold",
+
+
+
   },
 
   // Modal Styles

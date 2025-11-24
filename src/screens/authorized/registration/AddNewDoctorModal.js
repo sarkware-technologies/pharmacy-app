@@ -1007,6 +1007,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
             placeholderTextColor="#999"
             value={doctorForm.address2}
             onChangeText={(text) => setDoctorForm(prev => ({ ...prev, address2: text }))}
+            mandatory
           />
 
           <AppInput
