@@ -335,7 +335,9 @@ const PharmacySelector = () => {
               })}
             </ScrollView>
           ) : (
-            <AppText style={styles.dropdownItemText}>No states available</AppText>
+            <View style={styles.dropdownEmptyContainer}>
+              <AppText style={styles.dropdownEmptyText}>No states available</AppText>
+            </View>
           )}
         </View>
       )}
@@ -366,7 +368,9 @@ const PharmacySelector = () => {
               })}
             </ScrollView>
           ) : (
-            <AppText style={styles.dropdownItemText}>No cities available</AppText>
+            <View style={styles.dropdownEmptyContainer}>
+              <AppText style={styles.dropdownEmptyText}>No cities available</AppText>
+            </View>
           )}
         </View>
       )}
@@ -564,6 +568,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     flex: 1,
+  },
+  dropdownEmptyContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  dropdownEmptyText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
   },
   searchContainer: {
     flexDirection: 'row',

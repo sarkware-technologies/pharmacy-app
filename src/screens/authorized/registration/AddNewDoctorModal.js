@@ -1262,6 +1262,9 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
               console.log('GST OCR Data:', ocrData);
               if (ocrData.gstNumber) {
                 setDoctorForm(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
+                if (ocrData.isGstValid) {
+                  setVerificationStatus(prev => ({ ...prev, gst: true }));
+                }
               }
             }}
           />

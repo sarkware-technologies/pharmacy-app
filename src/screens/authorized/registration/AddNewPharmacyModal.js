@@ -187,6 +187,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
         type: 'error',
         text1: 'Error',
         text2: 'Failed to load states',
+        position: 'top',
       });
     } finally {
       setLoadingStates(false);
@@ -221,6 +222,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
         type: 'error',
         text1: 'Error',
         text2: 'Failed to load cities',
+        position: 'top',
       });
     } finally {
       setLoadingCities(false);
@@ -370,12 +372,14 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           type: 'success',
           text1: 'Success',
           text2: `OTP sent to ${field}`,
+        position: 'top',
         });
       } else {
         Toast.show({
           type: 'error',
           text1: 'Error',
           text2: response.message || 'Failed to generate OTP',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -384,6 +388,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
         type: 'error',
         text1: 'Error',
         text2: error.response?.data?.message || error.message || 'Failed to send OTP. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -430,6 +435,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           type: 'success',
           text1: 'Success',
           text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
+        position: 'top',
         });
         
         setShowOTP(prev => ({ ...prev, [field]: false }));
@@ -446,6 +452,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           type: 'error',
           text1: 'Invalid OTP',
           text2: response.message || 'Please enter the correct OTP',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -454,6 +461,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
         type: 'error',
         text1: 'Error',
         text2: error.response?.data?.message || error.message || 'Failed to validate OTP. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -760,6 +768,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           type: 'success',
           text1: 'Pharmacy Added',
           text2: response.message || 'Pharmacy registered successfully',
+        position: 'top',
         });
 
         // Pass the created pharmacy data back to parent
@@ -781,6 +790,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           type: 'error',
           text1: 'Registration Failed',
           text2: response.details || 'Failed to register pharmacy. Please try again.',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -789,6 +799,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
         type: 'error',
         text1: 'Error',
         text2: 'An error occurred while registering the pharmacy. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoading(false);
@@ -1348,6 +1359,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
               console.log('GST OCR Data:', ocrData);
               if (ocrData.gstNumber) {
                 setPharmacyForm(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
+                if (ocrData.isGstValid) {
+                  setVerificationStatus(prev => ({ ...prev, gst: true }));
+                }
               }
             }}
           />

@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-no-undef */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -64,12 +65,14 @@ const HospitalSelector = () => {
         useNativeDriver: true,
       }),
     ]).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch states and hospitals on component mount
   useEffect(() => {
     fetchStates();
     fetchHospitals();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch hospitals when filters or search changes
@@ -77,6 +80,7 @@ const HospitalSelector = () => {
     if (!loading) {
       fetchHospitals();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStates, selectedCities, searchQuery]);
 
   // Fetch cities when state is selected
@@ -347,7 +351,9 @@ const HospitalSelector = () => {
               })}
             </ScrollView>
           ) : (
-            <AppText style={styles.dropdownItemText}>No states available</AppText>
+            <View style={styles.dropdownEmptyContainer}>
+              <AppText style={styles.dropdownEmptyText}>No states available</AppText>
+            </View>
           )}
         </View>
       )}
@@ -378,7 +384,9 @@ const HospitalSelector = () => {
               })}
             </ScrollView>
           ) : (
-            <AppText style={styles.dropdownItemText}>No cities available</AppText>
+            <View style={styles.dropdownEmptyContainer}>
+              <AppText style={styles.dropdownEmptyText}>No cities available</AppText>
+            </View>
           )}
         </View>
       )}
@@ -573,6 +581,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     flex: 1,
+  },
+  dropdownEmptyContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  dropdownEmptyText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
   },
   searchContainer: {
     flexDirection: 'row',

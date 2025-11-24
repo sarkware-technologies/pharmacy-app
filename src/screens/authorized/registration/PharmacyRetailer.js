@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unstable-nested-components */
 /* eslint-disable no-dupe-keys */
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -324,6 +325,7 @@ const PharmacyRegistrationForm = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to load states',
+        position: 'top',
       });
     }
   };
@@ -345,6 +347,7 @@ const PharmacyRegistrationForm = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to load cities',
+        position: 'top',
       });
     } finally {
       setLoadingCities(false);
@@ -417,6 +420,7 @@ const PharmacyRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `OTP sent to ${field}`,
+        position: 'top',
         });
 
         // Animate OTP container
@@ -434,6 +438,7 @@ const PharmacyRegistrationForm = () => {
             type: 'error',
             text1: 'Customer Exists',
             text2: `Customer already exists with this ${field}`,
+        position: 'top',
           });
 
           // Check if already verified
@@ -448,6 +453,7 @@ const PharmacyRegistrationForm = () => {
             type: 'error',
             text1: 'Error',
             text2: response.message || 'Failed to generate OTP',
+        position: 'top',
           });
         }
       }
@@ -456,7 +462,8 @@ const PharmacyRegistrationForm = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to send OTP. Please try again.',
+        text2:  error.message || 'Failed to send OTP. Please try again.',
+        position: 'top',
       });
     } finally {
       if (isMounted.current) {
@@ -505,6 +512,7 @@ const PharmacyRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
+        position: 'top',
         });
 
         setShowOTP(prev => ({ ...prev, [field]: false }));
@@ -522,6 +530,7 @@ const PharmacyRegistrationForm = () => {
           type: 'error',
           text1: 'Invalid OTP',
           text2: 'Please enter the correct OTP',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -530,6 +539,7 @@ const PharmacyRegistrationForm = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to validate OTP. Please try again.',
+        position: 'top',
       });
     } finally {
       if (isMounted.current) {
@@ -634,6 +644,10 @@ const PharmacyRegistrationForm = () => {
     if (!formData.stateId) newErrors.stateId = 'State is required';
     if (!formData.mobileNumber || formData.mobileNumber.length !== 10) newErrors.mobileNumber = 'Valid 10-digit mobile number is required';
     if (!verificationStatus.mobile) newErrors.mobileVerification = 'Mobile number verification is required';
+    if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
+      newErrors.emailAddress = 'Valid email address is required';
+    }
+    if (!verificationStatus.email) newErrors.emailVerification = 'Email verification is required';
     if (!formData.address2) newErrors.address2 = 'Address 2 is required';
     if (!formData.address3) newErrors.address3 = 'Address 3 is required';
     if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
@@ -662,6 +676,7 @@ const PharmacyRegistrationForm = () => {
         type: 'error',
         text1: 'Validation Error',
         text2: 'Please fill all required fields and complete verifications',
+        position: 'top',
       });
       // Scroll to first error
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
@@ -734,6 +749,7 @@ const PharmacyRegistrationForm = () => {
           type: 'success',
           text1: 'Registration Successful',
           text2: response.message || 'Customer registered successfully',
+        position: 'top',
         });
 
         // Navigate to success screen with registration details
@@ -752,6 +768,7 @@ const PharmacyRegistrationForm = () => {
             type: 'error',
             text1: 'Registration Failed',
             text2: response.message || 'Failed to register. Please try again.',
+        position: 'top',
           });
         }
       }
@@ -760,8 +777,10 @@ const PharmacyRegistrationForm = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to register. Please check your connection and try again.',
+        text2: error.message || 'Failed to register. Please check your connection and try again.',
+        position: 'top',
       });
+      setLoading(false)
     } finally {
       setRegistering(false);
     }
@@ -1313,6 +1332,9 @@ const PharmacyRegistrationForm = () => {
               />
               {errors.emailAddress && (
                 <AppText style={styles.errorText}>{errors.emailAddress}</AppText>
+              )}
+              {errors.emailVerification && (
+                <AppText style={styles.errorText}>{errors.emailVerification}</AppText>
               )}
               {renderOTPInput('email')}
 

@@ -10,21 +10,33 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { colors } from '../../styles/colors';
-import {AppText,AppInput} from "../"
+import {AppText,AppInput} from ".."
 
 const { width, height } = Dimensions.get('window');
 
 const RejectCustomerModal = ({ visible, onClose, onConfirm, customerName }) => {
   const [comment, setComment] = useState('');
+  const [error, setError] = useState('');
 
   const handleConfirm = () => {
+    if (!comment || comment.trim() === '') {
+      setError('Please enter a comment before rejecting');
+      return;
+    }
     onConfirm(comment);
     setComment('');
+    setError('');
   };
 
   const handleClose = () => {
     setComment('');
+    setError('');
     onClose();
+  };
+
+  const handleCommentChange = (text) => {
+    setComment(text);
+    if (error) setError('');
   };
 
   return (
@@ -53,15 +65,16 @@ const RejectCustomerModal = ({ visible, onClose, onConfirm, customerName }) => {
           {/* Comment Input */}
           <View style={styles.inputContainer}>
             <AppInput
-              style={styles.input}
+              style={[styles.input, error && styles.inputError]}
               placeholder="Write your comment*"
               placeholderTextColor="#999"
               multiline={true}
               numberOfLines={4}
               value={comment}
-              onChangeText={setComment}
+              onChangeText={handleCommentChange}
               textAlignVertical="top"
             />
+            {error && <AppText style={styles.errorText}>{error}</AppText>}
           </View>
 
           {/* Action Buttons */}
@@ -141,6 +154,17 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
     color: '#1F2937',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  inputError: {
+    borderColor: '#EF4444',
+    borderWidth: 1,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 6,
   },
   buttonContainer: {
     flexDirection: 'row',

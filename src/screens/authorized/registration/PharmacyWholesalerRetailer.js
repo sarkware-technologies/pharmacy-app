@@ -412,6 +412,7 @@ const PharmacyWholesalerRetailerForm = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to load states',
+        position: 'top',
       });
     }
   };
@@ -433,6 +434,7 @@ const PharmacyWholesalerRetailerForm = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to load cities',
+        position: 'top',
       });
     } finally {
       setLoadingCities(false);
@@ -488,6 +490,7 @@ const PharmacyWholesalerRetailerForm = () => {
           type: 'success',
           text1: 'OTP Sent',
           text2: response.message || 'OTP has been sent successfully',
+        position: 'top',
         });
 
         // Animate OTP container
@@ -513,15 +516,16 @@ const PharmacyWholesalerRetailerForm = () => {
             type: 'error',
             text1: 'Error',
             text2: response.message || 'Failed to generate OTP',
+        position: 'top',
           });
         }
       }
     } catch (error) {
-      console.error('OTP generation error:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to generate OTP. Please try again.',
+        text2: error.message || 'Failed to generate OTP. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -565,6 +569,7 @@ const PharmacyWholesalerRetailerForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
+        position: 'top',
         });
 
         setShowOTP(prev => ({ ...prev, [field]: false }));
@@ -581,6 +586,7 @@ const PharmacyWholesalerRetailerForm = () => {
           type: 'error',
           text1: 'Invalid OTP',
           text2: 'Please enter the correct OTP',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -589,6 +595,7 @@ const PharmacyWholesalerRetailerForm = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to validate OTP. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -689,8 +696,14 @@ const PharmacyWholesalerRetailerForm = () => {
     if (!formData.mobileNumber || !/^\d{10}$/.test(formData.mobileNumber)) {
       newErrors.mobileNumber = 'Valid mobile number is required (10 digits)';
     }
+    if (!verificationStatus.mobile) {
+      newErrors.mobileVerification = 'Mobile number verification is required';
+    }
     if (!formData.emailAddress || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress)) {
       newErrors.emailAddress = 'Valid email address is required';
+    }
+    if (!verificationStatus.email) {
+      newErrors.emailVerification = 'Email verification is required';
     }
 
     setErrors(newErrors);
@@ -715,6 +728,7 @@ const PharmacyWholesalerRetailerForm = () => {
         type: 'error',
         text1: 'Validation Error',
         text2: 'Please fill all required fields and complete verifications',
+        position: 'top',
       });
       // Scroll to first error
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
@@ -797,6 +811,7 @@ const PharmacyWholesalerRetailerForm = () => {
           type: 'success',
           text1: 'Registration Successful',
           text2: response.message || 'Customer registered successfully',
+        position: 'top',
         });
 
         // Navigate to success screen with registration details
@@ -815,6 +830,7 @@ const PharmacyWholesalerRetailerForm = () => {
             type: 'error',
             text1: 'Registration Failed',
             text2: response.message || 'Failed to register. Please try again.',
+        position: 'top',
           });
         }
       }
@@ -824,6 +840,7 @@ const PharmacyWholesalerRetailerForm = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to register. Please check your connection and try again.',
+        position: 'top',
       });
     } finally {
       setRegistering(false);
@@ -1508,6 +1525,9 @@ const PharmacyWholesalerRetailerForm = () => {
               />
               {errors.emailAddress && (
                 <AppText style={styles.errorText}>{errors.emailAddress}</AppText>
+              )}
+              {errors.emailVerification && (
+                <AppText style={styles.errorText}>{errors.emailVerification}</AppText>
               )}
               {renderOTPInput('email')}
 

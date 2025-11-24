@@ -18,15 +18,27 @@ const { width } = Dimensions.get('window');
 // Approve Customer Modal Component
 export const ApproveConfirmModal = ({ visible, onClose, onConfirm, customerName = "customer" }) => {
   const [comment, setComment] = useState('');
+  const [error, setError] = useState('');
 
   const handleConfirm = () => {
+    if (!comment || comment.trim() === '') {
+      setError('Please enter a comment before approving');
+      return;
+    }
     onConfirm(comment);
     setComment('');
+    setError('');
   };
 
   const handleCancel = () => {
     onClose();
     setComment('');
+    setError('');
+  };
+
+  const handleCommentChange = (text) => {
+    setComment(text);
+    if (error) setError('');
   };
 
   return (
@@ -100,15 +112,27 @@ export const ApproveConfirmModal = ({ visible, onClose, onConfirm, customerName 
 // Link Divisions Modal Component
 export const LinkDivisionsModal = ({ visible, onClose, onConfirm }) => {
   const [comment, setComment] = useState('');
+  const [error, setError] = useState('');
 
   const handleConfirm = () => {
+    if (!comment || comment.trim() === '') {
+      setError('Please enter a comment before linking divisions');
+      return;
+    }
     onConfirm(comment);
     setComment('');
+    setError('');
   };
 
   const handleCancel = () => {
     onClose();
     setComment('');
+    setError('');
+  };
+
+  const handleCommentChange = (text) => {
+    setComment(text);
+    if (error) setError('');
   };
 
   return (
@@ -141,15 +165,16 @@ export const LinkDivisionsModal = ({ visible, onClose, onConfirm }) => {
                 {/* Comment Input */}
                 <View style={styles.inputContainer}>
                   <AppInput
-                    style={styles.commentInput}
+                    style={[styles.commentInput, error && styles.inputError]}
                     placeholder="Write your comment"
                     placeholderTextColor="#999"
                     value={comment}
-                    onChangeText={setComment}
+                    onChangeText={handleCommentChange}
                     multiline={true}
                     textAlignVertical="top"
                   />
                   <AppText style={styles.asterisk}>*</AppText>
+                  {error && <AppText style={styles.errorText}>{error}</AppText>}
                 </View>
 
                 {/* Buttons */}
@@ -399,6 +424,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
     backgroundColor: '#FAFAFA',
+  },
+  inputError: {
+    borderColor: '#EF4444',
+    borderWidth: 1,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 6,
+    marginLeft: 4,
   },
   asterisk: {
     position: 'absolute',

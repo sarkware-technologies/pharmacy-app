@@ -253,6 +253,7 @@ const GovtHospitalRegistrationForm = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to load cities',
+        position: 'top',
       });
     } finally {
       setLoadingCities(false);
@@ -300,6 +301,7 @@ const GovtHospitalRegistrationForm = () => {
         type: 'error',
         text1: 'Invalid Mobile',
         text2: 'Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9',
+        position: 'top',
       });
       return;
     }
@@ -308,6 +310,7 @@ const GovtHospitalRegistrationForm = () => {
         type: 'error',
         text1: 'Invalid Email',
         text2: 'Please enter a valid email address',
+        position: 'top',
       });
       return;
     }
@@ -347,12 +350,14 @@ const GovtHospitalRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `OTP sent to ${field}`,
+        position: 'top',
         });
       } else {
         Toast.show({
           type: 'error',
           text1: 'Error',
           text2: response.message || 'Failed to generate OTP',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -360,7 +365,8 @@ const GovtHospitalRegistrationForm = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to send OTP. Please try again.',
+        text2: error.message || 'Failed to send OTP. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -484,6 +490,7 @@ const GovtHospitalRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
+        position: 'top',
         });
 
         setShowOTP(prev => ({ ...prev, [field]: false }));
@@ -500,6 +507,7 @@ const GovtHospitalRegistrationForm = () => {
           type: 'error',
           text1: 'Invalid OTP',
           text2: 'Please enter the correct OTP',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -508,6 +516,7 @@ const GovtHospitalRegistrationForm = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to validate OTP. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -622,8 +631,14 @@ const GovtHospitalRegistrationForm = () => {
     if (!formData.mobileNumber || formData.mobileNumber.length !== 10) {
       newErrors.mobileNumber = 'Valid 10-digit mobile number is required';
     }
+    if (!verificationStatus.mobile) {
+      newErrors.mobileVerification = 'Mobile number verification is required';
+    }
     if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
       newErrors.emailAddress = 'Valid email address is required';
+    }
+    if (!verificationStatus.email) {
+      newErrors.emailVerification = 'Email verification is required';
     }
     // PAN validation
     if (!formData.panNumber || formData.panNumber.trim() === '') {
@@ -734,6 +749,7 @@ const GovtHospitalRegistrationForm = () => {
           type: 'success',
           text1: 'Registration Successful',
           text2: response.message || 'Government Hospital registered successfully',
+        position: 'top',
         });
 
         navigation.navigate('RegistrationSuccess', {
@@ -746,6 +762,7 @@ const GovtHospitalRegistrationForm = () => {
           type: 'error',
           text1: 'Registration Failed',
           text2: response.details || 'Failed to register hospital. Please try again.',
+        position: 'top',
         });
       }
 
@@ -755,6 +772,7 @@ const GovtHospitalRegistrationForm = () => {
         type: 'error',
         text1: 'Error',
         text2: error + '. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoading(false);
@@ -1160,6 +1178,9 @@ const GovtHospitalRegistrationForm = () => {
               />
         {errors.emailAddress && (
           <AppText style={styles.errorText}>{errors.emailAddress}</AppText>
+        )}
+        {errors.emailVerification && (
+          <AppText style={styles.errorText}>{errors.emailVerification}</AppText>
         )}
         {renderOTPInput('email')}
 

@@ -281,6 +281,7 @@ const GroupHospitalRegistrationForm = () => {
         type: 'error',
         text1: 'Invalid Mobile',
         text2: 'Please enter a valid 10-digit mobile number',
+        position: 'top',
       });
       return;
     }
@@ -289,6 +290,7 @@ const GroupHospitalRegistrationForm = () => {
         type: 'error',
         text1: 'Invalid Mobile',
         text2: 'Please enter valid 10-digit mobile number',
+        position: 'top',
       });
       return;
     }
@@ -297,6 +299,7 @@ const GroupHospitalRegistrationForm = () => {
         type: 'error',
         text1: 'Invalid Email',
         text2: 'Please enter a valid email address',
+        position: 'top',
       });
       return;
     }
@@ -336,6 +339,7 @@ const GroupHospitalRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `OTP sent to ${field}`,
+        position: 'top',
         });
 
         // Animate OTP container
@@ -350,6 +354,7 @@ const GroupHospitalRegistrationForm = () => {
           type: 'error',
           text1: 'Error',
           text2: response.message || 'Failed to generate OTP',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -357,7 +362,8 @@ const GroupHospitalRegistrationForm = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to send OTP. Please try again.',
+        text2:  error.message || 'Failed to send OTP. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -482,6 +488,7 @@ const GroupHospitalRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
+        position: 'top',
         });
         
         setShowOTP(prev => ({ ...prev, [field]: false }));
@@ -498,6 +505,7 @@ const GroupHospitalRegistrationForm = () => {
           type: 'error',
           text1: 'Invalid OTP',
           text2: 'Please enter the correct OTP',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -506,6 +514,7 @@ const GroupHospitalRegistrationForm = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to validate OTP. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -608,8 +617,14 @@ const GroupHospitalRegistrationForm = () => {
     if (!formData.mobileNumber || formData.mobileNumber.length !== 10) {
       newErrors.mobileNumber = 'Valid 10-digit mobile number is required';
     }
+    if (!verificationStatus.mobile) {
+      newErrors.mobileVerification = 'Mobile number verification is required';
+    }
     if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
       newErrors.emailAddress = 'Valid email address is required';
+    }
+    if (!verificationStatus.email) {
+      newErrors.emailVerification = 'Email verification is required';
     }
 
     // PAN validation
@@ -715,6 +730,7 @@ const GroupHospitalRegistrationForm = () => {
           type: 'success',
           text1: 'Registration Successful',
           text2: response.message || 'Group Hospital registered successfully',
+        position: 'top',
         });
 
         navigation.navigate('RegistrationSuccess', {
@@ -727,6 +743,7 @@ const GroupHospitalRegistrationForm = () => {
           type: 'error',
           text1: 'Registration Failed',
           text2: response.details || 'Failed to register hospital. Please try again.',
+        position: 'top',
         });
       }
       
@@ -736,6 +753,7 @@ const GroupHospitalRegistrationForm = () => {
         type: 'error',
         text1: 'Error',
         text2: error + '. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoading(false);
@@ -1070,13 +1088,14 @@ const GroupHospitalRegistrationForm = () => {
               <AppText style={styles.inlineVerifyText}>Verify<AppText style={styles.inlineAsterisk}>*</AppText></AppText>
             </TouchableOpacity>
           }
-        />
+          />
         {errors.emailAddress && (
           <AppText style={styles.errorText}>{errors.emailAddress}</AppText>
         )}
-        {renderOTPInput('email')}
-
-        {/* Upload PAN */}
+        {errors.emailVerification && (
+          <AppText style={styles.errorText}>{errors.emailVerification}</AppText>
+        )}
+        {renderOTPInput('email')}        {/* Upload PAN */}
         <FileUploadComponent
           placeholder="Upload PAN"
           accept={['pdf', 'jpg', 'png', 'jpeg']}

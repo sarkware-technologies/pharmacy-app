@@ -283,6 +283,7 @@ const PrivateRegistrationForm = () => {
           type: 'error',
           text1: 'Error',
           text2: 'Failed to load cities',
+        position: 'top',
         });
       } finally {
         setLoadingCities(false);
@@ -373,6 +374,7 @@ const PrivateRegistrationForm = () => {
         type: 'success',
         text1: 'Edit Mode',
         text2: 'Customer data loaded successfully',
+        position: 'top',
         position: 'bottom',
         visibilityTime: 2000,
       });
@@ -384,6 +386,7 @@ const PrivateRegistrationForm = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to load customer data: ' + error.message,
+        position: 'top',
         position: 'bottom',
       });
     }
@@ -545,6 +548,7 @@ const PrivateRegistrationForm = () => {
           type: 'success',
           text1: 'Customer data loaded',
           text2: 'You can now edit the customer details',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -553,6 +557,7 @@ const PrivateRegistrationForm = () => {
         type: 'error',
         text1: 'Failed to load customer data',
         text2: 'Please try again or contact support',
+        position: 'top',
       });
     } finally {
       setLoadingCustomerData(false);
@@ -607,6 +612,7 @@ const PrivateRegistrationForm = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to load states',
+        position: 'top',
       });
     } finally {
       setLoadingStates(false);
@@ -653,6 +659,7 @@ const PrivateRegistrationForm = () => {
           type: 'error',
           text1: 'Failed to load states',
           text2: 'Please try again later',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -661,6 +668,7 @@ const PrivateRegistrationForm = () => {
         type: 'error',
         text1: 'Error loading states',
         text2: 'Please check your connection',
+        position: 'top',
       });
     } finally {
       setLoadingStates(false);
@@ -690,6 +698,7 @@ const PrivateRegistrationForm = () => {
           type: 'error',
           text1: 'Failed to load cities',
           text2: 'Please try again later',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -698,6 +707,7 @@ const PrivateRegistrationForm = () => {
         type: 'error',
         text1: 'Error loading cities',
         text2: 'Please check your connection',
+        position: 'top',
       });
     } finally {
       setLoadingCities(false);
@@ -754,6 +764,7 @@ const PrivateRegistrationForm = () => {
           type: 'info',
           text1: 'Already Verified',
           text2: `This ${field} is already verified`,
+        position: 'top',
         });
         return;
       }
@@ -767,6 +778,7 @@ const PrivateRegistrationForm = () => {
             type: 'error',
             text1: 'Invalid Mobile Number',
             text2: 'Please enter a valid 10-digit mobile number',
+        position: 'top',
           });
           return;
         }
@@ -775,6 +787,7 @@ const PrivateRegistrationForm = () => {
             type: 'error',
             text1: 'Invalid Mobile Number',
             text2: 'Please enter valid 10-digit mobile number',
+        position: 'top',
           });
           return;
         }
@@ -785,6 +798,7 @@ const PrivateRegistrationForm = () => {
             type: 'error',
             text1: 'Invalid Email',
             text2: 'Please enter a valid email address',
+        position: 'top',
           });
           return;
         }
@@ -818,6 +832,7 @@ const PrivateRegistrationForm = () => {
           type: 'success',
           text1: 'OTP Sent',
           text2: `OTP sent to your ${field === 'mobile' ? 'mobile number' : 'email address'}`,
+        position: 'top',
         });
         
         // Animate OTP container
@@ -835,6 +850,7 @@ const PrivateRegistrationForm = () => {
             type: 'error',
             text1: 'Customer Already Exists',
             text2: `Customer with this ${field} already exists (ID: ${existingCustomer.id})`,
+        position: 'top',
             visibilityTime: 4000,
           });
         } else {
@@ -842,6 +858,7 @@ const PrivateRegistrationForm = () => {
             type: 'error',
             text1: 'OTP Generation Failed',
             text2: response.message || 'Failed to send OTP. Please try again.',
+        position: 'top',
           });
         }
       }
@@ -850,7 +867,8 @@ const PrivateRegistrationForm = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to send OTP. Please check your connection and try again.',
+        text2: error.message || 'Failed to send OTP. Please check your connection and try again.',
+        position: 'top',
       });
     }
   };
@@ -884,6 +902,7 @@ const PrivateRegistrationForm = () => {
           type: 'error',
           text1: 'Invalid OTP',
           text2: 'Please enter complete OTP',
+        position: 'top',
         });
         return;
       }
@@ -905,6 +924,7 @@ const PrivateRegistrationForm = () => {
           type: 'success',
           text1: 'Verification Successful',
           text2: `${field === 'mobile' ? 'Mobile number' : 'Email address'} verified successfully!`,
+        position: 'top',
         });
         
         // Update verification status
@@ -923,6 +943,7 @@ const PrivateRegistrationForm = () => {
           type: 'error',
           text1: 'Verification Failed',
           text2: 'Invalid OTP. Please try again.',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -931,6 +952,7 @@ const PrivateRegistrationForm = () => {
         type: 'error',
         text1: 'Verification Error',
         text2: 'Failed to verify OTP. Please try again.',
+        position: 'top',
       });
     }
   };
@@ -1041,6 +1063,7 @@ const PrivateRegistrationForm = () => {
         type: 'error',
         text1: 'Validation Error',
         text2: 'Please fill all required fields and complete verifications',
+        position: 'top',
       });
       scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: true });
       return;
@@ -1133,6 +1156,8 @@ const PrivateRegistrationForm = () => {
             `Customer updated successfully` : 
             `Customer registered with code: ${response.data.code || response.data.id}`,
           visibilityTime: 5000,
+          position: 'top',
+
         });
         
         // Navigate to success page or back to list
@@ -1157,6 +1182,7 @@ const PrivateRegistrationForm = () => {
           type: 'error',
           text1: 'Invalid GST Number',
           text2: 'Please enter a valid GST number (e.g., 27ABCDE1234F1Z5)',
+        position: 'top',
           visibilityTime: 5000,
         });
       } else {
@@ -1164,6 +1190,7 @@ const PrivateRegistrationForm = () => {
           type: 'error',
           text1: isEditMode ? 'Update Failed' : 'Registration Failed',
           text2: error.message || 'Failed to process. Please try again.',
+        position: 'top',
           visibilityTime: 5000,
         });
       }
@@ -1774,6 +1801,7 @@ const PrivateRegistrationForm = () => {
                     type: 'info',
                     text1: 'Fetch GST',
                     text2: 'Fetching GST details from PAN...',
+        position: 'top',
                   });
                   // Here you would call API to fetch GST from PAN
                   // and populate the GST dropdown options

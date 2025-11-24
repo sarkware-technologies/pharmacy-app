@@ -15,6 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
 import AppText from "../../../components/AppText"
 import SunLogo from '../../../components/icons/SunLogo';
+import SuccessRegistrationIcon from '../../../components/icons/SuccessRegistrationIcon';
 
 const { width } = Dimensions.get('window');
 
@@ -165,97 +166,8 @@ const RegistrationSuccess = () => {
         </Animated.View>
         
         {/* Success Icon */}
-        <Animated.View
-          style={[
-            styles.successIconContainer,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
-            },
-          ]}
-        >
-          <View style={styles.successCircle}>
-            <Animated.View
-              style={[
-                styles.checkmarkContainer,
-                {
-                  opacity: checkAnim,
-                  transform: [{ scale: checkAnim }],
-                },
-              ]}
-            >
-              <Icon name="checkmark" size={50} color="#fff" />
-            </Animated.View>
-          </View>
-          
-          {/* Decorative elements */}
-          <View style={styles.decorativeElements}>
-            <Animated.View 
-              style={[
-                styles.decorativeDot, 
-                { 
-                  top: -20, 
-                  left: -30,
-                  transform: [{ translateY: float }]
-                }
-              ]} 
-            />
-            <Animated.View 
-              style={[
-                styles.decorativePlus, 
-                { 
-                  top: -10, 
-                  right: -25,
-                  transform: [{ rotate: spin }]
-                }
-              ]}
-            >
-              <AppText style={styles.plusText}>+</AppText>
-            </Animated.View>
-            <Animated.View 
-              style={[
-                styles.decorativeCircle, 
-                { 
-                  bottom: -15, 
-                  left: -25,
-                  transform: [{ scale: checkAnim }]
-                }
-              ]} 
-            />
-            <Animated.View 
-              style={[
-                styles.decorativeCross, 
-                { 
-                  bottom: -20, 
-                  right: -30,
-                  transform: [{ rotate: spin }]
-                }
-              ]}
-            >
-              <AppText style={styles.crossText}>×</AppText>
-            </Animated.View>
-            <Animated.View 
-              style={[
-                styles.decorativeTriangle, 
-                { 
-                  top: 20, 
-                  left: -40,
-                  transform: [{ translateY: float }]
-                }
-              ]} 
-            />
-            <Animated.View 
-              style={[
-                styles.decorativeDot, 
-                { 
-                  bottom: 10, 
-                  right: -40,
-                  backgroundColor: '#87CEEB',
-                  transform: [{ scale: checkAnim }]
-                }
-              ]} 
-            />
-          </View>
+        <Animated.View>
+          <SuccessRegistrationIcon />
         </Animated.View>
         
         {/* Success Message */}
@@ -412,6 +324,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#333',
     marginBottom: 16,
+    marginTop: 20,
   },
   successMessage: {
     fontSize: 15,
@@ -423,15 +336,19 @@ const styles = StyleSheet.create({
   customerCode: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.primary,
+    color: '#111',
+    backgroundColor: '#dee2e6',
+    paddingHorizontal: 30,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   buttonContainer: {
     width: '100%',
   },
   okayButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#F7941E',
     paddingVertical: 16,
-    borderRadius: 30,
+    borderRadius: 20,
     alignItems: 'center',
     elevation: 2,
     shadowColor: '#000',

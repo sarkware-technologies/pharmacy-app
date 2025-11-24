@@ -152,6 +152,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         type: 'error',
         text1: 'Error',
         text2: 'Failed to load states',
+        position: 'top',
       });
     } finally {
       setLoadingStates(false);
@@ -185,6 +186,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         type: 'error',
         text1: 'Error',
         text2: 'Failed to load cities',
+        position: 'top',
       });
       setCities([]);
     } finally {
@@ -291,12 +293,14 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           type: 'success',
           text1: 'Success',
           text2: `OTP sent to ${field}`,
+        position: 'top',
         });
       } else {
         Toast.show({
           type: 'error',
           text1: 'Error',
           text2: response.message || 'Failed to generate OTP',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -305,6 +309,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         type: 'error',
         text1: 'Error',
         text2: error.response?.data?.message || error.message || 'Failed to send OTP. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -351,6 +356,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           type: 'success',
           text1: 'Success',
           text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
+        position: 'top',
         });
 
         setShowOTP(prev => ({ ...prev, [field]: false }));
@@ -367,6 +373,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           type: 'error',
           text1: 'Invalid OTP',
           text2: response.message || 'Please enter the correct OTP',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -375,6 +382,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         type: 'error',
         text1: 'Error',
         text2: error.response?.data?.message || error.message || 'Failed to validate OTP. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
@@ -642,6 +650,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           type: 'success',
           text1: 'Hospital Added',
           text2: response.message || 'Hospital registered successfully',
+        position: 'top',
         });
 
         // Pass the created hospital data back to parent
@@ -668,6 +677,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           type: 'error',
           text1: 'Registration Failed',
           text2: response.details || 'Failed to register hospital. Please try again.',
+        position: 'top',
         });
       }
     } catch (error) {
@@ -676,6 +686,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         type: 'error',
         text1: 'Error',
         text2: 'An error occurred while registering the hospital. Please try again.',
+        position: 'top',
       });
     } finally {
       setLoading(false);
@@ -1237,6 +1248,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
               console.log('GST OCR Data:', ocrData);
               if (ocrData.gstNumber) {
                 setHospitalForm(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
+                if (ocrData.isGstValid) {
+                  setVerificationStatus(prev => ({ ...prev, gst: true }));
+                }
               }
             }}
           />
