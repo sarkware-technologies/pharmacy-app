@@ -496,14 +496,14 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     }
 
 
-    // Address 1 validation
+    // Address 2 validation
     if (!hospitalForm.address2 || hospitalForm.address2.trim() === '') {
       newErrors.address2 = 'Address 2 is required';
     }
 
 
 
-    // Address 1 validation
+    // Address 3 validation
     if (!hospitalForm.address3 || hospitalForm.address3.trim() === '') {
       newErrors.address3 = 'Address 3 is required';
     }
@@ -1276,7 +1276,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <AppText style={styles.modalSectionLabel}>Mapping</AppText>
           <AppText style={styles.modalFieldLabel}>Hospital</AppText>
           <View style={[styles.mappingPharmacyBox, { marginBottom: 20 }]}>
-            <AppText style={styles.mappingPharmacyText}>{hospitalForm.hospitalName || 'Hospital name will appear here'}</AppText>
+            <AppText style={styles.mappingPharmacyText}>{pharmacyName || 'Hospital name will appear here'}</AppText>
           </View>
 
           {/* Add Stockist Section (Optional) */}
@@ -1583,14 +1583,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   errorText: {
-    // fontSize: 11,
-    // color: colors.error,
-    // marginTop: -5,
-    // marginBottom: 10,
-    // marginLeft: 4,
+    marginTop:2,
     color: colors.error,
     fontSize: 12,
-    // marginTop: 4,
     marginLeft: 4,
   },
   dropdown: {
@@ -1851,7 +1846,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    // marginBottom: 16,
+    marginBottom: 2,
     backgroundColor: '#FFFFFF',
   },
   dateText: {
@@ -1870,7 +1865,7 @@ const styles = StyleSheet.create({
   },
   inlineAsterisk: {
     color: 'red',
-    fontSize: 1,
+    fontSize: 16,
     marginLeft: 2,
   },
     optionalText: {
