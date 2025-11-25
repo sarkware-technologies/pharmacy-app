@@ -785,15 +785,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             mandatory={true}
             error={hospitalErrors.registrationNumber}
           />
-          {/* <TouchableOpacity 
-            style={[styles.modalInput, { marginBottom: hospitalErrors.registrationDate ? 5 : 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, hospitalErrors.registrationDate && styles.inputError]}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <AppText style={[styles.dropdownPlaceholder, hospitalForm.registrationDate && { color: '#333' }]}>
-              {hospitalForm.registrationDate || 'Registration date *'}
-            </AppText>
-            <Icon name="calendar-today" size={20} color="#999" />
-          </TouchableOpacity> */}
+         
           <TouchableOpacity
             style={[
               styles.datePickerInput,

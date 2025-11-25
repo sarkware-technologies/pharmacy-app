@@ -1819,6 +1819,7 @@ const GovtHospitalRegistrationForm = () => {
         visible={showAddPharmacyModal}
         onClose={() => setShowAddPharmacyModal(false)}
         hospitalName={formData.hospitalName}
+        parentHospital={true}
         onSubmit={(pharmacy) => {
           console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
           console.log('Full Response:', pharmacy);
