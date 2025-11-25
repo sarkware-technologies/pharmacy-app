@@ -121,7 +121,7 @@ const PharmacyWholesalerRetailerForm = () => {
 
     // Stockist Suggestions
     suggestedDistributors: [],
-    stockists: [],
+    stockists: [{ name: '', code: '', city: '' }],
   });
 
   // Document IDs for API submission
@@ -1885,12 +1885,13 @@ const PharmacyWholesalerRetailerForm = () => {
 
               {formData?.stockists.map((stockist, index) => (
                 <View key={index} style={styles.stockistContainer}>
-                  <View style={styles.stockistHeader}>
-                    <AppText style={styles.stockistTitle}>Stockist {index + 1}</AppText>
-                    <TouchableOpacity onPress={() => handleRemoveStockist(index)}>
-                      <Icon name="delete" size={20} color={colors.error} />
-                    </TouchableOpacity>
-                  </View>
+                  {index > 0 && (
+                    <View style={styles.stockistHeader}>
+                      <TouchableOpacity onPress={() => handleRemoveStockist(index)} style={{ marginLeft: 'auto' }}>
+                        <Icon name="delete" size={20} color={colors.error} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
                   <CustomInput
                     placeholder={`Name of the Stockist ${index + 1}`}
                     value={stockist.name}
@@ -2650,7 +2651,8 @@ const styles = StyleSheet.create({
   stockistContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 0,
     marginBottom: 16,
   }, stockistHeader: {
     flexDirection: 'row',

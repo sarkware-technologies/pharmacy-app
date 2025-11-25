@@ -26,6 +26,7 @@ import PharmacySelector from '../screens/authorized/registration/PharmacySelecto
 import PharmacyRetailerForm from '../screens/authorized/registration/PharmacyRetailer';
 import PharmacyWholesalerForm from '../screens/authorized/registration/PharmacyWholesaler';
 import PharmacyWholesalerRetailerForm from '../screens/authorized/registration/PharmacyWholesalerRetailer';
+import OnboardCustomer from '../screens/authorized/registration/OnboardCustomer';
 
 // Pricing Screens
 import RateContractList from '../screens/authorized/pricing/RateContractList';
@@ -337,6 +338,7 @@ const MainStack = () => (
     <Stack.Screen name="HospitalSelector" component={HospitalSelector} />
     <Stack.Screen name="DoctorSelector" component={DoctorSelector} />
     <Stack.Screen name="PharmacySelector" component={PharmacySelector} />
+    <Stack.Screen name="OnboardCustomer" component={OnboardCustomer} />
     {/* These are for the tab stacks - handled in BottomTabNavigator */}
     <Stack.Screen name="RateContractList" component={RateContractList} />
     <Stack.Screen name="CreateRateContract" component={CreateRateContract} />

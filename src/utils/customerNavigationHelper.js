@@ -185,18 +185,14 @@ export const transformCustomerDataForEdit = (apiData) => {
 };
 
 /**
- * Handle onboard button click - Fetch customer data and navigate to edit screen
- * This is the most efficient way as it:
- * 1. Fetches data once from API
- * 2. Transforms it immediately
- * 3. Passes both raw and transformed data to form
- * 4. Form doesn't need to fetch again
+ * Handle onboard button click - Navigate to OnboardCustomer screen
+ * This screen shows registration type in disabled mode and allows editing specific fields
  * 
  * @param {Object} navigation - React Navigation object
  * @param {String} customerId - Customer ID to fetch
  * @param {Boolean} isStaging - Whether this is from staging tab
- * @param {Function} customerAPI - Customer API instance
- * @param {Function} showToast - Toast notification function
+ * @param {Function} customerAPI - Customer API instance (optional, for backward compatibility)
+ * @param {Function} showToast - Toast notification function (optional, for backward compatibility)
  */
 export const handleOnboardCustomer = async (navigation, customerId, isStaging, customerAPI, showToast) => {
   try {
@@ -204,89 +200,53 @@ export const handleOnboardCustomer = async (navigation, customerId, isStaging, c
       customerId,
       isStaging,
       hasNavigation: !!navigation,
-      hasCustomerAPI: !!customerAPI,
     });
 
-    // Fetch customer details
-    console.log('📡 Fetching customer details from API...');
-    const response = await customerAPI.getCustomerDetails(customerId, isStaging);
-    console.log('📥 API Response:', response.success ? 'Success' : 'Failed');
+    // If customerAPI is provided, fetch customer details first
+    if (customerAPI) {
+      console.log('📡 Fetching customer details from API...');
+      const response = await customerAPI.getCustomerDetails(customerId, isStaging);
+      console.log('📥 API Response:', response.success ? 'Success' : 'Failed');
 
-    if (response.success && response.data) {
-      const customerData = response.data;
-      console.log('✅ Customer data received:', {
-        id: customerData.id,
-        type: customerData.customerType,
-        category: customerData.customerCategory,
-        subCategory: customerData.customerSubcategory,
-      });
-      
-      // Get navigation details
-      const navigationDetails = getEditNavigationScreen(customerData);
-      console.log('🧭 Navigation details:', navigationDetails);
-
-      if (navigationDetails) {
-        // Transform data for form - this makes it efficient as form receives pre-processed data
-        console.log('🔄 Transforming customer data...');
-        const transformedData = transformCustomerDataForEdit(customerData);
-        console.log('✅ Data transformed. Preview:', {
-          customerId: transformedData.customerId,
-          name: transformedData.name,
-          clinicName: transformedData.clinicName,
-          mobile: transformedData.mobile,
-          email: transformedData.email,
-          address1: transformedData.address1,
+      if (response.success && response.data) {
+        const customerData = response.data;
+        console.log('✅ Customer data received:', {
+          id: customerData.id,
+          type: customerData.customerType,
+          category: customerData.customerCategory,
         });
 
-        // Prepare navigation params
-        const navigationParams = {
-          mode: 'edit',
+        // Navigate to OnboardCustomer screen with customer data
+        navigation.navigate('OnboardCustomer', {
           customerId: customerData.id,
-          isStaging,
-          isEditMode: true,
-          // Pass raw customer data
           customerData: customerData,
-          // Pass transformed data ready for form population
-          editData: transformedData,
-          // Pass type information for reference
-          typeId: customerData.typeId,
-          typeName: customerData.customerType,
-          categoryId: customerData.categoryId,
-          categoryName: customerData.customerCategory,
-          subCategoryId: customerData.subCategoryId,
-          subCategoryName: customerData.customerSubcategory,
-        };
+          isStaging: isStaging,
+        });
 
-        console.log('🚀 Navigating to:', navigationDetails.screenName);
-        console.log('📦 Navigation params keys:', Object.keys(navigationParams));
-
-        // Navigate to edit screen with all necessary data
-        navigation.navigate(navigationDetails.screenName, navigationParams);
-
-        console.log('✅ Navigation completed successfully');
+        console.log('✅ Navigation to OnboardCustomer completed successfully');
 
         // Show success toast
         setTimeout(() => {
           showToast?.({
             type: 'success',
             text1: 'Success',
-            text2: 'Opening edit form...',
+            text2: 'Loading customer details...',
           });
         }, 100);
       } else {
-        console.error('❌ Navigation details not found for customer type');
+        console.error('❌ API response was not successful:', response);
         showToast?.({
           type: 'error',
-          text1: 'Navigation Error',
-          text2: 'Could not determine the correct form for this customer type',
+          text1: 'Error',
+          text2: response.message || 'Failed to fetch customer details',
         });
       }
     } else {
-      console.error('❌ API response was not successful:', response);
-      showToast?.({
-        type: 'error',
-        text1: 'Error',
-        text2: response.message || 'Failed to fetch customer details',
+      // Direct navigation without API call (for when data is already available)
+      console.log('🚀 Navigating to OnboardCustomer without API call');
+      navigation.navigate('OnboardCustomer', {
+        customerId: customerId,
+        isStaging: isStaging,
       });
     }
   } catch (error) {

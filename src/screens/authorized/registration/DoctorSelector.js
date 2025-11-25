@@ -410,7 +410,7 @@ const DoctorSelector = () => {
           value={searchQuery}
           onChangeText={setSearchQuery}
           onSubmitEditing={handleSearch}
-          placeholderTextColor="#999"
+          placeholderTextColor="#777777"
         />
       </View>
 

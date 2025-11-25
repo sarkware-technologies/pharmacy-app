@@ -138,7 +138,7 @@ const PrivateRegistrationForm = () => {
   });
 
   // State for managing stockists
-  const [stockists, setStockists] = useState([]);
+  const [stockists, setStockists] = useState([{ name: '', code: '', city: '' }]);
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -1919,7 +1919,7 @@ const PrivateRegistrationForm = () => {
               {formData.selectedCategory.groupCorporateHospital && (
                 <>
                   <TouchableOpacity
-                    style={styles.selectorInput}
+                    style={styles.hospitalSelectorDropdown}
                     onPress={() => {
                       navigation.navigate('HospitalSelector', {
                         selectedHospitals: formData.selectedHospitals,
@@ -1931,39 +1931,19 @@ const PrivateRegistrationForm = () => {
                     }}
                     activeOpacity={0.7}
                   >
-                    {formData.selectedHospitals && formData.selectedHospitals.length > 0 ? (
-                      <View style={styles.selectedItemsContainer}>
-                        {formData.selectedHospitals.map((hospital, index) => (
-                          <View key={hospital.id} style={styles.selectedItemTag}>
-                            <AppText style={styles.selectedItemTagText}>{hospital.name}</AppText>
-                            <TouchableOpacity
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                setFormData(prev => ({
-                                  ...prev,
-                                  selectedHospitals: prev.selectedHospitals.filter(h => h.id !== hospital.id)
-                                }));
-                              }}
-                              style={styles.removeTagButton}
-                            >
-                              <AppText style={styles.removeTagText}>×</AppText>
-                            </TouchableOpacity>
-                          </View>
-                        ))}
-                      </View>
-                    ) : (
-                      <>
-                        <AppText style={styles.selectorPlaceholder}>Search hospital name/code</AppText>                
-                        <Search />
-                      </>
-                    )}
+                    <AppText style={styles.hospitalSelectorText}>
+                      {formData.selectedHospitals && formData.selectedHospitals.length > 0
+                        ? formData.selectedHospitals.map(h => h.name).join(', ')
+                        : 'Search hospital name/code'}
+                    </AppText>
+                    <Icon name="arrow-drop-down" size={24} color="#333" />
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
-                    style={styles.addNewLink}
+                    style={styles.addNewHospitalLink}
                     onPress={() => setShowHospitalModal(true)}
                   >            
-                    <AppText style={styles.addNewLinkText}>+ Add New Group Hospital</AppText>
+                    <AppText style={styles.addNewHospitalLinkText}>+ Add New Group Hospital</AppText>
                   </TouchableOpacity>
                 </>
               )}
@@ -2094,17 +2074,18 @@ const PrivateRegistrationForm = () => {
               {/* Stockist List */}
               {stockists.map((stockist, index) => (
                 <View key={index} style={styles.stockistCard}>
-                  <View style={styles.stockistCardHeader}>
-                    <AppText style={styles.stockistCardTitle}>Stockist {index + 1}</AppText>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setStockists(prev => prev.filter((_, i) => i !== index));
-                      }}
-                      style={styles.deleteStockistButton}
-                    >
-                      <Icon name="trash-outline" size={20} color="#FF3B30" />
-                    </TouchableOpacity>
-                  </View>
+                  {index > 0 && (
+                    <View style={styles.stockistCardHeader}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setStockists(prev => prev.filter((_, i) => i !== index));
+                        }}
+                        style={[styles.deleteStockistButton, { marginLeft: 'auto' }]}
+                      >
+                        <Icon name="trash-outline" size={20} color="#FF3B30" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
                   
                   <CustomInput
                     placeholder="Name of the stockist"
@@ -2775,7 +2756,8 @@ const styles = StyleSheet.create({
   },
   stockistCard: {
     backgroundColor: '#FFFFFF',
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 0,
     marginBottom: 16,
   },
   stockistCardHeader: {
@@ -2813,6 +2795,32 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textDecorationLine: 'underline',
   },
+  hospitalSelectorDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: '#999',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
+    backgroundColor: '#fff',
+  },
+  hospitalSelectorText: {
+    fontSize: 16,
+    color: '#777777',
+    flex: 1,
+    fontWeight: '500',
+  },
+  addNewHospitalLink: {
+    marginBottom: 16,
+  },
+  addNewHospitalLinkText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+  },
   selectorInput: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2827,7 +2835,7 @@ const styles = StyleSheet.create({
   },
   selectorPlaceholder: {
     fontSize: 16,
-    color: '#999',
+    color: '#777777',
     flex: 1,
   },
   selectedItem: {

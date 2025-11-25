@@ -118,7 +118,7 @@ const GovtHospitalRegistrationForm = () => {
   });
 
   // State for managing stockists
-  const [stockists, setStockists] = useState([]);
+  const [stockists, setStockists] = useState([{ name: '', code: '', city: '' }]);
 
   // State for managing expanded hospitals in accordion
   const [expandedHospitals, setExpandedHospitals] = useState({});
@@ -1606,14 +1606,16 @@ const GovtHospitalRegistrationForm = () => {
             <View>
               <AppText style={styles.stockistCardIndex}>{index + 1}</AppText>
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                setStockists(prev => prev.filter((_, i) => i !== index));
-              }}
-              style={styles.deleteStockistButton}
-            >
-              <Icon name="trash-outline" size={20} color="#FF3B30" />
-            </TouchableOpacity>
+            {index > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  setStockists(prev => prev.filter((_, i) => i !== index));
+                }}
+                style={styles.deleteStockistButton}
+              >
+                <Icon name="trash-outline" size={20} color="#FF3B30" />
+              </TouchableOpacity>
+            )}
           </View>
 
           <CustomInput
@@ -2333,7 +2335,8 @@ const styles = StyleSheet.create({
   stockistCard: {
     backgroundColor: '#FFFFFF',
     // borderRadius: 12,
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 0,
     marginBottom: 16,
     // borderWidth: 1,
     // borderColor: '#E8E8E8',

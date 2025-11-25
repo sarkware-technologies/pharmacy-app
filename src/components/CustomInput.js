@@ -206,7 +206,9 @@ const styles = StyleSheet.create({
     input: {
         flex: 1,
         fontSize: 16,
-        color: colors.text    },
+        color: colors.text,
+        fontFamily: 'Lato-Bold',
+    },
     inputWithIcon: {
         paddingLeft: 0,
     },

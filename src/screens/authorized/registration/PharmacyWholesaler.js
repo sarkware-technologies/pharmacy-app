@@ -56,6 +56,13 @@ const PharmacyWholesalerForm = () => {
     subCategory,
     subCategoryName,
     subCategoryId,
+    mode,
+    isEditMode,
+    customerId,
+    customerData,
+    editData,
+    isOnboardMode,
+    hidePanGst,
   } = route.params || {};
 
   // State for license types fetched from API
@@ -109,7 +116,7 @@ const PharmacyWholesalerForm = () => {
     customerGroupId: 1,
 
     // Stockist Suggestions
-    stockists: [],
+    stockists: [{ name: '', code: '', city: '' }],
   });
 
   // Error state
@@ -836,7 +843,7 @@ const PharmacyWholesalerForm = () => {
         mapping: {
           hospitals:
             formData.selectedHospitals?.map(h => ({
-              id: h.id,
+              id: Number(h.id),
               isNew: false,
             })) || [],
         },
@@ -1024,6 +1031,18 @@ const PharmacyWholesalerForm = () => {
               },
             ]}
           >
+            {/* Registration Type Section - Only shown in onboard mode */}
+            {isOnboardMode && (
+              <View style={styles.section}>
+                <AppText style={styles.sectionTitle}>Registration Type</AppText>
+                <View style={styles.disabledInputContainer}>
+                  <AppText style={styles.disabledInputText}>
+                    {`${type || ''} - ${category || ''}${subCategory ? ` - ${subCategory}` : ''}`.trim()}
+                  </AppText>
+                </View>
+              </View>
+            )}
+
             {/* License Details Section */}
             <View style={[styles.section, styles.sectionTopSpacing]}>
               <AppText style={styles.sectionTitle}>
@@ -1506,129 +1525,134 @@ const PharmacyWholesalerForm = () => {
               )}
               {renderOTPInput('email')}
 
-              {/* PAN Upload */}
-              <FileUploadComponent
-                placeholder="Upload PAN"
-                accept={['pdf', 'jpg', 'png', 'jpeg']}
-                maxSize={15 * 1024 * 1024}
-                docType={DOC_TYPES.PAN}
-                initialFile={formData.panFile}
-                onFileUpload={file => handleFileUpload('panFile', file)}
-                onFileDelete={() => handleFileDelete('panFile')}
-                mandatory={true}
-                onOcrDataExtracted={ocrData => {
-                  console.log('PAN OCR Data:', ocrData);
-                  if (ocrData.panNumber) {
-                    setFormData(prev => ({
-                      ...prev,
-                      panNumber: ocrData.panNumber,
-                    }));
-                    // Auto-verify when PAN is populated from OCR
-                    setVerificationStatus(prev => ({ ...prev, pan: true }));
-                  }
-                }}
-              />
+              {/* PAN and GST fields - Hidden in onboard mode */}
+              {!hidePanGst && (
+                <>
+                  {/* PAN Upload */}
+                  <FileUploadComponent
+                    placeholder="Upload PAN"
+                    accept={['pdf', 'jpg', 'png', 'jpeg']}
+                    maxSize={15 * 1024 * 1024}
+                    docType={DOC_TYPES.PAN}
+                    initialFile={formData.panFile}
+                    onFileUpload={file => handleFileUpload('panFile', file)}
+                    onFileDelete={() => handleFileDelete('panFile')}
+                    mandatory={true}
+                    onOcrDataExtracted={ocrData => {
+                      console.log('PAN OCR Data:', ocrData);
+                      if (ocrData.panNumber) {
+                        setFormData(prev => ({
+                          ...prev,
+                          panNumber: ocrData.panNumber,
+                        }));
+                        // Auto-verify when PAN is populated from OCR
+                        setVerificationStatus(prev => ({ ...prev, pan: true }));
+                      }
+                    }}
+                  />
 
-              {/* PAN Number */}
-              <CustomInput
-                placeholder="PAN Number"
-                value={formData.panNumber}
-                onChangeText={text => {
-                  const upperText = text.toUpperCase();
-                  setFormData(prev => ({ ...prev, panNumber: upperText }));
-                  setErrors(prev => ({ ...prev, panNumber: null }));
-                }}
-                autoCapitalize="characters"
-                maxLength={10}
-                mandatory
-                editable={!verificationStatus.pan}
-                rightComponent={
-                  <TouchableOpacity
-                    style={[
-                      styles.inlineVerifyButton,
-                      verificationStatus.pan && styles.verifiedButton,
-                    ]}
-                    onPress={() => {
-                      if (!verificationStatus.pan) {
-                        // Verify PAN format
-                        if (
-                          /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)
-                        ) {
-                          setVerificationStatus(prev => ({
-                            ...prev,
-                            pan: true,
-                          }));
-                        } else {
-                          Alert.alert(
-                            'Invalid PAN',
-                            'Please enter a valid PAN number',
-                          );
+                  {/* PAN Number */}
+                  <CustomInput
+                    placeholder="PAN Number"
+                    value={formData.panNumber}
+                    onChangeText={text => {
+                      const upperText = text.toUpperCase();
+                      setFormData(prev => ({ ...prev, panNumber: upperText }));
+                      setErrors(prev => ({ ...prev, panNumber: null }));
+                    }}
+                    autoCapitalize="characters"
+                    maxLength={10}
+                    mandatory
+                    editable={!verificationStatus.pan}
+                    rightComponent={
+                      <TouchableOpacity
+                        style={[
+                          styles.inlineVerifyButton,
+                          verificationStatus.pan && styles.verifiedButton,
+                        ]}
+                        onPress={() => {
+                          if (!verificationStatus.pan) {
+                            // Verify PAN format
+                            if (
+                              /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)
+                            ) {
+                              setVerificationStatus(prev => ({
+                                ...prev,
+                                pan: true,
+                              }));
+                            } else {
+                              Alert.alert(
+                                'Invalid PAN',
+                                'Please enter a valid PAN number',
+                              );
+                            }
+                          }
+                        }}
+                        disabled={verificationStatus.pan}
+                      >
+                        <AppText
+                          style={[
+                            styles.inlineVerifyText,
+                            verificationStatus.pan && styles.verifiedText,
+                          ]}
+                        >
+                          {verificationStatus.pan ? (
+                            'Verified'
+                          ) : (
+                            <>
+                              Verify
+                              <AppText style={styles.inlineAsterisk}>*</AppText>
+                            </>
+                          )}
+                        </AppText>
+                      </TouchableOpacity>
+                    }
+                  />
+                  {errors.panNumber && (
+                    <AppText style={styles.errorText}>{errors.panNumber}</AppText>
+                  )}
+
+                  {/* GST Upload */}
+                  <FileUploadComponent
+                    placeholder="Upload GST"
+                    accept={['pdf', 'jpg', 'png', 'jpeg']}
+                    maxSize={15 * 1024 * 1024}
+                    docType={DOC_TYPES.GST}
+                    initialFile={formData.gstFile}
+                    onFileUpload={file => handleFileUpload('gstFile', file)}
+                    onFileDelete={() => handleFileDelete('gstFile')}
+                    onOcrDataExtracted={ocrData => {
+                      console.log('GST OCR Data:', ocrData);
+                      if (ocrData.gstNumber) {
+                        setFormData(prev => ({
+                          ...prev,
+                          gstNumber: ocrData.gstNumber,
+                        }));
+                        if (ocrData.isGstValid) {
+                          setVerificationStatus(prev => ({ ...prev, gst: true }));
                         }
                       }
                     }}
-                    disabled={verificationStatus.pan}
-                  >
-                    <AppText
-                      style={[
-                        styles.inlineVerifyText,
-                        verificationStatus.pan && styles.verifiedText,
-                      ]}
-                    >
-                      {verificationStatus.pan ? (
-                        'Verified'
-                      ) : (
-                        <>
-                          Verify
-                          <AppText style={styles.inlineAsterisk}>*</AppText>
-                        </>
-                      )}
-                    </AppText>
-                  </TouchableOpacity>
-                }
-              />
-              {errors.panNumber && (
-                <AppText style={styles.errorText}>{errors.panNumber}</AppText>
+                  />
+
+                  {/* GST Number */}
+                  <CustomInput
+                    placeholder="GST number"
+                    value={formData.gstNumber}
+                    onChangeText={text => {
+                      const filtered = text
+                        .replace(/[^A-Za-z0-9]/g, '')
+                        .toUpperCase();
+                      setFormData(prev => ({ ...prev, gstNumber: filtered }));
+                      setErrors(prev => ({ ...prev, gstNumber: null }));
+                    }}
+                    autoCapitalize="characters"
+                    keyboardType="default"
+                    maxLength={15}
+                    error={errors.gstNumber}
+                  />
+                </>
               )}
-
-              {/* GST Upload */}
-              <FileUploadComponent
-                placeholder="Upload GST"
-                accept={['pdf', 'jpg', 'png', 'jpeg']}
-                maxSize={15 * 1024 * 1024}
-                docType={DOC_TYPES.GST}
-                initialFile={formData.gstFile}
-                onFileUpload={file => handleFileUpload('gstFile', file)}
-                onFileDelete={() => handleFileDelete('gstFile')}
-                onOcrDataExtracted={ocrData => {
-                  console.log('GST OCR Data:', ocrData);
-                  if (ocrData.gstNumber) {
-                    setFormData(prev => ({
-                      ...prev,
-                      gstNumber: ocrData.gstNumber,
-                    }));
-                    if (ocrData.isGstValid) {
-                      setVerificationStatus(prev => ({ ...prev, gst: true }));
-                    }
-                  }
-                }}
-              />
-
-              {/* GST Number */}
-              <CustomInput
-                placeholder="GST number"
-                value={formData.gstNumber}
-                onChangeText={text => {
-                  const filtered = text
-                    .replace(/[^A-Za-z0-9]/g, '')
-                    .toUpperCase();
-                  setFormData(prev => ({ ...prev, gstNumber: filtered }));
-                  setErrors(prev => ({ ...prev, gstNumber: null }));
-                }}
-                autoCapitalize="characters"
-                keyboardType="default"
-                maxLength={15}
-                error={errors.gstNumber}
-              />
             </View>
 
             {/* Mapping Section */}
@@ -1695,7 +1719,7 @@ const PharmacyWholesalerForm = () => {
                 {formData.selectedCategory === 'groupCorporateHospital' && (
                   <>
                     <TouchableOpacity
-                      style={styles.selectorInput}
+                      style={styles.hospitalSelectorDropdown}
                       onPress={() => {
                         navigation.navigate('HospitalSelector', {
                           selectedHospitals: formData.selectedHospitals,
@@ -1709,29 +1733,19 @@ const PharmacyWholesalerForm = () => {
                       }}
                       activeOpacity={0.7}
                     >
-                      {formData.selectedHospitals &&
-                      formData.selectedHospitals.length > 0 ? (
-                        <View style={styles.hospitalDropdownContainer}>
-                          <AppText style={styles.hospitalDropdownText}>
-                            {formData.selectedHospitals.map(h => h.name).join(', ')}
-                          </AppText>
-                          <Icon name="arrow-drop-down" size={24} color="#666" />
-                        </View>
-                      ) : (
-                        <>
-                          <AppText style={styles.selectorPlaceholder}>
-                            Search hospital name/code
-                          </AppText>
-                          <Icon name="search" size={20} color="#999" />
-                        </>
-                      )}
+                      <AppText style={styles.hospitalSelectorText}>
+                        {formData.selectedHospitals && formData.selectedHospitals.length > 0
+                          ? formData.selectedHospitals.map(h => h.name).join(', ')
+                          : 'Search hospital name/code'}
+                      </AppText>
+                      <Icon name="arrow-drop-down" size={24} color="#333" />
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={styles.addNewLink}
+                      style={styles.addNewHospitalLink}
                       onPress={() => setShowAddHospitalModal(true)}
                     >
-                      <AppText style={styles.addNewLinkText}>
+                      <AppText style={styles.addNewHospitalLinkText}>
                         + Add New Hospital
                       </AppText>
                     </TouchableOpacity>
@@ -1890,16 +1904,16 @@ const PharmacyWholesalerForm = () => {
 
               {formData.stockists.map((stockist, index) => (
                 <View key={index} style={styles.stockistContainer}>
-                  <View style={styles.stockistHeader}>
-                    <AppText style={styles.stockistTitle}>
-                      Stockist {index + 1}
-                    </AppText>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveStockist(index)}
-                    >
-                      <Icon name="delete" size={20} color={colors.error} />
-                    </TouchableOpacity>
-                  </View>
+                  {index > 0 && (
+                    <View style={styles.stockistHeader}>
+                      <TouchableOpacity
+                        onPress={() => handleRemoveStockist(index)}
+                        style={{ marginLeft: 'auto' }}
+                      >
+                        <Icon name="delete" size={20} color={colors.error} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
                   <CustomInput
                     placeholder={`Name of the Stockist ${index + 1}`}
                     value={stockist.name}
@@ -2194,6 +2208,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 0,
+  },
+  disabledInputContainer: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    marginBottom: 16,
+  },
+  disabledInputText: {
+    fontSize: 14,
+    color: '#666',
   },
   content: {
     paddingHorizontal: 0,
@@ -2652,6 +2678,32 @@ const styles = StyleSheet.create({
     color: '#333',
     flex: 1,
   },
+  hospitalSelectorDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: '#999',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
+    backgroundColor: '#fff',
+  },
+  hospitalSelectorText: {
+    fontSize: 16,
+    color: '#777777',
+    flex: 1,
+    fontWeight: '500',
+  },
+  addNewHospitalLink: {
+    marginBottom: 16,
+  },
+  addNewHospitalLinkText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+  },
   selectorInput: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2666,7 +2718,7 @@ const styles = StyleSheet.create({
   },
   selectorPlaceholder: {
     fontSize: 16,
-    color: '#999',
+    color: '#777777',
     flex: 1,
   },
   selectedPharmacyItem: {

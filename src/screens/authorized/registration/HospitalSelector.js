@@ -1,11 +1,8 @@
-/* eslint-disable react/jsx-no-undef */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   ScrollView,
   StatusBar,
   Animated,
@@ -16,7 +13,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
 import {AppText,AppInput} from "../../../components"
 import { customerAPI } from '../../../api/customer';
@@ -27,7 +23,8 @@ const HospitalSelector = () => {
   const { onSelect, selectedHospitals = [] } = route.params || {};
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItems, setSelectedItems] = useState(selectedHospitals || []);
+  // Single selection - only one hospital can be selected at a time
+  const [selectedItem, setSelectedItem] = useState(selectedHospitals?.length > 0 ? selectedHospitals[0] : null);
   
   // Hospital data states
   const [hospitalsData, setHospitalsData] = useState([]);
@@ -106,18 +103,41 @@ const HospitalSelector = () => {
       
       console.log('HospitalSelector: Filter params - stateIds:', stateIds, 'cityIds:', cityIds, 'searchText:', searchQuery);
       
-      // Call API with filters and search
-      const response = await customerAPI.getHospitalsList(['HOSP'], 4, 1, 20, stateIds, cityIds, [6, 10], ['PRI'], ['PCL', 'PIH'], searchQuery);
+      // Build payload matching the API requirements
+      const payload = {
+        typeCode: ['HOSP'],
+        statusIds: [7, 2], // ACTIVE and APPROVED
+        page: 1,
+        limit: 20,
+      };
+      
+      // Add optional filters
+      if (stateIds.length > 0) {
+        payload.stateIds = stateIds;
+      }
+      if (cityIds.length > 0) {
+        payload.cityIds = cityIds;
+      }
+      if (searchQuery && searchQuery.trim().length > 0) {
+        payload.searchText = searchQuery.trim();
+      }
+      
+      console.log('HospitalSelector: API payload being sent:', JSON.stringify(payload));
+      
+      // Call API directly with correct payload
+      const response = await customerAPI.getCustomersListHospitals(payload);
       console.log('HospitalSelector: Hospitals API response:', response);
       
-      if (response?.data?.customers && Array.isArray(response.data.customers)) {
+      if (response?.customers && Array.isArray(response.customers)) {
         // Transform API response to match expected format
-        const transformedHospitals = response.data.customers.map(customer => ({
+        const transformedHospitals = response.customers.map(customer => ({
           id: customer.customerId,
           name: customer.customerName,
           code: customer.customerCode || customer.customerId,
           city: customer.cityName || 'N/A',
           state: customer.stateName || 'N/A',
+          customerId: customer.customerId,
+          customerCode: customer.customerCode,
         }));
         console.log('HospitalSelector: Transformed hospitals:', transformedHospitals.length, 'items');
         setHospitalsData(transformedHospitals);
@@ -212,28 +232,24 @@ const HospitalSelector = () => {
   };
 
   const handleToggleHospital = (hospital) => {
-    const isSelected = selectedItems.some(item => item.id === hospital.id);
+    // Single selection - radio button behavior
+    const isSelected = selectedItem?.id === hospital.id;
     if (isSelected) {
-      setSelectedItems(selectedItems.filter(item => item.id !== hospital.id));
+      setSelectedItem(null); // Deselect if already selected
     } else {
-      setSelectedItems([...selectedItems, hospital]);
+      setSelectedItem(hospital); // Select this hospital
     }
   };
 
   const handleContinue = () => {
-    if (onSelect) {
-      onSelect(selectedItems);
+    if (onSelect && selectedItem) {
+      onSelect([selectedItem]); // Return as array for compatibility
     }
     navigation.goBack();
   };
 
-  const handleAddNewHospital = () => {
-    // Navigate to add new hospital form
-    navigation.navigate('AddGroupHospital');
-  };
-
   const renderHospitalItem = ({ item }) => {
-    const isSelected = selectedItems.some(hospital => hospital.id === item.id);
+    const isSelected = selectedItem?.id === item.id;
     
     return (
       <TouchableOpacity
@@ -241,9 +257,9 @@ const HospitalSelector = () => {
         onPress={() => handleToggleHospital(item)}
         activeOpacity={0.7}
       >
-        <View style={styles.checkboxContainer}>
-          <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-            {isSelected && <FilterCheck />}
+        <View style={styles.radioContainer}>
+          <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
+            {isSelected && <View style={styles.radioInner} />}
           </View>
         </View>
         
@@ -257,20 +273,11 @@ const HospitalSelector = () => {
     );
   };
 
-  const renderNoResults = () => (
-    <View style={styles.noResultsContainer}>
-      <Icon name="search-outline" size={60} color="#CCC" />
-      <AppText style={styles.noResultsTitle}>Hospital Not Found</AppText>
-      <AppText style={styles.noResultsText}>
-        Hospital not found. You can add group hospital to continue.{'\n'}
-        Else try to search different hospital
-      </AppText>
-      <TouchableOpacity
-        style={styles.addNewButton}
-        onPress={handleAddNewHospital}
-      >        
-        <AppText style={styles.addNewButtonText}>+Add New Group Hospital</AppText>
-      </TouchableOpacity>
+  // Empty list component
+  const renderEmptyList = () => (
+    <View style={styles.emptyContainer}>
+      <Icon name="search" size={40} color="#999" />
+      <AppText style={styles.emptyText}>No hospitals found</AppText>
     </View>
   );
 
@@ -400,9 +407,18 @@ const HospitalSelector = () => {
           value={searchQuery}
           onChangeText={setSearchQuery}
           onSubmitEditing={handleSearch}
-          placeholderTextColor="#999"
+          placeholderTextColor="#777777"
         />
       </View>
+
+      {/* Header Row */}
+      {!loading && !error && hospitalsData.length > 0 && (
+        <View style={styles.headerRow}>
+          <View style={styles.headerRadioSpace} />
+          <AppText style={styles.headerText}>Name</AppText>
+          <AppText style={styles.headerCityText}>City</AppText>
+        </View>
+      )}
 
       {/* Hospital List */}
       {loading ? (
@@ -429,33 +445,19 @@ const HospitalSelector = () => {
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Icon name="search" size={40} color="#999" />
-              <AppText style={styles.emptyText}>No hospitals found</AppText>
-            </View>
-          )}
-          // ListFooterComponent={() => (
-          //   <TouchableOpacity
-          //     style={styles.addNewButton}
-          //     onPress={handleAddNewHospital}
-          //   >
-          //     <Icon name="add" size={20} color={colors.primary} />
-          //     <AppText style={styles.addNewButtonText}>Add New Hospital</AppText>
-          //   </TouchableOpacity>
-          // )}
+          ListEmptyComponent={renderEmptyList}
         />
       )}
 
       {/* Bottom Button */}
-      {selectedItems.length > 0 && (
+      {selectedItem && (
         <View style={styles.bottomContainer}>
           <TouchableOpacity
             style={styles.continueButton}
             onPress={handleContinue}
           >
             <AppText style={styles.continueButtonText}>
-              Continue ({selectedItems.length} selected)
+              Continue (1 selected)
             </AppText>
           </TouchableOpacity>
         </View>
@@ -595,9 +597,12 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginHorizontal: 16,
+    marginVertical: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
     backgroundColor: '#F8F8F8',
+    borderRadius: 8,
   },
   searchIcon: {
     marginRight: 12,
@@ -605,7 +610,34 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
+    height: 20,
     color: '#333',
+    paddingVertical: 0, 
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F8F8F8',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  headerRadioSpace: {
+    width: 34,
+    marginRight: 12,
+  },
+  headerText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
+  },
+  headerCityText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
+    marginRight: 4,
   },
   listContent: {
     paddingBottom: 100,
@@ -617,6 +649,27 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+  },
+  radioContainer: {
+    marginRight: 12,
+  },
+  radioCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#DDD',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioCircleSelected: {
+    borderColor: colors.primary,
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
   },
   checkboxContainer: {
     marginRight: 12,

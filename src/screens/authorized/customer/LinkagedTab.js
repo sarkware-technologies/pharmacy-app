@@ -968,7 +968,6 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
                 <View style={styles.preferredCheckboxPlaceholder} />
               </View>
               <AppText style={[styles.preferredHeaderText, { flex: 1 }]}>Distributor Details</AppText>
-              <AppText style={[styles.preferredHeaderText, { flex: 0.5, textAlign: 'right' }]}>Stockist Type</AppText>
             </View>
 
             {/* Distributor List */}
@@ -999,9 +998,6 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
                     <View style={{ flex: 1 }}>
                       <AppText style={styles.preferredDistributorName}>{distributor.name}</AppText>
                       <AppText style={styles.preferredDistributorCode}>{distributor.code} |</AppText>
-                    </View>
-                    <View style={{ flex: 0.5, alignItems: 'flex-end' }}>
-                      <AppText style={styles.preferredStockistType}>1</AppText>
                     </View>
                   </TouchableOpacity>
                 ))

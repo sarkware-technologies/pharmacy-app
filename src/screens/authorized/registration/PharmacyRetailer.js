@@ -116,7 +116,7 @@ const PharmacyRegistrationForm = () => {
 
     // Stockist Suggestions
     suggestedDistributors: [],
-    stockists: [],
+    stockists: [{ name: '', code: '', city: '' }],
   });
 
   // Document IDs for API submission
@@ -1499,7 +1499,7 @@ const PharmacyRegistrationForm = () => {
                 {formData.selectedCategory === 'groupCorporateHospital' && (
                   <>
                     <TouchableOpacity
-                      style={styles.selectorInput}
+                      style={styles.hospitalSelectorDropdown}
                       onPress={() => {
                         navigation.navigate('HospitalSelector', {
                           selectedHospitals: formData.selectedHospitals,
@@ -1510,26 +1510,19 @@ const PharmacyRegistrationForm = () => {
                       }}
                       activeOpacity={0.7}
                     >
-                      {formData.selectedHospitals && formData.selectedHospitals.length > 0 ? (
-                        <View style={styles.hospitalDropdownContainer}>
-                          <AppText style={styles.hospitalDropdownText}>
-                            {formData.selectedHospitals.map(h => h.name).join(', ')}
-                          </AppText>
-                          <Icon name="arrow-drop-down" size={24} color="#666" />
-                        </View>
-                      ) : (
-                        <>
-                          <AppText style={styles.selectorPlaceholder}>Search hospital name/code</AppText>
-                          <Icon name="search" size={20} color="#999" />
-                        </>
-                      )}
+                      <AppText style={styles.hospitalSelectorText}>
+                        {formData.selectedHospitals && formData.selectedHospitals.length > 0
+                          ? formData.selectedHospitals.map(h => h.name).join(', ')
+                          : 'Search hospital name/code'}
+                      </AppText>
+                      <Icon name="arrow-drop-down" size={24} color="#333" />
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={styles.addNewLink}
+                      style={styles.addNewHospitalLink}
                       onPress={() => setShowAddHospitalModal(true)}
                     >
-                      <AppText style={styles.addNewLinkText}>+ Add New Hospital</AppText>
+                      <AppText style={styles.addNewHospitalLinkText}>+ Add New Hospital</AppText>
                     </TouchableOpacity>
                   </>
                 )}
@@ -1670,12 +1663,13 @@ const PharmacyRegistrationForm = () => {
 
               {formData.stockists.map((stockist, index) => (
                 <View key={index} style={styles.stockistContainer}>
-                  <View style={styles.stockistHeader}>
-                    <AppText style={styles.stockistTitle}>Stockist {index + 1}</AppText>
-                    <TouchableOpacity onPress={() => handleRemoveStockist(index)}>
-                      <Icon name="delete" size={20} color={colors.error} />
-                    </TouchableOpacity>
-                  </View>
+                  {index > 0 && (
+                    <View style={styles.stockistHeader}>
+                      <TouchableOpacity onPress={() => handleRemoveStockist(index)} style={{ marginLeft: 'auto' }}>
+                        <Icon name="delete" size={20} color={colors.error} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
                   <CustomInput
                     placeholder={`Name of the Stockist ${index + 1}`}
                     value={stockist.name}
@@ -2491,7 +2485,8 @@ const styles = StyleSheet.create({
   stockistContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 0,
     marginBottom: 16,
   },
   stockistHeader: {
@@ -2587,6 +2582,32 @@ const styles = StyleSheet.create({
     color: '#333',
     flex: 1,
   },
+  hospitalSelectorDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: '#999',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
+    backgroundColor: '#fff',
+  },
+  hospitalSelectorText: {
+    fontSize: 16,
+    color: '#777777',
+    flex: 1,
+    fontWeight: '500',
+  },
+  addNewHospitalLink: {
+    marginBottom: 16,
+  },
+  addNewHospitalLinkText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+  },
   selectorInput: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2601,7 +2622,7 @@ const styles = StyleSheet.create({
   },
   selectorPlaceholder: {
     fontSize: 16,
-    color: '#999',
+    color: '#777777',
     flex: 1,
   },
   selectedPharmacyItem: {
