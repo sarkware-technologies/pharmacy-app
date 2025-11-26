@@ -169,7 +169,7 @@ const ProductMapping = () => {
 
   const hanldeMapping = async (product) => {
     try {
-      console.log(product, 23948273)
+      setProductMapping(false)
       if (product) {
         const response = await UploadProductMapping({
           customerId: selectedCustomer?.customerId,
@@ -179,7 +179,6 @@ const ProductMapping = () => {
           uploadedProductName: mappingProduct.uploadedProductName,
           packing: product.packing,
         })
-        console.log(response, 98768)
         if (response && response.length > 0) {
           console.log(response[0])
           const list = products.map((e) => {
@@ -205,10 +204,7 @@ const ProductMapping = () => {
               }
               : e;
           });
-          console.log(list, 8678909876, product)
           setProducts(list);
-          setProductMapping(false)
-          setMappingProduct(null)
         }
         else {
 
@@ -219,6 +215,9 @@ const ProductMapping = () => {
     catch (e) {
       ErrorMessage(e);
     }
+    finally {
+          setMappingProduct(null)
+    }
   }
 
 
@@ -228,6 +227,12 @@ const ProductMapping = () => {
 
     return (
       <View style={styles.productCard}>
+        {item.id == mappingProduct?.id && (
+          <View style={{ position: "absolute", height: "100%", width: "100%", justifyContent: "center", opacity: 0.5, zIndex: 10 }}>
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        )}
+
         <View style={styles.productHeader}>
           <AppText style={styles.productName}>{item?.productName ?? '-'}</AppText>
         </View>
@@ -380,7 +385,7 @@ const ProductMapping = () => {
           </View>
         ) : (
           <View style={styles.mappingComplete}>
-            <AppText style={[styles.mappingCompleteText,{color:"red"}]}>{getFilteredProducts("Non-Mapped")?.length} products unmapped</AppText>
+            <AppText style={[styles.mappingCompleteText, { color: "red" }]}>{getFilteredProducts("Non-Mapped")?.length} products unmapped</AppText>
           </View>
         ))}
 
@@ -485,7 +490,8 @@ const ProductMapping = () => {
 
       <SearchProductModal
         onSelectProduct={hanldeMapping}
-        visible={productMapping} onClose={() => {
+        visible={productMapping}
+        onClose={() => {
           setProductMapping(false)
           setMappingProduct(null)
         }}
@@ -678,7 +684,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#EDEDED",
     paddingHorizontal: 4,
-    paddingVertical: 15
+    paddingVertical: 15,
+    position: "relative"
 
   },
   productHeader: {

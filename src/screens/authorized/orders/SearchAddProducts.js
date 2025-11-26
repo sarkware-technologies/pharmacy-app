@@ -51,7 +51,7 @@ const SearchAddProducts = () => {
   const [cartCount, setCartCount] = useState(0);
   const isFirstLoad = useRef(true);
   const [loadingProduct, setLoadingProduct] = useState("");
- 
+
 
   const [cartDetail, setCartDetail] = useState([]);
 
@@ -180,29 +180,31 @@ const SearchAddProducts = () => {
 
   const handleQuantityChange = async (product, event) => {
     try {
-      setLoadingProduct(product?.id);
-      const minQTY = product?.productDetails.packing ? parseInt(product?.productDetails.packing) : 1
-      const updateQTY = product?.quantity + (event === 'plus' ? +minQTY : -minQTY);
-      if (updateQTY > 0) {
-        const increasesQTY = await IncreaseQTY(
-          product?.cartIds,
-          product?.productDetails?.productId,
-          product?.quantity + (event === 'plus' ? +minQTY : -minQTY)
-        );
-        if (increasesQTY?.qty) {
-          const list = products.map(item => {
-            return {
-              ...item,
-              quantity: item.id === product.id ? increasesQTY?.qty : item?.quantity,
-            };
-          })
-          setTempProduct(list);
+      if (product?.cartId) {
+        setLoadingProduct(product?.id);
+        const minQTY = product?.productDetails.packing ? parseInt(product?.productDetails.packing) : 1
+        const updateQTY = product?.quantity + (event === 'plus' ? +minQTY : -minQTY);
+        if (updateQTY > 0) {
+          const increasesQTY = await IncreaseQTY(
+            parseInt(product?.cartId),
+            product?.productDetails?.productId,
+            product?.quantity + (event === 'plus' ? +minQTY : -minQTY)
+          );
+          if (increasesQTY?.qty) {
+            const list = products.map(item => {
+              return {
+                ...item,
+                quantity: item.id === product.id ? increasesQTY?.qty : item?.quantity,
+              };
+            })
+            // setTempProduct(list);
+            setProducts(list);
+          }
+        }
+        else {
+          await handleDelete(product);
         }
       }
-      else {
-        await handleDelete(product);
-      }
-
 
     } catch (error) {
 
@@ -239,10 +241,11 @@ const SearchAddProducts = () => {
             ...item,
             isInCart: item.id === product.id ? true : item.isInCart ?? false,
             quantity: item.id === product.id ? payload.qty : item?.quantity,
-            cartIds: item.id === product.id ? addtocart?.[0]?.id ?? item.cartIds : item.cartIds,
+            cartId: item.id === product.id ? addtocart?.[0]?.id ?? item.cartId : item.cartId,
           };
         })
-        setTempProduct(list);
+        setProducts(list);
+        // setTempProduct(list);
       }
     }
     catch (error) {
@@ -262,18 +265,21 @@ const SearchAddProducts = () => {
 
   const handleDelete = async (product) => {
     try {
-
-      const deleteCart = await DeleteCart([product.cartIds]);
-      if (deleteCart?.message == "Product deleted successfully.") {
-        const list = products.map(item => {
-          return {
-            ...item,
-            isInCart: item.id === product.id ? false : item?.isInCart,
-            quantity: item.id === product.id ? null : item?.quantity,
-            cartIds: item.id === product.id ? null : item.cartIds,
-          };
-        })
-        setTempProduct(list);
+      if (product.cartId) {
+        setLoadingProduct(product?.id);
+        const deleteCart = await DeleteCart([parseInt(product.cartId)]);
+        if (deleteCart?.message == "Product deleted successfully.") {
+          const list = products.map(item => {
+            return {
+              ...item,
+              isInCart: item.id === product.id ? false : item?.isInCart,
+              quantity: item.id === product.id ? null : item?.quantity,
+              cartId: item.id === product.id ? null : item.cartId,
+            };
+          })
+          setProducts(list);
+          // setTempProduct(list);
+        }
       }
 
     }
@@ -281,6 +287,9 @@ const SearchAddProducts = () => {
     }
     finally {
       getCartdetails();
+      setTimeout(() => {
+        setLoadingProduct(null);
+      }, 300)
     }
 
   }
@@ -290,6 +299,7 @@ const SearchAddProducts = () => {
     const product = list.map(prod => {
       let isInCart = false;
       let quantity = 0;
+      let cartId = null;
 
       for (const dist of cartDetail || []) {
         for (const p of dist.products || []) {
@@ -299,7 +309,9 @@ const SearchAddProducts = () => {
             p.productId == prod.productDetails?.productId
           ) {
             isInCart = true;
+            isInCart = true;
             quantity = p.qty;
+            cartId = p.id;
             break;
           }
         }
@@ -310,8 +322,10 @@ const SearchAddProducts = () => {
         ...prod,
         isInCart,
         quantity,
+        cartId
       };
     })
+    console.log(product, 23948273)
     setProducts(product);
   }
 
@@ -384,7 +398,7 @@ const SearchAddProducts = () => {
               <AppText style={styles.staus}>ACTIVE</AppText>
             </View>
             <View style={{ height: 45 }}>
-              <AddToCartWidget loading={loadingProduct == item?.id} isInCart={item.isInCart} quantity={quantity} item={item} handleQuantityChange={handleQuantityChange} handleAddToCart={handleAddToCart} />
+              <AddToCartWidget handleDelete={() => handleDelete(item)} loading={loadingProduct == item?.id} isInCart={item.isInCart} quantity={quantity} item={item} handleQuantityChange={handleQuantityChange} handleAddToCart={handleAddToCart} />
               {/* {item.isInCart ? (
                 <View style={styles.quantityControls}>
                   <View style={styles.quantityBox}>

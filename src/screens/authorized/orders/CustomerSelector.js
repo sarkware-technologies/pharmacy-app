@@ -45,7 +45,6 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer, showFilter
     cityIds: [],
   });
   useEffect(() => {
-    console.log(987987987, Object.values(selectedFilters || {}).every((arr) => !arr || arr.length === 0))
     if (visible) {
       setHasMore(true)
       setLoading(false)
@@ -131,7 +130,7 @@ const CustomerSelectionModal = ({ visible, onClose, onSelectCustomer, showFilter
         page: currentPage,
         limit: 20,
         searchText: query,
-        // statusIds: [2],
+        statusIds: [7],
         // typeCode: "DOCT"
         ...(filter?.cityIds?.length && { cityIds: filter?.cityIds }), ...(filter?.stateIds?.length && { stateIds: filter?.stateIds })
       });

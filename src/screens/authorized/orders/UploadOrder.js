@@ -51,6 +51,7 @@ const UploadOrder = () => {
 
   const [timer, setTimer] = useState(0);
   const timerRef = useRef(null);
+  const [isUploading, setIsUploading] = useState(false);
 
 
 
@@ -158,6 +159,10 @@ const UploadOrder = () => {
     try {
 
       if (originalFile || templateFile) {
+        setIsUploading(true);
+        if (isocr) {
+          startTimer();
+        }
         const fileUpload = await UploadTemplateOrder(originalFile ?? templateFile, parseInt(selectedCustomer?.customerId), selectedDistributor?.id, "UPLOAD", isocr);
         console.log(fileUpload?.status, "Upload file response")
         if (fileUpload?.poFileProducts) {
@@ -182,9 +187,39 @@ const UploadOrder = () => {
       }
     }
     finally {
+      setIsUploading(false)
+      if (isocr) {
+        stopTimer();
+        setTimer(0);
+      }
     }
 
   };
+
+  const formatTime = (sec) => {
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = (sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  // Start a timer
+  const startTimer = () => {
+    if (timerRef.current) return; // prevent multiple intervals
+
+    setTimer(0);
+    timerRef.current = setInterval(() => {
+      setTimer(prev => prev + 1);
+    }, 1000);
+  };
+
+  // Stop timer
+  const stopTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
 
 
   const handleDownloadTemplate = async () => {
@@ -199,6 +234,8 @@ const UploadOrder = () => {
       ErrorMessage(error);
     }
   };
+
+
 
 
 
@@ -289,14 +326,20 @@ const UploadOrder = () => {
             {/* OCR Status */}
             {/* {(isProcessing || ocrComplete) && ( */}
             {isocr && (
-              <View style={{ display: "flex", alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 10 }}>
-                {/* <ActivityIndicator size="small" color={colors.primary} /> */}
-                <CustomCheckbox checked={isocr} activeColor="#F7941E" size={15} title={<AppText style={styles.ocrText}>
-                  Read the file with OCR  |  02:15 Sec
-                </AppText>} />
+              <View style={{ flexDirection: "row", justifyContent: "center", gap: 10 }}>
+                <CustomCheckbox
+                  checked={isocr}
+                  activeColor="#F7941E"
+                  size={15}
+                  title={
+                    <AppText style={styles.ocrText}>
+                      Read the file with OCR  |  {formatTime(timer)}
+                    </AppText>
+                  }
+                />
               </View>
-
             )}
+
             {!originalFile && (
               <View style={{ height: 25 }}></View>
             )}
@@ -314,12 +357,13 @@ const UploadOrder = () => {
           <TouchableOpacity
             style={[
               styles.continueButton,
-              (!originalFile && !templateFile) && styles.disabledButton
+              ((!originalFile && !templateFile) || isUploading) && styles.disabledButton
             ]}
             onPress={handleContinue}
-            disabled={!originalFile && !templateFile}
+            disabled={!originalFile && !templateFile || isUploading}
+
           >
-            <AppText style={styles.continueText}>Continue</AppText>
+            <AppText style={styles.continueText}>{isUploading?'Uploading...':'Continue'}</AppText>
           </TouchableOpacity>
         </View>
       </View>
