@@ -69,7 +69,8 @@ const CustomerDetail = ({ navigation, route }) => {
   useEffect(() => {
     // For staging customers (PENDING, NOT-ONBOARDED), use stgCustomerId, otherwise use customerId
     const customerId = customer?.stgCustomerId || customer?.customerId;
-    const isStaging = customer?.statusName === 'PENDING' || customer?.statusName === 'NOT-ONBOARDED';
+    // Set isStaging=false only for NOT-ONBOARDED status, true for PENDING
+    const isStaging = customer?.statusName === 'NOT-ONBOARDED' ? false : (customer?.statusName === 'PENDING' ? true : false);
     
     if (customerId) {
       console.log('Fetching customer details for:', { customerId, isStaging });

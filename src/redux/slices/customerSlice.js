@@ -65,7 +65,7 @@ export const fetchTabCounts = createAsyncThunk(
         apiClient.post('/user-management/customer/customers-list', { 
           typeCode: [], categoryCode: [], subCategoryCode: [], statusIds: [19], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 
         }),
-        apiClient.post('/user-management/customer/customers-list', { 
+        apiClient.post('/user-management/customer/customers-list/staging', { 
           typeCode: [], categoryCode: [], subCategoryCode: [], statusIds: [6], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 
         })
       ]);

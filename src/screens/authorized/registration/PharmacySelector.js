@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unstable-nested-components */
 // src/screens/authorized/registration/PharmacySelector.js
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -21,6 +22,8 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
 import {AppText,AppInput} from "../../../components"
 import { customerAPI } from '../../../api/customer';
+import PhamacySearchNotFound from '../../../components/icons/PhamacySearchNotFound';
+import AddNewPharmacyModal from './AddNewPharmacyModal';
 
 const PharmacySelector = () => {
   const navigation = useNavigation();
@@ -46,6 +49,9 @@ const PharmacySelector = () => {
   // Filter dropdowns
   const [showStateDropdown, setShowStateDropdown] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
+  
+  // Add new pharmacy modal
+  const [showAddPharmacyModal, setShowAddPharmacyModal] = useState(false);
   
   // Animation
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -222,8 +228,14 @@ const PharmacySelector = () => {
   };
 
   const handleAddNewPharmacy = () => {
-    // Navigate to add new pharmacy form
-    navigation.navigate('AddPharmacy');
+    setShowAddPharmacyModal(true);
+  };
+
+  const handlePharmacySubmit = (newPharmacy) => {
+    // Add the new pharmacy to selected items
+    setSelectedItems([...selectedItems, newPharmacy]);
+    // Optionally refresh the pharmacy list
+    fetchPharmacies();
   };
 
   const handleContinue = () => {
@@ -382,11 +394,20 @@ const PharmacySelector = () => {
           style={styles.searchInput}
           placeholder="Search by pharmacy name/code"
           value={searchQuery}
-          onChangeText={setSearchQuery}
+          onChangeText={(text) => setSearchQuery(text)}
           onSubmitEditing={handleSearch}
-          placeholderTextColor="#777777"
+          placeholderTextColor="#999999"
         />
       </View>
+
+      {/* Header Row for Name and City */}
+      {!loading && !error && pharmaciesData.length > 0 && (
+        <View style={styles.listHeader}>
+          <View style={styles.checkboxPlaceholder} />
+          <AppText style={[styles.listHeaderText, styles.nameHeader]}>Name</AppText>
+          <AppText style={styles.listHeaderText}>City</AppText>
+        </View>
+      )}
 
       {/* Pharmacy List */}
       {loading ? (
@@ -415,8 +436,15 @@ const PharmacySelector = () => {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Icon name="search" size={40} color="#999" />
-              <AppText style={styles.emptyText}>No pharmacies found</AppText>
+              <PhamacySearchNotFound width={40} height={40} color="#999" />
+              <AppText style={styles.emptyTitle}>Pharmacy Not Found</AppText>
+              <AppText style={styles.emptySubtitle}>Pharmacy not found. You can add a new pharmacy to continue</AppText>
+              <TouchableOpacity
+                style={styles.addNewPharmacyButtonEmpty}
+                onPress={handleAddNewPharmacy}
+              >
+                <AppText style={styles.addNewPharmacyTextEmpty}>+Add New Pharamcy</AppText>
+              </TouchableOpacity>
             </View>
           )}
           // ListFooterComponent={() => (
@@ -435,15 +463,28 @@ const PharmacySelector = () => {
       {selectedItems.length > 0 && (
         <View style={styles.bottomContainer}>
           <TouchableOpacity
+            style={styles.addNewButton}
+            onPress={handleAddNewPharmacy}
+          >
+            <AppText style={styles.addNewButtonText}>+Add New Pharamcy</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.continueButton}
             onPress={handleContinue}
           >
             <AppText style={styles.continueButtonText}>
-              Continue ({selectedItems.length} selected)
+              Continue
             </AppText>
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Add New Pharmacy Modal */}
+      <AddNewPharmacyModal
+        visible={showAddPharmacyModal}
+        onClose={() => setShowAddPharmacyModal(false)}
+        onSubmit={handlePharmacySubmit}
+      />
     </SafeAreaView>
   );
 };
@@ -582,9 +623,13 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
     backgroundColor: '#F8F8F8',
+    marginHorizontal: 16,
+    marginVertical: 12,
+    borderRadius: 8,
+    height: 48,
   },
   searchIcon: {
     marginRight: 12,
@@ -593,6 +638,29 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#333',
+    padding: 0,
+    margin: 0,
+  },
+  listHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  checkboxPlaceholder: {
+    width: 34,
+    marginRight: 12,
+  },
+  nameHeader: {
+    flex: 1,
+  },
+  listHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
   },
   listContent: {
     paddingBottom: 100,
@@ -664,11 +732,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  addNewButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 24,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+  addNewButtonText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
   },
   continueButton: {
+    flex: 1,
     backgroundColor: colors.primary,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 24,
     alignItems: 'center',
   },
   continueButtonText: {
@@ -720,12 +805,36 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 60,
+    paddingHorizontal: 32,
   },
-  emptyText: {
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 24,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  addNewPharmacyButtonEmpty: {
+    marginTop: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+  addNewPharmacyTextEmpty: {
     fontSize: 16,
-    color: '#666',
-    marginTop: 12,
+    color: colors.primary,
+    fontWeight: '600',
   },
 });
 

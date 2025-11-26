@@ -1,3 +1,4 @@
+/* eslint-disable no-dupe-keys */
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
@@ -156,15 +157,8 @@ const CustomerList = ({ navigation }) => {
   const tabScrollRef = useRef(null);
   const tabRefs = useRef({});
 
-  const filteredCustomers = customers.filter((customer) => {
-    if (activeTab === 'onboarded') {
-      return customer.statusName === 'ACTIVE';
-    } else if (activeTab === 'waitingForApproval' || activeTab === 'notOnboarded') {
-      // Use the same dataset for both tabs, based on PENDING status
-      return customer.statusName === 'PENDING';
-    }
-    return true;
-  });
+  // No client-side filtering - API handles filtering based on statusIds
+  const filteredCustomers = customers;
 
   // Map tab to statusIds
   const getStatusIdsForTab = (tab) => {
@@ -186,28 +180,59 @@ const CustomerList = ({ navigation }) => {
   // Fetch customers on mount and when tab changes
   useEffect(() => {
     const initializeData = async () => {    
+      // Reset customers list and pagination when tab changes
       dispatch(resetCustomersList());  
-      // Fetch customers based on active tab
-      // For 'all' and 'waitingForApproval', use original logic
-      // For other tabs, use statusIds
-      if (activeTab === 'all' || activeTab === 'waitingForApproval') {
-        const isStaging = activeTab === 'waitingForApproval';
-        dispatch(fetchCustomersList({
+      
+      // Fetch customers based on active tab with page: 1
+      if (activeTab === 'all') {
+        // All tab - regular endpoint, no statusIds
+        const payload = {
           page: 1,
           limit: 10,
           isLoadMore: false,
-          isStaging: isStaging,
-          ...(isStaging && { statusIds: [5] })
-        }));
-      } else {
-        // For unverified, rejected, notOnboarded use new statusIds
+          isStaging: false,
+          typeCode: [],
+          categoryCode: [],
+          subCategoryCode: [],
+          sortBy: '',
+          sortDirection: 'ASC'
+        };
+        console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
+        dispatch(fetchCustomersList(payload));
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+        // Waiting for Approval and Rejected - staging endpoint
         const statusIds = getStatusIdsForTab(activeTab);
-        dispatch(fetchCustomersList({
+        const payload = {
           page: 1,
           limit: 10,
           isLoadMore: false,
-          statusIds: statusIds
-        }));
+          isStaging: true,
+          typeCode: [],
+          categoryCode: [],
+          subCategoryCode: [],
+          statusIds: statusIds,
+          sortBy: '',
+          sortDirection: 'ASC'
+        };
+        console.log(`🔍 ${activeTab} tab API payload (staging):`, JSON.stringify(payload, null, 2));
+        dispatch(fetchCustomersList(payload));
+      } else {
+        // Not Onboarded and Unverified - regular endpoint with statusIds
+        const statusIds = getStatusIdsForTab(activeTab);
+        const payload = {
+          page: 1,
+          limit: 10,
+          isLoadMore: false,
+          isStaging: false,
+          typeCode: [],
+          categoryCode: [],
+          subCategoryCode: [],
+          statusIds: statusIds,
+          sortBy: '',
+          sortDirection: 'ASC'
+        };
+        console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
+        dispatch(fetchCustomersList(payload));
       }
       
       // Only fetch these on initial mount
@@ -257,6 +282,7 @@ const CustomerList = ({ navigation }) => {
     }, 500);
     
     return () => clearTimeout(delayDebounceFn);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchText, dispatch]); // Only trigger on search text change, not on tab change
 
   // Refresh function
@@ -295,15 +321,23 @@ const CustomerList = ({ navigation }) => {
     const nextPage = currentPage + 1;
     
     let requestParams;
-    if (activeTab === 'all' || activeTab === 'waitingForApproval') {
-      const isStaging = activeTab === 'waitingForApproval';
+    if (activeTab === 'all') {
       requestParams = {
         page: nextPage,
         limit: limit || 10,
         ...filters,
         isLoadMore: true,
-        isStaging: isStaging,
-        ...(isStaging && { statusIds: [5] })
+        isStaging: false
+      };
+    } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+      const statusIds = getStatusIdsForTab(activeTab);
+      requestParams = {
+        page: nextPage,
+        limit: limit || 10,
+        ...filters,
+        isLoadMore: true,
+        isStaging: true,
+        statusIds: statusIds
       };
     } else {
       const statusIds = getStatusIdsForTab(activeTab);
@@ -312,6 +346,7 @@ const CustomerList = ({ navigation }) => {
         limit: limit || 10,
         ...filters,
         isLoadMore: true,
+        isStaging: false,
         statusIds: statusIds
       };
     }
@@ -368,17 +403,29 @@ const CustomerList = ({ navigation }) => {
   };
 
   // Handle tab press with centering
-  const handleTabPress = (tabName) => {
+  const handleTabPress = async (tabName) => {
+    // First reset the list and set active tab
     setActiveTab(tabName);
     
-    // Scroll the tab into center view after a small delay to ensure layout is ready
+    // Scroll the tab into visible area after a small delay to ensure layout is ready
     setTimeout(() => {
       if (tabRefs.current[tabName] && tabScrollRef.current) {
-        tabRefs.current[tabName].measureInWindow((x, y, w, h) => {
-          const screenWidth = Dimensions.get('window').width;
-          const centerOffset = x + w / 2 - screenWidth / 2;
-          tabScrollRef.current?.scrollTo({ x: centerOffset, animated: true });
-        });
+        tabRefs.current[tabName].measureLayout(
+          tabScrollRef.current.getNode ? tabScrollRef.current.getNode() : tabScrollRef.current,
+          (x, y, w, h) => {
+            const screenWidth = Dimensions.get('window').width;
+            // Center the tab in the screen
+            const scrollX = x - (screenWidth / 2) + (w / 2);
+            
+            tabScrollRef.current?.scrollTo({ 
+              x: Math.max(0, scrollX), 
+              animated: true 
+            });
+          },
+          () => {
+            console.log('measureLayout failed');
+          }
+        );
       }
     }, 100);
   };
@@ -388,7 +435,8 @@ const CustomerList = ({ navigation }) => {
     setLoadingDocuments(true);
     try {
       const customerId = customer?.stgCustomerId || customer?.customerId;
-      const isStaging = customer?.statusName === 'PENDING' || customer?.statusName === 'NOT-ONBOARDED';
+      // Set isStaging=false only for NOT-ONBOARDED status, true for PENDING
+      const isStaging = customer?.statusName === 'NOT-ONBOARDED' ? false : (customer?.statusName === 'PENDING' ? true : false);
       
       const response = await customerAPI.getCustomerDetails(customerId, isStaging);
       
@@ -659,6 +707,7 @@ const CustomerList = ({ navigation }) => {
         useNativeDriver: true,
       }),
     ]).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getStatusColor = (status) => {

@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unstable-nested-components */
 /* eslint-disable no-dupe-keys */
 // src/screens/authorized/registration/GroupHospitalRegistrationForm.js
 
@@ -35,6 +36,7 @@ import Calendar from '../../../components/icons/Calendar';
 import ArrowDown from '../../../components/icons/ArrowDown';
 import Search from '../../../components/icons/Search';
 import CloseCircle from '../../../components/icons/CloseCircle';
+import RemoveHospitalCloseIcon from '../../../components/icons/RemoveHospitalCloseIcon';
 import { customerAPI } from '../../../api/customer';
 import { AppText, AppInput } from '../../../components';
 import AddNewHospitalModal from './AddNewHospitalModal';
@@ -109,7 +111,7 @@ const GroupHospitalRegistrationForm = () => {
   ]);
 
   // State for managing expanded hospitals in accordion
-  const [expandedHospitals, setExpandedHospitals] = useState({});
+  const [expandedHospitals, setExpandedHospitals] = useState({ summary: true });
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -666,6 +668,11 @@ const GroupHospitalRegistrationForm = () => {
       }
     }
 
+    // Linked Hospitals validation
+    if (!formData.linkedHospitals || formData.linkedHospitals.length === 0) {
+      newErrors.linkedHospitals = 'At least one linked hospital is required';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1133,13 +1140,29 @@ const GroupHospitalRegistrationForm = () => {
           keyboardType="phone-pad"
           maxLength={10}
           mandatory
+          editable={!verificationStatus.mobile}
           rightComponent={
             <TouchableOpacity
-              style={styles.inlineVerifyButton}
+              style={[
+                styles.inlineVerifyButton,
+                verificationStatus.mobile && styles.verifiedButton,
+              ]}
               onPress={() => handleVerify('mobile')}
+              disabled={verificationStatus.mobile}
             >
-              <AppText style={styles.inlineVerifyText}>
-                Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+              <AppText
+                style={[
+                  styles.inlineVerifyText,
+                  verificationStatus.mobile && styles.verifiedText,
+                ]}
+              >
+                {verificationStatus.mobile ? (
+                  'Verified'
+                ) : (
+                  <>
+                    Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                  </>
+                )}
               </AppText>
             </TouchableOpacity>
           }
@@ -1158,13 +1181,29 @@ const GroupHospitalRegistrationForm = () => {
           keyboardType="email-address"
           autoCapitalize="none"
           mandatory
+          editable={!verificationStatus.email}
           rightComponent={
             <TouchableOpacity
-              style={styles.inlineVerifyButton}
+              style={[
+                styles.inlineVerifyButton,
+                verificationStatus.email && styles.verifiedButton,
+              ]}
               onPress={() => handleVerify('email')}
+              disabled={verificationStatus.email}
             >
-              <AppText style={styles.inlineVerifyText}>
-                Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+              <AppText
+                style={[
+                  styles.inlineVerifyText,
+                  verificationStatus.email && styles.verifiedText,
+                ]}
+              >
+                {verificationStatus.email ? (
+                  'Verified'
+                ) : (
+                  <>
+                    Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                  </>
+                )}
               </AppText>
             </TouchableOpacity>
           }
@@ -1331,89 +1370,100 @@ const GroupHospitalRegistrationForm = () => {
           <Icon name="information-circle-outline" size={16} color="#999" />
         </AppText>
 
-        {/* Hospital Selector Dropdown */}
-        <TouchableOpacity
-          style={styles.selectorInput}
-          onPress={() => {
-            navigation.navigate('HospitalSelector', {
-              selectedHospitals: formData.linkedHospitals,
-              onSelect: hospitals => {
-                setFormData(prev => ({
-                  ...prev,
-                  linkedHospitals: hospitals.map(h => ({
-                    ...h,
-                    pharmacies: [],
-                  })),
-                }));
-              },
-            });
-          }}
-          activeOpacity={0.7}
-        >
-          <AppText style={styles.selectorPlaceholder}>
-            {formData.linkedHospitals.length > 0
-              ? `${formData.linkedHospitals.length} Hospitals Selected`
-              : 'Search hospital name/code'}
-          </AppText>
-          <ArrowDown />
-        </TouchableOpacity>
+        {/* Hospital Selector - Collapsible Summary */}
+        {formData.linkedHospitals.length === 0 ? (
+          <TouchableOpacity
+            style={[styles.selectorInput, errors.linkedHospitals && styles.inputError]}
+            onPress={() => {
+              navigation.navigate('HospitalSelector', {
+                selectedHospitals: formData.linkedHospitals,
+                allowMultiple: true,
+                onSelect: hospitals => {
+                  setFormData(prev => ({
+                    ...prev,
+                    linkedHospitals: hospitals.map(h => ({
+                      ...h,
+                      pharmacies: h.pharmacies || [],
+                    })),
+                  }));
+                  setErrors(prev => ({ ...prev, linkedHospitals: null }));
+                },
+              });
+            }}
+            activeOpacity={0.7}
+          >
+            <AppText style={styles.selectorPlaceholder}>
+              Search hospital name/code
+            </AppText>
+            <ArrowDown height={8} width={8} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.hospitalsSummary}
+            onPress={() => {
+              navigation.navigate('HospitalSelector', {
+                selectedHospitals: formData.linkedHospitals,
+                allowMultiple: true,
+                onSelect: hospitals => {
+                  setFormData(prev => ({
+                    ...prev,
+                    linkedHospitals: hospitals.map(h => ({
+                      ...h,
+                      pharmacies: h.pharmacies || [],
+                    })),
+                  }));
+                  setErrors(prev => ({ ...prev, linkedHospitals: null }));
+                },
+              });
+            }}
+            activeOpacity={0.7}
+          >
+            <AppText style={styles.hospitalsSummaryText}>
+              {formData.linkedHospitals.length} Hospital{formData.linkedHospitals.length > 1 ? 's' : ''} Selected
+            </AppText>
+            <ArrowDown height={8} width={8} color="#111" />
+          </TouchableOpacity>
+        )}
+        {errors.linkedHospitals && (
+          <AppText style={styles.errorText}>{errors.linkedHospitals}</AppText>
+        )}
 
-        {/* Accordion-style Hospital List with Nested Pharmacies */}
+        {/* Expanded Hospital List with Nested Pharmacies */}
         {formData.linkedHospitals.length > 0 && (
           <View style={styles.hospitalsContainer}>
             {formData.linkedHospitals.map((hospital, index) => (
               <View key={hospital.id || index} style={styles.hospitalAccordion}>
                 {/* Hospital Header */}
-                <TouchableOpacity
-                  style={styles.hospitalHeader}
-                  onPress={() => {
-                    setExpandedHospitals(prev => ({
-                      ...prev,
-                      [hospital.id]: !prev[hospital.id],
-                    }));
-                  }}
-                  activeOpacity={0.7}
-                >
+                <View style={styles.hospitalHeader}>
                   <View style={styles.hospitalHeaderContent}>
                     <AppText style={styles.hospitalName}>
                       {hospital.name}
                     </AppText>
                   </View>
-                  <View style={styles.hospitalHeaderActions}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setFormData(prev => ({
-                          ...prev,
-                          linkedHospitals: prev.linkedHospitals.filter(
-                            (_, i) => i !== index,
-                          ),
-                        }));
-                      }}
-                      style={styles.removeButton}
-                    >
-                      <CloseCircle color="#999" />
-                    </TouchableOpacity>
-                    <Icon
-                      name={
-                        expandedHospitals[hospital.id]
-                          ? 'chevron-up'
-                          : 'chevron-down'
-                      }
-                      size={20}
-                      color={colors.primary}
-                      style={styles.chevron}
-                    />
-                  </View>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        linkedHospitals: prev.linkedHospitals.filter(
+                          (_, i) => i !== index,
+                        ),
+                      }));
+                    }}
+                    style={styles.removeButton}
+                  >
+                    <RemoveHospitalCloseIcon width={12} height={12} color="#999" />
+                  </TouchableOpacity>
+                </View>
 
-                {/* Hospital Content (Pharmacies) */}
-                {expandedHospitals[hospital.id] && (
-                  <View style={styles.hospitalContent}>
-                    {/* Pharmacies Section */}
-                    <View style={styles.pharmaciesSection}>
-                      <AppText style={styles.pharmaciesLabel}>
-                        Pharmacies
-                      </AppText>
+                {/* Pharmacies Section - Always Visible */}
+                <View style={styles.hospitalContent}>
+                  <View style={styles.pharmaciesSection}>
+                      {/* Pharmacies Label - Only show when pharmacies exist */}
+                      {hospital.pharmacies && hospital.pharmacies.length > 0 && (
+                        <AppText style={styles.pharmaciesLabel}>
+                          Pharmacies
+                        </AppText>
+                      )}
 
                       {/* Selected Pharmacies Tags */}
                       {hospital.pharmacies &&
@@ -1446,7 +1496,7 @@ const GroupHospitalRegistrationForm = () => {
                                   }}
                                   style={styles.pharmacyTagRemove}
                                 >
-                                  <Icon name="close" size={14} color="#666" />
+                                  <RemoveHospitalCloseIcon width={12} height={12} color="#666" />
                                 </TouchableOpacity>
                               </View>
                             ))}
@@ -1475,9 +1525,8 @@ const GroupHospitalRegistrationForm = () => {
                           + Add Pharmacy
                         </AppText>
                       </TouchableOpacity>
-                    </View>
                   </View>
-                )}
+                </View>
               </View>
             ))}
           </View>
@@ -2201,6 +2250,24 @@ const styles = StyleSheet.create({
     color: '#999',
     flex: 1,
   },
+  hospitalsSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.loginInputBorderColor,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  hospitalsSummaryText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+    flex: 1,
+  },
   selectedItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2603,7 +2670,8 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   addPharmacyLink: {
-    paddingVertical: 8,
+    padding: 0,
+    margin: 0,
   },
   addPharmacyLinkText: {
     fontSize: 13,

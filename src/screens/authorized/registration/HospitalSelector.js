@@ -20,11 +20,12 @@ import { customerAPI } from '../../../api/customer';
 const HospitalSelector = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { onSelect, selectedHospitals = [] } = route.params || {};
+  const { onSelect, selectedHospitals = [], allowMultiple = false } = route.params || {};
   
   const [searchQuery, setSearchQuery] = useState('');
-  // Single selection - only one hospital can be selected at a time
-  const [selectedItem, setSelectedItem] = useState(selectedHospitals?.length > 0 ? selectedHospitals[0] : null);
+  // Support both single and multiple selection
+  const [selectedItems, setSelectedItems] = useState(allowMultiple ? selectedHospitals : []);
+  const [selectedItem, setSelectedItem] = useState(!allowMultiple && selectedHospitals?.length > 0 ? selectedHospitals[0] : null);
   
   // Hospital data states
   const [hospitalsData, setHospitalsData] = useState([]);
@@ -232,24 +233,40 @@ const HospitalSelector = () => {
   };
 
   const handleToggleHospital = (hospital) => {
-    // Single selection - radio button behavior
-    const isSelected = selectedItem?.id === hospital.id;
-    if (isSelected) {
-      setSelectedItem(null); // Deselect if already selected
+    if (allowMultiple) {
+      // Multiple selection - checkbox behavior
+      const isSelected = selectedItems.some(h => h.id === hospital.id);
+      if (isSelected) {
+        setSelectedItems(selectedItems.filter(h => h.id !== hospital.id));
+      } else {
+        setSelectedItems([...selectedItems, hospital]);
+      }
     } else {
-      setSelectedItem(hospital); // Select this hospital
+      // Single selection - radio button behavior
+      const isSelected = selectedItem?.id === hospital.id;
+      if (isSelected) {
+        setSelectedItem(null); // Deselect if already selected
+      } else {
+        setSelectedItem(hospital); // Select this hospital
+      }
     }
   };
 
   const handleContinue = () => {
-    if (onSelect && selectedItem) {
-      onSelect([selectedItem]); // Return as array for compatibility
+    if (onSelect) {
+      if (allowMultiple) {
+        onSelect(selectedItems);
+      } else if (selectedItem) {
+        onSelect([selectedItem]); // Return as array for compatibility
+      }
     }
     navigation.goBack();
   };
 
   const renderHospitalItem = ({ item }) => {
-    const isSelected = selectedItem?.id === item.id;
+    const isSelected = allowMultiple 
+      ? selectedItems.some(h => h.id === item.id)
+      : selectedItem?.id === item.id;
     
     return (
       <TouchableOpacity
@@ -258,9 +275,17 @@ const HospitalSelector = () => {
         activeOpacity={0.7}
       >
         <View style={styles.radioContainer}>
-          <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
-            {isSelected && <View style={styles.radioInner} />}
-          </View>
+          {allowMultiple ? (
+            // Checkbox for multiple selection
+            <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+              {isSelected && <Icon name="checkmark" size={16} color="#fff" />}
+            </View>
+          ) : (
+            // Radio button for single selection
+            <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
+              {isSelected && <View style={styles.radioInner} />}
+            </View>
+          )}
         </View>
         
         <View style={styles.hospitalInfo}>
@@ -450,14 +475,14 @@ const HospitalSelector = () => {
       )}
 
       {/* Bottom Button */}
-      {selectedItem && (
+      {(allowMultiple ? selectedItems.length > 0 : selectedItem) && (
         <View style={styles.bottomContainer}>
           <TouchableOpacity
             style={styles.continueButton}
             onPress={handleContinue}
           >
             <AppText style={styles.continueButtonText}>
-              Continue (1 selected)
+              Continue ({allowMultiple ? selectedItems.length : 1} selected)
             </AppText>
           </TouchableOpacity>
         </View>
