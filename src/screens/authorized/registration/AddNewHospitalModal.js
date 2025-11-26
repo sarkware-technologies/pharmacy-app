@@ -559,14 +559,14 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     }
 
     // GST validation
-    if (!hospitalForm.gstFile && !documentIds.gst) {
-      newErrors.gstFile = 'GST document is required';
-    }
-    if (!hospitalForm.gstNumber || hospitalForm.gstNumber.trim() === '') {
-      newErrors.gstNumber = 'GST number is required';
-    } else if (!/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(hospitalForm.gstNumber)) {
-      newErrors.gstNumber = 'Invalid GST format';
-    }
+    // if (!hospitalForm.gstFile && !documentIds.gst) {
+    //   newErrors.gstFile = 'GST document is required';
+    // }
+    // if (!hospitalForm.gstNumber || hospitalForm.gstNumber.trim() === '') {
+    //   newErrors.gstNumber = 'GST number is required';
+    // } else if (!/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(hospitalForm.gstNumber)) {
+    //   newErrors.gstNumber = 'Invalid GST format';
+    // }
 
     if (Object.keys(newErrors).length > 0) {
       setHospitalErrors(newErrors);
@@ -1158,10 +1158,11 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           {renderOTPInput('email')}
 
           <FileUploadComponent
-            placeholder="Upload PAN *"
+            placeholder="Upload PAN"
             accept={['pdf', 'jpg', 'png', 'jpeg']}
             maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.PAN}
+             mandatory={true}
             initialFile={hospitalForm.panFile}
             onFileUpload={(file) => handleFileUpload('pan', file)}
             onFileDelete={() => handleFileDelete('pan')}
@@ -1228,21 +1229,18 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           />
 
           <FileUploadComponent
-            placeholder="Upload GST *"
+            placeholder="Upload GST"
             accept={['pdf', 'jpg', 'png', 'jpeg']}
             maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.GST}
             initialFile={hospitalForm.gstFile}
             onFileUpload={(file) => handleFileUpload('gst', file)}
             onFileDelete={() => handleFileDelete('gst')}
-            errorMessage={hospitalErrors.gstFile}
             onOcrDataExtracted={(ocrData) => {
               console.log('GST OCR Data:', ocrData);
               if (ocrData.gstNumber) {
                 setHospitalForm(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
-                if (ocrData.isGstValid) {
-                  setVerificationStatus(prev => ({ ...prev, gst: true }));
-                }
+               
               }
             }}
           />
@@ -1256,12 +1254,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             value={hospitalForm.gstNumber}
             onChangeText={(text) => {
               setHospitalForm(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
-              if (hospitalErrors.gstNumber) {
-                setHospitalErrors(prev => ({ ...prev, gstNumber: null }));
-              }
+           
             }}
-            mandatory={true}
-            error={hospitalErrors.gstNumber}
+   
           />
 
           {/* Mapping Section */}

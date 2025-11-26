@@ -618,14 +618,14 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
     }
 
     // GST validation
-    if (!doctorForm.gstFile && !documentIds.gst) {
-      newErrors.gstFile = 'GST document is required';
-    }
-    if (!doctorForm.gstNumber || doctorForm.gstNumber.trim() === '') {
-      newErrors.gstNumber = 'GST number is required';
-    } else if (!/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(doctorForm.gstNumber)) {
-      newErrors.gstNumber = 'Invalid GST format';
-    }
+    // if (!doctorForm.gstFile && !documentIds.gst) {
+    //   newErrors.gstFile = 'GST document is required';
+    // }
+    // if (!doctorForm.gstNumber || doctorForm.gstNumber.trim() === '') {
+    //   newErrors.gstNumber = 'GST number is required';
+    // } else if (!/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(doctorForm.gstNumber)) {
+    //   newErrors.gstNumber = 'Invalid GST format';
+    // }
 
     if (Object.keys(newErrors).length > 0) {
       console.log('=== Validation Errors ===');
@@ -1316,6 +1316,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
             accept={['pdf', 'jpg', 'png', 'jpeg']}
             maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.PAN}
+            mandatory
             initialFile={doctorForm.panFile}
             onFileUpload={(file) => handleFileUpload('pan', file)}
             onFileDelete={() => handleFileDelete('pan')}
@@ -1390,14 +1391,11 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
             initialFile={doctorForm.gstFile}
             onFileUpload={(file) => handleFileUpload('gst', file)}
             onFileDelete={() => handleFileDelete('gst')}
-            errorMessage={doctorErrors.gstFile}
             onOcrDataExtracted={(ocrData) => {
               console.log('GST OCR Data:', ocrData);
               if (ocrData.gstNumber) {
                 setDoctorForm(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
-                if (ocrData.isGstValid) {
-                  setVerificationStatus(prev => ({ ...prev, gst: true }));
-                }
+               
               }
             }}
           />
@@ -1416,8 +1414,6 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
                 setDoctorErrors(prev => ({ ...prev, gstNumber: null }));
               }
             }}
-            mandatory={true}
-            error={doctorErrors.gstNumber}
           />
 
           {/* Mapping Section */}
