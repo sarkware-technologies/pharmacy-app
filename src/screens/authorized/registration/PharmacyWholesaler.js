@@ -1774,10 +1774,11 @@ const PharmacyWholesalerForm = () => {
                       }}
                     >
                       <AppText style={styles.selectorPlaceholder}>
-                        {formData.selectedDoctors.length > 0
+                        {/* {formData.selectedDoctors.length > 0
                           ? `${formData.selectedDoctors.length} Doctor${formData.selectedDoctors.length !== 1 ? 's' : ''} selected`
                           : 'Search doctor name/code'
-                        }
+                        } */}
+                        Search doctor name/code
                       </AppText>
                       <Icon name="arrow-drop-down" size={24} color="#666" />
                     </TouchableOpacity>

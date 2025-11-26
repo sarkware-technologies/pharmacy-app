@@ -1551,10 +1551,11 @@ const PharmacyRegistrationForm = () => {
                       }}
                     >
                       <AppText style={styles.selectorPlaceholder}>
-                        {formData.selectedDoctors.length > 0
+                       {/* {formData.selectedDoctors.length > 0
                           ? `${formData.selectedDoctors.length} Doctor${formData.selectedDoctors.length !== 1 ? 's' : ''} selected`
                           : 'Search doctor name/code'
-                        }
+                        } */}
+                        Search doctor name/code
                       </AppText>
                       <Icon name="arrow-drop-down" size={24} color="#666" />
                     </TouchableOpacity>
@@ -2704,9 +2705,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
-  selectedItemsContainer: {
-    marginBottom: 16,
-  },
+
   selectedItemsLabel: {
     fontSize: 14,
     fontWeight: '600',
