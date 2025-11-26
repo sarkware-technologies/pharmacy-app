@@ -601,6 +601,14 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
       newErrors.address1 = 'Address 1 is required';
     }
 
+
+    if (!pharmacyForm.address2 || pharmacyForm.address2.trim() === '') {
+      newErrors.address2 = 'Address 2 is required';
+    }
+
+    if (!pharmacyForm.address3 || pharmacyForm.address3.trim() === '') {
+      newErrors.address3 = 'Address 3 is required';
+    }
     // Pincode validation
     if (!pharmacyForm.pincode || pharmacyForm.pincode.trim() === '') {
       newErrors.pincode = 'Pincode is required';
@@ -655,11 +663,11 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
     if (!pharmacyForm.gstFile && !documentIds.gst) {
       newErrors.gstFile = 'GST document is required';
     }
-    if (!pharmacyForm.gstNumber || pharmacyForm.gstNumber.trim() === '') {
-      newErrors.gstNumber = 'GST number is required';
-    } else if (!/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(pharmacyForm.gstNumber)) {
-      newErrors.gstNumber = 'Invalid GST format';
-    }
+    // if (!pharmacyForm.gstNumber || pharmacyForm.gstNumber.trim() === '') {
+    //   newErrors.gstNumber = 'GST number is required';
+    // } else if (!/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(pharmacyForm.gstNumber)) {
+    //   newErrors.gstNumber = 'Invalid GST format';
+    // }
 
     if (Object.keys(newErrors).length > 0) {
       setPharmacyErrors(newErrors);
@@ -1158,12 +1166,17 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             placeholder="Address 2"
             value={pharmacyForm.address2}
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address2: text }))}
+            mandatory
+            error={pharmacyErrors.address2}
+
           />
 
           <CustomInput
             placeholder="Address 3"
             value={pharmacyForm.address3}
             onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address3: text }))}
+            mandatory
+            error={pharmacyErrors.address3}
           />
 
           <CustomInput
@@ -1455,14 +1468,10 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             value={pharmacyForm.gstNumber}
             onChangeText={(text) => {
               setPharmacyForm(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
-              if (pharmacyErrors.gstNumber) {
-                setPharmacyErrors(prev => ({ ...prev, gstNumber: null }));
-              }
+             
             }}
             maxLength={15}
             autoCapitalize="characters"
-            mandatory={true}
-            error={pharmacyErrors.gstNumber}
           />
 
           {/* Mapping Section */}
