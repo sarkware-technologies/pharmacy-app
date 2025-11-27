@@ -874,92 +874,56 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             placeholder="Address 1 "
             error={hospitalErrors.address1}
             mandatory={true}
-            onLocationSelect={(locationData) => {
-              console.log('Location selected:', locationData);
+       
 
-              // Update address field with full address
-              setHospitalForm(prev => ({ ...prev, address1: locationData.address }));
-
-              // Split address by commas for other address fields
-              const addressParts = locationData.address.split(',').map(part => part.trim());
-              const filteredParts = addressParts.filter(part =>
-                part.toLowerCase() !== 'india' &&
-                part !== locationData.pincode
-              );
-
-              // Update pincode
-              if (locationData.pincode) {
-                setHospitalForm(prev => ({ ...prev, pincode: locationData.pincode }));
-                setHospitalErrors(prev => ({ ...prev, pincode: null }));
-              }
-
-              // Update area
-              if (locationData.area) {
-                setHospitalForm(prev => ({ ...prev, area: locationData.area }));
-                setHospitalErrors(prev => ({ ...prev, area: null }));
-              }
-
-              // Match and update state
-              if (locationData.state && states.length > 0) {
-                const matchedState = states.find(s =>
-                  s.name.toLowerCase().includes(locationData.state.toLowerCase()) ||
-                  locationData.state.toLowerCase().includes(s.name.toLowerCase())
-                );
-                if (matchedState) {
+             onLocationSelect={locationData => {
+                  const addressParts = locationData.address
+                    .split(',')
+                    .map(part => part.trim());
+                  const extractedPincode = locationData.pincode || '';
+                  const filteredParts = addressParts.filter(part => {
+                    return (
+                      !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india'
+                    );
+                  });
+                  const matchedState = states.find(
+                    s =>
+                      s.name.toLowerCase() === locationData.state.toLowerCase(),
+                  );
+                  const matchedCity = cities.find(
+                    c =>
+                      c.name.toLowerCase() === locationData.city.toLowerCase(),
+                  );
                   setHospitalForm(prev => ({
                     ...prev,
-                    state: matchedState.name,
-                    stateId: matchedState.id,
-                  }));
-                  setHospitalErrors(prev => ({ ...prev, state: null }));
-
-                  // Load cities for the matched state
-                  loadCities(matchedState.id);
-                }
-              }
-
-              // Match and update city (after a short delay to ensure cities are loaded)
-              if (locationData.city) {
-                setTimeout(() => {
-                  const matchedCity = cities.find(c =>
-                    c.name.toLowerCase().includes(locationData.city.toLowerCase()) ||
-                    locationData.city.toLowerCase().includes(c.name.toLowerCase())
-                  );
-                  if (matchedCity) {
-                    setHospitalForm(prev => ({
-                      ...prev,
-                      city: matchedCity.name,
+                    address1: filteredParts[0] || '',
+                    address2: filteredParts[1] || '',
+                    address3: filteredParts[2] || '',
+                    address4: filteredParts.slice(3).join(', ') || '',
+                    pincode: extractedPincode,
+                    area: locationData.area || '',
+                    ...(matchedState && {
+                      stateId: matchedState.id,
+                      state: matchedState.name,
+                    }),
+                    ...(matchedCity && {
                       cityId: matchedCity.id,
-                    }));
-                    setHospitalErrors(prev => ({ ...prev, city: null }));
-                  }
-                }, 500);
-              }
-
-              // Fill remaining address fields
-              if (filteredParts.length > 1) {
-                setHospitalForm(prev => ({ ...prev, address2: filteredParts[1] || '' }));
-              }
-              if (filteredParts.length > 2) {
-                setHospitalForm(prev => ({ ...prev, address3: filteredParts[2] || '' }));
-              }
-              if (filteredParts.length > 3) {
-                setHospitalForm(prev => ({ ...prev, address4: filteredParts[3] || '' }));
-              }
-
-              // Clear all address field errors
-              setHospitalErrors(prev => ({
-                ...prev,
-                address1: null,
-                address2: null,
-                address3: null,
-                address4: null,
-                pincode: null,
-                area: null,
-                city: null,
-                state: null,
-              }));
-            }}
+                      city: matchedCity.name,
+                    }),
+                  }));
+                  // if (matchedState) loadCities(matchedState.id);
+                  setHospitalErrors(prev => ({
+                    ...prev,
+                    address1: null,
+                    address2: null,
+                    address3: null,
+                    address4: null,
+                    pincode: null,
+                    area: null,
+                    city: null,
+                    state: null,
+                  }));
+                }}
           />
 
           <CustomInput
