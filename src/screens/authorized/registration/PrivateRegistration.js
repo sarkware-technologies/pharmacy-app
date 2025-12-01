@@ -842,6 +842,10 @@ const PrivateRegistrationForm = () => {
           tension: 40,
           useNativeDriver: true,
         }).start();
+           setErrors(prev => ({
+          ...prev,
+          [`${field}Verification`]: null,
+        }));
       } else {
         // Handle failure case where customer already exists
         if (response.statusCode === 302 && response.data && response.data.length > 0) {
@@ -972,6 +976,12 @@ const PrivateRegistrationForm = () => {
     if (!formData.registrationDate) {
       newErrors.registrationDate = 'Registration date is required';
     }
+
+    if (!formData.licenseFile) {
+      newErrors.licenseFile = 'Registration Certificate is required';
+    }
+
+    
     
     // General Details validation
     if (!formData.clinicName) {
@@ -1020,7 +1030,9 @@ const PrivateRegistrationForm = () => {
         newErrors.gstNumber = 'Invalid GST format (e.g., 27ASDSD1234F1Z5)';
       }
     }
-    
+    if (!formData.panFile) {
+      newErrors.panFile = 'PAN document is required';
+    }
     // Verification validation - only for new registration
     if (!isEditMode) {
       if (!verificationStatus.mobile) {
@@ -1124,7 +1136,7 @@ const PrivateRegistrationForm = () => {
           mobile: formData.mobileNumber,
           email: formData.emailAddress,
           panNumber: formData.panNumber || '',
-          gstNumber: formData.gstNumber || '',
+         ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
         ...(formData.stockists && formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({
@@ -1204,6 +1216,8 @@ const PrivateRegistrationForm = () => {
     if (selectedDate) {
       const formattedDate = selectedDate.toLocaleDateString('en-IN');
       setFormData(prev => ({ ...prev, registrationDate: formattedDate }));
+            setErrors(prev => ({ ...prev, registrationDate: null }));
+
     }
   };
 
@@ -1406,7 +1420,10 @@ const PrivateRegistrationForm = () => {
               <CustomInput
                 placeholder="Hospital Registration Number"
                 value={formData.registrationNumber}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, registrationNumber: text }))}
+                onChangeText={(text) => {
+                  setFormData(prev => ({ ...prev, registrationNumber: text }))
+                  setErrors(prev => ({ ...prev, registrationNumber: null }))
+                }}
                 error={errors.registrationNumber}
                 autoCapitalize="characters"
                 mandatory={true}
@@ -1465,7 +1482,10 @@ const PrivateRegistrationForm = () => {
               <CustomInput
                 placeholder="Enter hospital Name"
                 value={formData.clinicName}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, clinicName: text }))}
+                onChangeText={(text) => {
+                  setFormData(prev => ({ ...prev, clinicName: text }))
+                  setErrors(prev => ({ ...prev, clinicName: null }))
+                }}
                 error={errors.clinicName}
                 mandatory={true}
               />
@@ -1731,6 +1751,7 @@ const PrivateRegistrationForm = () => {
                 onFileDelete={() => {
                   setFormData(prev => ({ ...prev, panFile: null }));
                 }}
+                errorMessage={errors.panFile}
                 mandatory={true}
                 onOcrDataExtracted={(ocrData) => {
                   console.log('PAN OCR Data:', ocrData);
@@ -1857,6 +1878,7 @@ const PrivateRegistrationForm = () => {
                   autoCapitalize="characters"
                   keyboardType="default"
                   maxLength={15}
+                  error={errors.gstNumber}
                 />
 
             </View>

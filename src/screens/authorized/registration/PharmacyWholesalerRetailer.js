@@ -500,6 +500,12 @@ const PharmacyWholesalerRetailerForm = () => {
           tension: 40,
           useNativeDriver: true,
         }).start();
+
+        setErrors(prev => ({
+          ...prev,
+          [`${field}Verification`]: null,
+        }));
+
       } else {
         // Check if customer already exists
         if (response.data && Array.isArray(response.data) && response.data.length > 0) {
@@ -685,6 +691,10 @@ const PharmacyWholesalerRetailerForm = () => {
     if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
       newErrors.panNumber = 'Valid PAN number is required (e.g., ABCDE1234F)';
     }
+
+    if (!documentIds.pan) {
+      newErrors.panFile = 'PAN document is required';
+    }
     if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode)) {
       newErrors.pincode = 'Valid pincode is required (6 digits)';
     }
@@ -693,6 +703,10 @@ const PharmacyWholesalerRetailerForm = () => {
     if (!formData.stateId) newErrors.stateId = 'State is required';
     if (!formData.pharmacyName) newErrors.pharmacyName = 'Pharmacy name is required';
     if (!formData.address1) newErrors.address1 = 'Address is required';
+        if (!formData.address2) newErrors.address2 = 'Address 2 is required';
+
+            if (!formData.address3) newErrors.address3 = 'Address 3 is required';
+
     if (!formData.mobileNumber || !/^\d{10}$/.test(formData.mobileNumber)) {
       newErrors.mobileNumber = 'Valid mobile number is required (10 digits)';
     }
@@ -706,6 +720,9 @@ const PharmacyWholesalerRetailerForm = () => {
       newErrors.emailVerification = 'Email verification is required';
     }
 
+     if (formData.gstNumber && !isValidGST(formData.gstNumber))
+      newErrors.gstNumber = 'GST number must be valid (e.g., 27ASDSD1234F1Z5)';
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -713,7 +730,13 @@ const PharmacyWholesalerRetailerForm = () => {
   const handleCancel = () => {
     setShowCancelModal(true);
   };
-
+  // GST validation function
+  const isValidGST = gst => {
+    // GST format: 2 digits (state code) + 10 alphanumeric + 1 letter + 1 digit + 1 letter = 15 characters
+    const gstRegex =
+      /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+    return gstRegex.test(gst);
+  };
   const formatDateForAPI = (date) => {
     if (!date) return null;
     const d = new Date(date);
@@ -790,7 +813,7 @@ const PharmacyWholesalerRetailerForm = () => {
           mobile: formData.mobileNumber,
           email: formData.emailAddress || '',
           panNumber: formData.panNumber,
-          gstNumber: formData.gstNumber,
+          ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
         ...(formData.stockists && formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({
@@ -1540,6 +1563,7 @@ const PharmacyWholesalerRetailerForm = () => {
                 onFileUpload={(file) => handleFileUpload('pan', file)}
                 onFileDelete={() => handleFileDelete('pan')}
                 mandatory={true}
+                errorMessage={errors.panFile}
                 onOcrDataExtracted={(ocrData) => {
                   console.log('PAN OCR Data:', ocrData);
                   if (ocrData.panNumber) {
@@ -1550,33 +1574,7 @@ const PharmacyWholesalerRetailerForm = () => {
                 }}
               />
 
-              {/* <View style={[styles.input, errors.panNumber && styles.inputError, verificationStatus.pan && styles.verifiedInput]}>
-                <View style={styles.inputTextContainer}>
-                  <CustomInput
-                    placeholder="PAN number"
-                    value={formData.panNumber}
-                    onChangeText={(text) => {
-                      const upperText = text.toUpperCase();
-                      setFormData(prev => ({ ...prev, panNumber: upperText }));
-                      setErrors(prev => ({ ...prev, panNumber: null }));
-                      // Auto-verify if valid PAN format
-                      if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(upperText)) {
-                        setVerificationStatus(prev => ({ ...prev, pan: true }));
-                      } else {
-                        setVerificationStatus(prev => ({ ...prev, pan: false }));
-                      }
-                    }}
-                    autoCapitalize="characters"
-                    maxLength={10}
-                    mandatory={true}
-                    error={errors.panNumber}
-                    style={styles.flexContainer}
-                  />
-                  {verificationStatus.pan && (
-                    <AppText style={styles.verifiedText}>✓ Verified</AppText>
-                  )}
-                </View>
-              </View> */}
+          
               <CustomInput
                 placeholder="PAN Number"
                 value={formData.panNumber}
@@ -1588,6 +1586,7 @@ const PharmacyWholesalerRetailerForm = () => {
                 autoCapitalize="characters"
                 maxLength={10} mandatory
                 editable={!verificationStatus.pan}
+                error={errors.panNumber}
 
                 rightComponent={
                 <TouchableOpacity
@@ -2279,6 +2278,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
+    marginBottom:16
   },
   dropdownText: {
     fontSize: 14,

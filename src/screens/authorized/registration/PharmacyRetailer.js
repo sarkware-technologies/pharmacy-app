@@ -430,6 +430,11 @@ const PharmacyRegistrationForm = () => {
           tension: 40,
           useNativeDriver: true,
         }).start();
+
+        setErrors(prev => ({
+          ...prev,
+          [`${field}Verification`]: null,
+        }));
       } else {
         // Check for existing customer
         if (!response.success && response.data && Array.isArray(response.data)) {
@@ -640,6 +645,10 @@ const PharmacyRegistrationForm = () => {
     if (!formData.pharmacyName) newErrors.pharmacyName = 'Pharmacy name is required';
     if (!formData.address1) newErrors.address1 = 'Address is required';
     if (!formData.pincode || formData.pincode.length !== 6 || !/^[1-9]\d{5}$/.test(formData.pincode)) newErrors.pincode = 'Valid 6-digit pincode is required';
+
+      if (!formData.area || formData.area.trim().length === 0) {
+      newErrors.area = 'Area is required';
+    }
     if (!formData.cityId) newErrors.cityId = 'City is required';
     if (!formData.stateId) newErrors.stateId = 'State is required';
     if (!formData.mobileNumber || formData.mobileNumber.length !== 10) newErrors.mobileNumber = 'Valid 10-digit mobile number is required';
@@ -654,6 +663,12 @@ const PharmacyRegistrationForm = () => {
       newErrors.panNumber = 'Valid PAN number is required (e.g., ABCDE1234F)';
     }
 
+    if (!formData.panFile && !documentIds.pan) {
+      newErrors.panFile = 'PAN document is required';
+    }
+
+    if (formData.gstNumber && !isValidGST(formData.gstNumber))
+      newErrors.gstNumber = 'GST number must be valid (e.g., 27ASDSD1234F1Z5)';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -662,6 +677,14 @@ const PharmacyRegistrationForm = () => {
     setShowCancelModal(true);
   };
 
+
+    // GST validation function
+  const isValidGST = gst => {
+    // GST format: 2 digits (state code) + 10 alphanumeric + 1 letter + 1 digit + 1 letter = 15 characters
+    const gstRegex =
+      /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+    return gstRegex.test(gst);
+  };
   const formatDateForAPI = (date) => {
     if (!date) return null;
     const d = new Date(date);
@@ -728,7 +751,7 @@ const PharmacyRegistrationForm = () => {
           mobile: formData.mobileNumber,
           email: formData.emailAddress || '',
           panNumber: formData.panNumber,
-          gstNumber: formData.gstNumber,
+       ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
         ...(formData.stockists && formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({
@@ -1347,6 +1370,7 @@ const PharmacyRegistrationForm = () => {
                 onFileUpload={(file) => handleFileUpload('pan', file)}
                 onFileDelete={() => handleFileDelete('pan')}
                 mandatory={true}
+                errorMessage={errors.panFile}
                 onOcrDataExtracted={(ocrData) => {
                   console.log('PAN OCR Data:', ocrData);
                   if (ocrData.panNumber) {
@@ -1369,6 +1393,7 @@ const PharmacyRegistrationForm = () => {
                 autoCapitalize="characters"
                 maxLength={10} mandatory
                 editable={!verificationStatus.pan}
+                error={errors.panNumber}
 
                 rightComponent={
                   <TouchableOpacity
@@ -2117,6 +2142,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
+    marginBottom:16
   },
   dropdownText: {
     fontSize: 14,
@@ -2594,6 +2620,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginBottom: 12,
     backgroundColor: '#fff',
+    
   },
   hospitalSelectorText: {
     fontSize: 16,

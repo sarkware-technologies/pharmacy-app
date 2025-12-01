@@ -212,9 +212,13 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
       if (type === 'clinicRegistration') {
         setSelectedDate20b(date);
         setDoctorForm(prev => ({ ...prev, clinicRegistrationExpiryDate: formattedDate }));
+        setDoctorErrors(prev => ({ ...prev, clinicRegistrationExpiryDate: null }));
+
       } else if (type === 'practiceLicense') {
         setSelectedDate21b(date);
         setDoctorForm(prev => ({ ...prev, practiceLicenseExpiryDate: formattedDate }));
+        setDoctorErrors(prev => ({ ...prev, practiceLicenseExpiryDate: null }));
+
       }
     }
 
@@ -344,6 +348,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
           text1: 'Success',
           text2: `OTP sent to ${field}`,
         });
+
+        setDoctorErrors(prev => ({
+          ...prev,
+          [`${field}Verification`]: null,
+        }));
+
       } else {
         Toast.show({
           type: 'error',
@@ -535,7 +545,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
     }
 
 
-    
+
 
     // Doctor Name validation
     if (!doctorForm.doctorName || doctorForm.doctorName.trim() === '') {
@@ -618,14 +628,10 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
     }
 
     // GST validation
-    // if (!doctorForm.gstFile && !documentIds.gst) {
-    //   newErrors.gstFile = 'GST document is required';
-    // }
-    // if (!doctorForm.gstNumber || doctorForm.gstNumber.trim() === '') {
-    //   newErrors.gstNumber = 'GST number is required';
-    // } else if (!/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(doctorForm.gstNumber)) {
-    //   newErrors.gstNumber = 'Invalid GST format';
-    // }
+    if (doctorForm.gstNumber.trim() !== '' &&
+      !/^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/.test(doctorForm.gstNumber)) {
+      newErrors.gstNumber = 'Invalid GST format';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       console.log('=== Validation Errors ===');
@@ -694,7 +700,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
           mobile: doctorForm.mobileNumber,
           email: doctorForm.emailAddress,
           panNumber: doctorForm.panNumber,
-          gstNumber: doctorForm.gstNumber,
+          ...(doctorForm.gstNumber ? { gstNumber: doctorForm.gstNumber } : {}),
         },
         suggestedDistributors: [{
           distributorCode: '',
@@ -803,7 +809,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
             value={doctorForm.clinicRegistrationNumber}
             onChangeText={(text) => {
               setDoctorForm(prev => ({ ...prev, clinicRegistrationNumber: text }));
-              if (doctorErrors.registrationNumber) {
+              if (doctorErrors.clinicRegistrationNumber) {
                 setDoctorErrors(prev => ({ ...prev, clinicRegistrationNumber: null }));
               }
             }}
@@ -862,7 +868,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
             value={doctorForm.practiceLicenseNumber}
             onChangeText={(text) => {
               setDoctorForm(prev => ({ ...prev, practiceLicenseNumber: text }));
-              if (doctorErrors.registrationNumber) {
+              if (doctorErrors.practiceLicenseNumber) {
                 setDoctorErrors(prev => ({ ...prev, practiceLicenseNumber: null }));
               }
             }}
@@ -900,7 +906,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
 
 
 
-    {/* Address Proof / Clinic Image */}
+          {/* Address Proof / Clinic Image */}
           <AppText style={[styles.fieldLabel, styles.sectionTopSpacing]}>Address Proof<AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
             placeholder="Upload"
@@ -927,7 +933,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
           />
 
 
-       
+
 
 
           {/* Date Pickers */}
@@ -1006,55 +1012,55 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
             placeholder="Address 1 "
             error={doctorErrors.address1}
             mandatory={true}
-        
-              onLocationSelect={locationData => {
-                  const addressParts = locationData.address
-                    .split(',')
-                    .map(part => part.trim());
-                  const extractedPincode = locationData.pincode || '';
-                  const filteredParts = addressParts.filter(part => {
-                    return (
-                      !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india'
-                    );
-                  });
-                  const matchedState = states.find(
-                    s =>
-                      s.name.toLowerCase() === locationData.state.toLowerCase(),
-                  );
-                  const matchedCity = cities.find(
-                    c =>
-                      c.name.toLowerCase() === locationData.city.toLowerCase(),
-                  );
-                  setDoctorForm(prev => ({
-                    ...prev,
-                    address1: filteredParts[0] || '',
-                    address2: filteredParts[1] || '',
-                    address3: filteredParts[2] || '',
-                    address4: filteredParts.slice(3).join(', ') || '',
-                    pincode: extractedPincode,
-                    area: locationData.area || '',
-                    ...(matchedState && {
-                      stateId: matchedState.id,
-                      state: matchedState.name,
-                    }),
-                    ...(matchedCity && {
-                      cityId: matchedCity.id,
-                      city: matchedCity.name,
-                    }),
-                  }));
-                  // if (matchedState) loadCities(matchedState.id);
-                  setDoctorErrors(prev => ({
-                    ...prev,
-                    address1: null,
-                    address2: null,
-                    address3: null,
-                    address4: null,
-                    pincode: null,
-                    area: null,
-                    city: null,
-                    state: null,
-                  }));
-                }}
+
+            onLocationSelect={locationData => {
+              const addressParts = locationData.address
+                .split(',')
+                .map(part => part.trim());
+              const extractedPincode = locationData.pincode || '';
+              const filteredParts = addressParts.filter(part => {
+                return (
+                  !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india'
+                );
+              });
+              const matchedState = states.find(
+                s =>
+                  s.name.toLowerCase() === locationData.state.toLowerCase(),
+              );
+              const matchedCity = cities.find(
+                c =>
+                  c.name.toLowerCase() === locationData.city.toLowerCase(),
+              );
+              setDoctorForm(prev => ({
+                ...prev,
+                address1: filteredParts[0] || '',
+                address2: filteredParts[1] || '',
+                address3: filteredParts[2] || '',
+                address4: filteredParts.slice(3).join(', ') || '',
+                pincode: extractedPincode,
+                area: locationData.area || '',
+                ...(matchedState && {
+                  stateId: matchedState.id,
+                  state: matchedState.name,
+                }),
+                ...(matchedCity && {
+                  cityId: matchedCity.id,
+                  city: matchedCity.name,
+                }),
+              }));
+              // if (matchedState) loadCities(matchedState.id);
+              setDoctorErrors(prev => ({
+                ...prev,
+                address1: null,
+                address2: null,
+                address3: null,
+                address4: null,
+                pincode: null,
+                area: null,
+                city: null,
+                state: null,
+              }));
+            }}
           />
 
 
@@ -1292,7 +1298,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
               }
             }}
           />
-     
+
 
           <CustomInput
             placeholder="PAN number"
@@ -1358,11 +1364,11 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
               console.log('GST OCR Data:', ocrData);
               if (ocrData.gstNumber) {
                 setDoctorForm(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
-               
+
               }
             }}
           />
-        
+
 
 
 
@@ -1377,6 +1383,8 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
                 setDoctorErrors(prev => ({ ...prev, gstNumber: null }));
               }
             }}
+
+            error={doctorForm.gstNumber}
           />
 
           {/* Mapping Section */}
@@ -1388,7 +1396,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
 
           {/* Action Buttons */}
           <View style={styles.modalActionButtons}>
-            
+
             <TouchableOpacity
               style={styles.cancelButton}
               onPress={handleClose}

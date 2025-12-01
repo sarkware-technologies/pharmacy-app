@@ -353,6 +353,11 @@ const GovtHospitalRegistrationForm = () => {
           text2: `OTP sent to ${field}`,
         position: 'top',
         });
+
+        setErrors(prev => ({
+          ...prev,
+          [`${field}Verification`]: null,
+        }));
       } else {
         Toast.show({
           type: 'error',
@@ -595,6 +600,10 @@ const GovtHospitalRegistrationForm = () => {
     if (!formData.registrationNumber) {
       newErrors.registrationNumber = 'Hospital code is required';
     }
+
+     if (!formData.registrationCertificate) {
+      newErrors.registrationCertificate = 'Registration Certificate is required';
+    }
     if (!formData.nin || formData.nin.trim().length === 0) {
       newErrors.nin = 'NIN (National Identification Number) is required';
     }
@@ -638,6 +647,8 @@ const GovtHospitalRegistrationForm = () => {
     if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
       newErrors.emailAddress = 'Valid email address is required';
     }
+
+   
     if (!verificationStatus.email) {
       newErrors.emailVerification = 'Email verification is required';
     }
@@ -646,6 +657,10 @@ const GovtHospitalRegistrationForm = () => {
       newErrors.panNumber = 'PAN number is required';
     } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
       newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
+    }
+
+        if (!formData.panFile) {
+      newErrors.panFile = 'Pan document is required';
     }
 
     // GST is optional - only validate if provided
@@ -728,7 +743,8 @@ const GovtHospitalRegistrationForm = () => {
           mobile: formData.mobileNumber,
           email: formData.emailAddress || '',
           panNumber: formData.panNumber || '',
-          gstNumber: formData.gstNumber || '',
+          ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
+
         },
         ...(formData.stockists && formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({
@@ -785,6 +801,8 @@ const GovtHospitalRegistrationForm = () => {
     if (selectedDate) {
       const formattedDate = selectedDate.toLocaleDateString('en-IN');
       setFormData(prev => ({ ...prev, registrationDate: formattedDate }));
+            setErrors(prev => ({ ...prev, registrationDate: null }));
+
     }
   };
 
@@ -855,17 +873,21 @@ const GovtHospitalRegistrationForm = () => {
           accept={['pdf', 'jpg', 'png']}
           maxSize={15 * 1024 * 1024}
           docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
-          initialFile={formData.registrationCertificateFile}
+          initialFile={formData.registrationCertificate}
           onFileUpload={(file) => handleFileUpload('registrationCertificate', file)}
           onFileDelete={() => handleFileDelete('registrationCertificate')}
           onOcrDataExtracted={handleRegistrationOcrData}
-          errorMessage={errors.registrationCertificateFile}
+          errorMessage={errors.registrationCertificate}
         />
 
         <CustomInput
           placeholder="Hospital Code "
           value={formData.registrationNumber}
-          onChangeText={(text) => setFormData(prev => ({ ...prev, registrationNumber: text }))}
+
+          onChangeText={(text) => {
+           setFormData(prev => ({ ...prev, registrationNumber: text }))
+            setErrors(prev => ({ ...prev, registrationNumber: null }));
+          }}
           error={errors.registrationNumber}
           autoCapitalize="characters"
           mandatory={false}
@@ -941,7 +963,10 @@ const GovtHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Hospital name"
           value={formData.hospitalName}
-          onChangeText={(text) => setFormData(prev => ({ ...prev, hospitalName: text }))}
+          onChangeText={(text) => {
+            setFormData(prev => ({ ...prev, hospitalName: text }))
+            setErrors(prev => ({ ...prev, hospitalName: null }))
+          }}
           error={errors.hospitalName}
           mandatory={true}
         />
@@ -1134,6 +1159,10 @@ const GovtHospitalRegistrationForm = () => {
         {errors.mobileNumber && (
           <AppText style={styles.errorText}>{errors.mobileNumber}</AppText>
         )}
+
+        {errors.mobileVerification && (
+          <AppText style={styles.errorText}>{errors.mobileVerification}</AppText>
+        )}
         {renderOTPInput('mobile')}
 
         {/* Email Address with Verify */}
@@ -1216,7 +1245,9 @@ const GovtHospitalRegistrationForm = () => {
                   setErrors(prev => ({ ...prev, panNumber: null }));
                 }}
                 autoCapitalize="characters"
-                maxLength={10} mandatory
+                maxLength={10} 
+                mandatory
+                error={errors.panNumber}
                 editable={!verificationStatus.pan}
 
                 rightComponent={

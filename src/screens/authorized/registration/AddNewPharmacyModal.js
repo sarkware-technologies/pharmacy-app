@@ -46,7 +46,7 @@ const MOCK_AREAS = [
   { id: 5, name: 'Sadar' },
 ];
 
-const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorName, parentHospital=null }) => {
+const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorName, parentHospital = null }) => {
   const [pharmacyForm, setPharmacyForm] = useState({
     licenseType: 'Only Retail', // 'Only Retail', 'Only Wholesaler', 'Retail Cum Wholesaler'
     license20b: '',
@@ -238,17 +238,17 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
 
     if (date) {
       const formattedDate = date.toLocaleDateString('en-IN');
-
       if (type === '20b') {
         setSelectedDate20b(date);
         setPharmacyForm(prev => ({ ...prev, license20bExpiryDate: formattedDate }));
+        setPharmacyErrors(prev => ({ ...prev, license20bExpiryDate: null }));
       } else if (type === '21b') {
         setSelectedDate21b(date);
         setPharmacyForm(prev => ({ ...prev, license21bExpiryDate: formattedDate }));
-      } else if (type === 'registration') {
-        setSelectedRegistrationDate(date);
-        setPharmacyForm(prev => ({ ...prev, registrationDate: formattedDate }));
+        setPharmacyErrors(prev => ({ ...prev, license21bExpiryDate: null }));
       }
+
+
     }
 
     setShowDatePicker(null);
@@ -352,6 +352,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
       const response = await customerAPI.generateOTP(requestData);
 
       if (response.success) {
+
+
         setShowOTP(prev => ({ ...prev, [field]: true }));
 
         // If OTP is returned in response (for testing), auto-fill it
@@ -375,6 +377,11 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           text2: `OTP sent to ${field}`,
           position: 'top',
         });
+
+        setPharmacyErrors(prev => ({
+          ...prev,
+          [`${field}Verification`]: null,
+        }));
       } else {
         Toast.show({
           type: 'error',
@@ -660,14 +667,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
     }
 
     // GST validation
-    // if (!pharmacyForm.gstFile && !documentIds.gst) {
-    //   newErrors.gstFile = 'GST document is required';
-    // }
-    // if (!pharmacyForm.gstNumber || pharmacyForm.gstNumber.trim() === '') {
-    //   newErrors.gstNumber = 'GST number is required';
-    // } else if (!/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(pharmacyForm.gstNumber)) {
-    //   newErrors.gstNumber = 'Invalid GST format';
-    // }
+
+
+    if (pharmacyForm.gstNumber.trim() !== '' &&
+      !/^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/.test(pharmacyForm.gstNumber)) {
+      newErrors.gstNumber = 'Invalid GST format';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setPharmacyErrors(newErrors);
@@ -755,7 +760,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           mobile: pharmacyForm.mobileNumber,
           email: pharmacyForm.emailAddress,
           panNumber: pharmacyForm.panNumber,
-          gstNumber: pharmacyForm.gstNumber,
+          ...(pharmacyForm.gstNumber ? { gstNumber: pharmacyForm.gstNumber } : {}),
         },
         suggestedDistributors: [{
           distributorCode: '',
@@ -932,7 +937,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           )}
 
           {/* 21B License */}
-             <View style={[styles.labelWithIcon, styles.sectionTopSpacing]}>
+          <View style={[styles.labelWithIcon, styles.sectionTopSpacing]}>
             <AppText style={styles.fieldLabel}>21<AppText style={styles.mandatory}>*</AppText></AppText>
             <Icon
               name="info-outline"
@@ -950,7 +955,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             onFileDelete={() => handleFileDelete('license21b')}
             errorMessage={pharmacyErrors.license21bFile}
           />
-     
+
           <CustomInput
             placeholder="Drug license number"
             value={pharmacyForm.license21b}
@@ -964,7 +969,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             error={pharmacyErrors.license21b}
           />
 
-   
+
 
           <TouchableOpacity
             style={[
@@ -1005,7 +1010,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             onFileDelete={() => handleFileDelete('pharmacyImage')}
             errorMessage={pharmacyErrors.pharmacyImageFile}
           />
-          
+
 
           {/* Date Pickers */}
           {showDatePicker === '20b' && (
@@ -1024,14 +1029,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
               onChange={(event, date) => handleDateChange('21b', event, date)}
             />
           )}
-          {showDatePicker === 'registration' && (
-            <DateTimePicker
-              value={selectedRegistrationDate}
-              mode="date"
-              display="default"
-              onChange={(event, date) => handleDateChange('registration', event, date)}
-            />
-          )}
+
 
           {/* General Details */}
           <AppText style={styles.modalSectionLabel}>General Details <AppText style={styles.mandatory}>*</AppText></AppText>
@@ -1074,56 +1072,56 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             placeholder="Address 1 "
             error={pharmacyErrors.address1}
             mandatory={true}
-         
 
-              onLocationSelect={locationData => {
-                  const addressParts = locationData.address
-                    .split(',')
-                    .map(part => part.trim());
-                  const extractedPincode = locationData.pincode || '';
-                  const filteredParts = addressParts.filter(part => {
-                    return (
-                      !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india'
-                    );
-                  });
-                  const matchedState = states.find(
-                    s =>
-                      s.name.toLowerCase() === locationData.state.toLowerCase(),
-                  );
-                  const matchedCity = cities.find(
-                    c =>
-                      c.name.toLowerCase() === locationData.city.toLowerCase(),
-                  );
-                  setPharmacyForm(prev => ({
-                    ...prev,
-                    address1: filteredParts[0] || '',
-                    address2: filteredParts[1] || '',
-                    address3: filteredParts[2] || '',
-                    address4: filteredParts.slice(3).join(', ') || '',
-                    pincode: extractedPincode,
-                    area: locationData.area || '',
-                    ...(matchedState && {
-                      stateId: matchedState.id,
-                      state: matchedState.name,
-                    }),
-                    ...(matchedCity && {
-                      cityId: matchedCity.id,
-                      city: matchedCity.name,
-                    }),
-                  }));
-                  // if (matchedState) loadCities(matchedState.id);
-                  setPharmacyErrors(prev => ({
-                    ...prev,
-                    address1: null,
-                    address2: null,
-                    address3: null,
-                    address4: null,
-                    pincode: null,
-                    area: null,
-                    city: null,
-                    state: null,
-                  }));
-                }}
+
+            onLocationSelect={locationData => {
+              const addressParts = locationData.address
+                .split(',')
+                .map(part => part.trim());
+              const extractedPincode = locationData.pincode || '';
+              const filteredParts = addressParts.filter(part => {
+                return (
+                  !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india'
+                );
+              });
+              const matchedState = states.find(
+                s =>
+                  s.name.toLowerCase() === locationData.state.toLowerCase(),
+              );
+              const matchedCity = cities.find(
+                c =>
+                  c.name.toLowerCase() === locationData.city.toLowerCase(),
+              );
+              setPharmacyForm(prev => ({
+                ...prev,
+                address1: filteredParts[0] || '',
+                address2: filteredParts[1] || '',
+                address3: filteredParts[2] || '',
+                address4: filteredParts.slice(3).join(', ') || '',
+                pincode: extractedPincode,
+                area: locationData.area || '',
+                ...(matchedState && {
+                  stateId: matchedState.id,
+                  state: matchedState.name,
+                }),
+                ...(matchedCity && {
+                  cityId: matchedCity.id,
+                  city: matchedCity.name,
+                }),
+              }));
+              // if (matchedState) loadCities(matchedState.id);
+              setPharmacyErrors(prev => ({
+                ...prev,
+                address1: null,
+                address2: null,
+                address3: null,
+                address4: null,
+                pincode: null,
+                area: null,
+                city: null,
+                state: null,
+              }));
+            }}
           />
 
           <CustomInput
@@ -1191,7 +1189,6 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             <CustomInput
               placeholder="City"
               value={pharmacyForm.city}
-              onChangeText={() => { }}
               mandatory={true}
               error={pharmacyErrors.city}
               editable={false}
@@ -1210,7 +1207,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             <CustomInput
               placeholder="State"
               value={pharmacyForm.state}
-              onChangeText={() => { }}
+              onChangeText={() => { setPharmacyErrors(prev => ({ ...prev, state: null })); }}
               mandatory={true}
               error={pharmacyErrors.state}
               editable={false}
@@ -1240,45 +1237,45 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             editable={!verificationStatus.mobile}
             error={pharmacyErrors.mobileNumber || pharmacyErrors.mobileVerification}
             rightComponent={
-               <TouchableOpacity
-                              style={[
-                                styles.inlineVerifyButton,
-                                verificationStatus.mobile && styles.verifiedButton,
-                                loadingOtp.mobile && styles.disabledButton,
-                              ]}
-                              onPress={() =>
-                                !verificationStatus.mobile &&
-                                !loadingOtp.mobile &&
-                                handleVerify('mobile')
-                              }
-                              disabled={verificationStatus.mobile || loadingOtp.mobile}
-                            >
-                              {loadingOtp.mobile && !verificationStatus.mobile ? (
-                                <ActivityIndicator size="small" color={colors.primary} />
-                              ) : (
-                                <AppText
-                                  style={[
-                                    styles.inlineVerifyText,
-                                    verificationStatus.mobile && styles.verifiedText,
-                                  ]}
-                                >
-                                  {verificationStatus.mobile ? (
-                                    'Verified'
-                                  ) : (
-                                    <>
-                                      Verify
-                                      <AppText style={styles.inlineAsterisk}>*</AppText>
-                                    </>
-                                  )}
-                                </AppText>
-                              )}
-                            </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.inlineVerifyButton,
+                  verificationStatus.mobile && styles.verifiedButton,
+                  loadingOtp.mobile && styles.disabledButton,
+                ]}
+                onPress={() =>
+                  !verificationStatus.mobile &&
+                  !loadingOtp.mobile &&
+                  handleVerify('mobile')
+                }
+                disabled={verificationStatus.mobile || loadingOtp.mobile}
+              >
+                {loadingOtp.mobile && !verificationStatus.mobile ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <AppText
+                    style={[
+                      styles.inlineVerifyText,
+                      verificationStatus.mobile && styles.verifiedText,
+                    ]}
+                  >
+                    {verificationStatus.mobile ? (
+                      'Verified'
+                    ) : (
+                      <>
+                        Verify
+                        <AppText style={styles.inlineAsterisk}>*</AppText>
+                      </>
+                    )}
+                  </AppText>
+                )}
+              </TouchableOpacity>
             }
           />
-   {/* OTP Verification for Mobile */}
-        {renderOTPInput('mobile')}
+          {/* OTP Verification for Mobile */}
+          {renderOTPInput('mobile')}
 
-       
+
           <CustomInput
             placeholder="Email Address"
             value={pharmacyForm.emailAddress}
@@ -1295,44 +1292,44 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             error={pharmacyErrors.emailAddress || pharmacyErrors.emailVerification}
             rightComponent={
               <TouchableOpacity
-                                            style={[
-                                              styles.inlineVerifyButton,
-                                              verificationStatus.email && styles.verifiedButton,
-                                              loadingOtp.email && styles.disabledButton,
-                                            ]}
-                                            onPress={() =>
-                                              !verificationStatus.email &&
-                                              !loadingOtp.email &&
-                                              handleVerify('email')
-                                            }
-                                            disabled={verificationStatus.email || loadingOtp.email}
-                                          >
-                                            {loadingOtp.email && !verificationStatus.email ? (
-                                              <ActivityIndicator size="small" color={colors.primary} />
-                                            ) : (
-                                              <AppText
-                                                style={[
-                                                  styles.inlineVerifyText,
-                                                  verificationStatus.email && styles.verifiedText,
-                                                ]}
-                                              >
-                                                {verificationStatus.email ? (
-                                                  'Verified'
-                                                ) : (
-                                                  <>
-                                                    Verify
-                                                    <AppText style={styles.inlineAsterisk}>*</AppText>
-                                                  </>
-                                                )}
-                                              </AppText>
-                                            )}
-                                          </TouchableOpacity>
+                style={[
+                  styles.inlineVerifyButton,
+                  verificationStatus.email && styles.verifiedButton,
+                  loadingOtp.email && styles.disabledButton,
+                ]}
+                onPress={() =>
+                  !verificationStatus.email &&
+                  !loadingOtp.email &&
+                  handleVerify('email')
+                }
+                disabled={verificationStatus.email || loadingOtp.email}
+              >
+                {loadingOtp.email && !verificationStatus.email ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <AppText
+                    style={[
+                      styles.inlineVerifyText,
+                      verificationStatus.email && styles.verifiedText,
+                    ]}
+                  >
+                    {verificationStatus.email ? (
+                      'Verified'
+                    ) : (
+                      <>
+                        Verify
+                        <AppText style={styles.inlineAsterisk}>*</AppText>
+                      </>
+                    )}
+                  </AppText>
+                )}
+              </TouchableOpacity>
             }
           />
 
-          
- {/* OTP Verification for Email */}
-        {renderOTPInput('email')}
+
+          {/* OTP Verification for Email */}
+          {renderOTPInput('email')}
           {/* PAN */}
           {/* <AppText style={styles.modalFieldLabel}>Upload PAN <AppText style={styles.mandatory}>*</AppText></AppText> */}
           <FileUploadComponent
@@ -1353,7 +1350,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
               }
             }}
           />
-      
+
 
           <CustomInput
             placeholder="PAN number"
@@ -1419,21 +1416,23 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
               console.log('GST OCR Data:', ocrData);
               if (ocrData.gstNumber) {
                 setPharmacyForm(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
-               
               }
             }}
           />
-    
+
 
           <CustomInput
             placeholder="GST number"
             value={pharmacyForm.gstNumber}
             onChangeText={(text) => {
               setPharmacyForm(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
-             
+              if (pharmacyErrors.gstNumber) {
+                setPharmacyErrors(prev => ({ ...prev, gstNumber: null }));
+              }
             }}
             maxLength={15}
             autoCapitalize="characters"
+            error={pharmacyErrors.gstNumber}
           />
 
           {/* Mapping Section */}
@@ -1444,11 +1443,11 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
 
           {parentHospital &&
 
-          <>
-          <AppText style={styles.modalFieldLabel}>{'Parent Group Hospital'}</AppText>
-          <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
-            <AppText style={styles.mappingNameText}>{hospitalName || doctorName || 'Name will appear here'}</AppText>
-          </View></>
+            <>
+              <AppText style={styles.modalFieldLabel}>{'Parent Group Hospital'}</AppText>
+              <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
+                <AppText style={styles.mappingNameText}>{hospitalName || doctorName || 'Name will appear here'}</AppText>
+              </View></>
           }
           <AppText style={styles.modalFieldLabel}>{hospitalName ? 'Hospital' : 'Doctor'}</AppText>
           <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
@@ -1603,7 +1602,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           </View>
         </Modal>
 
-     
+
       </SafeAreaView>
     </Modal>
   );

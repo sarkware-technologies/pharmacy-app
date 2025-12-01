@@ -417,6 +417,8 @@ const PharmacyWholesalerForm = () => {
         position: 'top',
         });
 
+
+
         // Animate OTP container
         Animated.spring(otpSlideAnim, {
           toValue: 0,
@@ -424,6 +426,12 @@ const PharmacyWholesalerForm = () => {
           tension: 40,
           useNativeDriver: true,
         }).start();
+
+
+        setErrors(prev => ({
+          ...prev,
+          [`${field}Verification`]: null,
+        }));
       } else {
         // Check for existing customer
         if (
@@ -753,6 +761,10 @@ const PharmacyWholesalerForm = () => {
     if (!formData.address1) newErrors.address1 = 'Address 1 is required';
     if (!formData.address2) newErrors.address2 = 'Address 2 is required';
     if (!formData.address3) newErrors.address3 = 'Address 3 is required';
+      if (!formData.area || formData.area.trim().length === 0) {
+      newErrors.area = 'Area is required';
+    }
+    
     if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode))
       newErrors.pincode = 'Valid 6-digit pincode is required';
     if (!formData.cityId) newErrors.city = 'City is required';
@@ -771,7 +783,9 @@ const PharmacyWholesalerForm = () => {
       newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
     if (formData.gstNumber && !isValidGST(formData.gstNumber))
       newErrors.gstNumber = 'GST number must be valid (e.g., 27ASDSD1234F1Z5)';
-
+if (!formData.panFile) {
+      newErrors.panFile = 'PAN document is required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -838,7 +852,7 @@ const PharmacyWholesalerForm = () => {
           mobile: formData.mobileNumber,
           email: formData.emailAddress,
           panNumber: formData.panNumber,
-          gstNumber: formData.gstNumber,
+         ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
         mapping: {
           hospitals:
@@ -1538,6 +1552,7 @@ const PharmacyWholesalerForm = () => {
                     onFileUpload={file => handleFileUpload('panFile', file)}
                     onFileDelete={() => handleFileDelete('panFile')}
                     mandatory={true}
+                    errorMessage={errors.panFile}
                     onOcrDataExtracted={ocrData => {
                       console.log('PAN OCR Data:', ocrData);
                       if (ocrData.panNumber) {
@@ -1564,6 +1579,7 @@ const PharmacyWholesalerForm = () => {
                     maxLength={10}
                     mandatory
                     editable={!verificationStatus.pan}
+                    error={errors.panNumber}
                     rightComponent={
                       <TouchableOpacity
                         style={[
@@ -1608,9 +1624,7 @@ const PharmacyWholesalerForm = () => {
                       </TouchableOpacity>
                     }
                   />
-                  {errors.panNumber && (
-                    <AppText style={styles.errorText}>{errors.panNumber}</AppText>
-                  )}
+            
 
                   {/* GST Upload */}
                   <FileUploadComponent
@@ -2311,6 +2325,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
+    marginBottom:16
   },
   dropdownText: {
     fontSize: 14,

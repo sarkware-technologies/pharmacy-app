@@ -244,6 +244,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       setSelectedDate(date);
       const formattedDate = date.toLocaleDateString('en-IN');
       setHospitalForm(prev => ({ ...prev, registrationDate: formattedDate }));
+      setHospitalErrors(prev => ({ ...prev, registrationDate: null }));
     }
   };
 
@@ -293,14 +294,20 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           type: 'success',
           text1: 'Success',
           text2: `OTP sent to ${field}`,
-        position: 'top',
+          position: 'top',
         });
+
+        setHospitalErrors(prev => ({
+          ...prev,
+          [`${field}Verification`]: null,
+        }));
+
       } else {
         Toast.show({
           type: 'error',
           text1: 'Error',
           text2: response.message || 'Failed to generate OTP',
-        position: 'top',
+          position: 'top',
         });
       }
     } catch (error) {
@@ -356,7 +363,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           type: 'success',
           text1: 'Success',
           text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
-        position: 'top',
+          position: 'top',
         });
 
         setShowOTP(prev => ({ ...prev, [field]: false }));
@@ -373,7 +380,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           type: 'error',
           text1: 'Invalid OTP',
           text2: response.message || 'Please enter the correct OTP',
-        position: 'top',
+          position: 'top',
         });
       }
     } catch (error) {
@@ -460,6 +467,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
   };
 
   const handleSubmit = async () => {
+
+    
     // Validate mandatory fields
     const newErrors = {};
 
@@ -558,15 +567,12 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
     }
 
-    // GST validation
-    // if (!hospitalForm.gstFile && !documentIds.gst) {
-    //   newErrors.gstFile = 'GST document is required';
-    // }
-    // if (!hospitalForm.gstNumber || hospitalForm.gstNumber.trim() === '') {
-    //   newErrors.gstNumber = 'GST number is required';
-    // } else if (!/^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$/.test(hospitalForm.gstNumber)) {
-    //   newErrors.gstNumber = 'Invalid GST format';
-    // }
+
+
+      if (hospitalForm.gstNumber.trim() !== '' &&
+      !/^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/.test(hospitalForm.gstNumber)) {
+      newErrors.gstNumber = 'Invalid GST format';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setHospitalErrors(newErrors);
@@ -630,7 +636,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           mobile: hospitalForm.mobileNumber,
           email: hospitalForm.emailAddress,
           panNumber: hospitalForm.panNumber,
-          gstNumber: hospitalForm.gstNumber,
+          ...(hospitalForm.gstNumber ? { gstNumber: hospitalForm.gstNumber } : {}),
         },
         suggestedDistributors: hospitalForm.stockistName || hospitalForm.stockistCode || hospitalForm.stockistCity ? [
           {
@@ -650,7 +656,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           type: 'success',
           text1: 'Hospital Added',
           text2: response.message || 'Hospital registered successfully',
-        position: 'top',
+          position: 'top',
         });
 
         // Pass the created hospital data back to parent
@@ -677,7 +683,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           type: 'error',
           text1: 'Registration Failed',
           text2: response.details || 'Failed to register hospital. Please try again.',
-        position: 'top',
+          position: 'top',
         });
       }
     } catch (error) {
@@ -785,7 +791,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             mandatory={true}
             error={hospitalErrors.registrationNumber}
           />
-         
+
           <TouchableOpacity
             style={[
               styles.datePickerInput,
@@ -874,56 +880,56 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             placeholder="Address 1 "
             error={hospitalErrors.address1}
             mandatory={true}
-       
 
-             onLocationSelect={locationData => {
-                  const addressParts = locationData.address
-                    .split(',')
-                    .map(part => part.trim());
-                  const extractedPincode = locationData.pincode || '';
-                  const filteredParts = addressParts.filter(part => {
-                    return (
-                      !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india'
-                    );
-                  });
-                  const matchedState = states.find(
-                    s =>
-                      s.name.toLowerCase() === locationData.state.toLowerCase(),
-                  );
-                  const matchedCity = cities.find(
-                    c =>
-                      c.name.toLowerCase() === locationData.city.toLowerCase(),
-                  );
-                  setHospitalForm(prev => ({
-                    ...prev,
-                    address1: filteredParts[0] || '',
-                    address2: filteredParts[1] || '',
-                    address3: filteredParts[2] || '',
-                    address4: filteredParts.slice(3).join(', ') || '',
-                    pincode: extractedPincode,
-                    area: locationData.area || '',
-                    ...(matchedState && {
-                      stateId: matchedState.id,
-                      state: matchedState.name,
-                    }),
-                    ...(matchedCity && {
-                      cityId: matchedCity.id,
-                      city: matchedCity.name,
-                    }),
-                  }));
-                  // if (matchedState) loadCities(matchedState.id);
-                  setHospitalErrors(prev => ({
-                    ...prev,
-                    address1: null,
-                    address2: null,
-                    address3: null,
-                    address4: null,
-                    pincode: null,
-                    area: null,
-                    city: null,
-                    state: null,
-                  }));
-                }}
+
+            onLocationSelect={locationData => {
+              const addressParts = locationData.address
+                .split(',')
+                .map(part => part.trim());
+              const extractedPincode = locationData.pincode || '';
+              const filteredParts = addressParts.filter(part => {
+                return (
+                  !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india'
+                );
+              });
+              const matchedState = states.find(
+                s =>
+                  s.name.toLowerCase() === locationData.state.toLowerCase(),
+              );
+              const matchedCity = cities.find(
+                c =>
+                  c.name.toLowerCase() === locationData.city.toLowerCase(),
+              );
+              setHospitalForm(prev => ({
+                ...prev,
+                address1: filteredParts[0] || '',
+                address2: filteredParts[1] || '',
+                address3: filteredParts[2] || '',
+                address4: filteredParts.slice(3).join(', ') || '',
+                pincode: extractedPincode,
+                area: locationData.area || '',
+                ...(matchedState && {
+                  stateId: matchedState.id,
+                  state: matchedState.name,
+                }),
+                ...(matchedCity && {
+                  cityId: matchedCity.id,
+                  city: matchedCity.name,
+                }),
+              }));
+              // if (matchedState) loadCities(matchedState.id);
+              setHospitalErrors(prev => ({
+                ...prev,
+                address1: null,
+                address2: null,
+                address3: null,
+                address4: null,
+                pincode: null,
+                area: null,
+                city: null,
+                state: null,
+              }));
+            }}
           />
 
           <CustomInput
@@ -1084,40 +1090,40 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             mandatory={true}
             error={hospitalErrors.emailAddress || hospitalErrors.emailVerification}
             rightComponent={
-                             <TouchableOpacity
-                               style={[
-                                 styles.inlineVerifyButton,
-                                 verificationStatus.email && styles.verifiedButton,
-                                 loadingOtp.email && styles.disabledButton,
-                               ]}
-                               onPress={() =>
-                                 !verificationStatus.email &&
-                                 !loadingOtp.email &&
-                                 handleVerify('email')
-                               }
-                               disabled={verificationStatus.email || loadingOtp.email}
-                             >
-                               {loadingOtp.email && !verificationStatus.email ? (
-                                 <ActivityIndicator size="small" color={colors.primary} />
-                               ) : (
-                                 <AppText
-                                   style={[
-                                     styles.inlineVerifyText,
-                                     verificationStatus.email && styles.verifiedText,
-                                   ]}
-                                 >
-                                   {verificationStatus.email ? (
-                                     'Verified'
-                                   ) : (
-                                     <>
-                                       Verify
-                                       <AppText style={styles.inlineAsterisk}>*</AppText>
-                                     </>
-                                   )}
-                                 </AppText>
-                               )}
-                             </TouchableOpacity>
-                           }
+              <TouchableOpacity
+                style={[
+                  styles.inlineVerifyButton,
+                  verificationStatus.email && styles.verifiedButton,
+                  loadingOtp.email && styles.disabledButton,
+                ]}
+                onPress={() =>
+                  !verificationStatus.email &&
+                  !loadingOtp.email &&
+                  handleVerify('email')
+                }
+                disabled={verificationStatus.email || loadingOtp.email}
+              >
+                {loadingOtp.email && !verificationStatus.email ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <AppText
+                    style={[
+                      styles.inlineVerifyText,
+                      verificationStatus.email && styles.verifiedText,
+                    ]}
+                  >
+                    {verificationStatus.email ? (
+                      'Verified'
+                    ) : (
+                      <>
+                        Verify
+                        <AppText style={styles.inlineAsterisk}>*</AppText>
+                      </>
+                    )}
+                  </AppText>
+                )}
+              </TouchableOpacity>
+            }
           />
           {renderOTPInput('email')}
 
@@ -1126,7 +1132,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             accept={['pdf', 'jpg', 'png', 'jpeg']}
             maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.PAN}
-             mandatory={true}
+            mandatory={true}
             initialFile={hospitalForm.panFile}
             onFileUpload={(file) => handleFileUpload('pan', file)}
             onFileDelete={() => handleFileDelete('pan')}
@@ -1204,7 +1210,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
               console.log('GST OCR Data:', ocrData);
               if (ocrData.gstNumber) {
                 setHospitalForm(prev => ({ ...prev, gstNumber: ocrData.gstNumber }));
-               
+
               }
             }}
           />
@@ -1218,9 +1224,12 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             value={hospitalForm.gstNumber}
             onChangeText={(text) => {
               setHospitalForm(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
-           
+              if (hospitalErrors.gstNumber) {
+                setHospitalErrors(prev => ({ ...prev, gstNumber: null }));
+              }
             }}
-   
+            error={hospitalForm.gstNumber}
+
           />
 
           {/* Mapping Section */}
@@ -1252,7 +1261,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <View style={styles.modalActionButtons}>
 
 
-              <TouchableOpacity
+            <TouchableOpacity
               style={styles.cancelButton}
               onPress={handleClose}
             >
@@ -1271,7 +1280,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 <AppText style={styles.submitButtonText}>Register</AppText>
               )}
             </TouchableOpacity>
-          
+
           </View>
         </ScrollView>
 
@@ -1413,7 +1422,7 @@ const styles = StyleSheet.create({
     marginLeft: -16,
   },
 
-   modalSectionLabel2: {
+  modalSectionLabel2: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1A1A1A',
@@ -1534,7 +1543,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   errorText: {
-    marginTop:2,
+    marginTop: 2,
     color: colors.error,
     fontSize: 12,
     marginLeft: 4,
@@ -1819,7 +1828,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 2,
   },
-    optionalText: {
+  optionalText: {
     fontSize: 18,
     fontWeight: '400',
     color: '#999',

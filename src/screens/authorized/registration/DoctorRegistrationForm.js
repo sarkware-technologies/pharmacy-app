@@ -560,6 +560,11 @@ const DoctorRegistrationForm = () => {
           tension: 40,
           useNativeDriver: true,
         }).start();
+
+          setErrors(prev => ({
+          ...prev,
+          [`${field}Verification`]: null,
+        }));
       } else {
         // Check for existing customer
         if (!response.success && response.data && Array.isArray(response.data)) {
@@ -927,6 +932,11 @@ const DoctorRegistrationForm = () => {
       }
     }
 
+      if (!formData.panFile) {
+      newErrors.panFile = 'PAN document is required';
+    }
+
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
 
@@ -994,7 +1004,7 @@ const DoctorRegistrationForm = () => {
           mobile: formData.mobileNumber,
           email: formData.emailAddress,
           panNumber: formData.panNumber,
-          gstNumber: formData.gstNumber,
+          ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
         ...(formData.stockists && formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({
@@ -1347,8 +1357,6 @@ const DoctorRegistrationForm = () => {
                   setFormData(prev => ({ ...prev, clinicName: text }));
                   setErrors(prev => ({ ...prev, clinicName: null }));
                 }}
-                error={errors.clinicName}
-                mandatory={true}
               />
 
               <AddressInputWithLocation
@@ -1453,6 +1461,7 @@ const DoctorRegistrationForm = () => {
                 value={formData.address2}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, address2: text }))}
                 mandatory={true}
+                error={errors.address2}
               />
 
               <CustomInput
@@ -1460,6 +1469,7 @@ const DoctorRegistrationForm = () => {
                 value={formData.address3}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, address3: text }))}
                 mandatory={true}
+                error={errors.address3}
               />
 
               <CustomInput
@@ -1649,6 +1659,8 @@ const DoctorRegistrationForm = () => {
                     onFileUpload={(file) => handleFileUpload('panFile', file)}
                     onFileDelete={() => handleFileDelete('panFile')}
                     mandatory={true}
+                    errorMessage={errors.panFile}
+
                     onOcrDataExtracted={(ocrData) => {
                       console.log('PAN OCR Data:', ocrData);
                       if (ocrData.panNumber) {
@@ -1740,7 +1752,6 @@ const DoctorRegistrationForm = () => {
                     autoCapitalize="characters"
                     keyboardType="default"
                     maxLength={15}
-                    mandatory={true}
                     error={errors.gstNumber}
                   />
                 </>
@@ -2772,6 +2783,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
+    marginBottom:16
   },
   dropdownText: {
     fontSize: 14,

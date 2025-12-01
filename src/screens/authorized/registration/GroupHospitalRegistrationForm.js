@@ -357,6 +357,11 @@ const GroupHospitalRegistrationForm = () => {
           tension: 40,
           useNativeDriver: true,
         }).start();
+
+           setErrors(prev => ({
+          ...prev,
+          [`${field}Verification`]: null,
+        }));
       } else {
         Toast.show({
           type: 'error',
@@ -615,6 +620,10 @@ const GroupHospitalRegistrationForm = () => {
     if (!formData.registrationNumber) {
       newErrors.registrationNumber = 'Registration number is required';
     }
+
+     if (!formData.registrationCertificate) {
+      newErrors.registrationCertificate = 'Registration Certificate is required';
+    }
     if (!formData.registrationDate) {
       newErrors.registrationDate = 'Registration date is required';
     }
@@ -626,8 +635,20 @@ const GroupHospitalRegistrationForm = () => {
     if (!formData.address1) {
       newErrors.address1 = 'Address is required';
     }
+
+      if (!formData.address2) {
+      newErrors.address2 = 'Address 2 is required';
+    }
+
+      if (!formData.address3) {
+      newErrors.address3 = 'Address 3 is required';
+    }
     if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode)) {
       newErrors.pincode = 'Valid 6-digit pincode is required';
+    }
+
+      if (!formData.area || formData.area.trim().length === 0) {
+      newErrors.area = 'Area is required';
     }
     if (!formData.city) {
       newErrors.city = 'City is required';
@@ -671,6 +692,10 @@ const GroupHospitalRegistrationForm = () => {
     // Linked Hospitals validation
     if (!formData.linkedHospitals || formData.linkedHospitals.length === 0) {
       newErrors.linkedHospitals = 'At least one linked hospital is required';
+    }
+
+    if (!formData.panFile) {
+      newErrors.panFile = 'PAN document is required';
     }
 
     setErrors(newErrors);
@@ -743,7 +768,7 @@ const GroupHospitalRegistrationForm = () => {
           mobile: formData.mobileNumber,
           email: formData.emailAddress || '',
           panNumber: formData.panNumber || '',
-          gstNumber: formData.gstNumber || '',
+         ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
         ...(stockists &&
           stockists.length > 0 && {
@@ -802,6 +827,8 @@ const GroupHospitalRegistrationForm = () => {
     if (selectedDate) {
       const formattedDate = selectedDate.toLocaleDateString('en-IN');
       setFormData(prev => ({ ...prev, registrationDate: formattedDate }));
+            setErrors(prev => ({ ...prev, registrationDate: null }));
+
     }
   };
 
@@ -870,20 +897,25 @@ const GroupHospitalRegistrationForm = () => {
           accept={['pdf', 'jpg', 'png']}
           maxSize={15 * 1024 * 1024}
           docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
-          initialFile={formData.registrationCertificateFile}
+          initialFile={formData.registrationCertificate}
           onFileUpload={file =>
             handleFileUpload('registrationCertificate', file)
           }
           onFileDelete={() => handleFileDelete('registrationCertificate')}
           onOcrDataExtracted={handleRegistrationOcrData}
-          errorMessage={errors.registrationCertificateFile}
+          errorMessage={errors.registrationCertificate}
         />
 
         <CustomInput
           placeholder="Hospital Registration Number"
           value={formData.registrationNumber}
-          onChangeText={text =>
+          onChangeText={text =>{
             setFormData(prev => ({ ...prev, registrationNumber: text }))
+            setErrors(prev => ({ ...prev, registrationNumber: null }))
+
+            
+
+          }
           }
           error={errors.registrationNumber}
           autoCapitalize="characters"
@@ -957,8 +989,11 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Hospital name"
           value={formData.hospitalName}
-          onChangeText={text =>
+          onChangeText={text =>{
             setFormData(prev => ({ ...prev, hospitalName: text }))
+            setErrors(prev => ({ ...prev, hospitalName: null }))
+
+          }
           }
           error={errors.hospitalName}
           mandatory={true}
@@ -1031,6 +1066,8 @@ const GroupHospitalRegistrationForm = () => {
           onChangeText={text =>
             setFormData(prev => ({ ...prev, address2: text }))
           }
+          mandatory
+          error={errors.address2}
         />
 
         <CustomInput
@@ -1039,6 +1076,8 @@ const GroupHospitalRegistrationForm = () => {
           onChangeText={text =>
             setFormData(prev => ({ ...prev, address3: text }))
           }
+             mandatory
+          error={errors.address3}
         />
 
         <CustomInput
@@ -1134,8 +1173,12 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Mobile number"
           value={formData.mobileNumber}
-          onChangeText={text =>
-            setFormData(prev => ({ ...prev, mobileNumber: text }))
+          onChangeText={text =>{
+                        setFormData(prev => ({ ...prev, mobileNumber: text }))
+
+                                setErrors(prev => ({ ...prev, mobileNumber: null }));
+
+          }
           }
           keyboardType="phone-pad"
           maxLength={10}
@@ -1170,13 +1213,20 @@ const GroupHospitalRegistrationForm = () => {
         {errors.mobileNumber && (
           <AppText style={styles.errorText}>{errors.mobileNumber}</AppText>
         )}
+
+         {errors.mobileVerification && (
+          <AppText style={styles.errorText}>{errors.mobileVerification}</AppText>
+        )}
         {renderOTPInput('mobile')}
         {/* Email Address with Verify */}
         <CustomInput
           placeholder="Email address"
           value={formData.emailAddress}
-          onChangeText={text =>
+          onChangeText={text =>{
             setFormData(prev => ({ ...prev, emailAddress: text }))
+                                setErrors(prev => ({ ...prev, emailAddress: null }));
+
+          }
           }
           keyboardType="email-address"
           autoCapitalize="none"
@@ -1249,6 +1299,7 @@ const GroupHospitalRegistrationForm = () => {
           keyboardType="default"
           maxLength={10}
           mandatory
+          error={errors.panNumber}
           editable={!verificationStatus.pan}
           rightComponent={
             <TouchableOpacity
