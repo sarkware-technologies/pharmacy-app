@@ -1449,7 +1449,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
                 <AppText style={styles.mappingNameText}>{hospitalName || doctorName || 'Name will appear here'}</AppText>
               </View></>
           }
-          <AppText style={styles.modalFieldLabel}>{hospitalName ? 'Hospital' : 'Doctor'}</AppText>
+          <AppText style={styles.modalFieldLabel}>{hospitalName ? 'Hospital' : 'Hospital'}</AppText>
           <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
             <AppText style={styles.mappingNameText}>{hospitalName || doctorName || 'Name will appear here'}</AppText>
           </View>
@@ -1475,7 +1475,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             </TouchableOpacity>
           </View>
         </ScrollView>
-
+        <Toast topOffset={20} />
         {/* State Selection Modal */}
         <Modal
           visible={showStateModal}

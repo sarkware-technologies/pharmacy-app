@@ -1417,7 +1417,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
             </TouchableOpacity>
           </View>
         </ScrollView>
-
+        <Toast topOffset={20} />
         {/* State Selection Modal */}
         <Modal
           visible={showStateModal}

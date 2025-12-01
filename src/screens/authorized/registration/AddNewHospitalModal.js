@@ -468,7 +468,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
   const handleSubmit = async () => {
 
-    
+
     // Validate mandatory fields
     const newErrors = {};
 
@@ -569,7 +569,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
 
 
-      if (hospitalForm.gstNumber.trim() !== '' &&
+    if (hospitalForm.gstNumber.trim() !== '' &&
       !/^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/.test(hospitalForm.gstNumber)) {
       newErrors.gstNumber = 'Invalid GST format';
     }
@@ -706,7 +706,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       transparent={false}
       onRequestClose={handleClose}
     >
+
       <SafeAreaView style={styles.modalContainer}>
+
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <Icon name="close" size={20} color="#666" />
@@ -1283,6 +1285,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
           </View>
         </ScrollView>
+        <Toast topOffset={20} />
 
         {/* State Selection Modal */}
         <Modal
