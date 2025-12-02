@@ -1341,7 +1341,7 @@ if (!formData.panFile) {
 
               {/* Area */}
               <CustomInput
-                placeholder="Enter Area"
+                placeholder="Area"
                 value={formData.area}
                 onChangeText={text => {
                   setFormData(prev => ({ ...prev, area: text }));

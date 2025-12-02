@@ -1496,7 +1496,7 @@ const DoctorRegistrationForm = () => {
               {/* Area Input Field */}
               <CustomInput
                 label="Area"
-                placeholder="Enter Area"
+                placeholder="Area"
                 value={formData.area}
                 onChangeText={(text) => {
                   setFormData(prev => ({ ...prev, area: text }));

@@ -1559,7 +1559,7 @@ const PrivateRegistrationForm = () => {
 
               {/* Area Text Input - Independent selection */}
               <CustomInput
-                placeholder="Enter Area"
+                placeholder="Area"
                 value={formData.area}
                 onChangeText={(text) => {
                   setFormData(prev => ({ ...prev, area: text }));
@@ -1815,21 +1815,7 @@ const PrivateRegistrationForm = () => {
               )}
 
               {/* Fetch GST from PAN Link */}
-              {/* <TouchableOpacity 
-                style={styles.linkButton}
-                onPress={() => {
-                  Toast.show({
-                    type: 'info',
-                    text1: 'Fetch GST',
-                    text2: 'Fetching GST details from PAN...',
-        position: 'top',
-                  });
-                  // Here you would call API to fetch GST from PAN
-                  // and populate the GST dropdown options
-                }}
-              >
-                <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
-              </TouchableOpacity> */}
+           
 
               {/* GST Upload */}
               <FileUploadComponent
