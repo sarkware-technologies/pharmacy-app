@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   pharmacyCity: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
   },
   addNewPharmacyButton: {

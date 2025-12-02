@@ -28,7 +28,7 @@ const DOC_TYPES = {
   REGISTRATION_CERTIFICATE: 8,
   HOSPITAL_IMAGE: 1,
   PAN: 7,
-  GST: 8,
+  GST: 2,
 };
 
 
@@ -644,7 +644,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             distributorName: hospitalForm.stockistName || '',
             city: hospitalForm.stockistCity || ''
           }
-        ] : []
+        ] : [],
+         isChildCustomer:true
       };
 
       console.log('Hospital registration payload:', registrationData);
@@ -1216,6 +1217,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
               }
             }}
           />
+
+    
           {/* {hospitalErrors.gstFile && (
             <AppText style={styles.errorText}>{hospitalErrors.gstFile}</AppText>
           )} */}
@@ -1230,9 +1233,10 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 setHospitalErrors(prev => ({ ...prev, gstNumber: null }));
               }
             }}
-            error={hospitalForm.gstNumber}
+            error={hospitalErrors.gstNumber}
 
           />
+
 
           {/* Mapping Section */}
           <AppText style={styles.modalSectionLabel}>Mapping</AppText>

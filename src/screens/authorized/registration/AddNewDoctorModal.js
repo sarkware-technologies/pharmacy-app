@@ -706,7 +706,8 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
           distributorCode: '',
           distributorName: '',
           city: ''
-        }]
+        }],
+        isChildCustomer:true
       };
 
       console.log('Doctor registration payload:', registrationData);
@@ -1384,7 +1385,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
               }
             }}
 
-            error={doctorForm.gstNumber}
+            error={doctorErrors.gstNumber}
           />
 
           {/* Mapping Section */}

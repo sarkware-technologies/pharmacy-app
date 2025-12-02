@@ -223,7 +223,7 @@ const PharmacyRegistrationForm = () => {
       // Mark component as unmounted
       isMounted.current = false;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadInitialData = async () => {
@@ -420,7 +420,7 @@ const PharmacyRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `OTP sent to ${field}`,
-        position: 'top',
+          position: 'top',
         });
 
         // Animate OTP container
@@ -443,7 +443,7 @@ const PharmacyRegistrationForm = () => {
             type: 'error',
             text1: 'Customer Exists',
             text2: `Customer already exists with this ${field}`,
-        position: 'top',
+            position: 'top',
           });
 
           // Check if already verified
@@ -458,7 +458,7 @@ const PharmacyRegistrationForm = () => {
             type: 'error',
             text1: 'Error',
             text2: response.message || 'Failed to generate OTP',
-        position: 'top',
+            position: 'top',
           });
         }
       }
@@ -467,7 +467,7 @@ const PharmacyRegistrationForm = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2:  error.message || 'Failed to send OTP. Please try again.',
+        text2: error.message || 'Failed to send OTP. Please try again.',
         position: 'top',
       });
     } finally {
@@ -517,7 +517,7 @@ const PharmacyRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
-        position: 'top',
+          position: 'top',
         });
 
         setShowOTP(prev => ({ ...prev, [field]: false }));
@@ -535,7 +535,7 @@ const PharmacyRegistrationForm = () => {
           type: 'error',
           text1: 'Invalid OTP',
           text2: 'Please enter the correct OTP',
-        position: 'top',
+          position: 'top',
         });
       }
     } catch (error) {
@@ -559,14 +559,20 @@ const PharmacyRegistrationForm = () => {
   };
 
   const handleAddStockist = () => {
-    setFormData(prev => ({
-      ...prev,
-      stockists: [
-        ...prev.stockists,
-        { name: '', code: '', city: '' }
-      ]
-    }));
-  };
+  if (formData.stockists.length >= 4) {
+    Toast.show({
+      type: 'error',
+      text1: 'Limit Reached',
+      text2: 'You can only add up to 4 stockists.',
+    });
+    return;
+  }
+
+  setFormData(prev => ({
+    ...prev,
+    stockists: [...prev.stockists, { name: '', code: '', city: '' }],
+  }));
+};
 
   const handleRemoveStockist = (index) => {
     setFormData(prev => ({
@@ -646,7 +652,7 @@ const PharmacyRegistrationForm = () => {
     if (!formData.address1) newErrors.address1 = 'Address is required';
     if (!formData.pincode || formData.pincode.length !== 6 || !/^[1-9]\d{5}$/.test(formData.pincode)) newErrors.pincode = 'Valid 6-digit pincode is required';
 
-      if (!formData.area || formData.area.trim().length === 0) {
+    if (!formData.area || formData.area.trim().length === 0) {
       newErrors.area = 'Area is required';
     }
     if (!formData.cityId) newErrors.cityId = 'City is required';
@@ -678,7 +684,7 @@ const PharmacyRegistrationForm = () => {
   };
 
 
-    // GST validation function
+  // GST validation function
   const isValidGST = gst => {
     // GST format: 2 digits (state code) + 10 alphanumeric + 1 letter + 1 digit + 1 letter = 15 characters
     const gstRegex =
@@ -751,7 +757,7 @@ const PharmacyRegistrationForm = () => {
           mobile: formData.mobileNumber,
           email: formData.emailAddress || '',
           panNumber: formData.panNumber,
-       ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
+          ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
         ...(formData.stockists && formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({
@@ -760,7 +766,8 @@ const PharmacyRegistrationForm = () => {
             "city": stockist.city,
             "customerId": stockist.name,
           }))
-        })
+        }),
+        isChildCustomer:false
       };
 
       console.log('Registration data:', registrationData);
@@ -772,7 +779,7 @@ const PharmacyRegistrationForm = () => {
           type: 'success',
           text1: 'Registration Successful',
           text2: response.message || 'Customer registered successfully',
-        position: 'top',
+          position: 'top',
         });
 
         // Navigate to success screen with registration details
@@ -791,7 +798,7 @@ const PharmacyRegistrationForm = () => {
             type: 'error',
             text1: 'Registration Failed',
             text2: response.message || 'Failed to register. Please try again.',
-        position: 'top',
+            position: 'top',
           });
         }
       }
@@ -904,19 +911,19 @@ const PharmacyRegistrationForm = () => {
   // Handle OCR extracted data for license uploads
   const handleLicenseOcrData = (ocrData) => {
     console.log('OCR Data Received:', ocrData);
-    
+
     const updates = {};
-    
+
     // Populate pharmacy name if available
     if (ocrData.pharmacyName && !formData.pharmacyName) {
       updates.pharmacyName = ocrData.pharmacyName;
     }
-    
+
     // Populate address fields if available
     if (ocrData.address && !formData.address1) {
       updates.address1 = ocrData.address;
     }
-    
+
     // Populate license number if available and field is empty
     if (ocrData.licenseNumber) {
       if (!formData.license20) {
@@ -925,7 +932,7 @@ const PharmacyRegistrationForm = () => {
         updates.license21 = ocrData.licenseNumber;
       }
     }
-    
+
     // Populate location fields if available
     if (ocrData.city && !formData.city) {
       updates.city = ocrData.city;
@@ -939,7 +946,7 @@ const PharmacyRegistrationForm = () => {
     if (ocrData.area && !formData.area) {
       updates.area = ocrData.area;
     }
-    
+
     // Populate expiry date if available
     if (ocrData.expiryDate) {
       const parts = ocrData.expiryDate.split('-');
@@ -952,7 +959,7 @@ const PharmacyRegistrationForm = () => {
         }
       }
     }
-    
+
     // Apply all updates at once
     if (Object.keys(updates).length > 0) {
       setFormData(prev => ({ ...prev, ...updates }));
@@ -1406,7 +1413,7 @@ const PharmacyRegistrationForm = () => {
                         // Verify PAN format
                         if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
                           setVerificationStatus(prev => ({ ...prev, pan: true }));
-                         
+
                         } else {
                           Alert.alert('Invalid PAN', 'Please enter a valid PAN number');
                         }
@@ -1576,7 +1583,7 @@ const PharmacyRegistrationForm = () => {
                       }}
                     >
                       <AppText style={styles.selectorPlaceholder}>
-                       {/* {formData.selectedDoctors.length > 0
+                        {/* {formData.selectedDoctors.length > 0
                           ? `${formData.selectedDoctors.length} Doctor${formData.selectedDoctors.length !== 1 ? 's' : ''} selected`
                           : 'Search doctor name/code'
                         } */}
@@ -1585,14 +1592,14 @@ const PharmacyRegistrationForm = () => {
                       <Icon name="arrow-drop-down" size={24} color="#666" />
                     </TouchableOpacity>
 
-                   
+
 
                     {/* Selected Doctors List */}
                     {formData.selectedDoctors.length > 0 && (
                       <View style={styles.selectedItemsContainer}>
                         {formData.selectedDoctors.map((doctor, index) => (
                           <View key={doctor.id || index} style={styles.selectedItemChip}>
-                             <AppText style={styles.addNewDoctorLink}>{ doctor.name || doctor.customerName || `Doctor ${index + 1}` }  </AppText>
+                            <AppText style={styles.addNewDoctorLink}>{doctor.name || doctor.customerName || `Doctor ${index + 1}`}  </AppText>
                             <TouchableOpacity
                               onPress={() => {
                                 setFormData(prev => ({
@@ -1608,7 +1615,7 @@ const PharmacyRegistrationForm = () => {
                       </View>
                     )}
 
-                     {/* Add New Doctor Link */}
+                    {/* Add New Doctor Link */}
                     <TouchableOpacity
                       style={styles.addNewLink}
                       onPress={() => {
@@ -1714,12 +1721,13 @@ const PharmacyRegistrationForm = () => {
                 </View>
               ))}
 
-              <TouchableOpacity
-                style={styles.addMoreButton}
-                onPress={handleAddStockist}
-              >
-                <AppText style={styles.addMoreButtonText}>+ Add New Stockist</AppText>
-              </TouchableOpacity>
+              {
+                formData.stockists.length < 4 && (
+                  <TouchableOpacity onPress={handleAddStockist}>
+                    <AppText style={styles.addMoreButtonText}>+ Add More Stockist</AppText>
+                  </TouchableOpacity>
+                )
+              }
             </View>
 
             {/* Action Buttons */}
@@ -2142,7 +2150,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    marginBottom:16
+    marginBottom: 16
   },
   dropdownText: {
     fontSize: 14,
@@ -2568,7 +2576,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-   selectedItemsContainer: {
+  selectedItemsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
@@ -2620,7 +2628,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginBottom: 12,
     backgroundColor: '#fff',
-    
+
   },
   hospitalSelectorText: {
     fontSize: 16,
@@ -2739,7 +2747,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
   },
-   selectedItemChip: {
+  selectedItemChip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -2757,7 +2765,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
- addNewDoctorLink: {
+  addNewDoctorLink: {
     fontSize: 14,
     color: "#555",
     fontWeight: '500',

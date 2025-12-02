@@ -257,6 +257,7 @@ const FileUploadComponent = ({
 
       if (responseData.success && responseData.data && responseData.data.length > 0) {
         const uploadedFile = responseData.data[0];
+        
         const fileData = {
           fileName: uploadedFile.fileName,
           s3Path: uploadedFile.s3Path,

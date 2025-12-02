@@ -200,6 +200,19 @@ const GroupHospitalRegistrationForm = () => {
     await loadCities();
   };
 
+    const handleAddStockist = () => {
+    
+        if (stockists.length >= 4) {
+          Toast.show({
+            type: 'error',
+            text1: 'Limit Reached',
+            text2: 'You can only add up to 4 stockists.',
+          });
+          return;
+        }
+        setStockists(prev => [...prev, { name: '', distributorCode: '', city: '' }]);
+    
+      };
   const loadStates = async () => {
     setLoadingStates(true);
     try {
@@ -779,6 +792,7 @@ const GroupHospitalRegistrationForm = () => {
               customerId: stockist.name,
             })),
           }),
+          isChildCustomer:false
       };
 
       console.log('Registration data:', registrationData);
@@ -1741,18 +1755,13 @@ const GroupHospitalRegistrationForm = () => {
         ))}
 
         {/* Add Stockist Button */}
-        <TouchableOpacity
-          style={styles.addStockistButton}
-          onPress={() => {
-            setStockists(prev => [
-              ...prev,
-              { name: '', distributorCode: '', city: '' },
-            ]);
-          }}
-          activeOpacity={0.7}
-        >
-          <AppText style={styles.addStockistButtonText}>+ Add Stockist</AppText>
-        </TouchableOpacity>
+       {
+                             stockists.length < 4 && (
+                               <TouchableOpacity style={styles.addStockistButton} onPress={handleAddStockist}>
+                                 <AppText style={styles.addStockistButtonText}>+ Add More Stockist</AppText>
+                               </TouchableOpacity>
+                             )
+                           }
       </View>
     </Animated.View>
   );

@@ -81,7 +81,7 @@ const DoctorRegistrationForm = () => {
   const route = useRoute();
 
   // Get registration type data from route params
-  const { 
+  const {
     type, typeName, typeId, category, categoryName, categoryId, subCategory, subCategoryName, subCategoryId,
     mode, isEditMode, customerId, customerData, editData,
     isOnboardMode, hidePanGst
@@ -237,7 +237,7 @@ const DoctorRegistrationForm = () => {
       setOtpTimers({ mobile: 30, email: 30 });
       setVerificationStatus({ mobile: false, email: false, pan: false, gst: false });
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load states and customer groups on mount
@@ -550,7 +550,7 @@ const DoctorRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `OTP sent to ${field}`,
-        position: 'top',
+          position: 'top',
         });
 
         // Animate OTP container
@@ -561,7 +561,7 @@ const DoctorRegistrationForm = () => {
           useNativeDriver: true,
         }).start();
 
-          setErrors(prev => ({
+        setErrors(prev => ({
           ...prev,
           [`${field}Verification`]: null,
         }));
@@ -573,7 +573,7 @@ const DoctorRegistrationForm = () => {
             type: 'error',
             text1: 'Customer Exists',
             text2: `Customer already exists with this ${field}`,
-        position: 'top',
+            position: 'top',
           });
 
           // Check if already verified
@@ -588,17 +588,17 @@ const DoctorRegistrationForm = () => {
             type: 'error',
             text1: 'Error',
             text2: response.message || 'Failed to generate OTP',
-        position: 'top',
+            position: 'top',
           });
         }
       }
     } catch (error) {
-       Toast.show({
-              type: 'error',
-              text1: 'Error',
-              text2:  error.message || 'Failed to send OTP. Please try again.',
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to send OTP. Please try again.',
         position: 'top',
-            });
+      });
     } finally {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
     }
@@ -643,7 +643,7 @@ const DoctorRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
-        position: 'top',
+          position: 'top',
         });
 
         setShowOTP(prev => ({ ...prev, [field]: false }));
@@ -665,7 +665,7 @@ const DoctorRegistrationForm = () => {
           type: 'error',
           text1: 'Error',
           text2: response.message || 'Invalid OTP. Please try again.',
-        position: 'top',
+          position: 'top',
         });
       }
     } catch (error) {
@@ -782,19 +782,19 @@ const DoctorRegistrationForm = () => {
   // Handle OCR extracted data for clinic/practice license uploads
   const handleLicenseOcrData = (ocrData) => {
     console.log('OCR Data Received:', ocrData);
-    
+
     const updates = {};
-    
+
     // Populate clinic name if available
     if (ocrData.clinicName && !formData.clinicName) {
       updates.clinicName = ocrData.clinicName;
     }
-    
+
     // Populate address fields if available
     if (ocrData.address && !formData.address1) {
       updates.address1 = ocrData.address;
     }
-    
+
     // Populate registration/license number if available
     if (ocrData.registrationNumber && !formData.clinicRegistrationNumber) {
       updates.clinicRegistrationNumber = ocrData.registrationNumber;
@@ -805,7 +805,7 @@ const DoctorRegistrationForm = () => {
         updates.practiceLicenseNumber = ocrData.licenseNumber;
       }
     }
-    
+
     // Populate registration/issue date if available
     if (ocrData.issueDate && !formData.clinicRegistrationDate) {
       const parts = ocrData.issueDate.split('-');
@@ -814,7 +814,7 @@ const DoctorRegistrationForm = () => {
         updates.clinicRegistrationDate = formattedDate;
       }
     }
-    
+
     // Populate expiry date if available
     if (ocrData.expiryDate && !formData.practiceLicenseExpiryDate) {
       const parts = ocrData.expiryDate.split('-');
@@ -823,7 +823,7 @@ const DoctorRegistrationForm = () => {
         updates.practiceLicenseExpiryDate = formattedDate;
       }
     }
-    
+
     // Populate location fields if available
     if (ocrData.city && !formData.city) {
       updates.city = ocrData.city;
@@ -837,7 +837,7 @@ const DoctorRegistrationForm = () => {
     if (ocrData.area && !formData.area) {
       updates.area = ocrData.area;
     }
-    
+
     // Apply all updates at once
     if (Object.keys(updates).length > 0) {
       setFormData(prev => ({ ...prev, ...updates }));
@@ -932,7 +932,7 @@ const DoctorRegistrationForm = () => {
       }
     }
 
-      if (!formData.panFile) {
+    if (!formData.panFile) {
       newErrors.panFile = 'PAN document is required';
     }
 
@@ -1013,7 +1013,8 @@ const DoctorRegistrationForm = () => {
             "city": stockist.city,
             "customerId": stockist.name,
           }))
-        })
+        }),
+        isChildCustomer:false
       };
 
       const response = await customerAPI.createCustomer(registrationData);
@@ -1023,7 +1024,7 @@ const DoctorRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: 'Doctor registered successfully!',
-        position: 'top',
+          position: 'top',
         });
 
         // Navigate to success screen with registration details
@@ -1041,14 +1042,14 @@ const DoctorRegistrationForm = () => {
             type: 'error',
             text1: 'Registration Failed',
             text2: errorMessage,
-        position: 'top',
+            position: 'top',
           });
         } else {
           Toast.show({
             type: 'error',
             text1: 'Registration Failed',
             text2: response.details || 'Failed to register doctor. Please try again.',
-        position: 'top',
+            position: 'top',
           });
         }
       }
@@ -1066,14 +1067,20 @@ const DoctorRegistrationForm = () => {
   };
 
   const handleAddStockist = () => {
-    setFormData(prev => ({
-      ...prev,
-      stockists: [
-        ...prev.stockists,
-        { name: '', code: '', city: '' }
-      ]
-    }));
-  };
+  if (formData.stockists.length >= 4) {
+    Toast.show({
+      type: 'error',
+      text1: 'Limit Reached',
+      text2: 'You can only add up to 4 stockists.',
+    });
+    return;
+  }
+
+  setFormData(prev => ({
+    ...prev,
+    stockists: [...prev.stockists, { name: '', code: '', city: '' }],
+  }));
+};
 
   const handleRemoveStockist = (index) => {
     setFormData(prev => ({
@@ -1370,32 +1377,32 @@ const DoctorRegistrationForm = () => {
                 mandatory={true}
                 onLocationSelect={(locationData) => {
                   console.log('Location selected:', locationData);
-                  
+
                   // Update address field
                   setFormData(prev => ({ ...prev, address1: locationData.address }));
-                  
+
                   // Split address by commas for other address fields
                   const addressParts = locationData.address.split(',').map(part => part.trim());
-                  const filteredParts = addressParts.filter(part => 
-                    part.toLowerCase() !== 'india' && 
+                  const filteredParts = addressParts.filter(part =>
+                    part.toLowerCase() !== 'india' &&
                     part !== locationData.pincode
                   );
-                  
+
                   // Update pincode
                   if (locationData.pincode) {
                     setFormData(prev => ({ ...prev, pincode: locationData.pincode }));
                     setErrors(prev => ({ ...prev, pincode: null }));
                   }
-                  
+
                   // Update area
                   if (locationData.area) {
                     setFormData(prev => ({ ...prev, area: locationData.area }));
                     setErrors(prev => ({ ...prev, area: null }));
                   }
-                  
+
                   // Match and update state
                   if (locationData.state && states.length > 0) {
-                    const matchedState = states.find(s => 
+                    const matchedState = states.find(s =>
                       s.name.toLowerCase().includes(locationData.state.toLowerCase()) ||
                       locationData.state.toLowerCase().includes(s.name.toLowerCase())
                     );
@@ -1406,16 +1413,16 @@ const DoctorRegistrationForm = () => {
                         stateId: matchedState.id,
                       }));
                       setErrors(prev => ({ ...prev, state: null }));
-                      
+
                       // Load cities for the matched state
                       //loadCities(matchedState.id);
                     }
                   }
-                  
+
                   // Match and update city (after a short delay to ensure cities are loaded)
                   if (locationData.city) {
                     setTimeout(() => {
-                      const matchedCity = cities.find(c => 
+                      const matchedCity = cities.find(c =>
                         c.name.toLowerCase().includes(locationData.city.toLowerCase()) ||
                         locationData.city.toLowerCase().includes(c.name.toLowerCase())
                       );
@@ -1429,7 +1436,7 @@ const DoctorRegistrationForm = () => {
                       }
                     }, 500);
                   }
-                  
+
                   // Fill remaining address fields
                   if (filteredParts.length > 1) {
                     setFormData(prev => ({ ...prev, address2: filteredParts[1] || '' }));
@@ -1440,7 +1447,7 @@ const DoctorRegistrationForm = () => {
                   if (filteredParts.length > 3) {
                     setFormData(prev => ({ ...prev, address4: filteredParts[3] || '' }));
                   }
-                  
+
                   // Clear all address field errors
                   setErrors(prev => ({
                     ...prev,
@@ -1695,7 +1702,7 @@ const DoctorRegistrationForm = () => {
                             // Verify PAN format
                             if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
                               setVerificationStatus(prev => ({ ...prev, pan: true }));
-                             
+
                             } else {
                               Alert.alert('Invalid PAN', 'Please enter a valid PAN number');
                             }
@@ -1842,7 +1849,7 @@ const DoctorRegistrationForm = () => {
                     activeOpacity={0.7}
                   >
                     <AppText style={styles.hospitalSelectorText}>
-                      {formData.selectedHospital 
+                      {formData.selectedHospital
                         ? formData.selectedHospital.name
                         : 'Search hospital name/code'}
                     </AppText>
@@ -1996,12 +2003,13 @@ const DoctorRegistrationForm = () => {
                 </View>
               ))}
 
-              <TouchableOpacity
-                style={styles.addMoreButton}
-                onPress={handleAddStockist}
-              >
-                <AppText style={styles.addMoreButtonText}>+ Add New Stockist</AppText>
-              </TouchableOpacity>
+              {
+                formData.stockists.length < 4 && (
+                  <TouchableOpacity onPress={handleAddStockist}>
+                    <AppText style={styles.addMoreButtonText}>+ Add More Stockist</AppText>
+                  </TouchableOpacity>
+                )
+              }
             </View>
 
             {/* Action Buttons */}
@@ -2081,7 +2089,7 @@ const DoctorRegistrationForm = () => {
             type: 'success',
             text1: 'Hospital Added',
             text2: 'Hospital has been added successfully',
-        position: 'top',
+            position: 'top',
           });
         }}
       />
@@ -2099,7 +2107,7 @@ const DoctorRegistrationForm = () => {
             type: 'success',
             text1: 'Pharmacy Added',
             text2: 'Pharmacy has been added successfully',
-        position: 'top',
+            position: 'top',
           });
         }}
       />
@@ -2783,7 +2791,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    marginBottom:16
+    marginBottom: 16
   },
   dropdownText: {
     fontSize: 14,

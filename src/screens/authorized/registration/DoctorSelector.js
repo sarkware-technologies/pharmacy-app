@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   doctorCity: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#666',
     fontWeight: '500',
   },

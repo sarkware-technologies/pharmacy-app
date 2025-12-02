@@ -766,7 +766,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           distributorCode: '',
           distributorName: '',
           city: ''
-        }]
+        }],
+         isChildCustomer:true
       };
 
       console.log('Pharmacy registration payload:', registrationData);

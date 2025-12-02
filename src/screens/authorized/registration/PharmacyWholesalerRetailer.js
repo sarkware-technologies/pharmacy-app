@@ -305,13 +305,13 @@ const PharmacyWholesalerRetailerForm = () => {
       setShowStateModal(false);
       setShowCityModal(false);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     // Load initial data
     loadInitialData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadInitialData = async () => {
@@ -490,7 +490,7 @@ const PharmacyWholesalerRetailerForm = () => {
           type: 'success',
           text1: 'OTP Sent',
           text2: response.message || 'OTP has been sent successfully',
-        position: 'top',
+          position: 'top',
         });
 
         // Animate OTP container
@@ -522,7 +522,7 @@ const PharmacyWholesalerRetailerForm = () => {
             type: 'error',
             text1: 'Error',
             text2: response.message || 'Failed to generate OTP',
-        position: 'top',
+            position: 'top',
           });
         }
       }
@@ -575,7 +575,7 @@ const PharmacyWholesalerRetailerForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
-        position: 'top',
+          position: 'top',
         });
 
         setShowOTP(prev => ({ ...prev, [field]: false }));
@@ -592,7 +592,7 @@ const PharmacyWholesalerRetailerForm = () => {
           type: 'error',
           text1: 'Invalid OTP',
           text2: 'Please enter the correct OTP',
-        position: 'top',
+          position: 'top',
         });
       }
     } catch (error) {
@@ -703,9 +703,9 @@ const PharmacyWholesalerRetailerForm = () => {
     if (!formData.stateId) newErrors.stateId = 'State is required';
     if (!formData.pharmacyName) newErrors.pharmacyName = 'Pharmacy name is required';
     if (!formData.address1) newErrors.address1 = 'Address is required';
-        if (!formData.address2) newErrors.address2 = 'Address 2 is required';
+    if (!formData.address2) newErrors.address2 = 'Address 2 is required';
 
-            if (!formData.address3) newErrors.address3 = 'Address 3 is required';
+    if (!formData.address3) newErrors.address3 = 'Address 3 is required';
 
     if (!formData.mobileNumber || !/^\d{10}$/.test(formData.mobileNumber)) {
       newErrors.mobileNumber = 'Valid mobile number is required (10 digits)';
@@ -720,7 +720,7 @@ const PharmacyWholesalerRetailerForm = () => {
       newErrors.emailVerification = 'Email verification is required';
     }
 
-     if (formData.gstNumber && !isValidGST(formData.gstNumber))
+    if (formData.gstNumber && !isValidGST(formData.gstNumber))
       newErrors.gstNumber = 'GST number must be valid (e.g., 27ASDSD1234F1Z5)';
 
     setErrors(newErrors);
@@ -822,7 +822,8 @@ const PharmacyWholesalerRetailerForm = () => {
             "city": stockist.city,
             "customerId": stockist.name,
           }))
-        })
+        }),
+        isChildCustomer:false
       };
 
       console.log('Registration data:', registrationData);
@@ -834,7 +835,7 @@ const PharmacyWholesalerRetailerForm = () => {
           type: 'success',
           text1: 'Registration Successful',
           text2: response.message || 'Customer registered successfully',
-        position: 'top',
+          position: 'top',
         });
 
         // Navigate to success screen with registration details
@@ -853,7 +854,7 @@ const PharmacyWholesalerRetailerForm = () => {
             type: 'error',
             text1: 'Registration Failed',
             text2: response.message || 'Failed to register. Please try again.',
-        position: 'top',
+            position: 'top',
           });
         }
       }
@@ -965,19 +966,19 @@ const PharmacyWholesalerRetailerForm = () => {
   // Handle OCR extracted data for license uploads
   const handleLicenseOcrData = (ocrData) => {
     console.log('OCR Data Received:', ocrData);
-    
+
     const updates = {};
-    
+
     // Populate pharmacy name if available
     if (ocrData.pharmacyName && !formData.pharmacyName) {
       updates.pharmacyName = ocrData.pharmacyName;
     }
-    
+
     // Populate address fields if available
     if (ocrData.address && !formData.address1) {
       updates.address1 = ocrData.address;
     }
-    
+
     // Populate license number if available and field is empty
     if (ocrData.licenseNumber) {
       // Try to populate in order: 20, 21, 20B, 21B
@@ -991,7 +992,7 @@ const PharmacyWholesalerRetailerForm = () => {
         updates.license21b = ocrData.licenseNumber;
       }
     }
-    
+
     // Populate location fields if available
     if (ocrData.city && !formData.city) {
       updates.city = ocrData.city;
@@ -1005,7 +1006,7 @@ const PharmacyWholesalerRetailerForm = () => {
     if (ocrData.area && !formData.area) {
       updates.area = ocrData.area;
     }
-    
+
     // Populate expiry date if available
     if (ocrData.expiryDate) {
       const parts = ocrData.expiryDate.split('-');
@@ -1023,7 +1024,7 @@ const PharmacyWholesalerRetailerForm = () => {
         }
       }
     }
-    
+
     // Apply all updates at once
     if (Object.keys(updates).length > 0) {
       setFormData(prev => ({ ...prev, ...updates }));
@@ -1037,14 +1038,20 @@ const PharmacyWholesalerRetailerForm = () => {
 
 
   const handleAddStockist = () => {
-    setFormData(prev => ({
-      ...prev,
-      stockists: [
-        ...prev.stockists,
-        { name: '', code: '', city: '' }
-      ]
-    }));
-  };
+  if (formData.stockists.length >= 4) {
+    Toast.show({
+      type: 'error',
+      text1: 'Limit Reached',
+      text2: 'You can only add up to 4 stockists.',
+    });
+    return;
+  }
+
+  setFormData(prev => ({
+    ...prev,
+    stockists: [...prev.stockists, { name: '', code: '', city: '' }],
+  }));
+};
 
   const handleRemoveStockist = (index) => {
     setFormData(prev => ({
@@ -1574,7 +1581,7 @@ const PharmacyWholesalerRetailerForm = () => {
                 }}
               />
 
-          
+
               <CustomInput
                 placeholder="PAN Number"
                 value={formData.panNumber}
@@ -1589,37 +1596,37 @@ const PharmacyWholesalerRetailerForm = () => {
                 error={errors.panNumber}
 
                 rightComponent={
-                <TouchableOpacity
-                  style={[
-                    styles.inlineVerifyButton,
-                    verificationStatus.pan && styles.verifiedButton
-                  ]}
-                  onPress={() => {
-                    if (!verificationStatus.pan) {
-                      // Verify PAN format
-                      if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
-                        setVerificationStatus(prev => ({ ...prev, pan: true }));
-                       
-                      } else {
-                        Alert.alert('Invalid PAN', 'Please enter a valid PAN number');
+                  <TouchableOpacity
+                    style={[
+                      styles.inlineVerifyButton,
+                      verificationStatus.pan && styles.verifiedButton
+                    ]}
+                    onPress={() => {
+                      if (!verificationStatus.pan) {
+                        // Verify PAN format
+                        if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+                          setVerificationStatus(prev => ({ ...prev, pan: true }));
+
+                        } else {
+                          Alert.alert('Invalid PAN', 'Please enter a valid PAN number');
+                        }
                       }
-                    }
-                  }}
-                  disabled={verificationStatus.pan}
-                >
-                  <AppText style={[
-                    styles.inlineVerifyText,
-                    verificationStatus.pan && styles.verifiedText
-                  ]}>
-                    {verificationStatus.pan ? (
-                      'Verified'
-                    ) : (
-                      <>
-                        Verify<AppText style={styles.inlineAsterisk}>*</AppText>
-                      </>
-                    )}
-                  </AppText>
-                </TouchableOpacity>
+                    }}
+                    disabled={verificationStatus.pan}
+                  >
+                    <AppText style={[
+                      styles.inlineVerifyText,
+                      verificationStatus.pan && styles.verifiedText
+                    ]}>
+                      {verificationStatus.pan ? (
+                        'Verified'
+                      ) : (
+                        <>
+                          Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                        </>
+                      )}
+                    </AppText>
+                  </TouchableOpacity>
                 }
               />
 
@@ -1781,14 +1788,14 @@ const PharmacyWholesalerRetailerForm = () => {
                       <Icon name="arrow-drop-down" size={24} color="#666" />
                     </TouchableOpacity>
 
-                   
+
 
                     {/* Selected Doctors List */}
                     {formData.selectedDoctors.length > 0 && (
                       <View style={styles.selectedItemsContainer}>
                         {formData.selectedDoctors.map((doctor, index) => (
                           <View key={doctor.id || index} style={styles.selectedItemChip}>
-                             <AppText style={styles.addNewDoctorLink}>{ doctor.name || doctor.customerName || `Doctor ${index + 1}` }  </AppText>
+                            <AppText style={styles.addNewDoctorLink}>{doctor.name || doctor.customerName || `Doctor ${index + 1}`}  </AppText>
                             <TouchableOpacity
                               onPress={() => {
                                 setFormData(prev => ({
@@ -1804,7 +1811,7 @@ const PharmacyWholesalerRetailerForm = () => {
                       </View>
                     )}
 
-                     {/* Add New Doctor Link */}
+                    {/* Add New Doctor Link */}
                     <TouchableOpacity
                       style={styles.addNewLink}
                       onPress={() => {
@@ -1910,12 +1917,13 @@ const PharmacyWholesalerRetailerForm = () => {
                 </View>
               ))}
 
-              <TouchableOpacity
-                style={styles.addMoreButton}
-                onPress={handleAddStockist}
-              >
-                <AppText style={styles.addMoreButtonText}>+ Add New Stockist</AppText>
-              </TouchableOpacity>
+              {
+                formData.stockists.length < 4 && (
+                  <TouchableOpacity onPress={handleAddStockist}>
+                    <AppText style={styles.addMoreButtonText}>+ Add More Stockist</AppText>
+                  </TouchableOpacity>
+                )
+              }
             </View>
 
             {/* Action Buttons */}
@@ -2278,7 +2286,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    marginBottom:16
+    marginBottom: 16
   },
   dropdownText: {
     fontSize: 14,
@@ -2707,7 +2715,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-    selectedItemsContainer: {
+  selectedItemsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
@@ -2851,7 +2859,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
   },
-   selectedItemChip: {
+  selectedItemChip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

@@ -870,6 +870,7 @@ if (!formData.panFile) {
               customerId: stockist.name,
             })),
           }),
+           isChildCustomer:false
       };
 
       const response = await customerAPI.createCustomer(registrationData);
@@ -883,6 +884,8 @@ if (!formData.panFile) {
           text2: 'Pharmacy registered successfully!',
         position: 'top',
         });
+
+       
 
         // Navigate to success screen with registration details
         navigation.navigate('RegistrationSuccess', {
@@ -925,12 +928,28 @@ if (!formData.panFile) {
     }
   };
 
+  // const handleAddStockist = () => {
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     stockists: [...prev.stockists, { name: '', code: '', city: '' }],
+  //   }));
+  // };
+
   const handleAddStockist = () => {
-    setFormData(prev => ({
-      ...prev,
-      stockists: [...prev.stockists, { name: '', code: '', city: '' }],
-    }));
-  };
+  if (formData.stockists.length >= 4) {
+    Toast.show({
+      type: 'error',
+      text1: 'Limit Reached',
+      text2: 'You can only add up to 4 stockists.',
+    });
+    return;
+  }
+
+  setFormData(prev => ({
+    ...prev,
+    stockists: [...prev.stockists, { name: '', code: '', city: '' }],
+  }));
+};
 
   const handleRemoveStockist = index => {
     setFormData(prev => ({
@@ -1957,9 +1976,16 @@ if (!formData.panFile) {
                 style={styles.addMoreButton}
                 onPress={handleAddStockist}
               >
-                <AppText style={styles.addMoreButtonText}>
-                  + Add Stockist
-                </AppText>
+
+            
+                {
+                  formData.stockists.length < 4 && (
+                    <TouchableOpacity onPress={handleAddStockist}>
+                      <AppText style={styles.addMoreButtonText}>+ Add More Stockist</AppText>
+                    </TouchableOpacity>
+                  )
+                }
+              
               </TouchableOpacity>
             </View>
 

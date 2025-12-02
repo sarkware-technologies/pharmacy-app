@@ -266,6 +266,19 @@ const PrivateRegistrationForm = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleAddStockist = () => {
+
+    if (stockists.length >= 4) {
+      Toast.show({
+        type: 'error',
+        text1: 'Limit Reached',
+        text2: 'You can only add up to 4 stockists.',
+      });
+      return;
+    }
+    setStockists(prev => [...prev, { name: '', distributorCode: '', city: '' }]);
+
+  };
   const loadCities = async () => {
       setLoadingCities(true);
       try {
@@ -1138,14 +1151,16 @@ const PrivateRegistrationForm = () => {
           panNumber: formData.panNumber || '',
          ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
-        ...(formData.stockists && formData.stockists.length > 0 && {
-          suggestedDistributors: formData.stockists.map(stockist => ({
+       ...(stockists &&
+          stockists.length > 0 && {
+          suggestedDistributors: stockists.map(stockist => ({
             "distributorCode": stockist.code,
             "distributorName": stockist.name,
             "city": stockist.city,
             "customerId": stockist.name,
           }))
-        })
+        }),
+        isChildCustomer:false
       };
 
       // If editing, add the customerId to the payload
@@ -2128,15 +2143,14 @@ const PrivateRegistrationForm = () => {
               ))}
 
               {/* Add Stockist Button */}
-              <TouchableOpacity
-                style={styles.addStockistButton}
-                onPress={() => {
-                  setStockists(prev => [...prev, { name: '', distributorCode: '', city: '' }]);
-                }}
-                activeOpacity={0.7}
-              >        
-                <AppText style={styles.addStockistButtonText}>+ Add Stockist</AppText>
-              </TouchableOpacity>
+       
+               {
+                      stockists.length < 4 && (
+                        <TouchableOpacity style={styles.addStockistButton} onPress={handleAddStockist}>
+                          <AppText style={styles.addStockistButtonText}>+ Add More Stockist</AppText>
+                        </TouchableOpacity>
+                      )
+                    }
             </View>
 
             {/* Action Buttons */}

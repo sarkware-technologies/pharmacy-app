@@ -204,7 +204,7 @@ const GovtHospitalRegistrationForm = () => {
     // Load states and customer groups on mount
     loadStates();
     loadCustomerGroups();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load cities when state changes - NO RESET
@@ -351,7 +351,7 @@ const GovtHospitalRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `OTP sent to ${field}`,
-        position: 'top',
+          position: 'top',
         });
 
         setErrors(prev => ({
@@ -363,7 +363,7 @@ const GovtHospitalRegistrationForm = () => {
           type: 'error',
           text1: 'Error',
           text2: response.message || 'Failed to generate OTP',
-        position: 'top',
+          position: 'top',
         });
       }
     } catch (error) {
@@ -378,7 +378,19 @@ const GovtHospitalRegistrationForm = () => {
       setLoadingOtp(prev => ({ ...prev, [field]: false }));
     }
   };
+  const handleAddStockist = () => {
 
+    if (stockists.length >= 4) {
+      Toast.show({
+        type: 'error',
+        text1: 'Limit Reached',
+        text2: 'You can only add up to 4 stockists.',
+      });
+      return;
+    }
+    setStockists(prev => [...prev, { name: '', distributorCode: '', city: '' }]);
+
+  };
   const handleFileUpload = (field, file) => {
     if (file && file.id) {
       setDocumentIds(prev => ({ ...prev, [field]: file.id }));
@@ -408,24 +420,24 @@ const GovtHospitalRegistrationForm = () => {
   // Handle OCR extracted data for registration certificate uploads
   const handleRegistrationOcrData = (ocrData) => {
     console.log('OCR Data Received:', ocrData);
-    
+
     const updates = {};
-    
+
     // Populate hospital name if available
     if (ocrData.hospitalName && !formData.hospitalName) {
       updates.hospitalName = ocrData.hospitalName;
     }
-    
+
     // Populate address fields if available
     if (ocrData.address && !formData.address1) {
       updates.address1 = ocrData.address;
     }
-    
+
     // Populate registration number if available
     if (ocrData.registrationNumber && !formData.registrationNumber) {
       updates.registrationNumber = ocrData.registrationNumber;
     }
-    
+
     // Populate registration date if available
     if (ocrData.issueDate && !formData.registrationDate) {
       const parts = ocrData.issueDate.split('-');
@@ -434,7 +446,7 @@ const GovtHospitalRegistrationForm = () => {
         updates.registrationDate = formattedDate;
       }
     }
-    
+
     // Populate location fields if available
     if (ocrData.city && !formData.city) {
       updates.city = ocrData.city;
@@ -448,7 +460,7 @@ const GovtHospitalRegistrationForm = () => {
     if (ocrData.area && !formData.area) {
       updates.area = ocrData.area;
     }
-    
+
     // Apply all updates at once
     if (Object.keys(updates).length > 0) {
       setFormData(prev => ({ ...prev, ...updates }));
@@ -496,7 +508,7 @@ const GovtHospitalRegistrationForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `${field === 'mobile' ? 'Mobile' : 'Email'} verified successfully!`,
-        position: 'top',
+          position: 'top',
         });
 
         setShowOTP(prev => ({ ...prev, [field]: false }));
@@ -513,7 +525,7 @@ const GovtHospitalRegistrationForm = () => {
           type: 'error',
           text1: 'Invalid OTP',
           text2: 'Please enter the correct OTP',
-        position: 'top',
+          position: 'top',
         });
       }
     } catch (error) {
@@ -601,7 +613,7 @@ const GovtHospitalRegistrationForm = () => {
       newErrors.registrationNumber = 'Hospital code is required';
     }
 
-     if (!formData.registrationCertificate) {
+    if (!formData.registrationCertificate) {
       newErrors.registrationCertificate = 'Registration Certificate is required';
     }
     if (!formData.nin || formData.nin.trim().length === 0) {
@@ -648,7 +660,7 @@ const GovtHospitalRegistrationForm = () => {
       newErrors.emailAddress = 'Valid email address is required';
     }
 
-   
+
     if (!verificationStatus.email) {
       newErrors.emailVerification = 'Email verification is required';
     }
@@ -659,7 +671,7 @@ const GovtHospitalRegistrationForm = () => {
       newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
     }
 
-        if (!formData.panFile) {
+    if (!formData.panFile) {
       newErrors.panFile = 'Pan document is required';
     }
 
@@ -671,9 +683,9 @@ const GovtHospitalRegistrationForm = () => {
     }
 
     // Mapping Details
-    // if (!formData.linkedHospitals || formData.linkedHospitals.length === 0) {
-    //   newErrors.linkedHospitals = 'At least one linked hospital is required';
-    // }
+    if (!formData.linkedHospitals || formData.linkedHospitals.length === 0) {
+      newErrors.linkedHospitals = 'At least one linked hospital is required';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -746,14 +758,15 @@ const GovtHospitalRegistrationForm = () => {
           ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
 
         },
-        ...(formData.stockists && formData.stockists.length > 0 && {
-          suggestedDistributors: formData.stockists.map(stockist => ({
+        ...(stockists && stockists.length > 0 && {
+          suggestedDistributors: stockists.map(stockist => ({
             "distributorCode": stockist.code,
             "distributorName": stockist.name,
             "city": stockist.city,
             "customerId": stockist.name,
           }))
-        })
+        }),
+        isChildCustomer:false
       };
 
       const response = await customerAPI.createCustomer(registrationData);
@@ -766,7 +779,7 @@ const GovtHospitalRegistrationForm = () => {
           type: 'success',
           text1: 'Registration Successful',
           text2: response.message || 'Government Hospital registered successfully',
-        position: 'top',
+          position: 'top',
         });
 
         navigation.navigate('RegistrationSuccess', {
@@ -779,7 +792,7 @@ const GovtHospitalRegistrationForm = () => {
           type: 'error',
           text1: 'Registration Failed',
           text2: response.details || 'Failed to register hospital. Please try again.',
-        position: 'top',
+          position: 'top',
         });
       }
 
@@ -801,7 +814,7 @@ const GovtHospitalRegistrationForm = () => {
     if (selectedDate) {
       const formattedDate = selectedDate.toLocaleDateString('en-IN');
       setFormData(prev => ({ ...prev, registrationDate: formattedDate }));
-            setErrors(prev => ({ ...prev, registrationDate: null }));
+      setErrors(prev => ({ ...prev, registrationDate: null }));
 
     }
   };
@@ -885,7 +898,7 @@ const GovtHospitalRegistrationForm = () => {
           value={formData.registrationNumber}
 
           onChangeText={(text) => {
-           setFormData(prev => ({ ...prev, registrationNumber: text }))
+            setFormData(prev => ({ ...prev, registrationNumber: text }))
             setErrors(prev => ({ ...prev, registrationNumber: null }));
           }}
           error={errors.registrationNumber}
@@ -1114,48 +1127,48 @@ const GovtHospitalRegistrationForm = () => {
         <AppText style={styles.stepTitle}>Security Details<AppText style={{ color: 'red' }}>*</AppText></AppText>
 
         {/* Mobile Number with Verify */}
-    <CustomInput
-                placeholder="Mobile Number"
-                value={formData.mobileNumber}
-                onChangeText={(text) => {
-                  if (/^\d{0,10}$/.test(text)) {
-                    setFormData(prev => ({ ...prev, mobileNumber: text }));
-                    setErrors(prev => ({ ...prev, mobileNumber: null }));
-                  }
-                }}
-                maxLength={10}
-                keyboardType="phone-pad"
-                mandatory
-                editable={!verificationStatus.mobile}
+        <CustomInput
+          placeholder="Mobile Number"
+          value={formData.mobileNumber}
+          onChangeText={(text) => {
+            if (/^\d{0,10}$/.test(text)) {
+              setFormData(prev => ({ ...prev, mobileNumber: text }));
+              setErrors(prev => ({ ...prev, mobileNumber: null }));
+            }
+          }}
+          maxLength={10}
+          keyboardType="phone-pad"
+          mandatory
+          editable={!verificationStatus.mobile}
 
-                rightComponent={
-                  <TouchableOpacity
-                    style={[
-                      styles.inlineVerifyButton,
-                      verificationStatus.mobile && styles.verifiedButton
-                    ]}
-                    onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
-                    disabled={verificationStatus.mobile || loadingOtp.mobile}
-                  >
-                    {loadingOtp.mobile && !verificationStatus.mobile ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
-                    ) : (
-                      <AppText style={[
-                        styles.inlineVerifyText,
-                        verificationStatus.mobile && styles.verifiedText
-                      ]}>
-                        {verificationStatus.mobile ? (
-                          'Verified'
-                        ) : (
-                          <>
-                            Verify<AppText style={styles.inlineAsterisk}>*</AppText>
-                          </>
-                        )}
-                      </AppText>
-                    )}
-                  </TouchableOpacity>
-                }
-              />
+          rightComponent={
+            <TouchableOpacity
+              style={[
+                styles.inlineVerifyButton,
+                verificationStatus.mobile && styles.verifiedButton
+              ]}
+              onPress={() => !verificationStatus.mobile && handleVerify('mobile')}
+              disabled={verificationStatus.mobile || loadingOtp.mobile}
+            >
+              {loadingOtp.mobile && !verificationStatus.mobile ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <AppText style={[
+                  styles.inlineVerifyText,
+                  verificationStatus.mobile && styles.verifiedText
+                ]}>
+                  {verificationStatus.mobile ? (
+                    'Verified'
+                  ) : (
+                    <>
+                      Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                    </>
+                  )}
+                </AppText>
+              )}
+            </TouchableOpacity>
+          }
+        />
         {errors.mobileNumber && (
           <AppText style={styles.errorText}>{errors.mobileNumber}</AppText>
         )}
@@ -1166,46 +1179,46 @@ const GovtHospitalRegistrationForm = () => {
         {renderOTPInput('mobile')}
 
         {/* Email Address with Verify */}
-       <CustomInput
-                placeholder="Email Address"
-                value={formData.emailAddress}
-                onChangeText={(text) => {
-                  setFormData(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
-                  setErrors(prev => ({ ...prev, emailAddress: null }));
-                }}
-                keyboardType="email-address"
-                mandatory
-                editable={!verificationStatus.email}
+        <CustomInput
+          placeholder="Email Address"
+          value={formData.emailAddress}
+          onChangeText={(text) => {
+            setFormData(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
+            setErrors(prev => ({ ...prev, emailAddress: null }));
+          }}
+          keyboardType="email-address"
+          mandatory
+          editable={!verificationStatus.email}
 
-                rightComponent={
-                  <TouchableOpacity
-                    style={[
-                      styles.inlineVerifyButton,
-                      verificationStatus.email && styles.verifiedButton,
-                      loadingOtp.email && styles.disabledButton
-                    ]}
-                    onPress={() => !verificationStatus.email && !loadingOtp.email && handleVerify('email')}
-                    disabled={verificationStatus.email || loadingOtp.email}
-                  >
-                    {loadingOtp.email && !verificationStatus.email ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
-                    ) : (
-                      <AppText style={[
-                        styles.inlineVerifyText,
-                        verificationStatus.email && styles.verifiedText
-                      ]}>
-                        {verificationStatus.email ? (
-                          'Verified'
-                        ) : (
-                          <>
-                            Verify<AppText style={styles.inlineAsterisk}>*</AppText>
-                          </>
-                        )}
-                      </AppText>
-                    )}
-                  </TouchableOpacity>
-                }
-              />
+          rightComponent={
+            <TouchableOpacity
+              style={[
+                styles.inlineVerifyButton,
+                verificationStatus.email && styles.verifiedButton,
+                loadingOtp.email && styles.disabledButton
+              ]}
+              onPress={() => !verificationStatus.email && !loadingOtp.email && handleVerify('email')}
+              disabled={verificationStatus.email || loadingOtp.email}
+            >
+              {loadingOtp.email && !verificationStatus.email ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <AppText style={[
+                  styles.inlineVerifyText,
+                  verificationStatus.email && styles.verifiedText
+                ]}>
+                  {verificationStatus.email ? (
+                    'Verified'
+                  ) : (
+                    <>
+                      Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                    </>
+                  )}
+                </AppText>
+              )}
+            </TouchableOpacity>
+          }
+        />
         {errors.emailAddress && (
           <AppText style={styles.errorText}>{errors.emailAddress}</AppText>
         )}
@@ -1236,54 +1249,54 @@ const GovtHospitalRegistrationForm = () => {
         />
 
         {/* PAN Number */}
-       <CustomInput
-                placeholder="PAN Number"
-                value={formData.panNumber}
-                onChangeText={(text) => {
-                  const upperText = text.toUpperCase();
-                  setFormData(prev => ({ ...prev, panNumber: upperText }));
-                  setErrors(prev => ({ ...prev, panNumber: null }));
-                }}
-                autoCapitalize="characters"
-                maxLength={10} 
-                mandatory
-                error={errors.panNumber}
-                editable={!verificationStatus.pan}
+        <CustomInput
+          placeholder="PAN Number"
+          value={formData.panNumber}
+          onChangeText={(text) => {
+            const upperText = text.toUpperCase();
+            setFormData(prev => ({ ...prev, panNumber: upperText }));
+            setErrors(prev => ({ ...prev, panNumber: null }));
+          }}
+          autoCapitalize="characters"
+          maxLength={10}
+          mandatory
+          error={errors.panNumber}
+          editable={!verificationStatus.pan}
 
-                rightComponent={
-                  <TouchableOpacity
-                    style={[
-                      styles.inlineVerifyButton,
-                      verificationStatus.pan && styles.verifiedButton
-                    ]}
-                    onPress={() => {
-                      if (!verificationStatus.pan) {
-                        // Verify PAN format
-                        if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
-                          setVerificationStatus(prev => ({ ...prev, pan: true }));
-                         
-                        } else {
-                          Alert.alert('Invalid PAN', 'Please enter a valid PAN number');
-                        }
-                      }
-                    }}
-                    disabled={verificationStatus.pan}
-                  >
-                    <AppText style={[
-                      styles.inlineVerifyText,
-                      verificationStatus.pan && styles.verifiedText
-                    ]}>
-                      {verificationStatus.pan ? (
-                        'Verified'
-                      ) : (
-                        <>
-                          Verify<AppText style={styles.inlineAsterisk}>*</AppText>
-                        </>
-                      )}
-                    </AppText>
-                  </TouchableOpacity>
+          rightComponent={
+            <TouchableOpacity
+              style={[
+                styles.inlineVerifyButton,
+                verificationStatus.pan && styles.verifiedButton
+              ]}
+              onPress={() => {
+                if (!verificationStatus.pan) {
+                  // Verify PAN format
+                  if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+                    setVerificationStatus(prev => ({ ...prev, pan: true }));
+
+                  } else {
+                    Alert.alert('Invalid PAN', 'Please enter a valid PAN number');
+                  }
                 }
-              />
+              }}
+              disabled={verificationStatus.pan}
+            >
+              <AppText style={[
+                styles.inlineVerifyText,
+                verificationStatus.pan && styles.verifiedText
+              ]}>
+                {verificationStatus.pan ? (
+                  'Verified'
+                ) : (
+                  <>
+                    Verify<AppText style={styles.inlineAsterisk}>*</AppText>
+                  </>
+                )}
+              </AppText>
+            </TouchableOpacity>
+          }
+        />
 
         {/* Upload GST */}
         <FileUploadComponent
@@ -1459,61 +1472,61 @@ const GovtHospitalRegistrationForm = () => {
               {/* Pharmacies Section - Always Visible */}
               <View style={styles.hospitalContent}>
                 <View style={styles.pharmaciesSection}>
-                    {/* Pharmacies Label - Only show when pharmacies exist */}
-                    {hospital.pharmacies && hospital.pharmacies.length > 0 && (
-                      <AppText style={styles.pharmaciesLabel}>Pharmacies</AppText>
-                    )}
+                  {/* Pharmacies Label - Only show when pharmacies exist */}
+                  {hospital.pharmacies && hospital.pharmacies.length > 0 && (
+                    <AppText style={styles.pharmaciesLabel}>Pharmacies</AppText>
+                  )}
 
-                    {/* Selected Pharmacies Tags */}
-                    {hospital.pharmacies && hospital.pharmacies.length > 0 && (
-                      <View style={styles.pharmaciesTags}>
-                        {hospital.pharmacies.map((pharmacy, pIndex) => (
-                          <View key={pharmacy.id || pIndex} style={styles.pharmacyTag}>
-                            <AppText style={styles.pharmacyTagText}>{pharmacy.name}</AppText>
-                            <TouchableOpacity
-                              onPress={() => {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  linkedHospitals: prev.linkedHospitals.map((h, hIndex) =>
-                                    hIndex === index
-                                      ? {
-                                        ...h,
-                                        pharmacies: h.pharmacies.filter((_, pIdx) => pIdx !== pIndex)
-                                      }
-                                      : h
-                                  )
-                                }));
-                              }}
-                              style={styles.pharmacyTagRemove}
-                            >
-                              <RemoveHospitalCloseIcon width={14} height={14} color="#666" />
-                            </TouchableOpacity>
-                          </View>
-                        ))}
-                      </View>
-                    )}
+                  {/* Selected Pharmacies Tags */}
+                  {hospital.pharmacies && hospital.pharmacies.length > 0 && (
+                    <View style={styles.pharmaciesTags}>
+                      {hospital.pharmacies.map((pharmacy, pIndex) => (
+                        <View key={pharmacy.id || pIndex} style={styles.pharmacyTag}>
+                          <AppText style={styles.pharmacyTagText}>{pharmacy.name}</AppText>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                linkedHospitals: prev.linkedHospitals.map((h, hIndex) =>
+                                  hIndex === index
+                                    ? {
+                                      ...h,
+                                      pharmacies: h.pharmacies.filter((_, pIdx) => pIdx !== pIndex)
+                                    }
+                                    : h
+                                )
+                              }));
+                            }}
+                            style={styles.pharmacyTagRemove}
+                          >
+                            <RemoveHospitalCloseIcon width={14} height={14} color="#666" />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  )}
 
-                    {/* Add Pharmacy Link */}
-                    <TouchableOpacity
-                      style={styles.addPharmacyLink}
-                      onPress={() => {
-                        navigation.navigate('PharmacySelector', {
-                          selectedPharmacies: hospital.pharmacies || [],
-                          onSelect: (pharmacies) => {
-                            setFormData(prev => ({
-                              ...prev,
-                              linkedHospitals: prev.linkedHospitals.map((h, hIndex) =>
-                                hIndex === index
-                                  ? { ...h, pharmacies }
-                                  : h
-                              )
-                            }));
-                          }
-                        });
-                      }}
-                    >
-                      <AppText style={styles.addPharmacyLinkText}>+ Add Pharmacy</AppText>
-                    </TouchableOpacity>
+                  {/* Add Pharmacy Link */}
+                  <TouchableOpacity
+                    style={styles.addPharmacyLink}
+                    onPress={() => {
+                      navigation.navigate('PharmacySelector', {
+                        selectedPharmacies: hospital.pharmacies || [],
+                        onSelect: (pharmacies) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            linkedHospitals: prev.linkedHospitals.map((h, hIndex) =>
+                              hIndex === index
+                                ? { ...h, pharmacies }
+                                : h
+                            )
+                          }));
+                        }
+                      });
+                    }}
+                  >
+                    <AppText style={styles.addPharmacyLinkText}>+ Add Pharmacy</AppText>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -1600,7 +1613,7 @@ const GovtHospitalRegistrationForm = () => {
             const groupId = index + 9; // 9, 10, 11, 12
             const isDisabled = group !== '12 GOVT';
             const isSelected = formData.customerGroupId === groupId;
-            
+
             return (
               <TouchableOpacity
                 key={group}
@@ -1639,25 +1652,20 @@ const GovtHospitalRegistrationForm = () => {
       {/* Stockist Suggestions */}
       <View style={styles.sectionLabelContainer}>
         <AppText style={styles.sectionLabel}>Stockist Suggestions <AppText style={styles.optional}>(Optional)</AppText> </AppText>
-       
+
       </View>
 
       {/* Stockist List */}
       {stockists.map((stockist, index) => (
         <View key={index} style={styles.stockistCard}>
           <View style={styles.stockistCardHeader}>
-            <View>
-              <AppText style={styles.stockistCardTitle}>Stockist</AppText>
-            </View>
-            <View>
-              <AppText style={styles.stockistCardIndex}>{index + 1}</AppText>
-            </View>
+
             {index > 0 && (
               <TouchableOpacity
+                style={{ marginLeft: 'auto' }}
                 onPress={() => {
                   setStockists(prev => prev.filter((_, i) => i !== index));
                 }}
-                style={styles.deleteStockistButton}
               >
                 <Icon name="trash-outline" size={20} color="#FF3B30" />
               </TouchableOpacity>
@@ -1697,15 +1705,15 @@ const GovtHospitalRegistrationForm = () => {
       ))}
 
       {/* Add Stockist Button */}
-      <TouchableOpacity
-        style={styles.addStockistButton}
-        onPress={() => {
-          setStockists(prev => [...prev, { name: '', distributorCode: '', city: '' }]);
-        }}
-        activeOpacity={0.7}
-      >
-        <AppText style={styles.addStockistButtonText}>+ Add Stockist</AppText>
-      </TouchableOpacity>
+
+
+      {
+        stockists.length < 4 && (
+          <TouchableOpacity style={styles.addStockistButton} onPress={handleAddStockist}>
+            <AppText style={styles.addStockistButtonText}>+ Add More Stockist</AppText>
+          </TouchableOpacity>
+        )
+      }
     </Animated.View>
   );
 
@@ -1764,7 +1772,7 @@ const GovtHospitalRegistrationForm = () => {
           ]}
         >
           <TouchableOpacity
-  style={[styles.registerButton, loading && styles.disabledButton]}            onPress={handleNextStep}
+            style={[styles.registerButton, loading && styles.disabledButton]} onPress={handleNextStep}
             activeOpacity={0.8}
             disabled={loading}
           >
@@ -1778,7 +1786,7 @@ const GovtHospitalRegistrationForm = () => {
       </View>
 
 
-       
+
 
       {/* Cancel Confirmation Modal */}
       {/* Dropdown Modals */}
@@ -2465,8 +2473,8 @@ const styles = StyleSheet.create({
   },
 
 
-  
-   actionButtons: {
+
+  actionButtons: {
     flexDirection: 'row',
     marginTop: 24,
     marginBottom: 32,
@@ -2739,8 +2747,8 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: colors.primary,
-  }, 
- radioButtonLabel: {
+  },
+  radioButtonLabel: {
     fontSize: 14,
     color: '#333',
     fontWeight: '500',
