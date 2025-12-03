@@ -33,6 +33,7 @@ import { AppText, AppInput } from "../../../components"
 import AddNewHospitalModal from './AddNewHospitalModal';
 import AddNewDoctorModal from './AddNewDoctorModal';
 import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
+import FetchGst from '../../../components/icons/FetchGst';
 
 // Default document types for file uploads (will be updated from API for licenses)
 const DOC_TYPES = {
@@ -831,7 +832,7 @@ const PharmacyWholesalerRetailerForm = () => {
           ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
         ...(formData.stockists && formData.stockists.length > 0 && {
-          suggestedDistributors: formData.stockists.map(stockist => ({
+          suggestedDistributors: formData?.stockists.map(stockist => ({
             "distributorCode": stockist.code,
             "distributorName": stockist.name,
             "city": stockist.city,
@@ -1078,7 +1079,7 @@ const PharmacyWholesalerRetailerForm = () => {
   const handleStockistChange = (index, field, value) => {
     setFormData(prev => ({
       ...prev,
-      stockists: prev.stockists.map((stockist, i) =>
+      stockists: prev?.stockists.map((stockist, i) =>
         i === index ? { ...stockist, [field]: value } : stockist
       )
     }));
@@ -1645,6 +1646,25 @@ const PharmacyWholesalerRetailerForm = () => {
                 }
               />
 
+               {
+                                  verificationStatus.pan &&
+                                  <TouchableOpacity
+                                    style={styles.linkButton}
+                                    onPress={() => {
+                                      Toast.show({
+                                        type: 'info',
+                                        text1: 'Fetch GST',
+                                        text2: 'Fetching GST details from PAN...',
+                                      });
+                                      // Here you would call API to fetch GST from PAN
+                                      // and populate the GST dropdown options
+                                    }}
+                                  >
+                                    <FetchGst />
+                                    <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
+                                  </TouchableOpacity>
+                                }
+
               <FileUploadComponent
                 placeholder="Upload GST"
                 accept={['pdf', 'jpg', 'png', 'jpeg']}
@@ -1904,7 +1924,7 @@ const PharmacyWholesalerRetailerForm = () => {
                 Add suggested stockists for this pharmacy
               </AppText> */}
 
-              {formData?.stockists.map((stockist, index) => (
+              {formData.stockists.map((stockist, index) => (
                 <View key={index} style={styles.stockistContainer}>
                   {index > 0 && (
                     <View style={styles.stockistHeader}>
@@ -2131,31 +2151,37 @@ const PharmacyWholesalerRetailerForm = () => {
         animationType="fade"
         onRequestClose={() => setShowCancelModal(false)}
       >
-        <View style={styles.cancelModalOverlay}>
-          <View style={styles.cancelModalContent}>
-            <View style={styles.modalIconContainer}>
-              <AppText style={styles.modalIcon}>!</AppText>
-            </View>
-            <AppText style={styles.modalTitle}>Are you sure you want to Cancel the Onboarding?</AppText>
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
-                style={styles.modalYesButton}
-                onPress={() => {
-                  setShowCancelModal(false);
-                  navigation.goBack();
-                }}
-              >
-                <AppText style={styles.modalYesButtonText}>Yes</AppText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalNoButton}
-                onPress={() => setShowCancelModal(false)}
-              >
-                <AppText style={styles.modalNoButtonText}>No</AppText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+       <View style={styles.cancelModalOverlay}>
+                <View style={styles.cancelModalContent}>
+                  <View style={styles.modalIconContainerOuter}>
+      
+                    <View style={styles.modalIconContainer}>
+      
+                      <AppText style={styles.modalIcon}>!</AppText>
+                    </View></View>
+                  <AppText style={styles.cancelModalTitle}>
+                    {`Are you sure you want
+to Cancel the Onboarding?`}
+                  </AppText>
+                  <View style={styles.modalButtonContainer}>
+                    <TouchableOpacity
+                      style={styles.modalYesButton}
+                      onPress={() => {
+                        setShowCancelModal(false);
+                        navigation.goBack();
+                      }}
+                    >
+                      <AppText style={styles.modalYesButtonText}>Yes</AppText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.modalNoButton}
+                      onPress={() => setShowCancelModal(false)}
+                    >
+                      <AppText style={styles.modalNoButtonText}>No</AppText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
       </Modal>
     </SafeAreaView>
   );
@@ -2603,7 +2629,7 @@ const styles = StyleSheet.create({
   modalLoader: {
     paddingVertical: 50,
   },
-  cancelModalOverlay: {
+    cancelModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
@@ -2613,22 +2639,42 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 32,
+    paddingTop: 70,
+    paddingBottom: 20,
     alignItems: 'center',
   },
-  modalIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FFE5E5',
+
+  cancelModalTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: "center",
+    marginBottom: 50
+
+  },
+
+
+
+  modalIconContainerOuter: {
+    width: 80,
+    height: 80,
+    borderRadius: 50,
+    backgroundColor: '#FFE3E3',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+  },
+  modalIconContainer: {
+    width: 46,
+    height: 46,
+    borderRadius: 30,
+    backgroundColor: '#FF6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalIcon: {
     fontSize: 32,
-    color: '#FF6B6B',
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   modalButtonContainer: {
@@ -2641,12 +2687,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: colors.primary,
+    borderColor: '#FF6B6B',
     alignItems: 'center',
   },
   modalYesButtonText: {
     fontSize: 16,
-    color: colors.primary,
+    color: '#FF6B6B',
     fontWeight: '600',
   },
   modalNoButton: {
@@ -2920,6 +2966,17 @@ const styles = StyleSheet.create({
     gap: 50,
     flex: 1,
     marginBottom: 16
+  },
+   linkButton: {
+    flexDirection: 'row',   
+    alignItems: 'center',  
+    gap: 2,                
+    paddingVertical: 8,
+    marginBottom: 16,
+    marginTop: -16,
+  },
+  linkText: {
+    color: colors.primary
   }
 });
 

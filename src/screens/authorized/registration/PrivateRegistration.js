@@ -39,6 +39,7 @@ import AddNewPharmacyModal from './AddNewPharmacyModal';
 import AddNewHospitalModal from './AddNewHospitalModal';
 import { AppText, AppInput } from "../../../components"
 import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
+import FetchGst from '../../../components/icons/FetchGst';
 
 const { width, height } = Dimensions.get('window');
 
@@ -1857,7 +1858,24 @@ const PrivateRegistrationForm = () => {
                 <AppText style={styles.errorText}>{errors.panNumber}</AppText>
               )}
 
-              {/* Fetch GST from PAN Link */}
+               {
+                   verificationStatus.pan &&
+                    <TouchableOpacity
+                      style={styles.linkButton}
+                      onPress={() => {
+                        Toast.show({
+                          type: 'info',
+                          text1: 'Fetch GST',
+                          text2: 'Fetching GST details from PAN...',
+                        });
+                        // Here you would call API to fetch GST from PAN
+                        // and populate the GST dropdown options
+                      }}
+                    >
+                      <FetchGst />
+                      <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
+                    </TouchableOpacity>
+                  }
 
 
               {/* GST Upload */}
@@ -2332,31 +2350,37 @@ const PrivateRegistrationForm = () => {
         animationType="fade"
         onRequestClose={() => setShowCancelModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalIconContainer}>
-              <AppText style={styles.modalIcon}>!</AppText>
-            </View>
-            <AppText style={styles.modalTitle}>Are you sure you want to Cancel the {isEditMode ? 'Editing' : 'Onboarding'}?</AppText>
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
-                style={styles.modalYesButton}
-                onPress={() => {
-                  setShowCancelModal(false);
-                  navigation.goBack();
-                }}
-              >
-                <AppText style={styles.modalYesButtonText}>Yes</AppText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalNoButton}
-                onPress={() => setShowCancelModal(false)}
-              >
-                <AppText style={styles.modalNoButtonText}>No</AppText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+           <View style={styles.cancelModalOverlay}>
+                        <View style={styles.cancelModalContent}>
+                          <View style={styles.modalIconContainerOuter}>
+              
+                            <View style={styles.modalIconContainer}>
+              
+                              <AppText style={styles.modalIcon}>!</AppText>
+                            </View></View>
+                          <AppText style={styles.cancelModalTitle}>
+                            {`Are you sure you want
+to Cancel the Onboarding?`}
+                          </AppText>
+                          <View style={styles.modalButtonContainer}>
+                            <TouchableOpacity
+                              style={styles.modalYesButton}
+                              onPress={() => {
+                                setShowCancelModal(false);
+                                navigation.goBack();
+                              }}
+                            >
+                              <AppText style={styles.modalYesButtonText}>Yes</AppText>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.modalNoButton}
+                              onPress={() => setShowCancelModal(false)}
+                            >
+                              <AppText style={styles.modalNoButtonText}>No</AppText>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </View>
       </Modal>
     </SafeAreaView>
   );
@@ -3051,6 +3075,86 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
+
+
+   cancelModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  cancelModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 70,
+    paddingBottom: 20,
+    alignItems: 'center',
+  },
+
+  cancelModalTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: "center",
+    marginBottom: 50
+
+  },
+
+
+
+  modalIconContainerOuter: {
+    width: 80,
+    height: 80,
+    borderRadius: 50,
+    backgroundColor: '#FFE3E3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalIconContainer: {
+    width: 46,
+    height: 46,
+    borderRadius: 30,
+    backgroundColor: '#FF6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalIcon: {
+    fontSize: 32,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalYesButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#FF6B6B',
+    alignItems: 'center',
+  },
+  modalYesButtonText: {
+    fontSize: 16,
+    color: '#FF6B6B',
+    fontWeight: '600',
+  },
+  modalNoButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    backgroundColor: '#FF6B6B',
+    alignItems: 'center',
+  },
+  modalNoButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+  },
   // Hospital and Pharmacy Modal Styles
   modalContainer: {
     flex: 1,
@@ -3305,6 +3409,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
   },
+   linkButton: {
+    flexDirection: 'row',   
+    alignItems: 'center',  
+    gap: 2,                
+    paddingVertical: 8,
+    marginBottom: 16,
+    marginTop: -16,
+  },
+  linkText: {
+    color: colors.primary
+  }
 });
 
 export default PrivateRegistrationForm;

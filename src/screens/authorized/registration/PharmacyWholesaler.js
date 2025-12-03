@@ -30,6 +30,8 @@ import { AppText, AppInput } from '../../../components';
 import AddNewHospitalModal from './AddNewHospitalModal';
 import AddNewDoctorModal from './AddNewDoctorModal';
 import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
+import FetchGst from '../../../components/icons/FetchGst';
+
 // Document types for file uploads
 const DOC_TYPES = {
   LICENSE_20B: 2, // License Type ID for 20B
@@ -414,7 +416,7 @@ const PharmacyWholesalerForm = () => {
           type: 'success',
           text1: 'Success',
           text2: `OTP sent to ${field}`,
-        position: 'top',
+          position: 'top',
         });
 
 
@@ -444,7 +446,7 @@ const PharmacyWholesalerForm = () => {
             type: 'error',
             text1: 'Customer Exists',
             text2: `Customer already exists with this ${field}`,
-        position: 'top',
+            position: 'top',
           });
 
           // Check if already verified
@@ -459,7 +461,7 @@ const PharmacyWholesalerForm = () => {
             type: 'error',
             text1: 'Error',
             text2: response.message || 'Failed to generate OTP',
-        position: 'top',
+            position: 'top',
           });
         }
       }
@@ -468,7 +470,7 @@ const PharmacyWholesalerForm = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-                position: 'top',
+        position: 'top',
         text2:
           error.response?.data?.message ||
           error.message ||
@@ -517,9 +519,8 @@ const PharmacyWholesalerForm = () => {
         Toast.show({
           type: 'success',
           text1: 'Success',
-          text2: `${
-            field === 'mobile' ? 'Mobile' : 'Email'
-          } verified successfully!`,
+          text2: `${field === 'mobile' ? 'Mobile' : 'Email'
+            } verified successfully!`,
           position: 'top',
 
         });
@@ -543,7 +544,7 @@ const PharmacyWholesalerForm = () => {
           type: 'error',
           text1: 'Error',
           text2: response.message || 'Invalid OTP. Please try again.',
-        position: 'top',
+          position: 'top',
         });
       }
     } catch (error) {
@@ -555,7 +556,7 @@ const PharmacyWholesalerForm = () => {
           error.response?.data?.message ||
           error.message ||
           'Failed to verify OTP. Please try again.',
-                  position: 'top',
+        position: 'top',
 
       });
     } finally {
@@ -568,31 +569,31 @@ const PharmacyWholesalerForm = () => {
     await handleVerify(field);
   };
 
-const handleDateChange = (event, selectedDate) => {
-  // 1️⃣ Immediately close picker (prevents reopening)
-  setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
+  const handleDateChange = (event, selectedDate) => {
+    // 1️⃣ Immediately close picker (prevents reopening)
+    setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
 
-  // 2️⃣ If dismissed → don't update anything
-  if (event.type === 'dismissed') {
+    // 2️⃣ If dismissed → don't update anything
+    if (event.type === 'dismissed') {
+      setSelectedDateField(null);
+      return;
+    }
+
+    // 3️⃣ User pressed OK
+    if (event.type === 'set' && selectedDate) {
+      const formattedDate = selectedDate.toISOString();
+      setFormData(prev => ({
+        ...prev,
+        [`${selectedDateField}ExpiryDate`]: formattedDate,
+      }));
+      setErrors(prev => ({
+        ...prev,
+        [`${selectedDateField}ExpiryDate`]: null,
+      }));
+    }
+
     setSelectedDateField(null);
-    return;
-  }
-
-  // 3️⃣ User pressed OK
-  if (event.type === 'set' && selectedDate) {
-    const formattedDate = selectedDate.toISOString();
-    setFormData(prev => ({
-      ...prev,
-      [`${selectedDateField}ExpiryDate`]: formattedDate,
-    }));
-    setErrors(prev => ({
-      ...prev,
-      [`${selectedDateField}ExpiryDate`]: null,
-    }));
-  }
-
-  setSelectedDateField(null);
-};
+  };
 
 
 
@@ -677,19 +678,19 @@ const handleDateChange = (event, selectedDate) => {
   // Handle OCR extracted data for license uploads
   const handleLicenseOcrData = (ocrData) => {
     console.log('OCR Data Received:', ocrData);
-    
+
     const updates = {};
-    
+
     // Populate pharmacy name if available
     if (ocrData.pharmacyName && !formData.pharmacyName) {
       updates.pharmacyName = ocrData.pharmacyName;
     }
-    
+
     // Populate address fields if available
     if (ocrData.address && !formData.address1) {
       updates.address1 = ocrData.address;
     }
-    
+
     // Populate license number if available and field is empty
     if (ocrData.licenseNumber) {
       // Determine which license field to populate based on which file was just uploaded
@@ -700,7 +701,7 @@ const handleDateChange = (event, selectedDate) => {
         updates.license21b = ocrData.licenseNumber;
       }
     }
-    
+
     // Populate location fields if available
     if (ocrData.city && !formData.city) {
       updates.city = ocrData.city;
@@ -714,7 +715,7 @@ const handleDateChange = (event, selectedDate) => {
     if (ocrData.area && !formData.area) {
       updates.area = ocrData.area;
     }
-    
+
     // Populate expiry date if available
     if (ocrData.expiryDate) {
       // Convert date format from DD-MM-YYYY to required format
@@ -728,7 +729,7 @@ const handleDateChange = (event, selectedDate) => {
         }
       }
     }
-    
+
     // Apply all updates at once
     if (Object.keys(updates).length > 0) {
       setFormData(prev => ({ ...prev, ...updates }));
@@ -773,10 +774,10 @@ const handleDateChange = (event, selectedDate) => {
     if (!formData.address1) newErrors.address1 = 'Address 1 is required';
     if (!formData.address2) newErrors.address2 = 'Address 2 is required';
     if (!formData.address3) newErrors.address3 = 'Address 3 is required';
-      if (!formData.area || formData.area.trim().length === 0) {
+    if (!formData.area || formData.area.trim().length === 0) {
       newErrors.area = 'Area is required';
     }
-    
+
     if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode))
       newErrors.pincode = 'Valid 6-digit pincode is required';
     if (!formData.cityId) newErrors.city = 'City is required';
@@ -795,7 +796,7 @@ const handleDateChange = (event, selectedDate) => {
       newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
     if (formData.gstNumber && !isValidGST(formData.gstNumber))
       newErrors.gstNumber = 'GST number must be valid (e.g., 27ASDSD1234F1Z5)';
-if (!formData.panFile) {
+    if (!formData.panFile) {
       newErrors.panFile = 'PAN document is required';
     }
     setErrors(newErrors);
@@ -864,7 +865,7 @@ if (!formData.panFile) {
           mobile: formData.mobileNumber,
           email: formData.emailAddress,
           panNumber: formData.panNumber,
-         ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
+          ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
         mapping: {
           hospitals:
@@ -875,14 +876,14 @@ if (!formData.panFile) {
         },
         ...(formData.stockists &&
           formData.stockists.length > 0 && {
-            suggestedDistributors: formData.stockists.map(stockist => ({
-              distributorCode: stockist.code,
-              distributorName: stockist.name,
-              city: stockist.city,
-              customerId: stockist.name,
-            })),
-          }),
-           isChildCustomer:false
+          suggestedDistributors: formData.stockists.map(stockist => ({
+            distributorCode: stockist.code,
+            distributorName: stockist.name,
+            city: stockist.city,
+            customerId: stockist.name,
+          })),
+        }),
+        isChildCustomer: false
       };
 
       const response = await customerAPI.createCustomer(registrationData);
@@ -894,10 +895,10 @@ if (!formData.panFile) {
           type: 'success',
           text1: 'Success',
           text2: 'Pharmacy registered successfully!',
-        position: 'top',
+          position: 'top',
         });
 
-       
+
 
         // Navigate to success screen with registration details
         navigation.navigate('RegistrationSuccess', {
@@ -913,13 +914,13 @@ if (!formData.panFile) {
             type: 'error',
             text1: 'Registration Failed',
             text2: errorMessage,
-        position: 'top',
+            position: 'top',
           });
         } else {
           Toast.show({
             type: 'error',
             text1: 'Registration Failed',
-                    position: 'top',
+            position: 'top',
 
             text2:
               response.details ||
@@ -948,20 +949,20 @@ if (!formData.panFile) {
   // };
 
   const handleAddStockist = () => {
-  if (formData.stockists.length >= 4) {
-    Toast.show({
-      type: 'error',
-      text1: 'Limit Reached',
-      text2: 'You can only add up to 4 stockists.',
-    });
-    return;
-  }
+    if (formData.stockists.length >= 4) {
+      Toast.show({
+        type: 'error',
+        text1: 'Limit Reached',
+        text2: 'You can only add up to 4 stockists.',
+      });
+      return;
+    }
 
-  setFormData(prev => ({
-    ...prev,
-    stockists: [...prev.stockists, { name: '', code: '', city: '' }],
-  }));
-};
+    setFormData(prev => ({
+      ...prev,
+      stockists: [...prev.stockists, { name: '', code: '', city: '' }],
+    }));
+  };
 
   const handleRemoveStockist = index => {
     setFormData(prev => ({
@@ -1655,7 +1656,26 @@ if (!formData.panFile) {
                       </TouchableOpacity>
                     }
                   />
-            
+
+                  {
+                    verificationStatus.pan &&
+                    <TouchableOpacity
+                      style={styles.linkButton}
+                      onPress={() => {
+                        Toast.show({
+                          type: 'info',
+                          text1: 'Fetch GST',
+                          text2: 'Fetching GST details from PAN...',
+                        });
+                        // Here you would call API to fetch GST from PAN
+                        // and populate the GST dropdown options
+                      }}
+                    >
+                      <FetchGst />
+                      <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
+                    </TouchableOpacity>
+                  }
+
 
                   {/* GST Upload */}
                   <FileUploadComponent
@@ -1727,8 +1747,8 @@ if (!formData.panFile) {
                     <View style={styles.radioCircle}>
                       {formData.selectedCategory ===
                         'groupCorporateHospital' && (
-                        <View style={styles.radioSelected} />
-                      )}
+                          <View style={styles.radioSelected} />
+                        )}
                     </View>
                     <AppText style={styles.radioLabel}>Hospital</AppText>
                   </TouchableOpacity>
@@ -1823,19 +1843,19 @@ if (!formData.panFile) {
                           ? `${formData.selectedDoctors.length} Doctor${formData.selectedDoctors.length !== 1 ? 's' : ''} selected`
                           : 'Search doctor name/code'
                         }
-                      
+
                       </AppText>
                       <Icon name="arrow-drop-down" size={24} color="#666" />
                     </TouchableOpacity>
 
-                   
+
 
                     {/* Selected Doctors List */}
                     {formData.selectedDoctors.length > 0 && (
                       <View style={styles.selectedItemsContainer}>
                         {formData.selectedDoctors.map((doctor, index) => (
                           <View key={doctor.id || index} style={styles.selectedItemChip}>
-                             <AppText style={styles.addNewDoctorLink}>{ doctor.name || doctor.customerName || `Doctor ${index + 1}` }  </AppText>
+                            <AppText style={styles.addNewDoctorLink}>{doctor.name || doctor.customerName || `Doctor ${index + 1}`}  </AppText>
                             <TouchableOpacity
                               onPress={() => {
                                 setFormData(prev => ({
@@ -1851,7 +1871,7 @@ if (!formData.panFile) {
                       </View>
                     )}
 
-                     {/* Add New Doctor Link */}
+                    {/* Add New Doctor Link */}
                     <TouchableOpacity
                       style={styles.addNewLink}
                       onPress={() => {
@@ -1989,7 +2009,7 @@ if (!formData.panFile) {
                 onPress={handleAddStockist}
               >
 
-            
+
                 {
                   formData.stockists.length < 4 && (
                     <TouchableOpacity onPress={handleAddStockist}>
@@ -1997,7 +2017,7 @@ if (!formData.panFile) {
                     </TouchableOpacity>
                   )
                 }
-              
+
               </TouchableOpacity>
             </View>
 
@@ -2102,11 +2122,15 @@ if (!formData.panFile) {
       >
         <View style={styles.cancelModalOverlay}>
           <View style={styles.cancelModalContent}>
-            <View style={styles.modalIconContainer}>
-              <AppText style={styles.modalIcon}>!</AppText>
-            </View>
-            <AppText style={styles.modalTitle}>
-              Are you sure you want to Cancel the Onboarding?
+            <View style={styles.modalIconContainerOuter}>
+
+              <View style={styles.modalIconContainer}>
+
+                <AppText style={styles.modalIcon}>!</AppText>
+              </View></View>
+            <AppText style={styles.cancelModalTitle}>
+              {`Are you sure you want
+to Cancel the Onboarding?`}
             </AppText>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
@@ -2363,7 +2387,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    marginBottom:16
+    marginBottom: 16
   },
   dropdownText: {
     fontSize: 14,
@@ -2604,22 +2628,42 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 32,
+    paddingTop: 70,
+    paddingBottom: 20,
     alignItems: 'center',
   },
-  modalIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FFE5E5',
+
+  cancelModalTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: "center",
+    marginBottom: 50
+
+  },
+
+
+
+  modalIconContainerOuter: {
+    width: 80,
+    height: 80,
+    borderRadius: 50,
+    backgroundColor: '#FFE3E3',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+  },
+  modalIconContainer: {
+    width: 46,
+    height: 46,
+    borderRadius: 30,
+    backgroundColor: '#FF6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalIcon: {
     fontSize: 32,
-    color: '#FF6B6B',
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   modalButtonContainer: {
@@ -2632,12 +2676,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: colors.primary,
+    borderColor: '#FF6B6B',
     alignItems: 'center',
   },
   modalYesButtonText: {
     fontSize: 16,
-    color: colors.primary,
+    color: '#FF6B6B',
     fontWeight: '600',
   },
   modalNoButton: {
@@ -2647,6 +2691,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF6B6B',
     alignItems: 'center',
   },
+
+
+
+
   modalNoButtonText: {
     fontSize: 16,
     color: '#fff',
@@ -2910,6 +2958,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
+
+
+  linkButton: {
+    flexDirection: 'row',   
+    alignItems: 'center',  
+    gap: 2,                
+    paddingVertical: 8,
+    marginBottom: 16,
+    marginTop: -16,
+  },
+  linkText: {
+    color: colors.primary
+  }
 });
 
 export default PharmacyWholesalerForm;
