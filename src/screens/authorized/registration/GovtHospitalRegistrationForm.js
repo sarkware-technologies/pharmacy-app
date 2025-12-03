@@ -41,6 +41,7 @@ import { customerAPI } from '../../../api/customer';
 import { AppText, AppInput } from "../../../components"
 import AddNewHospitalModal from './AddNewHospitalModal';
 import AddNewPharmacyModal from './AddNewPharmacyModal';
+import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 
 const { width, height } = Dimensions.get('window');
 
@@ -115,7 +116,12 @@ const GovtHospitalRegistrationForm = () => {
     // Mapping
     markAsBuyingEntity: false,
     linkedHospitals: [],
+    linkedPharmacies: [],
     customerGroupId: 12,
+    selectedCategory: {
+
+      pharmacy: false,
+    },
   });
 
   // State for managing stockists
@@ -620,7 +626,19 @@ const GovtHospitalRegistrationForm = () => {
       newErrors.nin = 'NIN (National Identification Number) is required';
     }
     if (!formData.registrationDate) {
-      newErrors.registrationDate = 'Registration date is required';
+      newErrors.registrationDate = 'Legal Start date is required';
+    } else {
+
+      console.log("working");
+      const [day, month, year] = formData.registrationDate.split('/');
+      const selected = new Date(year, month - 1, day);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selected > today) {
+        newErrors.registrationDate = 'Future date is not allowed';
+      }
     }
 
     // General Details
@@ -766,7 +784,7 @@ const GovtHospitalRegistrationForm = () => {
             "customerId": stockist.name,
           }))
         }),
-        isChildCustomer:false
+        isChildCustomer: false
       };
 
       const response = await customerAPI.createCustomer(registrationData);
@@ -809,15 +827,30 @@ const GovtHospitalRegistrationForm = () => {
     }
   };
 
-  const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(false);
-    if (selectedDate) {
-      const formattedDate = selectedDate.toLocaleDateString('en-IN');
-      setFormData(prev => ({ ...prev, registrationDate: formattedDate }));
-      setErrors(prev => ({ ...prev, registrationDate: null }));
 
+  const handleDateChange = (event, selectedDate) => {
+    // close immediately
+    setShowDatePicker(false);
+
+    // 🚫 Cancel clicked → do nothing
+    if (event.type === 'dismissed') {
+      return;
+    }
+
+    // ✅ OK clicked → update date
+    if (event.type === 'set' && selectedDate) {
+      const formattedDate = selectedDate.toLocaleDateString('en-IN');
+      setFormData(prev => ({
+        ...prev,
+        registrationDate: formattedDate,
+      }));
+      setErrors(prev => ({
+        ...prev,
+        registrationDate: null,
+      }));
     }
   };
+
 
 
   const handleCancel = () => {
@@ -1169,6 +1202,7 @@ const GovtHospitalRegistrationForm = () => {
             </TouchableOpacity>
           }
         />
+        {renderOTPInput('mobile')}
         {errors.mobileNumber && (
           <AppText style={styles.errorText}>{errors.mobileNumber}</AppText>
         )}
@@ -1176,7 +1210,7 @@ const GovtHospitalRegistrationForm = () => {
         {errors.mobileVerification && (
           <AppText style={styles.errorText}>{errors.mobileVerification}</AppText>
         )}
-        {renderOTPInput('mobile')}
+
 
         {/* Email Address with Verify */}
         <CustomInput
@@ -1374,7 +1408,7 @@ const GovtHospitalRegistrationForm = () => {
         </TouchableOpacity>
       </View>
 
-      <AppText style={styles.stepTitle}>
+      <AppText style={styles.stepTitlewithoutline}>
         Select category
       </AppText>
 
@@ -1409,7 +1443,8 @@ const GovtHospitalRegistrationForm = () => {
           <AppText style={styles.selectorPlaceholder}>
             Search hospital name/code
           </AppText>
-          <ArrowDown />
+          <ArrowDown color='#333' />
+
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
@@ -1435,11 +1470,10 @@ const GovtHospitalRegistrationForm = () => {
           <AppText style={styles.hospitalsSummaryText}>
             {formData.linkedHospitals.length} Hospital{formData.linkedHospitals.length > 1 ? 's' : ''} Selected
           </AppText>
-          <Icon
-            name="chevron-down"
-            size={20}
-            color="#333"
-          />
+
+
+          <ArrowDown color='#333' />
+
         </TouchableOpacity>
       )}
       {errors.linkedHospitals && (
@@ -1545,63 +1579,109 @@ const GovtHospitalRegistrationForm = () => {
       {/* <View style={styles.divider} /> */}
 
       {/* Pharmacy Selection */}
-      <AppText style={styles.sectionLabel}>Pharmacy</AppText>
 
-      <View style={styles.pharmacySelectionContainer}>
+
+      <View style={styles.categoryOptions}>
+
         <TouchableOpacity
-          style={styles.pharmacySelectButton}
-          onPress={() => {
-            navigation.navigate('PharmacySelector', {
-              selectedPharmacies: formData.linkedPharmacies || [],
-              onSelect: (pharmacies) => {
-                setFormData(prev => ({
-                  ...prev,
-                  linkedPharmacies: pharmacies
-                }));
-              }
-            });
-          }}
+          style={[
+            styles.checkboxButton,
+            formData.selectedCategory.pharmacy && styles.checkboxButtonActive,
+          ]}
+          onPress={() => setFormData(prev => ({
+            ...prev,
+            selectedCategory: {
+              ...prev.selectedCategory,
+              pharmacy: !prev.selectedCategory.pharmacy
+            }
+          }))}
           activeOpacity={0.7}
         >
-          <AppText style={styles.pharmacySelectButtonText}>
-            {formData.linkedPharmacies && formData.linkedPharmacies.length > 0
-              ? `${formData.linkedPharmacies.length} Pharmacies Selected`
-              : 'Select Pharmacy'}
-          </AppText>
-          <ArrowDown />
+          <View style={[
+            styles.checkbox,
+            formData.selectedCategory.pharmacy && styles.checkboxSelected
+          ]}>
+            {formData.selectedCategory.pharmacy && (
+              <AppText style={styles.checkboxTick}>✓</AppText>
+            )}
+          </View>
+          <AppText style={styles.checkboxLabel}>Pharmacy</AppText>
         </TouchableOpacity>
+
+
       </View>
 
-      {/* Selected Pharmacies Display */}
-      {formData.linkedPharmacies && formData.linkedPharmacies.length > 0 && (
-        <View style={styles.selectedPharmaciesContainer}>
-          {formData.linkedPharmacies.map((pharmacy, index) => (
-            <View key={pharmacy.id || index} style={styles.pharmacyItem}>
-              <View style={styles.pharmacyInfo}>
-                <AppText style={styles.pharmacyName}>{pharmacy.name}</AppText>
-                <AppText style={styles.pharmacyCode}>{pharmacy.code}</AppText>
-              </View>
-              <TouchableOpacity
-                onPress={() => {
-                  setFormData(prev => ({
-                    ...prev,
-                    linkedPharmacies: prev.linkedPharmacies.filter((_, i) => i !== index)
-                  }));
-                }}
-              >
-                <CloseCircle color="#FF3B30" />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
+      {formData.selectedCategory.pharmacy && (
+        <>
+          <View style={styles.pharmacySelectionContainer}>
+
+            <TouchableOpacity
+              style={[styles.selectorInput, errors.linkedHospitals && styles.inputError]}
+              onPress={() => {
+                navigation.navigate('PharmacySelector', {
+                  selectedPharmacies: formData.linkedPharmacies || [],
+                  onSelect: (pharmacies) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      linkedPharmacies: pharmacies
+                    }));
+                  }
+                });
+              }}
+              activeOpacity={0.7}
+            >
+
+              <AppText style={[
+                styles.selectorPlaceholder,
+                formData.linkedPharmacies.length !== 0 && { color: '#333' }
+              ]}>
+                {formData.linkedPharmacies && formData.linkedPharmacies.length > 0
+                  ? `${formData.linkedPharmacies.length} Pharmacies Selected`
+                  : 'Select pharmacy name/code'}
+              </AppText>
+              <ArrowDown color='#333' />
+
+            </TouchableOpacity>
+          </View>
+
+          {/* Selected Pharmacies Display */}
+
+          {formData.linkedPharmacies.length > 0 && (
+            <View style={styles.selectedItemsContainer}>
+
+              {/* Selected Pharmacies List */}
+              {formData.linkedPharmacies.map((pharmacy, index) => (
+
+
+                <View key={pharmacy.id || index} style={styles.selectedItemChip}>
+                  <AppText >{pharmacy.name}  </AppText>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        linkedPharmacies: prev.linkedPharmacies.filter((_, i) => i !== index)
+                      }));
+                    }}
+                  >
+                    <DoctorDeleteIcon />
+                  </TouchableOpacity>
+                </View>
+
+              ))}
+            </View>)}
+
+          <TouchableOpacity
+            style={styles.addNewLink}
+            onPress={() => setShowAddPharmacyModal(true)}
+          >
+            <AppText style={styles.addNewLinkText}>+ Add New Pharmacy</AppText>
+          </TouchableOpacity>
+        </>
       )}
 
-      <TouchableOpacity
-        style={styles.addNewLink}
-        onPress={() => setShowAddPharmacyModal(true)}
-      >
-        <AppText style={styles.addNewLinkText}>+ Add New Pharmacy</AppText>
-      </TouchableOpacity>
+
+
+
 
       {/* <View style={styles.divider} /> */}
       <View style={styles.customerGroupContainer}>
@@ -2048,6 +2128,13 @@ const styles = StyleSheet.create({
     borderLeftColor: colors.primary,
     paddingLeft: 12,
   },
+  stepTitlewithoutline: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 20,
+  },
+
   input: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2163,8 +2250,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
     borderRadius: 12,
     padding: 20,
-    marginBottom: 16,
-    marginTop: -8,
+    marginBottom: -42,
+    marginTop: 42,
   },
   otpTitle: {
     fontSize: 14,
@@ -2275,7 +2362,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
   },
   selectorPlaceholder: {
     fontSize: 16,
@@ -2850,6 +2937,68 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     color: '#333',
+  },
+  categoryOptions: {
+    marginBottom: 20,
+  },
+  checkboxButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  checkboxButtonActive: {
+    opacity: 0.8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    backgroundColor: '#fff',
+  },
+  checkboxSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  checkboxTick: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  checkboxInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: '#333',
+  },
+
+
+  selectedItemsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    flex: 1,
+    marginBottom: 16,
+  },
+  selectedItemChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F5F5F6',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: "#ccc",
   },
 });
 

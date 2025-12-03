@@ -19,7 +19,8 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
 import {AppText,AppInput} from "../../../components"
 import { customerAPI } from '../../../api/customer';
-
+import PhamacySearchNotFound from '../../../components/icons/PhamacySearchNotFound';
+import AddNewDoctorModal from './AddNewDoctorModal';
 const DoctorSelector = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -27,6 +28,7 @@ const DoctorSelector = () => {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState(selectedDoctors || []);
+      const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
   
   // Doctor data states
   const [doctorsData, setDoctorsData] = useState([]);
@@ -140,6 +142,8 @@ const DoctorSelector = () => {
     }
   };
 
+
+   
   const fetchStates = async () => {
     try {
       setStatesLoading(true);
@@ -234,10 +238,17 @@ const DoctorSelector = () => {
   };
 
   const handleAddNewDoctor = () => {
-    // Navigate to add new doctor form
-    navigation.navigate('AddNewDoctor');
+       setShowAddDoctorModal(true);
+
   };
 
+
+    const handleDoctorSubmit = (newDoctor) => {
+    // Add the new pharmacy to selected items
+    setSelectedItems([...selectedItems, newDoctor]);
+    // Optionally refresh the pharmacy list
+    fetchDoctors();
+  };
   const renderDoctorItem = ({ item }) => {
     const isSelected = selectedItems.some(doctor => doctor.id === item.id);
     
@@ -412,6 +423,10 @@ const DoctorSelector = () => {
           onSubmitEditing={handleSearch}
           placeholderTextColor="#777777"
         />
+
+           <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <Icon name="close" size={15} color="#999" style={styles.closeIcon} />
+                  </TouchableOpacity>
       </View>
 
       {/* Doctor List */}
@@ -440,9 +455,16 @@ const DoctorSelector = () => {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Icon name="search" size={40} color="#999" />
-              <AppText style={styles.emptyText}>No doctors found</AppText>
+           <View style={styles.emptyContainer}>
+              <PhamacySearchNotFound width={40} height={40} color="#999" />
+              <AppText style={styles.emptyTitle}>Doctor Not Found</AppText>
+              <AppText style={styles.emptySubtitle}>Doctor not found. You can add a new doctor to continue</AppText>
+              <TouchableOpacity
+                style={styles.addNewPharmacyButtonEmpty}
+                onPress={handleAddNewDoctor}
+              >
+                <AppText style={styles.addNewPharmacyTextEmpty}>+Add New Doctor</AppText>
+              </TouchableOpacity>
             </View>
           )}
           // ListFooterComponent={() => (
@@ -470,7 +492,14 @@ const DoctorSelector = () => {
           </TouchableOpacity>
         </View>
       )}
+      <AddNewDoctorModal
+        visible={showAddDoctorModal}
+        onClose={() => setShowAddDoctorModal(false)}
+        onSubmit={handleDoctorSubmit}
+      />
     </SafeAreaView>
+
+    
   );
 };
 
@@ -605,12 +634,23 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+
+    paddingHorizontal: 20,
+    paddingVertical: 8,
     backgroundColor: '#F8F8F8',
+    marginHorizontal: 16,
+    marginVertical: 12,
+    borderRadius: 8,
+
   },
   searchIcon: {
     marginRight: 12,
+  },
+  closeIcon: {
+   
+     backgroundColor: '#EDEDED',
+     borderRadius:50,
+     padding:2
   },
   searchInput: {
     flex: 1,
@@ -717,12 +757,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
+ 
   emptyText: {
     fontSize: 16,
     color: '#666',
@@ -782,6 +817,41 @@ const styles = StyleSheet.create({
   continueButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+   emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 24,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  addNewPharmacyButtonEmpty: {
+    marginTop: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+  addNewPharmacyTextEmpty: {
+    fontSize: 16,
+    color: colors.primary,
     fontWeight: '600',
   },
 });

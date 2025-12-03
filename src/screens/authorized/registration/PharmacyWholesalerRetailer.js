@@ -613,17 +613,32 @@ const PharmacyWholesalerRetailerForm = () => {
     await handleVerify(field);
   };
 
+
   const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
-    if (selectedDate && selectedDateField) {
-      setFormData(prev => ({
-        ...prev,
-        [`${selectedDateField}ExpiryDate`]: selectedDate
-      }));
-      setErrors(prev => ({ ...prev, [`${selectedDateField}ExpiryDate`]: null }));
-    }
+  // 1️⃣ Immediately close picker (prevents reopening)
+  setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
+
+  // 2️⃣ If dismissed → don't update anything
+  if (event.type === 'dismissed') {
     setSelectedDateField(null);
-  };
+    return;
+  }
+
+  // 3️⃣ User pressed OK
+  if (event.type === 'set' && selectedDate) {
+    const formattedDate = selectedDate.toISOString();
+    setFormData(prev => ({
+      ...prev,
+      [`${selectedDateField}ExpiryDate`]: formattedDate,
+    }));
+    setErrors(prev => ({
+      ...prev,
+      [`${selectedDateField}ExpiryDate`]: null,
+    }));
+  }
+
+  setSelectedDateField(null);
+};
 
   const openDatePicker = (field) => {
     setSelectedDateField(field);
@@ -1779,11 +1794,10 @@ const PharmacyWholesalerRetailerForm = () => {
                       }}
                     >
                       <AppText style={styles.selectorPlaceholder}>
-                        {/* {formData.selectedDoctors.length > 0
+                        {formData?.selectedDoctors.length > 0
                           ? `${formData.selectedDoctors.length} Doctor${formData.selectedDoctors.length !== 1 ? 's' : ''} selected`
                           : 'Search doctor name/code'
-                        } */}
-                        Search doctor name/code
+                        }
                       </AppText>
                       <Icon name="arrow-drop-down" size={24} color="#666" />
                     </TouchableOpacity>
@@ -2766,7 +2780,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 16,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
   },
   selectorPlaceholder: {
     fontSize: 16,
@@ -2863,7 +2877,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFF5ED',
+    backgroundColor: '#F5F5F6',
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,

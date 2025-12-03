@@ -16,6 +16,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
 import {AppText,AppInput} from "../../../components"
 import { customerAPI } from '../../../api/customer';
+import PhamacySearchNotFound from '../../../components/icons/PhamacySearchNotFound';
+import AddNewHospitalModal from './AddNewHospitalModal';
 
 const HospitalSelector = () => {
   const navigation = useNavigation();
@@ -43,6 +45,7 @@ const HospitalSelector = () => {
   // Filter dropdowns
   const [showStateDropdown, setShowStateDropdown] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
+    const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
   
   // Animation
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -91,7 +94,11 @@ const HospitalSelector = () => {
       setSelectedCities([]);
     }
   }, [selectedStates]);
+ const handleAddNewHospital = () => {
+    setShowAddHospitalModal(true);
+  };
 
+  
   const fetchHospitals = async () => {
     try {
       setLoading(true);
@@ -263,6 +270,16 @@ const HospitalSelector = () => {
     navigation.goBack();
   };
 
+
+
+    const handleHospitalSubmit = (newHospital) => {
+    // Add the new pharmacy to selected items
+    setSelectedItems([...selectedItems, newHospital]);
+    // Optionally refresh the pharmacy list
+    fetchHospitals();
+  };
+
+
   const renderHospitalItem = ({ item }) => {
     const isSelected = allowMultiple 
       ? selectedItems.some(h => h.id === item.id)
@@ -300,10 +317,21 @@ const HospitalSelector = () => {
 
   // Empty list component
   const renderEmptyList = () => (
-    <View style={styles.emptyContainer}>
-      <Icon name="search" size={40} color="#999" />
-      <AppText style={styles.emptyText}>No hospitals found</AppText>
-    </View>
+    // <View style={styles.emptyContainer}>
+    //   <Icon name="search" size={40} color="#999" />
+    //   <AppText style={styles.emptyText}>No hospitals found</AppText>
+    // </View>
+      <View style={styles.emptyContainer}>
+              <PhamacySearchNotFound width={40} height={40} color="#999" />
+              <AppText style={styles.emptyTitle}>Hospital Not Found</AppText>
+              <AppText style={styles.emptySubtitle}>Hospital not found. You can add a new hospital to continue</AppText>
+              <TouchableOpacity
+                style={styles.addNewPharmacyButtonEmpty}
+                onPress={handleAddNewHospital}
+              >
+                <AppText style={styles.addNewPharmacyTextEmpty}>+Add New Hospital</AppText>
+              </TouchableOpacity>
+            </View>
   );
 
   return (
@@ -434,6 +462,11 @@ const HospitalSelector = () => {
           onSubmitEditing={handleSearch}
           placeholderTextColor="#777777"
         />
+
+       <TouchableOpacity onPress={() => setSearchQuery('')}>
+    <Icon name="close" size={15} color="#999" style={styles.closeIcon} />
+  </TouchableOpacity>
+
       </View>
 
       {/* Header Row */}
@@ -487,6 +520,12 @@ const HospitalSelector = () => {
           </TouchableOpacity>
         </View>
       )}
+
+      <AddNewHospitalModal
+        visible={showAddHospitalModal}
+        onClose={() => setShowAddHospitalModal(false)}
+        onSubmit={handleHospitalSubmit}
+      />
     </SafeAreaView>
   );
 };
@@ -631,6 +670,15 @@ const styles = StyleSheet.create({
   },
   searchIcon: {
     marginRight: 12,
+       
+
+  },
+
+  closeIcon: {
+   
+     backgroundColor: '#EDEDED',
+     borderRadius:50,
+     padding:2
   },
   searchInput: {
     flex: 1,
@@ -769,17 +817,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 12,
-  },
+ 
   noResultsContainer: {
     flex: 1,
     alignItems: 'center',
@@ -834,6 +872,42 @@ const styles = StyleSheet.create({
   continueButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+
+   emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 24,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  addNewPharmacyButtonEmpty: {
+    marginTop: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+  addNewPharmacyTextEmpty: {
+    fontSize: 16,
+    color: colors.primary,
     fontWeight: '600',
   },
 });

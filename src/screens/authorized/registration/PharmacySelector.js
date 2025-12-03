@@ -398,6 +398,10 @@ const PharmacySelector = () => {
           onSubmitEditing={handleSearch}
           placeholderTextColor="#999999"
         />
+
+        <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Icon name="close" size={15} color="#999" style={styles.closeIcon} />
+          </TouchableOpacity>
       </View>
 
       {/* Header Row for Name and City */}
@@ -633,6 +637,12 @@ const styles = StyleSheet.create({
   },
   searchIcon: {
     marginRight: 12,
+  },
+   closeIcon: {
+   
+     backgroundColor: '#EDEDED',
+     borderRadius:50,
+     padding:2
   },
   searchInput: {
     flex: 1,

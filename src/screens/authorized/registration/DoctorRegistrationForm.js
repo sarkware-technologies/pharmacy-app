@@ -35,6 +35,7 @@ import { customerAPI } from '../../../api/customer';
 import { AppText, AppInput } from "../../../components"
 import AddNewHospitalModal from './AddNewHospitalModal';
 import AddNewPharmacyModal from './AddNewPharmacyModal';
+import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 
 const { width, height } = Dimensions.get('window');
 
@@ -687,15 +688,28 @@ const DoctorRegistrationForm = () => {
   };
 
   const handleDateChange = (event, selectedDate) => {
+    // 1️⃣ Immediately close picker (prevents reopening)
     setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
-    if (selectedDate && selectedDateField) {
+
+    // 2️⃣ If dismissed → don't update anything
+    if (event.type === 'dismissed') {
+      setSelectedDateField(null);
+      return;
+    }
+
+    // 3️⃣ User pressed OK
+    if (event.type === 'set' && selectedDate) {
       const formattedDate = selectedDate.toISOString();
       setFormData(prev => ({
         ...prev,
-        [`${selectedDateField}Date`]: formattedDate
+        [`${selectedDateField}Date`]: formattedDate,
       }));
-      setErrors(prev => ({ ...prev, [`${selectedDateField}Date`]: null }));
+      setErrors(prev => ({
+        ...prev,
+        [`${selectedDateField}Date`]: null,
+      }));
     }
+
     setSelectedDateField(null);
   };
 
@@ -1014,7 +1028,7 @@ const DoctorRegistrationForm = () => {
             "customerId": stockist.name,
           }))
         }),
-        isChildCustomer:false
+        isChildCustomer: false
       };
 
       const response = await customerAPI.createCustomer(registrationData);
@@ -1067,20 +1081,20 @@ const DoctorRegistrationForm = () => {
   };
 
   const handleAddStockist = () => {
-  if (formData.stockists.length >= 4) {
-    Toast.show({
-      type: 'error',
-      text1: 'Limit Reached',
-      text2: 'You can only add up to 4 stockists.',
-    });
-    return;
-  }
+    if (formData.stockists.length >= 4) {
+      Toast.show({
+        type: 'error',
+        text1: 'Limit Reached',
+        text2: 'You can only add up to 4 stockists.',
+      });
+      return;
+    }
 
-  setFormData(prev => ({
-    ...prev,
-    stockists: [...prev.stockists, { name: '', code: '', city: '' }],
-  }));
-};
+    setFormData(prev => ({
+      ...prev,
+      stockists: [...prev.stockists, { name: '', code: '', city: '' }],
+    }));
+  };
 
   const handleRemoveStockist = (index) => {
     setFormData(prev => ({
@@ -1883,26 +1897,29 @@ const DoctorRegistrationForm = () => {
                     <AppText style={styles.selectorPlaceholder}>Search pharmacy name/code</AppText>
                     <Search />
                   </TouchableOpacity>
+                  {formData.selectedPharmacies.length > 0 && (
+                    <View style={styles.selectedItemsContainer}>
 
-                  {/* Selected Pharmacies List */}
-                  {formData.selectedPharmacies.map((pharmacy) => (
-                    <View key={pharmacy.id} style={styles.selectedPharmacyItem}>
-                      <View style={styles.pharmacyInfo}>
-                        <AppText style={styles.pharmacyName}>{pharmacy.name}</AppText>
-                        <AppText style={styles.pharmacyCode}>{pharmacy.code}</AppText>
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            selectedPharmacies: prev.selectedPharmacies.filter(p => p.id !== pharmacy.id)
-                          }));
-                        }}
-                      >
-                        <CloseCircle color="#FF3B30" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
+                      {/* Selected Pharmacies List */}
+                      {formData.selectedPharmacies.map((pharmacy, index) => (
+
+
+                        <View key={pharmacy.id || index} style={styles.selectedItemChip}>
+                          <AppText >{pharmacy.name}  </AppText>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                selectedPharmacies: prev.selectedPharmacies.filter((_, i) => i !== index)
+                              }));
+                            }}
+                          >
+                            <DoctorDeleteIcon />
+                          </TouchableOpacity>
+                        </View>
+
+                      ))}
+                    </View>)}
 
                   <TouchableOpacity
                     style={styles.addNewLink}
@@ -2858,6 +2875,27 @@ const styles = StyleSheet.create({
   disabledText: {
     color: '#999999',
   },
+
+  selectedItemsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    flex: 1,
+    marginBottom: 16,
+  },
+  selectedItemChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F5F5F6',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: "#ccc",
+  },
+
 });
 
 export default DoctorRegistrationForm;
