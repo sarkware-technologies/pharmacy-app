@@ -18,13 +18,47 @@ export const verifyOTP = createAsyncThunk(
     const response = await authAPI.verifyOTP(sessionId, otp);
     // Store token in AsyncStorage when OTP is verified successfully
     console.log("data ", response.data);
-    if (response.data.token) { console.log("Token is there hence saving it in async storage");
-      await AsyncStorage.setItem('authToken', response.data.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
+    if (response.data.token) {
+      // console.log("Token is there hence saving it in async storage");
+      // await AsyncStorage.setItem('authToken', response.data.token);
+      // await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
+      await saveToken(response.data);
     } else { console.log("Toke is not present in the response data"); }
     return response;
   }
 );
+
+export const refreshToken = async (data) => {
+  const response = await authAPI.refreshToken();
+  // Store token in AsyncStorage when OTP is verified successfully
+  console.log("data ", response.data);
+  if (response.data.token) {
+    await saveToken(response.data);
+  } else { console.log("Toke is not present in the response data"); }
+  return response;
+
+}
+
+export const saveToken = async (data) => {
+  console.log("Saving Token Data:", data);
+
+  try {
+
+    await AsyncStorage.setItem("authToken", String(data.token));
+    await AsyncStorage.setItem("refreshToken", String(data.refreshToken));
+    await AsyncStorage.setItem("userRole", String(data.roleName));
+    await AsyncStorage.setItem("subrolename", String(data.subrolename));
+    await AsyncStorage.setItem("userId", String(data.userId)); // ✅ FIXED
+    await AsyncStorage.setItem("permissions", JSON.stringify(data.permissions ?? []));
+    await AsyncStorage.setItem("userData", JSON.stringify(data.user ?? {}));
+
+    console.log("AsyncStorage Save → SUCCESS");
+  } catch (e) {
+    console.log("AsyncStorage Save → ERROR", e);
+  }
+};
+
+
 
 export const resendOTP = createAsyncThunk(
   'auth/resendOTP',
@@ -72,7 +106,7 @@ export const checkAuthStatus = createAsyncThunk(
   async () => {
     const token = await AsyncStorage.getItem('authToken');
     const userData = await AsyncStorage.getItem('userData');
-    
+
     if (token && userData) {
       return {
         isAuthenticated: true,

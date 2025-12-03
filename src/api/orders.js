@@ -131,14 +131,24 @@ export const PlaceOrder = async (order) => {
 };
 
 
-export const UploadTemplateOrder = async (file, customerId, distributorId, orderType, isOCR) => {
+export const UploadTemplateOrder = async (orginal, template, customerId, distributorId, orderType, isOCR) => {
   try {
     const formData = new FormData();
-    formData.append('file', {
-      uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
-      type: file.type || 'application/octet-stream',
-      name: file.name || 'upload.xlsx',
-    });
+    // if (orginal) {
+    //   formData.append('orderFile', {
+    //     uri: Platform.OS === 'ios' ? orginal.uri.replace('file://', '') : orginal.uri,
+    //     type: orginal.type || 'application/octet-stream',
+    //     name: orginal.name || 'upload.xlsx',
+    //   });
+    // }
+    // if (template) {
+    //   formData.append('templateFile', {
+    //     uri: Platform.OS === 'ios' ? template.uri.replace('file://', '') : template.uri,
+    //     type: template.type || 'application/octet-stream',
+    //     name: template.name || 'upload.xlsx',
+    //   });
+
+    // }
     formData.append('customerId', String(customerId));
     formData.append('distributorId', String(distributorId));
     formData.append('orderType', String(orderType));
@@ -189,7 +199,7 @@ export const DownloadTemplate = async () => {
 }
 
 
-export const OrderAction = async (workflowInstance,body) => {
+export const OrderAction = async (workflowInstance, body) => {
   try {
     const response = await apiClient.post(`/approval/workflow-actions/${workflowInstance}`, body);
     return response.data;

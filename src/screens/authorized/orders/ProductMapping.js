@@ -46,8 +46,8 @@ const ProductMapping = () => {
   const [loadingProductId, setLoadingProductId] = useState(null);
 
 
-  const hanldeMappingclicked = (item) => {
-    setMappingProduct(item);
+  const hanldeMappingclicked = (item, type) => {
+    setMappingProduct({ ...item, ...{ key: item?.id + "_" + type } });
     setProductMapping(true)
   }
 
@@ -216,7 +216,7 @@ const ProductMapping = () => {
       ErrorMessage(e);
     }
     finally {
-          setMappingProduct(null)
+      setMappingProduct(null)
     }
   }
 
@@ -227,12 +227,6 @@ const ProductMapping = () => {
 
     return (
       <View style={styles.productCard}>
-        {item.id == mappingProduct?.id && (
-          <View style={{ position: "absolute", height: "100%", width: "100%", justifyContent: "center", opacity: 0.5, zIndex: 10 }}>
-            <ActivityIndicator size="small" color={colors.primary} />
-          </View>
-        )}
-
         <View style={styles.productHeader}>
           <AppText style={styles.productName}>{item?.productName ?? '-'}</AppText>
         </View>
@@ -241,18 +235,25 @@ const ProductMapping = () => {
         <View style={styles.productInfo}>
           <View style={styles.infoRow}>
             <AppText style={styles.infoLabel}>Customer Product Title</AppText>
-            {item.isMapped == 1 && (
+            {item.isMapped == 1 &&  item.id + "_change" != mappingProduct?.key && (
               <AppText style={[styles.infoLabel, { textAlign: "right" }]}>Mapping</AppText>
             )}
           </View>
           <View style={styles.infoRow}>
             <AppText style={styles.infoValue}>{item.uploadedProductName}</AppText>
-            {item.isMapped == 1 && (
-              <TouchableOpacity onPress={() => hanldeMappingclicked(item)}>
-                <AppText style={styles.changeLink}>Change ›</AppText>
-              </TouchableOpacity>
-            )}
-
+            {item.id + "_change" == mappingProduct?.key ? (
+              <>
+                <View style={{ justifyContent: "center", opacity: 0.5, zIndex: 10 }}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              </>
+            ) : (<>
+              {item.isMapped == 1 && (
+                <TouchableOpacity onPress={() => hanldeMappingclicked(item, "change")}>
+                  <AppText style={styles.changeLink}>Change ›</AppText>
+                </TouchableOpacity>
+              )}
+            </>)}
           </View>
         </View>
 
@@ -272,27 +273,36 @@ const ProductMapping = () => {
         </View>
 
         <View style={styles.mappingStatus}>
-          {item.isMapped == 1 ? (
+          {item.id + "_mapping" == mappingProduct?.key ? (
             <>
-              <Icon name="check-circle" size={20} color="#169560" />
-              <AppText style={styles.mappedText}>Mapped</AppText>
-            </>
-          ) : (
-            <View style={{ display: "flex", flexDirection: "column" }}>
-              <TouchableOpacity onPress={() => hanldeMappingclicked(item)}>
-                <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 }}>
-                  <AppText style={{ color: "#F7941E", fontWeight: 700, fontSize: 12 }}>Find Product</AppText>
-                  <Svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <Path fillRule="evenodd" clipRule="evenodd" d="M5.83333 11.6667C9.05508 11.6667 11.6667 9.05508 11.6667 5.83333C11.6667 2.61158 9.05508 0 5.83333 0C2.61158 0 0 2.61158 0 5.83333C0 9.05508 2.61158 11.6667 5.83333 11.6667ZM6.1075 3.77417C6.18953 3.69224 6.30073 3.64622 6.41667 3.64622C6.5326 3.64622 6.6438 3.69224 6.72583 3.77417L8.47583 5.52417C8.55776 5.6062 8.60378 5.7174 8.60378 5.83333C8.60378 5.94927 8.55776 6.06047 8.47583 6.1425L6.72583 7.8925C6.68578 7.93548 6.63748 7.96996 6.58381 7.99387C6.53015 8.01778 6.47221 8.03064 6.41347 8.03168C6.35473 8.03271 6.29638 8.02191 6.2419 7.9999C6.18742 7.9779 6.13794 7.94515 6.09639 7.9036C6.05485 7.86206 6.0221 7.81257 6.00009 7.7581C5.97809 7.70362 5.96728 7.64527 5.96832 7.58653C5.96936 7.52779 5.98222 7.46985 6.00613 7.41619C6.03004 7.36252 6.06452 7.31422 6.1075 7.27417L7.11083 6.27083H3.5C3.38397 6.27083 3.27269 6.22474 3.19064 6.14269C3.10859 6.06065 3.0625 5.94937 3.0625 5.83333C3.0625 5.7173 3.10859 5.60602 3.19064 5.52397C3.27269 5.44193 3.38397 5.39583 3.5 5.39583H7.11083L6.1075 4.3925C6.02557 4.31047 5.97955 4.19927 5.97955 4.08333C5.97955 3.9674 6.02557 3.8562 6.1075 3.77417Z" fill="#F7941E" />
-                  </Svg>
-                </View>
-              </TouchableOpacity>
-              <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
-                <UnMapped />
-                <AppText style={{ color: "#E85B49", fontSize: 10, fontWeight: 700 }}>Mapping Required</AppText>
+              <View style={{ justifyContent: "center", opacity: 0.5, zIndex: 10 }}>
+                <ActivityIndicator size="small" color={colors.primary} />
               </View>
-            </View>
-          )}
+            </>
+          ) : (<>
+            {item.isMapped == 1 ? (
+              <>
+                <Icon name="check-circle" size={20} color="#169560" />
+                <AppText style={styles.mappedText}>Mapped</AppText>
+              </>
+            ) : (
+              <View style={{ display: "flex", flexDirection: "column" }}>
+                <TouchableOpacity onPress={() => hanldeMappingclicked(item, "mapping")}>
+                  <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 }}>
+                    <AppText style={{ color: "#F7941E", fontWeight: 700, fontSize: 12 }}>Find Product</AppText>
+                    <Svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <Path fillRule="evenodd" clipRule="evenodd" d="M5.83333 11.6667C9.05508 11.6667 11.6667 9.05508 11.6667 5.83333C11.6667 2.61158 9.05508 0 5.83333 0C2.61158 0 0 2.61158 0 5.83333C0 9.05508 2.61158 11.6667 5.83333 11.6667ZM6.1075 3.77417C6.18953 3.69224 6.30073 3.64622 6.41667 3.64622C6.5326 3.64622 6.6438 3.69224 6.72583 3.77417L8.47583 5.52417C8.55776 5.6062 8.60378 5.7174 8.60378 5.83333C8.60378 5.94927 8.55776 6.06047 8.47583 6.1425L6.72583 7.8925C6.68578 7.93548 6.63748 7.96996 6.58381 7.99387C6.53015 8.01778 6.47221 8.03064 6.41347 8.03168C6.35473 8.03271 6.29638 8.02191 6.2419 7.9999C6.18742 7.9779 6.13794 7.94515 6.09639 7.9036C6.05485 7.86206 6.0221 7.81257 6.00009 7.7581C5.97809 7.70362 5.96728 7.64527 5.96832 7.58653C5.96936 7.52779 5.98222 7.46985 6.00613 7.41619C6.03004 7.36252 6.06452 7.31422 6.1075 7.27417L7.11083 6.27083H3.5C3.38397 6.27083 3.27269 6.22474 3.19064 6.14269C3.10859 6.06065 3.0625 5.94937 3.0625 5.83333C3.0625 5.7173 3.10859 5.60602 3.19064 5.52397C3.27269 5.44193 3.38397 5.39583 3.5 5.39583H7.11083L6.1075 4.3925C6.02557 4.31047 5.97955 4.19927 5.97955 4.08333C5.97955 3.9674 6.02557 3.8562 6.1075 3.77417Z" fill="#F7941E" />
+                    </Svg>
+                  </View>
+                </TouchableOpacity>
+                <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
+                  <UnMapped />
+                  <AppText style={{ color: "#E85B49", fontSize: 10, fontWeight: 700 }}>Mapping Required</AppText>
+                </View>
+              </View>
+            )}
+          </>)}
+
           <View style={styles.quantityControls}>
             <>
               <TouchableOpacity

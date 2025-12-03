@@ -61,6 +61,7 @@ export const SearchProductModal = ({
         page: pageNumber,
         limit: 20,
         search: query,
+        forMapping:true
       };
       const response = await getProducts(params);
 

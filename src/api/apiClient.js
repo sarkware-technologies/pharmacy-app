@@ -1,19 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ErrorMessage } from '../components/view/error';
 import { resetTo } from '../navigation/NavigationService';
+import Toast from 'react-native-toast-message';
+import { authAPI } from './auth';
+import { saveToken } from '../redux/slices/authSlice';
 
 export const BASE_URL = 'https://pharmsupply-dev-api.pharmconnect.com';
-
-// Enable or disable logging globally
-const ENABLE_API_LOGS = true;
 
 class ApiClient {
     constructor() {
         this.token = null;
         this.tokenPromise = null;
+        this.refreshPromise = null;  // 🔥 Prevents multiple refresh requests
     }
 
-    // Load token from AsyncStorage (with caching)
     async getToken() {
         if (this.token) return this.token;
         if (this.tokenPromise) return this.tokenPromise;
@@ -24,8 +24,8 @@ class ApiClient {
                 this.tokenPromise = null;
                 return token;
             })
-            .catch(error => {
-                console.error('Error loading token from AsyncStorage:', error);
+            .catch(err => {
+                console.error("Failed to load token:", err);
                 this.tokenPromise = null;
                 return null;
             });
@@ -33,29 +33,79 @@ class ApiClient {
         return this.tokenPromise;
     }
 
-    // Save or remove token
     async setToken(token) {
         this.token = token;
-        if (token) await AsyncStorage.setItem('authToken', token);
-        else await AsyncStorage.removeItem('authToken');
+        if (token) await AsyncStorage.setItem("authToken", token);
+        else await AsyncStorage.removeItem("authToken");
     }
 
     async clearCachedToken() {
         this.token = null;
-        await AsyncStorage.removeItem('authToken');
+        await AsyncStorage.removeItem("authToken");
+        await AsyncStorage.removeItem("refreshToken");
 
         Toast.show({
-            type: 'error',
-            text1: 'Session Expired',
-            text2: 'Please log in again.',
+            type: "error",
+            text1: "Session Expired",
+            text2: "Please log in again"
         });
 
-        setTimeout(() => {
-            resetTo('Auth');
-        }, 1500);
+        setTimeout(() => resetTo("Auth"), 1200);
     }
 
-    async request(endpoint, options = {}) {
+    // 🔥 AUTO REFRESH + returns new access token
+    async refreshAccessToken() {
+        if (this.refreshPromise) {
+            return this.refreshPromise; // wait for the existing refresh request
+        }
+
+        this.refreshPromise = new Promise(async (resolve) => {
+            try {
+                const refreshToken = await AsyncStorage.getItem("refreshToken");
+
+                if (!refreshToken) {
+                    console.log("⚠️ No refresh token found");
+                    resolve(null);
+                    return;
+                }
+
+                console.log("🔄 Refreshing token…");
+
+                // Call refresh-token API
+                const response = await authAPI.refreshToken({
+                    refreshToken,
+                });
+
+                const newToken = response.data?.token;
+                const newRefresh = response.data?.refreshToken;
+
+                if (newToken) {
+                    // Save both tokens using your existing helper
+                    await saveToken(response.data);
+
+                    // Update in-memory token
+                    this.token = newToken;
+
+                    console.log("✅ Token refreshed successfully.");
+                    resolve(newToken);
+                } else {
+                    console.log("❌ Refresh API did not return a token");
+                    resolve(null);
+                }
+            } catch (err) {
+                console.log("❌ Refresh failed:", err);
+                resolve(null);
+            } finally {
+                this.refreshPromise = null; // allow next refresh call
+            }
+        });
+
+        return this.refreshPromise;
+    }
+
+
+    // 🧨 MAIN REQUEST (with retry support)
+    async request(endpoint, options = {}, retry = false) {
         const url = `${BASE_URL}${endpoint}`;
         const token = await this.getToken();
         const isFormData = options.body instanceof FormData;
@@ -63,31 +113,38 @@ class ApiClient {
         const config = {
             ...options,
             headers: {
-                Accept: '*/*',
-                ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+                Accept: "*/*",
+                ...(isFormData ? {} : { "Content-Type": "application/json" }),
                 ...options.headers,
-            },
-
-
+            }
         };
 
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // --- Generate cURL command ---
-        const method = config.method || 'GET';
+        // -----------------------------
+        //       🔥 cURL LOGGING
+        // -----------------------------
+        const method = config.method || "GET";
         const headerStrings = Object.entries(config.headers || {})
-            .map(([key, value]) => `-H '${key}: ${value}'`)
-            .join(' ');
-        const bodyString = config.body ? `--data '${config.body}'` : '';
-        const curlCommand = `curl -X ${method} ${headerStrings} ${bodyString} '${url}'`;
+            .map(([k, v]) => `-H '${k}: ${v}'`)
+            .join(" ");
 
-        console.log('%c💡 CURL (copy for Postman / terminal):', 'color:#ff9800; font-weight:bold;');
-        console.log(curlCommand);
+        const bodyString =
+            config.body && !(config.body instanceof FormData)
+                ? `--data '${config.body}'`
+                : "";
 
-        // --- Log full request ---
-        console.log('%c🚀 API REQUEST', 'color:#00bcd4; font-weight:bold;', {
+        const curl = `curl -X ${method} ${headerStrings} ${bodyString} '${url}'`;
+
+        console.log("%c💡 CURL:", "color:#ff9800;font-weight:bold;");
+        console.log(curl);
+
+        // -----------------------------
+        //     🔥 REQUEST LOGGING
+        // -----------------------------
+        console.log("%c🚀 API REQUEST", "color:#00bcd4;font-weight:bold;", {
             url,
             method,
             headers: config.headers,
@@ -102,107 +159,107 @@ class ApiClient {
                 })(),
         });
 
+        // -----------------------------
+        //          FETCH CALL
+        // -----------------------------
+        let responseText = "";
+        let response;
+
         try {
-            const response = await fetch(url, config);
-            const text = await response.text();
-            let data;
+            response = await fetch(url, config);
+            responseText = await response.text();
+        } catch (err) {
+            throw new Error("Network Error");
+        }
 
-            try {
-                data = text ? JSON.parse(text) : {};
-            } catch {
-                data = { message: 'Invalid JSON response', raw: text, status: response?.status };
+        let data = {};
+        try {
+            data = responseText ? JSON.parse(responseText) : {};
+        } catch {
+            data = { message: "Invalid JSON", raw: responseText };
+        }
+
+        // -----------------------------
+        //       🔥 RESPONSE LOGGING
+        // -----------------------------
+        console.log("%c📦 API RESPONSE", "color:#4caf50;font-weight:bold;", {
+            url,
+            status: response.status,
+            ok: response.ok,
+            data,
+        });
+
+        // -----------------------------
+        //     🔥 TOKEN EXPIRED HANDLING
+        // -----------------------------
+        if (response.status === 401 && !retry) {
+            console.log("⚠️ 401 detected → refreshing token…");
+
+            const newToken = await this.refreshAccessToken();
+
+            if (newToken) {
+                console.log("🔁 Retrying previous API:", endpoint);
+
+                return this.request(endpoint, options, true);
             }
 
-            // --- Log response ---
-            console.log('%c📦 API RESPONSE', 'color:#4caf50; font-weight:bold;', {
-                url,
-                status: response.status,
-                ok: response.ok,
-                data,
-            });
+            console.log("❌ Refresh failed → logging out");
+            // await this.clearCachedToken();
+            throw new Error("Session expired");
+        }
 
-            // --- Handle errors ---
-            if (!response.ok || data?.success === false) {
-                const errorInfo = {
-                    endpoint,
-                    url,
-                    status: response.status,
-                    message:
-                        data?.message ||
-                        data?.error ||
-                        response.statusText ||
-                        'API request failed',
-                };
+        // -----------------------------
+        //     🔥 ANY OTHER ERROR
+        // -----------------------------
+        if (!response.ok || data?.success === false) {
+            const error = new Error(data?.message || "API Error");
+            error.status = response.status;
+            error.response = data;
 
-
-                // console.error('%c❌ API ERROR', 'color:#f44336; font-weight:bold;', errorInfo);
-
-                if (response.status === 401) {
-                    this.clearCachedToken();
-                }
-
-                const error = new Error(errorInfo.message);
-                error.status = response.status;
-                error.url = url;
-                error.endpoint = endpoint;
-                error.response = data;
-                if (![401, 200, 201, 400].includes(error.status)) {
-                    ErrorMessage(error);
-                }
-                throw error;
+            if (![401, 200, 201, 400].includes(error.status)) {
+                ErrorMessage(error);
             }
 
-            return data;
-        } catch (error) {
-            // console.error('%c🌐 NETWORK ERROR', 'color:#ff9800; font-weight:bold;', {
-            //     url,
-            //     message: error.message,
-            //     stack: error.stack,
-            // });
             throw error;
         }
-    }
 
+        return data;
+    }
 
     get(endpoint, params = {}) {
-        const queryString = Object.keys(params)
-            .map(
-                key =>
-                    `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`
-            )
-            .join('&');
-        const urlWithParams = queryString
-            ? `${endpoint}?${queryString}`
-            : endpoint;
+        const qs = Object.entries(params)
+            .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+            .join("&");
 
-        return this.request(urlWithParams, { method: 'GET' });
+        return this.request(qs ? `${endpoint}?${qs}` : endpoint, { method: "GET" });
     }
 
-    post(endpoint, data, isFormData = false) {
-        console.log(isFormData ? data : JSON.stringify(data), 9989898)
+    post(endpoint, data) {
         return this.request(endpoint, {
-            method: 'POST',
-            body: isFormData ? data : JSON.stringify(data),
-
-        });
-    }
-
-    patch(endpoint, data) {
-        return this.request(endpoint, {
-            method: 'PATCH',
+            method: "POST",
             body: JSON.stringify(data),
         });
     }
 
     put(endpoint, data) {
         return this.request(endpoint, {
-            method: 'PUT',
+            method: "PUT",
+            body: JSON.stringify(data),
+        });
+    }
+
+    patch(endpoint, data) {
+        return this.request(endpoint, {
+            method: "PATCH",
             body: JSON.stringify(data),
         });
     }
 
     delete(endpoint, data) {
-        return this.request(endpoint, { method: 'DELETE', body: JSON.stringify(data), });
+        return this.request(endpoint, {
+            method: "DELETE",
+            body: JSON.stringify(data),
+        });
     }
 }
 

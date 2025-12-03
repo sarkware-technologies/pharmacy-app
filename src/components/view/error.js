@@ -2,7 +2,6 @@ import Toast from "react-native-toast-message";
 
 export const ErrorMessage = (error) => {
   const statusCode = error?.response?.status;
-console.log(statusCode,2394872938)
 
   if ([500, 502, 504].includes(statusCode)) {
     Toast.show({

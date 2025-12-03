@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from './apiClient';
 
 // Helper function to determine auth channel
@@ -11,7 +12,7 @@ export const authAPI = {
     login: async (phoneOrEmail, password) => {
         try {
             const authChannel = getAuthChannel(phoneOrEmail);
-            
+
             const response = await apiClient.post('/user-management/login', {
                 username: phoneOrEmail,
                 password: password,
@@ -43,7 +44,7 @@ export const authAPI = {
             // Extract username from sessionId (we stored it as username-timestamp)
             const username = sessionId.split('-').slice(0, -1).join('-');
             const authChannel = getAuthChannel(username);
-            
+
             const response = await apiClient.post('/user-management/verify-otp', {
                 username: username,
                 authChannel: authChannel,
@@ -57,11 +58,49 @@ export const authAPI = {
             }
 
             return {
-                success: response.success,
+                success: response.data?.success ?? true,   // ✅ FIXED
                 data: {
-                    // FIXED: Use accessToken from response
                     token: response.data?.accessToken,
                     refreshToken: response.data?.refreshToken,
+                    roleName: response.data?.roleName,
+                    subrolename: response.data?.subrolename,
+                    userId: response.data?.userId,
+                    permissions: response.data?.permissions,
+                    user: {
+                        id: response.data?.userId,
+                        name: response.data?.name,
+                        email: response.data?.email,
+                        mobile: response.data?.mobile,
+                        roleId: response.data?.roleId,
+                        subroleId: response.data?.subroleId,
+                        isFirstLogin: response.data?.isFirstLogin,
+                        userDetails: response.data?.userDetails,
+                        userPermissions: response.data?.userPermissions
+                    }
+                }
+            };
+        } catch (error) {
+            if (error.message === 'Invalid or expired OTP') {
+                throw new Error('Invalid or expired OTP. Please try again.');
+            }
+            throw error;
+        }
+    },
+
+    refreshToken: async () => {
+        try {
+
+            const response = await apiClient.post('/user-management/refresh-token', { refreshToken: await AsyncStorage.getItem('refreshToken') });
+
+            return {
+                success: response.data?.success ?? true,   // ✅ FIXED
+                data: {
+                    token: response.data?.accessToken,
+                    refreshToken: response.data?.refreshToken,
+                    roleName: response.data?.roleName,
+                    subrolename: response.data?.subrolename,
+                    userId: response.data?.userId,
+                    permissions: response.data?.permissions,
                     user: {
                         id: response.data?.userId,
                         name: response.data?.name,
@@ -88,7 +127,7 @@ export const authAPI = {
             // Extract username from sessionId
             const username = sessionId.split('-').slice(0, -1).join('-');
             const authChannel = getAuthChannel(username);
-            
+
             // For resend, we need to call login again
             const response = await apiClient.post('/user-management/login', {
                 username: username,
@@ -113,7 +152,7 @@ export const authAPI = {
     requestPasswordReset: async (phoneOrEmail) => {
         try {
             const authChannel = getAuthChannel(phoneOrEmail);
-            
+
             const response = await apiClient.post('/user-management/forgot-password', {
                 username: phoneOrEmail,
                 authChannel: authChannel
@@ -141,7 +180,7 @@ export const authAPI = {
             // Extract username from resetSessionId
             const username = resetSessionId.replace('reset-', '').split('-').slice(0, -1).join('-');
             const authChannel = getAuthChannel(username);
-            
+
             const response = await apiClient.post('/user-management/verify-otp', {
                 username: username,
                 authChannel: authChannel,
@@ -187,7 +226,7 @@ export const authAPI = {
             // Extract username from resetSessionId
             const username = resetSessionId.replace('reset-', '').split('-').slice(0, -1).join('-');
             const authChannel = getAuthChannel(username);
-            
+
             // Call forgot-password again to resend OTP
             const response = await apiClient.post('/user-management/forgot-password', {
                 username: username,
@@ -206,5 +245,5 @@ export const authAPI = {
             };
         }
     }
-    
+
 };

@@ -102,11 +102,10 @@ const UploadOrder = () => {
       // ✅ Keep your original logic unchanged
       if (type === 'original') {
         setIsocr(true);
-        setTemplateFile(null);
+        // setTemplateFile(null);
         setOriginalFile(formattedFile);
       } else {
-        setIsocr(false);
-        setOriginalFile(null);
+        // setOriginalFile(null);
         setTemplateFile(formattedFile);
       }
 
@@ -122,28 +121,9 @@ const UploadOrder = () => {
 
 
 
-  // Alternative method using a file path if you have one
-  const handleFileFromPath = (type, filePath) => {
-    // This method can be used if you have file paths from other sources
-    const fileName = filePath.split('/').pop();
-    const file = {
-      name: fileName || 'return_file_sample_data.csv',
-      size: '4.1 MB', // You'd need to get actual file size
-      uri: filePath,
-      type: 'text/csv',
-    };
-
-    if (type === 'original') {
-      setOriginalFile(file);
-    } else {
-      setTemplateFile(file);
-    }
-  };
-
-
-
   const handleCancelUpload = (type) => {
     if (type === 'original') {
+      setIsocr(false);
       setOriginalFile(null);
     } else {
       setTemplateFile(null);
@@ -163,7 +143,7 @@ const UploadOrder = () => {
         if (isocr) {
           startTimer();
         }
-        const fileUpload = await UploadTemplateOrder(originalFile ?? templateFile, parseInt(selectedCustomer?.customerId), selectedDistributor?.id, "UPLOAD", isocr);
+        const fileUpload = await UploadTemplateOrder(originalFile, templateFile, parseInt(selectedCustomer?.customerId), selectedDistributor?.id, "UPLOAD", isocr);
         console.log(fileUpload?.status, "Upload file response")
         if (fileUpload?.poFileProducts) {
           const updatedProducts = fileUpload.poFileProducts.map(element => ({
@@ -363,7 +343,7 @@ const UploadOrder = () => {
             disabled={!originalFile && !templateFile || isUploading}
 
           >
-            <AppText style={styles.continueText}>{isUploading?'Uploading...':'Continue'}</AppText>
+            <AppText style={styles.continueText}>{isUploading ? 'Uploading...' : 'Continue'}</AppText>
           </TouchableOpacity>
         </View>
       </View>

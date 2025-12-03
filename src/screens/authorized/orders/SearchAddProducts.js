@@ -130,6 +130,7 @@ const SearchAddProducts = () => {
             page: pageNumber,
             limit: 10,
             search,
+            forMapping:true
           };
           const res = await getProducts(params);
 
