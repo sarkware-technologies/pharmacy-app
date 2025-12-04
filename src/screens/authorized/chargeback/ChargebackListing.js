@@ -180,15 +180,15 @@ const ChargebackListing = () => {
         </View>
 </View>
         <View style={styles.statsRow}>
-          <AppText style={styles.statText}>PO Count {item.poCount}</AppText>
+          <AppText style={styles.statText}>PO Count <AppText style={styles.statTextVal}>{item.poCount}</AppText></AppText>
           <AppText style={styles.separator}>|</AppText>
-          <AppText style={styles.statText}>Order Count {item.orderCount}</AppText>
+          <AppText style={styles.statText}>Order Count <AppText style={styles.statTextVal}>{item.orderCount}</AppText></AppText>
           <AppText style={styles.separator}>|</AppText>
-          <AppText style={styles.statText}>POD/Invoice {item.podInvoiceRatio}</AppText>
+          <AppText style={styles.statText}>POD/Invoice <AppText style={styles.statTextVal}>{item.podInvoiceRatio}</AppText></AppText>
         </View>
 
         <View style={styles.claimValueContainer}>
-          <AppText style={styles.claimValueLabel}>Claim Value ₹ {item.claimValue?.toLocaleString('en-IN')}</AppText>
+          <AppText style={styles.claimValueLabel}>Claim Value <AppText style={styles.claimValueLabelVal}>₹ {item.claimValue?.toLocaleString('en-IN')}</AppText></AppText>
           <TouchableOpacity>
             <Icon name="arrow-drop-down" size={24} color="#FFA500" />
           </TouchableOpacity>
@@ -543,6 +543,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
+    width:"70%"
   },
   detailsRow: {
     flexDirection: 'row',
@@ -589,7 +590,7 @@ const styles = StyleSheet.create({
   submittedText: {
     fontSize: 12,
     color: '#4481B4',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   viewButton: {
     flexDirection: 'row',
@@ -619,7 +620,7 @@ const styles = StyleSheet.create({
   draftText: {
     fontSize: 12,
     color: '#AE7017',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   uploadButton: {
     flexDirection: 'row',
@@ -724,6 +725,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
+
+  statTextVal:{
+ color: '#000',
+  },
   claimText: {
     fontSize: 12,
     color: '#999',
@@ -732,11 +737,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
+    // marginTop: 8,
   },
   claimValueLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#000',
+  },
+  claimValueLabelVal:{
+    color:"#666"
+
   },
   emptyContainer: {
     flex: 1,

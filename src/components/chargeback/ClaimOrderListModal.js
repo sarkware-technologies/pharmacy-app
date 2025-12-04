@@ -40,7 +40,7 @@ const ClaimOrderListModal = ({ visible, onClose, claim }) => {
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [currentOrder, setCurrentOrder] = useState(null);  
+  const [currentOrder, setCurrentOrder] = useState(null);
   const [orders, setOrders] = useState(mockOrdersList);
 
   const handleSelectAll = () => {
@@ -67,10 +67,10 @@ const ClaimOrderListModal = ({ visible, onClose, claim }) => {
 
   const handleGenerateClaim = () => {
     // Close the modal first
-    onClose();   
-    
+    onClose();
+
     navigation.getParent()?.navigate('ChargebackStack', {
-        screen: 'ClaimDetails'
+      screen: 'ClaimDetails'
     });
   };
 
@@ -82,8 +82,8 @@ const ClaimOrderListModal = ({ visible, onClose, claim }) => {
       onRequestClose={onClose}
     >
       <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
+
+        <View style={styles.modalHeader}>
             <AppText style={styles.modalTitle}>
               {claim?.customerName || 'Kokilaben Dhirubhai Ambani'}
             </AppText>
@@ -91,6 +91,8 @@ const ClaimOrderListModal = ({ visible, onClose, claim }) => {
               <CloseCircle />
             </TouchableOpacity>
           </View>
+        <View style={styles.modalContent}>
+          
 
           <View style={styles.selectAllContainer}>
             <CustomCheckBox
@@ -107,42 +109,42 @@ const ClaimOrderListModal = ({ visible, onClose, claim }) => {
                   value={selectedOrders.includes(order.id)}
                   onValueChange={() => handleSelectOrder(order.id)}
                 />
-                
+
                 <View style={styles.orderContent}>
                   <View style={styles.orderHeader}>
-                    <AppText style={styles.orderId}>{order.id}</AppText>                    
+                    <AppText style={styles.orderId}>{order.id}</AppText>
                   </View>
-                  
+
                   <View style={styles.orderDetails}>
                     <AppText style={styles.poNumber}>
                       {order.poNumber} | In CNS <AppText style={styles.cnsCount}>+{order.inCNS}</AppText>
                     </AppText>
                   </View>
-                  
+
                   <View style={styles.orderFooter}>
                     <View style={styles.draftBadge}>
                       <AppText style={styles.draftText}>DRAFT</AppText>
                     </View>
-                    
+
                     <View style={{ flexDirection: 'column', gap: 15, marginTop: -30 }}>
-                      <AppText style={styles.podInfo}>POD/Invoice {order.podInvoiceCount}</AppText>
-                      <TouchableOpacity 
+                      <AppText style={styles.podInfo}>POD/Invoice <AppText style={styles.podInfoText}>{order.podInvoiceCount}</AppText></AppText>
+                      <TouchableOpacity
                         style={styles.uploadButton}
                         onPress={() => handleUploadDocument(order)}
                       >
                         <Upload height={14} />
                         <AppText style={styles.uploadButtonText}>Upload Documents</AppText>
                       </TouchableOpacity>
-                    </View>                    
+                    </View>
                   </View>
                 </View>
               </View>
             ))}
           </ScrollView>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
-              styles.generateButton, 
+              styles.generateButton,
               selectedOrders.length === 0 && styles.disabledButton
             ]}
             onPress={handleGenerateClaim}
@@ -172,22 +174,28 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 20,
+    paddingTop: 16,
     paddingHorizontal: 16,
     maxHeight: '80%',
   },
   modalHeader: {
+
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    maxHeight: '80%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    borderBottomWidth:1,
+    borderBottomColor:"#EDEDED"
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2B2B2B',
     flex: 1,
     marginRight: 12,
   },
@@ -198,9 +206,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   selectAllText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#666',
     marginLeft: 8,
+    fontWeight: '600',
+
   },
   checkbox: {
     width: 20,
@@ -238,15 +248,22 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   orderId: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#000',
-    textDecorationLine: 'underline',
+    paddingBottom:0,
+
+   borderBottomWidth: 1,  // underline
+  borderBottomColor: '#000', // color
   },
   podInfo: {
     fontSize: 14,
     color: '#666',
     textAlign: 'right'
+  },
+
+  podInfoText: {
+    color: '#000',
   },
   orderDetails: {
     marginBottom: 12,
@@ -254,6 +271,7 @@ const styles = StyleSheet.create({
   poNumber: {
     fontSize: 14,
     color: '#666',
+    fontWeight: "400"
   },
   cnsCount: {
     color: '#FFA500',
@@ -265,15 +283,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   draftBadge: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: '#f7f1e8',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 4,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   draftText: {
     fontSize: 12,
-    color: '#FF9800',
-    fontWeight: '600',
+    color: '#AE7017',
+    fontWeight: '700',
   },
   uploadButton: {
     flexDirection: 'row',
@@ -288,6 +306,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#FFA500',
     marginLeft: 4,
+    fontWeight:"700"
   },
   generateButton: {
     backgroundColor: colors.primary,
