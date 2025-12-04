@@ -160,6 +160,7 @@ const ChargebackListing = () => {
   const renderPendingItem = ({ item }) => {
     return (
       <View style={styles.pendingCard}>
+        <View style={styles.pendingHeaderWrapper}>
         <View style={styles.pendingHeader}>
           <AppText style={styles.customerName}>{item.customerName}</AppText>
           <AppText style={styles.amount}>₹ {item.amount?.toLocaleString('en-IN')}</AppText>
@@ -177,7 +178,7 @@ const ChargebackListing = () => {
             {item.claimNumber} <AppText style={styles.spilBadge}>+{item.spilCount}</AppText>
           </AppText>
         </View>
-
+</View>
         <View style={styles.statsRow}>
           <AppText style={styles.statText}>PO Count {item.poCount}</AppText>
           <AppText style={styles.separator}>|</AppText>
@@ -189,7 +190,7 @@ const ChargebackListing = () => {
         <View style={styles.claimValueContainer}>
           <AppText style={styles.claimValueLabel}>Claim Value ₹ {item.claimValue?.toLocaleString('en-IN')}</AppText>
           <TouchableOpacity>
-            <Icon name="keyboard-arrow-down" size={24} color="#FFA500" />
+            <Icon name="arrow-drop-down" size={24} color="#FFA500" />
           </TouchableOpacity>
         </View>
       </View>
@@ -210,48 +211,8 @@ const ChargebackListing = () => {
         );
       case 'Pending':
         return (
-          <>
-            <View style={styles.filterContainer}>
-              <View style={styles.spilToggle}>
-                <TouchableOpacity
-                  style={[styles.toggleButton, spilType === 'SPIL' && styles.activeToggle]}
-                  onPress={() => setSpilType('SPIL')}
-                >
-                  <AppText style={[styles.toggleText, spilType === 'SPIL' && styles.activeToggleText]}>
-                    SPIL
-                  </AppText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.toggleButton, spilType === 'SPLL' && styles.activeToggle]}
-                  onPress={() => setSpilType('SPLL')}
-                >
-                  <AppText style={[styles.toggleText, spilType === 'SPLL' && styles.activeToggleText]}>
-                    SPLL
-                  </AppText>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.overdueToggle}>
-                <TouchableOpacity
-                  style={styles.radioButton}
-                  onPress={() => setOverdueFilter('Overdue')}
-                >
-                  <View style={styles.radio}>
-                    {overdueFilter === 'Overdue' && <View style={styles.radioSelected} />}
-                  </View>
-                  <AppText style={styles.radioText}>Overdue</AppText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.radioButton}
-                  onPress={() => setOverdueFilter('Due')}
-                >
-                  <View style={styles.radio}>
-                    {overdueFilter === 'Due' && <View style={styles.radioSelected} />}
-                  </View>
-                  <AppText style={styles.radioText}>Due</AppText>
-                </TouchableOpacity>
-              </View>
-            </View>
+         
+         
             <FlatList
               data={mockPendingClaims}
               renderItem={renderPendingItem}
@@ -259,7 +220,7 @@ const ChargebackListing = () => {
               contentContainerStyle={styles.listContainer}
               showsVerticalScrollIndicator={false}
             />
-          </>
+          
         );
       case 'Missed Claims':
       case 'Reassigned':
@@ -310,7 +271,113 @@ const ChargebackListing = () => {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+     
+
       <View style={{ backgroundColor: '#F5F5F5', flex: 1 }}>
+
+         {activeTab === "Pending" &&(
+
+            //  <View style={styles.filterContainer}>
+            //   <View style={styles.spilToggle}>
+            //     <TouchableOpacity
+            //       style={[styles.toggleButton, spilType === 'SPIL' && styles.activeToggle]}
+            //       onPress={() => setSpilType('SPIL')}
+            //     >
+            //       <AppText style={[styles.toggleText, spilType === 'SPIL' && styles.activeToggleText]}>
+            //         SPIL
+            //       </AppText>
+            //     </TouchableOpacity>
+            //     <TouchableOpacity
+            //       style={[styles.toggleButton, spilType === 'SPLL' && styles.activeToggle]}
+            //       onPress={() => setSpilType('SPLL')}
+            //     >
+            //       <AppText style={[styles.toggleText, spilType === 'SPLL' && styles.activeToggleText]}>
+            //         SPLL
+            //       </AppText>
+            //     </TouchableOpacity>
+            //   </View>
+
+            //   <View style={styles.overdueToggle}>
+            //     <TouchableOpacity
+            //       style={styles.radioButton}
+            //       onPress={() => setOverdueFilter('Overdue')}
+            //     >
+            //       <View style={styles.radio}>
+            //         {overdueFilter === 'Overdue' && <View style={styles.radioSelected} />}
+            //       </View>
+            //       <AppText style={styles.radioText}>Overdue</AppText>
+            //     </TouchableOpacity>
+            //     <TouchableOpacity
+            //       style={styles.radioButton}
+            //       onPress={() => setOverdueFilter('Due')}
+            //     >
+            //       <View style={styles.radio}>
+            //         {overdueFilter === 'Due' && <View style={styles.radioSelected} />}
+            //       </View>
+            //       <AppText style={styles.radioText}>Due</AppText>
+            //     </TouchableOpacity>
+            //   </View>
+            // </View>
+
+            <View style={styles.filterWrapper}>
+
+              {/* LEFT GROUP: SPIL + Radio (touching each other) */}
+              <View style={styles.leftGroup}>
+
+                {/* SPIL */}
+                <TouchableOpacity
+                  style={[styles.spilBox, spilType === 'SPIL' && styles.activeBox]}
+                  onPress={() => setSpilType('SPIL')}
+                >
+                  <AppText style={[styles.spilText, spilType === 'SPIL' && styles.activeText]}>
+                    SPIL
+                  </AppText>
+                </TouchableOpacity>
+
+                {/* RADIO BOX */}
+                <View style={styles.radioBox}>
+                  <TouchableOpacity style={[styles.radioOption, styles.extraMargin]} onPress={() => setOverdueFilter('Overdue')}>
+                    <View style={[styles.radioCircle, overdueFilter === 'Overdue' && styles.radioCircleActive]}>
+                      {overdueFilter === 'Overdue' && <View style={styles.radioDot} />}
+                    </View>
+                    <AppText style={[styles.radioLabel, overdueFilter === 'Overdue' && styles.radioLabelActive]}>
+                      Overdue
+                    </AppText>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.radioOption} onPress={() => setOverdueFilter('Due')}>
+                    <View style={[styles.radioCircle, overdueFilter === 'Due' && styles.radioCircleActive]}>
+                      {overdueFilter === 'Due' && <View style={styles.radioDot} />}
+                    </View>
+                    <AppText style={[styles.radioLabel, overdueFilter === 'Due' && styles.radioLabelActive]}>
+                      Due
+                    </AppText>
+                  </TouchableOpacity>
+                </View>
+
+              </View>
+
+              {/* SPLL */}
+              <TouchableOpacity
+                style={[styles.spllBox, spilType === 'SPLL' && styles.activeBox]}
+                onPress={() => setSpilType('SPLL')}
+              >
+                <AppText style={[styles.spllText, spilType === 'SPLL' && styles.activeText]}>
+                  SPLL
+                </AppText>
+              </TouchableOpacity>
+
+            </View>
+
+
+
+ 
+
+        )}
+
+
+
         {(activeTab === 'Claims' || activeTab === 'Pending') && (
 
           <View style={styles.searchContainer}>
@@ -332,6 +399,8 @@ const ChargebackListing = () => {
             </TouchableOpacity>
           </View>
         )}
+
+        
 
         {renderContent()}
 
@@ -572,7 +641,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginTop: 16,
   },
   spilToggle: {
     flexDirection: 'row',
@@ -632,10 +701,19 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
+
+  pendingHeaderWrapper:{
+
+    borderBottomWidth:1,
+    borderBottomColor:"#EDEDED"
+
+  },
   pendingHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
+  
+    
   },
   statsRow: {
     flexDirection: 'row',
@@ -670,6 +748,127 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
   },
+
+
+
+  filterWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+     paddingHorizontal: 16,
+     gap:10,
+     
+  },
+
+  /* SPIL + Radio side together */
+  leftGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+   
+  },
+
+  /* SPIL BOX */
+  spilBox: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    // borderTopRightRadius: 0,
+    // borderBottomRightRadius: 0,
+    zIndex:10
+  },
+
+  /* ACTIVE BOX (SPIL or SPLL) */
+  activeBox: {
+    borderColor: '#FFA500',
+    backgroundColor: '#FFF4E5',
+  },
+
+  spilText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
+  },
+  activeText: {
+    color: '#000',
+  },
+
+  /* RADIO BOX (touching SPIL, connected border) */
+  radioBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderRadius: 10,
+    marginLeft:- 10
+  },
+
+  radioOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+
+    
+  },
+
+  extraMargin:{
+    marginLeft:10
+  },
+
+  radioCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#C7C7C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioCircleActive: {
+    borderColor: '#FFA500',
+  },
+
+  radioDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#FFA500',
+  },
+
+  radioLabel: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: '#999',
+  },
+  radioLabelActive: {
+    color: '#000',
+    fontWeight: '600',
+  },
+
+  /* SPLL BOX (right side) */
+  spllBox: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+  },
+
+  spllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
+  },
+
+  
 });
 
 export default ChargebackListing;
