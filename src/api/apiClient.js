@@ -1,9 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ErrorMessage } from '../components/view/error';
-import { resetTo } from '../navigation/NavigationService';
 import Toast from 'react-native-toast-message';
 import { authAPI } from './auth';
 import { saveToken } from '../redux/slices/authSlice';
+import { store } from "../redux/store";
+import { logout } from "../redux/slices/authSlice";
+
 
 export const BASE_URL = 'https://pharmsupply-dev-api.pharmconnect.com';
 
@@ -11,7 +13,7 @@ class ApiClient {
     constructor() {
         this.token = null;
         this.tokenPromise = null;
-        this.refreshPromise = null;  // 🔥 Prevents multiple refresh requests
+        this.refreshPromise = null;
     }
 
     async getToken() {
@@ -40,23 +42,21 @@ class ApiClient {
     }
 
     async clearCachedToken() {
-        this.token = null;
-        await AsyncStorage.removeItem("authToken");
-        await AsyncStorage.removeItem("refreshToken");
-
         Toast.show({
             type: "error",
             text1: "Session Expired",
-            text2: "Please log in again"
+            text2: "Please log in again",
         });
 
-        setTimeout(() => resetTo("Auth"), 1200);
+        store.dispatch(logout());
+
+        await new Promise(res => setTimeout(res, 300));
     }
 
-    // 🔥 AUTO REFRESH + returns new access token
+
     async refreshAccessToken() {
         if (this.refreshPromise) {
-            return this.refreshPromise; // wait for the existing refresh request
+            return this.refreshPromise;
         }
 
         this.refreshPromise = new Promise(async (resolve) => {
@@ -69,9 +69,6 @@ class ApiClient {
                     return;
                 }
 
-                console.log("🔄 Refreshing token…");
-
-                // Call refresh-token API
                 const response = await authAPI.refreshToken({
                     refreshToken,
                 });
@@ -80,31 +77,22 @@ class ApiClient {
                 const newRefresh = response.data?.refreshToken;
 
                 if (newToken) {
-                    // Save both tokens using your existing helper
                     await saveToken(response.data);
-
-                    // Update in-memory token
                     this.token = newToken;
-
-                    console.log("✅ Token refreshed successfully.");
                     resolve(newToken);
                 } else {
-                    console.log("❌ Refresh API did not return a token");
                     resolve(null);
                 }
             } catch (err) {
-                console.log("❌ Refresh failed:", err);
                 resolve(null);
             } finally {
-                this.refreshPromise = null; // allow next refresh call
+                this.refreshPromise = null;
             }
         });
-
         return this.refreshPromise;
     }
 
 
-    // 🧨 MAIN REQUEST (with retry support)
     async request(endpoint, options = {}, retry = false) {
         const url = `${BASE_URL}${endpoint}`;
         const token = await this.getToken();
@@ -123,28 +111,19 @@ class ApiClient {
             config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // -----------------------------
-        //       🔥 cURL LOGGING
-        // -----------------------------
         const method = config.method || "GET";
         const headerStrings = Object.entries(config.headers || {})
             .map(([k, v]) => `-H '${k}: ${v}'`)
             .join(" ");
 
-        const bodyString =
-            config.body && !(config.body instanceof FormData)
-                ? `--data '${config.body}'`
-                : "";
+        const bodyString = config.body ? `--data '${config.body}'` : '';
+        const curlCommand = `curl -X ${method} ${headerStrings} ${bodyString} '${url}'`;
 
-        const curl = `curl -X ${method} ${headerStrings} ${bodyString} '${url}'`;
+        console.log('%c💡 CURL (copy for Postman / terminal):', 'color:#ff9800; font-weight:bold;');
+        console.log(curlCommand);
 
-        console.log("%c💡 CURL:", "color:#ff9800;font-weight:bold;");
-        console.log(curl);
-
-        // -----------------------------
-        //     🔥 REQUEST LOGGING
-        // -----------------------------
-        console.log("%c🚀 API REQUEST", "color:#00bcd4;font-weight:bold;", {
+        // --- Log full request ---
+        console.log('%c🚀 API REQUEST', 'color:#00bcd4; font-weight:bold;', {
             url,
             method,
             headers: config.headers,
@@ -159,9 +138,7 @@ class ApiClient {
                 })(),
         });
 
-        // -----------------------------
-        //          FETCH CALL
-        // -----------------------------
+
         let responseText = "";
         let response;
 
@@ -179,38 +156,20 @@ class ApiClient {
             data = { message: "Invalid JSON", raw: responseText };
         }
 
-        // -----------------------------
-        //       🔥 RESPONSE LOGGING
-        // -----------------------------
         console.log("%c📦 API RESPONSE", "color:#4caf50;font-weight:bold;", {
             url,
             status: response.status,
             ok: response.ok,
             data,
         });
-
-        // -----------------------------
-        //     🔥 TOKEN EXPIRED HANDLING
-        // -----------------------------
         if (response.status === 401 && !retry) {
-            console.log("⚠️ 401 detected → refreshing token…");
-
             const newToken = await this.refreshAccessToken();
-
             if (newToken) {
-                console.log("🔁 Retrying previous API:", endpoint);
-
                 return this.request(endpoint, options, true);
             }
-
-            console.log("❌ Refresh failed → logging out");
-            // await this.clearCachedToken();
+            await this.clearCachedToken();
             throw new Error("Session expired");
         }
-
-        // -----------------------------
-        //     🔥 ANY OTHER ERROR
-        // -----------------------------
         if (!response.ok || data?.success === false) {
             const error = new Error(data?.message || "API Error");
             error.status = response.status;

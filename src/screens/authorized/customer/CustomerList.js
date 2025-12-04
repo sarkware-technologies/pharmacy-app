@@ -50,7 +50,7 @@ import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModa
 import RejectCustomerModal from '../../../components/modals/RejectCustomerModal';
 import { customerAPI } from '../../../api/customer';
 import { SkeletonList } from '../../../components/SkeletonLoader';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from "../../../components"
 import Toast from 'react-native-toast-message';
 import { handleOnboardCustomer } from '../../../utils/customerNavigationHelper';
 
@@ -81,14 +81,14 @@ import CheckCircle from '../../../components/icons/CheckCircle';
 const CustomerList = ({ navigation }) => {
 
   const dispatch = useDispatch();
-  
+
   // Get customers from Redux instead of mock data
   const customers = useSelector(selectCustomers);
 
   const customerTypes = useSelector(selectCustomerTypes);
   const customerStatuses = useSelector(selectCustomerStatuses);
   const cities = useSelector(state => state.customer.cities);
-  
+
   // Get logged-in user data
   const loggedInUser = useSelector(state => state.auth.user);
   const states = useSelector(state => state.customer.states);
@@ -99,7 +99,7 @@ const CustomerList = ({ navigation }) => {
   const filters = useSelector(selectFilters); // Get filters from Redux
   const listError = useSelector(state => state.customer.error);
   const tabCounts = useSelector(selectTabCounts); // Re-added tabCounts selector
-  
+
   // Console log tab counts for debugging
   useEffect(() => {
     console.log('=== TAB COUNTS IN CUSTOMERLIST ===');
@@ -111,14 +111,14 @@ const CustomerList = ({ navigation }) => {
     console.log('Rejected:', tabCounts.rejected);
     console.log('====================================');
   }, [tabCounts]);
-  
+
   const [activeTab, setActiveTab] = useState('all');
   const [searchText, setSearchText] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [downloadModalVisible, setDownloadModalVisible] = useState(false);
   const [documentModalVisible, setDocumentModalVisible] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  
+
   const [selectedFilters, setSelectedFilters] = useState({
     typeCode: '',
     statusId: [],
@@ -128,14 +128,14 @@ const CustomerList = ({ navigation }) => {
   });
 
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
-  
+
   // Documents modal state
   const [showDocumentsModal, setShowDocumentsModal] = useState(false);
   const [customerDocuments, setCustomerDocuments] = useState(null);
@@ -152,7 +152,7 @@ const CustomerList = ({ navigation }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
-  
+
   // Tab scroll ref for centering active tab
   const tabScrollRef = useRef(null);
   const tabRefs = useRef({});
@@ -179,10 +179,10 @@ const CustomerList = ({ navigation }) => {
 
   // Fetch customers on mount and when tab changes
   useEffect(() => {
-    const initializeData = async () => {    
+    const initializeData = async () => {
       // Reset customers list and pagination when tab changes
-      dispatch(resetCustomersList());  
-      
+      dispatch(resetCustomersList());
+
       // Fetch customers based on active tab with page: 1
       if (activeTab === 'all') {
         // All tab - regular endpoint, no statusIds
@@ -234,14 +234,14 @@ const CustomerList = ({ navigation }) => {
         console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
         dispatch(fetchCustomersList(payload));
       }
-      
+
       // Only fetch these on initial mount
       if (activeTab === 'all') {
         dispatch(fetchCustomerStatuses());
         dispatch(fetchCustomerTypes());
       }
     };
-    
+
     initializeData();
   }, [activeTab, dispatch]); // Only trigger on tab change
 
@@ -280,9 +280,9 @@ const CustomerList = ({ navigation }) => {
         }));
       }
     }, 500);
-    
+
     return () => clearTimeout(delayDebounceFn);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchText, dispatch]); // Only trigger on search text change, not on tab change
 
   // Refresh function
@@ -319,7 +319,7 @@ const CustomerList = ({ navigation }) => {
     }
 
     const nextPage = currentPage + 1;
-    
+
     let requestParams;
     if (activeTab === 'all') {
       requestParams = {
@@ -350,7 +350,7 @@ const CustomerList = ({ navigation }) => {
         statusIds: statusIds
       };
     }
-    
+
     dispatch(fetchCustomersList(requestParams));
   }, [dispatch, currentPage, hasMore, listLoadingMore, listLoading, limit, filters, activeTab]);
 
@@ -364,7 +364,7 @@ const CustomerList = ({ navigation }) => {
   // Footer component for loading indicator
   const renderFooter = () => {
     if (!listLoadingMore) return null;
-    
+
     return (
       <View style={{ paddingVertical: 20 }}>
         <ActivityIndicator size="small" color={colors.primary} />
@@ -378,7 +378,7 @@ const CustomerList = ({ navigation }) => {
   // End reached component
   const renderEndReached = () => {
     if (hasMore || listLoadingMore || customers.length === 0) return null;
-    
+
     return (
       <View style={{ paddingVertical: 20, alignItems: 'center' }}>
         <AppText style={{ color: '#999', fontSize: 14 }}>
@@ -396,7 +396,7 @@ const CustomerList = ({ navigation }) => {
     setToastMessage(message);
     setToastType(type);
     setToastVisible(true);
-    
+
     setTimeout(() => {
       setToastVisible(false);
     }, 3000);
@@ -406,7 +406,7 @@ const CustomerList = ({ navigation }) => {
   const handleTabPress = async (tabName) => {
     // First reset the list and set active tab
     setActiveTab(tabName);
-    
+
     // Scroll the tab into visible area after a small delay to ensure layout is ready
     setTimeout(() => {
       if (tabRefs.current[tabName] && tabScrollRef.current) {
@@ -416,10 +416,10 @@ const CustomerList = ({ navigation }) => {
             const screenWidth = Dimensions.get('window').width;
             // Center the tab in the screen
             const scrollX = x - (screenWidth / 2) + (w / 2);
-            
-            tabScrollRef.current?.scrollTo({ 
-              x: Math.max(0, scrollX), 
-              animated: true 
+
+            tabScrollRef.current?.scrollTo({
+              x: Math.max(0, scrollX),
+              animated: true
             });
           },
           () => {
@@ -437,9 +437,9 @@ const CustomerList = ({ navigation }) => {
       const customerId = customer?.stgCustomerId || customer?.customerId;
       // Set isStaging=false only for NOT-ONBOARDED status, true for PENDING
       const isStaging = customer?.statusName === 'NOT-ONBOARDED' ? false : (customer?.statusName === 'PENDING' ? true : false);
-      
+
       const response = await customerAPI.getCustomerDetails(customerId, isStaging);
-      
+
       if (response?.data) {
         const details = response.data;
         const docs = {
@@ -470,11 +470,11 @@ const CustomerList = ({ navigation }) => {
       Alert.alert('Info', 'Document not available');
       return;
     }
-    
+
     setSelectedDocumentForPreview(doc);
     setPreviewModalVisible(true);
     setPreviewLoading(true);
-    
+
     try {
       const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
       if (response?.data?.signedUrl) {
@@ -494,7 +494,7 @@ const CustomerList = ({ navigation }) => {
       Alert.alert('Info', 'Document not available for download');
       return;
     }
-    
+
     try {
       const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
       if (response?.data?.signedUrl) {
@@ -520,7 +520,7 @@ const CustomerList = ({ navigation }) => {
       const actorId = loggedInUser?.userId || loggedInUser?.id;
       const parellGroupId = selectedCustomerForAction?.instance?.stepInstances[0]?.parallelGroup
       const stepOrderId = selectedCustomerForAction?.instance?.stepInstances[0]?.stepOrder
-      
+
       const actionDataPyaload = {
         stepOrder: stepOrderId,
         parallelGroup: parellGroupId,
@@ -539,11 +539,11 @@ const CustomerList = ({ navigation }) => {
       };
 
       const response = await customerAPI.workflowAction(instanceId, actionDataPyaload);
-      
+
       setApproveModalVisible(false);
       showToast(`Customer ${selectedCustomerForAction?.customerName} approved successfully!`, 'success');
       setSelectedCustomerForAction(null);
-      
+
       // Refresh the customer list after approval
       const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
       dispatch(fetchCustomersList({
@@ -577,7 +577,7 @@ const CustomerList = ({ navigation }) => {
       const actorId = loggedInUser?.userId || loggedInUser?.id;
       const parellGroupId = selectedCustomerForAction?.instance?.stepInstances[0]?.parallelGroup
       const stepOrderId = selectedCustomerForAction?.instance?.stepInstances[0]?.stepOrder
-      
+
       const actionDataPyaload = {
         stepOrder: stepOrderId,
         parallelGroup: parellGroupId,
@@ -596,11 +596,11 @@ const CustomerList = ({ navigation }) => {
       };
 
       const response = await customerAPI.workflowAction(instanceId, actionDataPyaload);
-      
+
       setRejectModalVisible(false);
       showToast(`Customer ${selectedCustomerForAction?.customerName} rejected!`, 'error');
       setSelectedCustomerForAction(null);
-      
+
       // Refresh the customer list after rejection
       const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
       dispatch(fetchCustomersList({
@@ -624,15 +624,15 @@ const CustomerList = ({ navigation }) => {
       setBlockUnblockLoading(true);
       const customerId = customer?.stgCustomerId || customer?.customerId;
       const distributorId = loggedInUser?.distributorId || 1;
-      
+
       const response = await customerAPI.blockUnblockCustomer(
         [customerId],
         distributorId,
         false // isActive = false for blocking
       );
-      
+
       showToast(`Customer ${customer?.customerName} blocked successfully!`, 'success');
-      
+
       // Refresh the customer list
       const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
       dispatch(fetchCustomersList({
@@ -657,15 +657,15 @@ const CustomerList = ({ navigation }) => {
       setBlockUnblockLoading(true);
       const customerId = customer?.stgCustomerId || customer?.customerId;
       const distributorId = loggedInUser?.distributorId || 1;
-      
+
       const response = await customerAPI.blockUnblockCustomer(
         [customerId],
         distributorId,
         true // isActive = true for unblocking
       );
-      
+
       showToast(`Customer ${customer?.customerName} unblocked successfully!`, 'success');
-      
+
       // Refresh the customer list
       const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
       dispatch(fetchCustomersList({
@@ -707,7 +707,7 @@ const CustomerList = ({ navigation }) => {
         useNativeDriver: true,
       }),
     ]).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getStatusColor = (status) => {
@@ -757,7 +757,7 @@ const CustomerList = ({ navigation }) => {
     let statusIds = [];
     let stateIds = [];
     let cityIds = [];
-    
+
     // Handle customerGroup (customer type) - map to typeCode array
     if (filters.customerGroup && filters.customerGroup.length > 0 && !filters.customerGroup.includes('All')) {
       typeCode = filters.customerGroup
@@ -767,7 +767,7 @@ const CustomerList = ({ navigation }) => {
         })
         .filter(code => code !== undefined);
     }
-    
+
     // Handle category - map to categoryCode array
     if (filters.category && filters.category.length > 0 && !filters.category.includes('All')) {
       categoryCode = filters.category
@@ -785,7 +785,7 @@ const CustomerList = ({ navigation }) => {
         })
         .filter(code => code !== undefined);
     }
-    
+
     // Handle subCategory - map to subCategoryCode array
     if (filters.subCategory && filters.subCategory.length > 0) {
       subCategoryCode = filters.subCategory
@@ -805,28 +805,28 @@ const CustomerList = ({ navigation }) => {
         })
         .filter(code => code !== undefined);
     }
-    
+
     // Handle status - map to statusIds array
     if (filters.status && filters.status.length > 0 && !filters.status.includes('All')) {
       statusIds = filters.status
         .map(statusName => customerStatuses.find(s => s.name === statusName)?.id)
         .filter(id => id !== undefined);
     }
-    
+
     // Handle state - map to stateIds array
     if (filters.state && filters.state.length > 0 && !filters.state.includes('All')) {
       stateIds = filters.state
         .map(stateName => states.find(s => s.stateName === stateName)?.id)
         .filter(id => id !== undefined);
     }
-    
+
     // Handle city - map to cityIds array
     if (filters.city && filters.city.length > 0 && !filters.city.includes('All')) {
       cityIds = filters.city
         .map(cityName => cities.find(c => c.cityName === cityName)?.id)
         .filter(id => id !== undefined);
     }
-    
+
     // Build API payload matching the format
     const filterParams = {
       typeCode: typeCode.length > 0 ? typeCode : [],
@@ -840,7 +840,7 @@ const CustomerList = ({ navigation }) => {
       sortBy: '',
       sortDirection: 'ASC',
     };
-    
+
     dispatch(setFilters(filterParams));
     const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
     dispatch(fetchCustomersList({
@@ -877,7 +877,7 @@ const CustomerList = ({ navigation }) => {
             <AppText style={styles.customerName}>{item.customerName} <ChevronRight height={11} color={colors.primary} /></AppText>
             <View style={styles.actionsContainer}>
               {item.statusName === 'NOT-ONBOARDED' && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => {
                     const customerId = item.customerId || item.stgCustomerId;
@@ -896,7 +896,7 @@ const CustomerList = ({ navigation }) => {
               )}
 
               {item.statusName === 'APPROVED' && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => {
                     const customerId = item.customerId || item.stgCustomerId;
@@ -914,7 +914,7 @@ const CustomerList = ({ navigation }) => {
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => fetchCustomerDocuments(item)}
               >
@@ -924,7 +924,7 @@ const CustomerList = ({ navigation }) => {
           </View>
 
           <View style={styles.customerInfo}>
-           <View style={styles.infoRow}>
+            <View style={styles.infoRow}>
               <AddrLine color="#999" />
               <AppText style={styles.infoText}>{item.customerCode}</AppText>
               <AppText style={styles.divider}>|</AppText>
@@ -946,9 +946,9 @@ const CustomerList = ({ navigation }) => {
             </View>
             <View style={styles.contactRow}>
               <Phone color="#999" />
-              <AppText style={{...styles.contactText, marginRight: 15}}>{item.mobile}</AppText>
+              <AppText style={{ ...styles.contactText, marginRight: 15 }}>{item.mobile}</AppText>
               <Email color="#999" style={styles.mailIcon} />
-              <AppText style={styles.contactText}   ellipsizeMode="tail" numberOfLines={1}  >{item.email}</AppText>
+              <AppText style={styles.contactText} ellipsizeMode="tail" numberOfLines={1}  >{item.email}</AppText>
             </View>
           </View>
 
@@ -959,55 +959,55 @@ const CustomerList = ({ navigation }) => {
               </AppText>
             </View>
             {item.statusName === 'LOCKED' ? (
-            <TouchableOpacity 
-              style={styles.unlockButton}
-              onPress={() => handleUnblockCustomer(item)}
-              disabled={blockUnblockLoading}
-            >
-              <UnLocked fill="#EF4444" />
-              <AppText style={styles.unlockButtonText}>Unblock</AppText>
-            </TouchableOpacity>
-          ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
-            <TouchableOpacity 
-              style={styles.blockButton}
-              onPress={() => handleUnblockCustomer(item)}
-              disabled={blockUnblockLoading}
-            >
-              <Locked fill="#666" />
-              <AppText style={styles.blockButtonText}>Block</AppText>
-            </TouchableOpacity>
-          ) :  item.statusName === 'PENDING' && item.action == 'APPROVE' ? (
-            <View style={styles.pendingActions}>
-              <TouchableOpacity 
-                style={styles.approveButton}
-                onPress={() => handleApprovePress(item)}
+              <TouchableOpacity
+                style={styles.unlockButton}
+                onPress={() => handleUnblockCustomer(item)}
+                disabled={blockUnblockLoading}
               >
-                <AppText style={styles.approveButtonText}>Approve</AppText>
+                <UnLocked fill="#EF4444" />
+                <AppText style={styles.unlockButtonText}>Unblock</AppText>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.rejectButton}
-                onPress={() => handleRejectPress(item)}
+            ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
+              <TouchableOpacity
+                style={styles.blockButton}
+                onPress={() => handleUnblockCustomer(item)}
+                disabled={blockUnblockLoading}
               >
-                <CloseCircle />
+                <Locked fill="#666" />
+                <AppText style={styles.blockButtonText}>Block</AppText>
               </TouchableOpacity>
-            </View>
-          ) : item.statusName === 'NOT-ONBOARDED' ? (
-            <TouchableOpacity 
-              style={styles.onboardButton}
-              onPress={() => {
-                const customerId = item.customerId || item.stgCustomerId;
-                const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
-                handleOnboardCustomer(
-                  navigation,
-                  customerId,
-                  isStaging,
-                  customerAPI,
-                  (toastConfig) => Toast.show(toastConfig)
-                );
-              }}>
-              <AppText style={styles.onboardButtonText}>Onboard</AppText>
-            </TouchableOpacity>
-          ) : null}
+            ) : item.statusName === 'PENDING' && item.action == 'APPROVE' ? (
+              <View style={styles.pendingActions}>
+                <TouchableOpacity
+                  style={styles.approveButton}
+                  onPress={() => handleApprovePress(item)}
+                >
+                  <AppText style={styles.approveButtonText}>Approve</AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.rejectButton}
+                  onPress={() => handleRejectPress(item)}
+                >
+                  <CloseCircle />
+                </TouchableOpacity>
+              </View>
+            ) : item.statusName === 'NOT-ONBOARDED' ? (
+              <TouchableOpacity
+                style={styles.onboardButton}
+                onPress={() => {
+                  const customerId = item.customerId || item.stgCustomerId;
+                  const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
+                  handleOnboardCustomer(
+                    navigation,
+                    customerId,
+                    isStaging,
+                    customerAPI,
+                    (toastConfig) => Toast.show(toastConfig)
+                  );
+                }}>
+                <AppText style={styles.onboardButtonText}>Onboard</AppText>
+              </TouchableOpacity>
+            ) : null}
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -1054,13 +1054,13 @@ const CustomerList = ({ navigation }) => {
                         </View>
                       </View>
                       <View style={styles.documentActionsSmall}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.documentActionButtonSmall}
                           onPress={() => previewDocument(customerDocuments.gstDoc)}
                         >
                           <EyeOpen width={16} color={colors.primary} />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.documentActionButtonSmall}
                           onPress={() => downloadDocument(customerDocuments.gstDoc)}
                         >
@@ -1083,13 +1083,13 @@ const CustomerList = ({ navigation }) => {
                         </View>
                       </View>
                       <View style={styles.documentActionsSmall}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.documentActionButtonSmall}
                           onPress={() => previewDocument(customerDocuments.panDoc)}
                         >
                           <EyeOpen width={16} color={colors.primary} />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.documentActionButtonSmall}
                           onPress={() => downloadDocument(customerDocuments.panDoc)}
                         >
@@ -1117,13 +1117,13 @@ const CustomerList = ({ navigation }) => {
                         </View>
                       </View>
                       <View style={styles.documentActions}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.documentActionButton}
                           onPress={() => previewDocument(doc)}
                         >
                           <EyeOpen width={18} color={colors.primary} />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.documentActionButton}
                           onPress={() => downloadDocument(doc)}
                         >
@@ -1167,11 +1167,11 @@ const CustomerList = ({ navigation }) => {
           <View style={styles.previewContainer}>
             {previewLoading ? (
               <ActivityIndicator size="large" color={colors.primary} />
-            ) : previewSignedUrl && (selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpg') || 
-                                     selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpeg') || 
-                                     selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.png')) ? (
-              <Image 
-                source={{ uri: previewSignedUrl }} 
+            ) : previewSignedUrl && (selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpg') ||
+              selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpeg') ||
+              selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.png')) ? (
+              <Image
+                source={{ uri: previewSignedUrl }}
                 style={styles.previewImage}
                 resizeMode="contain"
               />
@@ -1183,7 +1183,7 @@ const CustomerList = ({ navigation }) => {
             )}
           </View>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.downloadButtonInPreview}
             onPress={() => downloadDocument(selectedDocumentForPreview)}
           >
@@ -1240,186 +1240,186 @@ const CustomerList = ({ navigation }) => {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.openDrawer()}>
-          <Menu />
-        </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Customers</AppText>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('RegistrationType')}>
-            <AppText style={styles.createButtonText}>CREATE</AppText>
+
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+            <Menu />
           </TouchableOpacity>
-          <TouchableOpacity>
-            <Bell color="#333" />
+          <AppText style={styles.headerTitle}>Customers</AppText>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('RegistrationType')}>
+              <AppText style={styles.createButtonText}>CREATE</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <Bell color="#333" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setDownloadModalVisible(true)}>
+              <Download color="#333" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Tabs */}
+        <ScrollView
+          ref={tabScrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.tabContainer}
+          scrollEventThrottle={16}
+        >
+          <TouchableOpacity
+            ref={(ref) => tabRefs.current['all'] = ref}
+            style={[styles.tab, activeTab === 'all' && styles.activeTab]}
+            onPress={() => handleTabPress('all')}
+          >
+            <AppText style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
+              All ({tabCounts.all})
+            </AppText>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setDownloadModalVisible(true)}>
-            <Download color="#333" />
+          <TouchableOpacity
+            ref={(ref) => tabRefs.current['waitingForApproval'] = ref}
+            style={[styles.tab, activeTab === 'waitingForApproval' && styles.activeTab]}
+            onPress={() => handleTabPress('waitingForApproval')}
+          >
+            <AppText style={[styles.tabText, activeTab === 'waitingForApproval' && styles.activeTabText]}>
+              Waiting for Approval ({tabCounts.waitingForApproval})
+            </AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            ref={(ref) => tabRefs.current['notOnboarded'] = ref}
+            style={[styles.tab, activeTab === 'notOnboarded' && styles.activeTab]}
+            onPress={() => handleTabPress('notOnboarded')}
+          >
+            <AppText style={[styles.tabText, activeTab === 'notOnboarded' && styles.activeTabText]}>
+              Not Onboarded ({tabCounts.notOnboarded})
+            </AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            ref={(ref) => tabRefs.current['unverified'] = ref}
+            style={[styles.tab, activeTab === 'unverified' && styles.activeTab]}
+            onPress={() => handleTabPress('unverified')}
+          >
+            <AppText style={[styles.tabText, activeTab === 'unverified' && styles.activeTabText]}>
+              Unverified ({tabCounts.unverified})
+            </AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            ref={(ref) => tabRefs.current['rejected'] = ref}
+            style={[styles.tab, activeTab === 'rejected' && styles.activeTab]}
+            onPress={() => handleTabPress('rejected')}
+          >
+            <AppText style={[styles.tabText, activeTab === 'rejected' && styles.activeTabText]}>
+              Rejected ({tabCounts.rejected})
+            </AppText>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <TouchableOpacity
+            style={styles.searchBar}
+            onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerSearchMain' })}
+            activeOpacity={0.7}
+          >
+            <Search color="#999" />
+            <AppText style={styles.searchPlaceholder}>Search by customer name/code</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setFilterModalVisible(true)}
+          >
+            <Filter color="#666" />
           </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Tabs */}
-      <ScrollView 
-        ref={tabScrollRef}
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        style={styles.tabContainer}
-        scrollEventThrottle={16}
-      >
-        <TouchableOpacity
-          ref={(ref) => tabRefs.current['all'] = ref}
-          style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-          onPress={() => handleTabPress('all')}
+        {/* Customer List */}
+        <Animated.View
+          style={[
+            styles.listContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+            },
+          ]}
         >
-          <AppText style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
-            All ({tabCounts.all})
-          </AppText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          ref={(ref) => tabRefs.current['waitingForApproval'] = ref}
-          style={[styles.tab, activeTab === 'waitingForApproval' && styles.activeTab]}
-          onPress={() => handleTabPress('waitingForApproval')}
-        >
-          <AppText style={[styles.tabText, activeTab === 'waitingForApproval' && styles.activeTabText]}>
-            Waiting for Approval ({tabCounts.waitingForApproval})
-          </AppText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          ref={(ref) => tabRefs.current['notOnboarded'] = ref}
-          style={[styles.tab, activeTab === 'notOnboarded' && styles.activeTab]}
-          onPress={() => handleTabPress('notOnboarded')}
-        >
-          <AppText style={[styles.tabText, activeTab === 'notOnboarded' && styles.activeTabText]}>
-            Not Onboarded ({tabCounts.notOnboarded})
-          </AppText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          ref={(ref) => tabRefs.current['unverified'] = ref}
-          style={[styles.tab, activeTab === 'unverified' && styles.activeTab]}
-          onPress={() => handleTabPress('unverified')}
-        >
-          <AppText style={[styles.tabText, activeTab === 'unverified' && styles.activeTabText]}>
-            Unverified ({tabCounts.unverified})
-          </AppText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          ref={(ref) => tabRefs.current['rejected'] = ref}
-          style={[styles.tab, activeTab === 'rejected' && styles.activeTab]}
-          onPress={() => handleTabPress('rejected')}
-        >
-          <AppText style={[styles.tabText, activeTab === 'rejected' && styles.activeTabText]}>
-            Rejected ({tabCounts.rejected})
-          </AppText>
-        </TouchableOpacity>
-      </ScrollView>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <TouchableOpacity 
-          style={styles.searchBar}
-          onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerSearchMain' })}
-          activeOpacity={0.7}
-        >
-          <Search color="#999" />
-          <AppText style={styles.searchPlaceholder}>Search by customer name/code</AppText>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.filterButton}
-          onPress={() => setFilterModalVisible(true)}
-        >
-          <Filter color="#666" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Customer List */}
-      <Animated.View
-        style={[
-          styles.listContainer,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-          },
-        ]}
-      >
-
-        {listLoading && customers.length === 0 ? (
-        <SkeletonList items={5} />
-      ) :listError && customers.length === 0 ? (
-        <View style={styles.errorContainer}>
-          <AlertCircle size={60} color="#EF4444" />
-          <AppText style={styles.errorTitle}>Unable to Load Customers</AppText>
-          <AppText style={styles.errorMessage}>
-            {listError === 'Network request failed' || listError.includes('Network') 
-              ? 'Server is currently unavailable. Please check your connection and try again.'
-              : listError || 'Something went wrong. Please try again.'}
-          </AppText>
-          <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
-            <Refresh size={20} color="#fff" />
-            <AppText style={styles.retryButtonText}>Retry</AppText>
-          </TouchableOpacity>
-        </View>
-      ) : customers.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <People size={60} color="#9CA3AF" />
-          <AppText style={styles.emptyTitle}>No Customers Found</AppText>
-          <AppText style={styles.emptyMessage}>
-            {searchText ? `No customers match "${searchText}"` : 'Start by adding your first customer'}
-          </AppText>
-        </View>
-      ) : (
-        
-        <FlatList
-        data={filteredCustomers}
-        renderItem={renderCustomerItem}
-        keyExtractor={keyExtractor}
-        contentContainerStyle={styles.scrollContent}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={20}
-        windowSize={20}
-        initialNumToRender={10}
-        updateCellsBatchingPeriod={50}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-        // Infinite scroll props
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.3} // Load more when 30% from bottom
-        ListFooterComponent={
-          <>
-            {renderFooter()}
-            {renderEndReached()}
-          </>
-        }
-        ListEmptyComponent={
-          !listLoading && (
+          {listLoading && customers.length === 0 ? (
+            <SkeletonList items={5} />
+          ) : listError && customers.length === 0 ? (
+            <View style={styles.errorContainer}>
+              <AlertCircle size={60} color="#EF4444" />
+              <AppText style={styles.errorTitle}>Unable to Load Customers</AppText>
+              <AppText style={styles.errorMessage}>
+                {listError === 'Network request failed' || listError.includes('Network')
+                  ? 'Server is currently unavailable. Please check your connection and try again.'
+                  : listError || 'Something went wrong. Please try again.'}
+              </AppText>
+              <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
+                <Refresh size={20} color="#fff" />
+                <AppText style={styles.retryButtonText}>Retry</AppText>
+              </TouchableOpacity>
+            </View>
+          ) : customers.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <People width={80} height={80} color="#E0E0E0" />
+              <People size={60} color="#9CA3AF" />
               <AppText style={styles.emptyTitle}>No Customers Found</AppText>
               <AppText style={styles.emptyMessage}>
-                {searchText 
-                  ? `No results for "${searchText}"`
-                  : 'Start by adding your first customer'}
+                {searchText ? `No customers match "${searchText}"` : 'Start by adding your first customer'}
               </AppText>
             </View>
-          )
-        }                
-      />
+          ) : (
 
-      )}
+            <FlatList
+              data={filteredCustomers}
+              renderItem={renderCustomerItem}
+              keyExtractor={keyExtractor}
+              contentContainerStyle={styles.scrollContent}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={20}
+              windowSize={20}
+              initialNumToRender={10}
+              updateCellsBatchingPeriod={50}
+              refreshControl={
+                <RefreshControl
+                  refreshing={isRefreshing}
+                  onRefresh={onRefresh}
+                  colors={[colors.primary]}
+                  tintColor={colors.primary}
+                />
+              }
+              // Infinite scroll props
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.3} // Load more when 30% from bottom
+              ListFooterComponent={
+                <>
+                  {renderFooter()}
+                  {renderEndReached()}
+                </>
+              }
+              ListEmptyComponent={
+                !listLoading && (
+                  <View style={styles.emptyContainer}>
+                    <People width={80} height={80} color="#E0E0E0" />
+                    <AppText style={styles.emptyTitle}>No Customers Found</AppText>
+                    <AppText style={styles.emptyMessage}>
+                      {searchText
+                        ? `No results for "${searchText}"`
+                        : 'Start by adding your first customer'}
+                    </AppText>
+                  </View>
+                )
+              }
+            />
+
+          )}
         </Animated.View>
 
         <DownloadModal />
         <DocumentsModal />
         <DocumentPreviewModal />
 
-        <FilterModal 
+        <FilterModal
           visible={filterModalVisible}
           onClose={() => setFilterModalVisible(false)}
           onApply={handleApplyFilters}

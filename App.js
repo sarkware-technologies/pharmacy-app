@@ -9,7 +9,6 @@ import AppNavigator from './src/navigation/AppNavigator';
 import NoInternetScreen from './src/components/NoInternetscreen';
 import SplashScreen from './src/components/SplashScreen';
 
-import { setTopLevelNavigator } from './src/navigation/NavigationService';
 
 import './GlobalFont';
 
@@ -27,11 +26,6 @@ const App = () => {
         return () => unsubscribe();
     }, []);
 
-    useEffect(() => {
-        if (navigationRef.current) {
-            setTopLevelNavigator(navigationRef.current);
-        }
-    }, []);
 
     if (checking) {
         return <SplashScreen />;

@@ -174,19 +174,18 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
             const { options } = descriptors[route.key];
             const label = options.tabBarLabel ?? route.name;
 
-            // Check if current route is DynamicTab (More menu items)
             const isCurrentDynamicTab = state.routes[state.index]?.name === 'DynamicTab';
 
             const isFocused =
               route.name === 'More'
-                ? showMore || isCurrentDynamicTab // ✅ highlight More tab when modal is open OR when on DynamicTab
+                ? showMore || isCurrentDynamicTab 
                 : state.index === state.routes.findIndex(
                   (r) => r.name === route.name
                 );
 
             const onPress = () => {
               if (route.name === 'More') {
-                setShowMore(true); // ✅ open modal
+                setShowMore(true); 
                 return;
               }
               setShowMore(false);
@@ -302,7 +301,7 @@ const BottomTabNavigator = () => {
       />
       <Tab.Screen
         name="More"
-        component={CustomerStack} // Use CustomerStack as placeholder - drawer will open instead
+        component={CustomerStack}
         options={{
           tabBarLabel: 'More',
           tabBarIcon: ({ focused, color }) => (

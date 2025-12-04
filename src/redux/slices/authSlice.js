@@ -106,12 +106,21 @@ export const checkAuthStatus = createAsyncThunk(
   async () => {
     const token = await AsyncStorage.getItem('authToken');
     const userData = await AsyncStorage.getItem('userData');
-
+    const refreshToken = await AsyncStorage.getItem('refreshToken');
+    const userRole = await AsyncStorage.getItem('userRole');
+    const subrolename = await AsyncStorage.getItem('subrolename');
+    const userId = await AsyncStorage.getItem('userId');
+    const permissions = await AsyncStorage.getItem('permissions');
     if (token && userData) {
       return {
         isAuthenticated: true,
         token,
         user: JSON.parse(userData),
+        refreshToken,
+        userRole,
+        subrolename,
+        userId,
+        permissions,
       };
     }
     return { isAuthenticated: false };
@@ -121,11 +130,11 @@ export const checkAuthStatus = createAsyncThunk(
 export const logout = createAsyncThunk(
   'auth/logout',
   async () => {
-    await AsyncStorage.removeItem('authToken');
-    await AsyncStorage.removeItem('userData');
+    await AsyncStorage.clear();
     return {};
   }
 );
+
 
 const initialState = {
   isAuthenticated: false,

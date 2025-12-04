@@ -16,7 +16,7 @@ export const getOrders = async ({ page = 1, limit = 10, search = '', status = 'A
     if (status && status !== "All") {
       switch (status) {
         case "Waiting for Confirmation":
-          data.status = "PROCCESINGx";
+          data.status = "PENDING APPROVAL";
           break;
         case "Hold":
           data.status = "HOLD";
@@ -134,21 +134,21 @@ export const PlaceOrder = async (order) => {
 export const UploadTemplateOrder = async (orginal, template, customerId, distributorId, orderType, isOCR) => {
   try {
     const formData = new FormData();
-    // if (orginal) {
-    //   formData.append('orderFile', {
-    //     uri: Platform.OS === 'ios' ? orginal.uri.replace('file://', '') : orginal.uri,
-    //     type: orginal.type || 'application/octet-stream',
-    //     name: orginal.name || 'upload.xlsx',
-    //   });
-    // }
-    // if (template) {
-    //   formData.append('templateFile', {
-    //     uri: Platform.OS === 'ios' ? template.uri.replace('file://', '') : template.uri,
-    //     type: template.type || 'application/octet-stream',
-    //     name: template.name || 'upload.xlsx',
-    //   });
+    if (orginal) {
+      formData.append('orderFile', {
+        uri: Platform.OS === 'ios' ? orginal.uri.replace('file://', '') : orginal.uri,
+        type: orginal.type || 'application/octet-stream',
+        name: orginal.name || 'upload.xlsx',
+      });
+    }
+    if (template) {
+      formData.append('templateFile', {
+        uri: Platform.OS === 'ios' ? template.uri.replace('file://', '') : template.uri,
+        type: template.type || 'application/octet-stream',
+        name: template.name || 'upload.xlsx',
+      });
 
-    // }
+    }
     formData.append('customerId', String(customerId));
     formData.append('distributorId', String(distributorId));
     formData.append('orderType', String(orderType));

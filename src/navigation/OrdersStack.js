@@ -38,14 +38,7 @@ const OrdersStack = () => (
       },
     }}
   >
-    <Stack.Screen name="OrderList" component={OrderList} />
-    <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
-
-    {/* <Stack.Screen name="SelectDistributor" component={SelectDistributor} /> */}
-    <Stack.Screen name="SearchAddProducts" component={SearchAddProducts} />
-    <Stack.Screen name="Cart" component={Cart} />
-    <Stack.Screen name="UploadOrder" component={UploadOrder} />
-    <Stack.Screen name="ProductMapping" component={ProductMapping} />
+    <Stack.Screen name="OrderList" component={OrderList} options={{ unmountOnBlur: true }} />
   </Stack.Navigator>
 );
 

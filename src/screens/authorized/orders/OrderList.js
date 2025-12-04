@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,7 @@ import { Fonts } from "../../../utils/fontHelper"
 import { formatPrice, getInitials } from "../../../utils/getInitials"
 import Svg, { Path } from 'react-native-svg';
 import ModalClose from "../../../components/icons/modalClose"
+import { SkeletonList } from '../../../components/SkeletonLoader';
 
 const OrderList = () => {
   const navigation = useNavigation();
@@ -62,6 +63,20 @@ const OrderList = () => {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const tabs = ['All', 'Waiting for Confirmation', 'Hold', 'Track PO'];
+
+  useEffect(() => {
+    const unsubscribe = navigation.getParent()?.addListener("tabPress", e => {
+      const parent = navigation.getParent();
+      const activeTab = parent?.getState().routes[parent.getState().index].name;
+      setPage(1);
+      setHasMore(true);
+      loadOrders(false, 1);
+      // getCartdetails();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
 
   // ✅ Load orders when tab changes
   useEffect(() => {
@@ -208,17 +223,7 @@ const OrderList = () => {
     // Example: navigate to manual order page
   };
 
-  // ✅ Status color logic
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'PENDING APPROVAL':
-        return { bg: '#FEF7ED', text: '#F4AD48' };
-      case 'APPROVED':
-        return { bg: '#E8F4EF', text: '#169560' };
-      default:
-        return { bg: '#F4F4F4', text: '#666' };
-    }
-  };
+
 
   const checkAction = (instance) => {
     let action = true;
@@ -291,112 +296,6 @@ const OrderList = () => {
     }
 
   }
-
-
-  // ✅ Render each order item
-  const renderOrder = ({ item }) => {
-    const statusColors = getStatusColor(item.statusName);
-    const date = new Date(item.orderDate);
-    const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    })}`;
-
-    return (
-      <View style={styles.orderCard}>
-        <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.push("OrderDetails", { orderId: item?.orderId })}>
-          <TouchableOpacity onPress={() => navigation.push("OrderDetails", { orderId: item?.orderId })}>
-            <View style={styles.orderHeader}>
-              <View style={styles.orderIdRow}>
-                <AppText style={styles.orderId}>{item.orderNo}</AppText>
-                <Icon name="chevron-right" size={20} color={colors.primary} />
-              </View>
-              <AppText style={styles.orderAmount}>
-                {formatPrice(parseFloat(item.netOrderValue || 0))}
-              </AppText>
-            </View>
-
-            <View style={styles.orderMeta}>
-              <AppText style={styles.orderDate}>{formattedDate}</AppText>
-              <AppText style={styles.skuCount}>
-                SKU : <AppText style={{ color: '#2B2B2B', fontFamily: Fonts.Bold }}>{item.skwCount ?? 0}</AppText>
-              </AppText>
-            </View>
-          </TouchableOpacity>
-          <View style={styles.customerSection}>
-            <View style={styles.customerInfo}>
-              <View style={styles.customerDetails}>
-                <View style={{ display: "flex", alignItems: "center", flexDirection: "row", gap: 4 }}>
-                  <View style={{ backgroundColor: "#9C874333", width: 23, height: 22, paddingLeft: 0, borderRadius: "50%", display: 'flex', alignItems: "center", justifyContent: "center" }}>
-                    <AppText style={{ fontSize: 10, color: "#9C8743", fontFamily: Fonts.Regular }}>
-                      {getInitials(item.customerDetails?.customerName ?? '')}
-                    </AppText></View>
-                  <AppText style={styles.customerName}>
-                    {item.customerDetails?.customerName}
-                  </AppText>
-                </View>
-                <View style={styles.customerMeta}>
-                  <AddrLine />
-                  <View style={{ display: "flex", flexDirection: 'row', gap: 10, marginLeft: 5 }}>
-                    <AppText style={styles.customerMetaText}>
-                      {item.customerDetails?.customerId}
-                    </AppText>
-                    <AppText style={styles.customerMetaText}>
-                      | {item.customerDetails?.cityName} | Div:{' '}
-                    </AppText>
-                    <AppText style={styles.customerMetaText}>
-                      {item.divisionDetails?.divisionName}
-                    </AppText>
-                  </View>
-                </View>
-                <AppText style={styles.pendingAction}>
-                  Pending Action by:{' '}
-                  <AppText style={{ color: '#222' }}>
-                    {item.pendingActionBy?.Username || 'N/A'}
-                  </AppText>
-                </AppText>
-              </View>
-              <TouchableOpacity>
-                <Svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <Path d="M2.5 13.3907V14.2903C2.5 15.009 2.78548 15.6982 3.29365 16.2064C3.80181 16.7145 4.49103 17 5.20968 17H14.2419C14.9606 17 15.6498 16.7145 16.158 16.2064C16.6661 15.6982 16.9516 15.009 16.9516 14.2903V13.3871M9.72581 3V12.9355M9.72581 12.9355L12.8871 9.77419M9.72581 12.9355L6.56452 9.77419" stroke="#909090" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </Svg>
-
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        <View style={styles.orderFooter}>
-          <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
-            <AppText style={[styles.statusText, { color: statusColors.text }]}>
-              {item.statusName}
-            </AppText>
-          </View>
-          {checkAction(item?.instance) && (
-            <View style={{ display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", gap: 15 }}>
-              <TouchableOpacity onPress={() => !checkAction(item?.instance) ? actionToast() : handleAction("APPROVE", item?.instance, item.orderId)} disabled={!checkAction(item?.instance)} style={[{ backgroundColor: "#F7941E", display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, gap: 5 }, !checkAction(item?.instance) && { opacity: 0.5 }]}>
-                {/* <TouchableOpacity onPress={() => handleAction("APPROVE", item?.instance)} style={[{ backgroundColor: "#F7941E", display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, gap: 5 }, !checkAction(item?.instance) && { opacity: 0.5 }]}> */}
-                <Svg width="13" height="9" viewBox="0 0 13 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <Path d="M11.4167 0.75L4.08333 8.08333L0.75 4.75" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </Svg>
-                <AppText style={{ color: "white", fontSize: 14 }}>
-                  Confirm
-                </AppText>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => !checkAction(item?.instance) ? actionToast() : handleAction("REJECT", item?.instance, item.orderId)} disabled={!checkAction(item?.instance)} style={!checkAction(item?.instance) && { opacity: 0.5 }}>
-                <Svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <Path d="M13.75 13.75L7.75 7.75M7.75 13.75L13.75 7.75M20.75 10.75C20.75 5.227 16.273 0.75 10.75 0.75C5.227 0.75 0.75 5.227 0.75 10.75C0.75 16.273 5.227 20.75 10.75 20.75C16.273 20.75 20.75 16.273 20.75 10.75Z" stroke="#2B2B2B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </Svg>
-
-              </TouchableOpacity>
-            </View>
-
-          )}
-        </View>
-      </View>
-    );
-  };
-
   // ✅ Modal for order creation
   const renderCreateOrderModal = () => (
     <Modal
@@ -414,7 +313,7 @@ const OrderList = () => {
           <View style={styles.modalHeader}>
             <AppText style={styles.modalTitle}>Create New Order</AppText>
             <TouchableOpacity onPress={() => setShowCreateOrderModal(false)}>
-            <ModalClose/>
+              <ModalClose />
             </TouchableOpacity>
           </View>
 
@@ -512,14 +411,21 @@ const OrderList = () => {
 
         {/* List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
+          <ScrollView>
+            <SkeletonList items={5} />
+          </ScrollView>
         ) : (
           <FlatList
             style={{ marginBottom: 100 }}
             data={orders}
-            renderItem={renderOrder}
+            renderItem={({ item }) => (
+              <OrderItem
+                item={item}
+                navigation={navigation}
+                checkAction={checkAction}
+                handleAction={handleAction}
+              />
+            )}
             keyExtractor={(item, i) => i.toString()}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
@@ -574,6 +480,152 @@ const OrderList = () => {
     </SafeAreaView>
   );
 };
+
+
+
+{/* List */ }
+const OrderItem = React.memo(
+  ({ item, navigation, checkAction, handleAction }) => {
+
+    const date = new Date(item.orderDate);
+    const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
+
+    // ✅ Status color logic
+    const getStatusColor = (status) => {
+      switch (status) {
+        case 'PENDING APPROVAL':
+          return { bg: '#FEF7ED', text: '#F4AD48' };
+        case 'APPROVED':
+          return { bg: '#E8F4EF', text: '#169560' };
+        default:
+          return { bg: '#F4F4F4', text: '#666' };
+      }
+    };
+
+    const statusColors = getStatusColor(item.statusName);
+
+
+    return (
+      <View style={styles.orderCard}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => navigation.push("OrderDetails", { orderId: item?.orderId })}
+        >
+          {/* Header */}
+          <View style={styles.orderHeader}>
+            <View style={styles.orderIdRow}>
+              <AppText style={styles.orderId}>{item.orderNo}</AppText>
+              <Icon name="chevron-right" size={20} color={colors.primary} />
+            </View>
+
+            <AppText style={styles.orderAmount}>
+              {formatPrice(parseFloat(item.netOrderValue || 0))}
+            </AppText>
+          </View>
+
+          {/* Meta */}
+          <View style={styles.orderMeta}>
+            <AppText style={styles.orderDate}>{formattedDate}</AppText>
+
+            <AppText style={styles.skuCount}>
+              SKU:{" "}
+              <AppText style={{ color: "#2B2B2B", fontFamily: Fonts.Bold }}>
+                {item.skwCount ?? 0}
+              </AppText>
+            </AppText>
+          </View>
+
+          {/* Customer */}
+          <View style={styles.customerSection}>
+            <View style={styles.customerInfo}>
+              <View style={styles.customerDetails}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <View
+                    style={{
+                      backgroundColor: "#9C874333",
+                      width: 23,
+                      height: 22,
+                      borderRadius: 12,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <AppText style={{ fontSize: 10, color: "#9C8743" }}>
+                      {getInitials(item.customerDetails?.customerName || "")}
+                    </AppText>
+                  </View>
+
+                  <AppText style={styles.customerName}>
+                    {item.customerDetails?.customerName}
+                  </AppText>
+                </View>
+
+                <View style={styles.customerMeta}>
+                  <AddrLine />
+                  <View style={{ flexDirection: "row", gap: 10, marginLeft: 5 }}>
+                    <AppText style={styles.customerMetaText}>
+                      {item.customerDetails?.customerId}
+                    </AppText>
+                    <AppText style={styles.customerMetaText}>
+                      | {item.customerDetails?.cityName} | Div:
+                    </AppText>
+                    <AppText style={styles.customerMetaText}>
+                      {item.divisionDetails?.divisionName}
+                    </AppText>
+                  </View>
+                </View>
+
+                <AppText style={styles.pendingAction}>
+                  Pending Action by:{" "}
+                  <AppText style={{ color: "#222" }}>
+                    {item.pendingActionBy?.Username || "N/A"}
+                  </AppText>
+                </AppText>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Footer */}
+        <View style={styles.orderFooter}>
+          <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
+            <AppText style={[styles.statusText, { color: statusColors.text }]}>
+              {item.statusName}
+            </AppText>
+          </View>
+
+          {checkAction(item?.instance) && (
+            <View style={{ display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", gap: 15 }}>
+              <TouchableOpacity onPress={() => !checkAction(item?.instance) ? actionToast() : handleAction("APPROVE", item?.instance, item.orderId)} disabled={!checkAction(item?.instance)} style={[{ backgroundColor: "#F7941E", display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, gap: 5 }, !checkAction(item?.instance) && { opacity: 0.5 }]}>
+                {/* <TouchableOpacity onPress={() => handleAction("APPROVE", item?.instance)} style={[{ backgroundColor: "#F7941E", display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, gap: 5 }, !checkAction(item?.instance) && { opacity: 0.5 }]}> */}
+                <Svg width="13" height="9" viewBox="0 0 13 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <Path d="M11.4167 0.75L4.08333 8.08333L0.75 4.75" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </Svg>
+                <AppText style={{ color: "white", fontSize: 14 }}>
+                  Confirm
+                </AppText>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => !checkAction(item?.instance) ? actionToast() : handleAction("REJECT", item?.instance, item.orderId)} disabled={!checkAction(item?.instance)} style={!checkAction(item?.instance) && { opacity: 0.5 }}>
+                <Svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <Path d="M13.75 13.75L7.75 7.75M7.75 13.75L13.75 7.75M20.75 10.75C20.75 5.227 16.273 0.75 10.75 0.75C5.227 0.75 0.75 5.227 0.75 10.75C0.75 16.273 5.227 20.75 10.75 20.75C16.273 20.75 20.75 16.273 20.75 10.75Z" stroke="#2B2B2B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </Svg>
+
+              </TouchableOpacity>
+            </View>
+
+          )}
+        </View>
+      </View>
+    );
+  },
+  (prev, next) => prev.item === next.item // prevents re-render
+);
+
+
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },

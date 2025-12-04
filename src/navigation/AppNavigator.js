@@ -71,6 +71,11 @@ import SidebarDrawer from '../components/SidebarDrawer';
 
 // Redux actions
 import { checkAuthStatus } from '../redux/slices/authSlice';
+import OrderDetailsScreen from '../screens/authorized/orders/OrderDetails';
+import SearchAddProducts from '../screens/authorized/orders/SearchAddProducts';
+import Cart from '../screens/authorized/orders/Cart';
+import UploadOrder from '../screens/authorized/orders/UploadOrder';
+import ProductMapping from '../screens/authorized/orders/ProductMapping';
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -324,7 +329,6 @@ const MainStack = () => (
   >
     {/* Main app with drawer and bottom tabs */}
     <Stack.Screen name="DrawerMain" component={DrawerNavigator} />
-
     {/* Registration Screens (no bottom tabs) */}
     <Stack.Screen name="RegistrationType" component={RegistrationType} />
     <Stack.Screen name="PrivateRegistrationForm" component={PrivateRegistrationForm} />
@@ -355,6 +359,14 @@ const MainStack = () => (
     <Stack.Screen name="NetrateStack" component={NetrateStack} />
     {/* Customer Stack - opens without bottom tabs */}
     <Stack.Screen name="CustomerStack" component={CustomerStack} />
+
+    <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
+
+    {/* <Stack.Screen name="SelectDistributor" component={SelectDistributor} /> */}
+    <Stack.Screen name="SearchAddProducts" component={SearchAddProducts} />
+    <Stack.Screen name="Cart" component={Cart} />
+    <Stack.Screen name="UploadOrder" component={UploadOrder} />
+    <Stack.Screen name="ProductMapping" component={ProductMapping} />
   </Stack.Navigator>
 );
 
@@ -378,26 +390,21 @@ const DrawerNavigator = () => (
   </Drawer.Navigator>
 );
 
-// Loading Screen Component
 const LoadingScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
     <ActivityIndicator size="large" color="#FF9A3E" />
   </View>
 );
 
-// Root Navigator
 const AppNavigator = ({ navigationRef }) => {
   const dispatch = useDispatch();
 
-  // Get auth state from Redux
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
 
-  // Check auth status when app starts
   useEffect(() => {
     dispatch(checkAuthStatus());
   }, [dispatch]);
 
-  // Show loading screen while checking auth status
   if (loading) {
     return <LoadingScreen />;
   }
