@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,9 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  ScrollView,  
+  ScrollView,
   StatusBar,
+  Dimensions,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,7 +24,9 @@ import Filter from '../../../components/icons/Filter';
 import Calendar from '../../../components/icons/Calendar';
 import Download from '../../../components/icons/Download';
 import AddrLine from '../../../components/icons/AddrLine';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from "../../../components"
+import EyeOpenChargeBack from '../../../components/icons/EyeOpenChargeBack';
+import Upload from '../../../components/icons/Upload';
 
 const ChargebackListing = () => {
 
@@ -37,15 +40,45 @@ const ChargebackListing = () => {
   const [overdueFilter, setOverdueFilter] = useState('Overdue');
   const [searchText, setSearchText] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const tabScrollRef = useRef(null);
+  const tabRefs = useRef({});
 
   const tabs = ['Claims', 'Pending', 'Missed Claims', 'Reassigned'];
+
+  // Handle tab press with centering
+  const handleTabPress = async (tabName) => {
+    // First reset the list and set active tab
+    setActiveTab(tabName);
+
+    // Scroll the tab into visible area after a small delay to ensure layout is ready
+    setTimeout(() => {
+      if (tabRefs.current[tabName] && tabScrollRef.current) {
+        tabRefs.current[tabName].measureLayout(
+          tabScrollRef.current.getNode ? tabScrollRef.current.getNode() : tabScrollRef.current,
+          (x, y, w, h) => {
+            const screenWidth = Dimensions.get('window').width;
+            // Center the tab in the screen
+            const scrollX = x - (screenWidth / 2) + (w / 2);
+
+            tabScrollRef.current?.scrollTo({
+              x: Math.max(0, scrollX),
+              animated: true
+            });
+          },
+          () => {
+            console.log('measureLayout failed');
+          }
+        );
+      }
+    }, 100);
+  };
 
   const renderClaimItem = ({ item }) => {
     const isSubmitted = item.status === 'SUBMITTED';
     const isDraft = item.status === 'DRAFT';
 
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.claimCard}
         onPress={() => {
           if (isDraft) {
@@ -56,9 +89,9 @@ const ChargebackListing = () => {
       >
         <View style={styles.claimHeader}>
           <View style={styles.claimIdContainer}>
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <AppText style={styles.claimId}>{item.id}</AppText>
-            <Icon name="chevron-right" size={24} color="#FFA500" />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <AppText style={styles.claimId}>{item.id}</AppText>
+              <Icon name="chevron-right" size={24} color="#FFA500" />
             </View>
             <AppText style={styles.dateText}>{item.date}</AppText>
           </View>
@@ -71,7 +104,8 @@ const ChargebackListing = () => {
             )}
           </View>
         </View>
-        
+
+
         <View style={styles.customerInfo}>
           <AppText style={styles.customerName}>{item.customerName}</AppText>
           {isDraft && (
@@ -80,7 +114,7 @@ const ChargebackListing = () => {
             </TouchableOpacity>
           )}
         </View>
-        
+
         <View style={styles.detailsRow}>
           <View style={styles.codeContainer}>
             <AddrLine />
@@ -93,26 +127,28 @@ const ChargebackListing = () => {
             {item.orderCode} <AppText style={styles.spilBadge}>+{item.spilCount}</AppText> ({item.spilType})
           </AppText>
         </View>
-        
+
         {isSubmitted && (
           <View style={styles.statusContainer}>
             <View style={styles.submittedBadge}>
               <AppText style={styles.submittedText}>SUBMITTED</AppText>
             </View>
             <TouchableOpacity style={styles.viewButton}>
-              <Icon name="visibility" size={20} color="#FFA500" />
+              {/* <Icon name="visibility" size={20} color="#FFA500" /> */}
+              <EyeOpenChargeBack/>
+              
               <AppText style={styles.viewText}>View</AppText>
             </TouchableOpacity>
           </View>
         )}
-        
+
         {isDraft && (
           <View style={styles.draftContainer}>
             <View style={styles.draftBadge}>
               <AppText style={styles.draftText}>DRAFT</AppText>
             </View>
             <TouchableOpacity style={styles.uploadButton}>
-              <Icon name="cloud-upload" size={20} color="white" />
+              <Upload color='white'/>
               <AppText style={styles.uploadText}>Upload Documents</AppText>
             </TouchableOpacity>
           </View>
@@ -128,7 +164,7 @@ const ChargebackListing = () => {
           <AppText style={styles.customerName}>{item.customerName}</AppText>
           <AppText style={styles.amount}>₹ {item.amount?.toLocaleString('en-IN')}</AppText>
         </View>
-        
+
         <View style={styles.detailsRow}>
           <View style={styles.codeContainer}>
             <AddrLine />
@@ -141,7 +177,7 @@ const ChargebackListing = () => {
             {item.claimNumber} <AppText style={styles.spilBadge}>+{item.spilCount}</AppText>
           </AppText>
         </View>
-        
+
         <View style={styles.statsRow}>
           <AppText style={styles.statText}>PO Count {item.poCount}</AppText>
           <AppText style={styles.separator}>|</AppText>
@@ -149,7 +185,7 @@ const ChargebackListing = () => {
           <AppText style={styles.separator}>|</AppText>
           <AppText style={styles.statText}>POD/Invoice {item.podInvoiceRatio}</AppText>
         </View>
-        
+
         <View style={styles.claimValueContainer}>
           <AppText style={styles.claimValueLabel}>Claim Value ₹ {item.claimValue?.toLocaleString('en-IN')}</AppText>
           <TouchableOpacity>
@@ -194,7 +230,7 @@ const ChargebackListing = () => {
                   </AppText>
                 </TouchableOpacity>
               </View>
-              
+
               <View style={styles.overdueToggle}>
                 <TouchableOpacity
                   style={styles.radioButton}
@@ -239,31 +275,34 @@ const ChargebackListing = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      
+
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
+
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>          
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Menu />
         </TouchableOpacity>
         <AppText style={styles.headerTitle}>Chargeback</AppText>
         <View style={styles.headerRight}>
-          <TouchableOpacity>            
+          <TouchableOpacity>
             <Bell />
           </TouchableOpacity>
         </View>
       </View>
-      
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        style={{...styles.tabContainer, height: 55}}
+
+      <ScrollView
+        ref={tabScrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ ...styles.tabContainer, height: 55 }}
+        scrollEventThrottle={16}
       >
         {tabs.map((tab) => (
           <TouchableOpacity
+            ref={(ref) => tabRefs.current[tab] = ref}
             key={tab}
             style={[styles.tab, activeTab === tab && styles.activeTab]}
-            onPress={() => setActiveTab(tab)}
+            onPress={() => handleTabPress(tab)}
           >
             <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
               {tab}
@@ -271,36 +310,36 @@ const ChargebackListing = () => {
           </TouchableOpacity>
         ))}
       </ScrollView>
-      <View style={{backgroundColor: '#F5F5F5', flex: 1}}>
-      {(activeTab === 'Claims' || activeTab === 'Pending') && (
+      <View style={{ backgroundColor: '#F5F5F5', flex: 1 }}>
+        {(activeTab === 'Claims' || activeTab === 'Pending') && (
 
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Icon name="search" size={20} color="#999" />
-            <AppInput
-              style={styles.searchInput}
-              placeholder="Search customer name/code..."
-              value={searchText}
-              onChangeText={setSearchText}
-              placeholderTextColor="#999"
-            />
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Icon name="search" size={20} color="#999" />
+              <AppInput
+                style={styles.searchInput}
+                placeholder="Search customer name/code..."
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholderTextColor="#999"
+              />
+            </View>
+            <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
+              <Filter />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.filterButton}>
+              <Calendar />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
-            <Filter />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterButton}>
-            <Calendar />
-          </TouchableOpacity>
-        </View>        
-      )}
-      
-      {renderContent()}
-      
-      <ClaimOrderListModal
-        visible={showOrderListModal}
-        onClose={() => setShowOrderListModal(false)}
-        claim={selectedClaim}
-      />
+        )}
+
+        {renderContent()}
+
+        <ClaimOrderListModal
+          visible={showOrderListModal}
+          onClose={() => setShowOrderListModal(false)}
+          claim={selectedClaim}
+        />
       </View>
     </SafeAreaView>
   );
@@ -331,7 +370,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   tabContainer: {
-    
+
     backgroundColor: '#fff',
     paddingHorizontal: 16,
     borderBottomWidth: 1,
@@ -385,13 +424,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,    
+    marginBottom: 16,
     shadowRadius: 4,
   },
   claimHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 8,
+    borderBottomWidth:1,
+    borderBlockColor:"#EDEDED"
   },
   claimIdContainer: {
     flexDirection: 'column',
@@ -400,7 +441,7 @@ const styles = StyleSheet.create({
   },
   claimId: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#000',
   },
   amountContainer: {
@@ -419,8 +460,9 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     color: '#999',
-    marginBottom: 8,    
-    marginTop: -10
+    marginBottom: 8,
+    marginTop: -10,
+    fontWeight:400
   },
   customerInfo: {
     flexDirection: 'row',
@@ -430,7 +472,7 @@ const styles = StyleSheet.create({
   },
   customerName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#000',
   },
   detailsRow: {
@@ -470,23 +512,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submittedBadge: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: '#4481B41A',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 4,
+    borderRadius: 8,
   },
   submittedText: {
     fontSize: 12,
-    color: '#2196F3',
+    color: '#4481B4',
     fontWeight: '600',
   },
   viewButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#fef4e8',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   viewText: {
     fontSize: 14,
-    color: '#FFA500',
+    color: '#F7941E',
     marginLeft: 4,
     fontWeight: '500',
   },
@@ -496,14 +542,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   draftBadge: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: '#f7f1e8',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 4,
+    borderRadius:8,
   },
   draftText: {
     fontSize: 12,
-    color: '#FF9800',
+    color: '#AE7017',
     fontWeight: '600',
   },
   uploadButton: {
@@ -513,6 +559,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
+    gap:4
   },
   uploadText: {
     fontSize: 14,
@@ -583,7 +630,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,    
+    marginBottom: 12,
   },
   pendingHeader: {
     flexDirection: 'row',

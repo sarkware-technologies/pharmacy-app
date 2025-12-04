@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   StatusBar,
   Modal,
   Alert,
+  Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -160,6 +161,37 @@ const RateContractList = () => {
 
   const tabs = ['All', 'Draft', 'Pending Approval', 'Expiring Soon', 'Expired RC', 'Reassigned'];
 
+  // Tab scroll ref for centering active tab
+  const tabScrollRef = useRef(null);
+  const tabRefs = useRef({});
+
+    // Handle tab press with centering
+    const handleTabPress = async (tabName) => {
+      // First reset the list and set active tab
+      setActiveTab(tabName);
+  
+      // Scroll the tab into visible area after a small delay to ensure layout is ready
+      setTimeout(() => {
+        if (tabRefs.current[tabName] && tabScrollRef.current) {
+          tabRefs.current[tabName].measureLayout(
+            tabScrollRef.current.getNode ? tabScrollRef.current.getNode() : tabScrollRef.current,
+            (x, y, w, h) => {
+              const screenWidth = Dimensions.get('window').width;
+              // Center the tab in the screen
+              const scrollX = x - (screenWidth / 2) + (w / 2);
+  
+              tabScrollRef.current?.scrollTo({
+                x: Math.max(0, scrollX),
+                animated: true
+              });
+            },
+            () => {
+              console.log('measureLayout failed');
+            }
+          );
+        }
+      }, 100);
+    };
 
   const renderStatusBadge = (status) => {
     const statusBackgroundColors = {
@@ -480,7 +512,7 @@ const RateContractList = () => {
           <>
             <View style={styles.content}>
               <View style={styles.statsContainer}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} >
                   <View style={styles.statCard}>
                     <AppText style={styles.statLabel}>Active</AppText>
                     <AppText style={[styles.statValue, { color: "#169560" }]}>
@@ -544,12 +576,13 @@ const RateContractList = () => {
                 </ScrollView>
               </View>
 
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer}  ref={tabScrollRef} scrollEventThrottle={16}>
                 {tabs.map((tab, i) => (
                   <TouchableOpacity
                     key={i + tab}
+                    ref={(ref) => tabRefs.current[tab] = ref}
                     style={[styles.tab, activeTab === tab && styles.activeTab]}
-                    onPress={() => setActiveTab(tab)}
+                    onPress={() => handleTabPress(tab)}
                   >
                     <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
                       {tab}

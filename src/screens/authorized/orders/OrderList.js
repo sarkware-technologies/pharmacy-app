@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -11,6 +12,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Alert,
+  Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -63,7 +65,10 @@ const OrderList = () => {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const tabs = ['All', 'Waiting for Confirmation', 'Hold', 'Track PO'];
-
+  // Tab scroll ref for centering active tab
+  const tabScrollRef = useRef(null);
+  const tabRefs = useRef({});
+  
   useEffect(() => {
     const unsubscribe = navigation.getParent()?.addListener("tabPress", e => {
       const parent = navigation.getParent();
@@ -225,6 +230,34 @@ const OrderList = () => {
 
 
 
+    // Handle tab press with centering
+    const handleTabPress = async (tabName) => {
+      // First reset the list and set active tab
+      setActiveTab(tabName);
+  
+      // Scroll the tab into visible area after a small delay to ensure layout is ready
+      setTimeout(() => {
+        if (tabRefs.current[tabName] && tabScrollRef.current) {
+          tabRefs.current[tabName].measureLayout(
+            tabScrollRef.current.getNode ? tabScrollRef.current.getNode() : tabScrollRef.current,
+            (x, y, w, h) => {
+              const screenWidth = Dimensions.get('window').width;
+              // Center the tab in the screen
+              const scrollX = x - (screenWidth / 2) + (w / 2);
+  
+              tabScrollRef.current?.scrollTo({
+                x: Math.max(0, scrollX),
+                animated: true
+              });
+            },
+            () => {
+              console.log('measureLayout failed');
+            }
+          );
+        }
+      }, 100);
+    };
+
   const checkAction = (instance) => {
     let action = true;
     if (instance && Object.keys(instance).length === 0) {
@@ -375,12 +408,13 @@ const OrderList = () => {
         </View>
 
         {/* Tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ ...styles.tabContainer, ...{ height: 55 } }}>
+        <ScrollView  ref={tabScrollRef} horizontal showsHorizontalScrollIndicator={false} style={{ ...styles.tabContainer, ...{ height: 55 } }}  scrollEventThrottle={16}>
           {tabs.map((tab) => (
             <TouchableOpacity
               key={tab}
+              ref={(ref) => tabRefs.current[tab] = ref}
               style={[styles.tab, activeTab === tab && styles.activeTab]}
-              onPress={() => setActiveTab(tab)}
+              onPress={() => handleTabPress(tab)}
             >
               <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
                 {tab}
