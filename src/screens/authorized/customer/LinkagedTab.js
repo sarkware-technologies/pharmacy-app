@@ -132,7 +132,7 @@ const mockFieldData = [
   { id: 9, name: 'Sanket Kulkarni', code: 'SUN12345', designation: 'Customer executive' },
 ];
 
-export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mappingData = null }) => {
+export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mappingData = null, hasApprovePermission = false, isCustomerActive = false }) => {
   const [activeSubTab, setActiveSubTab] = useState('divisions');
   const [activeDistributorTab, setActiveDistributorTab] = useState('preferred');
   const [showDivisionModal, setShowDivisionModal] = useState(false);
@@ -1354,9 +1354,14 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
         </View>
       ) : (
         <>
-          <ScrollView style={styles.scrollContent}>
+          <ScrollView 
+            style={styles.scrollContent}
+            contentContainerStyle={[
+              (hasApprovePermission || isCustomerActive) && styles.scrollContentWithButton
+            ]}
+          >
             <View style={styles.divisionsContainer}>
-              <View style={styles.divisionColumn}>
+              <View style={[styles.divisionColumn, !(hasApprovePermission || isCustomerActive) && styles.divisionColumnFullWidth]}>
                 <AppText style={styles.columnTitle}>Opened Division</AppText>
                 <AppText style={styles.columnSubtitle}>Name & Code</AppText>
                 
@@ -1376,56 +1381,60 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
                 )}
               </View>
 
-              <View style={styles.divisionColumn}>
-                <View style={styles.columnHeader}>
-                  <AppText style={styles.columnTitle}>Other Division</AppText>
-                  <TouchableOpacity>
-                    <AppText style={styles.assignText}>Assign to Instra</AppText>
-                  </TouchableOpacity>
-                </View>
-                <AppText style={styles.columnSubtitle}>Name & Code</AppText>
-                
-                {otherDivisionsData.length === 0 ? (
-                  <View style={styles.emptyDivisionContainer}>
-                    <AppText style={styles.emptyDivisionText}>No other divisions available</AppText>
+              {(hasApprovePermission || isCustomerActive) && (
+                <View style={styles.divisionColumn}>
+                  <View style={styles.columnHeader}>
+                    <AppText style={styles.columnTitle}>Other Division</AppText>
+                    {/* <TouchableOpacity>
+                      <AppText style={styles.assignText}>Assign to Instra</AppText>
+                    </TouchableOpacity> */}
                   </View>
-                ) : (
-                  otherDivisionsData.map((division) => (
-                    <TouchableOpacity 
-                      key={`other-${division.divisionId}`} 
-                      style={styles.checkboxItem}
-                      onPress={() => toggleOtherDivisionSelection(division)}
-                    >
-                      <View style={[styles.checkbox, selectedDivisions.find(d => d.divisionId === division.divisionId) && styles.checkboxSelected]}>
-                        {selectedDivisions.find(d => d.divisionId === division.divisionId) && (
-                          <Icon name="check" size={16} color="#fff" />
-                        )}
-                      </View>
-                      <View>
-                        <AppText style={styles.divisionName}>{division.divisionName}</AppText>
-                        <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
-                      </View>
-                    </TouchableOpacity>
-                  ))
-                )}
-              </View>
+                  <AppText style={styles.columnSubtitle}>Name & Code</AppText>
+                  
+                  {otherDivisionsData.length === 0 ? (
+                    <View style={styles.emptyDivisionContainer}>
+                      <AppText style={styles.emptyDivisionText}>No other divisions available</AppText>
+                    </View>
+                  ) : (
+                    otherDivisionsData.map((division) => (
+                      <TouchableOpacity 
+                        key={`other-${division.divisionId}`} 
+                        style={styles.checkboxItem}
+                        onPress={() => toggleOtherDivisionSelection(division)}
+                      >
+                        <View style={[styles.checkbox, selectedDivisions.find(d => d.divisionId === division.divisionId) && styles.checkboxSelected]}>
+                          {selectedDivisions.find(d => d.divisionId === division.divisionId) && (
+                            <Icon name="check" size={16} color="#fff" />
+                          )}
+                        </View>
+                        <View>
+                          <AppText style={styles.divisionName}>{division.divisionName}</AppText>
+                          <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </View>
+              )}
             </View>
           </ScrollView>
 
-          {/* Sticky Continue Button at Bottom */}
-          <View style={styles.stickyButtonContainer}>
-            <TouchableOpacity 
-              style={[styles.continueButton, (linkingDivisions || selectedDivisions.length === 0) && styles.continueButtonDisabled]}
-              onPress={handleLinkDivisionsAPI}
-              disabled={linkingDivisions || selectedDivisions.length === 0}
-            >
-              {linkingDivisions ? (
-                <AppText style={styles.linkButtonText}>Linking...</AppText>
-              ) : (
-                <AppText style={styles.linkButtonText}>Continue</AppText>
-              )}
-            </TouchableOpacity>
-          </View>
+          {/* Sticky Continue Button at Bottom - Only show if user has approve permission or customer is active */}
+          {(hasApprovePermission || isCustomerActive) && (
+            <View style={styles.stickyButtonContainer}>
+              <TouchableOpacity 
+                style={[styles.continueButton, (linkingDivisions || selectedDivisions.length === 0) && styles.continueButtonDisabled]}
+                onPress={handleLinkDivisionsAPI}
+                disabled={linkingDivisions || selectedDivisions.length === 0}
+              >
+                {linkingDivisions ? (
+                  <AppText style={styles.linkButtonText}>Linking...</AppText>
+                ) : (
+                  <AppText style={styles.linkButtonText}>Continue</AppText>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </>
       )}
     </View>
@@ -2009,6 +2018,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
   },
+  scrollContentWithButton: {
+    paddingBottom: 100, // Add padding to ensure last item is visible above sticky button
+  },
   distributorTabs: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -2450,6 +2462,10 @@ const styles = StyleSheet.create({
   },
   divisionColumn: {
     flex: 1,
+  },
+  divisionColumnFullWidth: {
+    flex: 1,
+    width: '100%',
   },
   columnTitle: {
     fontSize: 16,

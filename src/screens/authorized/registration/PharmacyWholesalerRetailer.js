@@ -34,6 +34,7 @@ import AddNewHospitalModal from './AddNewHospitalModal';
 import AddNewDoctorModal from './AddNewDoctorModal';
 import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import FetchGst from '../../../components/icons/FetchGst';
+import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 
 // Default document types for file uploads (will be updated from API for licenses)
 const DOC_TYPES = {
@@ -189,14 +190,10 @@ const PharmacyWholesalerRetailerForm = () => {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const otpSlideAnim = useRef(new Animated.Value(-50)).current;
 
-  // States and cities data
-  const [states, setStates] = useState([]);
-  const [cities, setCities] = useState([]);
-  const [loadingCities, setLoadingCities] = useState(false);
+  // Pincode lookup hook
+  const { areas, cities, states, loading: pincodeLoading, lookupByPincode, clearData } = usePincodeLookup();
 
   // Dropdown modal states
-  const [showStateModal, setShowStateModal] = useState(false);
-  const [showCityModal, setShowCityModal] = useState(false);
   const [showAreaModal, setShowAreaModal] = useState(false);
   const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
   const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
@@ -300,11 +297,6 @@ const PharmacyWholesalerRetailerForm = () => {
         LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
         LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
       });
-      setStates([]);
-      setCities([]);
-      setLoadingCities(false);
-      setShowStateModal(false);
-      setShowCityModal(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -318,8 +310,7 @@ const PharmacyWholesalerRetailerForm = () => {
   const loadInitialData = async () => {
     // Fetch license types from API
     await fetchLicenseTypes();
-    // Load states on mount
-    await loadStates();
+    // Note: States and cities are now loaded via pincode lookup only
   };
 
   const fetchLicenseTypes = async () => {
@@ -390,57 +381,60 @@ const PharmacyWholesalerRetailerForm = () => {
     };
   }, [otpTimers, showOTP]);
 
-  // Load all cities on mount - independent selection
+  // Handle pincode change and trigger lookup
+  const handlePincodeChange = async (text) => {
+    if (/^\d{0,6}$/.test(text)) {
+      setFormData(prev => ({ ...prev, pincode: text }));
+      setErrors(prev => ({ ...prev, pincode: null }));
+      
+      // Clear previous selections when pincode changes
+      if (text.length < 6) {
+        setFormData(prev => ({
+          ...prev,
+          area: '',
+          areaId: '',
+          city: '',
+          cityId: '',
+          state: '',
+          stateId: '',
+        }));
+        clearData();
+      }
+      
+      // Trigger lookup when pincode is complete (6 digits)
+      if (text.length === 6) {
+        await lookupByPincode(text);
+      }
+    }
+  };
+  
+  // Auto-populate city, state, and area when pincode lookup completes
   useEffect(() => {
-    loadCities();
-  }, []);
-
-
-  const loadStates = async () => {
-    try {
-      const response = await customerAPI.getStates();
-      if (response.success && response.data) {
-        const _states = [];
-        for (let i = 0; i < response.data.states.length; i++) {
-          _states.push({ id: response.data.states[i].id, name: response.data.states[i].stateName });
-        }
-        setStates(_states || []);
-        //setStates(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to load states:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to load states',
-        position: 'top',
-      });
+    if (cities.length > 0 && states.length > 0) {
+      // Auto-select first city and state from lookup results
+      const firstCity = cities[0];
+      const firstState = states[0];
+      
+      setFormData(prev => ({
+        ...prev,
+        city: firstCity.name,
+        cityId: firstCity.id,
+        state: firstState.name,
+        stateId: firstState.id,
+      }));
     }
-  };
-
-  const loadCities = async () => {
-    setLoadingCities(true);
-    try {
-      const response = await customerAPI.getCities();
-      if (response.success && response.data) {
-        const _cities = [];
-        for (let i = 0; i < response.data.cities.length; i++) {
-          _cities.push({ id: response.data.cities[i].id, name: response.data.cities[i].cityName });
-        }
-        setCities(_cities || []);
-      }
-    } catch (error) {
-      console.error('Failed to load cities:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to load cities',
-        position: 'top',
-      });
-    } finally {
-      setLoadingCities(false);
+    
+    // Auto-select first area (0th index) if available
+    if (areas.length > 0 && !formData.area) {
+      const firstArea = areas[0];
+      setFormData(prev => ({
+        ...prev,
+        area: firstArea.name,
+        areaId: firstArea.id,
+      }));
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cities, states, areas]);
 
 
   const handleVerify = async (field) => {
@@ -1354,27 +1348,31 @@ const PharmacyWholesalerRetailerForm = () => {
                 }}
                 mandatory={true}
                 error={errors.address1}
-                onLocationSelect={(locationData) => {
+                onLocationSelect={async (locationData) => {
                   const addressParts = locationData.address.split(',').map(part => part.trim());
                   const extractedPincode = locationData.pincode || '';
                   const filteredParts = addressParts.filter(part => {
                     return !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india';
                   });
-                  const matchedState = states.find(s => s.name.toLowerCase() === locationData.state.toLowerCase());
-                  const matchedCity = cities.find(c => c.name.toLowerCase() === locationData.city.toLowerCase());
+                  
+                  // Update address fields only
                   setFormData(prev => ({
                     ...prev,
                     address1: filteredParts[0] || '',
                     address2: filteredParts[1] || '',
                     address3: filteredParts[2] || '',
                     address4: filteredParts.slice(3).join(', ') || '',
-                    pincode: extractedPincode,
-                    area: locationData.area || '',
-                    ...(matchedState && { stateId: matchedState.id, state: matchedState.name }),
-                    ...(matchedCity && { cityId: matchedCity.id, city: matchedCity.name }),
                   }));
-                  if (matchedState) loadCities(matchedState.id);
-                  setErrors(prev => ({ ...prev, address1: null, address2: null, address3: null, address4: null, pincode: null, area: null, city: null, state: null }));
+                  
+                  // Update pincode and trigger lookup (this will populate area, city, state)
+                  if (extractedPincode) {
+                    setFormData(prev => ({ ...prev, pincode: extractedPincode }));
+                    setErrors(prev => ({ ...prev, pincode: null }));
+                    // Trigger pincode lookup to populate area, city, state
+                    await lookupByPincode(extractedPincode);
+                  }
+                  
+                  setErrors(prev => ({ ...prev, address1: null, address2: null, address3: null, address4: null, pincode: null }));
                 }}
               />
 
@@ -1409,42 +1407,64 @@ const PharmacyWholesalerRetailerForm = () => {
               <CustomInput
                 placeholder="Pincode"
                 value={formData.pincode}
-                onChangeText={(text) => {
-                  if (/^\d*$/.test(text) && text.length <= 6) {
-                    setFormData(prev => ({ ...prev, pincode: text }));
-                    setErrors(prev => ({ ...prev, pincode: null }));
-                  }
-                }}
+                onChangeText={handlePincodeChange}
                 keyboardType="numeric"
                 maxLength={6}
                 mandatory={true}
                 error={errors.pincode}
               />
+              {pincodeLoading && (
+                <View style={{ marginTop: -10, marginBottom: 10 }}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              )}
 
-              <CustomInput
-                placeholder="Area"
-                value={formData.area}
-                onChangeText={(text) => {
-                  setFormData(prev => ({ ...prev, area: text }));
-                  setErrors(prev => ({ ...prev, area: null }));
-                }}
-                error={errors.area}
-                mandatory={true}
-              />
-
+              {/* Area Dropdown */}
               <View style={styles.dropdownContainer}>
-                {formData.city && (
+                {(formData.area || areas.length > 0) && (
+                  <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+                    Area<AppText style={styles.asteriskPrimary}>*</AppText>
+                  </AppText>
+                )}
+                <TouchableOpacity
+                  style={[styles.dropdown, errors.area && styles.inputError]}
+                  onPress={() => {
+                    if (areas.length === 0) {
+                      Toast.show({
+                        type: 'info',
+                        text1: 'Area',
+                        text2: 'Area for this pincode',
+                        position: 'top',
+                      });
+                    } else {
+                      setShowAreaModal(true);
+                    }
+                  }}
+                >
+                  <View style={styles.inputTextContainer}>
+                    <AppText style={formData.area ? styles.inputText : styles.placeholderText}>
+                      {formData.area || (areas.length === 0 ? 'Area' : 'Area')}
+                    </AppText>
+                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                  </View>
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
+                </TouchableOpacity>
+                {errors.area && <AppText style={styles.errorText}>{errors.area}</AppText>}
+              </View>
+
+              {/* City - Auto-populated from pincode */}
+              <View style={styles.dropdownContainer}>
+                {(formData.city || cities.length > 0) && (
                   <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
                     City<AppText style={styles.asteriskPrimary}>*</AppText>
                   </AppText>
                 )}
                 <TouchableOpacity
                   style={[styles.dropdown, errors.cityId && styles.inputError]}
-                  onPress={() => setShowCityModal(true)}
                 >
                   <View style={styles.inputTextContainer}>
                     <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
-                      {formData.city || 'City'}
+                      {formData.city || ('City')}
                     </AppText>
                     <AppText style={styles.inlineAsterisk}>*</AppText>
                   </View>
@@ -1453,15 +1473,19 @@ const PharmacyWholesalerRetailerForm = () => {
                 {errors.cityId && <AppText style={styles.errorText}>{errors.cityId}</AppText>}
               </View>
 
+              {/* State - Auto-populated from pincode */}
               <View style={styles.dropdownContainer}>
-                {/* <AppText style={styles.inputLabel}>State*</AppText> */}
+                {(formData.state || states.length > 0) && (
+                  <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+                    State<AppText style={styles.asteriskPrimary}>*</AppText>
+                  </AppText>
+                )}
                 <TouchableOpacity
                   style={[styles.dropdown, errors.stateId && styles.inputError]}
-                  onPress={() => setShowStateModal(true)}
                 >
                   <View style={styles.inputTextContainer}>
                     <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
-                      {formData.state || 'State'}
+                      {formData.state || ('State')}
                     </AppText>
                     <AppText style={styles.inlineAsterisk}>*</AppText>
                   </View>
@@ -2026,39 +2050,20 @@ const PharmacyWholesalerRetailerForm = () => {
 
       {/* Dropdown Modals */}
       <DropdownModal
-        visible={showStateModal}
-        onClose={() => setShowStateModal(false)}
-        title="Select State"
-        data={states}
-        selectedId={formData.stateId}
+        visible={showAreaModal}
+        onClose={() => setShowAreaModal(false)}
+        title="Select Area"
+        data={areas.map(area => ({ id: area.id, name: area.name }))}
+        selectedId={formData.areaId}
         onSelect={(item) => {
           setFormData(prev => ({
             ...prev,
-            stateId: item.id,
-            state: item.name,
-            // Don't reset city and area - allow independent selection
+            area: item.name,
+            areaId: item.id,
           }));
-          setErrors(prev => ({ ...prev, stateId: null }));
+          setErrors(prev => ({ ...prev, area: null }));
         }}
-        loading={false}
-      />
-
-      <DropdownModal
-        visible={showCityModal}
-        onClose={() => setShowCityModal(false)}
-        title="Select City"
-        data={cities}
-        selectedId={formData.cityId}
-        onSelect={(item) => {
-          setFormData(prev => ({
-            ...prev,
-            cityId: item.id,
-            city: item.name,
-            // Don't reset area - allow independent selection
-          }));
-          setErrors(prev => ({ ...prev, cityId: null }));
-        }}
-        loading={loadingCities}
+        loading={pincodeLoading}
       />
 
 
@@ -2305,7 +2310,7 @@ const styles = StyleSheet.create({
   },
   floatingLabel: {
     position: 'absolute',
-    top: -8,
+    top: -6,
     left: 12,
     fontSize: 12,
     fontWeight: '500',

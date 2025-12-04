@@ -86,11 +86,132 @@ const CustomerDetail = ({ navigation, route }) => {
     return () => {
       dispatch(clearSelectedCustomer());
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer?.stgCustomerId, customer?.customerId, dispatch]);
 
   console.log('CustomerDetail - selectedCustomer:', selectedCustomer);
   console.log('CustomerDetail - detailsLoading:', detailsLoading);
   console.log('CustomerDetail - detailsError:', detailsError);
+
+  // Helper function to determine required license fields based on registration type
+  const getRequiredLicenseFields = (typeId, categoryId) => {
+    // Pharmacy types (typeId: 1)
+    if (typeId === 1) {
+      if (categoryId === 2) {
+        // Pharmacy Wholesaler - only 20B and 21B
+        return [
+          { licenseTypeId: 2, label: '20B', docTypeIds: [4], docTypeNames: ['REGISTRATION', '20B'] },
+          { licenseTypeId: 4, label: '21B', docTypeIds: [6], docTypeNames: ['REGISTRATION', '21B'] }
+        ];
+      } else if (categoryId === 1) {
+        // Pharmacy Retailer - only 20 and 21
+        return [
+          { licenseTypeId: 1, label: '20', docTypeIds: [3], docTypeNames: ['REGISTRATION', '20'] },
+          { licenseTypeId: 3, label: '21', docTypeIds: [5], docTypeNames: ['REGISTRATION', '21'] }
+        ];
+      } else if (categoryId === 3) {
+        // Pharmacy Wholesaler & Retailer - all 4 licenses
+        return [
+          { licenseTypeId: 1, label: '20', docTypeIds: [3], docTypeNames: ['REGISTRATION', '20'] },
+          { licenseTypeId: 3, label: '21', docTypeIds: [5], docTypeNames: ['REGISTRATION', '21'] },
+          { licenseTypeId: 2, label: '20B', docTypeIds: [4], docTypeNames: ['REGISTRATION', '20B'] },
+          { licenseTypeId: 4, label: '21B', docTypeIds: [6], docTypeNames: ['REGISTRATION', '21B'] }
+        ];
+      }
+    }
+    // Doctor type (typeId: 3)
+    else if (typeId === 3) {
+      return [
+        { licenseTypeId: 6, label: 'Hospital Registration Number', docTypeIds: [10], docTypeNames: ['REGISTRATION', 'CLINIC REGISTRATION'] },
+        { licenseTypeId: 7, label: 'Practice License', docTypeIds: [8], docTypeNames: ['PRACTICE', 'PRACTICE LICENSE'] }
+      ];
+    }
+    // Hospital type (typeId: 2) - uses licenseTypeId 7 for registration
+    else if (typeId === 2) {
+      return [
+        { licenseTypeId: 7, label: 'Hospital Registration Number', docTypeIds: [8], docTypeNames: ['REGISTRATION'] }
+      ];
+    }
+    // Default: return empty array
+    return [];
+  };
+
+  // Get registration type from customer data
+  const typeId = selectedCustomer?.typeId;
+  const categoryId = selectedCustomer?.categoryId;
+  const requiredLicenseFields = getRequiredLicenseFields(typeId, categoryId);
+
+  // Map license data from API to display format
+  const mapLicenseData = () => {
+    if (!selectedCustomer?.licenceDetails?.licence) return [];
+    
+    return requiredLicenseFields.map(field => {
+      const license = selectedCustomer.licenceDetails.licence.find(
+        lic => lic.licenceTypeId === field.licenseTypeId
+      );
+      
+      // Find corresponding document by matching docTypeId (from license) or doctypeName
+      const document = selectedCustomer.docType?.find(
+        doc => {
+          // First, try to match using the docTypeId from the license object (most accurate)
+          if (license?.docTypeId) {
+            const licenseDocTypeId = typeof license.docTypeId === 'string' 
+              ? parseInt(license.docTypeId, 10) 
+              : license.docTypeId;
+            const docTypeId = typeof doc.docTypeId === 'string' 
+              ? parseInt(doc.docTypeId, 10) 
+              : (doc.docTypeId || (typeof doc.doctypeId === 'string' ? parseInt(doc.doctypeId, 10) : doc.doctypeId));
+            
+            if (licenseDocTypeId === docTypeId) {
+              return true;
+            }
+          }
+          
+          // Match by docTypeId from field definition
+          if (doc.docTypeId !== undefined) {
+            const docTypeId = typeof doc.docTypeId === 'string' 
+              ? parseInt(doc.docTypeId, 10) 
+              : (doc.docTypeId || (typeof doc.doctypeId === 'string' ? parseInt(doc.doctypeId, 10) : doc.doctypeId));
+            if (field.docTypeIds?.includes(docTypeId)) {
+              return true;
+            }
+          }
+          
+          // Also check doctypeId (alternative field name)
+          if (doc.doctypeId !== undefined) {
+            const doctypeId = typeof doc.doctypeId === 'string' 
+              ? parseInt(doc.doctypeId, 10) 
+              : doc.doctypeId;
+            if (field.docTypeIds?.includes(doctypeId)) {
+              return true;
+            }
+          }
+          
+          // Match by doctypeName as fallback
+          if (doc.doctypeName) {
+            const docNameUpper = doc.doctypeName.toUpperCase();
+            return field.docTypeNames?.some(name => 
+              docNameUpper.includes(name.toUpperCase()) || 
+              name.toUpperCase().includes(docNameUpper)
+            );
+          }
+          
+          return false;
+        }
+      );
+
+      return {
+        label: field.label,
+        licenseNumber: license?.licenceNo || '',
+        expiry: license?.licenceValidUpto 
+          ? new Date(license.licenceValidUpto).toLocaleDateString('en-GB').replace(/\//g, '-')
+          : '',
+        document: document || null,
+      };
+    });
+  };
+
+  const licenseData = mapLicenseData();
 
   // Format customer data from API response to match the UI structure
   const customerData = selectedCustomer ? {
@@ -106,25 +227,21 @@ const CustomerDetail = ({ navigation, route }) => {
     pincode: selectedCustomer.generalDetails?.pincode || '',
     city: selectedCustomer.generalDetails?.cityName || '',
     state: selectedCustomer.generalDetails?.stateName || '',
-    registrationNumber: selectedCustomer.licenceDetails?.licence?.[0]?.licenceNo || '',
-    registrationExpiry: selectedCustomer.licenceDetails?.licence?.[0]?.licenceValidUpto 
-      ? new Date(selectedCustomer.licenceDetails.licence[0].licenceValidUpto).toLocaleDateString('en-GB').replace(/\//g, '-')
-      : '',
-    practiceNumber: selectedCustomer.licenceDetails?.licence?.[1]?.licenceNo || '',
-    practiceExpiry: selectedCustomer.licenceDetails?.licence?.[1]?.licenceValidUpto
-      ? new Date(selectedCustomer.licenceDetails.licence[1].licenceValidUpto).toLocaleDateString('en-GB').replace(/\//g, '-')
-      : '',
     pan: selectedCustomer.securityDetails?.panNumber || '',
     gst: selectedCustomer.securityDetails?.gstNumber || '',
     // Store actual document objects with s3Path
     documents: {
       electricityBill: selectedCustomer.docType?.find(d => d.doctypeName === 'ELECTRICITY BILL') || null,
-      registrationCertificate: selectedCustomer.docType?.find(d => d.doctypeName === 'REGISTRATION') || null,
-      practiceCertificate: selectedCustomer.docType?.find(d => d.doctypeName === 'PRACTICE') || null,
       panDoc: selectedCustomer.docType?.find(d => d.doctypeName === 'PAN CARD') || null,
       gstDoc: selectedCustomer.docType?.find(d => d.doctypeName === 'GSTIN') || null,
-      image: selectedCustomer.docType?.[0] || null,
+      image: selectedCustomer.docType?.find(d => 
+        d.doctypeName === 'PHARMACY IMAGE' || 
+        d.doctypeName === 'HOSPITAL IMAGE' || 
+        d.doctypeName === 'CLINIC IMAGE' ||
+        d.doctypeName?.toLowerCase().includes('image')
+      ) || null,
     },
+    licenseData: licenseData,
   } : {
     // Empty data if no API response
     code: '',
@@ -134,20 +251,15 @@ const CustomerDetail = ({ navigation, route }) => {
     pincode: '',
     city: '',
     state: '',
-    registrationNumber: '',
-    registrationExpiry: '',
-    practiceNumber: '',
-    practiceExpiry: '',
     pan: '',
     gst: '',
     documents: {
       electricityBill: null,
-      registrationCertificate: null,
-      practiceCertificate: null,
       panDoc: null,
       gstDoc: null,
       image: null,
     },
+    licenseData: [],
   };
 
   // Get customer name for header
@@ -535,76 +647,55 @@ const CustomerDetail = ({ navigation, route }) => {
           </AnimatedSection>
 
           {/* License Details */}
-          <AnimatedSection delay={300}>
-            <AppText style={styles.sectionTitle}>License Details</AppText>
-            <View style={styles.card}>
-              <View style={styles.licenseRow}>
-                <View style={styles.licenseInfo}>
-                  <AppText style={styles.infoLabel}>Registration Number</AppText>
-                  <AppText style={styles.infoValue}>{customerData.registrationNumber}</AppText>
-                </View>
-                <View style={styles.licenseExpiry}>
-                  <AppText style={styles.infoLabel}>Expiry</AppText>
-                  <AppText style={styles.infoValue}>{customerData.registrationExpiry}</AppText>
-                </View>
-              </View>
-              
-              {customerData.documents.registrationCertificate && (
-                <>
-                  <AppText style={styles.uploadedFileLabel}>Uploaded file</AppText>
-                  <View style={styles.fileRow}>
-                    <AppText style={styles.fileName}>{customerData.documents.registrationCertificate?.fileName || customerData.documents.registrationCertificate}</AppText>
-                    <View style={styles.iconGroup}>
-                      <TouchableOpacity 
-                        style={styles.uploadedFile}
-                        onPress={() => openDocument(customerData.documents.registrationCertificate)}
-                      ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                      <AppText style={{ color: '#777' }}>|</AppText>
-                      <TouchableOpacity 
-                        style={styles.uploadedFile}
-                        onPress={() => downloadDocument(customerData.documents.registrationCertificate)}
-                      ><Download width={16} color={colors.primary} /></TouchableOpacity>
+          {customerData.licenseData && customerData.licenseData.length > 0 && (
+            <AnimatedSection delay={300}>
+              <AppText style={styles.sectionTitle}>License Details</AppText>
+              <View style={styles.card}>
+                {customerData.licenseData.map((license, index) => (
+                  <View key={index}>
+                    <View style={[styles.licenseRow, index > 0 && { marginTop: 10 }]}>
+                      <View style={styles.licenseInfo}>
+                        <AppText style={styles.infoLabel}>{license.label}</AppText>
+                        <AppText style={styles.infoValue}>{license.licenseNumber}</AppText>
+                      </View>
+                      <View style={styles.licenseExpiry}>
+                        <AppText style={styles.infoLabel}>Expiry</AppText>
+                        <AppText style={styles.infoValue}>{license.expiry}</AppText>
+                      </View>
                     </View>
+                    
+                    {license.document && (
+                      <>
+                        <AppText style={styles.uploadedFileLabel}>Uploaded file</AppText>
+                        <View style={[styles.fileRow, index === customerData.licenseData.length - 1 && { marginBottom: 8 }]}>
+                          <AppText style={styles.fileName}>{license.document?.fileName || ''}</AppText>
+                          <View style={styles.iconGroup}>
+                            <TouchableOpacity 
+                              style={styles.uploadedFile}
+                              onPress={() => openDocument(license.document)}
+                            >
+                              <EyeOpen width={18} color={colors.primary} />
+                            </TouchableOpacity>
+                            <AppText style={{ color: '#777' }}>|</AppText>
+                            <TouchableOpacity 
+                              style={styles.uploadedFile}
+                              onPress={() => downloadDocument(license.document)}
+                            >
+                              <Download width={16} color={colors.primary} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </>
+                    )}
                   </View>
-                </>
-              )}
-              
-              <View style={[styles.licenseRow, { marginTop: 10 }]}>
-                <View style={styles.licenseInfo}>
-                  <AppText style={styles.infoLabel}>Practice License</AppText>
-                  <AppText style={styles.infoValue}>{customerData.practiceNumber}</AppText>
-                </View>
-                <View style={styles.licenseExpiry}>
-                  <AppText style={styles.infoLabel}>Expiry</AppText>
-                  <AppText style={styles.infoValue}>{customerData.practiceExpiry}</AppText>
-                </View>
+                ))}
               </View>
-              
-              {customerData.documents.practiceCertificate && (
-                <>
-                  <AppText style={styles.uploadedFileLabel}>Uploaded file</AppText>
-                  <View style={{...styles.fileRow, marginBottom: 8}}>
-                    <AppText style={styles.fileName}>{customerData.documents.practiceCertificate?.fileName || customerData.documents.practiceCertificate}</AppText>
-                    <View style={styles.iconGroup}>
-                      <TouchableOpacity 
-                        style={styles.uploadedFile}
-                        onPress={() => openDocument(customerData.documents.practiceCertificate)}
-                      ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                      <AppText style={{ color: '#777' }}>|</AppText>
-                      <TouchableOpacity 
-                        style={styles.uploadedFile}
-                        onPress={() => downloadDocument(customerData.documents.practiceCertificate)}
-                      ><Download width={16} color={colors.primary} /></TouchableOpacity>
-                    </View>
-                  </View>
-                </>
-              )}
-            </View>
-          </AnimatedSection>
+            </AnimatedSection>
+          )}
 
-          {/* Other Details */}
+          {/* Security Details */}
           <AnimatedSection delay={400}>
-            <AppText style={styles.sectionTitle}>Other Details</AppText>
+            <AppText style={styles.sectionTitle}>Security Details</AppText>
             <View style={styles.card}>
               <View style={styles.otherDetailRow}>
                 <View style={styles.otherDetailItem}>
@@ -676,7 +767,13 @@ const CustomerDetail = ({ navigation, route }) => {
         </ScrollView>
       )}
 
-      {activeTab === 'linkaged' && <LinkagedTab customerType={customerData.customerType} customerId={customerData.customerId} mappingData={selectedCustomer?.mapping} />}
+      {activeTab === 'linkaged' && <LinkagedTab 
+        customerType={customerData.customerType} 
+        customerId={customerData.customerId} 
+        mappingData={selectedCustomer?.mapping} 
+        hasApprovePermission={customer?.action === 'APPROVE'}
+        isCustomerActive={customer?.statusName === 'ACTIVE' || selectedCustomer?.statusName === 'ACTIVE'}
+      />}
 
       {/* Action Buttons - Show only on Details tab and if customer action is APPROVE */}
       {activeTab === 'details' && customer?.action === 'APPROVE' && (
