@@ -17,7 +17,6 @@ const DropdownModal = ({
     onClose,
     title,
     data,
-    selectedId,
     selectedIds = [],
     onSelect,
     onMultiSelect,
@@ -205,6 +204,9 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 20,
         maxHeight: "75%",
         paddingBottom: 10,
+        position: "absolute",
+        bottom: 0,
+        width: "100%"
     },
     modalHeader: {
         flexDirection: "row",

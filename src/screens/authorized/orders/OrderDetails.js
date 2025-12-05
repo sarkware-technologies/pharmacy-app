@@ -21,6 +21,8 @@ import { OrderAction, OrderDetails } from '../../../api/orders';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DropdownModal from "./../../../components/view/dropdownModel"
 import Toast from 'react-native-toast-message';
+import { SkeletonText, SkeletonSection, SkeletonDetailPage, SkeletonListItem } from '../../../components/SkeletonLoader';
+import SearchAndProduct from './SearchAndProduct';
 
 const ClockIcon = () => (
   <Svg width="23" height="20" viewBox="0 0 23 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -101,6 +103,7 @@ const OrderDetailsScreen = () => {
   const [selectedDivision, setSelectedDivision] = useState({ key: "All", value: "All Div" });
   const [showSelectDivisiton, setShowSelectDivisiton] = useState(false);
   const [instance, setInstance] = useState();
+  const [searchAndMap, setSearchAndMap] = useState(false);
 
   useEffect(() => {
     if (orderId) {
@@ -212,265 +215,311 @@ const OrderDetailsScreen = () => {
     }
   }
 
+  const handleQuantityChange = (item, type) => {
+    console.log(item, type, 29378)
+    const updatedList = products.map((e) => {
+      if (e.id !== item.id) return e;
+      setLoadingProductId(item.id);
+
+      let newQty = e.uploadedQty;
+
+      if (type === 'plus') {
+        newQty = e.uploadedQty + 1;
+      } else if (type === 'minus') {
+        newQty = e.uploadedQty > 1 ? e.uploadedQty - 1 : 1;
+      }
+
+
+      return {
+        ...e,
+        uploadedQty: newQty,
+      };
+    });
+
+    // setProducts(updatedList);
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
 
       {/* Header */}
+
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity style={styles.backButton}>
             <BackButton />
           </TouchableOpacity>
           <AppText style={styles.orderNumber}>{orderDetails?.orderNo}</AppText>
-          <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.iconButton}>
-              <ClockIcon />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
-              <DownloadIcon />
-            </TouchableOpacity>
-          </View>
+          {orderDetails && (
+            <View style={styles.headerActions}>
+              <TouchableOpacity style={styles.iconButton}>
+                <ClockIcon />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.iconButton}>
+                <DownloadIcon />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
         <View style={styles.statusBadge}>
           <AppText style={[styles.statusText]}>{orderDetails?.statusName}</AppText>
         </View>
-
       </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Order Summary */}
-        <View style={styles.orderSummary}>
-          <View style={{ backgroundColor: '#FFF', paddingVertical: 16, paddingHorizontal: 12, paddingBottom: 20, borderRadius: 12 }}>
-            <View style={styles.summaryRow}>
-              <View>
-                <AppText style={styles.poNumber}>{orderData.poNumber ?? '-'}</AppText>
-                <AppText style={styles.dateText}>{orderDetails?.orderDate} | {orderData.orderType ?? '-'}</AppText>
-              </View>
-              <View style={styles.amountSection}>
-                <AppText style={styles.amount}>₹ {orderDetails?.totalPrice}</AppText>
-                <AppText style={styles.skuCount}>SKU's: {orderDetails?.skwCount ?? '-'}</AppText>
-              </View>
-            </View>
-
-            <View style={styles.detailsRow}>
-              <View style={styles.detailItem}>
-                <AppText style={styles.detailLabel}>Ordered by</AppText>
-                <AppText style={[styles.detailValue, styles.underlinedText]}>{orderDetails?.orderedBy ?? '-'}</AppText>
-              </View>
-              <View style={[styles.detailItem, styles.alignRight]}>
-                <AppText style={styles.detailLabel}>CFA Name</AppText>
-                <TouchableOpacity onPress={() => setHeaderExpanded(!headerExpanded)}>
-                  <View style={styles.expandableValue}>
-                    <AppText style={[styles.detailValue, styles.underlinedText]}>{orderDetails?.cfaName ?? '-'}</AppText>
-                    {!headerExpanded && (
-                      <Animated.View style={{ transform: [{ rotate: headerExpanded ? "180deg" : "0deg" }] }}>
-                        <ChevronDown />
-                      </Animated.View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {headerExpanded && (
-              <View style={styles.expandedContent}>
-                <View style={styles.expandedRow}>
-                  <View style={styles.expandedItem}>
-                    <AppText style={styles.expandedLabel}>(-) Savings</AppText>
-                    <AppText style={styles.expandedLabel}>Trade</AppText>
-                  </View>
-                  <View style={styles.expandedItem}>
-                    <AppText style={styles.expandedLabel}>(=) Gross Order Value</AppText>
-                    <AppText style={styles.expandedValue}>{orderDetails.orderValue ? `₹${orderDetails.orderValue}` : '-'}</AppText>
-                  </View>
-                  <View style={styles.expandedItem}>
-                    <AppText style={[styles.expandedLabel, { textAlign: "right" }]}>(+) Tax</AppText>
-                    <AppText style={[styles.expandedValue, { textAlign: "right" }]}> {orderDetails.tax ? `₹${orderDetails.tax}` : "-"}</AppText>
-                  </View>
+      {!orderDetails ? (
+        <>
+          <SkeletonDetailPage />
+        </>
+      ) : (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Order Summary */}
+          <View style={styles.orderSummary}>
+            <View style={{ backgroundColor: '#FFF', paddingVertical: 16, paddingHorizontal: 12, paddingBottom: 20, borderRadius: 12 }}>
+              <View style={styles.summaryRow}>
+                <View>
+                  <AppText style={styles.poNumber}>{orderData.poNumber ?? '-'}</AppText>
+                  <AppText style={styles.dateText}>{orderDetails?.orderDate} | {orderData.orderType ?? '-'}</AppText>
                 </View>
-
-                <View style={styles.expandedRow}>
-                  <View style={styles.expandedItem}>
-                    <AppText style={styles.expandedLabel}>Invoice Items</AppText>
-                    <AppText style={styles.expandedValue}>{orderDetails.invoicedItem ?? '-'}</AppText>
-                  </View>
-                  <View style={styles.expandedItem}>
-                    <AppText style={styles.expandedLabel}>Invoice Value</AppText>
-                    <AppText style={styles.expandedValue}> {orderDetails?.invoicedValue ? `₹${orderDetails?.invoicedValue}` : "-"}</AppText>
-                  </View>
-                  <View style={styles.expandedItem}>
-                    <AppText style={[styles.expandedLabel, { textAlign: "right" }]}>Supply Type</AppText>
-                    <AppText style={[styles.expandedValue, { textAlign: "right" }]}>{orderDetails.supplyType ?? '-'}</AppText>
-                  </View>
+                <View style={styles.amountSection}>
+                  <AppText style={styles.amount}>₹ {orderDetails?.totalPrice}</AppText>
+                  <AppText style={styles.skuCount}>SKU's: {orderDetails?.skwCount ?? '-'}</AppText>
                 </View>
-                <View style={{ display: "flex", flexDirection: 'row', justifyContent: "space-between", alignItems: "flex-end" }}>
-                  <View style={styles.contractHolder}>
-                    <AppText style={styles.expandedLabel}>Rate Contract Holder</AppText>
-                    <AppText style={styles.contractName}>{orderDetails?.rateContractHolder ?? '-'}</AppText>
-                    <AppText style={styles.contractDetails}>{orderDetails?.rateContractId ?? '-'} | {orderDetails?.rateContractLocation ?? '-'}</AppText>
-                  </View>
+              </View>
+
+              <View style={styles.detailsRow}>
+                <View style={styles.detailItem}>
+                  <AppText style={styles.detailLabel}>Ordered by</AppText>
+                  <AppText style={[styles.detailValue, styles.underlinedText]}>{orderDetails?.orderedBy ?? '-'}</AppText>
+                </View>
+                <View style={[styles.detailItem, styles.alignRight]}>
+                  <AppText style={styles.detailLabel}>CFA Name</AppText>
                   <TouchableOpacity onPress={() => setHeaderExpanded(!headerExpanded)}>
-                    {headerExpanded && (
-                      <Animated.View style={{ transform: [{ rotate: headerExpanded ? "180deg" : "0deg" }] }}>
-                        <ChevronDown />
-                      </Animated.View>
-                    )}
+                    <View style={styles.expandableValue}>
+                      <AppText style={[styles.detailValue, styles.underlinedText]}>{orderDetails?.cfaName ?? '-'}</AppText>
+                      {!headerExpanded && (
+                        <Animated.View style={{ transform: [{ rotate: headerExpanded ? "180deg" : "0deg" }] }}>
+                          <ChevronDown />
+                        </Animated.View>
+                      )}
+                    </View>
                   </TouchableOpacity>
                 </View>
-
               </View>
-            )}
+
+              {headerExpanded && (
+                <View style={styles.expandedContent}>
+                  <View style={styles.expandedRow}>
+                    <View style={styles.expandedItem}>
+                      <AppText style={styles.expandedLabel}>(-) Savings</AppText>
+                      <AppText style={styles.expandedLabel}>Trade</AppText>
+                    </View>
+                    <View style={styles.expandedItem}>
+                      <AppText style={styles.expandedLabel}>(=) Gross Order Value</AppText>
+                      <AppText style={styles.expandedValue}>{orderDetails.orderValue ? `₹${orderDetails.orderValue}` : '-'}</AppText>
+                    </View>
+                    <View style={styles.expandedItem}>
+                      <AppText style={[styles.expandedLabel, { textAlign: "right" }]}>(+) Tax</AppText>
+                      <AppText style={[styles.expandedValue, { textAlign: "right" }]}> {orderDetails.tax ? `₹${orderDetails.tax}` : "-"}</AppText>
+                    </View>
+                  </View>
+
+                  <View style={styles.expandedRow}>
+                    <View style={styles.expandedItem}>
+                      <AppText style={styles.expandedLabel}>Invoice Items</AppText>
+                      <AppText style={styles.expandedValue}>{orderDetails.invoicedItem ?? '-'}</AppText>
+                    </View>
+                    <View style={styles.expandedItem}>
+                      <AppText style={styles.expandedLabel}>Invoice Value</AppText>
+                      <AppText style={styles.expandedValue}> {orderDetails?.invoicedValue ? `₹${orderDetails?.invoicedValue}` : "-"}</AppText>
+                    </View>
+                    <View style={styles.expandedItem}>
+                      <AppText style={[styles.expandedLabel, { textAlign: "right" }]}>Supply Type</AppText>
+                      <AppText style={[styles.expandedValue, { textAlign: "right" }]}>{orderDetails.supplyType ?? '-'}</AppText>
+                    </View>
+                  </View>
+                  <View style={{ display: "flex", flexDirection: 'row', justifyContent: "space-between", alignItems: "flex-end" }}>
+                    <View style={styles.contractHolder}>
+                      <AppText style={styles.expandedLabel}>Rate Contract Holder</AppText>
+                      <AppText style={styles.contractName}>{orderDetails?.rateContractHolder ?? '-'}</AppText>
+                      <AppText style={styles.contractDetails}>{orderDetails?.rateContractId ?? '-'} | {orderDetails?.rateContractLocation ?? '-'}</AppText>
+                    </View>
+                    <TouchableOpacity onPress={() => setHeaderExpanded(!headerExpanded)}>
+                      {headerExpanded && (
+                        <Animated.View style={{ transform: [{ rotate: headerExpanded ? "180deg" : "0deg" }] }}>
+                          <ChevronDown />
+                        </Animated.View>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+
+                </View>
+              )}
+            </View>
           </View>
-        </View>
 
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <SearchIcon />
-          <AppInput
-            style={styles.searchInput}
-            placeholder="Search & Add products to cart"
-            placeholderTextColor="#999"
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-        </View>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <SearchIcon />
+            <AppInput
+              style={styles.searchInput}
+              placeholder="Search & Add products to cart"
+              placeholderTextColor="#999"
+              value={searchText}
+              onChangeText={setSearchText}
+              onFocus={(e) => setSearchAndMap(true)}
+            />
+          </View>
 
-        {/* Tabs */}
-        <View style={{ padding: 14, paddingVertical: 10, paddingBottom: 0 }}>
-          <View style={{ padding: 0, backgroundColor: "#ffffff", borderRadius: 12, overflow: "hidden", marginBottom: 80 }}>
-            <View style={styles.tabContainer}>
-              <View style={styles.tabs}>
-                <TouchableOpacity onPress={() => setSelectedTab('all')} style={styles.tabButton}>
-                  <AppText style={[styles.tabText, selectedTab === 'all' && styles.activeTab]}>All</AppText>
-                  {selectedTab === 'all' && <View style={styles.tabIndicator} />}
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setSelectedTab('multi')} style={styles.tabButton}>
-                  <AppText style={[styles.tabText, selectedTab === 'multi' && styles.activeTab]}>Multi-Mapped</AppText>
-                  {selectedTab === 'multi' && <View style={styles.tabIndicator} />}
-                </TouchableOpacity>
+          {/* Tabs */}
+          <View style={{ padding: 14, paddingVertical: 10, paddingBottom: 0 }}>
+            <View style={{ padding: 0, backgroundColor: "#ffffff", borderRadius: 12, overflow: "hidden", marginBottom: 80 }}>
+              <View style={styles.tabContainer}>
+                <View style={styles.tabs}>
+                  <TouchableOpacity onPress={() => setSelectedTab('all')} style={styles.tabButton}>
+                    <AppText style={[styles.tabText, selectedTab === 'all' && styles.activeTab]}>All</AppText>
+                    {selectedTab === 'all' && <View style={styles.tabIndicator} />}
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setSelectedTab('multi')} style={styles.tabButton}>
+                    <AppText style={[styles.tabText, selectedTab === 'multi' && styles.activeTab]}>Multi-Mapped</AppText>
+                    {selectedTab === 'multi' && <View style={styles.tabIndicator} />}
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.tabActions}>
+                  <TouchableOpacity style={styles.searchIconButton}>
+                    <SearchIcon />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.divDropdown} onPress={() => setShowSelectDivisiton(true)}>
+                    <AppText style={styles.divDropdownText}>
+                      {selectedDivision?.value}
+                    </AppText>
+                    <Svg width="7" height="4" viewBox="0 0 7 4" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <Path d="M6.08684 0C6.53229 0 6.75537 0.538571 6.44039 0.853553L3.6475 3.64645C3.45224 3.84171 3.13565 3.84171 2.94039 3.64645L0.147498 0.853552C-0.167485 0.53857 0.0555997 0 0.501052 0H6.08684Z" fill="#2B2B2B" />
+                    </Svg>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={{ backgroundColor: "#fef4e8", padding: 5, borderRadius: 6 }}>
+                    <Svg width="15" height="11" viewBox="0 0 15 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <Path d="M13.6293 4.62961C13.832 4.91361 13.9333 5.05628 13.9333 5.26628C13.9333 5.47694 13.832 5.61894 13.6293 5.90294C12.7186 7.18028 10.3926 9.93294 7.26664 9.93294C4.13998 9.93294 1.81464 7.17961 0.903976 5.90294C0.701309 5.61894 0.599976 5.47628 0.599976 5.26628C0.599976 5.05561 0.701309 4.91361 0.903976 4.62961C1.81464 3.35228 4.14064 0.599609 7.26664 0.599609C10.3933 0.599609 12.7186 3.35294 13.6293 4.62961Z" stroke="#F7941E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                      <Path d="M9.2666 5.2666C9.2666 4.73617 9.05589 4.22746 8.68082 3.85239C8.30574 3.47731 7.79703 3.2666 7.2666 3.2666C6.73617 3.2666 6.22746 3.47731 5.85239 3.85239C5.47731 4.22746 5.2666 4.73617 5.2666 5.2666C5.2666 5.79703 5.47731 6.30574 5.85239 6.68082C6.22746 7.05589 6.73617 7.2666 7.2666 7.2666C7.79703 7.2666 8.30574 7.05589 8.68082 6.68082C9.05589 6.30574 9.2666 5.79703 9.2666 5.2666Z" stroke="#F7941E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </Svg>
+
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={styles.tabActions}>
-                <TouchableOpacity style={styles.searchIconButton}>
-                  <SearchIcon />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.divDropdown} onPress={() => setShowSelectDivisiton(true)}>
-                  <AppText style={styles.divDropdownText}>
-                    {selectedDivision?.value}
-                  </AppText>
-                  <Svg width="7" height="4" viewBox="0 0 7 4" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <Path d="M6.08684 0C6.53229 0 6.75537 0.538571 6.44039 0.853553L3.6475 3.64645C3.45224 3.84171 3.13565 3.84171 2.94039 3.64645L0.147498 0.853552C-0.167485 0.53857 0.0555997 0 0.501052 0H6.08684Z" fill="#2B2B2B" />
-                  </Svg>
-                </TouchableOpacity>
-                <TouchableOpacity style={{ backgroundColor: "#fef4e8", padding: 5, borderRadius: 6 }}>
-                  <Svg width="15" height="11" viewBox="0 0 15 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <Path d="M13.6293 4.62961C13.832 4.91361 13.9333 5.05628 13.9333 5.26628C13.9333 5.47694 13.832 5.61894 13.6293 5.90294C12.7186 7.18028 10.3926 9.93294 7.26664 9.93294C4.13998 9.93294 1.81464 7.17961 0.903976 5.90294C0.701309 5.61894 0.599976 5.47628 0.599976 5.26628C0.599976 5.05561 0.701309 4.91361 0.903976 4.62961C1.81464 3.35228 4.14064 0.599609 7.26664 0.599609C10.3933 0.599609 12.7186 3.35294 13.6293 4.62961Z" stroke="#F7941E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                    <Path d="M9.2666 5.2666C9.2666 4.73617 9.05589 4.22746 8.68082 3.85239C8.30574 3.47731 7.79703 3.2666 7.2666 3.2666C6.73617 3.2666 6.22746 3.47731 5.85239 3.85239C5.47731 4.22746 5.2666 4.73617 5.2666 5.2666C5.2666 5.79703 5.47731 6.30574 5.85239 6.68082C6.22746 7.05589 6.73617 7.2666 7.2666 7.2666C7.79703 7.2666 8.30574 7.05589 8.68082 6.68082C9.05589 6.30574 9.2666 5.79703 9.2666 5.2666Z" stroke="#F7941E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </Svg>
 
-                </TouchableOpacity>
+              {/* Select All / Show Deleted */}
+              <View style={styles.selectRow}>
+                <CustomCheckbox checkboxStyle={{ borderWidth: 1 }} size={14} title={<AppText style={styles.selectAllText} >Select all</AppText>} />
               </View>
-            </View>
 
-            {/* Select All / Show Deleted */}
-            <View style={styles.selectRow}>
-              <CustomCheckbox checkboxStyle={{ borderWidth: 1 }} size={14} title={<AppText style={styles.selectAllText} >Select all</AppText>} />
-              {/* <TouchableOpacity
-                style={styles.showDeleted}
-                onPress={() => setShowDeletedProducts(!showDeletedProducts)}
-              >
-                <View style={[styles.checkbox, showDeletedProducts && styles.checkboxChecked]} />
-                <AppText style={styles.selectAllText}>Show Deleted Products</AppText>
-              </TouchableOpacity> */}
-            </View>
+              {/* Product List */}
+              <View style={styles.productList}>
+                {productList.map((product, index) => (
+                  <View key={index} style={styles.productCard}>
+                    <View style={styles.productHeader}>
+                      <CustomCheckbox checkboxStyle={{ borderWidth: 1 }} size={14} title={
+                        <AppText style={styles.productName}>{product?.productName ?? '-'}</AppText>
+                      } />
+                      <AppText style={styles.productCode}>{product?.productCode ?? '-'}</AppText>
+                    </View>
 
-            {/* Product List */}
-            <View style={styles.productList}>
-              {productList.map((product, index) => (
-                <View key={index} style={styles.productCard}>
-                  <View style={styles.productHeader}>
-                    <CustomCheckbox checkboxStyle={{ borderWidth: 1 }} size={14} title={
-                      <AppText style={styles.productName}>{product?.productName ?? '-'}</AppText>
-                    } />
-                    <AppText style={styles.productCode}>{product?.productCode ?? '-'}</AppText>
-                  </View>
-
-                  <View style={styles.productDetails}>
-                    <View style={styles.productDetailRow}>
-                      <AppText style={styles.productLabel}>Customer Product</AppText>
-                      <View style={styles.priceContainer}>
-                        <AppText style={styles.productLabel}>Path</AppText>
+                    <View style={styles.productDetails}>
+                      <View style={styles.productDetailRow}>
+                        <AppText style={styles.productLabel}>Customer Product</AppText>
+                        <View style={styles.priceContainer}>
+                          <AppText style={styles.productLabel}>Path</AppText>
+                        </View>
+                      </View>
+                      <View style={styles.productDetailRow}>
+                        <AppText style={styles.productDetailText}>{product?.customerProduct ?? '-'}</AppText>
+                        <View style={styles.priceContainer}>
+                          <AppText style={styles.productPrice}>₹ {product?.ptr}</AppText>
+                        </View>
                       </View>
                     </View>
-                    <View style={styles.productDetailRow}>
-                      <AppText style={styles.productDetailText}>{product?.customerProduct ?? '-'}</AppText>
-                      <View style={styles.priceContainer}>
-                        <AppText style={styles.productPrice}>₹ {product?.ptr}</AppText>
-                      </View>
-                    </View>
-                  </View>
 
-                  <View style={styles.productActions}>
-                    <View style={styles.actionTabs}>
-                      <View style={styles.actionTab}>
-                        <AppText style={styles.actionTabLabel}>Mapping</AppText>
-                        <TouchableOpacity>
-                          <View style={{ display: "flex", alignItems: "center", gap: 5, flexDirection: "row" }}>
-                            <AppText style={styles.changeText}>
-                              Change
-                            </AppText>
+                    <View style={styles.productActions}>
+                      <View style={styles.actionTabs}>
+                        <View style={styles.actionTab}>
+                          <AppText style={styles.actionTabLabel}>Mapping</AppText>
+                          <TouchableOpacity>
+                            <View style={{ display: "flex", alignItems: "center", gap: 5, flexDirection: "row" }}>
+                              <AppText style={styles.changeText}>
+                                Change
+                              </AppText>
 
-                            <Svg style={{ marginTop: 3 }} width="4" height="7" viewBox="0 0 4 7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <Path d="M0.5 0.5L3.5 3.5L0.5 6.5" stroke="#F7941E" strokeLinecap="round" strokeLinejoin="round" />
-                            </Svg>
-                          </View>
+                              <Svg style={{ marginTop: 3 }} width="4" height="7" viewBox="0 0 4 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <Path d="M0.5 0.5L3.5 3.5L0.5 6.5" stroke="#F7941E" strokeLinecap="round" strokeLinejoin="round" />
+                              </Svg>
+                            </View>
+                          </TouchableOpacity>
+                        </View>
+                        <TouchableOpacity style={styles.actionTab}>
+                          <AppText style={styles.actionTabLabel}>Comment</AppText>
+                          <CommentIcon />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.actionTab}>
+                          <AppText style={styles.actionTabLabel}>Activity</AppText>
+                          <HistoryIcon />
                         </TouchableOpacity>
                       </View>
-                      <TouchableOpacity style={styles.actionTab}>
-                        <AppText style={styles.actionTabLabel}>Comment</AppText>
-                        <CommentIcon />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.actionTab}>
-                        <AppText style={styles.actionTabLabel}>Activity</AppText>
-                        <HistoryIcon />
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.quantityControls}>
-                      <AddToCartWidget isInCart={true} quantity={product?.quantity} />
+                      <View style={styles.quantityControls}>
+                        <AddToCartWidget item={product} isInCart={true} quantity={product?.quantity} handleQuantityChange={(item, type) => handleQuantityChange(item, type)} />
+                      </View>
                     </View>
                   </View>
-                </View>
-              ))}
+                ))}
+              </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
 
       {/* Bottom Actions */}
-      {checkActionshow("HOLD") && (
-
-        <View style={styles.bottomActions}>
-          <TouchableOpacity onPress={() => handleAction("HOLD")} style={[styles.holdButton, !checkAction("HOLD") && { opacity: 0.5 }]} disabled={!checkAction("HOLD")} >
-            <HoldIcon />
-            <AppText style={styles.holdButtonText}>Hold</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleAction("REJECT")} style={[styles.rejectButton, !checkAction("HOLD") && { opacity: 0.5 }]} disabled={!checkAction("REJECTED")}>
-            <Svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <Path d="M11.4333 11.4329L6.43331 6.43294M6.43331 11.4329L11.4333 6.43294M17.2666 8.93294C17.2666 4.33044 13.5358 0.599609 8.93331 0.599609C4.33081 0.599609 0.599976 4.33044 0.599976 8.93294C0.599976 13.5354 4.33081 17.2663 8.93331 17.2663C13.5358 17.2663 17.2666 13.5354 17.2666 8.93294Z" stroke="#F7941E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
-
-            <AppText style={styles.rejectButtonText}>Reject</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleAction("APPROVE")} style={[styles.approveButton, !checkAction("HOLD") && { opacity: 0.5 }]} disabled={!checkAction("CONFIRM")}>
-            <Svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <Path d="M14.3333 1L5.16667 10.1667L1 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
-            <AppText style={styles.approveButtonText}>Confirm</AppText>
-          </TouchableOpacity>
+      {!orderDetails ? (
+        <View>
         </View>
+      ) : (
+        <>
+          {checkActionshow("HOLD") && (
+            <View style={styles.bottomActions}>
+              <TouchableOpacity onPress={() => handleAction("HOLD")} style={[styles.holdButton, !checkAction("HOLD") && { opacity: 0.5 }]} disabled={!checkAction("HOLD")} >
+                <HoldIcon />
+                <AppText style={styles.holdButtonText}>Hold</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleAction("REJECT")} style={[styles.rejectButton, !checkAction("HOLD") && { opacity: 0.5 }]} disabled={!checkAction("REJECTED")}>
+                <Svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <Path d="M11.4333 11.4329L6.43331 6.43294M6.43331 11.4329L11.4333 6.43294M17.2666 8.93294C17.2666 4.33044 13.5358 0.599609 8.93331 0.599609C4.33081 0.599609 0.599976 4.33044 0.599976 8.93294C0.599976 13.5354 4.33081 17.2663 8.93331 17.2663C13.5358 17.2663 17.2666 13.5354 17.2666 8.93294Z" stroke="#F7941E" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                </Svg>
+
+                <AppText style={styles.rejectButtonText}>Reject</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleAction("APPROVE")} style={[styles.approveButton, !checkAction("HOLD") && { opacity: 0.5 }]} disabled={!checkAction("CONFIRM")}>
+                <Svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <Path d="M14.3333 1L5.16667 10.1667L1 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </Svg>
+                <AppText style={styles.approveButtonText}>Confirm</AppText>
+              </TouchableOpacity>
+            </View>
+          )}
+        </>
 
       )}
+      {orderDetails && (
+        <SearchAndProduct
+          onSelectProduct={(e) => console.log(e)}
+          visible={searchAndMap}
+          onClose={() => {
+            setSearchAndMap(false);
+            // setProductMapping(false)
+            // setMappingProduct(null)
+          }}
+          customerId={orderDetails?.customerId}
+          distributorId={orderDetails?.distributorId}
+
+        />
+      )}
+
 
       <DropdownModal
         visible={showSelectDivisiton}

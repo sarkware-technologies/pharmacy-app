@@ -130,7 +130,7 @@ const SearchAddProducts = () => {
             page: pageNumber,
             limit: 10,
             search,
-            forMapping:true
+            forMapping: true
           };
           const res = await getProducts(params);
 
@@ -223,6 +223,9 @@ const SearchAddProducts = () => {
   const handleAddToCart = async (product) => {
     try {
       setLoadingProduct(product?.id);
+      const packing = Number(product?.productDetails?.packing);
+
+
       const payload = {
         cfaId: product?.productDetails?.cfaId,
         customerId: product?.customerDetails?.customerId ? parseInt(product?.customerDetails?.customerId) : parseInt(selectedCustomer?.customerId),
@@ -232,7 +235,8 @@ const SearchAddProducts = () => {
         createdBy: 4,
         principalId: 1,
         productId: product?.productDetails?.productId,
-        qty: product?.productDetails.packing ? parseInt(product?.productDetails.packing) : 1
+        qty: !isNaN(packing) && packing > 0 ? packing : 1
+
       }
       const addtocart = await AddtoCart([payload]);
 
