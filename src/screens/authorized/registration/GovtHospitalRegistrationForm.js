@@ -22,7 +22,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import { colors } from '../../../styles/colors';
@@ -99,9 +99,13 @@ const GovtHospitalRegistrationForm = () => {
     address3: '',
     address4: '',
     pincode: '',
-    area: '',
-    city: '',
-    state: '',
+  area: '',
+  areaId: null,   // <- change from '' to null
+  city: '',
+  cityId: null,   // <- change from '' to null
+  state: '',
+  stateId: null,  // <- change from '' to null
+
 
     // Security Details
     mobileNumber: '',
@@ -150,12 +154,23 @@ const GovtHospitalRegistrationForm = () => {
 
   // API Data
   const [customerGroups, setCustomerGroups] = useState([]);
+
+  // --- add after customerGroups state ---
+  const [states, setStates] = useState([]);         // list shown in "Select State" modal
+  const [cities, setCities] = useState([]);         // list shown in "Select City" modal
+  const [loadingCities, setLoadingCities] = useState(false);
+
   
   // Pincode lookup hook
-  const { areas, cities, states, loading: pincodeLoading, lookupByPincode, clearData } = usePincodeLookup();
+  const { areas, cities: pincodeCities, states: pincodeStates, loading: pincodeLoading, lookupByPincode, clearData } = usePincodeLookup();
 
   // Dropdown Modals
+  // Dropdown modal states
+  const [showStateModal, setShowStateModal] = useState(false);
+  const [showCityModal, setShowCityModal] = useState(false);
   const [showAreaModal, setShowAreaModal] = useState(false);
+
+
   const [showGstModal, setShowGstModal] = useState(false);
 
   // OTP states
@@ -209,24 +224,141 @@ const GovtHospitalRegistrationForm = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Consolidated sync: map pincode lookup results → local lists and auto-select first items
+useEffect(() => {
+  // Populate local cities list from pincode result (so City modal shows it)
+  if (Array.isArray(pincodeCities) && pincodeCities.length > 0) {
+    const mappedCities = pincodeCities.map(c => ({
+      id: c.id,
+      name: c.name || c.cityName || c.city || '',
+    }));
+    setCities(mappedCities);
+
+    // Auto-select the first city if none selected or if cityId is null
+    const firstCity = mappedCities[0];
+    if (firstCity && !formData.cityId) {
+      setFormData(prev => ({
+        ...prev,
+        city: firstCity.name,
+        cityId: firstCity.id,
+      }));
+    }
+  }
+
+  // Populate local states list from pincode result (do NOT call any external state API)
+  if (Array.isArray(pincodeStates) && pincodeStates.length > 0) {
+    const mappedStates = pincodeStates.map(s => ({
+      id: s.id,
+      name: s.name || s.stateName || s.state || '',
+    }));
+
+    // setStates directly from pincode lookup (no external API)
+    setStates(mappedStates);
+
+    // Auto-select the first state if none selected or if stateId is null
+    const firstState = mappedStates[0];
+    if (firstState && !formData.stateId) {
+      setFormData(prev => ({
+        ...prev,
+        state: firstState.name,
+        stateId: firstState.id,
+      }));
+    }
+  }
+
+  // Auto-select first area when available
+  if (Array.isArray(areas) && areas.length > 0 && !formData.area) {
+    const firstArea = areas[0];
+    setFormData(prev => ({
+      ...prev,
+      area: firstArea.name,
+      areaId: firstArea.id,
+    }));
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [pincodeCities, pincodeStates, areas]);
+
+
+
+useEffect(() => {
+  // If pincode lookup returned cities/states, use them and also populate local lists
+  if (Array.isArray(pincodeCities) && pincodeCities.length > 0) {
+    const mappedCities = pincodeCities.map(c => ({ id: c.id, name: c.name || c.cityName || c.city }));
+    setCities(mappedCities);
+    const firstCity = mappedCities[0];
+    setFormData(prev => ({
+      ...prev,
+      city: firstCity?.name || prev.city,
+      cityId: firstCity?.id || prev.cityId,
+    }));
+  }
+
+  if (Array.isArray(pincodeStates) && pincodeStates.length > 0) {
+    const mappedStates = pincodeStates.map(s => ({ id: s.id, name: s.name || s.stateName || s.state }));
+    setStates(prevStates => {
+      // prefer the full list already loaded from API (loadStates) but if empty, set from pincode
+      return (prevStates && prevStates.length > 0) ? prevStates : mappedStates;
+    });
+    const firstState = mappedStates[0];
+    setFormData(prev => ({
+      ...prev,
+      state: firstState?.name || prev.state,
+      stateId: firstState?.id || prev.stateId,
+    }));
+  }
+
+  // Auto-select first area (0th index) if available
+  if (areas.length > 0 && !formData.area) {
+    const firstArea = areas[0];
+    setFormData(prev => ({
+      ...prev,
+      area: firstArea.name,
+      areaId: firstArea.id,
+    }));
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [pincodeCities, pincodeStates, areas]);
+
+
+  const loadStates = async () => {
+  try {
+    // fetch all states (used for manual state selection modal)
+    const statesResponse = await customerAPI.getStates();
+    if (statesResponse.success && statesResponse.data) {
+      const _states = [];
+      for (let i = 0; i < (statesResponse.data.states || []).length; i++) {
+        const s = statesResponse.data.states[i];
+        _states.push({ id: s.id, name: s.stateName });
+      }
+      setStates(_states);
+    }
+  } catch (err) {
+    console.error('Failed to load states:', err);
+  }
+};
+
+
   // Handle pincode change and trigger lookup
   const handlePincodeChange = async (text) => {
     if (/^\d{0,6}$/.test(text)) {
       setFormData(prev => ({ ...prev, pincode: text }));
       setErrors(prev => ({ ...prev, pincode: null }));
       
-      // Clear previous selections when pincode changes
-      if (text.length < 6) {
-        setFormData(prev => ({
-          ...prev,
-          area: '',
-          city: '',
-          cityId: null,
-          state: '',
-          stateId: null,
-        }));
-        clearData();
-      }
+        // in handlePincodeChange: when pincode length < 6, clear dependent fields
+  if (text.length < 6) {
+    setFormData(prev => ({
+      ...prev,
+      area: '',
+      areaId: null,
+      city: '',
+      cityId: null,
+      state: '',
+      stateId: null,
+    }));
+    clearData();
+  }
+
       
       // Trigger lookup when pincode is complete (6 digits)
       if (text.length === 6) {
@@ -235,39 +367,62 @@ const GovtHospitalRegistrationForm = () => {
     }
   };
   
-  // Auto-populate city, state, and area when pincode lookup completes
-  useEffect(() => {
-    if (cities.length > 0 && states.length > 0) {
-      // Auto-select first city and state from lookup results
-      const firstCity = cities[0];
-      const firstState = states[0];
-      
+  // Consolidated sync: map pincode lookup results → local lists and auto-select first items
+useEffect(() => {
+  // Populate local cities list from pincode result (so City modal shows it)
+  if (Array.isArray(pincodeCities) && pincodeCities.length > 0) {
+    const mappedCities = pincodeCities.map(c => ({
+      id: c.id,
+      name: c.name || c.cityName || c.city || '',
+    }));
+    setCities(mappedCities);
+
+    // Auto-select the first city if none selected or if cityId is null
+    const firstCity = mappedCities[0];
+    if (firstCity && !formData.cityId) {
       setFormData(prev => ({
         ...prev,
         city: firstCity.name,
         cityId: firstCity.id,
+      }));
+    }
+  }
+
+  // Populate local states list from pincode result (but do not overwrite if user already loaded full states)
+  if (Array.isArray(pincodeStates) && pincodeStates.length > 0) {
+    const mappedStates = pincodeStates.map(s => ({
+      id: s.id,
+      name: s.name || s.stateName || s.state || '',
+    }));
+
+    // prefer existing `states` (loaded via loadStates) if available — otherwise set from pincode
+    setStates(prevStates => (prevStates && prevStates.length > 0 ? prevStates : mappedStates));
+
+    // Auto-select the first state if none selected or if stateId is null
+    const firstState = mappedStates[0];
+    if (firstState && !formData.stateId) {
+      setFormData(prev => ({
+        ...prev,
         state: firstState.name,
         stateId: firstState.id,
       }));
     }
-    
-    // Auto-select first area (0th index) if available
-    if (areas.length > 0 && !formData.area) {
-      const firstArea = areas[0];
-      setFormData(prev => ({
-        ...prev,
-        area: firstArea.name,
-        areaId: firstArea.id,
-      }));
-    }
+  }
+
+  // Auto-select first area when available
+  if (Array.isArray(areas) && areas.length > 0 && !formData.area) {
+    const firstArea = areas[0];
+    setFormData(prev => ({
+      ...prev,
+      area: firstArea.name,
+      areaId: firstArea.id,
+    }));
+  }
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cities, states, areas]);
+}, [pincodeCities, pincodeStates, areas]);
+
   
-  // Legacy function kept as a no-op to avoid syntax issues and preserve compatibility
-  const loadCitiesLegacy = async () => {
-    // This function is kept for backward compatibility but intentionally does nothing.
-    return;
-  };
 
   const loadCustomerGroups = async () => {
     try {
@@ -661,11 +816,11 @@ const GovtHospitalRegistrationForm = () => {
     if (!formData.area || formData.area.trim().length === 0) {
       newErrors.area = 'Area is required';
     }
-    if (!formData.city) {
-      newErrors.city = 'City is required';
+    if (!formData.cityId) {
+      newErrors.cityId = 'City is required';
     }
-    if (!formData.state) {
-      newErrors.state = 'State is required';
+    if (!formData.stateId) {
+      newErrors.stateId = 'State is required';
     }
 
     // Security Details
@@ -765,10 +920,10 @@ const GovtHospitalRegistrationForm = () => {
           address2: formData.address2 || '',
           address3: formData.address3 || '',
           address4: formData.address4 || '',
-          pincode: parseInt(formData.pincode),
+          pincode: parseInt(formData.pincode, 10),
           area: formData.area,
-          city: formData.city,
-          state: formData.state,
+          cityId: parseInt(formData.cityId, 10),
+          stateId: parseInt(formData.stateId, 10),
         },
         securityDetails: {
           mobile: formData.mobileNumber,
@@ -1027,9 +1182,12 @@ const GovtHospitalRegistrationForm = () => {
         <AddressInputWithLocation
           placeholder="Address 1"
           value={formData.address1}
-          onChangeText={(text) => setFormData(prev => ({ ...prev, address1: text }))}
-          error={errors.address1}
+          onChangeText={(text) => {
+            setFormData(prev => ({ ...prev, address1: text }));
+            setErrors(prev => ({ ...prev, address1: null }));
+          }}
           mandatory={true}
+          error={errors.address1}
           onLocationSelect={async (locationData) => {
             const addressParts = locationData.address.split(',').map(part => part.trim());
             const extractedPincode = locationData.pincode || '';
@@ -1129,73 +1287,57 @@ const GovtHospitalRegistrationForm = () => {
               </AppText>
               <AppText style={styles.inlineAsterisk}>*</AppText>
             </View>
-            <ArrowDown color='#999' />
+            <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
           {errors.area && <AppText style={styles.errorText}>{errors.area}</AppText>}
         </View>
 
         {/* City - Auto-populated from pincode */}
         <View style={styles.dropdownContainer}>
-          {(formData.city || cities.length > 0) && (
+          {(formData.city || pincodeCities.length > 0) && (
             <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
               City<AppText style={styles.asteriskPrimary}>*</AppText>
             </AppText>
           )}
           <TouchableOpacity
-            style={[styles.dropdown, errors.city && styles.inputError]}
+            style={[styles.dropdown, errors.cityId && styles.inputError]}
             onPress={() => {
-              if (cities.length === 0) {
-                Toast.show({
-                  type: 'info',
-                  text1: 'No City Available',
-                  text2: 'No city available for this pincode',
-                  position: 'top',
-                });
-              }
+              setShowCityModal(true);
             }}
-            disabled={cities.length === 0}
           >
             <View style={styles.inputTextContainer}>
               <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
-                {formData.city || (cities.length === 0 ? 'No city available' : 'City')}
+                {formData.city || ('City')}
               </AppText>
               <AppText style={styles.inlineAsterisk}>*</AppText>
             </View>
-            <ArrowDown color='#999' />
+            <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
-          {errors.city && <AppText style={styles.errorText}>{errors.city}</AppText>}
+          {errors.cityId && <AppText style={styles.errorText}>{errors.cityId}</AppText>}
         </View>
 
         {/* State - Auto-populated from pincode */}
         <View style={styles.dropdownContainer}>
-          {(formData.state || states.length > 0) && (
+          {(formData.state || pincodeStates.length > 0) && (
             <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
               State<AppText style={styles.asteriskPrimary}>*</AppText>
             </AppText>
           )}
           <TouchableOpacity
-            style={[styles.dropdown, errors.state && styles.inputError]}
+            style={[styles.dropdown, errors.stateId && styles.inputError]}
             onPress={() => {
-              if (states.length === 0) {
-                Toast.show({
-                  type: 'info',
-                  text1: 'No State Available',
-                  text2: 'No state available for this pincode',
-                  position: 'top',
-                });
-              }
+              setShowStateModal(true)
             }}
-            disabled={states.length === 0}
           >
             <View style={styles.inputTextContainer}>
               <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
-                {formData.state || (states.length === 0 ? 'No state available' : 'State')}
+                {formData.state || ('State')}
               </AppText>
               <AppText style={styles.inlineAsterisk}>*</AppText>
             </View>
-            <ArrowDown color='#999' />
+            <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
-          {errors.state && <AppText style={styles.errorText}>{errors.state}</AppText>}
+          {errors.stateId && <AppText style={styles.errorText}>{errors.stateId}</AppText>}
         </View>
 
       </View>
@@ -1965,6 +2107,44 @@ const GovtHospitalRegistrationForm = () => {
       />
 
 
+       <DropdownModal
+        visible={showStateModal}
+        onClose={() => setShowStateModal(false)}
+        title="Select State"
+        data={states}
+        selectedId={formData.stateId}
+        onSelect={(item) => {
+          setFormData(prev => ({
+            ...prev,
+            stateId: item.id,
+            state: item.name,
+            // don't reset city -- but reset cityId if state changed
+            cityId: null,
+            city: '',
+          }));
+          setErrors(prev => ({ ...prev, stateId: null }));
+        }}
+        loading={false}
+      />
+
+      <DropdownModal
+        visible={showCityModal}
+        onClose={() => setShowCityModal(false)}
+        title="Select City"
+        data={cities}
+        selectedId={formData.cityId}
+        onSelect={(item) => {
+          setFormData(prev => ({
+            ...prev,
+            cityId: item.id,
+            city: item.name
+          }));
+          setErrors(prev => ({ ...prev, cityId: null }));
+        }}
+        loading={false}
+      />
+
+
       <Modal
         visible={showCancelModal}
         transparent={true}
@@ -2251,20 +2431,30 @@ const styles = StyleSheet.create({
     color: colors.primary,
     marginLeft: 8,
   },
-  dropdown: {
-    position: 'relative',
+  floatingLabel: {
+    position: 'absolute',
+    top: -6,
+    left: 12,
+    fontSize: 12,
+    fontWeight: '500',
     backgroundColor: '#fff',
+    paddingHorizontal: 4,
+    zIndex: 1,
+  },
+  dropdownContainer: {
+    marginBottom: 16,
+  },
+  dropdown: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderRadius: 8,
-    marginTop: -10,
-    marginBottom: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    maxHeight: 200,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    marginBottom: 2
   },
   dropdownItem: {
     paddingVertical: 12,
@@ -3162,6 +3352,9 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: colors.primary
+  },
+  asteriskPrimary: {
+    color: colors.primary,
   }
 });
 

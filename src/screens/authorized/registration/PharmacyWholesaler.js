@@ -135,6 +135,9 @@ const PharmacyWholesalerForm = () => {
   
   // Local state for dropdown modals
   const [showAreaModal, setShowAreaModal] = useState(false);
+  const [showCityModal, setShowCityModal] = useState(false);
+const [showStateModal, setShowStateModal] = useState(false);
+
 
   // Date picker states
   const [showDatePicker, setShowDatePicker] = useState({
@@ -1052,6 +1055,9 @@ const PharmacyWholesalerForm = () => {
                     )}
                   </TouchableOpacity>
                 )}
+                ListEmptyComponent={
+                  <AppText style={styles.emptyText}>No {title} available</AppText>
+                }
                 style={styles.modalList}
               />
             )}
@@ -1379,16 +1385,7 @@ const PharmacyWholesalerForm = () => {
                 <TouchableOpacity
                   style={[styles.dropdown, errors.area && styles.inputError]}
                   onPress={() => {
-                    if (areas.length === 0) {
-                      Toast.show({
-                        type: 'info',
-                        text1: 'Area',
-                        text2: 'Area for this pincode',
-                        position: 'top',
-                      });
-                    } else {
-                      setShowAreaModal(true);
-                    }
+                    setShowAreaModal(true)
                   }}
                 >
                   <View style={styles.inputTextContainer}>
@@ -1421,21 +1418,17 @@ const PharmacyWholesalerForm = () => {
                 )}
                 <TouchableOpacity
                   style={[styles.dropdown, errors.city && styles.inputError]}
+                  onPress={() => setShowCityModal(true)}
                 >
                   <View style={styles.inputTextContainer}>
-                    <AppText
-                      style={
-                        formData.city
-                          ? styles.inputText
-                          : styles.placeholderText
-                      }
-                    >
+                    <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
                       {formData.city || ('City')}
                     </AppText>
                     <AppText style={styles.inlineAsterisk}>*</AppText>
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
-                </TouchableOpacity>
+                </TouchableOpacity> 
+
                 {errors.city && (
                   <AppText style={styles.errorText}>{errors.city}</AppText>
                 )}
@@ -1452,21 +1445,17 @@ const PharmacyWholesalerForm = () => {
                 )}
                 <TouchableOpacity
                   style={[styles.dropdown, errors.state && styles.inputError]}
+                  onPress={() => setShowStateModal(true)}
                 >
                   <View style={styles.inputTextContainer}>
-                    <AppText
-                      style={
-                        formData.state
-                          ? styles.inputText
-                          : styles.placeholderText
-                      }
-                    >
+                    <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
                       {formData.state || ('State')}
                     </AppText>
                     <AppText style={styles.inlineAsterisk}>*</AppText>
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
+
                 {errors.state && (
                   <AppText style={styles.errorText}>{errors.state}</AppText>
                 )}
@@ -2128,6 +2117,41 @@ const PharmacyWholesalerForm = () => {
         loading={pincodeLoading}
       />
 
+      <DropdownModal
+        visible={showCityModal}
+        onClose={() => setShowCityModal(false)}
+        title="Select City"
+        data={cities.map(c => ({ id: c.id, name: c.name }))}
+        selectedId={formData.cityId}
+        onSelect={item => {
+          setFormData(prev => ({
+            ...prev,
+            city: item.name,
+            cityId: item.id,
+          }));
+          setErrors(prev => ({ ...prev, city: null }));
+        }}
+        loading={false}
+      />
+
+      <DropdownModal
+        visible={showStateModal}
+        onClose={() => setShowStateModal(false)}
+        title="Select State"
+        data={states.map(s => ({ id: s.id, name: s.name }))}
+        selectedId={formData.stateId}
+        onSelect={item => {
+          setFormData(prev => ({
+            ...prev,
+            state: item.name,
+            stateId: item.id,
+          }));
+          setErrors(prev => ({ ...prev, state: null }));
+        }}
+        loading={false}
+      />
+
+
       {/* Cancel Confirmation Modal */}
       <Modal
         visible={showCancelModal}
@@ -2373,6 +2397,7 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 16,
     color: colors.gray,
+    marginLeft: 8
   },
   inputLabel: {
     fontSize: 14,
@@ -2402,7 +2427,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    marginBottom: 16
+    marginBottom: 2
   },
   dropdownText: {
     fontSize: 14,
@@ -2973,8 +2998,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-
-
   linkButton: {
     flexDirection: 'row',   
     alignItems: 'center',  

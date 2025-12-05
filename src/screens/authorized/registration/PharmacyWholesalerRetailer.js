@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unstable-nested-components */
 /* eslint-disable no-dupe-keys */
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -144,6 +145,9 @@ const PharmacyWholesalerRetailerForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [registering, setRegistering] = useState(false);
+
+  const [showCityModal, setShowCityModal] = useState(false);
+const [showStateModal, setShowStateModal] = useState(false);
 
   // Date picker states
   const [showDatePicker, setShowDatePicker] = useState({
@@ -885,65 +889,73 @@ const PharmacyWholesalerRetailerForm = () => {
     navigation.navigate('HospitalSelector');
   };
 
-  // DropdownModal Component
   const DropdownModal = ({ visible, onClose, title, data, selectedId, onSelect, loading }) => {
-    return (
-      <Modal
-        visible={visible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={onClose}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.flexContainer}
-            activeOpacity={1}
-            onPress={onClose}
-          />
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <AppText style={styles.modalTitle}>{title}</AppText>
-              <TouchableOpacity onPress={onClose}>
-                <Icon name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            {loading ? (
-              <ActivityIndicator size="large" color={colors.primary} style={styles.modalLoader} />
-            ) : (
-              <FlatList
-                data={data}
-                keyExtractor={(item) => item.id?.toString() || item.value}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.modalItem,
-                      selectedId == item.id && styles.modalItemSelected
-                    ]}
-                    onPress={() => {
-                      onSelect(item);
-                      onClose();
-                    }}
-                  >
-                    <AppText style={[
-                      styles.modalItemText,
-                      selectedId == item.id && styles.modalItemTextSelected
-                    ]}>
-                      {item.name}
-                    </AppText>
-                    {selectedId == item.id && (
-                      <Icon name="check" size={20} color={colors.primary} />
-                    )}
-                  </TouchableOpacity>
-                )}
-                style={styles.modalList}
-              />
-            )}
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <TouchableOpacity
+          style={styles.flexContainer}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <AppText style={styles.modalTitle}>{title}</AppText>
+            <TouchableOpacity onPress={onClose}>
+              <Icon name="close" size={24} color="#666" />
+            </TouchableOpacity>
           </View>
+
+          {loading ? (
+            <ActivityIndicator size="large" color={colors.primary} style={styles.modalLoader} />
+          ) : (
+            <>
+              {(!data || data.length === 0) ? (
+                <View style={[styles.modalList, { padding: 24, alignItems: 'center' }]}>
+                  <AppText style={{ color: '#777', fontSize: 16 }}>No {title} found</AppText>
+                </View>
+              ) : (
+                <FlatList
+                  data={data}
+                  keyExtractor={(item) => item.id?.toString() || item.value}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.modalItem,
+                        selectedId == item.id && styles.modalItemSelected
+                      ]}
+                      onPress={() => {
+                        onSelect(item);
+                        onClose();
+                      }}
+                    >
+                      <AppText style={[
+                        styles.modalItemText,
+                        selectedId == item.id && styles.modalItemTextSelected
+                      ]}>
+                        {item.name}
+                      </AppText>
+                      {selectedId == item.id && (
+                        <Icon name="check" size={20} color={colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  )}
+                  style={styles.modalList}
+                />
+              )}
+            </>
+          )}
         </View>
-      </Modal>
-    );
-  };
+      </View>
+    </Modal>
+  );
+};
+
 
   const handleFileUpload = (field, file) => {
     if (file && file.id) {
@@ -1429,16 +1441,7 @@ const PharmacyWholesalerRetailerForm = () => {
                 <TouchableOpacity
                   style={[styles.dropdown, errors.area && styles.inputError]}
                   onPress={() => {
-                    if (areas.length === 0) {
-                      Toast.show({
-                        type: 'info',
-                        text1: 'Area',
-                        text2: 'Area for this pincode',
-                        position: 'top',
-                      });
-                    } else {
                       setShowAreaModal(true);
-                    }
                   }}
                 >
                   <View style={styles.inputTextContainer}>
@@ -1453,46 +1456,58 @@ const PharmacyWholesalerRetailerForm = () => {
               </View>
 
               {/* City - Auto-populated from pincode */}
-              <View style={styles.dropdownContainer}>
-                {(formData.city || cities.length > 0) && (
-                  <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
-                    City<AppText style={styles.asteriskPrimary}>*</AppText>
-                  </AppText>
-                )}
-                <TouchableOpacity
-                  style={[styles.dropdown, errors.cityId && styles.inputError]}
-                >
-                  <View style={styles.inputTextContainer}>
-                    <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
-                      {formData.city || ('City')}
-                    </AppText>
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
-                  </View>
-                  <Icon name="arrow-drop-down" size={24} color="#666" />
-                </TouchableOpacity>
-                {errors.cityId && <AppText style={styles.errorText}>{errors.cityId}</AppText>}
-              </View>
+              {/* City - Auto-populated from pincode */}
+<View style={styles.dropdownContainer}>
+  {(formData.city || cities.length > 0) && (
+    <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+      City<AppText style={styles.asteriskPrimary}>*</AppText>
+    </AppText>
+  )}
+  <TouchableOpacity
+    style={[styles.dropdown, errors.cityId && styles.inputError]}
+    onPress={() => {
+      // If city list empty, still open modal to show "No items" + manual entry option
+      setShowCityModal(true);
+    }}
+  >
+    <View style={styles.inputTextContainer}>
+      <AppText style={[styles.inputText, !formData.city && styles.placeholderText]}>
+        {formData.city || 'City'}
+      </AppText>
+      <AppText style={styles.inlineAsterisk}>*</AppText>
+    </View>
+    <Icon name="arrow-drop-down" size={24} color="#666" />
+  </TouchableOpacity>
+  {errors.cityId && <AppText style={styles.errorText}>{errors.cityId}</AppText>}
+</View>
+
 
               {/* State - Auto-populated from pincode */}
-              <View style={styles.dropdownContainer}>
-                {(formData.state || states.length > 0) && (
-                  <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
-                    State<AppText style={styles.asteriskPrimary}>*</AppText>
-                  </AppText>
-                )}
-                <TouchableOpacity
-                  style={[styles.dropdown, errors.stateId && styles.inputError]}
-                >
-                  <View style={styles.inputTextContainer}>
-                    <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
-                      {formData.state || ('State')}
-                    </AppText>
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
-                  </View>
-                  <Icon name="arrow-drop-down" size={24} color="#666" />
-                </TouchableOpacity>
-                {errors.stateId && <AppText style={styles.errorText}>{errors.stateId}</AppText>}
-              </View>
+             {/* State - Auto-populated from pincode */}
+<View style={styles.dropdownContainer}>
+  {(formData.state || states.length > 0) && (
+    <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+      State<AppText style={styles.asteriskPrimary}>*</AppText>
+    </AppText>
+  )}
+  <TouchableOpacity
+    style={[styles.dropdown, errors.stateId && styles.inputError]}
+    onPress={() => {
+      // Open state modal even if states array empty
+      setShowStateModal(true);
+    }}
+  >
+    <View style={styles.inputTextContainer}>
+      <AppText style={[styles.inputText, !formData.state && styles.placeholderText]}>
+        {formData.state || 'State'}
+      </AppText>
+      <AppText style={styles.inlineAsterisk}>*</AppText>
+    </View>
+    <Icon name="arrow-drop-down" size={24} color="#666" />
+  </TouchableOpacity>
+  {errors.stateId && <AppText style={styles.errorText}>{errors.stateId}</AppText>}
+</View>
+
             </View>
 
             {/* Security Details Section */}
@@ -2065,6 +2080,41 @@ const PharmacyWholesalerRetailerForm = () => {
         }}
         loading={pincodeLoading}
       />
+  {/* Dropdown Modals */}
+      <DropdownModal
+        visible={showStateModal}
+        onClose={() => setShowStateModal(false)}
+        title="Select State"
+        data={states}
+        selectedId={formData.stateId}
+        onSelect={item => {
+          setFormData(prev => ({
+            ...prev,
+            stateId: item.id,
+            state: item.name,
+            // Don't reset city and cityId - allow independent selection
+          }));
+          setErrors(prev => ({ ...prev, stateId: null }));
+        }}
+        loading={false}
+      />
+
+      <DropdownModal
+        visible={showCityModal}
+        onClose={() => setShowCityModal(false)}
+        title="Select City"
+        data={cities}
+        selectedId={formData.cityId}
+        onSelect={item => {
+          setFormData(prev => ({
+            ...prev,
+            cityId: item.id,
+            city: item.name,
+          }));
+          setErrors(prev => ({ ...prev, cityId: null }));
+        }}
+        loading={false}
+      />
 
 
       {/* Add New Hospital Modal */}
@@ -2319,7 +2369,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   dropdownContainer: {
-    marginBottom: 16,
+    marginBottom: 2,
   },
   dropdown: {
     flexDirection: 'row',
@@ -2951,6 +3001,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+  },
+  inputText: {
+    fontSize: 16,
+    color: '#333',
   },
   inlineAsterisk: {
     color: 'red',
