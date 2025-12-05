@@ -87,7 +87,7 @@ const GovtHospitalRegistrationForm = () => {
   // Form state
   const [formData, setFormData] = useState({
     // License Details
-    registrationCertificate: '',
+    registrationCertificateFile: '',
     registrationNumber: '',
     registrationDate: '',
     hospitalImageFile: '',
@@ -457,6 +457,8 @@ const GovtHospitalRegistrationForm = () => {
     };
   }, [otpTimers, showOTP]);
 
+
+  
   const handleVerify = async (field) => {
     // Validate field before verification
     if (field === 'mobile' && (!formData.mobileNumber || formData.mobileNumber.length !== 10 || !/^[6789]\d{9}$/.test(formData.mobileNumber))) {
@@ -838,8 +840,8 @@ const GovtHospitalRegistrationForm = () => {
       newErrors.registrationNumber = 'Hospital code is required';
     }
 
-    if (!formData.registrationCertificate) {
-      newErrors.registrationCertificate = 'Registration Certificate is required';
+    if (!formData.registrationCertificateFile) {
+      newErrors.registrationCertificateFile = 'Registration Certificate is required';
     }
     if (!formData.nin || formData.nin.trim().length === 0) {
       newErrors.nin = 'NIN (National Identification Number) is required';
@@ -1117,11 +1119,11 @@ const GovtHospitalRegistrationForm = () => {
           accept={['pdf', 'jpg', 'png']}
           maxSize={15 * 1024 * 1024}
           docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
-          initialFile={formData.registrationCertificate}
+          initialFile={formData.registrationCertificateFile}
           onFileUpload={(file) => handleFileUpload('registrationCertificate', file)}
           onFileDelete={() => handleFileDelete('registrationCertificate')}
           onOcrDataExtracted={handleRegistrationOcrData}
-          errorMessage={errors.registrationCertificate}
+          errorMessage={errors.registrationCertificateFile}
         />
 
         <CustomInput
@@ -1665,7 +1667,7 @@ const GovtHospitalRegistrationForm = () => {
       {/* Link Child Hospital */}
       <View style={styles.inputTextContainer}>
         <AppText style={styles.subsectionLabel}>Link hospital<AppText style={styles.inlineAsterisk}>*</AppText>
-          <Icon name="information-circle-outline" size={16} color="#999" /></AppText>
+          <Icon name="info-outline" size={16} color="#999" /></AppText>
       </View>
 
       {/* Hospital Selector - Collapsible Summary */}
