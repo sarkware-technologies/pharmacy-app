@@ -12,6 +12,7 @@ export const usePincodeLookup = () => {
   const [states, setStates] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // lookupByPincode now returns the extracted arrays so callers can act immediately
   const lookupByPincode = useCallback(async (pinCode) => {
     // Validate pincode (should be 6 digits)
     if (!pinCode || pinCode.length !== 6 || !/^\d{6}$/.test(pinCode)) {
@@ -19,7 +20,7 @@ export const usePincodeLookup = () => {
       setAreas([]);
       setCities([]);
       setStates([]);
-      return;
+      return { areas: [], cities: [], states: [] };
     }
 
     setLoading(true);
@@ -39,6 +40,7 @@ export const usePincodeLookup = () => {
             extractedCities.push({
               id: city.value,
               name: city.label,
+              raw: city,
             });
 
             // Add areas for this city
@@ -48,6 +50,7 @@ export const usePincodeLookup = () => {
                   id: area.value,
                   name: area.label,
                   cityId: city.value,
+                  raw: area,
                 });
               });
             }
@@ -61,13 +64,22 @@ export const usePincodeLookup = () => {
               id: state.value,
               name: state.label,
               gstCode: state.gstCode,
+              raw: state,
             });
           });
         }
 
+        // Update hook state
         setAreas(allAreas);
         setCities(extractedCities);
         setStates(extractedStates);
+
+        // RETURN the extracted arrays so the caller can use them immediately
+        return {
+          areas: allAreas,
+          cities: extractedCities,
+          states: extractedStates,
+        };
       } else {
         // No data found for this pincode
         setAreas([]);
@@ -79,6 +91,7 @@ export const usePincodeLookup = () => {
           text2: 'No city/state found for this pincode',
           position: 'top',
         });
+        return { areas: [], cities: [], states: [] };
       }
     } catch (error) {
       console.error('Error looking up pincode:', error);
@@ -91,6 +104,7 @@ export const usePincodeLookup = () => {
         text2: 'Failed to lookup pincode. Please try again.',
         position: 'top',
       });
+      return { areas: [], cities: [], states: [] };
     } finally {
       setLoading(false);
     }
@@ -111,4 +125,3 @@ export const usePincodeLookup = () => {
     clearData,
   };
 };
-

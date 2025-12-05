@@ -1437,21 +1437,69 @@ const PrivateRegistrationForm = () => {
                 onFileDelete={() => {
                   setFormData(prev => ({ ...prev, licenseFile: null }));
                 }}
-                onOcrDataExtracted={ocrData => {
+                onOcrDataExtracted={async (ocrData) => {
                   console.log('OCR Data Received:', ocrData);
+                  
+                  // Helper function to split address
+                  const splitAddress = (address) => {
+                    if (!address) return { address1: '', address2: '', address3: '' };
+                    const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
+                    if (parts.length >= 3) {
+                      return {
+                        address1: parts[0],
+                        address2: parts.slice(1, -1).join(', '),
+                        address3: parts[parts.length - 1],
+                      };
+                    } else if (parts.length === 2) {
+                      return { address1: parts[0], address2: parts[1], address3: '' };
+                    } else if (parts.length === 1) {
+                      const addr = parts[0];
+                      if (addr.length > 100) {
+                        return {
+                          address1: addr.substring(0, 50).trim(),
+                          address2: addr.substring(50, 100).trim(),
+                          address3: addr.substring(100).trim(),
+                        };
+                      } else if (addr.length > 50) {
+                        return {
+                          address1: addr.substring(0, 50).trim(),
+                          address2: addr.substring(50).trim(),
+                          address3: '',
+                        };
+                      } else {
+                        return { address1: addr, address2: '', address3: '' };
+                      }
+                    }
+                    return { address1: '', address2: '', address3: '' };
+                  };
+                  
                   const updates = {};
 
                   if (ocrData.hospitalName && !formData.clinicName) {
                     updates.clinicName = ocrData.hospitalName;
                   }
-                  if (ocrData.address && !formData.address1) {
-                    updates.address1 = ocrData.address;
+                  
+                  // Split and populate address fields
+                  if (ocrData.address) {
+                    const addressParts = splitAddress(ocrData.address);
+                    if (!formData.address1 && addressParts.address1) {
+                      updates.address1 = addressParts.address1;
+                    }
+                    if (!formData.address2 && addressParts.address2) {
+                      updates.address2 = addressParts.address2;
+                    }
+                    if (!formData.address3 && addressParts.address3) {
+                      updates.address3 = addressParts.address3;
+                    }
                   }
+                  
                   if (
                     ocrData.registrationNumber &&
                     !formData.registrationNumber
                   ) {
                     updates.registrationNumber = ocrData.registrationNumber;
+                  } else if (ocrData.licenseNumber && !formData.registrationNumber) {
+                    updates.registrationNumber = ocrData.licenseNumber;
                   }
                   if (ocrData.issueDate && !formData.registrationDate) {
                     const parts = ocrData.issueDate.split('-');
@@ -1459,17 +1507,17 @@ const PrivateRegistrationForm = () => {
                       updates.registrationDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
                     }
                   }
-                  if (ocrData.city && !formData.city) {
-                    updates.city = ocrData.city;
+                  if (ocrData.expiryDate) {
+                    const parts = ocrData.expiryDate.split('-');
+                    if (parts.length === 3) {
+                      const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                      // Store expiry date if needed
+                    }
                   }
-                  if (ocrData.state && !formData.state) {
-                    updates.state = ocrData.state;
-                  }
+                  
+                  // Populate pincode
                   if (ocrData.pincode && !formData.pincode) {
                     updates.pincode = ocrData.pincode;
-                  }
-                  if (ocrData.area && !formData.area) {
-                    updates.area = ocrData.area;
                   }
 
                   if (Object.keys(updates).length > 0) {
@@ -1479,6 +1527,11 @@ const PrivateRegistrationForm = () => {
                       errorUpdates[key] = null;
                     });
                     setErrors(prev => ({ ...prev, ...errorUpdates }));
+                  }
+                  
+                  // Trigger pincode lookup if pincode is available and valid (6 digits)
+                  if (ocrData.pincode && /^\d{6}$/.test(ocrData.pincode)) {
+                    await lookupByPincode(ocrData.pincode);
                   }
                 }}
                 errorMessage={errors.licenseFile}

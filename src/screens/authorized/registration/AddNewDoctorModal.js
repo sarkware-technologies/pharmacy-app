@@ -830,6 +830,102 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
             onFileUpload={(file) => handleFileUpload('clinicRegistrationCertificate', file)}
             onFileDelete={() => handleFileDelete('clinicRegistrationCertificate')}
             errorMessage={doctorErrors.clinicRegistrationCertificateFile}
+            onOcrDataExtracted={async (ocrData) => {
+              console.log('Clinic Registration OCR Data:', ocrData);
+              
+              // Helper function to split address
+              const splitAddress = (address) => {
+                if (!address) return { address1: '', address2: '', address3: '' };
+                const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
+                if (parts.length >= 3) {
+                  return {
+                    address1: parts[0],
+                    address2: parts.slice(1, -1).join(', '),
+                    address3: parts[parts.length - 1],
+                  };
+                } else if (parts.length === 2) {
+                  return { address1: parts[0], address2: parts[1], address3: '' };
+                } else if (parts.length === 1) {
+                  const addr = parts[0];
+                  if (addr.length > 100) {
+                    return {
+                      address1: addr.substring(0, 50).trim(),
+                      address2: addr.substring(50, 100).trim(),
+                      address3: addr.substring(100).trim(),
+                    };
+                  } else if (addr.length > 50) {
+                    return {
+                      address1: addr.substring(0, 50).trim(),
+                      address2: addr.substring(50).trim(),
+                      address3: '',
+                    };
+                  } else {
+                    return { address1: addr, address2: '', address3: '' };
+                  }
+                }
+                return { address1: '', address2: '', address3: '' };
+              };
+              
+              const updates = {};
+              
+              // Populate clinic name if available
+              if (ocrData.clinicName && !doctorForm.clinicName) {
+                updates.clinicName = ocrData.clinicName;
+              } else if (ocrData.hospitalName && !doctorForm.clinicName) {
+                updates.clinicName = ocrData.hospitalName;
+              }
+              
+              // Split and populate address fields
+              if (ocrData.address) {
+                const addressParts = splitAddress(ocrData.address);
+                if (!doctorForm.address1 && addressParts.address1) {
+                  updates.address1 = addressParts.address1;
+                }
+                if (!doctorForm.address2 && addressParts.address2) {
+                  updates.address2 = addressParts.address2;
+                }
+                if (!doctorForm.address3 && addressParts.address3) {
+                  updates.address3 = addressParts.address3;
+                }
+              }
+              
+              // Populate registration number if available
+              if (ocrData.registrationNumber && !doctorForm.clinicRegistrationNumber) {
+                updates.clinicRegistrationNumber = ocrData.registrationNumber;
+              } else if (ocrData.licenseNumber && !doctorForm.clinicRegistrationNumber) {
+                updates.clinicRegistrationNumber = ocrData.licenseNumber;
+              }
+              
+              // Populate expiry date if available
+              if (ocrData.expiryDate) {
+                const parts = ocrData.expiryDate.split('-');
+                if (parts.length === 3) {
+                  const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                  if (!doctorForm.clinicRegistrationExpiryDate) {
+                    updates.clinicRegistrationExpiryDate = formattedDate;
+                  }
+                }
+              }
+              
+              // Populate pincode
+              if (ocrData.pincode && !doctorForm.pincode) {
+                updates.pincode = ocrData.pincode;
+              }
+              
+              if (Object.keys(updates).length > 0) {
+                setDoctorForm(prev => ({ ...prev, ...updates }));
+                const errorUpdates = {};
+                Object.keys(updates).forEach(key => {
+                  errorUpdates[key] = null;
+                });
+                setDoctorErrors(prev => ({ ...prev, ...errorUpdates }));
+              }
+              
+              // Trigger pincode lookup if pincode is available and valid (6 digits)
+              if (ocrData.pincode && /^\d{6}$/.test(ocrData.pincode)) {
+                await lookupByPincode(ocrData.pincode);
+              }
+            }}
           />
 
 

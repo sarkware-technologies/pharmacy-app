@@ -178,12 +178,16 @@ const PharmacyRegistrationForm = () => {
   const otpSlideAnim = useRef(new Animated.Value(-50)).current;
 
   // States and cities data
+  const [areas, setAreas] = useState([]);
+  
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
 
+  const [uploadedAreas, setUploadedAreas] = useState([]); // [{ id, name }]
+
   // Pincode lookup hook
   const {
-    areas,
+    areas: pincodeAreas,
     cities: pincodeCities,
     states: pincodeStates,
     loading: pincodeLoading,
@@ -191,81 +195,138 @@ const PharmacyRegistrationForm = () => {
     clearData,
   } = usePincodeLookup();
 
-  // Handle pincode change and trigger lookup
-  const handlePincodeChange = async text => {
-    if (/^\d{0,6}$/.test(text)) {
-      setFormData(prev => ({ ...prev, pincode: text }));
-      setErrors(prev => ({ ...prev, pincode: null }));
+ // Handle pincode change and trigger lookup
+const handlePincodeChange = async text => {
+  if (!/^\d{0,6}$/.test(text)) return; // allow only digits up to 6
 
-      // Clear previous selections when pincode changes
-      if (text.length < 6) {
-        setFormData(prev => ({
-          ...prev,
-          area: '',
-          areaId: null,
-          city: '',
-          cityId: null,
-          state: '',
-          stateId: null,
-        }));
-        clearData();
+  setFormData(prev => ({ ...prev, pincode: text }));
+  setErrors(prev => ({ ...prev, pincode: null }));
+
+  // If user is editing pincode manually, clear any OCR/upload-derived area list
+  if (uploadedAreas && uploadedAreas.length > 0) {
+    setUploadedAreas([]); // prefer manual lookup results from pincode
+  }
+
+  // Clear previous selections when pincode becomes incomplete
+  if (text.length < 6) {
+    setFormData(prev => ({
+      ...prev,
+      area: '',
+      areaId: null,
+      city: '',
+      cityId: '',
+      state: '',
+      stateId: '',
+    }));
+    // clear hook data
+    clearData();
+    setAreas([]); // clear local areas too
+    setCities([]);
+    setStates([]);
+    return;
+  }
+
+  // Trigger lookup when pincode is complete (6 digits)
+  if (text.length === 6) {
+    // call lookup and receive returned arrays (hook now returns them)
+    const { areas: lkAreas = [], cities: lkCities = [], states: lkStates = [] } =
+      (await lookupByPincode(text)) || {};
+
+    // Apply to local component state so dropdowns read correct lists
+    if (Array.isArray(lkAreas)) setAreas(lkAreas);
+    if (Array.isArray(lkCities)) setCities(lkCities);
+    if (Array.isArray(lkStates)) setStates(lkStates);
+
+    // Auto-select first available values if form doesn't already have them
+    setFormData(prev => {
+      const next = { ...prev };
+
+      if ((!next.cityId || !next.city) && Array.isArray(lkCities) && lkCities.length > 0) {
+        next.city = lkCities[0].name || '';
+        next.cityId = lkCities[0].id || '';
       }
 
-      // Trigger lookup when pincode is complete (6 digits)
-      if (text.length === 6) {
-        await lookupByPincode(text);
+      if ((!next.stateId || !next.state) && Array.isArray(lkStates) && lkStates.length > 0) {
+        next.state = lkStates[0].name || '';
+        next.stateId = lkStates[0].id || '';
       }
-    }
-  };
 
-  // Sync pincode lookup results → local lists (states, cities, areas) and auto-select first matches.
-  // This replaces previous API-based state/city loading.
-  useEffect(() => {
-    // Map pincodeCities → cities
-    if (Array.isArray(pincodeCities) && pincodeCities.length > 0) {
-      const mappedCities = pincodeCities.map(c => ({
-        id: c.id,
-        name: c.name || c.cityName || c.city || '',
-      }));
-      setCities(mappedCities);
+      if ((!next.areaId || !next.area) && Array.isArray(lkAreas) && lkAreas.length > 0) {
+        next.area = lkAreas[0].name || '';
+        next.areaId = lkAreas[0].id || '';
+      }
 
-      // Auto-select the first city if none selected or cityId is falsy
-      const firstCity = mappedCities[0];
-      setFormData(prev => ({
-        ...prev,
-        city: prev.city || firstCity?.name || '',
-        cityId: prev.cityId || firstCity?.id || '',
-      }));
-    }
+      return next;
+    });
 
-    // Map pincodeStates → states
-    if (Array.isArray(pincodeStates) && pincodeStates.length > 0) {
-      const mappedStates = pincodeStates.map(s => ({
-        id: s.id,
-        name: s.name || s.stateName || s.state || '',
-      }));
-      setStates(mappedStates);
+    // clear any related errors
+    setErrors(prev => ({
+      ...prev,
+      pincode: null,
+      cityId: null,
+      stateId: null,
+      area: null,
+    }));
+  }
+};
 
-      // Auto-select the first state if none selected or stateId is falsy
-      const firstState = mappedStates[0];
-      setFormData(prev => ({
-        ...prev,
-        state: prev.state || firstState?.name || '',
-        stateId: prev.stateId || firstState?.id || '',
-      }));
-    }
 
-    // Auto-select first area when available
-    if (Array.isArray(areas) && areas.length > 0) {
-      const firstArea = areas[0];
-      setFormData(prev => ({
-        ...prev,
-        area: prev.area || firstArea.name || '',
-        areaId: prev.areaId || firstArea.id || '',
-      }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pincodeCities, pincodeStates, areas]);
+// Sync pincode lookup results → local lists (states, cities, areas) and auto-select first matches.
+useEffect(() => {
+  // Map pincodeCities → cities
+  if (Array.isArray(pincodeCities) && pincodeCities.length > 0) {
+    const mappedCities = pincodeCities.map(c => ({
+      id: c.id ?? c.value,
+      name: c.name || c.cityName || c.city || c.label || '',
+    }));
+    setCities(mappedCities);
+
+    // Auto-select the first city if none selected or cityId is falsy
+    const firstCity = mappedCities[0];
+    setFormData(prev => ({
+      ...prev,
+      city: prev.city || firstCity?.name || '',
+      cityId: prev.cityId || firstCity?.id || '',
+    }));
+  }
+
+  // Map pincodeStates → states
+  if (Array.isArray(pincodeStates) && pincodeStates.length > 0) {
+    const mappedStates = pincodeStates.map(s => ({
+      id: s.id ?? s.value,
+      name: s.name || s.stateName || s.state || s.label || '',
+    }));
+    setStates(mappedStates);
+
+    // Auto-select the first state if none selected or stateId is falsy
+    const firstState = mappedStates[0];
+    setFormData(prev => ({
+      ...prev,
+      state: prev.state || firstState?.name || '',
+      stateId: prev.stateId || firstState?.id || '',
+    }));
+  }
+
+  // Map pincodeAreas → areas (this 'areas' variable is the component's local state)
+  if (Array.isArray(pincodeAreas) && pincodeAreas.length > 0) {
+    const mappedAreas = pincodeAreas.map(a => ({
+      id: a.id ?? a.value,
+      name: a.name || a.label || '',
+      cityId: a.cityId || a.raw?.cityId || '',
+    }));
+    setAreas(mappedAreas);
+
+    // Auto-select first area if none selected
+    const firstArea = mappedAreas[0];
+    setFormData(prev => ({
+      ...prev,
+      area: prev.area || firstArea?.name || '',
+      areaId: prev.areaId || firstArea?.id || '',
+    }));
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [pincodeCities, pincodeStates, pincodeAreas]);
+
 
   // Dropdown modal states
   const [showStateModal, setShowStateModal] = useState(false);
@@ -975,7 +1036,8 @@ const PharmacyRegistrationForm = () => {
     );
   };
 
-  const handleFileUpload = (field, file) => {
+  const handleFileUpload = async (field, file) => {
+    // keep original behaviour for document Ids and formData
     if (file && file.id) {
       setDocumentIds(prev => ({ ...prev, [field]: file.id }));
     }
@@ -992,6 +1054,204 @@ const PharmacyRegistrationForm = () => {
       };
       setUploadedDocs(prev => [...prev, docObject]);
     }
+
+    // --- NEW: parse locationDetails (if present) and populate Area / City / State / Pincode ---
+    const locationDetails =
+      (file && file.locationDetails) ||
+      (file &&
+        file.response &&
+        file.response.data &&
+        file.response.data[0] &&
+        file.response.data[0].locationDetails) ||
+      (file && file.data && file.data[0] && file.data[0].locationDetails) ||
+      null;
+
+    try {
+      const updates = {};
+
+      if (locationDetails) {
+        // Build cities array
+        const ldCities = Array.isArray(locationDetails.cities)
+          ? locationDetails.cities.map(c => ({
+              id: c.value ?? c.id ?? c.value,
+              name:
+                c.label ||
+                c.name ||
+                c.city ||
+                (c.label && String(c.label)) ||
+                '',
+              raw: c,
+            }))
+          : [];
+
+        // Build states array
+        const ldStates = Array.isArray(locationDetails.states)
+          ? locationDetails.states.map(s => ({
+              id: s.value ?? s.id ?? s.value,
+              name: s.label || s.name || s.state || '',
+              gstCode: s.gstCode,
+              raw: s,
+            }))
+          : [];
+
+        // Build areas: if cities array present, take first city -> its area list
+        let ldAreas = [];
+        if (
+          Array.isArray(locationDetails.cities) &&
+          locationDetails.cities.length > 0
+        ) {
+          const firstCity = locationDetails.cities[0];
+          if (Array.isArray(firstCity.area)) {
+            ldAreas = firstCity.area.map(a => ({
+              id: a.value ?? a.id ?? a.value,
+              name: a.label || a.name || '',
+              raw: a,
+            }));
+          }
+        }
+
+        // Apply them to component state (so modal dropdowns can use them)
+        if (ldCities.length > 0) setCities(ldCities);
+        if (ldStates.length > 0) setStates(ldStates);
+        if (ldAreas.length > 0) setUploadedAreas(ldAreas);
+
+        // Prefer OCR'd textual City/State/Area if present on the file object
+        const uploadedCityName = (file && (file.City || file.city)) || null;
+        const uploadedStateName = (file && (file.State || file.state)) || null;
+        const uploadedAreaName = (file && (file.Area || file.area)) || null;
+
+        // City
+        if (ldCities.length > 0) {
+          const matchCity = uploadedCityName
+            ? ldCities.find(
+                c =>
+                  c.name &&
+                  c.name.toLowerCase() ===
+                    String(uploadedCityName).toLowerCase(),
+              )
+            : null;
+          const chosenCity = matchCity || ldCities[0];
+          if (chosenCity) {
+            updates.city = chosenCity.name || '';
+            updates.cityId = chosenCity.id || '';
+          }
+        }
+
+        // State
+        if (ldStates.length > 0) {
+          const matchState = uploadedStateName
+            ? ldStates.find(
+                s =>
+                  s.name &&
+                  s.name.toLowerCase() ===
+                    String(uploadedStateName).toLowerCase(),
+              )
+            : null;
+          const chosenState = matchState || ldStates[0];
+          if (chosenState) {
+            updates.state = chosenState.name || '';
+            updates.stateId = chosenState.id || '';
+          }
+        }
+
+        // Area
+        if (ldAreas.length > 0) {
+          const matchArea = uploadedAreaName
+            ? ldAreas.find(
+                a =>
+                  a.name &&
+                  a.name.toLowerCase() ===
+                    String(uploadedAreaName).toLowerCase(),
+              )
+            : null;
+          const chosenArea = matchArea || ldAreas[0];
+          if (chosenArea) {
+            updates.area = chosenArea.name || '';
+            updates.areaId = chosenArea.id || '';
+          }
+        }
+      }
+
+      // If the upload response also provided a Pincode (many responses use capital 'Pincode'), set it
+      const uploadedPincode =
+        (file &&
+          (file.Pincode ||
+            file.pincode ||
+            (file.response &&
+              file.response.data &&
+              file.response.data[0] &&
+              (file.response.data[0].Pincode ||
+                file.response.data[0].pincode)))) ||
+        null;
+
+      if (uploadedPincode && /^\d{6}$/.test(String(uploadedPincode))) {
+        updates.pincode = String(uploadedPincode);
+      }
+
+      // Apply updates gathered so far (city/state/area/pincode)
+      if (Object.keys(updates).length > 0) {
+        setFormData(prev => ({ ...prev, ...updates }));
+        const clearErrs = {};
+        if (updates.areaId) clearErrs.area = null;
+        if (updates.cityId) clearErrs.cityId = null;
+        if (updates.stateId) clearErrs.stateId = null;
+        if (updates.pincode) clearErrs.pincode = null;
+        setErrors(prev => ({ ...prev, ...clearErrs }));
+      }
+
+      // If there's a valid pincode extracted from the uploaded file, trigger lookupByPincode immediately
+      const finalPincode =
+        updates.pincode || (file && (file.Pincode || file.pincode));
+      if (finalPincode && /^\d{6}$/.test(String(finalPincode))) {
+        try {
+          console.log(
+            'handleFileUpload: calling lookupByPincode with',
+            String(finalPincode),
+          );
+          // call with string — lookup hook should accept string or number
+          await lookupByPincode(String(finalPincode));
+
+          // after lookup completes, if hook provided arrays and the form doesn't yet have selections,
+          // auto-select first available items so UI updates immediately
+          // (use the hook values: areas, pincodeCities, pincodeStates)
+          setFormData(prev => {
+            const next = { ...prev };
+            if (
+              (!next.cityId || !next.city) &&
+              Array.isArray(pincodeCities) &&
+              pincodeCities.length > 0
+            ) {
+              const fc = pincodeCities[0];
+              next.city = fc.name || fc.city || fc.cityName || '';
+              next.cityId = fc.id || fc.value || '';
+            }
+            if (
+              (!next.stateId || !next.state) &&
+              Array.isArray(pincodeStates) &&
+              pincodeStates.length > 0
+            ) {
+              const fs = pincodeStates[0];
+              next.state = fs.name || fs.state || fs.stateName || '';
+              next.stateId = fs.id || fs.value || '';
+            }
+            if (
+              (!next.areaId || !next.area) &&
+              Array.isArray(areas) &&
+              areas.length > 0
+            ) {
+              const fa = areas[0];
+              next.area = fa.name || '';
+              next.areaId = fa.id || '';
+            }
+            return next;
+          });
+        } catch (err) {
+          console.error('lookupByPincode failed in handleFileUpload:', err);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to apply locationDetails from upload:', err);
+    }
   };
 
   const handleFileDelete = field => {
@@ -1004,67 +1264,162 @@ const PharmacyRegistrationForm = () => {
   };
 
   // Handle OCR extracted data for license uploads
-  const handleLicenseOcrData = ocrData => {
-    console.log('OCR Data Received:', ocrData);
+  // Helper function to split address into address1, address2, address3
+  const splitAddress = address => {
+    if (!address) return { address1: '', address2: '', address3: '' };
 
-    const updates = {};
+    // Split by commas first
+    const parts = address
+      .split(',')
+      .map(part => part.trim())
+      .filter(part => part.length > 0);
 
-    // Populate pharmacy name if available
-    if (ocrData.pharmacyName && !formData.pharmacyName) {
-      updates.pharmacyName = ocrData.pharmacyName;
-    }
-
-    // Populate address fields if available
-    if (ocrData.address && !formData.address1) {
-      updates.address1 = ocrData.address;
-    }
-
-    // Populate license number if available and field is empty
-    if (ocrData.licenseNumber) {
-      if (!formData.license20) {
-        updates.license20 = ocrData.licenseNumber;
-      } else if (!formData.license21) {
-        updates.license21 = ocrData.licenseNumber;
+    if (parts.length >= 3) {
+      return {
+        address1: parts[0],
+        address2: parts.slice(1, -1).join(', '),
+        address3: parts[parts.length - 1],
+      };
+    } else if (parts.length === 2) {
+      return {
+        address1: parts[0],
+        address2: parts[1],
+        address3: '',
+      };
+    } else if (parts.length === 1) {
+      // If no commas, try to split by length (approximately 50 chars each)
+      const addr = parts[0];
+      if (addr.length > 100) {
+        return {
+          address1: addr.substring(0, 50).trim(),
+          address2: addr.substring(50, 100).trim(),
+          address3: addr.substring(100).trim(),
+        };
+      } else if (addr.length > 50) {
+        return {
+          address1: addr.substring(0, 50).trim(),
+          address2: addr.substring(50).trim(),
+          address3: '',
+        };
+      } else {
+        return {
+          address1: addr,
+          address2: '',
+          address3: '',
+        };
       }
     }
 
-    // Populate location fields if available
-    if (ocrData.city && !formData.city) {
-      updates.city = ocrData.city;
-    }
-    if (ocrData.state && !formData.state) {
-      updates.state = ocrData.state;
-    }
-    if (ocrData.pincode && !formData.pincode) {
-      updates.pincode = ocrData.pincode;
-    }
-    if (ocrData.area && !formData.area) {
-      updates.area = ocrData.area;
-    }
-
-    // Populate expiry date if available
-    if (ocrData.expiryDate) {
-      const parts = ocrData.expiryDate.split('-');
-      if (parts.length === 3) {
-        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
-        if (!formData.license20ExpiryDate) {
-          updates.license20ExpiryDate = formattedDate;
-        } else if (!formData.license21ExpiryDate) {
-          updates.license21ExpiryDate = formattedDate;
-        }
-      }
-    }
-
-    // Apply all updates at once
-    if (Object.keys(updates).length > 0) {
-      setFormData(prev => ({ ...prev, ...updates }));
-      const errorUpdates = {};
-      Object.keys(updates).forEach(key => {
-        errorUpdates[key] = null;
-      });
-      setErrors(prev => ({ ...prev, ...errorUpdates }));
-    }
+    return { address1: '', address2: '', address3: '' };
   };
+
+ const handleLicenseOcrData = async (ocrData) => {
+  console.log("OCR Data Received:", ocrData);
+
+  const updates = {};
+
+  // Pharmacy name
+  if (ocrData.pharmacyName && !formData.pharmacyName) {
+    updates.pharmacyName = ocrData.pharmacyName;
+  }
+
+  // Address parsing
+  if (ocrData.address) {
+    const addressParts = splitAddress(ocrData.address);
+    if (!formData.address1 && addressParts.address1) updates.address1 = addressParts.address1;
+    if (!formData.address2 && addressParts.address2) updates.address2 = addressParts.address2;
+    if (!formData.address3 && addressParts.address3) updates.address3 = addressParts.address3;
+  }
+
+  // License number
+  if (ocrData.licenseNumber) {
+    if (!formData.license20) updates.license20 = ocrData.licenseNumber;
+    else if (!formData.license21) updates.license21 = ocrData.licenseNumber;
+  }
+
+  // Expiry date
+  if (ocrData.expiryDate) {
+    const parts = ocrData.expiryDate.split("-");
+    if (parts.length === 3) {
+      const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      if (!formData.license20ExpiryDate) updates.license20ExpiryDate = formatted;
+      else if (!formData.license21ExpiryDate) updates.license21ExpiryDate = formatted;
+    }
+  }
+
+  // -----------------------------
+  //  🔥 DIRECTLY USE OCR LOCATION
+  // -----------------------------
+  const location = ocrData.locationDetails;
+
+  if (location) {
+    // Build CITIES (flat)
+    const extractedCities = Array.isArray(location.cities)
+      ? location.cities.map(c => ({
+          id: c.value,
+          name: c.label,
+        }))
+      : [];
+
+    // Build STATES (flat)
+    const extractedStates = Array.isArray(location.states)
+      ? location.states.map(s => ({
+          id: s.value,
+          name: s.label,
+          gstCode: s.gstCode,
+        }))
+      : [];
+
+    // Build AREAS (take from first city)
+    let extractedAreas = [];
+    if (
+      Array.isArray(location.cities) &&
+      location.cities.length > 0 &&
+      Array.isArray(location.cities[0].area)
+    ) {
+      extractedAreas = location.cities[0].area.map(a => ({
+        id: a.value,
+        name: a.label,
+        cityId: location.cities[0].value,
+      }));
+    }
+
+    // UPDATE STATE VALUES DIRECTLY (NO API CALL)
+    setCities(extractedCities);
+    setStates(extractedStates);
+    setAreas(extractedAreas);
+
+    // Set selected values if not already filled
+    if (extractedCities.length > 0) {
+      updates.city = extractedCities[0].name;
+      updates.cityId = extractedCities[0].id;
+    }
+
+    if (extractedStates.length > 0) {
+      updates.state = extractedStates[0].name;
+      updates.stateId = extractedStates[0].id;
+    }
+
+    if (extractedAreas.length > 0) {
+      updates.area = extractedAreas[0].name;
+      updates.areaId = extractedAreas[0].id;
+    }
+  }
+
+  // Pincode — use directly, no lookup
+  if (ocrData.Pincode || ocrData.pincode) {
+    updates.pincode = String(ocrData.Pincode || ocrData.pincode);
+  }
+
+  // Apply updates
+  if (Object.keys(updates).length > 0) {
+    setFormData(prev => ({ ...prev, ...updates }));
+    const clearErrs = {};
+    Object.keys(updates).forEach(k => (clearErrs[k] = null));
+    setErrors(prev => ({ ...prev, ...clearErrs }));
+  }
+};
+
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -2050,7 +2405,13 @@ const PharmacyRegistrationForm = () => {
         visible={showAreaModal}
         onClose={() => setShowAreaModal(false)}
         title="Select Area"
-        data={areas.map(area => ({ id: area.id, name: area.name }))}
+        data={
+          uploadedAreas && uploadedAreas.length > 0
+            ? uploadedAreas
+            : Array.isArray(areas)
+            ? areas.map(area => ({ id: area.id, name: area.name }))
+            : []
+        }
         selectedId={formData.areaId}
         onSelect={item => {
           setFormData(prev => ({

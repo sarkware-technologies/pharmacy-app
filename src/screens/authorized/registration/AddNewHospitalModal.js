@@ -740,6 +740,106 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             onFileUpload={(file) => handleFileUpload('registrationCertificate', file)}
             onFileDelete={() => handleFileDelete('registrationCertificate')}
             errorMessage={hospitalErrors.registrationCertificate}
+            onOcrDataExtracted={async (ocrData) => {
+              console.log('Registration Certificate OCR Data:', ocrData);
+              
+              // Helper function to split address
+              const splitAddress = (address) => {
+                if (!address) return { address1: '', address2: '', address3: '' };
+                const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
+                if (parts.length >= 3) {
+                  return {
+                    address1: parts[0],
+                    address2: parts.slice(1, -1).join(', '),
+                    address3: parts[parts.length - 1],
+                  };
+                } else if (parts.length === 2) {
+                  return { address1: parts[0], address2: parts[1], address3: '' };
+                } else if (parts.length === 1) {
+                  const addr = parts[0];
+                  if (addr.length > 100) {
+                    return {
+                      address1: addr.substring(0, 50).trim(),
+                      address2: addr.substring(50, 100).trim(),
+                      address3: addr.substring(100).trim(),
+                    };
+                  } else if (addr.length > 50) {
+                    return {
+                      address1: addr.substring(0, 50).trim(),
+                      address2: addr.substring(50).trim(),
+                      address3: '',
+                    };
+                  } else {
+                    return { address1: addr, address2: '', address3: '' };
+                  }
+                }
+                return { address1: '', address2: '', address3: '' };
+              };
+              
+              const updates = {};
+              
+              // Populate hospital name if available
+              if (ocrData.hospitalName && !hospitalForm.hospitalName) {
+                updates.hospitalName = ocrData.hospitalName;
+              }
+              
+              // Split and populate address fields
+              if (ocrData.address) {
+                const addressParts = splitAddress(ocrData.address);
+                if (!hospitalForm.address1 && addressParts.address1) {
+                  updates.address1 = addressParts.address1;
+                }
+                if (!hospitalForm.address2 && addressParts.address2) {
+                  updates.address2 = addressParts.address2;
+                }
+                if (!hospitalForm.address3 && addressParts.address3) {
+                  updates.address3 = addressParts.address3;
+                }
+              }
+              
+              // Populate registration number if available
+              if (ocrData.registrationNumber && !hospitalForm.registrationNumber) {
+                updates.registrationNumber = ocrData.registrationNumber;
+              } else if (ocrData.licenseNumber && !hospitalForm.registrationNumber) {
+                updates.registrationNumber = ocrData.licenseNumber;
+              }
+              
+              // Populate registration date if available
+              if (ocrData.issueDate && !hospitalForm.registrationDate) {
+                const parts = ocrData.issueDate.split('-');
+                if (parts.length === 3) {
+                  updates.registrationDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                }
+              }
+              
+              // Populate expiry date if available
+              if (ocrData.expiryDate) {
+                const parts = ocrData.expiryDate.split('-');
+                if (parts.length === 3) {
+                  const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                  // Store if needed
+                }
+              }
+              
+              // Populate pincode
+              if (ocrData.pincode && !hospitalForm.pincode) {
+                updates.pincode = ocrData.pincode;
+              }
+              
+              if (Object.keys(updates).length > 0) {
+                setHospitalForm(prev => ({ ...prev, ...updates }));
+                const errorUpdates = {};
+                Object.keys(updates).forEach(key => {
+                  errorUpdates[key] = null;
+                });
+                setHospitalErrors(prev => ({ ...prev, ...errorUpdates }));
+              }
+              
+              // Trigger pincode lookup if pincode is available and valid (6 digits)
+              if (ocrData.pincode && /^\d{6}$/.test(ocrData.pincode)) {
+                await lookupByPincode(ocrData.pincode);
+              }
+            }}
           />
 
           <CustomInput
