@@ -75,7 +75,7 @@ const GroupHospitalRegistrationForm = () => {
   // Form state
   const [formData, setFormData] = useState({
     // License Details
-    registrationCertificate: '',
+    registrationCertificateFile: '',
     registrationNumber: '',
     registrationDate: '',
     licenseImage: '',
@@ -1752,12 +1752,12 @@ const GroupHospitalRegistrationForm = () => {
             {customerGroups.length > 0
               ? customerGroups
                 .filter(group =>
-                  ['9-Doctor Supply', '10-VQ', '11-RFQ', '12-GOVT'].includes(
+                  ['DOCTOR SUPPLY', 'VQ', 'RFQ', 'GOVT'].includes(
                     group.customerGroupName,
                   ),
                 )
                 .map(group => {
-                  const isEnabled = ['10-VQ', '11-RFQ'].includes(
+                  const isEnabled = ['VQ', 'RFQ'].includes(
                     group.customerGroupName,
                   );
                   return (
