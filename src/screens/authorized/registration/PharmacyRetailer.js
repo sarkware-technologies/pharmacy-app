@@ -36,6 +36,7 @@ import AddNewDoctorModal from './AddNewDoctorModal';
 import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
+import FloatingDateInput from '../../../components/FloatingDateInput';
 
 // Default document types for file uploads (will be updated from API for licenses)
 const DOC_TYPES = {
@@ -136,15 +137,7 @@ const PharmacyRegistrationForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [registering, setRegistering] = useState(false);
-
-  // Date picker states
-  const [showDatePicker, setShowDatePicker] = useState({
-    license20: false,
-    license21: false,
-  });
-  const [selectedDateField, setSelectedDateField] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
-
   // OTP states
   const [showOTP, setShowOTP] = useState({
     mobile: false,
@@ -391,31 +384,6 @@ const PharmacyRegistrationForm = () => {
     };
   }, [otpTimers, showOTP]);
 
-  const handleDateChange = (event, selectedDate) => {
-    // 1️⃣ Immediately close picker (prevents reopening)
-    setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
-
-    // 2️⃣ If dismissed → don't update anything
-    if (event.type === 'dismissed') {
-      setSelectedDateField(null);
-      return;
-    }
-
-    // 3️⃣ User pressed OK
-    if (event.type === 'set' && selectedDate) {
-      const formattedDate = selectedDate.toISOString();
-      setFormData(prev => ({
-        ...prev,
-        [`${selectedDateField}ExpiryDate`]: formattedDate,
-      }));
-      setErrors(prev => ({
-        ...prev,
-        [`${selectedDateField}ExpiryDate`]: null,
-      }));
-    }
-
-    setSelectedDateField(null);
-  };
 
   const handleVerify = async field => {
     // Validate the field before showing OTP
@@ -584,9 +552,8 @@ const PharmacyRegistrationForm = () => {
         Toast.show({
           type: 'success',
           text1: 'Success',
-          text2: `${
-            field === 'mobile' ? 'Mobile' : 'Email'
-          } verified successfully!`,
+          text2: `${field === 'mobile' ? 'Mobile' : 'Email'
+            } verified successfully!`,
           position: 'top',
         });
 
@@ -660,10 +627,7 @@ const PharmacyRegistrationForm = () => {
     }));
   };
 
-  const openDatePicker = field => {
-    setSelectedDateField(field);
-    setShowDatePicker(prev => ({ ...prev, [field]: true }));
-  };
+
 
   const renderOTPInput = field => {
     if (!showOTP[field]) return null;
@@ -852,13 +816,13 @@ const PharmacyRegistrationForm = () => {
         },
         ...(formData.stockists &&
           formData.stockists.length > 0 && {
-            suggestedDistributors: formData.stockists.map(stockist => ({
-              distributorCode: stockist.code,
-              distributorName: stockist.name,
-              city: stockist.city,
-              customerId: stockist.name,
-            })),
-          }),
+          suggestedDistributors: formData.stockists.map(stockist => ({
+            distributorCode: stockist.code,
+            distributorName: stockist.name,
+            city: stockist.city,
+            customerId: stockist.name,
+          })),
+        }),
         isChildCustomer: false,
       };
 
@@ -979,7 +943,7 @@ const PharmacyRegistrationForm = () => {
                           style={[
                             styles.modalItemText,
                             selectedId == item.id &&
-                              styles.modalItemTextSelected,
+                            styles.modalItemTextSelected,
                           ]}
                         >
                           {item.name}
@@ -1000,7 +964,7 @@ const PharmacyRegistrationForm = () => {
                       No {title} Available
                     </AppText>
 
-                   
+
                   </View>
                 )}
               </>
@@ -1166,37 +1130,18 @@ const PharmacyRegistrationForm = () => {
                 error={errors.license20}
               />
 
-              <TouchableOpacity
-                style={[
-                  styles.datePickerInput,
-                  errors.license20ExpiryDate && styles.inputError,
-                ]}
-                onPress={() => openDatePicker('license20')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText
-                    style={
-                      formData.license20ExpiryDate
-                        ? styles.dateText
-                        : styles.placeholderText
-                    }
-                  >
-                    {formData.license20ExpiryDate
-                      ? new Date(
-                          formData.license20ExpiryDate,
-                        ).toLocaleDateString('en-IN')
-                      : 'Expiry date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.license20ExpiryDate && (
-                <AppText style={styles.errorText}>
-                  {errors.license20ExpiryDate}
-                </AppText>
-              )}
+
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.license20ExpiryDate}
+                error={errors.license20ExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, license20ExpiryDate: date }));
+                  setErrors(prev => ({ ...prev, license20ExpiryDate: null }));
+                }}
+              />
 
               {/* 21 License */}
               <View style={[styles.licenseRow, { marginTop: 20 }]}>
@@ -1233,37 +1178,19 @@ const PharmacyRegistrationForm = () => {
                 error={errors.license21}
               />
 
-              <TouchableOpacity
-                style={[
-                  styles.datePickerInput,
-                  errors.license21ExpiryDate && styles.inputError,
-                ]}
-                onPress={() => openDatePicker('license21')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText
-                    style={
-                      formData.license21ExpiryDate
-                        ? styles.dateText
-                        : styles.placeholderText
-                    }
-                  >
-                    {formData.license21ExpiryDate
-                      ? new Date(
-                          formData.license21ExpiryDate,
-                        ).toLocaleDateString('en-IN')
-                      : 'Expiry date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.license21ExpiryDate && (
-                <AppText style={styles.errorText}>
-                  {errors.license21ExpiryDate}
-                </AppText>
-              )}
+            
+
+               <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.license21ExpiryDate}
+                error={errors.license21ExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, license21ExpiryDate: date }));
+                  setErrors(prev => ({ ...prev, license21ExpiryDate: null }));
+                }}
+              />
             </View>
 
             <View style={styles.section}>
@@ -1804,8 +1731,8 @@ const PharmacyRegistrationForm = () => {
                     <View style={styles.radioCircle}>
                       {formData.selectedCategory ===
                         'groupCorporateHospital' && (
-                        <View style={styles.radioSelected} />
-                      )}
+                          <View style={styles.radioSelected} />
+                        )}
                     </View>
                     <AppText style={styles.radioLabel}>Hospital</AppText>
                   </TouchableOpacity>
@@ -1858,10 +1785,10 @@ const PharmacyRegistrationForm = () => {
                     >
                       <AppText style={styles.hospitalSelectorText}>
                         {formData.selectedHospitals &&
-                        formData.selectedHospitals.length > 0
+                          formData.selectedHospitals.length > 0
                           ? formData.selectedHospitals
-                              .map(h => h.name)
-                              .join(', ')
+                            .map(h => h.name)
+                            .join(', ')
                           : 'Search hospital name/code'}
                       </AppText>
                       <Icon name="arrow-drop-down" size={24} color="#333" />
@@ -1903,9 +1830,8 @@ const PharmacyRegistrationForm = () => {
                     >
                       <AppText style={styles.selectorPlaceholder}>
                         {formData?.selectedDoctors.length > 0
-                          ? `${formData.selectedDoctors.length} Doctor${
-                              formData.selectedDoctors.length !== 1 ? 's' : ''
-                            } selected`
+                          ? `${formData.selectedDoctors.length} Doctor${formData.selectedDoctors.length !== 1 ? 's' : ''
+                          } selected`
                           : 'Search doctor name/code'}
                       </AppText>
                       <Icon name="arrow-drop-down" size={24} color="#666" />
@@ -2119,34 +2045,7 @@ const PharmacyRegistrationForm = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Date Pickers */}
-      {showDatePicker.license20 && (
-        <DateTimePicker
-          value={
-            formData.license20ExpiryDate
-              ? new Date(formData.license20ExpiryDate)
-              : new Date()
-          }
-          mode="date"
-          display="default"
-          minimumDate={new Date()}
-          onChange={handleDateChange}
-        />
-      )}
-      {showDatePicker.license21 && (
-        <DateTimePicker
-          value={
-            formData.license21ExpiryDate
-              ? new Date(formData.license21ExpiryDate)
-              : new Date()
-          }
-          mode="date"
-          display="default"
-          minimumDate={new Date()}
-          onChange={handleDateChange}
-        />
-      )}
-
+     
       <DropdownModal
         visible={showAreaModal}
         onClose={() => setShowAreaModal(false)}
@@ -2497,22 +2396,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginRight: 8,
   },
-  datePickerInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.loginInputBorderColor,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  dateText: {
-    fontSize: 16,
-    color: '#333',
-  },
+
   placeholderText: {
     fontSize: 16,
     color: colors.gray,
@@ -3186,7 +3070,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-   inputText: {
+  inputText: {
     fontSize: 16,
     color: '#333',
   },

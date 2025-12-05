@@ -24,6 +24,7 @@ import AddressInputWithLocation from '../../../components/AddressInputWithLocati
 import { AppText, AppInput, CustomInput } from "../../../components"
 import Calendar from '../../../components/icons/Calendar';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
+import FloatingDateInput from '../../../components/FloatingDateInput';
 
 const DOC_TYPES = {
   LICENSE_20B: 3,
@@ -106,11 +107,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
   const [loadingOtp, setLoadingOtp] = useState({ mobile: false, email: false });
   const otpRefs = useRef({});
 
-  // Date picker states
-  const [showDatePicker, setShowDatePicker] = useState(null); // null, '20b', '21b', 'registration'
-  const [selectedDate20b, setSelectedDate20b] = useState(new Date());
-  const [selectedDate21b, setSelectedDate21b] = useState(new Date());
-  const [selectedRegistrationDate, setSelectedRegistrationDate] = useState(new Date());
+
 
   // API Data
   const [states, setStates] = useState([]);
@@ -119,7 +116,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingAreas, setLoadingAreas] = useState(false);
-  
+
   // Pincode lookup hook
   const { areas: pincodeAreas, cities: pincodeCities, states: pincodeStates, loading: pincodeLoading, lookupByPincode, clearData } = usePincodeLookup();
 
@@ -128,7 +125,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
     if (/^\d{0,6}$/.test(text)) {
       setDoctorForm(prev => ({ ...prev, pincode: text }));
       setDoctorErrors(prev => ({ ...prev, pincode: null }));
-      
+
       // Clear previous selections when pincode changes
       if (text.length < 6) {
         setDoctorForm(prev => ({
@@ -142,21 +139,21 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
         }));
         clearData();
       }
-      
+
       // Trigger lookup when pincode is complete (6 digits)
       if (text.length === 6) {
         await lookupByPincode(text);
       }
     }
   };
-  
+
   // Auto-populate city, state, and area when pincode lookup completes
   useEffect(() => {
     if (pincodeCities.length > 0 && pincodeStates.length > 0) {
       // Auto-select first city and state from lookup results
       const firstCity = pincodeCities[0];
       const firstState = pincodeStates[0];
-      
+
       setDoctorForm(prev => ({
         ...prev,
         city: firstCity.name,
@@ -165,7 +162,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
         stateId: firstState.id,
       }));
     }
-    
+
     // Auto-select first area (0th index) if available
     if (pincodeAreas.length > 0 && !doctorForm.area) {
       const firstArea = pincodeAreas[0];
@@ -175,7 +172,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
         areaId: firstArea.id,
       }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pincodeCities, pincodeStates, pincodeAreas]);
 
   // Modal visibility
@@ -206,10 +203,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
       Object.values(timers).forEach(timer => clearTimeout(timer));
     };
   }, [otpTimers, showOTP]);
-  const openDatePicker = field => {
-    // setSelectedDateField(field);
-    setShowDatePicker(prev => ({ ...prev, [field]: true }));
-  };
+
   const loadStates = async () => {
     setLoadingStates(true);
     try {
@@ -257,30 +251,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
     }
   };
 
-  const handleDateChange = (type, event, date) => {
-    if (event.type === 'dismissed') {
-      setShowDatePicker(null);
-      return;
-    }
 
-    if (date) {
-      const formattedDate = date.toLocaleDateString('en-IN');
-
-      if (type === 'clinicRegistration') {
-        setSelectedDate20b(date);
-        setDoctorForm(prev => ({ ...prev, clinicRegistrationExpiryDate: formattedDate }));
-        setDoctorErrors(prev => ({ ...prev, clinicRegistrationExpiryDate: null }));
-
-      } else if (type === 'practiceLicense') {
-        setSelectedDate21b(date);
-        setDoctorForm(prev => ({ ...prev, practiceLicenseExpiryDate: formattedDate }));
-        setDoctorErrors(prev => ({ ...prev, practiceLicenseExpiryDate: null }));
-
-      }
-    }
-
-    setShowDatePicker(null);
-  };
 
   const resetForm = () => {
     setDoctorForm({
@@ -764,7 +735,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
           distributorName: '',
           city: ''
         }],
-        isChildCustomer:true
+        isChildCustomer: true
       };
 
       console.log('Doctor registration payload:', registrationData);
@@ -876,32 +847,19 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
           />
 
 
-          <TouchableOpacity
-            style={[
-              styles.datePickerInput,
-              doctorErrors.clinicRegistrationExpiryDate && styles.inputError,
 
-            ]}
-            onPress={() => setShowDatePicker('clinicRegistration')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.inputTextContainer}>
-              <AppText
-                style={
-                  doctorForm.clinicRegistrationExpiryDate
-                    ? styles.dateText
-                    : styles.placeholderText
-                }
-              >
-                {doctorForm.clinicRegistrationExpiryDate || 'Expiry date'}
-              </AppText>
-              <AppText style={styles.inlineAsterisk}>*</AppText>
-            </View>
-            <Calendar />
-          </TouchableOpacity>
-          {doctorErrors.clinicRegistrationExpiryDate && (
-            <AppText style={styles.errorText}>{doctorErrors.clinicRegistrationExpiryDate}</AppText>
-          )}
+
+          <FloatingDateInput
+            label="Expiry Date"
+            mandatory={true}
+            value={doctorForm.clinicRegistrationExpiryDate}
+            error={doctorErrors.clinicRegistrationExpiryDate}
+            minimumDate={new Date()}    // If future date only (optional)
+            onChange={(date) => {
+              setDoctorForm(prev => ({ ...prev, clinicRegistrationExpiryDate: date }));
+              setDoctorErrors(prev => ({ ...prev, clinicRegistrationExpiryDate: null }));
+            }}
+          />
 
 
           {/* Practice License */}
@@ -935,33 +893,20 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
           />
 
 
-          <TouchableOpacity
-            style={[
-              styles.datePickerInput,
-              doctorErrors.practiceLicenseExpiryDate && styles.inputError,
+         
 
-            ]}
-            onPress={() => setShowDatePicker('practiceLicense')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.inputTextContainer}>
-              <AppText
-                style={
-                  doctorForm.practiceLicenseExpiryDate
-                    ? styles.dateText
-                    : styles.placeholderText
-                }
-              >
-                {doctorForm.practiceLicenseExpiryDate || 'Expiry date'}
-              </AppText>
-              <AppText style={styles.inlineAsterisk}>*</AppText>
-            </View>
-            <Calendar />
-          </TouchableOpacity>
-          {doctorErrors.practiceLicenseExpiryDate && (
-            <AppText style={styles.errorText}>{doctorErrors.practiceLicenseExpiryDate}</AppText>
-          )}
 
+<FloatingDateInput
+            label="Expiry Date"
+            mandatory={true}
+            value={doctorForm.practiceLicenseExpiryDate}
+            error={doctorErrors.practiceLicenseExpiryDate}
+            minimumDate={new Date()}    // If future date only (optional)
+            onChange={(date) => {
+              setDoctorForm(prev => ({ ...prev, practiceLicenseExpiryDate: date }));
+              setDoctorErrors(prev => ({ ...prev, practiceLicenseExpiryDate: null }));
+            }}
+          />
 
 
           {/* Address Proof / Clinic Image */}
@@ -994,23 +939,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
 
 
 
-          {/* Date Pickers */}
-          {showDatePicker === 'clinicRegistration' && (
-            <DateTimePicker
-              value={selectedDate20b}
-              mode="date"
-              display="default"
-              onChange={(event, date) => handleDateChange('clinicRegistration', event, date)}
-            />
-          )}
-          {showDatePicker === 'practiceLicense' && (
-            <DateTimePicker
-              value={selectedDate21b}
-              mode="date"
-              display="default"
-              onChange={(event, date) => handleDateChange('practiceLicense', event, date)}
-            />
-          )}
+         
 
           {/* General Details */}
           <AppText style={styles.modalSectionLabel}>General Details <AppText style={styles.mandatory}>*</AppText></AppText>
@@ -1081,7 +1010,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
                   !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india'
                 );
               });
-              
+
               // Update address fields only
               setDoctorForm(prev => ({
                 ...prev,
@@ -1090,7 +1019,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
                 address3: filteredParts[2] || '',
                 address4: filteredParts.slice(3).join(', ') || '',
               }));
-              
+
               // Update pincode and trigger lookup (this will populate area, city, state)
               if (extractedPincode) {
                 setDoctorForm(prev => ({ ...prev, pincode: extractedPincode }));
@@ -1098,7 +1027,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
                 // Trigger pincode lookup to populate area, city, state
                 await lookupByPincode(extractedPincode);
               }
-              
+
               setDoctorErrors(prev => ({
                 ...prev,
                 address1: null,
@@ -1897,23 +1826,6 @@ const styles = StyleSheet.create({
   },
 
 
-
-  datePickerInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.loginInputBorderColor,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 2,
-    backgroundColor: '#FFFFFF',
-  },
-  dateText: {
-    fontSize: 16,
-    color: '#333',
-  },
   placeholderText: {
     fontSize: 16,
     color: colors.gray,

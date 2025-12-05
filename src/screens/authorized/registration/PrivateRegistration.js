@@ -41,6 +41,7 @@ import { AppText, AppInput } from '../../../components';
 import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
+import FloatingDateInput from '../../../components/FloatingDateInput';
 
 const { width, height } = Dimensions.get('window');
 
@@ -153,7 +154,6 @@ const PrivateRegistrationForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [loadingCustomerData, setLoadingCustomerData] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   // Store original type data when editing
@@ -384,8 +384,8 @@ const PrivateRegistrationForm = () => {
         registrationNumber: data.licences?.[0]?.licenceNo || '',
         registrationDate: data.licences?.[0]?.licenceValidUpto
           ? new Date(data.licences?.[0]?.licenceValidUpto).toLocaleDateString(
-              'en-IN',
-            )
+            'en-IN',
+          )
           : '',
 
         // General details - from transformed flat structure
@@ -835,9 +835,8 @@ const PrivateRegistrationForm = () => {
         Toast.show({
           type: 'success',
           text1: 'OTP Sent',
-          text2: `OTP sent to your ${
-            field === 'mobile' ? 'mobile number' : 'email address'
-          }`,
+          text2: `OTP sent to your ${field === 'mobile' ? 'mobile number' : 'email address'
+            }`,
           position: 'top',
         });
 
@@ -939,9 +938,8 @@ const PrivateRegistrationForm = () => {
         Toast.show({
           type: 'success',
           text1: 'Verification Successful',
-          text2: `${
-            field === 'mobile' ? 'Mobile number' : 'Email address'
-          } verified successfully!`,
+          text2: `${field === 'mobile' ? 'Mobile number' : 'Email address'
+            } verified successfully!`,
           position: 'top',
         });
 
@@ -1121,8 +1119,8 @@ const PrivateRegistrationForm = () => {
       // Prepare registration date
       const registrationDate = formData.registrationDate
         ? new Date(
-            formData.registrationDate.split('/').reverse().join('-'),
-          ).toISOString()
+          formData.registrationDate.split('/').reverse().join('-'),
+        ).toISOString()
         : new Date().toISOString();
 
       // Use original type data for edit mode, or route params for new registration
@@ -1177,13 +1175,13 @@ const PrivateRegistrationForm = () => {
         },
         ...(stockists &&
           stockists.length > 0 && {
-            suggestedDistributors: stockists.map(stockist => ({
-              distributorCode: stockist.code,
-              distributorName: stockist.name,
-              city: stockist.city,
-              customerId: stockist.name,
-            })),
-          }),
+          suggestedDistributors: stockists.map(stockist => ({
+            distributorCode: stockist.code,
+            distributorName: stockist.name,
+            city: stockist.city,
+            customerId: stockist.name,
+          })),
+        }),
         isChildCustomer: false,
       };
 
@@ -1205,9 +1203,8 @@ const PrivateRegistrationForm = () => {
           text1: isEditMode ? 'Update Successful' : 'Registration Successful',
           text2: isEditMode
             ? `Customer updated successfully`
-            : `Customer registered with code: ${
-                response.data.code || response.data.id
-              }`,
+            : `Customer registered with code: ${response.data.code || response.data.id
+            }`,
           visibilityTime: 5000,
           position: 'top',
         });
@@ -1250,28 +1247,6 @@ const PrivateRegistrationForm = () => {
     }
   };
 
-  const handleDateChange = (event, selectedDate) => {
-    // close immediately
-    setShowDatePicker(false);
-
-    // 🚫 Cancel clicked → do nothing
-    if (event.type === 'dismissed') {
-      return;
-    }
-
-    // ✅ OK clicked → update date
-    if (event.type === 'set' && selectedDate) {
-      const formattedDate = selectedDate.toLocaleDateString('en-IN');
-      setFormData(prev => ({
-        ...prev,
-        registrationDate: formattedDate,
-      }));
-      setErrors(prev => ({
-        ...prev,
-        registrationDate: null,
-      }));
-    }
-  };
 
   const renderOTPInput = field => {
     if (!showOTP[field]) return null;
@@ -1521,34 +1496,19 @@ const PrivateRegistrationForm = () => {
                 mandatory={true}
               />
 
-              <TouchableOpacity
-                style={[
-                  styles.input,
-                  errors.registrationDate && styles.inputError,
-                ]}
-                onPress={() => setShowDatePicker(true)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText
-                    style={
-                      formData.registrationDate
-                        ? styles.inputText
-                        : styles.placeholderText
-                    }
-                  >
-                    {formData.registrationDate || 'Registration Date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.registrationDate && (
-                <AppText style={styles.errorText}>
-                  {errors.registrationDate}
-                </AppText>
-              )}
 
+
+
+              <FloatingDateInput
+                label="Registration Date"
+                mandatory={true}
+                value={formData.registrationDate}
+                error={errors.registrationDate}
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, registrationDate: date }));
+                  setErrors(prev => ({ ...prev, registrationDate: null }));
+                }}
+              />
               <AppText style={styles.sectionSubTitle}>
                 Image<AppText style={styles.asteriskRed}>*</AppText>{' '}
                 <Icon
@@ -1574,14 +1534,7 @@ const PrivateRegistrationForm = () => {
                 errorMessage={errors.licenseImage}
               />
 
-              {showDatePicker && (
-                <DateTimePicker
-                  value={new Date()}
-                  mode="date"
-                  display="default"
-                  onChange={handleDateChange}
-                />
-              )}
+           
             </View>
 
             {/* General Details Section */}
@@ -2143,7 +2096,7 @@ const PrivateRegistrationForm = () => {
                   style={[
                     styles.checkboxButton,
                     formData.selectedCategory.groupCorporateHospital &&
-                      styles.checkboxButtonActive,
+                    styles.checkboxButtonActive,
                   ]}
                   onPress={() =>
                     setFormData(prev => ({
@@ -2161,7 +2114,7 @@ const PrivateRegistrationForm = () => {
                     style={[
                       styles.checkbox,
                       formData.selectedCategory.groupCorporateHospital &&
-                        styles.checkboxSelected,
+                      styles.checkboxSelected,
                     ]}
                   >
                     {formData.selectedCategory.groupCorporateHospital && (
@@ -2199,10 +2152,10 @@ const PrivateRegistrationForm = () => {
                     >
                       <AppText style={styles.hospitalSelectorText}>
                         {formData.selectedHospitals &&
-                        formData.selectedHospitals.length > 0
+                          formData.selectedHospitals.length > 0
                           ? formData.selectedHospitals
-                              .map(h => h.name)
-                              .join(', ')
+                            .map(h => h.name)
+                            .join(', ')
                           : 'Search hospital name/code'}
                       </AppText>
                       <ArrowDown color="#333" />
@@ -2223,7 +2176,7 @@ const PrivateRegistrationForm = () => {
                   style={[
                     styles.checkboxButton,
                     formData.selectedCategory.pharmacy &&
-                      styles.checkboxButtonActive,
+                    styles.checkboxButtonActive,
                   ]}
                   onPress={() =>
                     setFormData(prev => ({
@@ -2240,7 +2193,7 @@ const PrivateRegistrationForm = () => {
                     style={[
                       styles.checkbox,
                       formData.selectedCategory.pharmacy &&
-                        styles.checkboxSelected,
+                      styles.checkboxSelected,
                     ]}
                   >
                     {formData.selectedCategory.pharmacy && (
@@ -2278,7 +2231,7 @@ const PrivateRegistrationForm = () => {
                   >
                     <AppText style={styles.selectorPlaceholder}>
                       {formData.selectedPharmacies &&
-                      formData?.selectedPharmacies.length > 0
+                        formData?.selectedPharmacies.length > 0
                         ? `${formData.selectedPharmacies.length} Pharmacies Selected`
                         : 'Select pharmacy name/code'}
                     </AppText>

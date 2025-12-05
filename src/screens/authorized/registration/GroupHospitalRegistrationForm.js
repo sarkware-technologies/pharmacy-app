@@ -43,6 +43,7 @@ import AddNewHospitalModal from './AddNewHospitalModal';
 import Toast from 'react-native-toast-message';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
+import FloatingDateInput from '../../../components/FloatingDateInput';
 
 const { width, height } = Dimensions.get('window');
 
@@ -118,7 +119,6 @@ const GroupHospitalRegistrationForm = () => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
 
@@ -538,9 +538,8 @@ const GroupHospitalRegistrationForm = () => {
         Toast.show({
           type: 'success',
           text1: 'Success',
-          text2: `${
-            field === 'mobile' ? 'Mobile' : 'Email'
-          } verified successfully!`,
+          text2: `${field === 'mobile' ? 'Mobile' : 'Email'
+            } verified successfully!`,
           position: 'top',
         });
 
@@ -680,6 +679,12 @@ const GroupHospitalRegistrationForm = () => {
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
+      console.log(selected);
+      console.log(today);
+      console.log(formData);
+
+
 
       if (selected > today) {
         newErrors.registrationDate = 'Future date is not allowed';
@@ -830,13 +835,13 @@ const GroupHospitalRegistrationForm = () => {
         },
         ...(stockists &&
           stockists.length > 0 && {
-            suggestedDistributors: stockists.map(stockist => ({
-              distributorCode: stockist.distributorCode,
-              distributorName: stockist.name,
-              city: stockist.city,
-              customerId: stockist.name,
-            })),
-          }),
+          suggestedDistributors: stockists.map(stockist => ({
+            distributorCode: stockist.distributorCode,
+            distributorName: stockist.name,
+            city: stockist.city,
+            customerId: stockist.name,
+          })),
+        }),
         isChildCustomer: false,
       };
 
@@ -881,28 +886,6 @@ const GroupHospitalRegistrationForm = () => {
     }
   };
 
-  const handleDateChange = (event, selectedDate) => {
-    // close immediately
-    setShowDatePicker(false);
-
-    // 🚫 Cancel clicked → do nothing
-    if (event.type === 'dismissed') {
-      return;
-    }
-
-    // ✅ OK clicked → update date
-    if (event.type === 'set' && selectedDate) {
-      const formattedDate = selectedDate.toLocaleDateString('en-IN');
-      setFormData(prev => ({
-        ...prev,
-        registrationDate: formattedDate,
-      }));
-      setErrors(prev => ({
-        ...prev,
-        registrationDate: null,
-      }));
-    }
-  };
 
   const handleCancel = () => {
     setShowCancelModal(true);
@@ -990,28 +973,16 @@ const GroupHospitalRegistrationForm = () => {
           mandatory={true}
         />
 
-        <TouchableOpacity
-          style={[styles.input, errors.registrationDate && styles.inputError]}
-          onPress={() => setShowDatePicker(true)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.inputTextContainer}>
-            <AppText
-              style={
-                formData.registrationDate
-                  ? styles.inputText
-                  : styles.placeholderText
-              }
-            >
-              {formData.registrationDate || 'Registration date'}
-            </AppText>
-            <AppText style={styles.inlineAsterisk}>*</AppText>
-          </View>
-          <Calendar />
-        </TouchableOpacity>
-        {errors.registrationDate && (
-          <AppText style={styles.errorText}>{errors.registrationDate}</AppText>
-        )}
+        <FloatingDateInput
+          label="Registration date"
+          mandatory={true}
+          value={formData.registrationDate}
+          error={errors.registrationDate}
+          onChange={(date) => {
+            setFormData(prev => ({ ...prev, registrationDate: date }));
+            setErrors(prev => ({ ...prev, registrationDate: null }));
+          }}
+        />
         <AppText style={styles.sectionSubTitle}>
           Image<AppText style={{ color: 'red' }}>*</AppText>{' '}
           <Icon name="information-circle-outline" size={16} color="#999" />
@@ -1027,14 +998,7 @@ const GroupHospitalRegistrationForm = () => {
           errorMessage={errors.hospitalImageFile}
         />
 
-        {showDatePicker && (
-          <DateTimePicker
-            value={new Date()}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-          />
-        )}
+       
       </View>
     </Animated.View>
   );
@@ -1657,11 +1621,11 @@ const GroupHospitalRegistrationForm = () => {
                                     (h, hIndex) =>
                                       hIndex === index
                                         ? {
-                                            ...h,
-                                            pharmacies: h.pharmacies.filter(
-                                              (_, pIdx) => pIdx !== pIndex,
-                                            ),
-                                          }
+                                          ...h,
+                                          pharmacies: h.pharmacies.filter(
+                                            (_, pIdx) => pIdx !== pIndex,
+                                          ),
+                                        }
                                         : h,
                                   ),
                                 }));
@@ -1724,58 +1688,18 @@ const GroupHospitalRegistrationForm = () => {
           <View style={styles.radioGridContainer}>
             {customerGroups.length > 0
               ? customerGroups
-                  .filter(group =>
-                    ['9-Doctor Supply', '10-VQ', '11-RFQ', '12-GOVT'].includes(
-                      group.customerGroupName,
-                    ),
-                  )
-                  .map(group => {
-                    const isEnabled = ['10-VQ', '11-RFQ'].includes(
-                      group.customerGroupName,
-                    );
-                    return (
-                      <TouchableOpacity
-                        key={group.customerGroupId}
-                        style={[
-                          styles.radioGridItem,
-                          !isEnabled && { opacity: 0.5 },
-                        ]}
-                        onPress={() => {
-                          if (isEnabled) {
-                            setFormData(prev => ({
-                              ...prev,
-                              customerGroup: group.customerGroupName,
-                            }));
-                          }
-                        }}
-                        activeOpacity={isEnabled ? 0.7 : 1}
-                        disabled={!isEnabled}
-                      >
-                        <View
-                          style={[
-                            styles.radioButton,
-                            formData.customerGroup ===
-                              group.customerGroupName &&
-                              styles.radioButtonSelected,
-                          ]}
-                        >
-                          {formData.customerGroup ===
-                            group.customerGroupName && (
-                            <View style={styles.radioButtonInner} />
-                          )}
-                        </View>
-                        <AppText style={styles.radioButtonLabel}>
-                          {group.customerGroupName}
-                        </AppText>
-                      </TouchableOpacity>
-                    );
-                  })
-              : // Fallback if API data not available
-                ['9-Doctor Supply', '10-VQ', '11-RFQ', '12-GOVT'].map(group => {
-                  const isEnabled = ['10-VQ', '11-RFQ'].includes(group);
+                .filter(group =>
+                  ['9-Doctor Supply', '10-VQ', '11-RFQ', '12-GOVT'].includes(
+                    group.customerGroupName,
+                  ),
+                )
+                .map(group => {
+                  const isEnabled = ['10-VQ', '11-RFQ'].includes(
+                    group.customerGroupName,
+                  );
                   return (
                     <TouchableOpacity
-                      key={group}
+                      key={group.customerGroupId}
                       style={[
                         styles.radioGridItem,
                         !isEnabled && { opacity: 0.5 },
@@ -1784,7 +1708,7 @@ const GroupHospitalRegistrationForm = () => {
                         if (isEnabled) {
                           setFormData(prev => ({
                             ...prev,
-                            customerGroup: group,
+                            customerGroup: group.customerGroupName,
                           }));
                         }
                       }}
@@ -1794,18 +1718,58 @@ const GroupHospitalRegistrationForm = () => {
                       <View
                         style={[
                           styles.radioButton,
-                          formData.customerGroup === group &&
-                            styles.radioButtonSelected,
+                          formData.customerGroup ===
+                          group.customerGroupName &&
+                          styles.radioButtonSelected,
                         ]}
                       >
-                        {formData.customerGroup === group && (
-                          <View style={styles.radioButtonInner} />
-                        )}
+                        {formData.customerGroup ===
+                          group.customerGroupName && (
+                            <View style={styles.radioButtonInner} />
+                          )}
                       </View>
-                      <AppText style={styles.radioButtonLabel}>{group}</AppText>
+                      <AppText style={styles.radioButtonLabel}>
+                        {group.customerGroupName}
+                      </AppText>
                     </TouchableOpacity>
                   );
-                })}
+                })
+              : // Fallback if API data not available
+              ['9-Doctor Supply', '10-VQ', '11-RFQ', '12-GOVT'].map(group => {
+                const isEnabled = ['10-VQ', '11-RFQ'].includes(group);
+                return (
+                  <TouchableOpacity
+                    key={group}
+                    style={[
+                      styles.radioGridItem,
+                      !isEnabled && { opacity: 0.5 },
+                    ]}
+                    onPress={() => {
+                      if (isEnabled) {
+                        setFormData(prev => ({
+                          ...prev,
+                          customerGroup: group,
+                        }));
+                      }
+                    }}
+                    activeOpacity={isEnabled ? 0.7 : 1}
+                    disabled={!isEnabled}
+                  >
+                    <View
+                      style={[
+                        styles.radioButton,
+                        formData.customerGroup === group &&
+                        styles.radioButtonSelected,
+                      ]}
+                    >
+                      {formData.customerGroup === group && (
+                        <View style={styles.radioButtonInner} />
+                      )}
+                    </View>
+                    <AppText style={styles.radioButtonLabel}>{group}</AppText>
+                  </TouchableOpacity>
+                );
+              })}
           </View>
         </View>
 

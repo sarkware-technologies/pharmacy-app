@@ -18,7 +18,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import { colors } from '../../../styles/colors';
 import { CustomInput } from '../../../components';
@@ -33,6 +32,9 @@ import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import ArrowDown from '../../../components/icons/ArrowDown';
+import FloatingDateInput from '../../../components/FloatingDateInput';
+
+
 
 // Document types for file uploads
 const DOC_TYPES = {
@@ -140,11 +142,6 @@ const [showStateModal, setShowStateModal] = useState(false);
 
 
   // Date picker states
-  const [showDatePicker, setShowDatePicker] = useState({
-    license20b: false,
-    license21b: false,
-  });
-  const [selectedDateField, setSelectedDateField] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   // OTP states
@@ -577,45 +574,6 @@ const [showStateModal, setShowStateModal] = useState(false);
   const handleResendOTP = async field => {
     setOtpTimers(prev => ({ ...prev, [field]: 30 }));
     await handleVerify(field);
-  };
-
-  const handleDateChange = (event, selectedDate) => {
-    // 1️⃣ Immediately close picker (prevents reopening)
-    setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
-
-    // 2️⃣ If dismissed → don't update anything
-    if (event.type === 'dismissed') {
-      setSelectedDateField(null);
-      return;
-    }
-
-    // 3️⃣ User pressed OK
-    if (event.type === 'set' && selectedDate) {
-      const formattedDate = selectedDate.toISOString();
-      setFormData(prev => ({
-        ...prev,
-        [`${selectedDateField}ExpiryDate`]: formattedDate,
-      }));
-      setErrors(prev => ({
-        ...prev,
-        [`${selectedDateField}ExpiryDate`]: null,
-      }));
-    }
-
-    setSelectedDateField(null);
-  };
-
-
-
-  const openDatePicker = field => {
-    setSelectedDateField(field);
-    setShowDatePicker(prev => ({ ...prev, [field]: true }));
-  };
-
-  const formatDate = dateString => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN');
   };
 
   const renderOTPInput = field => {
@@ -1141,35 +1099,20 @@ const [showStateModal, setShowStateModal] = useState(false);
                 }}
                 mandatory={true}
                 error={errors.license20b}
+              />   
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.license20bExpiryDate}
+                error={errors.license20bExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, license20bExpiryDate: date }));
+                  setErrors(prev => ({ ...prev, license20bExpiryDate: null }));
+                }}
               />
 
-              <TouchableOpacity
-                style={[
-                  styles.datePickerInput,
-                  errors.license20bExpiryDate && styles.inputError,
-                ]}
-                onPress={() => openDatePicker('license20b')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText
-                    style={
-                      formData.license20bExpiryDate
-                        ? styles.dateText
-                        : styles.placeholderText
-                    }
-                  >
-                    {formatDate(formData.license20bExpiryDate) || 'Expiry Date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.license20bExpiryDate && (
-                <AppText style={styles.errorText}>
-                  {errors.license20bExpiryDate}
-                </AppText>
-              )}
+
 
               {/* 21B License */}
               <View style={styles.licenseRow}>
@@ -1206,33 +1149,19 @@ const [showStateModal, setShowStateModal] = useState(false);
                 error={errors.license21b}
               />
 
-              <TouchableOpacity
-                style={[
-                  styles.datePickerInput,
-                  errors.license21bExpiryDate && styles.inputError,
-                ]}
-                onPress={() => openDatePicker('license21b')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText
-                    style={
-                      formData.license21bExpiryDate
-                        ? styles.dateText
-                        : styles.placeholderText
-                    }
-                  >
-                    {formatDate(formData.license21bExpiryDate) || 'Expiry Date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.license21bExpiryDate && (
-                <AppText style={styles.errorText}>
-                  {errors.license21bExpiryDate}
-                </AppText>
-              )}
+            
+
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.license21bExpiryDate}
+                error={errors.license21bExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, license21bExpiryDate: date }));
+                  setErrors(prev => ({ ...prev, license21bExpiryDate: null }));
+                }}
+              />
             </View>
 
             <View style={styles.section}>
@@ -2071,33 +2000,7 @@ const [showStateModal, setShowStateModal] = useState(false);
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Date Pickers */}
-      {showDatePicker.license20b && (
-        <DateTimePicker
-          value={
-            formData.license20bExpiryDate
-              ? new Date(formData.license20bExpiryDate)
-              : new Date()
-          }
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-          minimumDate={new Date()}
-        />
-      )}
-      {showDatePicker.license21b && (
-        <DateTimePicker
-          value={
-            formData.license21bExpiryDate
-              ? new Date(formData.license21bExpiryDate)
-              : new Date()
-          }
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-          minimumDate={new Date()}
-        />
-      )}
+     
 
       {/* Dropdown Modals */}
       <DropdownModal
@@ -2378,22 +2281,8 @@ const styles = StyleSheet.create({
     color: '#333',
     marginRight: 8,
   },
-  datePickerInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.loginInputBorderColor,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  dateText: {
-    fontSize: 16,
-    color: '#333',
-  },
+
+
   placeholderText: {
     fontSize: 16,
     color: colors.gray,

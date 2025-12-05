@@ -38,6 +38,7 @@ import AddNewPharmacyModal from './AddNewPharmacyModal';
 import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
+import FloatingDateInput from '../../../components/FloatingDateInput';
 
 const { width, height } = Dimensions.get('window');
 
@@ -194,12 +195,7 @@ const DoctorRegistrationForm = () => {
     clearData,
   } = usePincodeLookup();
 
-  // Date picker states
-  const [showDatePicker, setShowDatePicker] = useState({
-    clinicRegistration: false,
-    practiceLicense: false,
-  });
-  const [selectedDateField, setSelectedDateField] = useState(null);
+
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   // OTP states
@@ -509,15 +505,15 @@ const DoctorRegistrationForm = () => {
           formatDate(clinicLicense?.licenceValidUpto) || '',
         clinicRegistrationFile: clinicRegDoc
           ? {
-              uri: clinicRegDoc.s3Path,
-              name: clinicRegDoc.fileName,
-              type: clinicRegDoc.fileName?.endsWith('.pdf')
-                ? 'application/pdf'
-                : 'image/jpeg',
-              id: clinicRegDoc.docId,
-              s3Path: clinicRegDoc.s3Path,
-              docTypeId: clinicRegDoc.doctypeId,
-            }
+            uri: clinicRegDoc.s3Path,
+            name: clinicRegDoc.fileName,
+            type: clinicRegDoc.fileName?.endsWith('.pdf')
+              ? 'application/pdf'
+              : 'image/jpeg',
+            id: clinicRegDoc.docId,
+            s3Path: clinicRegDoc.s3Path,
+            docTypeId: clinicRegDoc.doctypeId,
+          }
           : null,
 
         practiceLicenseNumber: practiceLicense?.licenceNo || '',
@@ -525,39 +521,39 @@ const DoctorRegistrationForm = () => {
           formatDate(practiceLicense?.licenceValidUpto) || '',
         practiceLicenseFile: practiceLicDoc
           ? {
-              uri: practiceLicDoc.s3Path,
-              name: practiceLicDoc.fileName,
-              type: practiceLicDoc.fileName?.endsWith('.pdf')
-                ? 'application/pdf'
-                : 'image/jpeg',
-              id: practiceLicDoc.docId,
-              s3Path: practiceLicDoc.s3Path,
-              docTypeId: practiceLicDoc.doctypeId,
-            }
+            uri: practiceLicDoc.s3Path,
+            name: practiceLicDoc.fileName,
+            type: practiceLicDoc.fileName?.endsWith('.pdf')
+              ? 'application/pdf'
+              : 'image/jpeg',
+            id: practiceLicDoc.docId,
+            s3Path: practiceLicDoc.s3Path,
+            docTypeId: practiceLicDoc.doctypeId,
+          }
           : null,
 
         addressProofFile: addressProofDoc
           ? {
-              uri: addressProofDoc.s3Path,
-              name: addressProofDoc.fileName,
-              type: addressProofDoc.fileName?.endsWith('.pdf')
-                ? 'application/pdf'
-                : 'image/jpeg',
-              id: addressProofDoc.docId,
-              s3Path: addressProofDoc.s3Path,
-              docTypeId: addressProofDoc.doctypeId,
-            }
+            uri: addressProofDoc.s3Path,
+            name: addressProofDoc.fileName,
+            type: addressProofDoc.fileName?.endsWith('.pdf')
+              ? 'application/pdf'
+              : 'image/jpeg',
+            id: addressProofDoc.docId,
+            s3Path: addressProofDoc.s3Path,
+            docTypeId: addressProofDoc.doctypeId,
+          }
           : null,
 
         clinicImageFile: clinicImageDoc
           ? {
-              uri: clinicImageDoc.s3Path,
-              name: clinicImageDoc.fileName,
-              type: 'image/jpeg',
-              id: clinicImageDoc.docId,
-              s3Path: clinicImageDoc.s3Path,
-              docTypeId: clinicImageDoc.doctypeId,
-            }
+            uri: clinicImageDoc.s3Path,
+            name: clinicImageDoc.fileName,
+            type: 'image/jpeg',
+            id: clinicImageDoc.docId,
+            s3Path: clinicImageDoc.s3Path,
+            docTypeId: clinicImageDoc.doctypeId,
+          }
           : null,
 
         // General Details
@@ -585,28 +581,28 @@ const DoctorRegistrationForm = () => {
 
         panFile: panDoc
           ? {
-              uri: panDoc.s3Path,
-              name: panDoc.fileName,
-              type: panDoc.fileName?.endsWith('.pdf')
-                ? 'application/pdf'
-                : 'image/jpeg',
-              id: panDoc.docId,
-              s3Path: panDoc.s3Path,
-              docTypeId: panDoc.doctypeId,
-            }
+            uri: panDoc.s3Path,
+            name: panDoc.fileName,
+            type: panDoc.fileName?.endsWith('.pdf')
+              ? 'application/pdf'
+              : 'image/jpeg',
+            id: panDoc.docId,
+            s3Path: panDoc.s3Path,
+            docTypeId: panDoc.doctypeId,
+          }
           : null,
 
         gstFile: gstDoc
           ? {
-              uri: gstDoc.s3Path,
-              name: gstDoc.fileName,
-              type: gstDoc.fileName?.endsWith('.pdf')
-                ? 'application/pdf'
-                : 'image/jpeg',
-              id: gstDoc.docId,
-              s3Path: gstDoc.s3Path,
-              docTypeId: gstDoc.doctypeId,
-            }
+            uri: gstDoc.s3Path,
+            name: gstDoc.fileName,
+            type: gstDoc.fileName?.endsWith('.pdf')
+              ? 'application/pdf'
+              : 'image/jpeg',
+            id: gstDoc.docId,
+            s3Path: gstDoc.s3Path,
+            docTypeId: gstDoc.doctypeId,
+          }
           : null,
 
         // Group Details
@@ -846,9 +842,8 @@ const DoctorRegistrationForm = () => {
         Toast.show({
           type: 'success',
           text1: 'Success',
-          text2: `${
-            field === 'mobile' ? 'Mobile' : 'Email'
-          } verified successfully!`,
+          text2: `${field === 'mobile' ? 'Mobile' : 'Email'
+            } verified successfully!`,
           position: 'top',
         });
 
@@ -895,31 +890,9 @@ const DoctorRegistrationForm = () => {
     await handleVerify(field);
   };
 
-  const handleDateChange = (event, selectedDate) => {
-    // 1️⃣ Immediately close picker (prevents reopening)
-    setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
+ 
 
-    // 2️⃣ If dismissed → don't update anything
-    if (event.type === 'dismissed') {
-      setSelectedDateField(null);
-      return;
-    }
 
-    // 3️⃣ User pressed OK
-    if (event.type === 'set' && selectedDate) {
-      const formattedDate = selectedDate.toISOString();
-      setFormData(prev => ({
-        ...prev,
-        [`${selectedDateField}Date`]: formattedDate,
-      }));
-      setErrors(prev => ({
-        ...prev,
-        [`${selectedDateField}Date`]: null,
-      }));
-    }
-
-    setSelectedDateField(null);
-  };
 
   const loadCities = async (stateId = null) => {
     setLoadingCities(true);
@@ -948,10 +921,7 @@ const DoctorRegistrationForm = () => {
     }
   };
 
-  const openDatePicker = field => {
-    setSelectedDateField(field);
-    setShowDatePicker(prev => ({ ...prev, [field]: true }));
-  };
+ 
 
   const formatDate = dateString => {
     if (!dateString) return '';
@@ -1260,13 +1230,13 @@ const DoctorRegistrationForm = () => {
         },
         ...(formData.stockists &&
           formData.stockists.length > 0 && {
-            suggestedDistributors: formData.stockists.map(stockist => ({
-              distributorCode: stockist.code,
-              distributorName: stockist.name,
-              city: stockist.city,
-              customerId: stockist.name,
-            })),
-          }),
+          suggestedDistributors: formData.stockists.map(stockist => ({
+            distributorCode: stockist.code,
+            distributorName: stockist.name,
+            city: stockist.city,
+            customerId: stockist.name,
+          })),
+        }),
         isChildCustomer: false,
       };
 
@@ -1463,9 +1433,8 @@ const DoctorRegistrationForm = () => {
                 <AppText style={styles.sectionTitle}>Registration Type</AppText>
                 <View style={styles.disabledInputContainer}>
                   <AppText style={styles.disabledInputText}>
-                    {`${type || ''} - ${category || ''}${
-                      subCategory ? ` - ${subCategory}` : ''
-                    }`.trim()}
+                    {`${type || ''} - ${category || ''}${subCategory ? ` - ${subCategory}` : ''
+                      }`.trim()}
                   </AppText>
                 </View>
               </View>
@@ -1518,35 +1487,20 @@ const DoctorRegistrationForm = () => {
                 mandatory={true}
               />
 
-              <TouchableOpacity
-                style={[
-                  styles.datePickerInput,
-                  errors.clinicRegistrationDate && styles.inputError,
-                ]}
-                onPress={() => openDatePicker('clinicRegistration')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText
-                    style={
-                      formData.clinicRegistrationDate
-                        ? styles.inputText
-                        : styles.placeholderText
-                    }
-                  >
-                    {formatDate(formData.clinicRegistrationDate) ||
-                      'Expiry date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.clinicRegistrationDate && (
-                <AppText style={styles.errorText}>
-                  {errors.clinicRegistrationDate}
-                </AppText>
-              )}
 
+
+
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.clinicRegistrationDate}
+                error={errors.clinicRegistrationDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, clinicRegistrationDate: date }));
+                  setErrors(prev => ({ ...prev, clinicRegistrationDate: null }));
+                }}
+              />
               <AppText style={[styles.sectionLabel, { marginTop: 20 }]}>
                 Practice license
                 <AppText style={styles.mandatoryIndicator}>*</AppText>
@@ -1584,33 +1538,19 @@ const DoctorRegistrationForm = () => {
                 mandatory={true}
               />
 
-              <TouchableOpacity
-                style={[
-                  styles.datePickerInput,
-                  errors.practiceLicenseDate && styles.inputError,
-                ]}
-                onPress={() => openDatePicker('practiceLicense')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText
-                    style={
-                      formData.practiceLicenseDate
-                        ? styles.inputText
-                        : styles.placeholderText
-                    }
-                  >
-                    {formatDate(formData.practiceLicenseDate) || 'Expiry date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.practiceLicenseDate && (
-                <AppText style={styles.errorText}>
-                  {errors.practiceLicenseDate}
-                </AppText>
-              )}
+            
+
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.practiceLicenseDate}
+                error={errors.practiceLicenseDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, practiceLicenseDate: date }));
+                  setErrors(prev => ({ ...prev, practiceLicenseDate: null }));
+                }}
+              />
 
               <AppText style={[styles.sectionLabel, { marginTop: 20 }]}>
                 Address proof
@@ -1645,32 +1585,7 @@ const DoctorRegistrationForm = () => {
                 onFileDelete={() => handleFileDelete('clinicImageFile')}
               />
 
-              {showDatePicker.clinicRegistration && (
-                <DateTimePicker
-                  value={
-                    formData.clinicRegistrationDate
-                      ? new Date(formData.clinicRegistrationDate)
-                      : new Date()
-                  }
-                  mode="date"
-                  display="default"
-                  onChange={handleDateChange}
-                  minimumDate={new Date()}
-                />
-              )}
-              {showDatePicker.practiceLicense && (
-                <DateTimePicker
-                  value={
-                    formData.practiceLicenseDate
-                      ? new Date(formData.practiceLicenseDate)
-                      : new Date()
-                  }
-                  mode="date"
-                  display="default"
-                  onChange={handleDateChange}
-                  minimumDate={new Date()}
-                />
-              )}
+              
             </View>
 
             {/* General Details Section */}
@@ -2251,7 +2166,7 @@ const DoctorRegistrationForm = () => {
                   style={[
                     styles.radioButton,
                     formData.selectedCategory === 'Hospital' &&
-                      styles.radioButtonActive,
+                    styles.radioButtonActive,
                   ]}
                   onPress={() =>
                     setFormData(prev => ({
@@ -2273,7 +2188,7 @@ const DoctorRegistrationForm = () => {
                   style={[
                     styles.radioButton,
                     formData.selectedCategory === 'Pharmacy' &&
-                      styles.radioButtonActive,
+                    styles.radioButtonActive,
                   ]}
                   onPress={() =>
                     setFormData(prev => ({
@@ -3321,22 +3236,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
-  datePickerInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.loginInputBorderColor,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  dateText: {
-    fontSize: 16,
-    color: '#333',
-  },
+
   // New dropdown and radio styles
   dropdownContainer: {
     marginBottom: 16,

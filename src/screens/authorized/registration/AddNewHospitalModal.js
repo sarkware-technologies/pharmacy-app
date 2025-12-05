@@ -23,6 +23,7 @@ import CustomInput from '../../../components/CustomInput';
 import { AppText, AppInput } from "../../../components"
 import Calendar from '../../../components/icons/Calendar';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
+import FloatingDateInput from '../../../components/FloatingDateInput';
 
 const DOC_TYPES = {
   REGISTRATION_CERTIFICATE: 8,
@@ -71,9 +72,6 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     pan: false,
   });
 
-  // Date picker (boolean)
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const [hospitalErrors, setHospitalErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -163,7 +161,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         stateId: firstState.id,
       }));
     }
-    
+
     // Auto-select first area (0th index) if available
     if (areas && areas.length > 0 && !hospitalForm.area) {
       const firstArea = areas[0];
@@ -176,9 +174,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cities, states, areas]);
 
-  const openDatePicker = () => {
-    setShowDatePicker(true);
-  };
+
 
   const resetForm = () => {
     setHospitalForm({
@@ -215,19 +211,10 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     setDocumentIds({});
     setUploadedDocs([]);
     setVerificationStatus({ mobile: false, email: false, pan: false });
-    setSelectedDate(new Date());
     clearData();
   };
 
-  const handleDateChange = (event, date) => {
-    setShowDatePicker(false);
-    if (date) {
-      setSelectedDate(date);
-      const formattedDate = date.toLocaleDateString('en-IN');
-      setHospitalForm(prev => ({ ...prev, registrationDate: formattedDate }));
-      setHospitalErrors(prev => ({ ...prev, registrationDate: null }));
-    }
-  };
+
 
   const handleVerify = async (field) => {
     // Validate the field before showing OTP
@@ -768,39 +755,20 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             error={hospitalErrors.registrationNumber}
           />
 
-          <TouchableOpacity
-            style={[
-              styles.datePickerInput,
-              hospitalErrors.registrationDate && styles.inputError,
-            ]}
-            onPress={() => openDatePicker()}
-            activeOpacity={0.7}
-          >
-            <View style={styles.inputTextContainer}>
-              <AppText
-                style={
-                  hospitalForm.registrationDate
-                    ? styles.dateText
-                    : styles.placeholderText
-                }
-              >
-                {hospitalForm.registrationDate || 'Registration date'}
-              </AppText>
-              <AppText style={styles.inlineAsterisk}>*</AppText>
-            </View>
-            <Calendar />
-          </TouchableOpacity>
-          {hospitalErrors.registrationDate && (
-            <AppText style={styles.errorText}>{hospitalErrors.registrationDate}</AppText>
-          )}
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display="default"
-              onChange={handleDateChange}
-            />
-          )}
+
+
+
+          <FloatingDateInput
+            label="Registration date"
+            mandatory={true}
+            value={hospitalForm.registrationDate}
+            error={hospitalErrors.registrationDate}
+  
+            onChange={(date) => {
+              setHospitalForm(prev => ({ ...prev, registrationDate: date }));
+              setHospitalErrors(prev => ({ ...prev, registrationDate: null }));
+            }}
+          />
 
           {/* Image */}
           <AppText style={styles.modalFieldLabelImage}>Image <AppText style={styles.mandatory}>*</AppText> <Icon
@@ -862,7 +830,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                   !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india'
                 );
               });
-              
+
               // Update address fields only
               setHospitalForm(prev => ({
                 ...prev,
@@ -871,7 +839,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 address3: filteredParts[2] || '',
                 address4: filteredParts.slice(3).join(', ') || '',
               }));
-              
+
               // Update pincode and trigger lookup (this will populate area, city, state)
               if (extractedPincode) {
                 setHospitalForm(prev => ({ ...prev, pincode: extractedPincode }));
@@ -879,7 +847,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 // Trigger pincode lookup to populate area, city, state
                 await lookupByPincode(extractedPincode);
               }
-              
+
               setHospitalErrors(prev => ({
                 ...prev,
                 address1: null,
@@ -1271,7 +1239,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
-   inputWithButton: {
+  inputWithButton: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -1300,7 +1268,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginLeft: 8,
   },
-   inlineVerifyButton: {
+  inlineVerifyButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     // backgroundColor: '#FFF5ED',
@@ -1311,7 +1279,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '500',
   },
-otpNote: {
+  otpNote: {
     fontSize: 11,
     color: '#666',
     marginTop: 4,
@@ -1663,22 +1631,7 @@ otpNote: {
     color: colors.primary,
     fontWeight: '600',
   },
-  datePickerInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.loginInputBorderColor,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 2,
-    backgroundColor: '#FFFFFF',
-  },
-  dateText: {
-    fontSize: 16,
-    color: '#333',
-  },
+
   placeholderText: {
     fontSize: 16,
     color: colors.gray,

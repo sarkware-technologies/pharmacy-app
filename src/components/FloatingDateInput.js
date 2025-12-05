@@ -45,14 +45,38 @@ const FloatingDateInput = ({
       useNativeDriver: false,
     }).start();
   };
+const handleDateChange = (event, selectedDate) => {
+  setShowPicker(false);
 
-  const handleDateChange = (event, selectedDate) => {
-    setShowPicker(false);
-
-    if (event.type === "set" && selectedDate) {
-      onChange(selectedDate);
+  // If user cancels → do nothing and keep placeholder
+  if (event.type === 'dismissed') {
+    // If NO value present → drop label back down
+    if (!value) {
+      Animated.timing(floatingLabelAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
     }
-  };
+    return;
+  }
+
+  // If user selects a date
+  if (event.type === "set" && selectedDate) {
+
+    const formattedDate = selectedDate.toLocaleDateString('en-IN');
+
+    
+    onChange(formattedDate);
+
+    // Ensure label floats upward
+    Animated.timing(floatingLabelAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }
+};
 
 
   const labelTextStyle = {
@@ -66,6 +90,19 @@ const FloatingDateInput = ({
     }),
     fontFamily: "Lato-Bold",
   };
+
+ const parseToDate = (dateString) => {
+    if (!dateString) return new Date();
+
+    try {
+      const [day, month, year] = dateString.split("/");
+      return new Date(Number(year), Number(month) - 1, Number(day));
+    } catch (e) {
+      return new Date();
+    }
+  };
+
+
   return (
     <View style={styles.container}>
       {/* INPUT BOX */}
@@ -98,8 +135,8 @@ const FloatingDateInput = ({
           activeOpacity={0.7}
           onPress={openPicker}
         >
-          <AppText style={value ? styles.valueText : styles.placeholderText}>
-            {value ? new Date(value).toLocaleDateString("en-IN") : ""}
+ <AppText style={value ? styles.valueText : styles.placeholderText}>
+            {value || ""} {/* Already in DD/MM/YYYY */}
           </AppText>
         </TouchableOpacity>
 
@@ -115,7 +152,7 @@ const FloatingDateInput = ({
       {/* Date Picker */}
       {showPicker && (
         <DateTimePicker
-          value={value ? new Date(value) : new Date()}
+          value={parseToDate(value)}   // Always convert string to Date
           mode="date"
           display="default"
           minimumDate={minimumDate}

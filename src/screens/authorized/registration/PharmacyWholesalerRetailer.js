@@ -36,6 +36,8 @@ import AddNewDoctorModal from './AddNewDoctorModal';
 import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
+import FloatingDateInput from '../../../components/FloatingDateInput';
+
 
 // Default document types for file uploads (will be updated from API for licenses)
 const DOC_TYPES = {
@@ -147,16 +149,8 @@ const PharmacyWholesalerRetailerForm = () => {
   const [registering, setRegistering] = useState(false);
 
   const [showCityModal, setShowCityModal] = useState(false);
-const [showStateModal, setShowStateModal] = useState(false);
+  const [showStateModal, setShowStateModal] = useState(false);
 
-  // Date picker states
-  const [showDatePicker, setShowDatePicker] = useState({
-    license20: false,
-    license21: false,
-    license20b: false,
-    license21b: false,
-  });
-  const [selectedDateField, setSelectedDateField] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   // OTP states
@@ -390,7 +384,7 @@ const [showStateModal, setShowStateModal] = useState(false);
     if (/^\d{0,6}$/.test(text)) {
       setFormData(prev => ({ ...prev, pincode: text }));
       setErrors(prev => ({ ...prev, pincode: null }));
-      
+
       // Clear previous selections when pincode changes
       if (text.length < 6) {
         setFormData(prev => ({
@@ -404,21 +398,21 @@ const [showStateModal, setShowStateModal] = useState(false);
         }));
         clearData();
       }
-      
+
       // Trigger lookup when pincode is complete (6 digits)
       if (text.length === 6) {
         await lookupByPincode(text);
       }
     }
   };
-  
+
   // Auto-populate city, state, and area when pincode lookup completes
   useEffect(() => {
     if (cities.length > 0 && states.length > 0) {
       // Auto-select first city and state from lookup results
       const firstCity = cities[0];
       const firstState = states[0];
-      
+
       setFormData(prev => ({
         ...prev,
         city: firstCity.name,
@@ -427,7 +421,7 @@ const [showStateModal, setShowStateModal] = useState(false);
         stateId: firstState.id,
       }));
     }
-    
+
     // Auto-select first area (0th index) if available
     if (areas.length > 0 && !formData.area) {
       const firstArea = areas[0];
@@ -437,7 +431,7 @@ const [showStateModal, setShowStateModal] = useState(false);
         areaId: firstArea.id,
       }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cities, states, areas]);
 
 
@@ -610,38 +604,6 @@ const [showStateModal, setShowStateModal] = useState(false);
   const handleResendOTP = async (field) => {
     setOtpTimers(prev => ({ ...prev, [field]: 30 }));
     await handleVerify(field);
-  };
-
-
-  const handleDateChange = (event, selectedDate) => {
-  // 1️⃣ Immediately close picker (prevents reopening)
-  setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
-
-  // 2️⃣ If dismissed → don't update anything
-  if (event.type === 'dismissed') {
-    setSelectedDateField(null);
-    return;
-  }
-
-  // 3️⃣ User pressed OK
-  if (event.type === 'set' && selectedDate) {
-    const formattedDate = selectedDate.toISOString();
-    setFormData(prev => ({
-      ...prev,
-      [`${selectedDateField}ExpiryDate`]: formattedDate,
-    }));
-    setErrors(prev => ({
-      ...prev,
-      [`${selectedDateField}ExpiryDate`]: null,
-    }));
-  }
-
-  setSelectedDateField(null);
-};
-
-  const openDatePicker = (field) => {
-    setSelectedDateField(field);
-    setShowDatePicker(prev => ({ ...prev, [field]: true }));
   };
 
   const renderOTPInput = (field) => {
@@ -837,7 +799,7 @@ const [showStateModal, setShowStateModal] = useState(false);
             "customerId": stockist.name,
           }))
         }),
-        isChildCustomer:false
+        isChildCustomer: false
       };
 
       console.log('Registration data:', registrationData);
@@ -890,71 +852,71 @@ const [showStateModal, setShowStateModal] = useState(false);
   };
 
   const DropdownModal = ({ visible, onClose, title, data, selectedId, onSelect, loading }) => {
-  return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <TouchableOpacity
-          style={styles.flexContainer}
-          activeOpacity={1}
-          onPress={onClose}
-        />
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <AppText style={styles.modalTitle}>{title}</AppText>
-            <TouchableOpacity onPress={onClose}>
-              <Icon name="close" size={24} color="#666" />
-            </TouchableOpacity>
-          </View>
+    return (
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={onClose}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.flexContainer}
+            activeOpacity={1}
+            onPress={onClose}
+          />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <AppText style={styles.modalTitle}>{title}</AppText>
+              <TouchableOpacity onPress={onClose}>
+                <Icon name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
 
-          {loading ? (
-            <ActivityIndicator size="large" color={colors.primary} style={styles.modalLoader} />
-          ) : (
-            <>
-              {(!data || data.length === 0) ? (
-                <View style={[styles.modalList, { padding: 24, alignItems: 'center' }]}>
-                  <AppText style={{ color: '#777', fontSize: 16 }}>No {title} found</AppText>
-                </View>
-              ) : (
-                <FlatList
-                  data={data}
-                  keyExtractor={(item) => item.id?.toString() || item.value}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={[
-                        styles.modalItem,
-                        selectedId == item.id && styles.modalItemSelected
-                      ]}
-                      onPress={() => {
-                        onSelect(item);
-                        onClose();
-                      }}
-                    >
-                      <AppText style={[
-                        styles.modalItemText,
-                        selectedId == item.id && styles.modalItemTextSelected
-                      ]}>
-                        {item.name}
-                      </AppText>
-                      {selectedId == item.id && (
-                        <Icon name="check" size={20} color={colors.primary} />
-                      )}
-                    </TouchableOpacity>
-                  )}
-                  style={styles.modalList}
-                />
-              )}
-            </>
-          )}
+            {loading ? (
+              <ActivityIndicator size="large" color={colors.primary} style={styles.modalLoader} />
+            ) : (
+              <>
+                {(!data || data.length === 0) ? (
+                  <View style={[styles.modalList, { padding: 24, alignItems: 'center' }]}>
+                    <AppText style={{ color: '#777', fontSize: 16 }}>No {title} found</AppText>
+                  </View>
+                ) : (
+                  <FlatList
+                    data={data}
+                    keyExtractor={(item) => item.id?.toString() || item.value}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={[
+                          styles.modalItem,
+                          selectedId == item.id && styles.modalItemSelected
+                        ]}
+                        onPress={() => {
+                          onSelect(item);
+                          onClose();
+                        }}
+                      >
+                        <AppText style={[
+                          styles.modalItemText,
+                          selectedId == item.id && styles.modalItemTextSelected
+                        ]}>
+                          {item.name}
+                        </AppText>
+                        {selectedId == item.id && (
+                          <Icon name="check" size={20} color={colors.primary} />
+                        )}
+                      </TouchableOpacity>
+                    )}
+                    style={styles.modalList}
+                  />
+                )}
+              </>
+            )}
+          </View>
         </View>
-      </View>
-    </Modal>
-  );
-};
+      </Modal>
+    );
+  };
 
 
   const handleFileUpload = (field, file) => {
@@ -1060,20 +1022,20 @@ const [showStateModal, setShowStateModal] = useState(false);
 
 
   const handleAddStockist = () => {
-  if (formData.stockists.length >= 4) {
-    Toast.show({
-      type: 'error',
-      text1: 'Limit Reached',
-      text2: 'You can only add up to 4 stockists.',
-    });
-    return;
-  }
+    if (formData.stockists.length >= 4) {
+      Toast.show({
+        type: 'error',
+        text1: 'Limit Reached',
+        text2: 'You can only add up to 4 stockists.',
+      });
+      return;
+    }
 
-  setFormData(prev => ({
-    ...prev,
-    stockists: [...prev.stockists, { name: '', code: '', city: '' }],
-  }));
-};
+    setFormData(prev => ({
+      ...prev,
+      stockists: [...prev.stockists, { name: '', code: '', city: '' }],
+    }));
+  };
 
   const handleRemoveStockist = (index) => {
     setFormData(prev => ({
@@ -1148,24 +1110,17 @@ const [showStateModal, setShowStateModal] = useState(false);
                 error={errors.license20}
               />
 
-              <TouchableOpacity
-                style={[styles.datePickerInput, errors.license20ExpiryDate && styles.inputError]}
-                onPress={() => openDatePicker('license20')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText style={formData.license20ExpiryDate ? styles.dateText : styles.placeholderText}>
-                    {formData.license20ExpiryDate
-                      ? new Date(formData.license20ExpiryDate).toLocaleDateString('en-IN')
-                      : 'Expiry Date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.license20ExpiryDate && (
-                <AppText style={styles.errorText}>{errors.license20ExpiryDate}</AppText>
-              )}
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.license20ExpiryDate}
+                error={errors.license20ExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, license20ExpiryDate: date }));
+                  setErrors(prev => ({ ...prev, license20ExpiryDate: null }));
+                }}
+              />
 
               {/* 21 License */}
               <View style={[styles.licenseRow, { marginTop: 20 }]}>
@@ -1196,25 +1151,18 @@ const [showStateModal, setShowStateModal] = useState(false);
                 error={errors.license21}
               />
 
-              <TouchableOpacity
-                style={[styles.datePickerInput, errors.license21ExpiryDate && styles.inputError]}
-                onPress={() => openDatePicker('license21')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText style={formData.license21ExpiryDate ? styles.dateText : styles.placeholderText}>
-                    {formData.license21ExpiryDate
-                      ? new Date(formData.license21ExpiryDate).toLocaleDateString('en-IN')
-                      : 'Expiry Date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.license21ExpiryDate && (
-                <AppText style={styles.errorText}>{errors.license21ExpiryDate}</AppText>
-              )}
-
+         
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.license21ExpiryDate}
+                error={errors.license21ExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, license21ExpiryDate: date }));
+                  setErrors(prev => ({ ...prev, license21ExpiryDate: null }));
+                }}
+              />
               {/* 20B License */}
               <View style={[styles.licenseRow, { marginTop: 20 }]}>
 
@@ -1245,24 +1193,17 @@ const [showStateModal, setShowStateModal] = useState(false);
                 error={errors.license20b}
               />
 
-              <TouchableOpacity
-                style={[styles.datePickerInput, errors.license20bExpiryDate && styles.inputError]}
-                onPress={() => openDatePicker('license20b')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText style={formData.license20bExpiryDate ? styles.dateText : styles.placeholderText}>
-                    {formData.license20bExpiryDate
-                      ? new Date(formData.license20bExpiryDate).toLocaleDateString('en-IN')
-                      : 'Expiry Date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.license20bExpiryDate && (
-                <AppText style={styles.errorText}>{errors.license20bExpiryDate}</AppText>
-              )}
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.license20bExpiryDate}
+                error={errors.license20bExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, license20bExpiryDate: date }));
+                  setErrors(prev => ({ ...prev, license20bExpiryDate: null }));
+                }}
+              />
 
               {/* 21B License */}
               <View style={[styles.licenseRow, { marginTop: 20 }]}>
@@ -1294,24 +1235,20 @@ const [showStateModal, setShowStateModal] = useState(false);
                 error={errors.license21b}
               />
 
-              <TouchableOpacity
-                style={[styles.datePickerInput, errors.license21bExpiryDate && styles.inputError]}
-                onPress={() => openDatePicker('license21b')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText style={formData.license21bExpiryDate ? styles.dateText : styles.placeholderText}>
-                    {formData.license21bExpiryDate
-                      ? new Date(formData.license21bExpiryDate).toLocaleDateString('en-IN')
-                      : 'Expiry Date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.license21bExpiryDate && (
-                <AppText style={styles.errorText}>{errors.license21bExpiryDate}</AppText>
-              )}
+             
+
+               <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.license21bExpiryDate}
+                error={errors.license21bExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, license21bExpiryDate: date }));
+                  setErrors(prev => ({ ...prev, license21bExpiryDate: null }));
+                }}
+              />
+
             </View>
 
             <View style={styles.section}>
@@ -1366,7 +1303,7 @@ const [showStateModal, setShowStateModal] = useState(false);
                   const filteredParts = addressParts.filter(part => {
                     return !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india';
                   });
-                  
+
                   // Update address fields only
                   setFormData(prev => ({
                     ...prev,
@@ -1375,7 +1312,7 @@ const [showStateModal, setShowStateModal] = useState(false);
                     address3: filteredParts[2] || '',
                     address4: filteredParts.slice(3).join(', ') || '',
                   }));
-                  
+
                   // Update pincode and trigger lookup (this will populate area, city, state)
                   if (extractedPincode) {
                     setFormData(prev => ({ ...prev, pincode: extractedPincode }));
@@ -1383,7 +1320,7 @@ const [showStateModal, setShowStateModal] = useState(false);
                     // Trigger pincode lookup to populate area, city, state
                     await lookupByPincode(extractedPincode);
                   }
-                  
+
                   setErrors(prev => ({ ...prev, address1: null, address2: null, address3: null, address4: null, pincode: null }));
                 }}
               />
@@ -1441,7 +1378,7 @@ const [showStateModal, setShowStateModal] = useState(false);
                 <TouchableOpacity
                   style={[styles.dropdown, errors.area && styles.inputError]}
                   onPress={() => {
-                      setShowAreaModal(true);
+                    setShowAreaModal(true);
                   }}
                 >
                   <View style={styles.inputTextContainer}>
@@ -1457,56 +1394,56 @@ const [showStateModal, setShowStateModal] = useState(false);
 
               {/* City - Auto-populated from pincode */}
               {/* City - Auto-populated from pincode */}
-<View style={styles.dropdownContainer}>
-  {(formData.city || cities.length > 0) && (
-    <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
-      City<AppText style={styles.asteriskPrimary}>*</AppText>
-    </AppText>
-  )}
-  <TouchableOpacity
-    style={[styles.dropdown, errors.cityId && styles.inputError]}
-    onPress={() => {
-      // If city list empty, still open modal to show "No items" + manual entry option
-      setShowCityModal(true);
-    }}
-  >
-    <View style={styles.inputTextContainer}>
-      <AppText style={[styles.inputText, !formData.city && styles.placeholderText]}>
-        {formData.city || 'City'}
-      </AppText>
-      <AppText style={styles.inlineAsterisk}>*</AppText>
-    </View>
-    <Icon name="arrow-drop-down" size={24} color="#666" />
-  </TouchableOpacity>
-  {errors.cityId && <AppText style={styles.errorText}>{errors.cityId}</AppText>}
-</View>
+              <View style={styles.dropdownContainer}>
+                {(formData.city || cities.length > 0) && (
+                  <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+                    City<AppText style={styles.asteriskPrimary}>*</AppText>
+                  </AppText>
+                )}
+                <TouchableOpacity
+                  style={[styles.dropdown, errors.cityId && styles.inputError]}
+                  onPress={() => {
+                    // If city list empty, still open modal to show "No items" + manual entry option
+                    setShowCityModal(true);
+                  }}
+                >
+                  <View style={styles.inputTextContainer}>
+                    <AppText style={[styles.inputText, !formData.city && styles.placeholderText]}>
+                      {formData.city || 'City'}
+                    </AppText>
+                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                  </View>
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
+                </TouchableOpacity>
+                {errors.cityId && <AppText style={styles.errorText}>{errors.cityId}</AppText>}
+              </View>
 
 
               {/* State - Auto-populated from pincode */}
-             {/* State - Auto-populated from pincode */}
-<View style={styles.dropdownContainer}>
-  {(formData.state || states.length > 0) && (
-    <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
-      State<AppText style={styles.asteriskPrimary}>*</AppText>
-    </AppText>
-  )}
-  <TouchableOpacity
-    style={[styles.dropdown, errors.stateId && styles.inputError]}
-    onPress={() => {
-      // Open state modal even if states array empty
-      setShowStateModal(true);
-    }}
-  >
-    <View style={styles.inputTextContainer}>
-      <AppText style={[styles.inputText, !formData.state && styles.placeholderText]}>
-        {formData.state || 'State'}
-      </AppText>
-      <AppText style={styles.inlineAsterisk}>*</AppText>
-    </View>
-    <Icon name="arrow-drop-down" size={24} color="#666" />
-  </TouchableOpacity>
-  {errors.stateId && <AppText style={styles.errorText}>{errors.stateId}</AppText>}
-</View>
+              {/* State - Auto-populated from pincode */}
+              <View style={styles.dropdownContainer}>
+                {(formData.state || states.length > 0) && (
+                  <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+                    State<AppText style={styles.asteriskPrimary}>*</AppText>
+                  </AppText>
+                )}
+                <TouchableOpacity
+                  style={[styles.dropdown, errors.stateId && styles.inputError]}
+                  onPress={() => {
+                    // Open state modal even if states array empty
+                    setShowStateModal(true);
+                  }}
+                >
+                  <View style={styles.inputTextContainer}>
+                    <AppText style={[styles.inputText, !formData.state && styles.placeholderText]}>
+                      {formData.state || 'State'}
+                    </AppText>
+                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                  </View>
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
+                </TouchableOpacity>
+                {errors.stateId && <AppText style={styles.errorText}>{errors.stateId}</AppText>}
+              </View>
 
             </View>
 
@@ -1685,24 +1622,24 @@ const [showStateModal, setShowStateModal] = useState(false);
                 }
               />
 
-               {
-                                  verificationStatus.pan &&
-                                  <TouchableOpacity
-                                    style={styles.linkButton}
-                                    onPress={() => {
-                                      Toast.show({
-                                        type: 'info',
-                                        text1: 'Fetch GST',
-                                        text2: 'Fetching GST details from PAN...',
-                                      });
-                                      // Here you would call API to fetch GST from PAN
-                                      // and populate the GST dropdown options
-                                    }}
-                                  >
-                                    <FetchGst />
-                                    <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
-                                  </TouchableOpacity>
-                                }
+              {
+                verificationStatus.pan &&
+                <TouchableOpacity
+                  style={styles.linkButton}
+                  onPress={() => {
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Fetch GST',
+                      text2: 'Fetching GST details from PAN...',
+                    });
+                    // Here you would call API to fetch GST from PAN
+                    // and populate the GST dropdown options
+                  }}
+                >
+                  <FetchGst />
+                  <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
+                </TouchableOpacity>
+              }
 
               <FileUploadComponent
                 placeholder="Upload GST"
@@ -2025,44 +1962,6 @@ const [showStateModal, setShowStateModal] = useState(false);
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Date Pickers */}
-      {showDatePicker.license20 && (
-        <DateTimePicker
-          value={formData.license20ExpiryDate || new Date()}
-          mode="date"
-          display="default"
-          minimumDate={new Date()}
-          onChange={handleDateChange}
-        />
-      )}
-      {showDatePicker.license21 && (
-        <DateTimePicker
-          value={formData.license21ExpiryDate || new Date()}
-          mode="date"
-          display="default"
-          minimumDate={new Date()}
-          onChange={handleDateChange}
-        />
-      )}
-      {showDatePicker.license20b && (
-        <DateTimePicker
-          value={formData.license20bExpiryDate || new Date()}
-          mode="date"
-          display="default"
-          minimumDate={new Date()}
-          onChange={handleDateChange}
-        />
-      )}
-      {showDatePicker.license21b && (
-        <DateTimePicker
-          value={formData.license21bExpiryDate || new Date()}
-          mode="date"
-          display="default"
-          minimumDate={new Date()}
-          onChange={handleDateChange}
-        />
-      )}
-
       {/* Dropdown Modals */}
       <DropdownModal
         visible={showAreaModal}
@@ -2080,7 +1979,7 @@ const [showStateModal, setShowStateModal] = useState(false);
         }}
         loading={pincodeLoading}
       />
-  {/* Dropdown Modals */}
+      {/* Dropdown Modals */}
       <DropdownModal
         visible={showStateModal}
         onClose={() => setShowStateModal(false)}
@@ -2206,37 +2105,37 @@ const [showStateModal, setShowStateModal] = useState(false);
         animationType="fade"
         onRequestClose={() => setShowCancelModal(false)}
       >
-       <View style={styles.cancelModalOverlay}>
-                <View style={styles.cancelModalContent}>
-                  <View style={styles.modalIconContainerOuter}>
-      
-                    <View style={styles.modalIconContainer}>
-      
-                      <AppText style={styles.modalIcon}>!</AppText>
-                    </View></View>
-                  <AppText style={styles.cancelModalTitle}>
-                    {`Are you sure you want
+        <View style={styles.cancelModalOverlay}>
+          <View style={styles.cancelModalContent}>
+            <View style={styles.modalIconContainerOuter}>
+
+              <View style={styles.modalIconContainer}>
+
+                <AppText style={styles.modalIcon}>!</AppText>
+              </View></View>
+            <AppText style={styles.cancelModalTitle}>
+              {`Are you sure you want
 to Cancel the Onboarding?`}
-                  </AppText>
-                  <View style={styles.modalButtonContainer}>
-                    <TouchableOpacity
-                      style={styles.modalYesButton}
-                      onPress={() => {
-                        setShowCancelModal(false);
-                        navigation.goBack();
-                      }}
-                    >
-                      <AppText style={styles.modalYesButtonText}>Yes</AppText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.modalNoButton}
-                      onPress={() => setShowCancelModal(false)}
-                    >
-                      <AppText style={styles.modalNoButtonText}>No</AppText>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
+            </AppText>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={styles.modalYesButton}
+                onPress={() => {
+                  setShowCancelModal(false);
+                  navigation.goBack();
+                }}
+              >
+                <AppText style={styles.modalYesButtonText}>Yes</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalNoButton}
+                onPress={() => setShowCancelModal(false)}
+              >
+                <AppText style={styles.modalNoButtonText}>No</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -2333,22 +2232,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginRight: 8,
   },
-  datePickerInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.loginInputBorderColor,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  dateText: {
-    fontSize: 16,
-    color: '#333',
-  },
+
   placeholderText: {
     fontSize: 16,
     color: colors.gray,
@@ -2684,7 +2568,7 @@ const styles = StyleSheet.create({
   modalLoader: {
     paddingVertical: 50,
   },
-    cancelModalOverlay: {
+  cancelModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
@@ -3026,10 +2910,10 @@ const styles = StyleSheet.create({
     flex: 1,
     marginBottom: 16
   },
-   linkButton: {
-    flexDirection: 'row',   
-    alignItems: 'center',  
-    gap: 2,                
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
     paddingVertical: 8,
     marginBottom: 16,
     marginTop: -16,

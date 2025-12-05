@@ -23,6 +23,7 @@ import CustomInput from '../../../components/CustomInput';
 import { AppText, AppInput } from "../../../components";
 import Calendar from '../../../components/icons/Calendar';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
+import FloatingDateInput from '../../../components/FloatingDateInput';
 
 const DOC_TYPES = {
   LICENSE_20B: 3,
@@ -104,12 +105,6 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
   const [otpTimers, setOtpTimers] = useState({ mobile: 30, email: 30 });
   const [loadingOtp, setLoadingOtp] = useState({ mobile: false, email: false });
   const otpRefs = useRef({});
-
-  // Date picker states
-  const [showDatePicker, setShowDatePicker] = useState(null); // null, '20b', '21b', 'registration'
-  const [selectedDate20b, setSelectedDate20b] = useState(new Date());
-  const [selectedDate21b, setSelectedDate21b] = useState(new Date());
-  const [selectedRegistrationDate, setSelectedRegistrationDate] = useState(new Date());
 
   // Pincode lookup hook
   const { areas, cities, states, loading: pincodeLoading, lookupByPincode, clearData } = usePincodeLookup();
@@ -223,27 +218,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
     return;
   };
 
-  const handleDateChange = (type, event, date) => {
-    if (event.type === 'dismissed') {
-      setShowDatePicker(null);
-      return;
-    }
 
-    if (date) {
-      const formattedDate = date.toLocaleDateString('en-IN');
-      if (type === '20b') {
-        setSelectedDate20b(date);
-        setPharmacyForm(prev => ({ ...prev, license20bExpiryDate: formattedDate }));
-        setPharmacyErrors(prev => ({ ...prev, license20bExpiryDate: null }));
-      } else if (type === '21b') {
-        setSelectedDate21b(date);
-        setPharmacyForm(prev => ({ ...prev, license21bExpiryDate: formattedDate }));
-        setPharmacyErrors(prev => ({ ...prev, license21bExpiryDate: null }));
-      }
-    }
-
-    setShowDatePicker(null);
-  };
 
   const resetForm = () => {
     setPharmacyForm({
@@ -893,33 +868,20 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
 
 
 
-          <TouchableOpacity
-            style={[
-              styles.datePickerInput,
-              pharmacyErrors.license20bExpiryDate && styles.inputError,
+         
 
-            ]}
-            onPress={() => setShowDatePicker('20b')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.inputTextContainer}>
-              <AppText
-                style={
-                  pharmacyForm.license20bExpiryDate
-                    ? styles.dateText
-                    : styles.placeholderText
-                }
-              >
-                {pharmacyForm.license20bExpiryDate || 'Expiry date'}
-              </AppText>
-              <AppText style={styles.inlineAsterisk}>*</AppText>
-            </View>
-            <Calendar />
-          </TouchableOpacity>
-          {pharmacyErrors.license20bExpiryDate && (
-            <AppText style={styles.errorText}>{pharmacyErrors.license20bExpiryDate}</AppText>
-          )}
 
+ <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={pharmacyForm.license20bExpiryDate}
+                error={pharmacyErrors.license20bExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setPharmacyForm(prev => ({ ...prev, license20bExpiryDate: date }));
+                  setPharmacyErrors(prev => ({ ...prev, license20bExpiryDate: null }));
+                }}
+              />
           {/* 21B License */}
           <View style={[styles.labelWithIcon, styles.sectionTopSpacing]}>
             <AppText style={styles.fieldLabel}>21<AppText style={styles.mandatory}>*</AppText></AppText>
@@ -952,35 +914,17 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             mandatory={true}
             error={pharmacyErrors.license21b}
           />
-
-
-
-          <TouchableOpacity
-            style={[
-              styles.datePickerInput,
-              pharmacyErrors.license21bExpiryDate && styles.inputError,
-
-            ]}
-            onPress={() => setShowDatePicker('21b')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.inputTextContainer}>
-              <AppText
-                style={
-                  pharmacyForm.license21bExpiryDate
-                    ? styles.dateText
-                    : styles.placeholderText
-                }
-              >
-                {pharmacyForm.license21bExpiryDate || 'Expiry date'}
-              </AppText>
-              <AppText style={styles.inlineAsterisk}>*</AppText>
-            </View>
-            <Calendar />
-          </TouchableOpacity>
-          {pharmacyErrors.license21bExpiryDate && (
-            <AppText style={styles.errorText}>{pharmacyErrors.license21bExpiryDate}</AppText>
-          )}
+           <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={pharmacyForm.license21bExpiryDate}
+                error={pharmacyErrors.license21bExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setPharmacyForm(prev => ({ ...prev, license21bExpiryDate: date }));
+                  setPharmacyErrors(prev => ({ ...prev, license21bExpiryDate: null }));
+                }}
+              />
 
           {/* Pharmacy Image */}
           <AppText style={[styles.fieldLabel, styles.sectionTopSpacing]}>Pharmacy Image *</AppText>
@@ -996,24 +940,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           />
 
 
-          {/* Date Pickers */}
-          {showDatePicker === '20b' && (
-            <DateTimePicker
-              value={selectedDate20b}
-              mode="date"
-              display="default"
-              onChange={(event, date) => handleDateChange('20b', event, date)}
-            />
-          )}
-          {showDatePicker === '21b' && (
-            <DateTimePicker
-              value={selectedDate21b}
-              mode="date"
-              display="default"
-              onChange={(event, date) => handleDateChange('21b', event, date)}
-            />
-          )}
-
+         
 
           {/* General Details */}
           <AppText style={styles.modalSectionLabel}>General Details <AppText style={styles.mandatory}>*</AppText></AppText>
@@ -1855,22 +1782,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
-  datePickerInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.loginInputBorderColor,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 2,
-    backgroundColor: '#FFFFFF',
-  },
-  dateText: {
-    fontSize: 16,
-    color: '#333',
-  },
+
   placeholderText: {
     fontSize: 16,
     color: colors.gray,
