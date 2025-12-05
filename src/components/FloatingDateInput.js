@@ -64,9 +64,11 @@ const handleDateChange = (event, selectedDate) => {
   // If user selects a date
   if (event.type === "set" && selectedDate) {
 
-    const formattedDate = selectedDate.toLocaleDateString('en-IN');
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
 
-    
+    const formattedDate = `${year}-${month}-${day}`;
     onChange(formattedDate);
 
     // Ensure label floats upward
