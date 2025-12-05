@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react/no-unstable-nested-components */
 /* eslint-disable no-dupe-keys */
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -24,6 +25,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -85,6 +87,8 @@ const CustomerList = ({ navigation }) => {
 
   // Get customers from Redux instead of mock data
   const customers = useSelector(selectCustomers);
+
+
 
   const customerTypes = useSelector(selectCustomerTypes);
   const customerStatuses = useSelector(selectCustomerStatuses);
@@ -191,7 +195,7 @@ const CustomerList = ({ navigation }) => {
           page: 1,
           limit: 10,
           isLoadMore: false,
-          isStaging: false,
+          isStaging: true,
           typeCode: [],
           categoryCode: [],
           subCategoryCode: [],
@@ -246,8 +250,83 @@ const CustomerList = ({ navigation }) => {
     initializeData();
   }, [activeTab, dispatch]); // Only trigger on tab change
 
+
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     console.log("focus working");
+  //     const initializeData = async () => {
+  //       // Reset customers list and pagination when tab changes
+  //       dispatch(resetCustomersList());
+
+  //       // Fetch customers based on active tab with page: 1
+  //       if (activeTab === 'all') {
+  //         // All tab - regular endpoint, no statusIds
+  //         const payload = {
+  //           page: 1,
+  //           limit: 10,
+  //           isLoadMore: false,
+  //           isStaging: true,
+  //           typeCode: [],
+  //           categoryCode: [],
+  //           subCategoryCode: [],
+  //           sortBy: '',
+  //           sortDirection: 'ASC'
+  //         };
+  //         console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
+  //         dispatch(fetchCustomersList(payload));
+  //       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+  //         // Waiting for Approval and Rejected - staging endpoint
+  //         const statusIds = getStatusIdsForTab(activeTab);
+  //         const payload = {
+  //           page: 1,
+  //           limit: 10,
+  //           isLoadMore: false,
+  //           isStaging: true,
+  //           typeCode: [],
+  //           categoryCode: [],
+  //           subCategoryCode: [],
+  //           statusIds: statusIds,
+  //           sortBy: '',
+  //           sortDirection: 'ASC'
+  //         };
+  //         console.log(`🔍 ${activeTab} tab API payload (staging):`, JSON.stringify(payload, null, 2));
+  //         dispatch(fetchCustomersList(payload));
+  //       } else {
+  //         // Not Onboarded and Unverified - regular endpoint with statusIds
+  //         const statusIds = getStatusIdsForTab(activeTab);
+  //         const payload = {
+  //           page: 1,
+  //           limit: 10,
+  //           isLoadMore: false,
+  //           isStaging: false,
+  //           typeCode: [],
+  //           categoryCode: [],
+  //           subCategoryCode: [],
+  //           statusIds: statusIds,
+  //           sortBy: '',
+  //           sortDirection: 'ASC'
+  //         };
+  //         console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
+  //         dispatch(fetchCustomersList(payload));
+  //       }
+
+  //       // Only fetch these on initial mount
+  //       if (activeTab === 'all') {
+  //         dispatch(fetchCustomerStatuses());
+  //         dispatch(fetchCustomerTypes());
+  //       }
+  //     };
+
+  //     initializeData();
+  //   }, [activeTab, dispatch])
+  // );
+
+
+
   // Handle search with debounce
   useEffect(() => {
+
+
     const delayDebounceFn = setTimeout(() => {
       dispatch(resetCustomersList());
       if (activeTab === 'all' || activeTab === 'waitingForApproval') {
@@ -283,6 +362,8 @@ const CustomerList = ({ navigation }) => {
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
+
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchText, dispatch]); // Only trigger on search text change, not on tab change
 
@@ -297,7 +378,7 @@ const CustomerList = ({ navigation }) => {
         limit: 10,
         ...filters,
         isLoadMore: false,
-        isStaging: isStaging,
+        isStaging: true,
         ...(isStaging && { statusIds: [5] })
       }));
     } else {
@@ -875,7 +956,14 @@ const CustomerList = ({ navigation }) => {
           onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
         >
           <View style={styles.customerHeader}>
-            <AppText style={styles.customerName}>{item.customerName} <ChevronRight height={11} color={colors.primary} /></AppText>
+            {/* <AppText style={styles.customerName}>{item.customerName}<AppText style={styles.customerNameIcon}><ChevronRight height={11} color={colors.primary} /></AppText></AppText> */}
+
+            <View style={styles.customerNameRow}>
+              <AppText style={styles.customerName}>{item.customerName}</AppText>
+
+          
+              <ChevronRight height={12} color={colors.primary} />
+            </View>
             <View style={styles.actionsContainer}>
               {item.statusName === 'NOT-ONBOARDED' && (
                 <TouchableOpacity
@@ -915,6 +1003,7 @@ const CustomerList = ({ navigation }) => {
                 </TouchableOpacity>
               )}
 
+          
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => fetchCustomerDocuments(item)}
@@ -927,10 +1016,11 @@ const CustomerList = ({ navigation }) => {
           <View style={styles.customerInfo}>
             <View style={styles.infoRow}>
               <AddrLine color="#999" />
-              <AppText style={styles.infoText}>{item.customerCode}</AppText>
+              <AppText style={styles.infoText}>{item.customerCode || item.stgCustomerId}</AppText>
               <AppText style={styles.divider}>|</AppText>
-              <AppText style={styles.infoText}>{item.cityName}</AppText>
-              <AppText style={styles.divider}>|</AppText>
+              {item.cityName && (<><AppText style={styles.infoText}>{item.cityName}</AppText>
+                <AppText style={styles.divider}>|</AppText></>)}
+
               <AppText style={styles.infoText}>{item.groupName}</AppText>
               <AppText style={styles.divider}>|</AppText>
               <AppText
@@ -949,7 +1039,15 @@ const CustomerList = ({ navigation }) => {
               <Phone color="#999" />
               <AppText style={{ ...styles.contactText, marginRight: 15 }}>{item.mobile}</AppText>
               <Email color="#999" style={styles.mailIcon} />
-              <AppText style={styles.contactText} ellipsizeMode="tail" numberOfLines={1}  >{item.email}</AppText>
+              {/* <AppText style={styles.contactText} ellipsizeMode="tail" numberOfLines={1}  >{item.email}</AppText> */}
+
+              <AppText
+                style={[styles.contactText, { flex: 1, maxWidth: "100%" }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.email}
+              </AppText>
             </View>
           </View>
 
@@ -1145,6 +1243,10 @@ const CustomerList = ({ navigation }) => {
       </View>
     </Modal>
   );
+
+
+  console.log(filteredCustomers);
+
 
   // Document Preview Modal
   const DocumentPreviewModal = () => (
@@ -1371,6 +1473,7 @@ const CustomerList = ({ navigation }) => {
             </View>
           ) : (
 
+
             <FlatList
               data={filteredCustomers}
               renderItem={renderCustomerItem}
@@ -1414,6 +1517,8 @@ const CustomerList = ({ navigation }) => {
             />
 
           )}
+
+
         </Animated.View>
 
         <DownloadModal />
@@ -1598,11 +1703,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+
+  customerNameRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap:2
+  },
   customerName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
   },
+
   actionsContainer: {
     flexDirection: 'row',
     gap: 12,

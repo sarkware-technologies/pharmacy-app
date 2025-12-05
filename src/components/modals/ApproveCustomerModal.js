@@ -18,12 +18,12 @@ const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName }) => 
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
 
-  const handleConfirm = () => {
+  const handleConfirm = async() => {
     if (!comment || comment.trim() === '') {
       setError('Please enter a comment before approving');
       return;
     }
-    onConfirm(comment);
+   await onConfirm(comment);
     setComment('');
     setError('');
   };

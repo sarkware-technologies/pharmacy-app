@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react/no-unstable-nested-components */
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -101,6 +102,15 @@ const CustomerSearch = ({ navigation }) => {
       dispatch(resetCustomersList());
     }
   };
+
+
+
+//   useEffect(() => {
+//   return () => {
+//     // Reset customers list when screen unmounts
+//     dispatch(resetCustomersList());
+//   };
+// }, []);
 
   const handleRecentSearchClick = (search) => {
     const bounceAnim = new Animated.Value(1);
