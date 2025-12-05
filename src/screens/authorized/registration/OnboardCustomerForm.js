@@ -8,15 +8,18 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-toast-message';
 import AppText from '../../../components/AppText';
 import CustomInput from '../../../components/CustomInput';
 import { colors } from '../../../styles/colors';
 import * as customerAPI from '../../../api/customer';
+import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 
 /**
  * Simplified Onboard Customer Form
@@ -37,8 +40,11 @@ const OnboardCustomerForm = ({ route, navigation }) => {
     address4: '',
     pincode: '',
     area: '',
+    areaId: null,
     city: '',
+    cityId: null,
     state: '',
+    stateId: null,
     
     // Security Details - Mobile and Email are editable
     mobileNumber: '',
@@ -53,6 +59,12 @@ const OnboardCustomerForm = ({ route, navigation }) => {
     customerGroupName: '',
   });
 
+  // Pincode lookup hook
+  const { areas, cities, states, loading: pincodeLoading, lookupByPincode, clearData } = usePincodeLookup();
+  
+  // Dropdown modal states
+  const [showAreaModal, setShowAreaModal] = useState(false);
+
   const [registrationType, setRegistrationType] = useState({
     type: '',
     category: '',
@@ -64,6 +76,34 @@ const OnboardCustomerForm = ({ route, navigation }) => {
       populateFormData(customerData);
     }
   }, [customerData]);
+
+  // Auto-populate city, state, and area when pincode lookup completes
+  useEffect(() => {
+    if (cities.length > 0 && states.length > 0) {
+      // Auto-select first city and state from lookup results
+      const firstCity = cities[0];
+      const firstState = states[0];
+      
+      setFormData(prev => ({
+        ...prev,
+        city: firstCity.name,
+        cityId: firstCity.id,
+        state: firstState.name,
+        stateId: firstState.id,
+      }));
+    }
+    
+    // Auto-select first area (0th index) if available
+    if (areas.length > 0 && !formData.area) {
+      const firstArea = areas[0];
+      setFormData(prev => ({
+        ...prev,
+        area: firstArea.name,
+        areaId: firstArea.id,
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cities, states, areas]);
 
   const populateFormData = (data) => {
     const { generalDetails, securityDetails, customerType, customerCategory, customerSubcategory, mapping, groupDetails } = data;
@@ -86,8 +126,11 @@ const OnboardCustomerForm = ({ route, navigation }) => {
       address4: generalDetails?.address4 || '',
       pincode: generalDetails?.pincode ? String(generalDetails.pincode) : '',
       area: generalDetails?.area || '',
+      areaId: generalDetails?.areaId || null,
       city: generalDetails?.cityName || '',
+      cityId: generalDetails?.cityId || null,
       state: generalDetails?.stateName || '',
+      stateId: generalDetails?.stateId || null,
       
       // Security Details
       mobileNumber: securityDetails?.mobile || '',
@@ -289,33 +332,92 @@ const OnboardCustomerForm = ({ route, navigation }) => {
             <CustomInput
               placeholder="Pincode"
               value={formData.pincode}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, pincode: text }))}
+              onChangeText={async (text) => {
+                if (/^\d{0,6}$/.test(text)) {
+                  setFormData(prev => ({ ...prev, pincode: text }));
+                  
+                  // Clear previous selections when pincode changes
+                  if (text.length < 6) {
+                    setFormData(prev => ({
+                      ...prev,
+                      area: '',
+                      areaId: null,
+                      city: '',
+                      cityId: null,
+                      state: '',
+                      stateId: null,
+                    }));
+                    clearData();
+                  }
+                  
+                  // Trigger lookup when pincode is complete (6 digits)
+                  if (text.length === 6) {
+                    await lookupByPincode(text);
+                  }
+                }
+              }}
               keyboardType="number-pad"
               maxLength={6}
             />
+            {pincodeLoading && (
+              <View style={{ marginTop: -10, marginBottom: 10 }}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            )}
 
-            {/* Area - Editable */}
-            <CustomInput
-              placeholder="Area"
-              value={formData.area}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, area: text }))}
-            />
+            {/* Area Dropdown */}
+            <View style={styles.dropdownContainer}>
+              {(formData.area || areas.length > 0) && (
+                <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+                  Area
+                </AppText>
+              )}
+              <TouchableOpacity
+                style={styles.dropdown}
+                onPress={() => setShowAreaModal(true)}
+              >
+                <View style={styles.inputTextContainer}>
+                  <AppText style={formData.area ? styles.inputText : styles.placeholderText}>
+                    {formData.area || ('Area')}
+                  </AppText>
+                </View>
+                <Icon name="arrow-drop-down" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
 
-            {/* City - Disabled */}
-            <CustomInput
-              placeholder="City"
-              value={formData.city}
-              editable={false}
-              style={styles.disabledInput}
-            />
+            {/* City - Auto-populated from pincode */}
+            <View style={styles.dropdownContainer}>
+              {(formData.city || cities.length > 0) && (
+                <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+                  City
+                </AppText>
+              )}
+              <TouchableOpacity style={styles.dropdown}>
+                <View style={styles.inputTextContainer}>
+                  <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
+                    {formData.city || ('City')}
+                  </AppText>
+                </View>
+                <Icon name="arrow-drop-down" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
 
-            {/* State - Disabled */}
-            <CustomInput
-              placeholder="State"
-              value={formData.state}
-              editable={false}
-              style={styles.disabledInput}
-            />
+            {/* State - Auto-populated from pincode */}
+            <View style={styles.dropdownContainer}>
+              {(formData.state || states.length > 0) && (
+                <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+                  State
+                </AppText>
+              )}
+              <TouchableOpacity style={styles.dropdown}>
+                <View style={styles.inputTextContainer}>
+                  <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
+                    {formData.state || ('State')}
+                  </AppText>
+                </View>
+                <Icon name="arrow-drop-down" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Security Details */}
@@ -494,6 +596,68 @@ const OnboardCustomerForm = ({ route, navigation }) => {
           <View style={styles.bottomSpacing} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Area Dropdown Modal */}
+      <Modal
+        visible={showAreaModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowAreaModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAreaModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <AppText style={styles.modalTitle}>Select Area</AppText>
+              <TouchableOpacity onPress={() => setShowAreaModal(false)}>
+                <Icon name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            {pincodeLoading ? (
+              <ActivityIndicator size="large" color={colors.primary} style={styles.modalLoader} />
+            ) : (
+              <FlatList
+                data={areas}
+                keyExtractor={(item) => item.id?.toString() || item.value}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.modalItem,
+                      formData.areaId == item.id && styles.modalItemSelected
+                    ]}
+                    onPress={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        area: item.name,
+                        areaId: item.id,
+                      }));
+                      setShowAreaModal(false);
+                    }}
+                  >
+                    <AppText style={[
+                      styles.modalItemText,
+                      formData.areaId == item.id && styles.modalItemTextSelected
+                    ]}>
+                      {item.name || item.label}
+                    </AppText>
+                    {formData.areaId == item.id && (
+                      <Icon name="check" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={
+                  <AppText style={styles.emptyText}>No items available</AppText>
+                }
+                style={styles.modalList}
+              />
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -715,6 +879,102 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  floatingLabel: {
+    position: 'absolute',
+    top: -6,
+    left: 12,
+    fontSize: 12,
+    fontWeight: '500',
+    backgroundColor: '#fff',
+    paddingHorizontal: 4,
+    zIndex: 1,
+  },
+  dropdownContainer: {
+    marginBottom: 16,
+  },
+  dropdown: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    marginBottom: 16
+  },
+  inputText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  placeholderText: {
+    fontSize: 16,
+    color: '#999',
+  },
+  inputTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalList: {
+    paddingHorizontal: 16,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalItemSelected: {
+    backgroundColor: '#FFF5ED',
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+    textAlign: 'left',
+  },
+  modalItemTextSelected: {
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  modalLoader: {
+    paddingVertical: 50,
+  },
+  emptyText: {
+    textAlign: 'center',
+    paddingVertical: 40,
+    fontSize: 16,
+    color: '#999',
   },
 });
 

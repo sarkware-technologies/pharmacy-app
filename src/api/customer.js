@@ -145,6 +145,17 @@ export const customerAPI = {
         }
     },
 
+    // Get city, state, and area by pincode
+    getCityByPin: async (pinCode) => {
+        try {
+            const response = await apiClient.get(`/user-management/customer/city-by-pin?pinCode=${pinCode}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching city by pincode:', error);
+            throw error;
+        }
+    },
+
     // Get customer groups (if needed)
     getCustomerGroups: async () => {
         try {

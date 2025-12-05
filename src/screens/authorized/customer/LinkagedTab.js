@@ -28,6 +28,14 @@ import { getDistributors } from '../../../api/distributor';
 import { useSelector } from 'react-redux';
 import { selectCurrentCustomerId } from '../../../redux/slices/customerSlice';
 import {AppText,AppInput} from "../../../components"
+import { colors } from '../../../styles/colors';
+import Distributors from "../../../components/icons/Distributors"
+import Divisions from "../../../components/icons/Divisions"
+import Field from "../../../components/icons/Field"
+import CustomerHierarchy from "../../../components/icons/CustomerHierarchy"
+
+
+ 
 
 const { width } = Dimensions.get('window');
 
@@ -132,7 +140,7 @@ const mockFieldData = [
   { id: 9, name: 'Sanket Kulkarni', code: 'SUN12345', designation: 'Customer executive' },
 ];
 
-export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mappingData = null }) => {
+export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mappingData = null, hasApprovePermission = false, isCustomerActive = false }) => {
   const [activeSubTab, setActiveSubTab] = useState('divisions');
   const [activeDistributorTab, setActiveDistributorTab] = useState('preferred');
   const [showDivisionModal, setShowDivisionModal] = useState(false);
@@ -207,6 +215,11 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
   const [divisionsError, setDivisionsError] = useState(null);
   const [linkingDivisions, setLinkingDivisions] = useState(false);
 
+    // Tab scroll ref for centering active tab
+    const tabScrollRef = useRef(null);
+    const tabRefs = useRef({});
+
+
   // Show toast notification
   const showToast = (message, type = 'success') => {
     setToastMessage(message);
@@ -217,6 +230,35 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
       setToastVisible(false);
     }, 3000);
   };
+
+
+
+    const handleTabPress = async (tabName) => {
+      // First reset the list and set active tab
+      setActiveSubTab(tabName);
+  
+      // Scroll the tab into visible area after a small delay to ensure layout is ready
+      setTimeout(() => {
+        if (tabRefs.current[tabName] && tabScrollRef.current) {
+          tabRefs.current[tabName].measureLayout(
+            tabScrollRef.current.getNode ? tabScrollRef.current.getNode() : tabScrollRef.current,
+            (x, y, w, h) => {
+              const screenWidth = Dimensions.get('window').width;
+              // Center the tab in the screen
+              const scrollX = x - (screenWidth / 2) + (w / 2);
+  
+              tabScrollRef.current?.scrollTo({
+                x: Math.max(0, scrollX),
+                animated: true
+              });
+            },
+            () => {
+              console.log('measureLayout failed');
+            }
+          );
+        }
+      }, 100);
+    };
 
   // Fetch divisions data on component mount
   useEffect(() => {
@@ -1354,9 +1396,14 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
         </View>
       ) : (
         <>
-          <ScrollView style={styles.scrollContent}>
+          <ScrollView 
+            style={styles.scrollContent}
+            contentContainerStyle={[
+              (hasApprovePermission || isCustomerActive) && styles.scrollContentWithButton
+            ]}
+          >
             <View style={styles.divisionsContainer}>
-              <View style={styles.divisionColumn}>
+              <View style={[styles.divisionColumn, !(hasApprovePermission || isCustomerActive) && styles.divisionColumnFullWidth]}>
                 <AppText style={styles.columnTitle}>Opened Division</AppText>
                 <AppText style={styles.columnSubtitle}>Name & Code</AppText>
                 
@@ -1376,56 +1423,60 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
                 )}
               </View>
 
-              <View style={styles.divisionColumn}>
-                <View style={styles.columnHeader}>
-                  <AppText style={styles.columnTitle}>Other Division</AppText>
-                  <TouchableOpacity>
-                    <AppText style={styles.assignText}>Assign to Instra</AppText>
-                  </TouchableOpacity>
-                </View>
-                <AppText style={styles.columnSubtitle}>Name & Code</AppText>
-                
-                {otherDivisionsData.length === 0 ? (
-                  <View style={styles.emptyDivisionContainer}>
-                    <AppText style={styles.emptyDivisionText}>No other divisions available</AppText>
+              {(hasApprovePermission || isCustomerActive) && (
+                <View style={styles.divisionColumn}>
+                  <View style={styles.columnHeader}>
+                    <AppText style={styles.columnTitle}>Other Division</AppText>
+                    {/* <TouchableOpacity>
+                      <AppText style={styles.assignText}>Assign to Instra</AppText>
+                    </TouchableOpacity> */}
                   </View>
-                ) : (
-                  otherDivisionsData.map((division) => (
-                    <TouchableOpacity 
-                      key={`other-${division.divisionId}`} 
-                      style={styles.checkboxItem}
-                      onPress={() => toggleOtherDivisionSelection(division)}
-                    >
-                      <View style={[styles.checkbox, selectedDivisions.find(d => d.divisionId === division.divisionId) && styles.checkboxSelected]}>
-                        {selectedDivisions.find(d => d.divisionId === division.divisionId) && (
-                          <Icon name="check" size={16} color="#fff" />
-                        )}
-                      </View>
-                      <View>
-                        <AppText style={styles.divisionName}>{division.divisionName}</AppText>
-                        <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
-                      </View>
-                    </TouchableOpacity>
-                  ))
-                )}
-              </View>
+                  <AppText style={styles.columnSubtitle}>Name & Code</AppText>
+                  
+                  {otherDivisionsData.length === 0 ? (
+                    <View style={styles.emptyDivisionContainer}>
+                      <AppText style={styles.emptyDivisionText}>No other divisions available</AppText>
+                    </View>
+                  ) : (
+                    otherDivisionsData.map((division) => (
+                      <TouchableOpacity 
+                        key={`other-${division.divisionId}`} 
+                        style={styles.checkboxItem}
+                        onPress={() => toggleOtherDivisionSelection(division)}
+                      >
+                        <View style={[styles.checkbox, selectedDivisions.find(d => d.divisionId === division.divisionId) && styles.checkboxSelected]}>
+                          {selectedDivisions.find(d => d.divisionId === division.divisionId) && (
+                            <Icon name="check" size={16} color="#fff" />
+                          )}
+                        </View>
+                        <View>
+                          <AppText style={styles.divisionName}>{division.divisionName}</AppText>
+                          <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </View>
+              )}
             </View>
           </ScrollView>
 
-          {/* Sticky Continue Button at Bottom */}
-          <View style={styles.stickyButtonContainer}>
-            <TouchableOpacity 
-              style={[styles.continueButton, (linkingDivisions || selectedDivisions.length === 0) && styles.continueButtonDisabled]}
-              onPress={handleLinkDivisionsAPI}
-              disabled={linkingDivisions || selectedDivisions.length === 0}
-            >
-              {linkingDivisions ? (
-                <AppText style={styles.linkButtonText}>Linking...</AppText>
-              ) : (
-                <AppText style={styles.linkButtonText}>Continue</AppText>
-              )}
-            </TouchableOpacity>
-          </View>
+          {/* Sticky Continue Button at Bottom - Only show if user has approve permission or customer is active */}
+          {(hasApprovePermission || isCustomerActive) && (
+            <View style={styles.stickyButtonContainer}>
+              <TouchableOpacity 
+                style={[styles.continueButton, (linkingDivisions || selectedDivisions.length === 0) && styles.continueButtonDisabled]}
+                onPress={handleLinkDivisionsAPI}
+                disabled={linkingDivisions || selectedDivisions.length === 0}
+              >
+                {linkingDivisions ? (
+                  <AppText style={styles.linkButtonText}>Linking...</AppText>
+                ) : (
+                  <AppText style={styles.linkButtonText}>Continue</AppText>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </>
       )}
     </View>
@@ -1863,15 +1914,32 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
   );
 
   return (
+
+    <>
     <View style={styles.container}>
       {/* Sub-tabs */}
-      <View style={styles.subTabsContainer}>
-        {/* Divisions Tab - Always visible */}
+
+          <ScrollView
+              ref={tabScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.subTabsContainer}
+              scrollEventThrottle={16}
+            >
+              
+
+
+
+            {/* Divisions Tab - Always visible */}
         <TouchableOpacity
+
+        ref={(ref) => tabRefs.current['divisions'] = ref}
           style={[styles.subTab, activeSubTab === 'divisions' && styles.activeSubTab]}
-          onPress={() => setActiveSubTab('divisions')}
+
+           onPress={() => handleTabPress('divisions')}
         >
-          <Icon name="view-grid" size={18} color={activeSubTab === 'divisions' ? '#000' : '#999'} />
+
+          <Divisions color={activeSubTab === 'divisions' ? '#000' : '#999'}/>
           <AppText style={[styles.subTabText, activeSubTab === 'divisions' && styles.activeSubTabText]}>
             Divisions
           </AppText>
@@ -1880,10 +1948,14 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
         {/* Distributors Tab - Disabled if no opened divisions */}
         <TouchableOpacity
           style={[styles.subTab, activeSubTab === 'distributors' && styles.activeSubTab, openedDivisionsData.length === 0 && styles.disabledTab]}
-          onPress={() => openedDivisionsData.length > 0 && setActiveSubTab('distributors')}
+          ref={(ref) => tabRefs.current['distributors'] = ref}
+          onPress={() => openedDivisionsData.length > 0 && handleTabPress('distributors')}
           disabled={openedDivisionsData.length === 0}
         >
-          <Icon name="store" size={18} color={openedDivisionsData.length > 0 ? (activeSubTab === 'distributors' ? '#000' : '#999') : '#CCC'} />
+          
+
+                      <Distributors color={openedDivisionsData.length > 0 ? (activeSubTab === 'distributors' ? '#000' : '#999') : '#CCC'}/>
+
           <AppText style={[styles.subTabText, activeSubTab === 'distributors' && styles.activeSubTabText, openedDivisionsData.length === 0 && styles.disabledTabText]}>
             Distributors
           </AppText>
@@ -1892,10 +1964,14 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
         {/* Field Tab - Disabled if no opened divisions */}
         <TouchableOpacity
           style={[styles.subTab, activeSubTab === 'field' && styles.activeSubTab, openedDivisionsData.length === 0 && styles.disabledTab]}
-          onPress={() => openedDivisionsData.length > 0 && setActiveSubTab('field')}
+          ref={(ref) => tabRefs.current['field'] = ref}
+
+          onPress={() => openedDivisionsData.length > 0 && handleTabPress('field')}
           disabled={openedDivisionsData.length === 0}
         >
-          <IconFeather name="users" size={18} color={openedDivisionsData.length > 0 ? (activeSubTab === 'field' ? '#000' : '#999') : '#CCC'} />
+       
+
+            <Field color={openedDivisionsData.length > 0 ? (activeSubTab === 'field' ? '#000' : '#999') : '#CCC'}/>
           <AppText style={[styles.subTabText, activeSubTab === 'field' && styles.activeSubTabText, openedDivisionsData.length === 0 && styles.disabledTabText]}>
             Field
           </AppText>
@@ -1904,14 +1980,62 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
         {/* Customer Hierarchy Tab - Always visible */}
         <TouchableOpacity
           style={[styles.subTab, activeSubTab === 'hierarchy' && styles.activeSubTab]}
+          onPress={() => handleTabPress('hierarchy')}
+          ref={(ref) => tabRefs.current['hierarchy'] = ref}
+
+        >
+
+         <CustomerHierarchy color={openedDivisionsData.length > 0 ? (activeSubTab === 'hierarchy' ? '#000' : '#999') : '#CCC'}/>
+          <AppText style={[styles.subTabText, activeSubTab === 'hierarchy' && styles.activeSubTabText]}>
+            Customer Hierarchy
+          </AppText>
+        </TouchableOpacity>
+            </ScrollView>
+        {/* Divisions Tab - Always visible */}
+        {/* <TouchableOpacity
+          style={[styles.subTab, activeSubTab === 'divisions' && styles.activeSubTab]}
+          onPress={() => setActiveSubTab('divisions')}
+        >
+          <Icon name="view-grid" size={18} color={activeSubTab === 'divisions' ? '#000' : '#999'} />
+          <AppText style={[styles.subTabText, activeSubTab === 'divisions' && styles.activeSubTabText]}>
+            Divisions
+          </AppText>
+        </TouchableOpacity> */}
+
+        {/* Distributors Tab - Disabled if no opened divisions */}
+        {/* <TouchableOpacity
+          style={[styles.subTab, activeSubTab === 'distributors' && styles.activeSubTab, openedDivisionsData.length === 0 && styles.disabledTab]}
+          onPress={() => openedDivisionsData.length > 0 && setActiveSubTab('distributors')}
+          disabled={openedDivisionsData.length === 0}
+        >
+          <Icon name="store" size={18} color={openedDivisionsData.length > 0 ? (activeSubTab === 'distributors' ? '#000' : '#999') : '#CCC'} />
+          <AppText style={[styles.subTabText, activeSubTab === 'distributors' && styles.activeSubTabText, openedDivisionsData.length === 0 && styles.disabledTabText]}>
+            Distributors
+          </AppText>
+        </TouchableOpacity> */}
+
+        {/* Field Tab - Disabled if no opened divisions */}
+        {/* <TouchableOpacity
+          style={[styles.subTab, activeSubTab === 'field' && styles.activeSubTab, openedDivisionsData.length === 0 && styles.disabledTab]}
+          onPress={() => openedDivisionsData.length > 0 && setActiveSubTab('field')}
+          disabled={openedDivisionsData.length === 0}
+        >
+          <IconFeather name="users" size={18} color={openedDivisionsData.length > 0 ? (activeSubTab === 'field' ? '#000' : '#999') : '#CCC'} />
+          <AppText style={[styles.subTabText, activeSubTab === 'field' && styles.activeSubTabText, openedDivisionsData.length === 0 && styles.disabledTabText]}>
+            Field
+          </AppText>
+        </TouchableOpacity> */}
+
+        {/* Customer Hierarchy Tab - Always visible */}
+        {/* <TouchableOpacity
+          style={[styles.subTab, activeSubTab === 'hierarchy' && styles.activeSubTab]}
           onPress={() => setActiveSubTab('hierarchy')}
         >
           <Icon name="sitemap" size={18} color={activeSubTab === 'hierarchy' ? '#000' : '#999'} />
           <AppText style={[styles.subTabText, activeSubTab === 'hierarchy' && styles.activeSubTabText]}>
             Customer Hierarchy
           </AppText>
-        </TouchableOpacity>
-      </View>
+        </TouchableOpacity> */}
 
       {/* Content based on active sub-tab */}
       {activeSubTab === 'distributors' && renderDistributorsTab()}
@@ -1955,6 +2079,9 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
         </View>
       )}
     </View>
+
+      
+            </>
   );
 };
 
@@ -1967,20 +2094,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#fff',
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    maxHeight: 60,
+    marginHorizontal:16,
+    marginTop:10
+    
   },
   subTab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingVertical:8,
+     paddingHorizontal:15,
     borderRadius: 8,
     marginHorizontal: 4,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#909090',
     backgroundColor: 'transparent',
   },
   activeSubTab: {
@@ -1989,7 +2118,7 @@ const styles = StyleSheet.create({
   },
   subTabText: {
     marginLeft: 6,
-    fontSize: 13,
+    fontSize: 14,
     color: '#999',
     fontWeight: '400',
   },
@@ -2008,6 +2137,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
+  },
+  scrollContentWithButton: {
+    paddingBottom: 100, // Add padding to ensure last item is visible above sticky button
   },
   distributorTabs: {
     flexDirection: 'row',
@@ -2450,6 +2582,10 @@ const styles = StyleSheet.create({
   },
   divisionColumn: {
     flex: 1,
+  },
+  divisionColumnFullWidth: {
+    flex: 1,
+    width: '100%',
   },
   columnTitle: {
     fontSize: 16,
@@ -3301,6 +3437,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
   },
+
+
+
+
+   
+
 });
 
 export default LinkagedTab;

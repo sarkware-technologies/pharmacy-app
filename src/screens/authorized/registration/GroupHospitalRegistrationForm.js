@@ -42,6 +42,8 @@ import { AppText, AppInput } from '../../../components';
 import AddNewHospitalModal from './AddNewHospitalModal';
 import Toast from 'react-native-toast-message';
 import FetchGst from '../../../components/icons/FetchGst';
+import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
+import FloatingDateInput from '../../../components/FloatingDateInput';
 
 const { width, height } = Dimensions.get('window');
 
@@ -87,6 +89,7 @@ const GroupHospitalRegistrationForm = () => {
     address4: '',
     pincode: '',
     area: '',
+    areaId: null, // <<< ADDED
     city: '',
     cityId: null,
     state: '',
@@ -116,7 +119,6 @@ const GroupHospitalRegistrationForm = () => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
 
@@ -132,11 +134,17 @@ const GroupHospitalRegistrationForm = () => {
   const [uploadedDocs, setUploadedDocs] = useState([]);
 
   // API Data
-  const [states, setStates] = useState([]);
-  const [cities, setCities] = useState([]);
   const [customerGroups, setCustomerGroups] = useState([]);
-  const [loadingStates, setLoadingStates] = useState(false);
-  const [loadingCities, setLoadingCities] = useState(false);
+
+  // Pincode lookup hook
+  const {
+    areas,
+    cities,
+    states,
+    loading: pincodeLoading,
+    lookupByPincode,
+    clearData,
+  } = usePincodeLookup();
 
   // Dropdown Modals
   const [showAreaModal, setShowAreaModal] = useState(false);
@@ -195,14 +203,12 @@ const GroupHospitalRegistrationForm = () => {
   }, []);
 
   const loadInitialData = async () => {
-    // Load states on mount
-    await loadStates();
-    // Load all cities on mount (independent of state)
-    await loadCities();
+    // Note: States and cities are now loaded via pincode lookup only
+    // Keep this function in case we add more initial loads later (customer groups etc.)
+    loadCustomerGroups();
   };
 
   const handleAddStockist = () => {
-
     if (stockists.length >= 4) {
       Toast.show({
         type: 'error',
@@ -211,52 +217,71 @@ const GroupHospitalRegistrationForm = () => {
       });
       return;
     }
-    setStockists(prev => [...prev, { name: '', distributorCode: '', city: '' }]);
-
+    setStockists(prev => [
+      ...prev,
+      { name: '', distributorCode: '', city: '' },
+    ]);
   };
-  const loadStates = async () => {
-    setLoadingStates(true);
-    try {
-      const response = await customerAPI.getStates();
-      if (response.success && response.data) {
-        const _states = [];
-        for (let i = 0; i < response.data.states.length; i++) {
-          _states.push({
-            id: response.data.states[i].id,
-            name: response.data.states[i].stateName,
-          });
-        }
 
-        setStates(_states || []);
+  // Handle pincode change and trigger lookup
+  const handlePincodeChange = async text => {
+    if (/^\d{0,6}$/.test(text)) {
+      setFormData(prev => ({ ...prev, pincode: text }));
+      setErrors(prev => ({ ...prev, pincode: null }));
+
+      // Clear previous selections when pincode changes
+      if (text.length < 6) {
+        setFormData(prev => ({
+          ...prev,
+          area: '',
+          areaId: null,
+          city: '',
+          cityId: null,
+          state: '',
+          stateId: null,
+        }));
+        clearData();
       }
-    } catch (error) {
-      console.error('Error loading states:', error);
-      Alert.alert('Error', 'Failed to load states. Please try again.');
-    } finally {
-      setLoadingStates(false);
+
+      // Trigger lookup when pincode is complete (6 digits)
+      if (text.length === 6) {
+        await lookupByPincode(text);
+      }
     }
   };
 
-  const loadCities = async (stateId = null) => {
-    setLoadingCities(true);
-    try {
-      const response = await customerAPI.getCities(stateId);
-      if (response.success && response.data) {
-        const _cities = [];
-        for (let i = 0; i < response.data.cities.length; i++) {
-          _cities.push({
-            id: response.data.cities[i].id,
-            name: response.data.cities[i].cityName,
-          });
-        }
-        setCities(_cities || []);
-      }
-    } catch (error) {
-      console.error('Error loading cities:', error);
-      Alert.alert('Error', 'Failed to load cities. Please try again.');
-    } finally {
-      setLoadingCities(false);
+  // Auto-populate city, state, and area when pincode lookup completes
+  useEffect(() => {
+    if (cities.length > 0 && states.length > 0) {
+      // Auto-select first city and state from lookup results
+      const firstCity = cities[0];
+      const firstState = states[0];
+
+      setFormData(prev => ({
+        ...prev,
+        city: firstCity.name,
+        cityId: firstCity.id,
+        state: firstState.name,
+        stateId: firstState.id,
+      }));
     }
+
+    // Auto-select first area (0th index) if available
+    if (areas.length > 0 && !formData.area) {
+      const firstArea = areas[0];
+      setFormData(prev => ({
+        ...prev,
+        area: firstArea.name,
+        areaId: firstArea.id,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cities, states, areas]);
+
+  // Legacy functions removed - cities and states now loaded via pincode lookup only
+  const loadStatesLegacy = async () => {
+    // No-op retained for backward compatibility
+    return;
   };
 
   const loadCustomerGroups = async () => {
@@ -423,8 +448,54 @@ const GroupHospitalRegistrationForm = () => {
     setFormData(prev => ({ ...prev, [`${field}File`]: null }));
   };
 
+  // Helper function to split address into address1, address2, address3
+  const splitAddress = (address) => {
+    if (!address) return { address1: '', address2: '', address3: '' };
+    
+    // Split by commas first
+    const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
+    
+    if (parts.length >= 3) {
+      return {
+        address1: parts[0],
+        address2: parts.slice(1, -1).join(', '),
+        address3: parts[parts.length - 1],
+      };
+    } else if (parts.length === 2) {
+      return {
+        address1: parts[0],
+        address2: parts[1],
+        address3: '',
+      };
+    } else if (parts.length === 1) {
+      // If no commas, try to split by length (approximately 50 chars each)
+      const addr = parts[0];
+      if (addr.length > 100) {
+        return {
+          address1: addr.substring(0, 50).trim(),
+          address2: addr.substring(50, 100).trim(),
+          address3: addr.substring(100).trim(),
+        };
+      } else if (addr.length > 50) {
+        return {
+          address1: addr.substring(0, 50).trim(),
+          address2: addr.substring(50).trim(),
+          address3: '',
+        };
+      } else {
+        return {
+          address1: addr,
+          address2: '',
+          address3: '',
+        };
+      }
+    }
+    
+    return { address1: '', address2: '', address3: '' };
+  };
+
   // Handle OCR extracted data for registration certificate uploads
-  const handleRegistrationOcrData = ocrData => {
+  const handleRegistrationOcrData = async (ocrData) => {
     console.log('OCR Data Received:', ocrData);
 
     const updates = {};
@@ -434,14 +505,25 @@ const GroupHospitalRegistrationForm = () => {
       updates.hospitalName = ocrData.hospitalName;
     }
 
-    // Populate address fields if available
-    if (ocrData.address && !formData.address1) {
-      updates.address1 = ocrData.address;
+    // Split and populate address fields if available
+    if (ocrData.address) {
+      const addressParts = splitAddress(ocrData.address);
+      if (!formData.address1 && addressParts.address1) {
+        updates.address1 = addressParts.address1;
+      }
+      if (!formData.address2 && addressParts.address2) {
+        updates.address2 = addressParts.address2;
+      }
+      if (!formData.address3 && addressParts.address3) {
+        updates.address3 = addressParts.address3;
+      }
     }
 
-    // Populate registration number if available
+    // Populate registration number if available (also check licenseNumber as fallback)
     if (ocrData.registrationNumber && !formData.registrationNumber) {
       updates.registrationNumber = ocrData.registrationNumber;
+    } else if (ocrData.licenseNumber && !formData.registrationNumber) {
+      updates.registrationNumber = ocrData.licenseNumber;
     }
 
     // Populate registration date if available
@@ -453,21 +535,22 @@ const GroupHospitalRegistrationForm = () => {
       }
     }
 
-    // Populate location fields if available
-    if (ocrData.city && !formData.city) {
-      updates.city = ocrData.city;
+    // Populate expiry date if available (for license expiry tracking)
+    if (ocrData.expiryDate) {
+      const parts = ocrData.expiryDate.split('-');
+      if (parts.length === 3) {
+        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
+        // Store expiry date if there's a field for it, or use registrationDate as fallback
+        // Note: You may need to add a separate expiryDate field if required
+      }
     }
-    if (ocrData.state && !formData.state) {
-      updates.state = ocrData.state;
-    }
+    
+    // Populate pincode
     if (ocrData.pincode && !formData.pincode) {
       updates.pincode = ocrData.pincode;
     }
-    if (ocrData.area && !formData.area) {
-      updates.area = ocrData.area;
-    }
 
-    // Apply all updates at once
+    // Apply all updates first
     if (Object.keys(updates).length > 0) {
       setFormData(prev => ({ ...prev, ...updates }));
       const errorUpdates = {};
@@ -475,6 +558,11 @@ const GroupHospitalRegistrationForm = () => {
         errorUpdates[key] = null;
       });
       setErrors(prev => ({ ...prev, ...errorUpdates }));
+    }
+
+    // Trigger pincode lookup if pincode is available and valid (6 digits)
+    if (ocrData.pincode && /^\d{6}$/.test(ocrData.pincode)) {
+      await lookupByPincode(ocrData.pincode);
     }
   };
 
@@ -610,13 +698,20 @@ const GroupHospitalRegistrationForm = () => {
                         selectedId == item.id && styles.modalItemTextSelected,
                       ]}
                     >
-                      {item.name}
+                      {item.name || item.label}
                     </AppText>
                     {selectedId == item.id && (
-                      <Icon name="check" size={20} color={colors.primary} />
+                      <Icon name="checkmark" size={20} color={colors.primary} />
                     )}
                   </TouchableOpacity>
                 )}
+                ListEmptyComponent={
+                  <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                    <AppText style={styles.emptyText}>
+                      No {title} available
+                    </AppText>
+                  </View>
+                }
                 style={styles.modalList}
               />
             )}
@@ -635,18 +730,24 @@ const GroupHospitalRegistrationForm = () => {
     }
 
     if (!formData.registrationCertificate) {
-      newErrors.registrationCertificate = 'Registration Certificate is required';
+      newErrors.registrationCertificate =
+        'Registration Certificate is required';
     }
     if (!formData.registrationDate) {
       newErrors.registrationDate = 'Registration date is required';
-    }else {
-
-      console.log("working");
+    } else {
+      console.log('working');
       const [day, month, year] = formData.registrationDate.split('/');
       const selected = new Date(year, month - 1, day);
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
+      console.log(selected);
+      console.log(today);
+      console.log(formData);
+
+
 
       if (selected > today) {
         newErrors.registrationDate = 'Future date is not allowed';
@@ -675,10 +776,10 @@ const GroupHospitalRegistrationForm = () => {
     if (!formData.area || formData.area.trim().length === 0) {
       newErrors.area = 'Area is required';
     }
-    if (!formData.city) {
+    if (!formData.cityId) {
       newErrors.city = 'City is required';
     }
-    if (!formData.state) {
+    if (!formData.stateId) {
       newErrors.state = 'State is required';
     }
 
@@ -804,7 +905,7 @@ const GroupHospitalRegistrationForm = () => {
             customerId: stockist.name,
           })),
         }),
-        isChildCustomer: false
+        isChildCustomer: false,
       };
 
       console.log('Registration data:', registrationData);
@@ -840,7 +941,7 @@ const GroupHospitalRegistrationForm = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error + '. Please try again.',
+        text2: String(error) + '. Please try again.',
         position: 'top',
       });
     } finally {
@@ -848,30 +949,6 @@ const GroupHospitalRegistrationForm = () => {
     }
   };
 
-   const handleDateChange = (event, selectedDate) => {
-  // close immediately
-  setShowDatePicker(false);
-
-  // 🚫 Cancel clicked → do nothing
-  if (event.type === 'dismissed') {
-    return;
-  }
-
-  // ✅ OK clicked → update date
-  if (event.type === 'set' && selectedDate) {
-    const formattedDate = selectedDate.toLocaleDateString('en-IN');
-    setFormData(prev => ({
-      ...prev,
-      registrationDate: formattedDate,
-    }));
-    setErrors(prev => ({
-      ...prev,
-      registrationDate: null,
-    }));
-  }
-};
-
-  
 
   const handleCancel = () => {
     setShowCancelModal(true);
@@ -951,40 +1028,24 @@ const GroupHospitalRegistrationForm = () => {
           placeholder="Hospital Registration Number"
           value={formData.registrationNumber}
           onChangeText={text => {
-            setFormData(prev => ({ ...prev, registrationNumber: text }))
-            setErrors(prev => ({ ...prev, registrationNumber: null }))
-
-
-
-          }
-          }
+            setFormData(prev => ({ ...prev, registrationNumber: text }));
+            setErrors(prev => ({ ...prev, registrationNumber: null }));
+          }}
           error={errors.registrationNumber}
           autoCapitalize="characters"
           mandatory={true}
         />
 
-        <TouchableOpacity
-          style={[styles.input, errors.registrationDate && styles.inputError]}
-          onPress={() => setShowDatePicker(true)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.inputTextContainer}>
-            <AppText
-              style={
-                formData.registrationDate
-                  ? styles.inputText
-                  : styles.placeholderText
-              }
-            >
-              {formData.registrationDate || 'Registration date'}
-            </AppText>
-            <AppText style={styles.inlineAsterisk}>*</AppText>
-          </View>
-          <Calendar />
-        </TouchableOpacity>
-        {errors.registrationDate && (
-          <AppText style={styles.errorText}>{errors.registrationDate}</AppText>
-        )}
+        <FloatingDateInput
+          label="Registration date"
+          mandatory={true}
+          value={formData.registrationDate}
+          error={errors.registrationDate}
+          onChange={(date) => {
+            setFormData(prev => ({ ...prev, registrationDate: date }));
+            setErrors(prev => ({ ...prev, registrationDate: null }));
+          }}
+        />
         <AppText style={styles.sectionSubTitle}>
           Image<AppText style={{ color: 'red' }}>*</AppText>{' '}
           <Icon name="information-circle-outline" size={16} color="#999" />
@@ -1000,14 +1061,7 @@ const GroupHospitalRegistrationForm = () => {
           errorMessage={errors.hospitalImageFile}
         />
 
-        {showDatePicker && (
-          <DateTimePicker
-            value={new Date()}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-          />
-        )}
+       
       </View>
     </Animated.View>
   );
@@ -1031,11 +1085,9 @@ const GroupHospitalRegistrationForm = () => {
           placeholder="Hospital name"
           value={formData.hospitalName}
           onChangeText={text => {
-            setFormData(prev => ({ ...prev, hospitalName: text }))
-            setErrors(prev => ({ ...prev, hospitalName: null }))
-
-          }
-          }
+            setFormData(prev => ({ ...prev, hospitalName: text }));
+            setErrors(prev => ({ ...prev, hospitalName: null }));
+          }}
           error={errors.hospitalName}
           mandatory={true}
         />
@@ -1056,7 +1108,7 @@ const GroupHospitalRegistrationForm = () => {
           }
           error={errors.address1}
           mandatory={true}
-          onLocationSelect={locationData => {
+          onLocationSelect={async locationData => {
             const addressParts = locationData.address
               .split(',')
               .map(part => part.trim());
@@ -1064,29 +1116,24 @@ const GroupHospitalRegistrationForm = () => {
             const filteredParts = addressParts.filter(part => {
               return !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india';
             });
-            const matchedState = states.find(
-              s => s.name.toLowerCase() === locationData.state.toLowerCase(),
-            );
-            const matchedCity = cities.find(
-              c => c.name.toLowerCase() === locationData.city.toLowerCase(),
-            );
+
+            // Update address fields only
             setFormData(prev => ({
               ...prev,
               address1: filteredParts[0] || '',
               address2: filteredParts[1] || '',
               address3: filteredParts[2] || '',
               address4: filteredParts.slice(3).join(', ') || '',
-              pincode: extractedPincode,
-              area: locationData.area || '',
-              ...(matchedState && {
-                stateId: matchedState.id,
-                state: matchedState.name,
-              }),
-              ...(matchedCity && {
-                cityId: matchedCity.id,
-                city: matchedCity.name,
-              }),
             }));
+
+            // Update pincode and trigger lookup (this will populate area, city, state)
+            if (extractedPincode) {
+              setFormData(prev => ({ ...prev, pincode: extractedPincode }));
+              setErrors(prev => ({ ...prev, pincode: null }));
+              // Trigger pincode lookup to populate area, city, state
+              await lookupByPincode(extractedPincode);
+            }
+
             setErrors(prev => ({
               ...prev,
               address1: null,
@@ -1094,9 +1141,6 @@ const GroupHospitalRegistrationForm = () => {
               address3: null,
               address4: null,
               pincode: null,
-              area: null,
-              city: null,
-              state: null,
             }));
           }}
         />
@@ -1132,66 +1176,107 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Pincode"
           value={formData.pincode}
-          onChangeText={text =>
-            setFormData(prev => ({ ...prev, pincode: text }))
-          }
+          onChangeText={handlePincodeChange}
           keyboardType="numeric"
           maxLength={6}
           error={errors.pincode}
           mandatory={true}
         />
-
-        {/* Area Input */}
-        <CustomInput
-          placeholder="Area"
-          value={formData.area}
-          onChangeText={text => {
-            setFormData(prev => ({ ...prev, area: text }));
-            setErrors(prev => ({ ...prev, area: null }));
-          }}
-          error={errors.area}
-          mandatory={true}
-        />
-
-        {/* City Dropdown */}
-        <TouchableOpacity
-          style={[styles.input, errors.city && styles.inputError]}
-          onPress={() => setShowCityModal(true)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.inputTextContainer}>
-            <AppText
-              style={formData.city ? styles.inputText : styles.placeholderText}
-            >
-              {formData.city || 'City'}
-            </AppText>
-            <AppText style={styles.mandatoryIndicator}>*</AppText>
+        {pincodeLoading && (
+          <View style={{ marginTop: -10, marginBottom: 10 }}>
+            <ActivityIndicator size="small" color={colors.primary} />
           </View>
-          <ArrowDown color="#999" />
-        </TouchableOpacity>
-        {errors.city && (
-          <AppText style={styles.errorText}>{errors.city}</AppText>
         )}
 
-        {/* State Dropdown */}
-        <TouchableOpacity
-          style={[styles.input, errors.state && styles.inputError]}
-          onPress={() => setShowStateModal(true)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.inputTextContainer}>
-            <AppText
-              style={formData.state ? styles.inputText : styles.placeholderText}
-            >
-              {formData.state || 'State'}
+        {/* Area Dropdown */}
+        <View style={styles.dropdownContainer}>
+          {(formData.area || areas.length > 0) && (
+            <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+              Area<AppText style={styles.asteriskPrimary}>*</AppText>
             </AppText>
-            <AppText style={styles.mandatoryIndicator}>*</AppText>
-          </View>
-          <ArrowDown color="#999" />
-        </TouchableOpacity>
-        {errors.state && (
-          <AppText style={styles.errorText}>{errors.state}</AppText>
-        )}
+          )}
+          <TouchableOpacity
+            style={[styles.dropdown, errors.area && styles.inputError]}
+            onPress={() => {
+              setShowAreaModal(true);
+            }}
+          >
+            <View style={styles.inputTextContainer}>
+              <AppText
+                style={
+                  formData.area ? styles.inputText : styles.placeholderText
+                }
+              >
+                {formData.area || (areas.length === 0 ? 'Area' : 'Area')}
+              </AppText>
+              <AppText style={styles.inlineAsterisk}>*</AppText>
+            </View>
+            <ArrowDown color="#999" />
+          </TouchableOpacity>
+          {errors.area && (
+            <AppText style={styles.errorText}>{errors.area}</AppText>
+          )}
+        </View>
+
+        {/* City - Auto-populated from pincode */}
+        <View style={styles.dropdownContainer}>
+          {(formData.city || cities.length > 0) && (
+            <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+              City<AppText style={styles.asteriskPrimary}>*</AppText>
+            </AppText>
+          )}
+          <TouchableOpacity
+            style={[styles.dropdown, errors.city && styles.inputError]}
+            onPress={() => {
+              setShowCityModal(true);
+            }}
+          >
+            <View style={styles.inputTextContainer}>
+              <AppText
+                style={
+                  formData.city ? styles.inputText : styles.placeholderText
+                }
+              >
+                {formData.city || 'City'}
+              </AppText>
+              <AppText style={styles.inlineAsterisk}>*</AppText>
+            </View>
+            <ArrowDown color="#999" />
+          </TouchableOpacity>
+          {errors.city && (
+            <AppText style={styles.errorText}>{errors.city}</AppText>
+          )}
+        </View>
+
+        {/* State - Auto-populated from pincode */}
+        <View style={styles.dropdownContainer}>
+          {(formData.state || states.length > 0) && (
+            <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+              State<AppText style={styles.asteriskPrimary}>*</AppText>
+            </AppText>
+          )}
+          <TouchableOpacity
+            style={[styles.dropdown, errors.state && styles.inputError]}
+            onPress={() => {
+              setShowStateModal(true);
+            }}
+          >
+            <View style={styles.inputTextContainer}>
+              <AppText
+                style={
+                  formData.state ? styles.inputText : styles.placeholderText
+                }
+              >
+                {formData.state || 'State'}
+              </AppText>
+              <AppText style={styles.inlineAsterisk}>*</AppText>
+            </View>
+            <ArrowDown color="#999" />
+          </TouchableOpacity>
+          {errors.state && (
+            <AppText style={styles.errorText}>{errors.state}</AppText>
+          )}
+        </View>
       </View>
     </Animated.View>
   );
@@ -1215,12 +1300,9 @@ const GroupHospitalRegistrationForm = () => {
           placeholder="Mobile number"
           value={formData.mobileNumber}
           onChangeText={text => {
-            setFormData(prev => ({ ...prev, mobileNumber: text }))
-
+            setFormData(prev => ({ ...prev, mobileNumber: text }));
             setErrors(prev => ({ ...prev, mobileNumber: null }));
-
-          }
-          }
+          }}
           keyboardType="phone-pad"
           maxLength={10}
           mandatory
@@ -1256,7 +1338,9 @@ const GroupHospitalRegistrationForm = () => {
         )}
 
         {errors.mobileVerification && (
-          <AppText style={styles.errorText}>{errors.mobileVerification}</AppText>
+          <AppText style={styles.errorText}>
+            {errors.mobileVerification}
+          </AppText>
         )}
         {renderOTPInput('mobile')}
         {/* Email Address with Verify */}
@@ -1264,11 +1348,9 @@ const GroupHospitalRegistrationForm = () => {
           placeholder="Email address"
           value={formData.emailAddress}
           onChangeText={text => {
-            setFormData(prev => ({ ...prev, emailAddress: text }))
+            setFormData(prev => ({ ...prev, emailAddress: text }));
             setErrors(prev => ({ ...prev, emailAddress: null }));
-
-          }
-          }
+          }}
           keyboardType="email-address"
           autoCapitalize="none"
           mandatory
@@ -1381,24 +1463,23 @@ const GroupHospitalRegistrationForm = () => {
           }
         />
 
-         {
-                            verificationStatus.pan &&
-                            <TouchableOpacity
-                              style={styles.linkButton}
-                              onPress={() => {
-                                Toast.show({
-                                  type: 'info',
-                                  text1: 'Fetch GST',
-                                  text2: 'Fetching GST details from PAN...',
-                                });
-                                // Here you would call API to fetch GST from PAN
-                                // and populate the GST dropdown options
-                              }}
-                            >
-                              <FetchGst />
-                              <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
-                            </TouchableOpacity>
-                          }
+        {verificationStatus.pan && (
+          <TouchableOpacity
+            style={styles.linkButton}
+            onPress={() => {
+              Toast.show({
+                type: 'info',
+                text1: 'Fetch GST',
+                text2: 'Fetching GST details from PAN...',
+              });
+              // Here you would call API to fetch GST from PAN
+              // and populate the GST dropdown options
+            }}
+          >
+            <FetchGst />
+            <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
+          </TouchableOpacity>
+        )}
         {/* Upload GST */}
         <FileUploadComponent
           placeholder="Upload GST"
@@ -1484,7 +1565,10 @@ const GroupHospitalRegistrationForm = () => {
         {/* Hospital Selector - Collapsible Summary */}
         {formData.linkedHospitals.length === 0 ? (
           <TouchableOpacity
-            style={[styles.selectorInput, errors.linkedHospitals && styles.inputError]}
+            style={[
+              styles.selectorInput,
+              errors.linkedHospitals && styles.inputError,
+            ]}
             onPress={() => {
               navigation.navigate('HospitalSelector', {
                 selectedHospitals: formData.linkedHospitals,
@@ -1506,7 +1590,7 @@ const GroupHospitalRegistrationForm = () => {
             <AppText style={styles.selectorPlaceholder}>
               Search hospital name/code
             </AppText>
-            <ArrowDown color='#333' />
+            <ArrowDown color="#333" />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -1530,7 +1614,8 @@ const GroupHospitalRegistrationForm = () => {
             activeOpacity={0.7}
           >
             <AppText style={styles.hospitalsSummaryText}>
-              {formData.linkedHospitals.length} Hospital{formData.linkedHospitals.length > 1 ? 's' : ''} Selected
+              {formData.linkedHospitals.length} Hospital
+              {formData.linkedHospitals.length > 1 ? 's' : ''} Selected
             </AppText>
             <ArrowDown height={8} width={8} color="#111" />
           </TouchableOpacity>
@@ -1562,7 +1647,11 @@ const GroupHospitalRegistrationForm = () => {
                     }}
                     style={styles.removeButton}
                   >
-                    <RemoveHospitalCloseIcon width={12} height={12} color="#999" />
+                    <RemoveHospitalCloseIcon
+                      width={12}
+                      height={12}
+                      color="#999"
+                    />
                   </TouchableOpacity>
                 </View>
 
@@ -1577,42 +1666,45 @@ const GroupHospitalRegistrationForm = () => {
                     )}
 
                     {/* Selected Pharmacies Tags */}
-                    {hospital.pharmacies &&
-                      hospital.pharmacies.length > 0 && (
-                        <View style={styles.pharmaciesTags}>
-                          {hospital.pharmacies.map((pharmacy, pIndex) => (
-                            <View
-                              key={pharmacy.id || pIndex}
-                              style={styles.pharmacyTag}
+                    {hospital.pharmacies && hospital.pharmacies.length > 0 && (
+                      <View style={styles.pharmaciesTags}>
+                        {hospital.pharmacies.map((pharmacy, pIndex) => (
+                          <View
+                            key={pharmacy.id || pIndex}
+                            style={styles.pharmacyTag}
+                          >
+                            <AppText style={styles.pharmacyTagText}>
+                              {pharmacy.name}
+                            </AppText>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  linkedHospitals: prev.linkedHospitals.map(
+                                    (h, hIndex) =>
+                                      hIndex === index
+                                        ? {
+                                          ...h,
+                                          pharmacies: h.pharmacies.filter(
+                                            (_, pIdx) => pIdx !== pIndex,
+                                          ),
+                                        }
+                                        : h,
+                                  ),
+                                }));
+                              }}
+                              style={styles.pharmacyTagRemove}
                             >
-                              <AppText style={styles.pharmacyTagText}>
-                                {pharmacy.name}
-                              </AppText>
-                              <TouchableOpacity
-                                onPress={() => {
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    linkedHospitals: prev.linkedHospitals.map(
-                                      (h, hIndex) =>
-                                        hIndex === index
-                                          ? {
-                                            ...h,
-                                            pharmacies: h.pharmacies.filter(
-                                              (_, pIdx) => pIdx !== pIndex,
-                                            ),
-                                          }
-                                          : h,
-                                    ),
-                                  }));
-                                }}
-                                style={styles.pharmacyTagRemove}
-                              >
-                                <RemoveHospitalCloseIcon width={12} height={12} color="#666" />
-                              </TouchableOpacity>
-                            </View>
-                          ))}
-                        </View>
-                      )}
+                              <RemoveHospitalCloseIcon
+                                width={12}
+                                height={12}
+                                color="#666"
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </View>
+                    )}
 
                     {/* Add Pharmacy Link */}
                     <TouchableOpacity
@@ -1801,13 +1893,16 @@ const GroupHospitalRegistrationForm = () => {
         ))}
 
         {/* Add Stockist Button */}
-        {
-          stockists.length < 4 && (
-            <TouchableOpacity style={styles.addStockistButton} onPress={handleAddStockist}>
-              <AppText style={styles.addStockistButtonText}>+ Add More Stockist</AppText>
-            </TouchableOpacity>
-          )
-        }
+        {stockists.length < 4 && (
+          <TouchableOpacity
+            style={styles.addStockistButton}
+            onPress={handleAddStockist}
+          >
+            <AppText style={styles.addStockistButtonText}>
+              + Add More Stockist
+            </AppText>
+          </TouchableOpacity>
+        )}
       </View>
     </Animated.View>
   );
@@ -1878,40 +1973,56 @@ const GroupHospitalRegistrationForm = () => {
         </Animated.View>
       </View>
 
-      {/* Cancel Confirmation Modal */}
       {/* Dropdown Modals */}
       <DropdownModal
-        visible={showStateModal}
-        onClose={() => setShowStateModal(false)}
-        title="Select State"
-        data={states}
-        selectedId={states.find(s => s.name === formData.state)?.id}
+        visible={showAreaModal}
+        onClose={() => setShowAreaModal(false)}
+        title="Select Area"
+        data={areas.map(area => ({ id: area.id, name: area.name }))}
+        selectedId={formData.areaId}
         onSelect={item => {
           setFormData(prev => ({
             ...prev,
-            stateId: item.id,
-            state: item.name,
-            // Don't reset city and cityId - allow independent selection
+            area: item.name,
+            areaId: item.id,
           }));
-          setErrors(prev => ({ ...prev, state: null }));
+          setErrors(prev => ({ ...prev, area: null }));
         }}
-        loading={loadingStates}
+        loading={pincodeLoading}
       />
 
       <DropdownModal
         visible={showCityModal}
         onClose={() => setShowCityModal(false)}
         title="Select City"
-        data={cities}
-        selectedId={cities.find(c => c.name === formData.city)?.id}
+        data={cities.map(c => ({ id: c.id, name: c.name }))}
+        selectedId={formData.cityId}
         onSelect={item => {
           setFormData(prev => ({
             ...prev,
             city: item.name,
+            cityId: item.id,
           }));
           setErrors(prev => ({ ...prev, city: null }));
         }}
-        loading={loadingCities}
+        loading={false}
+      />
+
+      <DropdownModal
+        visible={showStateModal}
+        onClose={() => setShowStateModal(false)}
+        title="Select State"
+        data={states.map(s => ({ id: s.id, name: s.name }))}
+        selectedId={formData.stateId}
+        onSelect={item => {
+          setFormData(prev => ({
+            ...prev,
+            state: item.name,
+            stateId: item.id,
+          }));
+          setErrors(prev => ({ ...prev, state: null }));
+        }}
+        loading={false}
       />
 
       <Modal
@@ -1920,37 +2031,36 @@ const GroupHospitalRegistrationForm = () => {
         animationType="fade"
         onRequestClose={() => setShowCancelModal(false)}
       >
-          <View style={styles.cancelModalOverlay}>
-                 <View style={styles.cancelModalContent}>
-                   <View style={styles.modalIconContainerOuter}>
-       
-                     <View style={styles.modalIconContainer}>
-       
-                       <AppText style={styles.modalIcon}>!</AppText>
-                     </View></View>
-                   <AppText style={styles.cancelModalTitle}>
-                     {`Are you sure you want
+        <View style={styles.cancelModalOverlay}>
+          <View style={styles.cancelModalContent}>
+            <View style={styles.modalIconContainerOuter}>
+              <View style={styles.modalIconContainer}>
+                <AppText style={styles.modalIcon}>!</AppText>
+              </View>
+            </View>
+            <AppText style={styles.cancelModalTitle}>
+              {`Are you sure you want
        to Cancel the Onboarding?`}
-                   </AppText>
-                   <View style={styles.modalButtonContainer}>
-                     <TouchableOpacity
-                       style={styles.modalYesButton}
-                       onPress={() => {
-                         setShowCancelModal(false);
-                         navigation.goBack();
-                       }}
-                     >
-                       <AppText style={styles.modalYesButtonText}>Yes</AppText>
-                     </TouchableOpacity>
-                     <TouchableOpacity
-                       style={styles.modalNoButton}
-                       onPress={() => setShowCancelModal(false)}
-                     >
-                       <AppText style={styles.modalNoButtonText}>No</AppText>
-                     </TouchableOpacity>
-                   </View>
-                 </View>
-               </View>
+            </AppText>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={styles.modalYesButton}
+                onPress={() => {
+                  setShowCancelModal(false);
+                  navigation.goBack();
+                }}
+              >
+                <AppText style={styles.modalYesButtonText}>Yes</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalNoButton}
+                onPress={() => setShowCancelModal(false)}
+              >
+                <AppText style={styles.modalNoButtonText}>No</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       {/* Add New Hospital Modal */}
@@ -1969,19 +2079,6 @@ const GroupHospitalRegistrationForm = () => {
           setShowAddHospitalModal(false);
         }}
       />
-
-      {/* Add New Doctor Modal */}
-      {/* <AddNewDoctorModal
-        visible={showAddDoctorModal}
-        onClose={() => setShowAddDoctorModal(false)}
-        onAdd={(doctor) => {
-          setFormData(prev => ({
-            ...prev,
-            linkedDoctors: [...prev.linkedDoctors, doctor]
-          }));
-          setShowAddDoctorModal(false);
-        }}
-      /> */}
     </SafeAreaView>
   );
 };
@@ -2127,17 +2224,41 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: 16,
+    marginLeft: 8,
     color: colors.gray,
   },
   inputTextContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    flex: 1,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
   inputLabel: {
     fontSize: 14,
     color: '#333',
     fontWeight: '500',
+  },
+  dropdownContainer: {
+    marginBottom: 16,
+    position: 'relative',
+    marginBottom: 20,
+  },
+  floatingLabel: {
+    position: 'absolute',
+    top: -4,
+    left: 12,
+    backgroundColor: '#fff',
+    paddingHorizontal: 4,
+    fontSize: 12,
+    color: colors.primary,
+    zIndex: 10,
+  },
+  asteriskPrimary: {
+    color: colors.primary,
   },
   mandatoryIndicator: {
     fontSize: 16,
@@ -2170,19 +2291,16 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   dropdown: {
-    position: 'relative',
-    backgroundColor: '#fff',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderRadius: 8,
-    marginTop: -10,
-    marginBottom: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    maxHeight: 200,
+    paddingHorizontal: 12,
+    paddingVertical: 16,   // increased from 12 -> 16 to match other inputs
+    backgroundColor: '#FFFFFF',
+    minHeight: 48,         // ensure height similar to text inputs
   },
   dropdownItem: {
     paddingVertical: 12,
@@ -2595,6 +2713,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
+    maxHeight: '70%',
     paddingTop: 32,
     paddingBottom: 32,
     alignItems: 'center',
@@ -2842,7 +2961,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginBottom: 16,
   },
-   cancelModalOverlay: {
+  cancelModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
@@ -2861,12 +2980,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#333',
-    textAlign: "center",
-    marginBottom: 50
-
+    textAlign: 'center',
+    marginBottom: 50,
   },
-
-
 
   modalIconContainerOuter: {
     width: 80,
@@ -2920,17 +3036,17 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
-   linkButton: {
-    flexDirection: 'row',   
-    alignItems: 'center',  
-    gap: 2,                
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
     paddingVertical: 8,
     marginBottom: 16,
     marginTop: -16,
   },
   linkText: {
-    color: colors.primary
-  }
+    color: colors.primary,
+  },
 });
 
 export default GroupHospitalRegistrationForm;

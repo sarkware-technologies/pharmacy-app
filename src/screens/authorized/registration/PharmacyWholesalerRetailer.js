@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unstable-nested-components */
 /* eslint-disable no-dupe-keys */
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -34,6 +35,9 @@ import AddNewHospitalModal from './AddNewHospitalModal';
 import AddNewDoctorModal from './AddNewDoctorModal';
 import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import FetchGst from '../../../components/icons/FetchGst';
+import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
+import FloatingDateInput from '../../../components/FloatingDateInput';
+
 
 // Default document types for file uploads (will be updated from API for licenses)
 const DOC_TYPES = {
@@ -144,14 +148,9 @@ const PharmacyWholesalerRetailerForm = () => {
   const [loading, setLoading] = useState(false);
   const [registering, setRegistering] = useState(false);
 
-  // Date picker states
-  const [showDatePicker, setShowDatePicker] = useState({
-    license20: false,
-    license21: false,
-    license20b: false,
-    license21b: false,
-  });
-  const [selectedDateField, setSelectedDateField] = useState(null);
+  const [showCityModal, setShowCityModal] = useState(false);
+  const [showStateModal, setShowStateModal] = useState(false);
+
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   // OTP states
@@ -189,14 +188,10 @@ const PharmacyWholesalerRetailerForm = () => {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const otpSlideAnim = useRef(new Animated.Value(-50)).current;
 
-  // States and cities data
-  const [states, setStates] = useState([]);
-  const [cities, setCities] = useState([]);
-  const [loadingCities, setLoadingCities] = useState(false);
+  // Pincode lookup hook
+  const { areas, cities, states, loading: pincodeLoading, lookupByPincode, clearData } = usePincodeLookup();
 
   // Dropdown modal states
-  const [showStateModal, setShowStateModal] = useState(false);
-  const [showCityModal, setShowCityModal] = useState(false);
   const [showAreaModal, setShowAreaModal] = useState(false);
   const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
   const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
@@ -300,11 +295,6 @@ const PharmacyWholesalerRetailerForm = () => {
         LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
         LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
       });
-      setStates([]);
-      setCities([]);
-      setLoadingCities(false);
-      setShowStateModal(false);
-      setShowCityModal(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -318,8 +308,7 @@ const PharmacyWholesalerRetailerForm = () => {
   const loadInitialData = async () => {
     // Fetch license types from API
     await fetchLicenseTypes();
-    // Load states on mount
-    await loadStates();
+    // Note: States and cities are now loaded via pincode lookup only
   };
 
   const fetchLicenseTypes = async () => {
@@ -390,57 +379,60 @@ const PharmacyWholesalerRetailerForm = () => {
     };
   }, [otpTimers, showOTP]);
 
-  // Load all cities on mount - independent selection
+  // Handle pincode change and trigger lookup
+  const handlePincodeChange = async (text) => {
+    if (/^\d{0,6}$/.test(text)) {
+      setFormData(prev => ({ ...prev, pincode: text }));
+      setErrors(prev => ({ ...prev, pincode: null }));
+
+      // Clear previous selections when pincode changes
+      if (text.length < 6) {
+        setFormData(prev => ({
+          ...prev,
+          area: '',
+          areaId: '',
+          city: '',
+          cityId: '',
+          state: '',
+          stateId: '',
+        }));
+        clearData();
+      }
+
+      // Trigger lookup when pincode is complete (6 digits)
+      if (text.length === 6) {
+        await lookupByPincode(text);
+      }
+    }
+  };
+
+  // Auto-populate city, state, and area when pincode lookup completes
   useEffect(() => {
-    loadCities();
-  }, []);
+    if (cities.length > 0 && states.length > 0) {
+      // Auto-select first city and state from lookup results
+      const firstCity = cities[0];
+      const firstState = states[0];
 
-
-  const loadStates = async () => {
-    try {
-      const response = await customerAPI.getStates();
-      if (response.success && response.data) {
-        const _states = [];
-        for (let i = 0; i < response.data.states.length; i++) {
-          _states.push({ id: response.data.states[i].id, name: response.data.states[i].stateName });
-        }
-        setStates(_states || []);
-        //setStates(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to load states:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to load states',
-        position: 'top',
-      });
+      setFormData(prev => ({
+        ...prev,
+        city: firstCity.name,
+        cityId: firstCity.id,
+        state: firstState.name,
+        stateId: firstState.id,
+      }));
     }
-  };
 
-  const loadCities = async () => {
-    setLoadingCities(true);
-    try {
-      const response = await customerAPI.getCities();
-      if (response.success && response.data) {
-        const _cities = [];
-        for (let i = 0; i < response.data.cities.length; i++) {
-          _cities.push({ id: response.data.cities[i].id, name: response.data.cities[i].cityName });
-        }
-        setCities(_cities || []);
-      }
-    } catch (error) {
-      console.error('Failed to load cities:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to load cities',
-        position: 'top',
-      });
-    } finally {
-      setLoadingCities(false);
+    // Auto-select first area (0th index) if available
+    if (areas.length > 0 && !formData.area) {
+      const firstArea = areas[0];
+      setFormData(prev => ({
+        ...prev,
+        area: firstArea.name,
+        areaId: firstArea.id,
+      }));
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cities, states, areas]);
 
 
   const handleVerify = async (field) => {
@@ -612,38 +604,6 @@ const PharmacyWholesalerRetailerForm = () => {
   const handleResendOTP = async (field) => {
     setOtpTimers(prev => ({ ...prev, [field]: 30 }));
     await handleVerify(field);
-  };
-
-
-  const handleDateChange = (event, selectedDate) => {
-  // 1️⃣ Immediately close picker (prevents reopening)
-  setShowDatePicker(prev => ({ ...prev, [selectedDateField]: false }));
-
-  // 2️⃣ If dismissed → don't update anything
-  if (event.type === 'dismissed') {
-    setSelectedDateField(null);
-    return;
-  }
-
-  // 3️⃣ User pressed OK
-  if (event.type === 'set' && selectedDate) {
-    const formattedDate = selectedDate.toISOString();
-    setFormData(prev => ({
-      ...prev,
-      [`${selectedDateField}ExpiryDate`]: formattedDate,
-    }));
-    setErrors(prev => ({
-      ...prev,
-      [`${selectedDateField}ExpiryDate`]: null,
-    }));
-  }
-
-  setSelectedDateField(null);
-};
-
-  const openDatePicker = (field) => {
-    setSelectedDateField(field);
-    setShowDatePicker(prev => ({ ...prev, [field]: true }));
   };
 
   const renderOTPInput = (field) => {
@@ -839,7 +799,7 @@ const PharmacyWholesalerRetailerForm = () => {
             "customerId": stockist.name,
           }))
         }),
-        isChildCustomer:false
+        isChildCustomer: false
       };
 
       console.log('Registration data:', registrationData);
@@ -891,7 +851,6 @@ const PharmacyWholesalerRetailerForm = () => {
     navigation.navigate('HospitalSelector');
   };
 
-  // DropdownModal Component
   const DropdownModal = ({ visible, onClose, title, data, selectedId, onSelect, loading }) => {
     return (
       <Modal
@@ -917,39 +876,48 @@ const PharmacyWholesalerRetailerForm = () => {
             {loading ? (
               <ActivityIndicator size="large" color={colors.primary} style={styles.modalLoader} />
             ) : (
-              <FlatList
-                data={data}
-                keyExtractor={(item) => item.id?.toString() || item.value}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.modalItem,
-                      selectedId == item.id && styles.modalItemSelected
-                    ]}
-                    onPress={() => {
-                      onSelect(item);
-                      onClose();
-                    }}
-                  >
-                    <AppText style={[
-                      styles.modalItemText,
-                      selectedId == item.id && styles.modalItemTextSelected
-                    ]}>
-                      {item.name}
-                    </AppText>
-                    {selectedId == item.id && (
-                      <Icon name="check" size={20} color={colors.primary} />
+              <>
+                {(!data || data.length === 0) ? (
+                  <View style={[styles.modalList, { padding: 24, alignItems: 'center' }]}>
+                    <AppText style={{ color: '#777', fontSize: 16 }}>No {title} found</AppText>
+                  </View>
+                ) : (
+                  <FlatList
+                    data={data}
+                    keyExtractor={(item) => item.id?.toString() || item.value}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={[
+                          styles.modalItem,
+                          selectedId == item.id && styles.modalItemSelected
+                        ]}
+                        onPress={() => {
+                          onSelect(item);
+                          onClose();
+                        }}
+                      >
+                        <AppText style={[
+                          styles.modalItemText,
+                          selectedId == item.id && styles.modalItemTextSelected
+                        ]}>
+                          {item.name}
+                        </AppText>
+                        {selectedId == item.id && (
+                          <Icon name="check" size={20} color={colors.primary} />
+                        )}
+                      </TouchableOpacity>
                     )}
-                  </TouchableOpacity>
+                    style={styles.modalList}
+                  />
                 )}
-                style={styles.modalList}
-              />
+              </>
             )}
           </View>
         </View>
       </Modal>
     );
   };
+
 
   const handleFileUpload = (field, file) => {
     if (file && file.id) {
@@ -980,7 +948,53 @@ const PharmacyWholesalerRetailerForm = () => {
   };
 
   // Handle OCR extracted data for license uploads
-  const handleLicenseOcrData = (ocrData) => {
+  // Helper function to split address into address1, address2, address3
+  const splitAddress = (address) => {
+    if (!address) return { address1: '', address2: '', address3: '' };
+    
+    // Split by commas first
+    const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
+    
+    if (parts.length >= 3) {
+      return {
+        address1: parts[0],
+        address2: parts.slice(1, -1).join(', '),
+        address3: parts[parts.length - 1],
+      };
+    } else if (parts.length === 2) {
+      return {
+        address1: parts[0],
+        address2: parts[1],
+        address3: '',
+      };
+    } else if (parts.length === 1) {
+      // If no commas, try to split by length (approximately 50 chars each)
+      const addr = parts[0];
+      if (addr.length > 100) {
+        return {
+          address1: addr.substring(0, 50).trim(),
+          address2: addr.substring(50, 100).trim(),
+          address3: addr.substring(100).trim(),
+        };
+      } else if (addr.length > 50) {
+        return {
+          address1: addr.substring(0, 50).trim(),
+          address2: addr.substring(50).trim(),
+          address3: '',
+        };
+      } else {
+        return {
+          address1: addr,
+          address2: '',
+          address3: '',
+        };
+      }
+    }
+    
+    return { address1: '', address2: '', address3: '' };
+  };
+
+  const handleLicenseOcrData = async (ocrData) => {
     console.log('OCR Data Received:', ocrData);
 
     const updates = {};
@@ -990,9 +1004,18 @@ const PharmacyWholesalerRetailerForm = () => {
       updates.pharmacyName = ocrData.pharmacyName;
     }
 
-    // Populate address fields if available
-    if (ocrData.address && !formData.address1) {
-      updates.address1 = ocrData.address;
+    // Split and populate address fields if available
+    if (ocrData.address) {
+      const addressParts = splitAddress(ocrData.address);
+      if (!formData.address1 && addressParts.address1) {
+        updates.address1 = addressParts.address1;
+      }
+      if (!formData.address2 && addressParts.address2) {
+        updates.address2 = addressParts.address2;
+      }
+      if (!formData.address3 && addressParts.address3) {
+        updates.address3 = addressParts.address3;
+      }
     }
 
     // Populate license number if available and field is empty
@@ -1008,19 +1031,10 @@ const PharmacyWholesalerRetailerForm = () => {
         updates.license21b = ocrData.licenseNumber;
       }
     }
-
-    // Populate location fields if available
-    if (ocrData.city && !formData.city) {
-      updates.city = ocrData.city;
-    }
-    if (ocrData.state && !formData.state) {
-      updates.state = ocrData.state;
-    }
+    
+    // Populate pincode
     if (ocrData.pincode && !formData.pincode) {
       updates.pincode = ocrData.pincode;
-    }
-    if (ocrData.area && !formData.area) {
-      updates.area = ocrData.area;
     }
 
     // Populate expiry date if available
@@ -1041,7 +1055,7 @@ const PharmacyWholesalerRetailerForm = () => {
       }
     }
 
-    // Apply all updates at once
+    // Apply all updates first
     if (Object.keys(updates).length > 0) {
       setFormData(prev => ({ ...prev, ...updates }));
       const errorUpdates = {};
@@ -1050,24 +1064,29 @@ const PharmacyWholesalerRetailerForm = () => {
       });
       setErrors(prev => ({ ...prev, ...errorUpdates }));
     }
+
+    // Trigger pincode lookup if pincode is available and valid (6 digits)
+    if (ocrData.pincode && /^\d{6}$/.test(ocrData.pincode)) {
+      await lookupByPincode(ocrData.pincode);
+    }
   };
 
 
   const handleAddStockist = () => {
-  if (formData.stockists.length >= 4) {
-    Toast.show({
-      type: 'error',
-      text1: 'Limit Reached',
-      text2: 'You can only add up to 4 stockists.',
-    });
-    return;
-  }
+    if (formData.stockists.length >= 4) {
+      Toast.show({
+        type: 'error',
+        text1: 'Limit Reached',
+        text2: 'You can only add up to 4 stockists.',
+      });
+      return;
+    }
 
-  setFormData(prev => ({
-    ...prev,
-    stockists: [...prev.stockists, { name: '', code: '', city: '' }],
-  }));
-};
+    setFormData(prev => ({
+      ...prev,
+      stockists: [...prev.stockists, { name: '', code: '', city: '' }],
+    }));
+  };
 
   const handleRemoveStockist = (index) => {
     setFormData(prev => ({
@@ -1142,24 +1161,17 @@ const PharmacyWholesalerRetailerForm = () => {
                 error={errors.license20}
               />
 
-              <TouchableOpacity
-                style={[styles.datePickerInput, errors.license20ExpiryDate && styles.inputError]}
-                onPress={() => openDatePicker('license20')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText style={formData.license20ExpiryDate ? styles.dateText : styles.placeholderText}>
-                    {formData.license20ExpiryDate
-                      ? new Date(formData.license20ExpiryDate).toLocaleDateString('en-IN')
-                      : 'Expiry Date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.license20ExpiryDate && (
-                <AppText style={styles.errorText}>{errors.license20ExpiryDate}</AppText>
-              )}
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.license20ExpiryDate}
+                error={errors.license20ExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, license20ExpiryDate: date }));
+                  setErrors(prev => ({ ...prev, license20ExpiryDate: null }));
+                }}
+              />
 
               {/* 21 License */}
               <View style={[styles.licenseRow, { marginTop: 20 }]}>
@@ -1190,25 +1202,18 @@ const PharmacyWholesalerRetailerForm = () => {
                 error={errors.license21}
               />
 
-              <TouchableOpacity
-                style={[styles.datePickerInput, errors.license21ExpiryDate && styles.inputError]}
-                onPress={() => openDatePicker('license21')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText style={formData.license21ExpiryDate ? styles.dateText : styles.placeholderText}>
-                    {formData.license21ExpiryDate
-                      ? new Date(formData.license21ExpiryDate).toLocaleDateString('en-IN')
-                      : 'Expiry Date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.license21ExpiryDate && (
-                <AppText style={styles.errorText}>{errors.license21ExpiryDate}</AppText>
-              )}
-
+         
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.license21ExpiryDate}
+                error={errors.license21ExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, license21ExpiryDate: date }));
+                  setErrors(prev => ({ ...prev, license21ExpiryDate: null }));
+                }}
+              />
               {/* 20B License */}
               <View style={[styles.licenseRow, { marginTop: 20 }]}>
 
@@ -1239,24 +1244,17 @@ const PharmacyWholesalerRetailerForm = () => {
                 error={errors.license20b}
               />
 
-              <TouchableOpacity
-                style={[styles.datePickerInput, errors.license20bExpiryDate && styles.inputError]}
-                onPress={() => openDatePicker('license20b')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText style={formData.license20bExpiryDate ? styles.dateText : styles.placeholderText}>
-                    {formData.license20bExpiryDate
-                      ? new Date(formData.license20bExpiryDate).toLocaleDateString('en-IN')
-                      : 'Expiry Date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.license20bExpiryDate && (
-                <AppText style={styles.errorText}>{errors.license20bExpiryDate}</AppText>
-              )}
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.license20bExpiryDate}
+                error={errors.license20bExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, license20bExpiryDate: date }));
+                  setErrors(prev => ({ ...prev, license20bExpiryDate: null }));
+                }}
+              />
 
               {/* 21B License */}
               <View style={[styles.licenseRow, { marginTop: 20 }]}>
@@ -1288,24 +1286,20 @@ const PharmacyWholesalerRetailerForm = () => {
                 error={errors.license21b}
               />
 
-              <TouchableOpacity
-                style={[styles.datePickerInput, errors.license21bExpiryDate && styles.inputError]}
-                onPress={() => openDatePicker('license21b')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.inputTextContainer}>
-                  <AppText style={formData.license21bExpiryDate ? styles.dateText : styles.placeholderText}>
-                    {formData.license21bExpiryDate
-                      ? new Date(formData.license21bExpiryDate).toLocaleDateString('en-IN')
-                      : 'Expiry Date'}
-                  </AppText>
-                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                </View>
-                <Calendar />
-              </TouchableOpacity>
-              {errors.license21bExpiryDate && (
-                <AppText style={styles.errorText}>{errors.license21bExpiryDate}</AppText>
-              )}
+             
+
+               <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={formData.license21bExpiryDate}
+                error={errors.license21bExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setFormData(prev => ({ ...prev, license21bExpiryDate: date }));
+                  setErrors(prev => ({ ...prev, license21bExpiryDate: null }));
+                }}
+              />
+
             </View>
 
             <View style={styles.section}>
@@ -1354,27 +1348,31 @@ const PharmacyWholesalerRetailerForm = () => {
                 }}
                 mandatory={true}
                 error={errors.address1}
-                onLocationSelect={(locationData) => {
+                onLocationSelect={async (locationData) => {
                   const addressParts = locationData.address.split(',').map(part => part.trim());
                   const extractedPincode = locationData.pincode || '';
                   const filteredParts = addressParts.filter(part => {
                     return !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india';
                   });
-                  const matchedState = states.find(s => s.name.toLowerCase() === locationData.state.toLowerCase());
-                  const matchedCity = cities.find(c => c.name.toLowerCase() === locationData.city.toLowerCase());
+
+                  // Update address fields only
                   setFormData(prev => ({
                     ...prev,
                     address1: filteredParts[0] || '',
                     address2: filteredParts[1] || '',
                     address3: filteredParts[2] || '',
                     address4: filteredParts.slice(3).join(', ') || '',
-                    pincode: extractedPincode,
-                    area: locationData.area || '',
-                    ...(matchedState && { stateId: matchedState.id, state: matchedState.name }),
-                    ...(matchedCity && { cityId: matchedCity.id, city: matchedCity.name }),
                   }));
-                  if (matchedState) loadCities(matchedState.id);
-                  setErrors(prev => ({ ...prev, address1: null, address2: null, address3: null, address4: null, pincode: null, area: null, city: null, state: null }));
+
+                  // Update pincode and trigger lookup (this will populate area, city, state)
+                  if (extractedPincode) {
+                    setFormData(prev => ({ ...prev, pincode: extractedPincode }));
+                    setErrors(prev => ({ ...prev, pincode: null }));
+                    // Trigger pincode lookup to populate area, city, state
+                    await lookupByPincode(extractedPincode);
+                  }
+
+                  setErrors(prev => ({ ...prev, address1: null, address2: null, address3: null, address4: null, pincode: null }));
                 }}
               />
 
@@ -1409,41 +1407,59 @@ const PharmacyWholesalerRetailerForm = () => {
               <CustomInput
                 placeholder="Pincode"
                 value={formData.pincode}
-                onChangeText={(text) => {
-                  if (/^\d*$/.test(text) && text.length <= 6) {
-                    setFormData(prev => ({ ...prev, pincode: text }));
-                    setErrors(prev => ({ ...prev, pincode: null }));
-                  }
-                }}
+                onChangeText={handlePincodeChange}
                 keyboardType="numeric"
                 maxLength={6}
                 mandatory={true}
                 error={errors.pincode}
               />
+              {pincodeLoading && (
+                <View style={{ marginTop: -10, marginBottom: 10 }}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              )}
 
-              <CustomInput
-                placeholder="Area"
-                value={formData.area}
-                onChangeText={(text) => {
-                  setFormData(prev => ({ ...prev, area: text }));
-                  setErrors(prev => ({ ...prev, area: null }));
-                }}
-                error={errors.area}
-                mandatory={true}
-              />
-
+              {/* Area Dropdown */}
               <View style={styles.dropdownContainer}>
-                {formData.city && (
+                {(formData.area || areas.length > 0) && (
+                  <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+                    Area<AppText style={styles.asteriskPrimary}>*</AppText>
+                  </AppText>
+                )}
+                <TouchableOpacity
+                  style={[styles.dropdown, errors.area && styles.inputError]}
+                  onPress={() => {
+                    setShowAreaModal(true);
+                  }}
+                >
+                  <View style={styles.inputTextContainer}>
+                    <AppText style={formData.area ? styles.inputText : styles.placeholderText}>
+                      {formData.area || (areas.length === 0 ? 'Area' : 'Area')}
+                    </AppText>
+                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                  </View>
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
+                </TouchableOpacity>
+                {errors.area && <AppText style={styles.errorText}>{errors.area}</AppText>}
+              </View>
+
+              {/* City - Auto-populated from pincode */}
+              {/* City - Auto-populated from pincode */}
+              <View style={styles.dropdownContainer}>
+                {(formData.city || cities.length > 0) && (
                   <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
                     City<AppText style={styles.asteriskPrimary}>*</AppText>
                   </AppText>
                 )}
                 <TouchableOpacity
                   style={[styles.dropdown, errors.cityId && styles.inputError]}
-                  onPress={() => setShowCityModal(true)}
+                  onPress={() => {
+                    // If city list empty, still open modal to show "No items" + manual entry option
+                    setShowCityModal(true);
+                  }}
                 >
                   <View style={styles.inputTextContainer}>
-                    <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
+                    <AppText style={[styles.inputText, !formData.city && styles.placeholderText]}>
                       {formData.city || 'City'}
                     </AppText>
                     <AppText style={styles.inlineAsterisk}>*</AppText>
@@ -1453,14 +1469,24 @@ const PharmacyWholesalerRetailerForm = () => {
                 {errors.cityId && <AppText style={styles.errorText}>{errors.cityId}</AppText>}
               </View>
 
+
+              {/* State - Auto-populated from pincode */}
+              {/* State - Auto-populated from pincode */}
               <View style={styles.dropdownContainer}>
-                {/* <AppText style={styles.inputLabel}>State*</AppText> */}
+                {(formData.state || states.length > 0) && (
+                  <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
+                    State<AppText style={styles.asteriskPrimary}>*</AppText>
+                  </AppText>
+                )}
                 <TouchableOpacity
                   style={[styles.dropdown, errors.stateId && styles.inputError]}
-                  onPress={() => setShowStateModal(true)}
+                  onPress={() => {
+                    // Open state modal even if states array empty
+                    setShowStateModal(true);
+                  }}
                 >
                   <View style={styles.inputTextContainer}>
-                    <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
+                    <AppText style={[styles.inputText, !formData.state && styles.placeholderText]}>
                       {formData.state || 'State'}
                     </AppText>
                     <AppText style={styles.inlineAsterisk}>*</AppText>
@@ -1469,6 +1495,7 @@ const PharmacyWholesalerRetailerForm = () => {
                 </TouchableOpacity>
                 {errors.stateId && <AppText style={styles.errorText}>{errors.stateId}</AppText>}
               </View>
+
             </View>
 
             {/* Security Details Section */}
@@ -1646,24 +1673,24 @@ const PharmacyWholesalerRetailerForm = () => {
                 }
               />
 
-               {
-                                  verificationStatus.pan &&
-                                  <TouchableOpacity
-                                    style={styles.linkButton}
-                                    onPress={() => {
-                                      Toast.show({
-                                        type: 'info',
-                                        text1: 'Fetch GST',
-                                        text2: 'Fetching GST details from PAN...',
-                                      });
-                                      // Here you would call API to fetch GST from PAN
-                                      // and populate the GST dropdown options
-                                    }}
-                                  >
-                                    <FetchGst />
-                                    <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
-                                  </TouchableOpacity>
-                                }
+              {
+                verificationStatus.pan &&
+                <TouchableOpacity
+                  style={styles.linkButton}
+                  onPress={() => {
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Fetch GST',
+                      text2: 'Fetching GST details from PAN...',
+                    });
+                    // Here you would call API to fetch GST from PAN
+                    // and populate the GST dropdown options
+                  }}
+                >
+                  <FetchGst />
+                  <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
+                </TouchableOpacity>
+              }
 
               <FileUploadComponent
                 placeholder="Upload GST"
@@ -1986,44 +2013,23 @@ const PharmacyWholesalerRetailerForm = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Date Pickers */}
-      {showDatePicker.license20 && (
-        <DateTimePicker
-          value={formData.license20ExpiryDate || new Date()}
-          mode="date"
-          display="default"
-          minimumDate={new Date()}
-          onChange={handleDateChange}
-        />
-      )}
-      {showDatePicker.license21 && (
-        <DateTimePicker
-          value={formData.license21ExpiryDate || new Date()}
-          mode="date"
-          display="default"
-          minimumDate={new Date()}
-          onChange={handleDateChange}
-        />
-      )}
-      {showDatePicker.license20b && (
-        <DateTimePicker
-          value={formData.license20bExpiryDate || new Date()}
-          mode="date"
-          display="default"
-          minimumDate={new Date()}
-          onChange={handleDateChange}
-        />
-      )}
-      {showDatePicker.license21b && (
-        <DateTimePicker
-          value={formData.license21bExpiryDate || new Date()}
-          mode="date"
-          display="default"
-          minimumDate={new Date()}
-          onChange={handleDateChange}
-        />
-      )}
-
+      {/* Dropdown Modals */}
+      <DropdownModal
+        visible={showAreaModal}
+        onClose={() => setShowAreaModal(false)}
+        title="Select Area"
+        data={areas.map(area => ({ id: area.id, name: area.name }))}
+        selectedId={formData.areaId}
+        onSelect={(item) => {
+          setFormData(prev => ({
+            ...prev,
+            area: item.name,
+            areaId: item.id,
+          }));
+          setErrors(prev => ({ ...prev, area: null }));
+        }}
+        loading={pincodeLoading}
+      />
       {/* Dropdown Modals */}
       <DropdownModal
         visible={showStateModal}
@@ -2031,12 +2037,12 @@ const PharmacyWholesalerRetailerForm = () => {
         title="Select State"
         data={states}
         selectedId={formData.stateId}
-        onSelect={(item) => {
+        onSelect={item => {
           setFormData(prev => ({
             ...prev,
             stateId: item.id,
             state: item.name,
-            // Don't reset city and area - allow independent selection
+            // Don't reset city and cityId - allow independent selection
           }));
           setErrors(prev => ({ ...prev, stateId: null }));
         }}
@@ -2049,16 +2055,15 @@ const PharmacyWholesalerRetailerForm = () => {
         title="Select City"
         data={cities}
         selectedId={formData.cityId}
-        onSelect={(item) => {
+        onSelect={item => {
           setFormData(prev => ({
             ...prev,
             cityId: item.id,
             city: item.name,
-            // Don't reset area - allow independent selection
           }));
           setErrors(prev => ({ ...prev, cityId: null }));
         }}
-        loading={loadingCities}
+        loading={false}
       />
 
 
@@ -2151,37 +2156,37 @@ const PharmacyWholesalerRetailerForm = () => {
         animationType="fade"
         onRequestClose={() => setShowCancelModal(false)}
       >
-       <View style={styles.cancelModalOverlay}>
-                <View style={styles.cancelModalContent}>
-                  <View style={styles.modalIconContainerOuter}>
-      
-                    <View style={styles.modalIconContainer}>
-      
-                      <AppText style={styles.modalIcon}>!</AppText>
-                    </View></View>
-                  <AppText style={styles.cancelModalTitle}>
-                    {`Are you sure you want
+        <View style={styles.cancelModalOverlay}>
+          <View style={styles.cancelModalContent}>
+            <View style={styles.modalIconContainerOuter}>
+
+              <View style={styles.modalIconContainer}>
+
+                <AppText style={styles.modalIcon}>!</AppText>
+              </View></View>
+            <AppText style={styles.cancelModalTitle}>
+              {`Are you sure you want
 to Cancel the Onboarding?`}
-                  </AppText>
-                  <View style={styles.modalButtonContainer}>
-                    <TouchableOpacity
-                      style={styles.modalYesButton}
-                      onPress={() => {
-                        setShowCancelModal(false);
-                        navigation.goBack();
-                      }}
-                    >
-                      <AppText style={styles.modalYesButtonText}>Yes</AppText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.modalNoButton}
-                      onPress={() => setShowCancelModal(false)}
-                    >
-                      <AppText style={styles.modalNoButtonText}>No</AppText>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
+            </AppText>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={styles.modalYesButton}
+                onPress={() => {
+                  setShowCancelModal(false);
+                  navigation.goBack();
+                }}
+              >
+                <AppText style={styles.modalYesButtonText}>Yes</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalNoButton}
+                onPress={() => setShowCancelModal(false)}
+              >
+                <AppText style={styles.modalNoButtonText}>No</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -2278,22 +2283,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginRight: 8,
   },
-  datePickerInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.loginInputBorderColor,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  dateText: {
-    fontSize: 16,
-    color: '#333',
-  },
+
   placeholderText: {
     fontSize: 16,
     color: colors.gray,
@@ -2305,7 +2295,7 @@ const styles = StyleSheet.create({
   },
   floatingLabel: {
     position: 'absolute',
-    top: -8,
+    top: -6,
     left: 12,
     fontSize: 12,
     fontWeight: '500',
@@ -2314,7 +2304,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   dropdownContainer: {
-    marginBottom: 16,
+    marginBottom: 2,
   },
   dropdown: {
     flexDirection: 'row',
@@ -2629,7 +2619,7 @@ const styles = StyleSheet.create({
   modalLoader: {
     paddingVertical: 50,
   },
-    cancelModalOverlay: {
+  cancelModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
@@ -2947,6 +2937,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
+  inputText: {
+    fontSize: 16,
+    color: '#333',
+  },
   inlineAsterisk: {
     color: 'red',
     fontSize: 16,
@@ -2967,10 +2961,10 @@ const styles = StyleSheet.create({
     flex: 1,
     marginBottom: 16
   },
-   linkButton: {
-    flexDirection: 'row',   
-    alignItems: 'center',  
-    gap: 2,                
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
     paddingVertical: 8,
     marginBottom: 16,
     marginTop: -16,

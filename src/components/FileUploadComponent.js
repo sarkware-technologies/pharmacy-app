@@ -336,6 +336,11 @@ const FileUploadComponent = ({
             ocrData.isValid = uploadedFile.isValid;
           }
           
+          // Extract locationDetails if present (for structured location data with IDs)
+          if (uploadedFile.locationDetails) {
+            ocrData.locationDetails = uploadedFile.locationDetails;
+          }
+          
           // Send extracted data to parent
           if (Object.keys(ocrData).length > 0) {
             onOcrDataExtracted(ocrData);
