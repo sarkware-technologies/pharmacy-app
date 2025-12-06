@@ -164,7 +164,7 @@ const DoctorRegistrationForm = () => {
     // Mapping
     markAsBuyingEntity: false,
     selectedCategory: '',
-    selectedHospital: null,
+    selectedHospitals: null,
     selectedPharmacies: [],
 
     // Customer Group
@@ -2424,13 +2424,13 @@ const DoctorRegistrationForm = () => {
                     style={styles.hospitalSelectorDropdown}
                     onPress={() => {
                       navigation.navigate('HospitalSelector', {
-                        selectedHospitals: formData.selectedHospital
-                          ? [formData.selectedHospital]
+                        selectedHospitals: formData.selectedHospitals
+                          ? [formData.selectedHospitals]
                           : [],
                         onSelect: hospitals => {
                           setFormData(prev => ({
                             ...prev,
-                            selectedHospital: hospitals[0] || null,
+                            selectedHospitals: hospitals[0] || null,
                           }));
                         },
                       });
@@ -2438,9 +2438,14 @@ const DoctorRegistrationForm = () => {
                     activeOpacity={0.7}
                   >
                     <AppText style={styles.hospitalSelectorText}>
-                      {formData.selectedHospital
-                        ? formData.selectedHospital.name
-                        : 'Search hospital name/code'}
+                    
+
+                        {formData.selectedHospitals && formData.selectedHospitals.length > 0
+                          ? formData.selectedHospitals.map(h => h.name).join(', ')
+                          : 'Search hospital name/code'}
+                        
+
+                        
                     </AppText>
                     <Icon name="arrow-drop-down" size={24} color="#333" />
                   </TouchableOpacity>
@@ -2474,10 +2479,15 @@ const DoctorRegistrationForm = () => {
                     }}
                     activeOpacity={0.7}
                   >
-                    <AppText style={styles.selectorPlaceholder}>
-                      Search pharmacy name/code
-                    </AppText>
-                    <Search />
+                     <AppText style={[
+                styles.selectorPlaceholder,
+                formData.selectedPharmacies.length !== 0 && { color: '#333' }
+              ]}>
+                {formData.selectedPharmacies && formData.selectedPharmacies.length > 0
+                  ? `${formData.selectedPharmacies.length} Pharmacies Selected`
+                  : 'Select pharmacy name/code'}
+              </AppText>
+              <ArrowDown color='#333' />
                   </TouchableOpacity>
                   {formData.selectedPharmacies.length > 0 && (
                     <View style={styles.selectedItemsContainer}>
@@ -2487,7 +2497,7 @@ const DoctorRegistrationForm = () => {
                           key={pharmacy.id || index}
                           style={styles.selectedItemChip}
                         >
-                          <AppText>{pharmacy.name} </AppText>
+                          <AppText style={{ color: '#333'} }>{pharmacy.name} </AppText>
                           <TouchableOpacity
                             onPress={() => {
                               setFormData(prev => ({
@@ -2746,6 +2756,33 @@ const DoctorRegistrationForm = () => {
         mappingName={formData.doctorName}
         mappingLabel="Doctor"
         onSubmit={hospital => {
+ console.log('=== Hospital Response from AddNewHospitalModal ===');
+          console.log('Full Response:', hospital);
+          console.log('Hospital ID:', hospital.id || hospital.customerId);
+          console.log('=== End Hospital Response ===');
+           const hospitalData = {
+            id: hospital.id || hospital.customerId,
+            name: hospital.name || hospital.hospitalName,
+            code: hospital.code || hospital.shortName,
+            customerId: hospital.id || hospital.customerId,
+            stateId: hospital.stateId,
+            cityId: hospital.cityId,
+            area: hospital.area,
+            city: hospital.city,
+            state: hospital.state,
+            mobileNumber: hospital.mobileNumber,
+            emailAddress: hospital.emailAddress,
+            isNew: true,
+            ...hospital,
+          };
+
+            setFormData(prev => ({
+            ...prev,
+            selectedHospitals: [
+              ...(prev.selectedHospitals || []),
+              hospitalData,
+            ],
+          }));
           setShowHospitalModal(false);
           // Handle hospital submission if needed
           Toast.show({
@@ -2757,6 +2794,9 @@ const DoctorRegistrationForm = () => {
         }}
       />
 
+      {console.log(formData)
+      }
+
       {/* Add New Pharmacy Modal */}
       <AddNewPharmacyModal
         visible={showPharmacyModal}
@@ -2764,6 +2804,39 @@ const DoctorRegistrationForm = () => {
         mappingName={formData.doctorName}
         mappingLabel="Doctor"
         onSubmit={pharmacy => {
+
+
+            console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
+          console.log('Full Response:', pharmacy);
+          console.log('Pharmacy ID:', pharmacy.id || pharmacy.customerId);
+          console.log('=== End Pharmacy Response ===');
+
+          // Create pharmacy object for display
+          const newPharmacyItem = {
+            id: pharmacy.id || pharmacy.customerId,
+            name: pharmacy.pharmacyName || pharmacy.name,
+            code: pharmacy.code || ''
+          };
+
+           setFormData(prev => ({
+            ...prev,
+            selectedPharmacies: [
+              ...(prev.selectedPharmacies || []),
+              newPharmacyItem
+            ],
+            mapping: {
+              ...prev.mapping,
+              pharmacy: [
+                ...(prev.mapping?.pharmacy || []),
+                {
+                  id: pharmacy.id || pharmacy.customerId,
+                  isNew: true
+                }
+              ]
+            }
+          }));
+
+
           setShowPharmacyModal(false);
           // Handle pharmacy submission if needed
           Toast.show({

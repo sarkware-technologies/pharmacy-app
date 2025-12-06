@@ -3089,7 +3089,7 @@ const styles = StyleSheet.create({
   },
   addNewDoctorLink: {
     fontSize: 14,
-    color: "#555",
+    color: "#333",
     fontWeight: '500',
   },
   divider: {

@@ -642,7 +642,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           ]
         },
         customerDocs: uploadedDocs,
-        isBuyer: Boolean(hospitalForm.isBuyer),
+        isBuyer: true,
         customerGroupId: 1,
         generalDetails: {
           name: hospitalForm.hospitalName,

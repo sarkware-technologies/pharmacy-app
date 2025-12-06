@@ -1956,7 +1956,7 @@ const PrivateRegistrationForm = () => {
               </AppText>
 
               <CustomInput
-                placeholder="Enter hospital Name"
+                placeholder="Enter hospital name"
                 value={formData.clinicName}
                 onChangeText={text => {
                   setFormData(prev => ({ ...prev, clinicName: text }));
@@ -1967,7 +1967,7 @@ const PrivateRegistrationForm = () => {
               />
 
               <CustomInput
-                placeholder="Enter short Name"
+                placeholder="Enter short name"
                 value={formData.shortName}
                 onChangeText={text =>
                   setFormData(prev => ({ ...prev, shortName: text }))
@@ -2660,7 +2660,7 @@ const PrivateRegistrationForm = () => {
                           key={pharmacy.id || index}
                           style={styles.selectedItemChip}
                         >
-                          <AppText>{pharmacy.name} </AppText>
+                          <AppText style={{ color: '#333'} }>{pharmacy.name} </AppText>
                           <TouchableOpacity
                             onPress={() => {
                               setFormData(prev => ({

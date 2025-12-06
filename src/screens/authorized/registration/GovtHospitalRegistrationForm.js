@@ -2223,7 +2223,7 @@ const GovtHospitalRegistrationForm = () => {
 
 
                 <View key={pharmacy.id || index} style={styles.selectedItemChip}>
-                  <AppText >{pharmacy.name}  </AppText>
+                  <AppText style={{ color: '#333'} }>{pharmacy.name}  </AppText>
                   <TouchableOpacity
                     onPress={() => {
                       setFormData(prev => ({

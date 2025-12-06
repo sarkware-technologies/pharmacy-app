@@ -686,9 +686,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
     }
 
     // Owner Name validation
-    if (!pharmacyForm.ownerName || pharmacyForm.ownerName.trim() === '') {
-      newErrors.ownerName = 'Owner name is required';
-    }
+    // if (!pharmacyForm.ownerName || pharmacyForm.ownerName.trim() === '') {
+    //   newErrors.ownerName = 'Owner name is required';
+    // }
 
     // Address 1 validation
     if (!pharmacyForm.address1 || pharmacyForm.address1.trim() === '') {
@@ -1503,7 +1503,6 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               }
             }}
             mandatory={false}
-            error={pharmacyErrors.ownerName}
           />
 
           <AddressInputWithLocation

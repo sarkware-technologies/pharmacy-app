@@ -960,8 +960,26 @@ const CustomerList = ({ navigation }) => {
             {/* <AppText style={styles.customerName}>{item.customerName}<AppText style={styles.customerNameIcon}><ChevronRight height={11} color={colors.primary} /></AppText></AppText> */}
 
             <View style={styles.customerNameRow}>
-              <AppText style={styles.customerName}>{item.customerName} <ChevronRight height={12} color={colors.primary}  />  </AppText>
-              
+
+              <AppText
+                style={styles.customerName}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.customerName}
+              </AppText>
+
+              <ChevronRight
+                height={12}
+                color={colors.primary}
+                style={{ marginLeft: 6 }}
+              />
+              {/* <AppText style={[styles.customerName, { flex: 1, maxWidth: "80%" }]} numberOfLines={1}
+                ellipsizeMode="tail">{item.customerName} <ChevronRight height={12} color={colors.primary}  />  </AppText> */}
+
+
+
+
             </View>
             <View style={styles.actionsContainer}>
               {item.statusName === 'NOT-ONBOARDED' && (
@@ -1004,7 +1022,7 @@ const CustomerList = ({ navigation }) => {
                 </TouchableOpacity>
               )}
 
-          
+
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => fetchCustomerDocuments(item)}
@@ -1082,13 +1100,18 @@ const CustomerList = ({ navigation }) => {
                   style={styles.approveButton}
                   onPress={() => handleApprovePress(item)}
                 >
-                  <AppText style={styles.approveButtonText}>Approve</AppText>
+
+
+                  <View style={styles.approveButtonContent}>
+                    <Icon name="checkmark-outline" size={18} color="white" />
+                    <AppText style={styles.approveButtonText}>Approve</AppText>
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.rejectButton}
                   onPress={() => handleRejectPress(item)}
                 >
-                  <CloseCircle />
+                  <CloseCircle color='#000'/>
                 </TouchableOpacity>
               </View>
             ) : item.statusName === 'NOT-ONBOARDED' ? (
@@ -1707,14 +1730,18 @@ const styles = StyleSheet.create({
   },
 
   customerNameRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap:2
+    gap: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    maxWidth: "80%",     // ⬅ LEFT BLOCK TAKES 80%
+    flexShrink: 1,       // ⬅ allow text to shrink
   },
   customerName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
+    flexShrink: 1,       // ⬅ allows truncation
+
   },
 
   actionsContainer: {
@@ -1820,17 +1847,25 @@ const styles = StyleSheet.create({
   approveButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
     backgroundColor: colors.primary,
     gap: 4,
   },
+  approveButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',   // ⬅️ PERFECT vertical alignment
+  },
+
   approveButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
+    marginLeft: 4,          // ⬅️ spacing between icon & text
   },
+
+
   rejectButton: {
     padding: 4,
   },
