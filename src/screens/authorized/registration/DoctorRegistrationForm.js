@@ -681,8 +681,7 @@ const DoctorRegistrationForm = () => {
     if (
       field === 'mobile' &&
       (!formData.mobileNumber ||
-        formData.mobileNumber.length !== 10 ||
-        !/^[6789]\d{9}$/.test(formData.mobileNumber))
+        !/^[6-9]\d{9}$/.test(formData.mobileNumber))
     ) {
       setErrors(prev => ({
         ...prev,
@@ -692,11 +691,12 @@ const DoctorRegistrationForm = () => {
     }
     if (
       field === 'email' &&
-      (!formData.emailAddress || !formData.emailAddress.includes('@'))
+      (!formData.emailAddress ||
+        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
     ) {
       setErrors(prev => ({
         ...prev,
-        emailAddress: 'Please enter valid email address',
+        emailAddress: 'Please enter a valid email address',
       }));
       return;
     }
@@ -1835,7 +1835,7 @@ const DoctorRegistrationForm = () => {
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.area && (
-                  <AppText style={styles.errorText}>{errors.area}</AppText>
+                  <AppText style={styles.errorTextDropdown}>{errors.area}</AppText>
                 )}
               </View>
 
@@ -1869,7 +1869,7 @@ const DoctorRegistrationForm = () => {
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.city && (
-                  <AppText style={styles.errorText}>{errors.city}</AppText>
+                  <AppText style={styles.errorTextDropdown}>{errors.city}</AppText>
                 )}
               </View>
 
@@ -1903,7 +1903,7 @@ const DoctorRegistrationForm = () => {
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.state && (
-                  <AppText style={styles.errorText}>{errors.state}</AppText>
+                  <AppText style={styles.errorTextDropdown}>{errors.state}</AppText>
                 )}
               </View>
             </View>
@@ -2668,7 +2668,7 @@ to Cancel the Onboarding?`}
 const styles = StyleSheet.create({
   floatingLabel: {
     position: 'absolute',
-    top: -6,
+    top: -10,
     left: 12,
     fontSize: 12,
     fontWeight: '500',
@@ -2795,6 +2795,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -12,
     marginBottom: 12,
+    marginLeft: 4,
+  },
+  errorTextDropdown: {
+    color: colors.error,
+    fontSize: 12,
+    // marginBottom: 12,
     marginLeft: 4,
   },
   inputWithButton: {
@@ -3414,6 +3420,10 @@ const styles = StyleSheet.create({
   linkText: {
     color: colors.primary,
   },
+  asteriskPrimary: {
+    color: "red",
+    fontSize:16
+  }
 });
 
 export default DoctorRegistrationForm;

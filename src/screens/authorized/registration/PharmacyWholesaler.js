@@ -131,14 +131,14 @@ const PharmacyWholesalerForm = () => {
 
   // Dropdown data
   const [customerGroups, setCustomerGroups] = useState([]);
-  
+
   // Pincode lookup hook
   const { areas, cities, states, loading: pincodeLoading, lookupByPincode, clearData } = usePincodeLookup();
-  
+
   // Local state for dropdown modals
   const [showAreaModal, setShowAreaModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
-const [showStateModal, setShowStateModal] = useState(false);
+  const [showStateModal, setShowStateModal] = useState(false);
 
 
   // Date picker states
@@ -278,7 +278,7 @@ const [showStateModal, setShowStateModal] = useState(false);
     if (/^\d{0,6}$/.test(text)) {
       setFormData(prev => ({ ...prev, pincode: text }));
       setErrors(prev => ({ ...prev, pincode: null }));
-      
+
       // Clear previous selections when pincode changes
       if (text.length < 6) {
         setFormData(prev => ({
@@ -292,21 +292,21 @@ const [showStateModal, setShowStateModal] = useState(false);
         }));
         clearData();
       }
-      
+
       // Trigger lookup when pincode is complete (6 digits)
       if (text.length === 6) {
         await lookupByPincode(text);
       }
     }
   };
-  
+
   // Auto-populate city, state, and area when pincode lookup completes
   useEffect(() => {
     if (cities.length > 0 && states.length > 0) {
       // Auto-select first city and state from lookup results
       const firstCity = cities[0];
       const firstState = states[0];
-      
+
       setFormData(prev => ({
         ...prev,
         city: firstCity.name,
@@ -315,7 +315,7 @@ const [showStateModal, setShowStateModal] = useState(false);
         stateId: firstState.id,
       }));
     }
-    
+
     // Auto-select first area (0th index) if available
     if (areas.length > 0 && !formData.area) {
       const firstArea = areas[0];
@@ -325,7 +325,7 @@ const [showStateModal, setShowStateModal] = useState(false);
         areaId: firstArea.id,
       }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cities, states, areas]);
 
   // OTP Timer Effect
@@ -352,15 +352,9 @@ const [showStateModal, setShowStateModal] = useState(false);
     // Validate the field before showing OTP
     if (
       field === 'mobile' &&
-      (!formData.mobileNumber || formData.mobileNumber.length !== 10)
+      (!formData.mobileNumber ||
+        !/^[6-9]\d{9}$/.test(formData.mobileNumber))
     ) {
-      setErrors(prev => ({
-        ...prev,
-        mobileNumber: 'Please enter valid 10-digit mobile number',
-      }));
-      return;
-    }
-    if (field === 'mobile' && !/^[6-9]/.test(formData.mobileNumber)) {
       setErrors(prev => ({
         ...prev,
         mobileNumber: 'Please enter valid 10-digit mobile number',
@@ -369,11 +363,12 @@ const [showStateModal, setShowStateModal] = useState(false);
     }
     if (
       field === 'email' &&
-      (!formData.emailAddress || !formData.emailAddress.includes('@'))
+      (!formData.emailAddress ||
+        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
     ) {
       setErrors(prev => ({
         ...prev,
-        emailAddress: 'Please enter valid email address',
+        emailAddress: 'Please enter a valid email address',
       }));
       return;
     }
@@ -488,7 +483,7 @@ const [showStateModal, setShowStateModal] = useState(false);
     }
   };
 
-   const formatDateForAPI = (date) => {
+  const formatDateForAPI = (date) => {
     if (!date) return null;
     const d = new Date(date);
     // Add time component to avoid timezone issues
@@ -655,10 +650,10 @@ const [showStateModal, setShowStateModal] = useState(false);
   // Helper function to split address into address1, address2, address3
   const splitAddress = (address) => {
     if (!address) return { address1: '', address2: '', address3: '' };
-    
+
     // Split by commas first
     const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
-    
+
     if (parts.length >= 3) {
       return {
         address1: parts[0],
@@ -694,7 +689,7 @@ const [showStateModal, setShowStateModal] = useState(false);
         };
       }
     }
-    
+
     return { address1: '', address2: '', address3: '' };
   };
 
@@ -732,7 +727,7 @@ const [showStateModal, setShowStateModal] = useState(false);
         updates.license21b = ocrData.licenseNumber;
       }
     }
-    
+
     // Populate pincode
     if (ocrData.pincode && !formData.pincode) {
       updates.pincode = ocrData.pincode;
@@ -1158,7 +1153,7 @@ const [showStateModal, setShowStateModal] = useState(false);
                 }}
                 mandatory={true}
                 error={errors.license20b}
-              />   
+              />
               <FloatingDateInput
                 label="Expiry Date"
                 mandatory={true}
@@ -1208,7 +1203,7 @@ const [showStateModal, setShowStateModal] = useState(false);
                 error={errors.license21b}
               />
 
-            
+
 
               <FloatingDateInput
                 label="Expiry Date"
@@ -1287,7 +1282,7 @@ const [showStateModal, setShowStateModal] = useState(false);
                       !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india'
                     );
                   });
-                  
+
                   // Update address fields only
                   setFormData(prev => ({
                     ...prev,
@@ -1296,7 +1291,7 @@ const [showStateModal, setShowStateModal] = useState(false);
                     address3: filteredParts[2] || '',
                     address4: filteredParts.slice(3).join(', ') || '',
                   }));
-                  
+
                   // Update pincode and trigger lookup (this will populate area, city, state)
                   if (extractedPincode) {
                     setFormData(prev => ({ ...prev, pincode: extractedPincode }));
@@ -1304,7 +1299,7 @@ const [showStateModal, setShowStateModal] = useState(false);
                     // Trigger pincode lookup to populate area, city, state
                     await lookupByPincode(extractedPincode);
                   }
-                  
+
                   setErrors(prev => ({
                     ...prev,
                     address1: null,
@@ -1391,7 +1386,7 @@ const [showStateModal, setShowStateModal] = useState(false);
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.area && (
-                  <AppText style={styles.errorText}>{errors.area}</AppText>
+                  <AppText style={styles.errorTextDropdown}>{errors.area}</AppText>
                 )}
               </View>
 
@@ -1415,10 +1410,10 @@ const [showStateModal, setShowStateModal] = useState(false);
                     <AppText style={styles.inlineAsterisk}>*</AppText>
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
-                </TouchableOpacity> 
+                </TouchableOpacity>
 
                 {errors.city && (
-                  <AppText style={styles.errorText}>{errors.city}</AppText>
+                  <AppText style={styles.errorTextDropdown}>{errors.city}</AppText>
                 )}
               </View>
 
@@ -1445,7 +1440,7 @@ const [showStateModal, setShowStateModal] = useState(false);
                 </TouchableOpacity>
 
                 {errors.state && (
-                  <AppText style={styles.errorText}>{errors.state}</AppText>
+                  <AppText style={styles.errorTextDropdown}>{errors.state}</AppText>
                 )}
               </View>
             </View>
@@ -2059,7 +2054,7 @@ const [showStateModal, setShowStateModal] = useState(false);
         </ScrollView>
       </KeyboardAvoidingView>
 
-     
+
 
       {/* Dropdown Modals */}
       <DropdownModal
@@ -2354,7 +2349,7 @@ const styles = StyleSheet.create({
   },
   floatingLabel: {
     position: 'absolute',
-    top: -6,
+    top: -10,
     left: 12,
     fontSize: 12,
     fontWeight: '500',
@@ -2431,6 +2426,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -12,
     marginBottom: 12,
+    marginLeft: 4,
+  },
+  errorTextDropdown: {
+    color: colors.error,
+    fontSize: 12,
+    // marginBottom: 12,
     marginLeft: 4,
   },
   otpContainer: {
@@ -2934,7 +2935,8 @@ const styles = StyleSheet.create({
     color: 'red',
   },
   asteriskPrimary: {
-    color: colors.primary,
+    color: "red",
+    fontSize:16
   },
   radioButtonContainer: {
     flexDirection: 'row',
@@ -2947,9 +2949,9 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   linkButton: {
-    flexDirection: 'row',   
-    alignItems: 'center',  
-    gap: 2,                
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
     paddingVertical: 8,
     marginBottom: 16,
     marginTop: -16,

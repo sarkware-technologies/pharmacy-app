@@ -490,15 +490,9 @@ const PharmacyWholesalerRetailerForm = () => {
     // Validate the field before showing OTP
     if (
       field === 'mobile' &&
-      (!formData.mobileNumber || formData.mobileNumber.length !== 10)
+      (!formData.mobileNumber ||
+        !/^[6-9]\d{9}$/.test(formData.mobileNumber))
     ) {
-      setErrors(prev => ({
-        ...prev,
-        mobileNumber: 'Please enter valid 10-digit mobile number',
-      }));
-      return;
-    }
-    if (field === 'mobile' && !/^[6-9]/.test(formData.mobileNumber)) {
       setErrors(prev => ({
         ...prev,
         mobileNumber: 'Please enter valid 10-digit mobile number',
@@ -507,11 +501,12 @@ const PharmacyWholesalerRetailerForm = () => {
     }
     if (
       field === 'email' &&
-      (!formData.emailAddress || !formData.emailAddress.includes('@'))
+      (!formData.emailAddress ||
+        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
     ) {
       setErrors(prev => ({
         ...prev,
-        emailAddress: 'Please enter valid email address',
+        emailAddress: 'Please enter a valid email address',
       }));
       return;
     }
@@ -2468,7 +2463,7 @@ const handleLicenseOcrData = async (ocrData) => {
                 Add suggested stockists for this pharmacy
               </AppText> */}
 
-              {formData.stockists.map((stockist, index) => (
+              {formData?.stockists.map((stockist, index) => (
                 <View key={index} style={styles.stockistContainer}>
                   {index > 0 && (
                     <View style={styles.stockistHeader}>
@@ -2830,7 +2825,7 @@ const styles = StyleSheet.create({
   },
   floatingLabel: {
     position: 'absolute',
-    top: -6,
+    top: -10,
     left: 12,
     fontSize: 12,
     fontWeight: '500',
@@ -2909,6 +2904,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -12,
     marginBottom: 12,
+    marginLeft: 4,
+  },
+  errorTextDropdown: {
+    color: colors.error,
+    fontSize: 12,
+    marginTop:2,
+    // marginBottom: 12,
     marginLeft: 4,
   },
   otpContainer: {
@@ -3484,7 +3486,8 @@ const styles = StyleSheet.create({
     color: 'red',
   },
   asteriskPrimary: {
-    color: colors.primary,
+    color:"red",
+    fontSize:16
   },
   radioButtonContainer: {
     flexDirection: 'row',

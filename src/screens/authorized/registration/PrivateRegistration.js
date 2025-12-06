@@ -748,7 +748,8 @@ const PrivateRegistrationForm = () => {
       let requestData = {}; // No customerId needed for new registrations
 
       if (field === 'mobile') {
-        if (!formData.mobileNumber || formData.mobileNumber.length !== 10) {
+        if (!formData.mobileNumber ||
+        !/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
           Toast.show({
             type: 'error',
             text1: 'Invalid Mobile Number',
@@ -757,18 +758,11 @@ const PrivateRegistrationForm = () => {
           });
           return;
         }
-        if (!/^[6-9]/.test(formData.mobileNumber)) {
-          Toast.show({
-            type: 'error',
-            text1: 'Invalid Mobile Number',
-            text2: 'Please enter valid 10-digit mobile number',
-            position: 'top',
-          });
-          return;
-        }
+       
         requestData.mobile = formData.mobileNumber;
       } else if (field === 'email') {
-        if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
+        if (!formData.emailAddress ||
+        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress)) {
           Toast.show({
             type: 'error',
             text1: 'Invalid Email',
@@ -1782,7 +1776,7 @@ const PrivateRegistrationForm = () => {
                   <ArrowDown color="#999" />
                 </TouchableOpacity>
                 {errors.area && (
-                  <AppText style={styles.errorText}>{errors.area}</AppText>
+                  <AppText style={styles.errorTextDropdown}>{errors.area}</AppText>
                 )}
               </View>
 
@@ -1816,7 +1810,7 @@ const PrivateRegistrationForm = () => {
                   <ArrowDown color="#999" />
                 </TouchableOpacity>
                 {errors.cityId && (
-                  <AppText style={styles.errorText}>{errors.cityId}</AppText>
+                  <AppText style={styles.errorTextDropdown}>{errors.cityId}</AppText>
                 )}
               </View>
 
@@ -1850,7 +1844,7 @@ const PrivateRegistrationForm = () => {
                   <ArrowDown color="#999" />
                 </TouchableOpacity>
                 {errors.stateId && (
-                  <AppText style={styles.errorText}>{errors.stateId}</AppText>
+                  <AppText style={styles.errorTextDropdown}>{errors.stateId}</AppText>
                 )}
               </View>
             </View>
@@ -2814,9 +2808,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginLeft: 4,
   },
+
+  errorTextDropdown: {
+    color: colors.error,
+    fontSize: 12,
+    // marginBottom: 12,
+    marginLeft: 4,
+  },
   floatingLabel: {
     position: 'absolute',
-    top: -6,
+    top: -10,
     left: 12,
     fontSize: 12,
     fontWeight: '500',
@@ -3700,7 +3701,8 @@ const styles = StyleSheet.create({
     color: 'red',
   },
   asteriskPrimary: {
-    color: colors.primary,
+    color: "red",
+    fontSize:16
   },
   radioButtonContainer: {
     flexDirection: 'row',

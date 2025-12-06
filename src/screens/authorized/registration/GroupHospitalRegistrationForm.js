@@ -317,37 +317,26 @@ const GroupHospitalRegistrationForm = () => {
 
   const handleVerify = async field => {
     // Validate field before verification
-    if (
+   if (
       field === 'mobile' &&
-      (!formData.mobileNumber || formData.mobileNumber.length !== 10)
+      (!formData.mobileNumber ||
+        !/^[6-9]\d{9}$/.test(formData.mobileNumber))
     ) {
-      Toast.show({
-        type: 'error',
-        text1: 'Invalid Mobile',
-        text2: 'Please enter a valid 10-digit mobile number',
-        position: 'top',
-      });
-      return;
-    }
-    if (field === 'mobile' && !/^[6-9]/.test(formData.mobileNumber)) {
-      Toast.show({
-        type: 'error',
-        text1: 'Invalid Mobile',
-        text2: 'Please enter valid 10-digit mobile number',
-        position: 'top',
-      });
+      setErrors(prev => ({
+        ...prev,
+        mobileNumber: 'Please enter valid 10-digit mobile number',
+      }));
       return;
     }
     if (
       field === 'email' &&
-      (!formData.emailAddress || !formData.emailAddress.includes('@'))
+      (!formData.emailAddress ||
+        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
     ) {
-      Toast.show({
-        type: 'error',
-        text1: 'Invalid Email',
-        text2: 'Please enter a valid email address',
-        position: 'top',
-      });
+      setErrors(prev => ({
+        ...prev,
+        emailAddress: 'Please enter a valid email address',
+      }));
       return;
     }
 
@@ -1218,7 +1207,7 @@ const GroupHospitalRegistrationForm = () => {
             <ArrowDown color="#999" />
           </TouchableOpacity>
           {errors.area && (
-            <AppText style={styles.errorText}>{errors.area}</AppText>
+            <AppText style={styles.errorTextDropdown}>{errors.area}</AppText>
           )}
         </View>
 
@@ -1248,7 +1237,7 @@ const GroupHospitalRegistrationForm = () => {
             <ArrowDown color="#999" />
           </TouchableOpacity>
           {errors.city && (
-            <AppText style={styles.errorText}>{errors.city}</AppText>
+            <AppText style={styles.errorTextDropdown}>{errors.city}</AppText>
           )}
         </View>
 
@@ -1278,7 +1267,7 @@ const GroupHospitalRegistrationForm = () => {
             <ArrowDown color="#999" />
           </TouchableOpacity>
           {errors.state && (
-            <AppText style={styles.errorText}>{errors.state}</AppText>
+            <AppText style={styles.errorTextDropdown}>{errors.state}</AppText>
           )}
         </View>
       </View>
@@ -2247,13 +2236,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   dropdownContainer: {
-    marginBottom: 16,
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   floatingLabel: {
     position: 'absolute',
-    top: -4,
+    top: -10,
     left: 12,
     backgroundColor: '#fff',
     paddingHorizontal: 4,
@@ -2262,7 +2250,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   asteriskPrimary: {
-    color: colors.primary,
+    color: "red",
+    fontSize:16
   },
   mandatoryIndicator: {
     fontSize: 16,
@@ -2275,6 +2264,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -12,
     marginBottom: 12,
+    marginLeft: 4,
+  },
+  errorTextDropdown: {
+    color: colors.error,
+    fontSize: 12,
+    // marginBottom: 12,
+    marginTop:2,
     marginLeft: 4,
   },
   uploadButton: {

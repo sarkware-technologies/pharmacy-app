@@ -461,22 +461,26 @@ const GovtHospitalRegistrationForm = () => {
   
   const handleVerify = async (field) => {
     // Validate field before verification
-    if (field === 'mobile' && (!formData.mobileNumber || formData.mobileNumber.length !== 10 || !/^[6789]\d{9}$/.test(formData.mobileNumber))) {
-      Toast.show({
-        type: 'error',
-        text1: 'Invalid Mobile',
-        text2: 'Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9',
-        position: 'top',
-      });
+    if (
+      field === 'mobile' &&
+      (!formData.mobileNumber ||
+        !/^[6-9]\d{9}$/.test(formData.mobileNumber))
+    ) {
+      setErrors(prev => ({
+        ...prev,
+        mobileNumber: 'Please enter valid 10-digit mobile number',
+      }));
       return;
     }
-    if (field === 'email' && (!formData.emailAddress || !formData.emailAddress.includes('@'))) {
-      Toast.show({
-        type: 'error',
-        text1: 'Invalid Email',
-        text2: 'Please enter a valid email address',
-        position: 'top',
-      });
+    if (
+      field === 'email' &&
+      (!formData.emailAddress ||
+        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
+    ) {
+      setErrors(prev => ({
+        ...prev,
+        emailAddress: 'Please enter a valid email address',
+      }));
       return;
     }
 
@@ -1330,7 +1334,7 @@ const GovtHospitalRegistrationForm = () => {
             </View>
             <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
-          {errors.area && <AppText style={styles.errorText}>{errors.area}</AppText>}
+          {errors.area && <AppText style={styles.errorTextDropdown}>{errors.area}</AppText>}
         </View>
 
         {/* City - Auto-populated from pincode */}
@@ -1354,7 +1358,7 @@ const GovtHospitalRegistrationForm = () => {
             </View>
             <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
-          {errors.cityId && <AppText style={styles.errorText}>{errors.cityId}</AppText>}
+          {errors.cityId && <AppText style={styles.errorTextDropdown}>{errors.cityId}</AppText>}
         </View>
 
         {/* State - Auto-populated from pincode */}
@@ -1378,7 +1382,7 @@ const GovtHospitalRegistrationForm = () => {
             </View>
             <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
-          {errors.stateId && <AppText style={styles.errorText}>{errors.stateId}</AppText>}
+          {errors.stateId && <AppText style={styles.errorTextDropdown}>{errors.stateId}</AppText>}
         </View>
 
       </View>
@@ -2455,6 +2459,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginLeft: 4,
   },
+  errorTextDropdown: {
+      color: colors.error,
+      fontSize: 12,
+      // marginBottom: 12,
+      marginLeft: 4,
+    },
   uploadButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2474,7 +2484,7 @@ const styles = StyleSheet.create({
   },
   floatingLabel: {
     position: 'absolute',
-    top: -6,
+    top: -10,
     left: 12,
     fontSize: 12,
     fontWeight: '500',
@@ -3380,7 +3390,8 @@ const styles = StyleSheet.create({
     color: colors.primary
   },
   asteriskPrimary: {
-    color: colors.primary,
+    color: "red",
+    fontSize:16
   }
 });
 

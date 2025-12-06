@@ -448,17 +448,11 @@ useEffect(() => {
 
   const handleVerify = async field => {
     // Validate the field before showing OTP
-    if (
+     if (
       field === 'mobile' &&
-      (!formData.mobileNumber || formData.mobileNumber.length !== 10)
+      (!formData.mobileNumber ||
+        !/^[6-9]\d{9}$/.test(formData.mobileNumber))
     ) {
-      setErrors(prev => ({
-        ...prev,
-        mobileNumber: 'Please enter valid 10-digit mobile number',
-      }));
-      return;
-    }
-    if (field === 'mobile' && !/^[6-9]/.test(formData.mobileNumber)) {
       setErrors(prev => ({
         ...prev,
         mobileNumber: 'Please enter valid 10-digit mobile number',
@@ -467,11 +461,12 @@ useEffect(() => {
     }
     if (
       field === 'email' &&
-      (!formData.emailAddress || !formData.emailAddress.includes('@'))
+      (!formData.emailAddress ||
+        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
     ) {
       setErrors(prev => ({
         ...prev,
-        emailAddress: 'Please enter valid email address',
+        emailAddress: 'Please enter a valid email address',
       }));
       return;
     }
@@ -1717,7 +1712,7 @@ useEffect(() => {
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.area && (
-                  <AppText style={styles.errorText}>{errors.area}</AppText>
+                  <AppText style={styles.errorTextDropdown}>{errors.area}</AppText>
                 )}
               </View>
 
@@ -1751,7 +1746,7 @@ useEffect(() => {
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.cityId && (
-                  <AppText style={styles.errorText}>{errors.cityId}</AppText>
+                  <AppText style={styles.errorTextDropdown}>{errors.cityId}</AppText>
                 )}
               </View>
 
@@ -1785,7 +1780,7 @@ useEffect(() => {
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.stateId && (
-                  <AppText style={styles.errorText}>{errors.stateId}</AppText>
+                  <AppText style={styles.errorTextDropdown}>{errors.stateId}</AppText>
                 )}
               </View>
             </View>
@@ -2769,7 +2764,7 @@ const styles = StyleSheet.create({
   },
   floatingLabel: {
     position: 'absolute',
-    top: -6,
+    top: -10,
     left: 12,
     fontSize: 12,
     fontWeight: '500',
@@ -2848,6 +2843,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -12,
     marginBottom: 12,
+    marginLeft: 4,
+  },
+  errorTextDropdown: {
+    color: colors.error,
+    fontSize: 12,
+    marginTop:2,
+    // marginBottom: 12,
     marginLeft: 4,
   },
   otpContainer: {
@@ -3459,7 +3461,8 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   asteriskPrimary: {
-    color: colors.primary,
+    color: "red",
+    fontSize:16
   },
 });
 
