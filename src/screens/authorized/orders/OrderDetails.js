@@ -313,31 +313,40 @@ const OrderDetailsScreen = () => {
   }
 
   const handleUpdatecomment = () => {
-    const commentObj = {
-      createdAt: new Date().toISOString(),
-      comment,
-      userName: loggedInUser?.name,
-      userId: loggedInUser?.id,
-      productId: showComment?.productId,
-    };
+    if (comment && showComment && comment.trim() !== "") {
+      const commentObj = {
+        createdAt: new Date().toISOString(),
+        comment,
+        userName: loggedInUser?.name,
+        userId: loggedInUser?.id,
+        productId: showComment?.productId,
+      };
 
-    setProductList(prev => {
-      const updatedList = prev.map(item => {
-        if (item.productId != showComment?.productId) {
-          return item;
-        }
+      setProductList(prev => {
+        const updatedList = prev.map(item => {
+          if (item.productId != showComment?.productId) {
+            return item;
+          }
 
-        return {
-          ...item,
-          comments: [...(item.comments || []), commentObj],
-        };
+          return {
+            ...item,
+            comments: [...(item.comments || []), commentObj],
+          };
+        });
+
+        saveDraft(updatedList);
+        return updatedList;
       });
-
-      saveDraft(updatedList);
-      return updatedList;
-    });
-    setShowComment(null);
-    setComment("");
+      setShowComment(null);
+      setComment("");
+    }
+    else {
+      Toast.show({
+        type: 'error',
+        text1: 'Comment is empty',
+        text2: 'Please enter a valid comment',
+      });
+    }
   }
 
 
