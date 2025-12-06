@@ -1076,6 +1076,14 @@ const PrivateRegistrationForm = () => {
     setShowCancelModal(true);
   };
 
+   const formatDateForAPI = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    // Add time component to avoid timezone issues
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
+  };
+
   const getCustomerGroupId = groupName => {
     // If we have customer groups from API, use them
     if (customerGroups && customerGroups.length > 0) {
@@ -1146,9 +1154,7 @@ const PrivateRegistrationForm = () => {
             {
               licenceTypeId: licenseTypes.REGISTRATION?.id || 7, // Use dynamic license type ID
               licenceNo: formData.registrationNumber,
-              licenceValidUpto: new Date(
-                new Date().setFullYear(new Date().getFullYear() + 1),
-              ).toISOString(), // 1 year validity
+              licenceValidUpto:formatDateForAPI(formData.registrationDate)
             },
           ],
         },

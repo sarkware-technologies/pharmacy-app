@@ -1045,6 +1045,14 @@ const DoctorRegistrationForm = () => {
     return { address1: '', address2: '', address3: '' };
   };
 
+
+  const formatDateForAPI = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    // Add time component to avoid timezone issues
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
+  };
   const handleLicenseOcrData = async (ocrData) => {
     console.log('OCR Data Received:', ocrData);
 
@@ -1254,12 +1262,12 @@ const DoctorRegistrationForm = () => {
             {
               licenceTypeId: licenseTypes.CLINIC_REGISTRATION?.id || 6,
               licenceNo: formData.clinicRegistrationNumber,
-              licenceValidUpto: formData.clinicRegistrationDate,
+              licenceValidUpto: formatDateForAPI(formData.clinicRegistrationDate),
             },
             {
               licenceTypeId: licenseTypes.PRACTICE_LICENSE?.id || 7,
               licenceNo: formData.practiceLicenseNumber,
-              licenceValidUpto: formData.practiceLicenseDate,
+              licenceValidUpto: formatDateForAPI(formData.practiceLicenseDate),
             },
           ],
         },

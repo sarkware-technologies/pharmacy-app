@@ -488,6 +488,14 @@ const [showStateModal, setShowStateModal] = useState(false);
     }
   };
 
+   const formatDateForAPI = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    // Add time component to avoid timezone issues
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
+  };
+
   const handleOtpChange = (field, index, value) => {
     if (value.length <= 1 && /^\d*$/.test(value)) {
       const newOtpValues = { ...otpValues };
@@ -856,12 +864,12 @@ const [showStateModal, setShowStateModal] = useState(false);
             {
               licenceTypeId: licenseTypes.LICENSE_20B?.id || 2,
               licenceNo: formData.license20b,
-              licenceValidUpto: formData.license20bExpiryDate,
+              licenceValidUpto: formatDateForAPI(formData.license20bExpiryDate),
             },
             {
               licenceTypeId: licenseTypes.LICENSE_21B?.id || 4,
               licenceNo: formData.license21b,
-              licenceValidUpto: formData.license21bExpiryDate,
+              licenceValidUpto: formatDateForAPI(formData.license21bExpiryDate),
             },
           ],
         },

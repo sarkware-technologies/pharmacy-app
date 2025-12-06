@@ -720,7 +720,13 @@ const GroupHospitalRegistrationForm = () => {
       </Modal>
     );
   };
-
+ const formatDateForAPI = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    // Add time component to avoid timezone issues
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
+  };
   const validateForm = () => {
     const newErrors = {};
 
@@ -869,9 +875,7 @@ const GroupHospitalRegistrationForm = () => {
             {
               licenceTypeId: 7,
               licenceNo: formData.registrationNumber,
-              licenceValidUpto: new Date(
-                new Date().setFullYear(new Date().getFullYear() + 1),
-              ).toISOString(),
+              licenceValidUpto: formatDateForAPI(formData.registrationDate)
             },
           ],
         },

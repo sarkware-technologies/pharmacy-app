@@ -24,6 +24,7 @@ import { AppText, AppInput } from "../../../components";
 import Calendar from '../../../components/icons/Calendar';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
+import { formatPrice } from '../../../utils/getInitials';
 
 const DOC_TYPES = {
   LICENSE_20B: 3,
@@ -33,11 +34,9 @@ const DOC_TYPES = {
   GST: 2,
 };
 
-// Default license types (will be overridden by API)
-const DEFAULT_LICENSE_TYPES = {
-  LICENSE_20B: { id: 1, docTypeId: 3, name: '20B', code: 'LIC20B' },
-  LICENSE_21B: { id: 3, docTypeId: 5, name: '21B', code: 'LIC21B' },
-};
+
+
+
 
 const MOCK_AREAS = [
   { id: 0, name: 'Vadgaonsheri' },
@@ -51,6 +50,14 @@ const MOCK_AREAS = [
 const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorName, parentHospital = null }) => {
   const [pharmacyForm, setPharmacyForm] = useState({
     licenseType: 'Only Retail', // 'Only Retail', 'Only Wholesaler', 'Retail Cum Wholesaler'
+    licenseTypeId: 1,
+    license20: '',
+    license20File: null,
+    license20ExpiryDate: '',
+    license21: '',
+    license21File: null,
+    license21ExpiryDate: '',
+
     license20b: '',
     license20bFile: null,
     license20bExpiryDate: '',
@@ -97,7 +104,14 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
   });
 
   // License types state
-  const [licenseTypes, setLicenseTypes] = useState(DEFAULT_LICENSE_TYPES);
+  const [licenseTypes, setLicenseTypes] = useState({
+    LICENSE_20: { id: 1, docTypeId: 3, name: '20', code: 'LIC20' },
+    LICENSE_21: { id: 3, docTypeId: 5, name: '21', code: 'LIC21' },
+    LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
+    LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
+  });
+
+
 
   // OTP verification states
   const [showOTP, setShowOTP] = useState({ mobile: false, email: false });
@@ -120,30 +134,49 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
 
   const fetchLicenseTypes = async () => {
     try {
-      const response = await customerAPI.getLicenseTypes(1, 1); // typeId: 1 (pharmacy), categoryId: 1 (Only Retail)
+      const response = await customerAPI.getLicenseTypes(1, pharmacyForm.licenseTypeId || 1); // typeId: 1 (pharmacy), categoryId: 1 (Only Retailer)
       if (response.success && response.data) {
+        console.log(response);
+
         const licenseData = {};
         response.data.forEach(license => {
           // Map the license codes to match what we expect
-          if (license.code === 'LIC20B' || license.name === '20B') {
-            licenseData.LICENSE_20B = {
+          // Note: The API might return different codes, so we map them appropriately
+          if (license.code === 'LIC20' || license.name === '20') {
+            licenseData.LICENSE_20 = {
               id: license.id,
               docTypeId: license.docTypeId,
               name: license.name,
               code: license.code,
             };
-          } else if (license.code === 'LIC21B' || license.name === '21B') {
-            licenseData.LICENSE_21B = {
+          } else if (license.code === 'LIC21' || license.name === '21') {
+            licenseData.LICENSE_21 = {
               id: license.id,
               docTypeId: license.docTypeId,
               name: license.name,
+              code: license.code,
+            };
+          } else if (license.code === 'LIC20B' || license.name === '20B') {
+            // If API returns 20B instead of 20, map it
+            licenseData.LICENSE_20 = {
+              id: license.id,
+              docTypeId: license.docTypeId,
+              name: '20', // Keep the display name as 20
+              code: license.code,
+            };
+          } else if (license.code === 'LIC21B' || license.name === '21B') {
+            // If API returns 21B instead of 21, map it
+            licenseData.LICENSE_21 = {
+              id: license.id,
+              docTypeId: license.docTypeId,
+              name: '21', // Keep the display name as 21
               code: license.code,
             };
           }
         });
 
         if (Object.keys(licenseData).length > 0) {
-          setLicenseTypes(licenseData);
+          setLicenseTypes(prev => ({ ...prev, ...licenseData }));
         }
       }
     } catch (error) {
@@ -152,17 +185,19 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
     }
   };
 
+
+
   useEffect(() => {
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pharmacyForm.licenseTypeId]);
 
   // Handle pincode change and trigger lookup
   const handlePincodeChange = async (text) => {
     if (/^\d{0,6}$/.test(text)) {
       setPharmacyForm(prev => ({ ...prev, pincode: text }));
       setPharmacyErrors(prev => ({ ...prev, pincode: null }));
-      
+
       // Clear previous selections when pincode changes
       if (text.length < 6) {
         setPharmacyForm(prev => ({
@@ -176,21 +211,21 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
         }));
         clearData();
       }
-      
+
       // Trigger lookup when pincode is complete (6 digits)
       if (text.length === 6) {
         await lookupByPincode(text);
       }
     }
   };
-  
+
   // Auto-populate city, state, and area when pincode lookup completes
   useEffect(() => {
     if (cities && cities.length > 0 && states && states.length > 0) {
       // Auto-select first city and state from lookup results
       const firstCity = cities[0];
       const firstState = states[0];
-      
+
       setPharmacyForm(prev => ({
         ...prev,
         city: firstCity.name,
@@ -199,7 +234,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
         stateId: firstState.id,
       }));
     }
-    
+
     // Auto-select first area (0th index) if available
     if (areas && areas.length > 0 && !pharmacyForm.area) {
       const firstArea = areas[0];
@@ -209,9 +244,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
         areaId: firstArea.id,
       }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cities, states, areas]);
-  
+
   // Legacy functions removed - cities and states now loaded via pincode lookup only
   const loadCitiesLegacy = async (stateId = null) => {
     // No-op kept for backward compatibility
@@ -223,6 +258,13 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
   const resetForm = () => {
     setPharmacyForm({
       licenseType: 'Only Retail',
+      licenseTypeId: 1,
+      license20: '',
+      license20File: null,
+      license20ExpiryDate: '',
+      license21: '',
+      license21File: null,
+      license21ExpiryDate: '',
       license20b: '',
       license20bFile: null,
       license20bExpiryDate: '',
@@ -497,25 +539,31 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
   }, [otpTimers, showOTP]);
 
   // Helper function to parse date string in DD/MM/YYYY format to ISO format
-  const parseDateToISO = (dateString) => {
-    if (!dateString) return new Date().toISOString();
-    try {
-      // Parse DD/MM/YYYY format
-      const parts = dateString.split('/');
-      if (parts.length === 3) {
-        const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-        const year = parseInt(parts[2], 10);
-        const date = new Date(year, month, day);
-        return date.toISOString();
-      }
-      return new Date().toISOString();
-    } catch (error) {
-      console.error('Error parsing date:', error);
-      return new Date().toISOString();
-    }
+  // const parseDateToISO = (dateString) => {
+  //   if (!dateString) return new Date().toISOString();
+  //   try {
+  //     // Parse DD/MM/YYYY format
+  //     const parts = dateString.split('/');
+  //     if (parts.length === 3) {
+  //       const day = parseInt(parts[0], 10);
+  //       const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+  //       const year = parseInt(parts[2], 10);
+  //       const date = new Date(year, month, day);
+  //       return date.toISOString();
+  //     }
+  //     return new Date().toISOString();
+  //   } catch (error) {
+  //     console.error('Error parsing date:', error);
+  //     return new Date().toISOString();
+  //   }
+  // };
+  const formatDateForAPI = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    // Add time component to avoid timezone issues
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
   };
-
   const handleSubmit = async () => {
     // Comprehensive validation
     const newErrors = {};
@@ -525,27 +573,57 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
       newErrors.licenseType = 'License type is required';
     }
 
-    // 20B License validation
-    if (!pharmacyForm.license20bFile && !documentIds.license20b) {
-      newErrors.license20bFile = '20 license document is required';
-    }
-    if (!pharmacyForm.license20b || pharmacyForm.license20b.trim() === '') {
-      newErrors.license20b = '20 license number is required';
-    }
-    if (!pharmacyForm.license20bExpiryDate || pharmacyForm.license20bExpiryDate.trim() === '') {
-      newErrors.license20bExpiryDate = '20 expiry date is required';
+
+  
+
+    if (pharmacyForm.licenseTypeId && pharmacyForm.licenseTypeId !== 2) {
+      // 20 License validation
+      if (!pharmacyForm.license20File && !documentIds.license20) {
+        newErrors.license20File = '20 license document is required';
+      }
+      if (!pharmacyForm.license20 || pharmacyForm.license20.trim() === '') {
+        newErrors.license20 = '20 license number is required';
+      }
+      if (!pharmacyForm.license20ExpiryDate || pharmacyForm.license20ExpiryDate.trim() === '') {
+        newErrors.license20ExpiryDate = '20 expiry date is required';
+      }
+
+      // 21 License validation
+      if (!pharmacyForm.license21File && !documentIds.license21) {
+        newErrors.license21File = '21 license document is required';
+      }
+      if (!pharmacyForm.license21 || pharmacyForm.license21.trim() === '') {
+        newErrors.license21 = '21 license number is required';
+      }
+      if (!pharmacyForm.license21ExpiryDate || pharmacyForm.license21ExpiryDate.trim() === '') {
+        newErrors.license21ExpiryDate = '21 expiry date is required';
+      }
     }
 
-    // 21B License validation
-    if (!pharmacyForm.license21bFile && !documentIds.license21b) {
-      newErrors.license21bFile = '21B license document is required';
+      if (pharmacyForm.licenseTypeId && pharmacyForm.licenseTypeId !== 1) {
+      // 20b License validation
+      if (!pharmacyForm.license20bFile && !documentIds.license20b) {
+        newErrors.license20bFile = '20 B license document is required';
+      }
+      if (!pharmacyForm.license20b || pharmacyForm.license20b.trim() === '') {
+        newErrors.license20b = '20 B license number is required';
+      }
+      if (!pharmacyForm.license20bExpiryDate || pharmacyForm.license20bExpiryDate.trim() === '') {
+        newErrors.license20bExpiryDate = '20 B expiry date is required';
+      }
+
+      // 21b License validation
+      if (!pharmacyForm.license21bFile && !documentIds.license21b) {
+        newErrors.license21bFile = '21 B license document is required';
+      }
+      if (!pharmacyForm.license21b || pharmacyForm.license21b.trim() === '') {
+        newErrors.license21b = '21 B license number is required';
+      }
+      if (!pharmacyForm.license21bExpiryDate || pharmacyForm.license21bExpiryDate.trim() === '') {
+        newErrors.license21bExpiryDate = '21 B expiry date is required';
+      }
     }
-    if (!pharmacyForm.license21b || pharmacyForm.license21b.trim() === '') {
-      newErrors.license21b = '21B license number is required';
-    }
-    if (!pharmacyForm.license21bExpiryDate || pharmacyForm.license21bExpiryDate.trim() === '') {
-      newErrors.license21bExpiryDate = '21B expiry date is required';
-    }
+
 
     // Pharmacy Image validation
     if (!pharmacyForm.pharmacyImageFile && !documentIds.pharmacyImage) {
@@ -651,50 +729,55 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
     setLoading(true);
 
     try {
-      // Determine categoryId and subCategoryId based on license type
-      let categoryId = 1;
-      let subCategoryId = 0;
-
-      if (pharmacyForm.licenseType === 'Only Retail') {
-        categoryId = 1;
-        subCategoryId = 0;
-      } else if (pharmacyForm.licenseType === 'Only Wholesaler') {
-        categoryId = 2;
-        subCategoryId = 0;
-      } else if (pharmacyForm.licenseType === 'Retail Cum Wholesaler') {
-        categoryId = 3;
-        subCategoryId = 0;
-      }
-
-      // Get license type IDs from fetched license types
-      const license20bTypeId = licenseTypes.LICENSE_20B?.id || 1;
-      const license21bTypeId = licenseTypes.LICENSE_21B?.id || 3;
-
-      console.log('Using license type IDs:', { license20bTypeId, license21bTypeId });
-      console.log('Payload details - typeId: 1, categoryId:', categoryId, 'subCategoryId:', subCategoryId);
-
+  
       // Prepare registration payload matching the API structure
       const registrationData = {
         typeId: 1,
-        categoryId: categoryId,
-        subCategoryId: subCategoryId,
+        categoryId: pharmacyForm.licenseTypeId,
+        subCategoryId: 0,
         isMobileVerified: verificationStatus.mobile,
         isEmailVerified: verificationStatus.email,
         isExisting: false,
         licenceDetails: {
           registrationDate: new Date().toISOString(),
           licence: [
-            {
-              licenceTypeId: license20bTypeId,
-              licenceNo: pharmacyForm.license20b,
-              licenceValidUpto: pharmacyForm.license20bExpiryDate ? parseDateToISO(pharmacyForm.license20bExpiryDate) : new Date().toISOString(),
-            },
-            {
-              licenceTypeId: license21bTypeId,
-              licenceNo: pharmacyForm.license21b,
-              licenceValidUpto: pharmacyForm.license21bExpiryDate ? parseDateToISO(pharmacyForm.license21bExpiryDate) : new Date().toISOString(),
-            }
+            // Add 20 & 21 only if licenseTypeId is NOT 2
+            ...(pharmacyForm.licenseTypeId !== 2
+              ? [
+                {
+                  licenceTypeId: licenseTypes.LICENSE_20?.id || 1,
+                  licenceNo: pharmacyForm.license20,
+                  licenceValidUpto: formatDateForAPI(pharmacyForm.license20ExpiryDate)
+                   
+                },
+                {
+                  licenceTypeId: licenseTypes.LICENSE_21?.id || 3,
+                  licenceNo: pharmacyForm.license21,
+                  licenceValidUpto: formatDateForAPI(pharmacyForm.license21ExpiryDate)
+                    
+                },
+              ]
+              : []),
+
+            // Add 20B & 21B only if licenseTypeId is NOT 1
+            ...(pharmacyForm.licenseTypeId !== 1
+              ? [
+                {
+                  licenceTypeId: licenseTypes.LICENSE_20B?.id || 2,
+                  licenceNo: pharmacyForm.license20b,
+                  licenceValidUpto: formatDateForAPI(pharmacyForm.license20bExpiryDate)
+                 
+                },
+                {
+                  licenceTypeId: licenseTypes.LICENSE_21B?.id || 4,
+                  licenceNo: pharmacyForm.license21b,
+                  licenceValidUpto: formatDateForAPI(pharmacyForm.license21bExpiryDate)
+                  
+                },
+              ]
+              : []),
           ]
+
         },
         customerDocs: uploadedDocs,
         isBuyer: true,
@@ -725,10 +808,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           distributorName: '',
           city: ''
         }],
-         isChildCustomer:true
+        isChildCustomer: true
       };
 
       console.log('Pharmacy registration payload:', registrationData);
+      console.log(pharmacyForm);
+      
       console.log('=== Calling API: customerAPI.createCustomer ===');
 
       const response = await customerAPI.createCustomer(registrationData);
@@ -766,7 +851,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           position: 'top',
         });
       }
-    } catch (error) {
+    }
+    
+    catch (error) {
       console.error('Pharmacy registration error:', error);
       Toast.show({
         type: 'error',
@@ -779,6 +866,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
     }
   };
 
+
+  console.log(pharmacyErrors);
+  
   return (
     <Modal
       visible={visible}
@@ -803,7 +893,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             <View style={styles.radioRow}>
               <TouchableOpacity
                 style={styles.radioOption}
-                onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Only Retail' }))}
+                onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Only Retail', licenseTypeId: 1 }))}
               >
                 <View style={[styles.radioCircle, pharmacyForm.licenseType === 'Only Retail' && styles.radioCircleSelected]}>
                   {pharmacyForm.licenseType === 'Only Retail' && <View style={styles.radioInnerCircle} />}
@@ -812,7 +902,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.radioOption}
-                onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Only Wholesaler' }))}
+                onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Only Wholesaler', licenseTypeId: 2 }))}
               >
                 <View style={[styles.radioCircle, pharmacyForm.licenseType === 'Only Wholesaler' && styles.radioCircleSelected]}>
                   {pharmacyForm.licenseType === 'Only Wholesaler' && <View style={styles.radioInnerCircle} />}
@@ -822,7 +912,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             </View>
             <TouchableOpacity
               style={styles.radioOption}
-              onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Retail Cum Wholesaler' }))}
+              onPress={() => setPharmacyForm(prev => ({ ...prev, licenseType: 'Retail Cum Wholesaler', licenseTypeId: 3 }))}
             >
               <View style={[styles.radioCircle, pharmacyForm.licenseType === 'Retail Cum Wholesaler' && styles.radioCircleSelected]}>
                 {pharmacyForm.licenseType === 'Retail Cum Wholesaler' && <View style={styles.radioInnerCircle} />}
@@ -831,139 +921,321 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             </TouchableOpacity>
           </View>
 
-          {/* 20B License */}
-          <View style={styles.labelWithIcon}>
-            <AppText style={styles.fieldLabel}>20<AppText style={styles.mandatory}>*</AppText></AppText>
-            <Icon
-              name="info-outline"
-              size={16}
-              color={colors.textSecondary}
-            />
-          </View>
-          <FileUploadComponent
-            placeholder="Upload 20 license"
-            accept={['pdf', 'jpg', 'png']}
-            maxSize={15 * 1024 * 1024}
-            docType={DOC_TYPES.LICENSE_20B}
-            initialFile={pharmacyForm.license20bFile}
-            onFileUpload={(file) => handleFileUpload('license20b', file)}
-            onFileDelete={() => handleFileDelete('license20b')}
-            errorMessage={pharmacyErrors.license20bFile}
-            onOcrDataExtracted={async (ocrData) => {
-              console.log('License OCR Data:', ocrData);
-              
-              // Helper function to split address
-              const splitAddress = (address) => {
-                if (!address) return { address1: '', address2: '', address3: '' };
-                const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
-                if (parts.length >= 3) {
-                  return {
-                    address1: parts[0],
-                    address2: parts.slice(1, -1).join(', '),
-                    address3: parts[parts.length - 1],
+
+          {pharmacyForm.licenseTypeId !== 2 && (
+
+            <>
+              {/* 20 License */}
+              <View style={styles.labelWithIcon}>
+                <AppText style={styles.fieldLabel}>20<AppText style={styles.mandatory}>*</AppText></AppText>
+                <Icon
+                  name="info-outline"
+                  size={16}
+                  color={colors.textSecondary}
+                />
+              </View>
+              <FileUploadComponent
+                placeholder="Upload 20 license"
+                accept={['pdf', 'jpg', 'png']}
+                maxSize={15 * 1024 * 1024}
+                docType={licenseTypes.LICENSE_20?.docTypeId || 3}
+                initialFile={pharmacyForm.license20File}
+                onFileUpload={(file) => handleFileUpload('license20', file)}
+                onFileDelete={() => handleFileDelete('license20')}
+                errorMessage={pharmacyErrors.license20File}
+                onOcrDataExtracted={async (ocrData) => {
+                  console.log('License OCR Data:', ocrData);
+
+                  // Helper function to split address
+                  const splitAddress = (address) => {
+                    if (!address) return { address1: '', address2: '', address3: '' };
+                    const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
+                    if (parts.length >= 3) {
+                      return {
+                        address1: parts[0],
+                        address2: parts.slice(1, -1).join(', '),
+                        address3: parts[parts.length - 1],
+                      };
+                    } else if (parts.length === 2) {
+                      return { address1: parts[0], address2: parts[1], address3: '' };
+                    } else if (parts.length === 1) {
+                      const addr = parts[0];
+                      if (addr.length > 100) {
+                        return {
+                          address1: addr.substring(0, 50).trim(),
+                          address2: addr.substring(50, 100).trim(),
+                          address3: addr.substring(100).trim(),
+                        };
+                      } else if (addr.length > 50) {
+                        return {
+                          address1: addr.substring(0, 50).trim(),
+                          address2: addr.substring(50).trim(),
+                          address3: '',
+                        };
+                      } else {
+                        return { address1: addr, address2: '', address3: '' };
+                      }
+                    }
+                    return { address1: '', address2: '', address3: '' };
                   };
-                } else if (parts.length === 2) {
-                  return { address1: parts[0], address2: parts[1], address3: '' };
-                } else if (parts.length === 1) {
-                  const addr = parts[0];
-                  if (addr.length > 100) {
-                    return {
-                      address1: addr.substring(0, 50).trim(),
-                      address2: addr.substring(50, 100).trim(),
-                      address3: addr.substring(100).trim(),
-                    };
-                  } else if (addr.length > 50) {
-                    return {
-                      address1: addr.substring(0, 50).trim(),
-                      address2: addr.substring(50).trim(),
-                      address3: '',
-                    };
-                  } else {
-                    return { address1: addr, address2: '', address3: '' };
+
+                  const updates = {};
+
+                  // Populate pharmacy name if available
+                  if (ocrData.pharmacyName && !pharmacyForm.pharmacyName) {
+                    updates.pharmacyName = ocrData.pharmacyName;
                   }
-                }
-                return { address1: '', address2: '', address3: '' };
-              };
-              
-              const updates = {};
-              
-              // Populate pharmacy name if available
-              if (ocrData.pharmacyName && !pharmacyForm.pharmacyName) {
-                updates.pharmacyName = ocrData.pharmacyName;
-              }
-              
-              // Split and populate address fields
-              if (ocrData.address) {
-                const addressParts = splitAddress(ocrData.address);
-                if (!pharmacyForm.address1 && addressParts.address1) {
-                  updates.address1 = addressParts.address1;
-                }
-                if (!pharmacyForm.address2 && addressParts.address2) {
-                  updates.address2 = addressParts.address2;
-                }
-                if (!pharmacyForm.address3 && addressParts.address3) {
-                  updates.address3 = addressParts.address3;
-                }
-              }
-              
-              // Populate license number if available
-              if (ocrData.licenseNumber && !pharmacyForm.license20b) {
-                updates.license20b = ocrData.licenseNumber;
-              }
-              
-              // Populate expiry date if available
-              if (ocrData.expiryDate) {
-                const parts = ocrData.expiryDate.split('-');
-                if (parts.length === 3) {
-                  const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                  if (!pharmacyForm.license20bExpiryDate) {
-                    updates.license20bExpiryDate = formattedDate;
+
+                  // Split and populate address fields
+                  if (ocrData.address) {
+                    const addressParts = splitAddress(ocrData.address);
+                    if (!pharmacyForm.address1 && addressParts.address1) {
+                      updates.address1 = addressParts.address1;
+                    }
+                    if (!pharmacyForm.address2 && addressParts.address2) {
+                      updates.address2 = addressParts.address2;
+                    }
+                    if (!pharmacyForm.address3 && addressParts.address3) {
+                      updates.address3 = addressParts.address3;
+                    }
                   }
-                }
-              }
-              
-              // Populate pincode
-              if (ocrData.pincode && !pharmacyForm.pincode) {
-                updates.pincode = ocrData.pincode;
-              }
-              
-              if (Object.keys(updates).length > 0) {
-                setPharmacyForm(prev => ({ ...prev, ...updates }));
-                const errorUpdates = {};
-                Object.keys(updates).forEach(key => {
-                  errorUpdates[key] = null;
-                });
-                setPharmacyErrors(prev => ({ ...prev, ...errorUpdates }));
-              }
-              
-              // Trigger pincode lookup if pincode is available and valid (6 digits)
-              if (ocrData.pincode && /^\d{6}$/.test(ocrData.pincode)) {
-                await lookupByPincode(ocrData.pincode);
-              }
-            }}
-          />
+
+                  // Populate license number if available
+                  if (ocrData.licenseNumber && !pharmacyForm.license20) {
+                    updates.license20 = ocrData.licenseNumber;
+                  }
+
+                  // Populate expiry date if available
+                  if (ocrData.expiryDate) {
+                    const parts = ocrData.expiryDate.split('-');
+                    if (parts.length === 3) {
+                      const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                      if (!pharmacyForm.license20ExpiryDate) {
+                        updates.license20ExpiryDate = formattedDate;
+                      }
+                    }
+                  }
+
+                  // Populate pincode
+                  if (ocrData.pincode && !pharmacyForm.pincode) {
+                    updates.pincode = ocrData.pincode;
+                  }
+
+                  if (Object.keys(updates).length > 0) {
+                    setPharmacyForm(prev => ({ ...prev, ...updates }));
+                    const errorUpdates = {};
+                    Object.keys(updates).forEach(key => {
+                      errorUpdates[key] = null;
+                    });
+                    setPharmacyErrors(prev => ({ ...prev, ...errorUpdates }));
+                  }
+
+                  // Trigger pincode lookup if pincode is available and valid (6 digits)
+                  if (ocrData.pincode && /^\d{6}$/.test(ocrData.pincode)) {
+                    await lookupByPincode(ocrData.pincode);
+                  }
+                }}
+              />
+              <CustomInput
+                placeholder="Drug license number"
+                value={pharmacyForm.license20}
+                onChangeText={(text) => {
+                  setPharmacyForm(prev => ({ ...prev, license20: text }));
+                  if (pharmacyErrors.license20) {
+                    setPharmacyErrors(prev => ({ ...prev, license20: null }));
+                  }
+                }}
+                mandatory={true}
+                error={pharmacyErrors.license20}
+              />
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={pharmacyForm.license20ExpiryDate}
+                error={pharmacyErrors.license20ExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setPharmacyForm(prev => ({ ...prev, license20ExpiryDate: date }));
+                  setPharmacyErrors(prev => ({ ...prev, license20ExpiryDate: null }));
+                }}
+              />
 
 
-          <CustomInput
-            placeholder="Drug license number"
-            value={pharmacyForm.license20b}
-            onChangeText={(text) => {
-              setPharmacyForm(prev => ({ ...prev, license20b: text }));
-              if (pharmacyErrors.license20b) {
-                setPharmacyErrors(prev => ({ ...prev, license20b: null }));
-              }
-            }}
-            mandatory={true}
-            error={pharmacyErrors.license20b}
-          />
+              {/* 21 License */}
+              <View style={[styles.labelWithIcon, styles.sectionTopSpacing]}>
+                <AppText style={styles.fieldLabel}>21<AppText style={styles.mandatory}>*</AppText></AppText>
+                <Icon
+                  name="info-outline"
+                  size={16}
+                  color={colors.textSecondary}
+                />
+              </View>
+              <FileUploadComponent
+                placeholder="Upload 21 license"
+                accept={['pdf', 'jpg', 'png']}
+                maxSize={15 * 1024 * 1024}
+                docType={licenseTypes.LICENSE_21?.docTypeId || 5}
+                initialFile={pharmacyForm.license21File}
+                onFileUpload={(file) => handleFileUpload('license21', file)}
+                onFileDelete={() => handleFileDelete('license21')}
+                errorMessage={pharmacyErrors.license21File}
+              />
+
+              <CustomInput
+                placeholder="Drug license number"
+                value={pharmacyForm.license21}
+                onChangeText={(text) => {
+                  setPharmacyForm(prev => ({ ...prev, license21: text }));
+                  if (pharmacyErrors.license21) {
+                    setPharmacyErrors(prev => ({ ...prev, license21: null }));
+                  }
+                }}
+                mandatory={true}
+                error={pharmacyErrors.license21}
+              />
+              <FloatingDateInput
+                label="Expiry Date"
+                mandatory={true}
+                value={pharmacyForm.license21ExpiryDate}
+                error={pharmacyErrors.license21ExpiryDate}
+                minimumDate={new Date()}    // If future date only (optional)
+                onChange={(date) => {
+                  setPharmacyForm(prev => ({ ...prev, license21ExpiryDate: date }));
+                  setPharmacyErrors(prev => ({ ...prev, license21ExpiryDate: null }));
+                }}
+              />
+            </>
+
+          )}
 
 
+           {pharmacyForm.licenseTypeId !== 1 && (
 
+            <>
+              {/* 20b License */}
+              <View style={styles.labelWithIcon}>
+                <AppText style={styles.fieldLabel}>20B<AppText style={styles.mandatory}>*</AppText></AppText>
+                <Icon
+                  name="info-outline"
+                  size={16}
+                  color={colors.textSecondary}
+                />
+              </View>
+              <FileUploadComponent
+                placeholder="Upload 20B license"
+                accept={['pdf', 'jpg', 'png']}
+                maxSize={15 * 1024 * 1024}
+                docType={licenseTypes.LICENSE_20B?.docTypeId || 4}
+                initialFile={pharmacyForm.license20bFile}
+                onFileUpload={(file) => handleFileUpload('license20b', file)}
+                onFileDelete={() => handleFileDelete('license20b')}
+                errorMessage={pharmacyErrors.license20bFile}
+                onOcrDataExtracted={async (ocrData) => {
+                  console.log('License OCR Data:', ocrData);
 
-         
+                  // Helper function to split address
+                  const splitAddress = (address) => {
+                    if (!address) return { address1: '', address2: '', address3: '' };
+                    const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
+                    if (parts.length >= 3) {
+                      return {
+                        address1: parts[0],
+                        address2: parts.slice(1, -1).join(', '),
+                        address3: parts[parts.length - 1],
+                      };
+                    } else if (parts.length === 2) {
+                      return { address1: parts[0], address2: parts[1], address3: '' };
+                    } else if (parts.length === 1) {
+                      const addr = parts[0];
+                      if (addr.length > 100) {
+                        return {
+                          address1: addr.substring(0, 50).trim(),
+                          address2: addr.substring(50, 100).trim(),
+                          address3: addr.substring(100).trim(),
+                        };
+                      } else if (addr.length > 50) {
+                        return {
+                          address1: addr.substring(0, 50).trim(),
+                          address2: addr.substring(50).trim(),
+                          address3: '',
+                        };
+                      } else {
+                        return { address1: addr, address2: '', address3: '' };
+                      }
+                    }
+                    return { address1: '', address2: '', address3: '' };
+                  };
 
+                  const updates = {};
 
- <FloatingDateInput
+                  // Populate pharmacy name if available
+                  if (ocrData.pharmacyName && !pharmacyForm.pharmacyName) {
+                    updates.pharmacyName = ocrData.pharmacyName;
+                  }
+
+                  // Split and populate address fields
+                  if (ocrData.address) {
+                    const addressParts = splitAddress(ocrData.address);
+                    if (!pharmacyForm.address1 && addressParts.address1) {
+                      updates.address1 = addressParts.address1;
+                    }
+                    if (!pharmacyForm.address2 && addressParts.address2) {
+                      updates.address2 = addressParts.address2;
+                    }
+                    if (!pharmacyForm.address3 && addressParts.address3) {
+                      updates.address3 = addressParts.address3;
+                    }
+                  }
+
+                  // Populate license number if available
+                  if (ocrData.licenseNumber && !pharmacyForm.license20b) {
+                    updates.license20b = ocrData.licenseNumber;
+                  }
+
+                  // Populate expiry date if available
+                  if (ocrData.expiryDate) {
+                    const parts = ocrData.expiryDate.split('-');
+                    if (parts.length === 3) {
+                      const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                      if (!pharmacyForm.license20bExpiryDate) {
+                        updates.license20bExpiryDate = formattedDate;
+                      }
+                    }
+                  }
+
+                  // Populate pincode
+                  if (ocrData.pincode && !pharmacyForm.pincode) {
+                    updates.pincode = ocrData.pincode;
+                  }
+
+                  if (Object.keys(updates).length > 0) {
+                    setPharmacyForm(prev => ({ ...prev, ...updates }));
+                    const errorUpdates = {};
+                    Object.keys(updates).forEach(key => {
+                      errorUpdates[key] = null;
+                    });
+                    setPharmacyErrors(prev => ({ ...prev, ...errorUpdates }));
+                  }
+
+                  // Trigger pincode lookup if pincode is available and valid (6 digits)
+                  if (ocrData.pincode && /^\d{6}$/.test(ocrData.pincode)) {
+                    await lookupByPincode(ocrData.pincode);
+                  }
+                }}
+              />
+              <CustomInput
+                placeholder="Drug license number"
+                value={pharmacyForm.license20b}
+                onChangeText={(text) => {
+                  setPharmacyForm(prev => ({ ...prev, license20b: text }));
+                  if (pharmacyErrors.license20b) {
+                    setPharmacyErrors(prev => ({ ...prev, license20b: null }));
+                  }
+                }}
+                mandatory={true}
+                error={pharmacyErrors.license20b}
+              />
+              <FloatingDateInput
                 label="Expiry Date"
                 mandatory={true}
                 value={pharmacyForm.license20bExpiryDate}
@@ -974,39 +1246,41 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
                   setPharmacyErrors(prev => ({ ...prev, license20bExpiryDate: null }));
                 }}
               />
-          {/* 21B License */}
-          <View style={[styles.labelWithIcon, styles.sectionTopSpacing]}>
-            <AppText style={styles.fieldLabel}>21<AppText style={styles.mandatory}>*</AppText></AppText>
-            <Icon
-              name="info-outline"
-              size={16}
-              color={colors.textSecondary}
-            />
-          </View>
-          <FileUploadComponent
-            placeholder="Upload 21 license"
-            accept={['pdf', 'jpg', 'png']}
-            maxSize={15 * 1024 * 1024}
-            docType={DOC_TYPES.LICENSE_21B}
-            initialFile={pharmacyForm.license21bFile}
-            onFileUpload={(file) => handleFileUpload('license21b', file)}
-            onFileDelete={() => handleFileDelete('license21b')}
-            errorMessage={pharmacyErrors.license21bFile}
-          />
 
-          <CustomInput
-            placeholder="Drug license number"
-            value={pharmacyForm.license21b}
-            onChangeText={(text) => {
-              setPharmacyForm(prev => ({ ...prev, license21b: text }));
-              if (pharmacyErrors.license21b) {
-                setPharmacyErrors(prev => ({ ...prev, license21b: null }));
-              }
-            }}
-            mandatory={true}
-            error={pharmacyErrors.license21b}
-          />
-           <FloatingDateInput
+
+              {/* 21 License */}
+              <View style={[styles.labelWithIcon, styles.sectionTopSpacing]}>
+                <AppText style={styles.fieldLabel}>21B<AppText style={styles.mandatory}>*</AppText></AppText>
+                <Icon
+                  name="info-outline"
+                  size={16}
+                  color={colors.textSecondary}
+                />
+              </View>
+              <FileUploadComponent
+                placeholder="Upload 21B license"
+                accept={['pdf', 'jpg', 'png']}
+                maxSize={15 * 1024 * 1024}
+                docType={licenseTypes.LICENSE_21B?.docTypeId || 6}
+                initialFile={pharmacyForm.license21bFile}
+                onFileUpload={(file) => handleFileUpload('license21b', file)}
+                onFileDelete={() => handleFileDelete('license21b')}
+                errorMessage={pharmacyErrors.license21bFile}
+              />
+
+              <CustomInput
+                placeholder="Drug license number"
+                value={pharmacyForm.license21b}
+                onChangeText={(text) => {
+                  setPharmacyForm(prev => ({ ...prev, license21b: text }));
+                  if (pharmacyErrors.license21b) {
+                    setPharmacyErrors(prev => ({ ...prev, license21b: null }));
+                  }
+                }}
+                mandatory={true}
+                error={pharmacyErrors.license21b}
+              />
+              <FloatingDateInput
                 label="Expiry Date"
                 mandatory={true}
                 value={pharmacyForm.license21bExpiryDate}
@@ -1017,6 +1291,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
                   setPharmacyErrors(prev => ({ ...prev, license21bExpiryDate: null }));
                 }}
               />
+            </>
+
+          )}
 
           {/* Pharmacy Image */}
           <AppText style={[styles.fieldLabel, styles.sectionTopSpacing]}>Pharmacy Image *</AppText>
@@ -1032,7 +1309,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
           />
 
 
-         
+
 
           {/* General Details */}
           <AppText style={styles.modalSectionLabel}>General Details <AppText style={styles.mandatory}>*</AppText></AppText>
@@ -1085,7 +1362,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
                   !part.match(/^\d{6}$/) && part.toLowerCase() !== 'india'
                 );
               });
-              
+
               // Update address fields only
               setPharmacyForm(prev => ({
                 ...prev,
@@ -1094,7 +1371,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
                 address3: filteredParts[2] || '',
                 address4: filteredParts.slice(3).join(', ') || '',
               }));
-              
+
               // Update pincode and trigger lookup (this will populate area, city, state)
               if (extractedPincode) {
                 setPharmacyForm(prev => ({ ...prev, pincode: extractedPincode }));
@@ -1102,7 +1379,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
                 // Trigger pincode lookup to populate area, city, state
                 await lookupByPincode(extractedPincode);
               }
-              
+
               setPharmacyErrors(prev => ({
                 ...prev,
                 address1: null,

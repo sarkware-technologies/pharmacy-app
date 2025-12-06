@@ -64,12 +64,15 @@ const handleDateChange = (event, selectedDate) => {
   // If user selects a date
   if (event.type === "set" && selectedDate) {
 
-    const year = selectedDate.getFullYear();
-    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-    const day = String(selectedDate.getDate()).padStart(2, '0');
+    // const year = selectedDate.getFullYear();
+    // const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    // const day = String(selectedDate.getDate()).padStart(2, '0');
 
-    const formattedDate = `${year}-${month}-${day}`;
-    onChange(formattedDate);
+    // const formattedDate = `${year}-${month}-${day}`;
+    // onChange(formattedDate);
+
+    const isoDate = selectedDate.toISOString();
+    onChange(isoDate);
 
     // Ensure label floats upward
     Animated.timing(floatingLabelAnim, {
@@ -93,16 +96,30 @@ const handleDateChange = (event, selectedDate) => {
     fontFamily: "Lato-Bold",
   };
 
- const parseToDate = (dateString) => {
-    if (!dateString) return new Date();
+const parseToDate = (dateString) => {  
+  if (!dateString) return new Date();
+  // ISO format (2025-12-22T00:00:00.000Z)
+  if (dateString.includes("T")) {
+    return new Date(dateString);
+  }
+  // DD/MM/YYYY support
+  if (dateString.includes("/")) {
+    const [day, month, year] = dateString.split("/");
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  }
+  return new Date();
+};
+const formatDisplayDate = (isoString) => {
+  if (!isoString) return "";
 
-    try {
-      const [day, month, year] = dateString.split("/");
-      return new Date(Number(year), Number(month) - 1, Number(day));
-    } catch (e) {
-      return new Date();
-    }
-  };
+  const date = new Date(isoString);
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+};
 
 
   return (
@@ -137,15 +154,15 @@ const handleDateChange = (event, selectedDate) => {
           activeOpacity={0.7}
           onPress={openPicker}
         >
- <AppText style={value ? styles.valueText : styles.placeholderText}>
-            {value || ""} {/* Already in DD/MM/YYYY */}
+          <AppText style={value ? styles.valueText : styles.placeholderText}>
+            {formatDisplayDate(value) || ""} {/* Already in DD/MM/YYYY */}
           </AppText>
         </TouchableOpacity>
 
         {/* Right Icon */}
-        <View style={styles.rightIcon}>
-          {rightComponent ? rightComponent : <CalendarIcon />}
-        </View>
+        <TouchableOpacity style={styles.rightIcon} onPress={openPicker}>
+  {rightComponent ? rightComponent : <CalendarIcon />}
+</TouchableOpacity>
       </View>
 
       {/* Error Message */}

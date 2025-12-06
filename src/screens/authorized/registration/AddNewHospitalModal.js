@@ -435,6 +435,14 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     setHospitalForm(prev => ({ ...prev, [`${field}File`]: null }));
   };
 
+    const formatDateForAPI = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    // Add time component to avoid timezone issues
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
+  };
+
   const handleClose = () => {
     resetForm();
     onClose();
@@ -577,7 +585,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             {
               licenceTypeId: 7,
               licenceNo: hospitalForm.registrationNumber,
-              licenceValidUpto: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+              licenceValidUpto: formatDateForAPI(hospitalForm.registrationDate),
             }
           ]
         },

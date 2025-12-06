@@ -511,23 +511,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
   };
 
   // Helper function to parse date string in DD/MM/YYYY format to ISO format
-  const parseDateToISO = (dateString) => {
-    if (!dateString) return new Date().toISOString();
-    try {
-      // Parse DD/MM/YYYY format
-      const parts = dateString.split('/');
-      if (parts.length === 3) {
-        const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-        const year = parseInt(parts[2], 10);
-        const date = new Date(year, month, day);
-        return date.toISOString();
-      }
-      return new Date().toISOString();
-    } catch (error) {
-      console.error('Error parsing date:', error);
-      return new Date().toISOString();
-    }
+  const formatDateForAPI = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    // Add time component to avoid timezone issues
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
   };
 
   const handleSubmit = async () => {
@@ -697,12 +686,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
             {
               licenceTypeId: 6,
               licenceNo: doctorForm.clinicRegistrationNumber,
-              licenceValidUpto: parseDateToISO(doctorForm.clinicRegistrationExpiryDate),
+              licenceValidUpto: formatDateForAPI(doctorForm.clinicRegistrationExpiryDate),
             },
             {
               licenceTypeId: 7,
               licenceNo: doctorForm.practiceLicenseNumber,
-              licenceValidUpto: parseDateToISO(doctorForm.practiceLicenseExpiryDate),
+              licenceValidUpto: formatDateForAPI(doctorForm.practiceLicenseExpiryDate),
             }
           ]
         },
