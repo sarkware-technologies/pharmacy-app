@@ -217,8 +217,8 @@ const FileUploadComponent = ({
 
     try {
       // Determine if OCR is required based on docType
-      // PAN = 7, GST = 2/8, License 20B = 4, License 21B = 6, Registration Certificate = 8, Clinic Registration = 10
-      const isOcrRequired = docType === 7 || docType === 2 || docType === 4 || docType === 6 || docType === 8 || docType === 10;
+      // PAN = 7, GST = 2/8, License 20B = 4, License 21B = 6, License 20 = 3, Registration Certificate = 8, Clinic Registration = 10
+      const isOcrRequired = docType === 7 || docType === 2 || docType === 3 || docType === 4 || docType === 6 || docType === 8 || docType === 10;
 
       // Create FormData
       const formData = new FormData();

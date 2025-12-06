@@ -735,8 +735,8 @@ const GroupHospitalRegistrationForm = () => {
       newErrors.registrationNumber = 'Registration number is required';
     }
 
-    if (!formData.registrationCertificate) {
-      newErrors.registrationCertificate =
+    if (!formData.registrationCertificateFile) {
+      newErrors.registrationCertificateFile =
         'Registration Certificate is required';
     }
     if (!formData.registrationDate) {
@@ -1019,13 +1019,13 @@ const GroupHospitalRegistrationForm = () => {
           accept={['pdf', 'jpg', 'png']}
           maxSize={15 * 1024 * 1024}
           docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
-          initialFile={formData.registrationCertificate}
+          initialFile={formData.registrationCertificateFile}
           onFileUpload={file =>
             handleFileUpload('registrationCertificate', file)
           }
           onFileDelete={() => handleFileDelete('registrationCertificate')}
           onOcrDataExtracted={handleRegistrationOcrData}
-          errorMessage={errors.registrationCertificate}
+          errorMessage={errors.registrationCertificateFile}
         />
 
         <CustomInput

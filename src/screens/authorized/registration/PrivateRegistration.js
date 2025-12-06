@@ -172,6 +172,7 @@ const PrivateRegistrationForm = () => {
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [customerGroups, setCustomerGroups] = useState([]);
+  const [uploadedAreas, setUploadedAreas] = useState([]); // For OCR-extracted areas
 
   // Pincode lookup hook
   const {
@@ -213,20 +214,25 @@ const PrivateRegistrationForm = () => {
   // Auto-populate city, state, and area when pincode lookup completes
   useEffect(() => {
     if (pincodeCities.length > 0 && pincodeStates.length > 0) {
-      // Auto-select first city and state from lookup results
+      // Auto-select first city and state from lookup results only if not already filled
       const firstCity = pincodeCities[0];
       const firstState = pincodeStates[0];
 
-      setFormData(prev => ({
-        ...prev,
-        city: firstCity.name,
-        cityId: firstCity.id,
-        state: firstState.name,
-        stateId: firstState.id,
-      }));
+      setFormData(prev => {
+        const updates = {};
+        if (!prev.city || !prev.cityId) {
+          updates.city = firstCity.name;
+          updates.cityId = firstCity.id;
+        }
+        if (!prev.state || !prev.stateId) {
+          updates.state = firstState.name;
+          updates.stateId = firstState.id;
+        }
+        return Object.keys(updates).length > 0 ? { ...prev, ...updates } : prev;
+      });
     }
 
-    // Auto-select first area (0th index) if available
+    // Auto-select first area (0th index) if available and not already filled
     if (areas.length > 0 && !formData.area) {
       const firstArea = areas[0];
       setFormData(prev => ({
@@ -693,37 +699,6 @@ const PrivateRegistrationForm = () => {
       console.error('Error loading license types:', error);
     }
 
-    try {
-      // Load states
-      setLoadingStates(true);
-      const statesResponse = await customerAPI.getStates();
-      if (
-        statesResponse.success &&
-        statesResponse.data &&
-        statesResponse.data.states
-      ) {
-        const _states = [];
-        for (let i = 0; i < statesResponse.data.states.length; i++) {
-          _states.push({
-            id: statesResponse.data.states[i].id,
-            name: statesResponse.data.states[i].stateName,
-          });
-        }
-        setStates(_states || []);
-      }
-    } catch (error) {
-      console.error('Error loading states:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to load states',
-        position: 'top',
-      });
-    } finally {
-      setLoadingStates(false);
-    }
-
-    // Note: Cities are now loaded via pincode lookup only
 
     try {
       // Load customer groups
@@ -735,10 +710,6 @@ const PrivateRegistrationForm = () => {
       console.error('Error loading customer groups:', error);
     }
   };
-
-  // Legacy functions removed - cities and states now loaded via pincode lookup only
-
-  // Legacy functions removed - cities and states now loaded via pincode lookup only
 
   // OTP Timer Effect
   useEffect(() => {
@@ -1521,9 +1492,68 @@ const PrivateRegistrationForm = () => {
                     }
                   }
                   
-                  // Populate pincode
-                  if (ocrData.pincode && !formData.pincode) {
-                    updates.pincode = ocrData.pincode;
+                  // -----------------------------
+                  //  🔥 DIRECTLY USE OCR LOCATION
+                  // -----------------------------
+                  const location = ocrData.locationDetails;
+
+                  if (location) {
+                    // Build CITIES (flat)
+                    const extractedCities = Array.isArray(location.cities)
+                      ? location.cities.map(c => ({
+                          id: c.value,
+                          name: c.label,
+                        }))
+                      : [];
+
+                    // Build STATES (flat)
+                    const extractedStates = Array.isArray(location.states)
+                      ? location.states.map(s => ({
+                          id: s.value,
+                          name: s.label,
+                          gstCode: s.gstCode,
+                        }))
+                      : [];
+
+                    // Build AREAS (take from first city)
+                    let extractedAreas = [];
+                    if (
+                      Array.isArray(location.cities) &&
+                      location.cities.length > 0 &&
+                      Array.isArray(location.cities[0].area)
+                    ) {
+                      extractedAreas = location.cities[0].area.map(a => ({
+                        id: a.value,
+                        name: a.label,
+                        cityId: location.cities[0].value,
+                      }));
+                    }
+
+                    // UPDATE STATE VALUES DIRECTLY (NO API CALL)
+                    setCities(extractedCities);
+                    setStates(extractedStates);
+                    if (extractedAreas.length > 0) setUploadedAreas(extractedAreas);
+
+                    // Set selected values if not already filled
+                    if (extractedCities.length > 0) {
+                      updates.city = extractedCities[0].name;
+                      updates.cityId = extractedCities[0].id;
+                    }
+
+                    if (extractedStates.length > 0) {
+                      updates.state = extractedStates[0].name;
+                      updates.stateId = extractedStates[0].id;
+                    }
+
+                    if (extractedAreas.length > 0) {
+                      updates.area = extractedAreas[0].name;
+                      updates.areaId = extractedAreas[0].id;
+                    }
+                  }
+
+                  // Pincode — use directly, no lookup
+                  if (ocrData.Pincode || ocrData.pincode) {
+                    updates.pincode = String(ocrData.Pincode || ocrData.pincode);
                   }
 
                   if (Object.keys(updates).length > 0) {
@@ -1535,9 +1565,9 @@ const PrivateRegistrationForm = () => {
                     setErrors(prev => ({ ...prev, ...errorUpdates }));
                   }
                   
-                  // Trigger pincode lookup if pincode is available and valid (6 digits)
-                  if (ocrData.pincode && /^\d{6}$/.test(ocrData.pincode)) {
-                    await lookupByPincode(ocrData.pincode);
+                  // Trigger pincode lookup if pincode is available and valid (6 digits) and locationDetails not available
+                  if (!location && (ocrData.pincode || ocrData.Pincode) && /^\d{6}$/.test(String(ocrData.pincode || ocrData.Pincode))) {
+                    await lookupByPincode(String(ocrData.pincode || ocrData.Pincode));
                   }
                 }}
                 errorMessage={errors.licenseFile}
@@ -1745,7 +1775,7 @@ const PrivateRegistrationForm = () => {
                           : styles.placeholderText
                       }
                     >
-                      Area
+                      {formData.area || 'Area'}
                     </AppText>
                     <AppText style={styles.inlineAsterisk}>*</AppText>
                   </View>
@@ -1779,7 +1809,7 @@ const PrivateRegistrationForm = () => {
                           : styles.placeholderText
                       }
                     >
-                      City
+                      {formData.city || 'City'}
                     </AppText>
                     <AppText style={styles.inlineAsterisk}>*</AppText>
                   </View>
@@ -1813,7 +1843,7 @@ const PrivateRegistrationForm = () => {
                           : styles.placeholderText
                       }
                     >
-                      State
+                      {formData.state || 'State'}
                     </AppText>
                     <AppText style={styles.inlineAsterisk}>*</AppText>
                   </View>
@@ -2571,7 +2601,13 @@ const PrivateRegistrationForm = () => {
         visible={showAreaModal}
         onClose={() => setShowAreaModal(false)}
         title="Select Area"
-        data={areas.map(area => ({ id: area.id, name: area.name }))}
+        data={
+          uploadedAreas && uploadedAreas.length > 0
+            ? uploadedAreas
+            : Array.isArray(areas)
+            ? areas.map(area => ({ id: area.id, name: area.name }))
+            : []
+        }
         selectedId={formData.areaId}
         onSelect={item => {
           setFormData(prev => ({
@@ -2583,51 +2619,43 @@ const PrivateRegistrationForm = () => {
         }}
         loading={pincodeLoading}
       />
-
-      {/* Area Dropdown Modal */}
-      <DropdownModal
-        visible={showAreaModal}
-        onClose={() => setShowAreaModal(false)}
-        title="Select Area"
-        data={areas.map(area => ({ id: area.id, name: area.name }))}
-        selectedId={formData.areaId}
-        onSelect={item => {
-          setFormData(prev => ({ ...prev, area: item.name, areaId: item.id }));
-          setErrors(prev => ({ ...prev, area: null }));
-        }}
-        loading={pincodeLoading}
-      />
+     
 
       {/* City Dropdown Modal */}
       <DropdownModal
         visible={showCityModal}
         onClose={() => setShowCityModal(false)}
         title="Select City"
-        data={pincodeCities.map(c => ({ id: c.id, name: c.name }))}
+        data={cities}
         selectedId={formData.cityId}
         onSelect={item => {
-          setFormData(prev => ({ ...prev, city: item.name, cityId: item.id }));
+          setFormData(prev => ({
+            ...prev,
+            cityId: item.id,
+            city: item.name,
+          }));
           setErrors(prev => ({ ...prev, cityId: null }));
         }}
-        loading={pincodeLoading}
+        loading={false}
       />
 
-      {/* State Dropdown Modal */}
+       {/* Dropdown Modals */}
       <DropdownModal
         visible={showStateModal}
         onClose={() => setShowStateModal(false)}
         title="Select State"
-        data={pincodeStates.map(s => ({ id: s.id, name: s.name }))}
+        data={states}
         selectedId={formData.stateId}
         onSelect={item => {
           setFormData(prev => ({
             ...prev,
-            state: item.name,
             stateId: item.id,
+            state: item.name,
+            // Don't reset city and cityId - allow independent selection
           }));
           setErrors(prev => ({ ...prev, stateId: null }));
         }}
-        loading={pincodeLoading}
+        loading={false}
       />
 
       {/* Cancel Confirmation Modal */}
