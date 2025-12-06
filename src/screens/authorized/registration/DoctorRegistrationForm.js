@@ -2428,11 +2428,11 @@ const DoctorRegistrationForm = () => {
                           ? [formData.selectedHospitals]
                           : [],
                         onSelect: hospitals => {
-                          setFormData(prev => ({
-                            ...prev,
-                            selectedHospitals: hospitals[0] || null,
-                          }));
-                        },
+                            setFormData(prev => ({
+                              ...prev,
+                              selectedHospitals: hospitals,
+                            }));
+                          },
                       });
                     }}
                     activeOpacity={0.7}
