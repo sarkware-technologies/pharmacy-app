@@ -85,10 +85,17 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
   const [uploadedDocs, setUploadedDocs] = useState([]);
 
   // Pincode lookup hook
-  const { areas, cities, states, loading: pincodeLoading, lookupByPincode, clearData } = usePincodeLookup();
+  const { areas: pincodeAreas, cities: pincodeCities, states: pincodeStates, loading: pincodeLoading, lookupByPincode, clearData } = usePincodeLookup();
+
+  // State for cities, states, and areas (can be from pincode lookup or OCR)
+  const [cities, setCities] = useState([]);
+  const [states, setStates] = useState([]);
+  const [uploadedAreas, setUploadedAreas] = useState([]); // For OCR-extracted areas
 
   // Modals for dropdowns
   const [showAreaModal, setShowAreaModal] = useState(false);
+  const [showCityModal, setShowCityModal] = useState(false);
+  const [showStateModal, setShowStateModal] = useState(false);
 
   // OTP states
   const [showOTP, setShowOTP] = useState({ mobile: false, email: false });
@@ -123,17 +130,27 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       setHospitalForm(prev => ({ ...prev, pincode: text }));
       setHospitalErrors(prev => ({ ...prev, pincode: null }));
 
-      // Clear previous selections when pincode changes
+      // If user is editing pincode manually, clear any OCR/upload-derived area list
+      if (uploadedAreas && uploadedAreas.length > 0) {
+        setUploadedAreas([]); // prefer manual lookup results from pincode
+      }
+
+      // Clear previous selections when pincode becomes incomplete
       if (text.length < 6) {
         setHospitalForm(prev => ({
           ...prev,
           area: '',
+          areaId: null,
           city: '',
           cityId: null,
           state: '',
           stateId: null,
         }));
         clearData();
+        // Clear local state arrays
+        setCities([]);
+        setStates([]);
+        return;
       }
 
       // Trigger lookup when pincode is complete (6 digits)
@@ -147,24 +164,47 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     }
   };
 
+  // Sync pincode lookup results to local state
+  useEffect(() => {
+    if (Array.isArray(pincodeCities) && pincodeCities.length > 0) {
+      const mappedCities = pincodeCities.map(c => ({
+        id: c.id ?? c.value,
+        name: c.name || c.cityName || c.city || c.label || '',
+      }));
+      setCities(mappedCities);
+    }
+    if (Array.isArray(pincodeStates) && pincodeStates.length > 0) {
+      const mappedStates = pincodeStates.map(s => ({
+        id: s.id ?? s.value,
+        name: s.name || s.stateName || s.state || s.label || '',
+      }));
+      setStates(mappedStates);
+    }
+  }, [pincodeCities, pincodeStates]);
+
   // Auto-populate city, state, and area when pincode lookup completes
   useEffect(() => {
     if (cities && cities.length > 0 && states && states.length > 0) {
       const firstCity = cities[0];
       const firstState = states[0];
 
-      setHospitalForm(prev => ({
-        ...prev,
-        city: firstCity.name,
-        cityId: firstCity.id,
-        state: firstState.name,
-        stateId: firstState.id,
-      }));
+      setHospitalForm(prev => {
+        const updates = {};
+        if (!prev.city || !prev.cityId) {
+          updates.city = firstCity.name;
+          updates.cityId = firstCity.id;
+        }
+        if (!prev.state || !prev.stateId) {
+          updates.state = firstState.name;
+          updates.stateId = firstState.id;
+        }
+        return Object.keys(updates).length > 0 ? { ...prev, ...updates } : prev;
+      });
     }
 
-    // Auto-select first area (0th index) if available
-    if (areas && areas.length > 0 && !hospitalForm.area) {
-      const firstArea = areas[0];
+    // Auto-select first area (0th index) if available and not already filled
+    if (pincodeAreas && pincodeAreas.length > 0 && !hospitalForm.area) {
+      const firstArea = pincodeAreas[0];
       setHospitalForm(prev => ({
         ...prev,
         area: firstArea.name,
@@ -172,7 +212,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cities, states, areas]);
+  }, [cities, states, pincodeAreas]);
 
 
 
@@ -834,6 +874,65 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 updates.pincode = ocrData.pincode;
               }
               
+              // -----------------------------
+              //  🔥 DIRECTLY USE OCR LOCATION
+              // -----------------------------
+              const location = ocrData.locationDetails;
+
+              if (location) {
+                // Build CITIES (flat)
+                const extractedCities = Array.isArray(location.cities)
+                  ? location.cities.map(c => ({
+                      id: c.value,
+                      name: c.label,
+                    }))
+                  : [];
+
+                // Build STATES (flat)
+                const extractedStates = Array.isArray(location.states)
+                  ? location.states.map(s => ({
+                      id: s.value,
+                      name: s.label,
+                      gstCode: s.gstCode,
+                    }))
+                  : [];
+
+                // Build AREAS (take from first city)
+                let extractedAreas = [];
+                if (
+                  Array.isArray(location.cities) &&
+                  location.cities.length > 0 &&
+                  Array.isArray(location.cities[0].area)
+                ) {
+                  extractedAreas = location.cities[0].area.map(a => ({
+                    id: a.value,
+                    name: a.label,
+                    cityId: location.cities[0].value,
+                  }));
+                }
+
+                // UPDATE STATE VALUES DIRECTLY (NO API CALL)
+                setCities(extractedCities);
+                setStates(extractedStates);
+                if (extractedAreas.length > 0) setUploadedAreas(extractedAreas);
+
+                // Set selected values if not already filled
+                if (extractedCities.length > 0) {
+                  updates.city = extractedCities[0].name;
+                  updates.cityId = extractedCities[0].id;
+                }
+
+                if (extractedStates.length > 0) {
+                  updates.state = extractedStates[0].name;
+                  updates.stateId = extractedStates[0].id;
+                }
+
+                if (extractedAreas.length > 0) {
+                  updates.area = extractedAreas[0].name;
+                  updates.areaId = extractedAreas[0].id;
+                }
+              }
+              
               if (Object.keys(updates).length > 0) {
                 setHospitalForm(prev => ({ ...prev, ...updates }));
                 const errorUpdates = {};
@@ -843,9 +942,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 setHospitalErrors(prev => ({ ...prev, ...errorUpdates }));
               }
               
-              // Trigger pincode lookup if pincode is available and valid (6 digits)
-              if (ocrData.pincode && /^\d{6}$/.test(ocrData.pincode)) {
-                await lookupByPincode(ocrData.pincode);
+              // Trigger pincode lookup if pincode is available and valid (6 digits) and locationDetails not available
+              if (!location && (ocrData.pincode || ocrData.Pincode) && /^\d{6}$/.test(String(ocrData.pincode || ocrData.Pincode))) {
+                await lookupByPincode(String(ocrData.pincode || ocrData.Pincode));
               }
             }}
           />
@@ -1001,7 +1100,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
           {/* Area Dropdown */}
           <View style={styles.dropdownContainer}>
-            {(hospitalForm.area || areas.length > 0) && (
+            {(hospitalForm.area || (uploadedAreas.length > 0 || pincodeAreas.length > 0)) && (
               <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
                 Area<AppText style={styles.asteriskPrimary}>*</AppText>
               </AppText>
@@ -1009,7 +1108,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             <TouchableOpacity
               style={[styles.dropdown, hospitalErrors.area && styles.inputError]}
               onPress={() => {
-                if (areas.length === 0) {
+                if (uploadedAreas.length === 0 && pincodeAreas.length === 0) {
                   Toast.show({
                     type: 'info',
                     text1: 'Area',
@@ -1023,7 +1122,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             >
               <View style={styles.inputTextContainer}>
                 <AppText style={hospitalForm.area ? styles.inputText : styles.placeholderText}>
-                  {hospitalForm.area || (areas.length === 0 ? 'Area' : 'Area')}
+                  {hospitalForm.area || 'Area'}
                 </AppText>
                 <AppText style={styles.inlineAsterisk}>*</AppText>
               </View>
@@ -1034,13 +1133,26 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
           {/* City - Auto-populated from pincode */}
           <View style={styles.dropdownContainer}>
-            {(hospitalForm.city || cities.length > 0) && (
+            {(hospitalForm.city || cities.length > 0 || pincodeCities.length > 0) && (
               <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
                 City<AppText style={styles.asteriskPrimary}>*</AppText>
               </AppText>
             )}
             <TouchableOpacity
               style={[styles.dropdown, hospitalErrors.city && styles.inputError]}
+              onPress={() => {
+                const availableCities = cities.length > 0 ? cities : pincodeCities;
+                if (availableCities.length === 0) {
+                  Toast.show({
+                    type: 'info',
+                    text1: 'City',
+                    text2: 'City for this pincode',
+                    position: 'top',
+                  });
+                } else {
+                  setShowCityModal(true);
+                }
+              }}
             >
               <View style={styles.inputTextContainer}>
                 <AppText style={hospitalForm.city ? styles.inputText : styles.placeholderText}>
@@ -1055,13 +1167,26 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
           {/* State - Auto-populated from pincode */}
           <View style={styles.dropdownContainer}>
-            {(hospitalForm.state || states.length > 0) && (
+            {(hospitalForm.state || states.length > 0 || pincodeStates.length > 0) && (
               <AppText style={[styles.floatingLabel, { color: colors.primary }]}>
                 State<AppText style={styles.asteriskPrimary}>*</AppText>
               </AppText>
             )}
             <TouchableOpacity
               style={[styles.dropdown, hospitalErrors.state && styles.inputError]}
+              onPress={() => {
+                const availableStates = states.length > 0 ? states : pincodeStates;
+                if (availableStates.length === 0) {
+                  Toast.show({
+                    type: 'info',
+                    text1: 'State',
+                    text2: 'State for this pincode',
+                    position: 'top',
+                  });
+                } else {
+                  setShowStateModal(true);
+                }
+              }}
             >
               <View style={styles.inputTextContainer}>
                 <AppText style={hospitalForm.state ? styles.inputText : styles.placeholderText}>
@@ -1327,6 +1452,189 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           </View>
         </ScrollView>
         <Toast topOffset={20} />
+        
+        {/* Area Selection Modal */}
+        <Modal
+          visible={showAreaModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowAreaModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.dropdownModal}>
+              <View style={styles.dropdownModalHeader}>
+                <AppText style={styles.dropdownModalTitle}>Select Area</AppText>
+                <TouchableOpacity onPress={() => setShowAreaModal(false)}>
+                  <Icon name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+              {pincodeLoading ? (
+                <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+              ) : (
+                <FlatList
+                  data={
+                    uploadedAreas && uploadedAreas.length > 0
+                      ? uploadedAreas
+                      : Array.isArray(pincodeAreas)
+                      ? pincodeAreas
+                      : []
+                  }
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.dropdownModalItem,
+                        hospitalForm.areaId == item.id && styles.modalItemSelected,
+                      ]}
+                      onPress={() => {
+                        setHospitalForm(prev => ({
+                          ...prev,
+                          area: item.name,
+                          areaId: item.id,
+                        }));
+                        setShowAreaModal(false);
+                      }}
+                    >
+                      <AppText
+                        style={[
+                          styles.dropdownModalItemText,
+                          hospitalForm.areaId == item.id && styles.modalItemTextSelected,
+                        ]}
+                      >
+                        {item.name}
+                      </AppText>
+                      {hospitalForm.areaId == item.id && (
+                        <Icon name="check" size={20} color={colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+            </View>
+          </View>
+        </Modal>
+
+        {/* City Selection Modal */}
+        <Modal
+          visible={showCityModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowCityModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.dropdownModal}>
+              <View style={styles.dropdownModalHeader}>
+                <AppText style={styles.dropdownModalTitle}>Select City</AppText>
+                <TouchableOpacity onPress={() => setShowCityModal(false)}>
+                  <Icon name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+              {pincodeLoading ? (
+                <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+              ) : (
+                <FlatList
+                  data={
+                    cities.length > 0
+                      ? cities
+                      : pincodeCities.length > 0
+                      ? pincodeCities
+                      : []
+                  }
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.dropdownModalItem,
+                        hospitalForm.cityId == item.id && styles.modalItemSelected,
+                      ]}
+                      onPress={() => {
+                        setHospitalForm(prev => ({
+                          ...prev,
+                          city: item.name,
+                          cityId: item.id,
+                        }));
+                        setShowCityModal(false);
+                      }}
+                    >
+                      <AppText
+                        style={[
+                          styles.dropdownModalItemText,
+                          hospitalForm.cityId == item.id && styles.modalItemTextSelected,
+                        ]}
+                      >
+                        {item.name}
+                      </AppText>
+                      {hospitalForm.cityId == item.id && (
+                        <Icon name="check" size={20} color={colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+            </View>
+          </View>
+        </Modal>
+
+        {/* State Selection Modal */}
+        <Modal
+          visible={showStateModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowStateModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.dropdownModal}>
+              <View style={styles.dropdownModalHeader}>
+                <AppText style={styles.dropdownModalTitle}>Select State</AppText>
+                <TouchableOpacity onPress={() => setShowStateModal(false)}>
+                  <Icon name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+              {pincodeLoading ? (
+                <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+              ) : (
+                <FlatList
+                  data={
+                    states.length > 0
+                      ? states
+                      : pincodeStates.length > 0
+                      ? pincodeStates
+                      : []
+                  }
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.dropdownModalItem,
+                        hospitalForm.stateId == item.id && styles.modalItemSelected,
+                      ]}
+                      onPress={() => {
+                        setHospitalForm(prev => ({
+                          ...prev,
+                          state: item.name,
+                          stateId: item.id,
+                        }));
+                        setShowStateModal(false);
+                      }}
+                    >
+                      <AppText
+                        style={[
+                          styles.dropdownModalItemText,
+                          hospitalForm.stateId == item.id && styles.modalItemTextSelected,
+                        ]}
+                      >
+                        {item.name}
+                      </AppText>
+                      {hospitalForm.stateId == item.id && (
+                        <Icon name="check" size={20} color={colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </Modal>
   );
@@ -1566,6 +1874,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginLeft: 4,
   },
+  floatingLabel: {
+    position: 'absolute',
+    top: -6,
+    left: 12,
+    fontSize: 12,
+    fontWeight: '500',
+    backgroundColor: '#fff',
+    paddingHorizontal: 4,
+    zIndex: 1,
+  },
   dropdown: {
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -1608,14 +1926,26 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   dropdownModalItem: {
-    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F0F0F0',
+  },
+  modalItemSelected: {
+    backgroundColor: '#FFF5ED',
   },
   dropdownModalItemText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#333',
+    flex: 1,
+    textAlign: 'left',
+  },
+  modalItemTextSelected: {
+    color: colors.primary,
+    fontWeight: '500',
   },
   inlineVerifyButton: {
     paddingHorizontal: 12,
@@ -1742,7 +2072,11 @@ const styles = StyleSheet.create({
 
   placeholderText: {
     fontSize: 16,
-    color: colors.gray,
+    color: '#999',
+  },
+  inputText: {
+    fontSize: 16,
+    color: '#333',
   },
   inputTextContainer: {
     flexDirection: 'row',
@@ -1758,6 +2092,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '400',
     color: '#999',
+  },
+  dropdownContainer: {
+    marginBottom: 18  ,
   },
 });
 
