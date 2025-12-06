@@ -55,6 +55,7 @@ class ApiClient {
 
 
     async refreshAccessToken() {
+        console.log("🔄 Refreshing access token...");
         if (this.refreshPromise) {
             return this.refreshPromise;
         }
@@ -162,7 +163,7 @@ class ApiClient {
             ok: response.ok,
             data,
         });
-        if (response.status === 401 && !retry) {
+        if (response.status === 401 && !retry && !endpoint.includes('/user-management/refresh-token')) {
             const newToken = await this.refreshAccessToken();
             if (newToken) {
                 return this.request(endpoint, options, true);

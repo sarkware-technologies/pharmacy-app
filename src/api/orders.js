@@ -211,3 +211,28 @@ export const OrderAction = async (workflowInstance, body) => {
 
 
 
+
+export const SaveDraft = async (instance, body) => {
+  try {
+    const response = await apiClient.post(`/approval/workflow-actions/${instance}/draft-edit`, body);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
+
+}
+
+
+
+
+export const GetLatestDraft = async (instance, assignedUserId) => {
+  try {
+    const response = await apiClient.get(`/approval/workflow-actions/${instance}/latest-draft/${assignedUserId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
+
+}

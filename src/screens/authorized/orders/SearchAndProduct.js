@@ -28,7 +28,11 @@ export const SearchAndProduct = ({
   onSelectProduct,
   onSearchChange,
   customerId,
-  distributorId
+  distributorId,
+  currentProduct,
+  handleQuantityChange,
+  handleDelete,
+  handleAddToCart
 }) => {
 
   const [search, setSearch] = useState("");
@@ -40,12 +44,16 @@ export const SearchAndProduct = ({
   // Reset when modal opens
   useEffect(() => {
     if (visible) {
-      setSearch("");
       setPage(1);
+      setSearch("");
       setProducts([]);
       setHasMore(true);
     }
   }, [visible]);
+
+  useEffect(() => {
+    console.log(page, 23891239)
+  }, [page])
 
   // Fetch data when search or page changes
   useEffect(() => {
@@ -63,17 +71,25 @@ export const SearchAndProduct = ({
         distributorIds: [distributorId],
         customerIds: [customerId],
         page: pageNumber,
-        limit: 20,
+        limit: 40,
         search: query,
         forMapping: true
       };
       const response = await getProducts(params);
 
+      const newProducts = (response?.rcDetails || []).map(item => {
+        const existing = currentProduct.find(
+          e => e?.productId == item.productId && e?.customerId == item.customerId
+        );
 
-      const newProducts = (response?.rcDetails || []).map(item => ({
-        ...item,
-        ...(item.productDetails || {}),
-      }));
+        return {
+          ...item,
+          ...(item.productDetails || {}),
+
+          qty: Number(existing?.quantity) || 0,  // ensures qty is always number
+          isCart: !!existing                     // ensures boolean
+        };
+      });
 
       if (pageNumber === 1) {
         setProducts(newProducts);
@@ -94,6 +110,26 @@ export const SearchAndProduct = ({
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (products && products.length && currentProduct) {
+
+      const product = products.map(item => {
+        const existing = currentProduct.find(
+          e => e?.productId == item.productId && e?.customerId == item.customerId
+        );
+
+        return {
+          ...item,
+          ...(item.productDetails || {}),
+
+          qty: Number(existing?.quantity) || 0,
+          isCart: !!existing
+        };
+      });
+      setProducts(product);
+    }
+  }, [currentProduct])
 
   const handleSearchChange = (text) => {
     setSearch(text);
@@ -173,9 +209,12 @@ export const SearchAndProduct = ({
         <View style={{ justifyContent: "space-between", flexDirection: "row" }}>
           <View style={styles.metricColumn}>
             <AppText style={styles.metricLabel}>Exausted /Max Qty</AppText>
-            <AppText style={styles.metricValue}>{item?.maxOrderQty??'-'} / {item?.moqFrequency??'-'}</AppText>
+            <AppText style={styles.metricValue}>{item?.maxOrderQty ?? '-'} / {item?.moqFrequency ?? '-'}</AppText>
           </View>
-          <AddToCartWidget />
+          <AddToCartWidget isInCart={item.isCart} quantity={item?.qty} item={item}
+            handleQuantityChange={handleQuantityChange}
+            handleDelete={handleDelete}
+            handleAddToCart={handleAddToCart} />
         </View>
       </View>
     </TouchableOpacity>
@@ -264,7 +303,6 @@ export const SearchAndProduct = ({
               )
             }
           />
-
         </View>
       </View>
     </Modal>

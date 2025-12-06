@@ -7,6 +7,9 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  TouchableWithoutFeedback,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
@@ -17,12 +20,15 @@ import Animated from 'react-native-reanimated';
 import CustomCheckbox from '../../../components/view/checkbox';
 import AddToCartWidget from "../../../components/addToCart"
 import BackButton from "../../../components/view/backButton"
-import { OrderAction, OrderDetails } from '../../../api/orders';
+import { GetLatestDraft, OrderAction, OrderDetails, SaveDraft } from '../../../api/orders';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DropdownModal from "./../../../components/view/dropdownModel"
 import Toast from 'react-native-toast-message';
 import { SkeletonText, SkeletonSection, SkeletonDetailPage, SkeletonListItem } from '../../../components/SkeletonLoader';
 import SearchAndProduct from './SearchAndProduct';
+import CommentSection from "../../../components/icons/commentSection"
+import { useSelector } from 'react-redux';
+import { formatRelativeTime, getInitials } from '../../../utils/getInitials';
 
 const ClockIcon = () => (
   <Svg width="23" height="20" viewBox="0 0 23 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -105,6 +111,14 @@ const OrderDetailsScreen = () => {
   const [instance, setInstance] = useState();
   const [searchAndMap, setSearchAndMap] = useState(false);
 
+  const [showComment, setShowComment] = useState(null);
+
+  const [comment, setComment] = useState("");
+
+  const loggedInUser = useSelector(state => state.auth?.user);
+
+
+
   useEffect(() => {
     if (orderId) {
       fetchOrder();
@@ -112,13 +126,35 @@ const OrderDetailsScreen = () => {
   }, [])
   const fetchOrder = async () => {
     const response = await OrderDetails(orderId);
-    if (response.orderData) {
-      setOrderDetails(response.orderData);
-      setProductList(response.orderData?.products);
-      setDivisions(response.orderData?.distributorDetails?.[0]?.divisions || []);
-      setInstance(response?.orderData?.instance)
+    const orderData = response?.orderData;
+
+    if (!orderData) return;
+
+    // Set common fields (always the same)
+    setOrderDetails(orderData);
+    setDivisions(orderData?.distributorDetails?.[0]?.divisions || []);
+    setInstance(orderData?.instance);
+
+    const instance = orderData?.instance;
+    const workflowInstanceId = instance?.workflowInstance?.id;
+    const stepInstances = instance?.stepInstances;
+
+    // If workflow + stepInstances exist
+    if (workflowInstanceId && Array.isArray(stepInstances) && stepInstances.length > 0) {
+      const firstStep = stepInstances[0];
+      const draft = await GetLatestDraft(workflowInstanceId, firstStep?.assignedUserId);
+
+      if (draft?.draftEdits?.orderLines) {
+        setProductList(draft.draftEdits.orderLines);
+        return; // done
+      }
     }
-  }
+
+    // Fallback (no draft or no workflow/steps)
+    setProductList(orderData?.products);
+  };
+
+
 
   const orderData = {
     orderNumber: 'SUNPH-10286',
@@ -165,7 +201,7 @@ const OrderDetailsScreen = () => {
     if (instance && Object.keys(instance).length === 0) {
       action = true;
     }
-    else if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && instance?.stepInstances[0].stepInstanceStatus == "PENDING") {
+    else if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && ['PENDING', 'IN_PROGRESS'].includes(instance?.stepInstances[0].stepInstanceStatus)) {
       action = true;
     }
     else if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && (instance?.stepInstances[0].stepInstanceStatus == "APPROVED" || instance?.stepInstances[0].stepInstanceStatus == "REJECTED")) {
@@ -174,6 +210,7 @@ const OrderDetailsScreen = () => {
     else {
       action = false
     }
+    console.log(action, 123456789)
     return action;
   }
 
@@ -214,30 +251,97 @@ const OrderDetailsScreen = () => {
       });
     }
   }
+  const [loadingProductId, setLoadingProductId] = useState(false);
+
 
   const handleQuantityChange = (item, type) => {
-    console.log(item, type, 29378)
-    const updatedList = products.map((e) => {
-      if (e.id !== item.id) return e;
-      setLoadingProductId(item.id);
+    setProductList(prev => {
+      const updatedList = prev.map(e => {
+        if (e.productId !== item.productId) return e;
+        setLoadingProductId(item.productId);
+        let newQty = e.quantity;
+        if (type === 'plus') {
+          newQty = e.quantity + 1;
+        } else if (type === 'minus') {
+          newQty = e.quantity > 1 ? e.quantity - 1 : 1;
+        }
 
-      let newQty = e.uploadedQty;
+        return { ...e, quantity: newQty };
+      });
 
-      if (type === 'plus') {
-        newQty = e.uploadedQty + 1;
-      } else if (type === 'minus') {
-        newQty = e.uploadedQty > 1 ? e.uploadedQty - 1 : 1;
-      }
-
-
-      return {
-        ...e,
-        uploadedQty: newQty,
-      };
+      saveDraft(updatedList);
+      return updatedList;
     });
+  };
 
-    // setProducts(updatedList);
+  const add_handleQuantityChange = (item, type) => {
+    handleQuantityChange(item, type);
+  };
+
+  const add_handleDelete = (item) => {
+    setProductList(prev => {
+      const list = prev.filter(e => e.productId !== item.productId);
+      saveDraft(list);
+      return list;
+    });
+  };
+
+  const add_handleAddToCart = (item) => {
+    console.log(item, 238927);
+
+    const packing = Number(item?.packing);
+    const exists = productList.some(e => e.productId === item.productId);
+
+    if (!exists) {
+      setProductList(prev => {
+        const quantity = packing > 0 && !isNaN(packing) ? packing : 1;
+        const list = [...prev, { ...item, quantity, ...{ isNew: true } }];
+        saveDraft(list);
+        return list;
+      });
+    }
+  };
+
+
+  const saveDraft = async (changes) => {
+    if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length) {
+      const stepInstances = instance?.stepInstances[0];
+      const response = await SaveDraft(instance?.workflowInstance?.id,
+        { actorId: stepInstances?.assignedUserId, parallelGroup: stepInstances?.parallelGroup, stepOrder: stepInstances?.stepOrder, dataChanges: { orderLines: changes } }
+      )
+    }
   }
+
+  const handleUpdatecomment = () => {
+    const commentObj = {
+      createdAt: new Date().toISOString(),
+      comment,
+      userName: loggedInUser?.name,
+      userId: loggedInUser?.id,
+      productId: showComment?.productId,
+    };
+
+    setProductList(prev => {
+      const updatedList = prev.map(item => {
+        if (item.productId != showComment?.productId) {
+          return item;
+        }
+
+        return {
+          ...item,
+          comments: [...(item.comments || []), commentObj],
+        };
+      });
+
+      saveDraft(updatedList);
+      return updatedList;
+    });
+    setShowComment(null);
+    setComment("");
+  }
+
+
+
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -454,7 +558,10 @@ const OrderDetailsScreen = () => {
                             </View>
                           </TouchableOpacity>
                         </View>
-                        <TouchableOpacity style={styles.actionTab}>
+                        <TouchableOpacity style={styles.actionTab} onPress={() => {
+                          setShowComment(product)
+                          setComment("");
+                        }}>
                           <AppText style={styles.actionTabLabel}>Comment</AppText>
                           <CommentIcon />
                         </TouchableOpacity>
@@ -464,7 +571,7 @@ const OrderDetailsScreen = () => {
                         </TouchableOpacity>
                       </View>
                       <View style={styles.quantityControls}>
-                        <AddToCartWidget item={product} isInCart={true} quantity={product?.quantity} handleQuantityChange={(item, type) => handleQuantityChange(item, type)} />
+                        <AddToCartWidget handleDelete={add_handleDelete} item={product} isInCart={true} quantity={product?.quantity} handleQuantityChange={(item, type) => handleQuantityChange(item, type)} />
                       </View>
                     </View>
                   </View>
@@ -516,7 +623,10 @@ const OrderDetailsScreen = () => {
           }}
           customerId={orderDetails?.customerId}
           distributorId={orderDetails?.distributorId}
-
+          currentProduct={productList.map((e) => { return { productId: e?.productId, productCode: e?.productCode, quantity: e?.quantity, customerId: orderDetails?.customerId, distributorId: orderDetails?.distributorId } })}
+          handleQuantityChange={add_handleQuantityChange}
+          handleDelete={add_handleDelete}
+          handleAddToCart={add_handleAddToCart}
         />
       )}
 
@@ -558,6 +668,88 @@ const OrderDetailsScreen = () => {
         title={"Select Divisions"}
         onClose={() => setShowSelectDivisiton(false)}
       />
+      <Modal
+        visible={showComment != null}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowComment(null)}
+      >
+        <TouchableWithoutFeedback >
+          <View
+            style={styles.modalOverlay}
+            activeOpacity={1}
+          >
+            <View style={styles.modalContent}>
+
+              <View style={styles.modalHeader}>
+                <AppText style={styles.modalTitle}>Comment</AppText>
+                <TouchableOpacity onPress={() => setShowComment(null)}>
+                  <Svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <Circle cx="11" cy="11" r="10.5" fill="white" stroke="#909090" />
+                    <Path d="M7.79468 7.79688L14.2049 14.2071M7.79468 14.2071L14.2049 7.79688" stroke="#909090" strokeLinecap="round" strokeLinejoin="round" />
+                  </Svg>
+                </TouchableOpacity>
+              </View>
+              {showComment && showComment?.comments && showComment?.comments?.length > 0 ? (
+                <View style={{ maxHeight: 200, paddingHorizontal: 20, marginBottom: 10 }}>
+                  <FlatList
+                    data={showComment?.comments || []}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({ item }) => (
+                      <View style={styles.commentItem}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                          <View
+                            style={{
+                              backgroundColor: "#9C874333",
+                              width: 35,
+                              height: 35,
+                              borderRadius: 20,
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <AppText style={{ fontSize: 10, color: "#9C8743" }}>
+                              {getInitials(item?.userName || "", 1)}
+                            </AppText>
+                          </View>
+                          <View style={{ gap: 5 }}>
+                            <AppText style={styles.commentUser}>{item?.userName}</AppText>
+                            <AppText style={styles.commentText}>{item?.comment}</AppText>
+                          </View>
+                        </View>
+                        <AppText style={styles.commentDate}>{formatRelativeTime(item?.createdAt)}</AppText>
+                      </View>
+                    )}
+                  />
+                </View>
+              ) : (
+                <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
+                  <AppText style={styles.noCommentsText}>No comments yet.</AppText>
+                </View>
+              )}
+
+              <View style={{ marginBottom: 15, width: "100%", paddingHorizontal: 20, marginTop: 15 }}>
+                <AppInput
+                  style={[styles.textArea, comment?.length > 0 ? { color: colors.primaryText } : {}]}
+                  placeholder="Add Comment*"
+                  value={comment}
+                  onChangeText={setComment}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", width: "100%", paddingHorizontal: 20 }}>
+                <TouchableOpacity style={[styles.approveButton]} onPress={() => handleUpdatecomment()}>
+                  <AppText style={styles.approveButtonText}>Done</AppText>
+                </TouchableOpacity>
+
+              </View>
+            </View>
+          </View>
+
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1067,7 +1259,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: '#FF8C00',
+    backgroundColor: '#F7941E',
     gap: 8,
   },
   approveButtonText: {
@@ -1077,6 +1269,69 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.Black
 
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomColor: "#DFE0E0",
+    borderBottomWidth: 0.5
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.primaryText,
+
+  },
+  textArea: {
+    height: 80,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 12,
+    // padding: 20,
+    fontSize: 14,
+    paddingHorizontal: 20,
+    fontFamily: Fonts.Regular,
+    fontWeight: 400,
+    color: "#C9CCD6",
+    borderWidth: 0.5,
+    borderColor: "#7777774D",
+
+  },
+  commentItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 15
+  },
+  commentUser: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.secondaryText,
+    fontFamily: Fonts.Regular
+  },
+  commentDate: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.secondaryText,
+    fontFamily: Fonts.Regular
+  },
+  commentText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primaryText,
+    fontFamily: Fonts.Bold
+  }
 });
 
 export default OrderDetailsScreen;
