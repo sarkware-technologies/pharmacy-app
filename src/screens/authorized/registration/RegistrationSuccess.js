@@ -26,7 +26,8 @@ const RegistrationSuccess = () => {
     customerCode, 
     registrationCode, 
     codeType, 
-    type 
+    type,
+    isEditMode 
   } = route.params || { customerCode: 'HSP12345', codeType: 'Customer' };
   
   // Determine the display code and label based on registration type
@@ -181,11 +182,13 @@ const RegistrationSuccess = () => {
         >
           <AppText style={styles.successTitle}>Successful!</AppText>
           <AppText style={styles.successMessage}>
-            We have received your information,{'\n'}
-            It will take upto 24 hours to approved, if we found{'\n'}
-            any issue our team will get back to you
+            {isEditMode 
+              ? 'Customer details have been updated successfully.'
+              : `We have received your information,${'\n'}It will take upto 24 hours to approved, if we found${'\n'}any issue our team will get back to you`}
           </AppText>
-          <AppText style={styles.customerCode}>{codeLabel} Code: {code}</AppText>
+          {!isEditMode && (
+            <AppText style={styles.customerCode}>{codeLabel} Code: {code}</AppText>
+          )}
         </Animated.View>
         
         {/* Spacer */}

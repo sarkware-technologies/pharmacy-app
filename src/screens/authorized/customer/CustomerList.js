@@ -976,7 +976,8 @@ const CustomerList = ({ navigation }) => {
                       customerId,
                       isStaging,
                       customerAPI,
-                      (toastConfig) => Toast.show(toastConfig)
+                      (toastConfig) => Toast.show(toastConfig),
+                      item.statusName // Pass status name
                     );
                   }}
                 >
@@ -984,18 +985,19 @@ const CustomerList = ({ navigation }) => {
                 </TouchableOpacity>
               )}
 
-              {item.statusName === 'APPROVED' && (
+              {(item.statusName?.toLowerCase() === 'approved' || item.statusName?.toLowerCase() === 'active') && (
                 <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => {
                     const customerId = item.customerId || item.stgCustomerId;
-                    const isStaging = false; // APPROVED items are not staging
+                    const isStaging = false;
                     handleOnboardCustomer(
                       navigation,
                       customerId,
                       isStaging,
                       customerAPI,
-                      (toastConfig) => Toast.show(toastConfig)
+                      (toastConfig) => Toast.show(toastConfig),
+                      item.statusName // Pass status name to determine edit vs onboard
                     );
                   }}
                 >
@@ -1101,7 +1103,8 @@ const CustomerList = ({ navigation }) => {
                     customerId,
                     isStaging,
                     customerAPI,
-                    (toastConfig) => Toast.show(toastConfig)
+                    (toastConfig) => Toast.show(toastConfig),
+                    item.statusName // Pass status name
                   );
                 }}>
                 <AppText style={styles.onboardButtonText}>Onboard</AppText>

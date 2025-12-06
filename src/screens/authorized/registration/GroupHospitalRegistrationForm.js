@@ -2,7 +2,7 @@
 /* eslint-disable no-dupe-keys */
 // src/screens/authorized/registration/GroupHospitalRegistrationForm.js
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -70,7 +70,19 @@ const GroupHospitalRegistrationForm = () => {
   const otpRefs = useRef({});
 
   // Get route params
-  const { typeId, categoryId, subCategoryId } = route.params || {};
+  const {
+    typeId,
+    categoryId,
+    subCategoryId,
+    mode,
+    customerId,
+    customerData: routeCustomerData,
+  } = route.params || {};
+
+  // Edit mode detection
+  const isEditMode = mode === 'edit' || !!customerId;
+  const [loadingCustomerData, setLoadingCustomerData] = useState(false);
+  const isMounted = useRef(true);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -182,6 +194,15 @@ const GroupHospitalRegistrationForm = () => {
   const otpSlideAnim = useRef(new Animated.Value(-50)).current;
   const buttonScaleAnim = useRef(new Animated.Value(1)).current;
 
+  // Set navigation header - hide default header in edit mode, show custom header
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: !isEditMode, // Hide default header in edit mode
+      title: isEditMode ? 'Edit' : 'Register',
+      headerBackTitleVisible: false,
+    });
+  }, [navigation, isEditMode]);
+
   useEffect(() => {
     // Entry animation
     Animated.parallel([
@@ -199,6 +220,21 @@ const GroupHospitalRegistrationForm = () => {
 
     // Load initial data
     loadInitialData();
+
+    // Handle edit mode - fetch customer details
+    if (isEditMode) {
+      if (routeCustomerData) {
+        // Use provided customer data
+        populateFormFromCustomerData(routeCustomerData);
+      } else if (customerId) {
+        // Fetch customer details from API
+        fetchCustomerDetailsForEdit();
+      }
+    }
+
+    return () => {
+      isMounted.current = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -282,6 +318,183 @@ const GroupHospitalRegistrationForm = () => {
   const loadStatesLegacy = async () => {
     // No-op retained for backward compatibility
     return;
+  };
+
+  // Fetch customer details for edit mode
+  const fetchCustomerDetailsForEdit = async () => {
+    if (!customerId) return;
+    
+    setLoadingCustomerData(true);
+    try {
+      const response = await customerAPI.getCustomerDetails(customerId, false);
+      if (response.success && response.data) {
+        populateFormFromCustomerData(response.data);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to load customer details',
+          position: 'top',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching customer details:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to load customer details. Please try again.',
+        position: 'top',
+      });
+    } finally {
+      setLoadingCustomerData(false);
+    }
+  };
+
+  // Populate form from customer data (API response)
+  const populateFormFromCustomerData = (data) => {
+    try {
+      const generalDetails = data.generalDetails || {};
+      const securityDetails = data.securityDetails || {};
+      const licenceDetails = data.licenceDetails || {};
+      const docType = data.docType || [];
+      const groupDetails = data.groupDetails || {};
+
+      // Format date from API ISO format to ISO format (FloatingDateInput expects ISO)
+      // Also handles invalid dates properly to prevent NaN/NAN/NAN
+      const formatDate = (isoDate) => {
+        if (!isoDate) return null;
+        try {
+          const date = new Date(isoDate);
+          // Check if date is valid
+          if (isNaN(date.getTime())) {
+            console.warn('Invalid date received:', isoDate);
+            return null;
+          }
+          // Return ISO format as FloatingDateInput expects ISO
+          return date.toISOString();
+        } catch (error) {
+          console.error('Error formatting date:', error, isoDate);
+          return null;
+        }
+      };
+
+      // Find license documents (Registration Certificate for Group Hospital)
+      const registrationLicense = licenceDetails.licence?.find(l => 
+        l.licenceTypeCode === 'REG' || 
+        l.licenceTypeName === 'Registration' ||
+        l.hospitalCode
+      );
+
+      // Find document files
+      const registrationDoc = docType.find(d => d.doctypeId === '8' || d.doctypeName === 'REGISTRATION');
+      const hospitalImageDoc = docType.find(d => d.doctypeId === '1' || d.doctypeName === 'CLINIC IMAGE');
+      const panDoc = docType.find(d => d.doctypeId === '7' || d.doctypeName === 'PAN CARD');
+      const gstDoc = docType.find(d => d.doctypeId === '2' || d.doctypeName === 'GSTIN');
+
+      // Populate form data
+      setFormData(prev => ({
+        ...prev,
+        // License Details
+        registrationNumber: registrationLicense?.licenceNo || registrationLicense?.hospitalCode || '',
+        registrationDate: formatDate(registrationLicense?.licenceValidUpto),
+        registrationCertificateFile: registrationDoc ? {
+          fileName: registrationDoc.fileName || 'REGISTRATION',
+          s3Path: registrationDoc.s3Path || '',
+          docId: registrationDoc.docId || '',
+        } : null,
+        licenseImage: hospitalImageDoc ? {
+          fileName: hospitalImageDoc.fileName || 'HOSPITAL IMAGE',
+          s3Path: hospitalImageDoc.s3Path || '',
+          docId: hospitalImageDoc.docId || '',
+        } : null,
+        
+        // General Details
+        hospitalName: generalDetails.customerName || '',
+        shortName: generalDetails.shortName || '',
+        address1: generalDetails.address1 || '',
+        address2: generalDetails.address2 || '',
+        address3: generalDetails.address3 || '',
+        address4: generalDetails.address4 || '',
+        pincode: String(generalDetails.pincode || ''),
+        area: generalDetails.area || '',
+        areaId: generalDetails.areaId ? String(generalDetails.areaId) : null,
+        city: generalDetails.cityName || '',
+        cityId: generalDetails.cityId ? String(generalDetails.cityId) : null,
+        state: generalDetails.stateName || '',
+        stateId: generalDetails.stateId ? String(generalDetails.stateId) : null,
+
+        // Security Details
+        mobileNumber: securityDetails.mobile || '',
+        emailAddress: securityDetails.email || '',
+        panNumber: securityDetails.panNumber || '',
+        panFile: panDoc ? {
+          fileName: panDoc.fileName || 'PAN CARD',
+          s3Path: panDoc.s3Path || '',
+          docId: panDoc.docId || '',
+        } : null,
+        gstNumber: securityDetails.gstNumber || '',
+        gstFile: gstDoc ? {
+          fileName: gstDoc.fileName || 'GSTIN',
+          s3Path: gstDoc.s3Path || '',
+          docId: gstDoc.docId || '',
+        } : null,
+
+        // Customer group
+        customerGroupId: groupDetails.customerGroupId || 1,
+        markAsBuyingEntity: data.isBuyer || false,
+      }));
+
+      // Set document IDs for existing documents
+      if (registrationDoc) {
+        setDocumentIds(prev => ({ ...prev, registrationCertificate: registrationDoc.docId }));
+      }
+      if (hospitalImageDoc) {
+        setDocumentIds(prev => ({ ...prev, hospitalImage: hospitalImageDoc.docId }));
+      }
+      if (panDoc) {
+        setDocumentIds(prev => ({ ...prev, pan: panDoc.docId }));
+      }
+      if (gstDoc) {
+        setDocumentIds(prev => ({ ...prev, gst: gstDoc.docId }));
+      }
+
+      // Set verification status
+      setVerificationStatus({
+        mobile: data.isMobileVerified || false,
+        email: data.isEmailVerified || false,
+      });
+
+      // Set uploaded documents
+      // Set uploaded documents - include both id and docId for edit mode
+      const uploadedDocsList = docType.map(doc => ({
+        id: doc.docId, // Use docId as id for existing documents
+        docId: doc.docId,
+        docTypeId: parseInt(doc.doctypeId),
+        fileName: doc.fileName,
+        s3Path: doc.s3Path,
+      }));
+      setUploadedDocs(uploadedDocsList);
+
+      // Trigger pincode lookup to populate area, city, state dropdowns
+      if (generalDetails.pincode) {
+        lookupByPincode(String(generalDetails.pincode));
+      }
+
+      Toast.show({
+        type: 'success',
+        text1: 'Edit Mode',
+        text2: 'Customer data loaded successfully',
+        position: 'top',
+      });
+    } catch (error) {
+      console.error('Error populating form from customer data:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to populate form data',
+        position: 'top',
+      });
+    }
   };
 
   const loadCustomerGroups = async () => {
@@ -412,16 +625,23 @@ const GroupHospitalRegistrationForm = () => {
   };
 
   const handleFileUpload = (field, file) => {
-    if (file && file.id) {
-      setDocumentIds(prev => ({ ...prev, [field]: file.id }));
+    if (file && (file.id || file.docId)) {
+      const fileId = file.id || file.docId;
+      setDocumentIds(prev => ({ ...prev, [field]: fileId }));
 
       // Add complete document object to uploaded list with docTypeId
+      // For edit mode: include docId if it's an existing file
       const docObject = {
         s3Path: file.s3Path || file.uri,
         docTypeId: file.docTypeId,
         fileName: file.fileName || file.name,
-        id: file.id,
+        id: file.id || file.docId, // Use id for new uploads, docId for existing files
+        ...(file.docId ? { docId: file.docId } : {}), // Include docId if it exists
       };
+      // Remove old doc if it exists (for edit mode file replacement)
+      if (isEditMode && file.docId) {
+        setUploadedDocs(prev => prev.filter(doc => doc.docId !== file.docId && doc.id !== file.docId));
+      }
       setUploadedDocs(prev => [...prev, docObject]);
     }
     setFormData(prev => ({ ...prev, [`${field}File`]: file }));
@@ -430,11 +650,21 @@ const GroupHospitalRegistrationForm = () => {
 
   const handleFileDelete = field => {
     const file = formData[`${field}File`];
-    if (file && file.id) {
-      setUploadedDocs(prev => prev.filter(doc => doc.id !== file.id));
+    // Handle both new uploads (file.id) and existing files from edit mode (file.docId)
+    if (file && (file.id || file.docId)) {
+      const fileId = file.id || file.docId;
+      setUploadedDocs(prev => prev.filter(doc => doc.id !== fileId && doc.docId !== fileId));
+      setDocumentIds(prev => {
+        const updated = { ...prev };
+        if (field === 'registrationCertificate') updated.registrationCertificate = null;
+        if (field === 'hospitalImage') updated.hospitalImage = null;
+        if (field === 'pan') updated.pan = null;
+        if (field === 'gst') updated.gst = null;
+        return updated;
+      });
     }
-    setDocumentIds(prev => ({ ...prev, [field]: null }));
     setFormData(prev => ({ ...prev, [`${field}File`]: null }));
+    setErrors(prev => ({ ...prev, [`${field}File`]: null }));
   };
 
   // Helper function to split address into address1, address2, address3
@@ -709,12 +939,34 @@ const GroupHospitalRegistrationForm = () => {
       </Modal>
     );
   };
- const formatDateForAPI = (date) => {
+  // Helper function to format dates for API submission
+  // Handles both ISO format and DD/MM/YYYY format dates
+  const formatDateForAPI = date => {
     if (!date) return null;
-    const d = new Date(date);
-    // Add time component to avoid timezone issues
-    d.setHours(23, 59, 59, 999);
-    return d.toISOString();
+    try {
+      let d;
+      // If date is in DD/MM/YYYY format (from FloatingDateInput display)
+      if (typeof date === 'string' && date.includes('/') && !date.includes('T')) {
+        const [day, month, year] = date.split('/');
+        d = new Date(Number(year), Number(month) - 1, Number(day));
+      } else {
+        // ISO format or Date object
+        d = new Date(date);
+      }
+      
+      // Check if date is valid
+      if (isNaN(d.getTime())) {
+        console.warn('Invalid date for API:', date);
+        return null;
+      }
+      
+      // Add time component to avoid timezone issues
+      d.setHours(23, 59, 59, 999);
+      return d.toISOString();
+    } catch (error) {
+      console.error('Error formatting date for API:', error, date);
+      return null;
+    }
   };
   const validateForm = () => {
     const newErrors = {};
@@ -850,6 +1102,21 @@ const GroupHospitalRegistrationForm = () => {
     ]).start();
 
     try {
+      // Prepare customerDocs array with proper structure
+      const prepareCustomerDocs = () => {
+        return uploadedDocs.map(doc => ({
+          s3Path: doc.s3Path,
+          docTypeId: String(doc.docTypeId),
+          fileName: doc.fileName,
+          ...(isEditMode && customerId ? {
+            customerId: String(customerId),
+            id: String(doc.docId || doc.id || ''),
+          } : {
+            id: String(doc.id || ''),
+          }),
+        }));
+      };
+
       // Prepare registration payload
       const registrationData = {
         typeId: typeId || 2,
@@ -864,11 +1131,12 @@ const GroupHospitalRegistrationForm = () => {
             {
               licenceTypeId: 7,
               licenceNo: formData.registrationNumber,
-              licenceValidUpto: formatDateForAPI(formData.registrationDate)
+              licenceValidUpto: formatDateForAPI(formData.registrationDate),
+              hospitalCode: '',
             },
           ],
         },
-        customerDocs: uploadedDocs,
+        customerDocs: prepareCustomerDocs(),
         isBuyer: formData.markAsBuyingEntity || false,
         customerGroupId: formData.customerGroupId || 1,
         generalDetails: {
@@ -878,10 +1146,13 @@ const GroupHospitalRegistrationForm = () => {
           address2: formData.address2 || '',
           address3: formData.address3 || '',
           address4: formData.address4 || '',
-          pincode: parseInt(formData.pincode),
-          area: formData.area,
-          cityId: parseInt(formData.cityId),
-          stateId: parseInt(formData.stateId),
+          pincode: parseInt(formData.pincode, 10),
+          area: formData.area || '',
+          areaId: formData.areaId ? parseInt(formData.areaId, 10) : null,
+          cityId: parseInt(formData.cityId, 10),
+          stateId: parseInt(formData.stateId, 10),
+          ownerName: '',
+          clinicName: '',
         },
         securityDetails: {
           mobile: formData.mobileNumber,
@@ -892,32 +1163,41 @@ const GroupHospitalRegistrationForm = () => {
         ...(stockists &&
           stockists.length > 0 && {
           suggestedDistributors: stockists.map(stockist => ({
-            distributorCode: stockist.distributorCode,
-            distributorName: stockist.name,
-            city: stockist.city,
-            customerId: stockist.name,
+            distributorCode: stockist.distributorCode || '',
+            distributorName: stockist.name || '',
+            city: stockist.city || '',
+            customerId: isEditMode && customerId ? parseInt(customerId, 10) : stockist.name,
           })),
         }),
         isChildCustomer: false,
+        ...(isEditMode && customerId ? { customerId: parseInt(customerId, 10) } : {}),
       };
 
-      console.log('Registration data:', registrationData);
+      console.log(isEditMode ? 'Update data:' : 'Registration data:', registrationData);
 
-      const response = await customerAPI.createCustomer(registrationData);
+      let response;
+      if (isEditMode && customerId) {
+        // Update existing customer - use POST to create endpoint with customerId in payload
+        response = await customerAPI.createCustomer(registrationData);
+      } else {
+        // Create new customer
+        response = await customerAPI.createCustomer(registrationData);
+      }
 
       if (response.success) {
         Toast.show({
           type: 'success',
-          text1: 'Registration Successful',
-          text2: response.message || 'Group Hospital registered successfully',
+          text1: isEditMode ? 'Update Successful' : 'Registration Successful',
+          text2: response.message || (isEditMode ? 'Customer details updated successfully' : 'Group Hospital registered successfully'),
           position: 'top',
         });
 
+        // Navigate to success screen for both create and edit
         navigation.navigate('RegistrationSuccess', {
           type: 'hospital',
-          registrationCode:
-            response.data?.id || response?.data?.id || 'SUCCESS',
-          customerId: response?.data?.id,
+          registrationCode: isEditMode ? customerId : (response.data?.id || response?.data?.id || 'SUCCESS'),
+          codeType: 'Group Hospital',
+          ...(isEditMode ? { isEditMode: true } : { customerId: response?.data?.id }),
         });
       } else {
         Toast.show({
@@ -944,7 +1224,13 @@ const GroupHospitalRegistrationForm = () => {
 
 
   const handleCancel = () => {
-    setShowCancelModal(true);
+    if (isEditMode) {
+      // In edit mode, navigate to CustomerStack which contains CustomerList
+      navigation.navigate('CustomerStack', { screen: 'CustomerList' });
+    } else {
+      // In registration mode, show cancel confirmation modal
+      setShowCancelModal(true);
+    }
   };
 
   const renderOTPInput = field => {
@@ -1900,9 +2186,35 @@ const GroupHospitalRegistrationForm = () => {
     </Animated.View>
   );
 
+  // Show loading indicator while fetching customer data
+  if (loadingCustomerData) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <AppText style={{ marginTop: 16, color: '#666' }}>Loading customer details...</AppText>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+
+      {/* Custom Header for Edit Mode */}
+      {isEditMode && (
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerList' })}
+            style={styles.backButton}
+          >
+            <ChevronLeft />
+          </TouchableOpacity>
+          <AppText style={styles.headerTitle}>Edit</AppText>
+        </View>
+      )}
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -1911,7 +2223,10 @@ const GroupHospitalRegistrationForm = () => {
         <ScrollView
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isEditMode && { paddingHorizontal: 16 }
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           <Animated.View

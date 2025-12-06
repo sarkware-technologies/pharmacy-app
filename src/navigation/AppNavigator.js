@@ -27,6 +27,7 @@ import PharmacyRetailerForm from '../screens/authorized/registration/PharmacyRet
 import PharmacyWholesalerForm from '../screens/authorized/registration/PharmacyWholesaler';
 import PharmacyWholesalerRetailerForm from '../screens/authorized/registration/PharmacyWholesalerRetailer';
 import OnboardCustomer from '../screens/authorized/registration/OnboardCustomer';
+import CustomerList from '../screens/authorized/customer/CustomerList';
 
 // Pricing Screens
 import RateContractList from '../screens/authorized/pricing/RateContractList';
@@ -299,6 +300,7 @@ const CustomerStack = () => (
   >
     <Stack.Screen name="CustomerSearchMain" component={CustomerSearch} />
     <Stack.Screen name="CustomerDetail" component={CustomerDetail} />
+    <Stack.Screen name="CustomerList" component={CustomerList} />
   </Stack.Navigator>
 );
 

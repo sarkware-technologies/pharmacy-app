@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unstable-nested-components */
 /* eslint-disable no-dupe-keys */
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -62,7 +62,15 @@ const PharmacyWholesalerRetailerForm = () => {
     subCategory,
     subCategoryName,
     subCategoryId,
+    mode,
+    customerId,
+    customerData: routeCustomerData,
   } = route.params || {};
+
+  // Edit mode detection
+  const isEditMode = mode === 'edit' || !!customerId;
+  const [loadingCustomerData, setLoadingCustomerData] = useState(false);
+  const isMounted = useRef(true);
 
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
@@ -213,6 +221,15 @@ const PharmacyWholesalerRetailerForm = () => {
   const [showHospitalModal, setShowHospitalModal] = useState(false);
   const [showPharmacyModal, setShowPharmacyModal] = useState(false);
 
+  // Set navigation header - hide default header in edit mode, show custom header
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: !isEditMode, // Hide default header in edit mode
+      title: isEditMode ? 'Edit' : 'Register',
+      headerBackTitleVisible: false,
+    });
+  }, [navigation, isEditMode]);
+
   useEffect(() => {
     // Entry animation
     Animated.parallel([
@@ -230,6 +247,17 @@ const PharmacyWholesalerRetailerForm = () => {
 
     // Load initial data
     loadInitialData();
+
+    // Handle edit mode - fetch customer details
+    if (isEditMode) {
+      if (routeCustomerData) {
+        // Use provided customer data
+        populateFormFromCustomerData(routeCustomerData);
+      } else if (customerId) {
+        // Fetch customer details from API
+        fetchCustomerDetailsForEdit();
+      }
+    }
 
     return () => {
       // Cleanup function to reset all states
@@ -377,6 +405,247 @@ const PharmacyWholesalerRetailerForm = () => {
     } catch (error) {
       console.error('Failed to fetch license types:', error);
       // Keep default values if API fails
+    }
+  };
+
+  // Fetch customer details for edit mode
+  const fetchCustomerDetailsForEdit = async () => {
+    if (!customerId) return;
+    
+    setLoadingCustomerData(true);
+    try {
+      const response = await customerAPI.getCustomerDetails(customerId, false);
+      if (response.success && response.data) {
+        populateFormFromCustomerData(response.data);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to load customer details',
+          position: 'top',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching customer details:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to load customer details. Please try again.',
+        position: 'top',
+      });
+    } finally {
+      setLoadingCustomerData(false);
+    }
+  };
+
+  // Populate form from customer data (API response)
+  const populateFormFromCustomerData = (data) => {
+    try {
+      const generalDetails = data.generalDetails || {};
+      const securityDetails = data.securityDetails || {};
+      const licenceDetails = data.licenceDetails || {};
+      const docType = data.docType || [];
+      const mapping = data.mapping || {};
+      const groupDetails = data.groupDetails || {};
+
+      // Format date from API ISO format to ISO format (FloatingDateInput expects ISO)
+      // Also handles invalid dates properly to prevent NaN/NAN/NAN
+      const formatDate = (isoDate) => {
+        if (!isoDate) return null;
+        try {
+          const date = new Date(isoDate);
+          // Check if date is valid
+          if (isNaN(date.getTime())) {
+            console.warn('Invalid date received:', isoDate);
+            return null;
+          }
+          // Return ISO format as FloatingDateInput expects ISO
+          return date.toISOString();
+        } catch (error) {
+          console.error('Error formatting date:', error, isoDate);
+          return null;
+        }
+      };
+
+      // Find license documents (all 4 types for Wholesaler Retailer)
+      const license20 = licenceDetails.licence?.find(l => l.licenceTypeCode === 'LIC20' || l.licenceTypeName === '20');
+      const license21 = licenceDetails.licence?.find(l => l.licenceTypeCode === 'LIC21' || l.licenceTypeName === '21');
+      const license20b = licenceDetails.licence?.find(l => l.licenceTypeCode === 'LIC20B' || l.licenceTypeName === '20B');
+      const license21b = licenceDetails.licence?.find(l => l.licenceTypeCode === 'LIC21B' || l.licenceTypeName === '21B');
+
+      // Find document files
+      const license20Doc = docType.find(d => d.doctypeId === '3' || d.doctypeName === 'LICENCE 20');
+      const license21Doc = docType.find(d => d.doctypeId === '5' || d.doctypeName === 'LICENCE 21');
+      const license20bDoc = docType.find(d => d.doctypeId === '4' || d.doctypeName === 'LICENCE 20B');
+      const license21bDoc = docType.find(d => d.doctypeId === '6' || d.doctypeName === 'LICENCE 21B');
+      const pharmacyImageDoc = docType.find(d => d.doctypeId === '1' || d.doctypeName === 'CLINIC IMAGE');
+      const panDoc = docType.find(d => d.doctypeId === '7' || d.doctypeName === 'PAN CARD');
+      const gstDoc = docType.find(d => d.doctypeId === '2' || d.doctypeName === 'GSTIN');
+
+      // Populate form data
+      setFormData(prev => ({
+        ...prev,
+        // License Details - All 4 licenses
+        license20: license20?.licenceNo || '',
+        license20ExpiryDate: formatDate(license20?.licenceValidUpto),
+        license20File: license20Doc ? {
+          fileName: license20Doc.fileName || 'LICENCE 20',
+          s3Path: license20Doc.s3Path || '',
+          docId: license20Doc.docId || '',
+        } : null,
+        license21: license21?.licenceNo || '',
+        license21ExpiryDate: formatDate(license21?.licenceValidUpto),
+        license21File: license21Doc ? {
+          fileName: license21Doc.fileName || 'LICENCE 21',
+          s3Path: license21Doc.s3Path || '',
+          docId: license21Doc.docId || '',
+        } : null,
+        license20b: license20b?.licenceNo || '',
+        license20bExpiryDate: formatDate(license20b?.licenceValidUpto),
+        license20bFile: license20bDoc ? {
+          fileName: license20bDoc.fileName || 'LICENCE 20B',
+          s3Path: license20bDoc.s3Path || '',
+          docId: license20bDoc.docId || '',
+        } : null,
+        license21b: license21b?.licenceNo || '',
+        license21bExpiryDate: formatDate(license21b?.licenceValidUpto),
+        license21bFile: license21bDoc ? {
+          fileName: license21bDoc.fileName || 'LICENCE 21B',
+          s3Path: license21bDoc.s3Path || '',
+          docId: license21bDoc.docId || '',
+        } : null,
+        pharmacyImageFile: pharmacyImageDoc ? {
+          fileName: pharmacyImageDoc.fileName || 'CLINIC IMAGE',
+          s3Path: pharmacyImageDoc.s3Path || '',
+          docId: pharmacyImageDoc.docId || '',
+        } : null,
+        
+        // General Details
+        pharmacyName: generalDetails.customerName || '',
+        shortName: generalDetails.shortName || '',
+        address1: generalDetails.address1 || '',
+        address2: generalDetails.address2 || '',
+        address3: generalDetails.address3 || '',
+        address4: generalDetails.address4 || '',
+        pincode: String(generalDetails.pincode || ''),
+        area: generalDetails.area || '',
+        areaId: generalDetails.areaId ? String(generalDetails.areaId) : '',
+        city: generalDetails.cityName || '',
+        cityId: generalDetails.cityId ? String(generalDetails.cityId) : '',
+        state: generalDetails.stateName || '',
+        stateId: generalDetails.stateId ? String(generalDetails.stateId) : '',
+
+        // Security Details
+        mobileNumber: securityDetails.mobile || '',
+        emailAddress: securityDetails.email || '',
+        panNumber: securityDetails.panNumber || '',
+        panFile: panDoc ? {
+          fileName: panDoc.fileName || 'PAN CARD',
+          s3Path: panDoc.s3Path || '',
+          docId: panDoc.docId || '',
+        } : null,
+        gstNumber: securityDetails.gstNumber || '',
+        gstFile: gstDoc ? {
+          fileName: gstDoc.fileName || 'GSTIN',
+          s3Path: gstDoc.s3Path || '',
+          docId: gstDoc.docId || '',
+        } : null,
+
+        // Customer group
+        customerGroupId: groupDetails.customerGroupId || 1,
+        isBuyer: data.isBuyer || false,
+
+        // Stockist Suggestions
+        stockists: data.suggestedDistributors?.map(dist => ({
+          name: dist.distributorName || '',
+          code: dist.distributorCode || '',
+          city: dist.city || '',
+        })) || [],
+      }));
+
+      // Set document IDs for existing documents
+      if (license20Doc) {
+        setDocumentIds(prev => ({ ...prev, license20: license20Doc.docId }));
+      }
+      if (license21Doc) {
+        setDocumentIds(prev => ({ ...prev, license21: license21Doc.docId }));
+      }
+      if (license20bDoc) {
+        setDocumentIds(prev => ({ ...prev, license20b: license20bDoc.docId }));
+      }
+      if (license21bDoc) {
+        setDocumentIds(prev => ({ ...prev, license21b: license21bDoc.docId }));
+      }
+      if (pharmacyImageDoc) {
+        setDocumentIds(prev => ({ ...prev, pharmacyImage: pharmacyImageDoc.docId }));
+      }
+      if (panDoc) {
+        setDocumentIds(prev => ({ ...prev, pan: panDoc.docId }));
+      }
+      if (gstDoc) {
+        setDocumentIds(prev => ({ ...prev, gst: gstDoc.docId }));
+      }
+
+      // Set verification status
+      setVerificationStatus({
+        mobile: data.isMobileVerified || false,
+        email: data.isEmailVerified || false,
+        pan: !!panDoc,
+        gst: !!gstDoc,
+      });
+
+      // Set uploaded documents
+      // Set uploaded documents - include both id and docId for edit mode
+      const uploadedDocsList = docType.map(doc => ({
+        id: doc.docId, // Use docId as id for existing documents
+        docId: doc.docId,
+        docTypeId: parseInt(doc.doctypeId),
+        fileName: doc.fileName,
+        s3Path: doc.s3Path,
+      }));
+      setUploadedDocs(uploadedDocsList);
+
+      // Trigger pincode lookup to populate area, city, state dropdowns
+      if (generalDetails.pincode) {
+        lookupByPincode(String(generalDetails.pincode));
+      }
+
+      // Handle mapping data (hospitals, doctors, pharmacies)
+      if (mapping.hospitals && mapping.hospitals.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          selectedCategory: 'groupCorporateHospital',
+          selectedHospitals: mapping.hospitals.map(h => ({
+            id: h.customerId,
+            customerId: h.customerId,
+            name: h.customerName,
+            code: h.customerCode,
+            cityName: h.cityName,
+            stateName: h.stateName,
+          })),
+        }));
+      }
+
+      if (mapping.doctors && mapping.doctors.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          selectedDoctors: mapping.doctors.map(d => ({
+            id: d.customerId,
+            customerId: d.customerId,
+            name: d.customerName || d.name,
+            code: d.customerCode,
+          })),
+        }));
+      }
+
+    } catch (error) {
+      console.error('Error populating form from customer data:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to populate form data',
+        position: 'top',
+      });
     }
   };
 
@@ -794,7 +1063,13 @@ const PharmacyWholesalerRetailerForm = () => {
   };
 
   const handleCancel = () => {
-    setShowCancelModal(true);
+    if (isEditMode) {
+      // In edit mode, navigate to CustomerStack which contains CustomerList
+      navigation.navigate('CustomerStack', { screen: 'CustomerList' });
+    } else {
+      // In registration mode, show cancel confirmation modal
+      setShowCancelModal(true);
+    }
   };
   // GST validation function
   const isValidGST = gst => {
@@ -803,12 +1078,34 @@ const PharmacyWholesalerRetailerForm = () => {
       /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
     return gstRegex.test(gst);
   };
+  // Helper function to format dates for API submission
+  // Handles both ISO format and DD/MM/YYYY format dates
   const formatDateForAPI = date => {
     if (!date) return null;
-    const d = new Date(date);
-    // Add time component to avoid timezone issues
-    d.setHours(23, 59, 59, 999);
-    return d.toISOString();
+    try {
+      let d;
+      // If date is in DD/MM/YYYY format (from FloatingDateInput display)
+      if (typeof date === 'string' && date.includes('/') && !date.includes('T')) {
+        const [day, month, year] = date.split('/');
+        d = new Date(Number(year), Number(month) - 1, Number(day));
+      } else {
+        // ISO format or Date object
+        d = new Date(date);
+      }
+      
+      // Check if date is valid
+      if (isNaN(d.getTime())) {
+        console.warn('Invalid date for API:', date);
+        return null;
+      }
+      
+      // Add time component to avoid timezone issues
+      d.setHours(23, 59, 59, 999);
+      return d.toISOString();
+    } catch (error) {
+      console.error('Error formatting date for API:', error, date);
+      return null;
+    }
   };
 
   const handleRegister = async () => {
@@ -827,6 +1124,21 @@ const PharmacyWholesalerRetailerForm = () => {
     setRegistering(true);
 
     try {
+      // Prepare customerDocs array with proper structure
+      const prepareCustomerDocs = () => {
+        return uploadedDocs.map(doc => ({
+          s3Path: doc.s3Path,
+          docTypeId: String(doc.docTypeId),
+          fileName: doc.fileName,
+          ...(isEditMode && customerId ? {
+            customerId: String(customerId),
+            id: String(doc.docId || doc.id || ''),
+          } : {
+            id: String(doc.id || ''),
+          }),
+        }));
+      };
+
       // Prepare the registration data according to API format with all 4 licenses
       const registrationData = {
         typeId: typeId || 1,
@@ -842,25 +1154,29 @@ const PharmacyWholesalerRetailerForm = () => {
               licenceTypeId: licenseTypes.LICENSE_20?.id || 1,
               licenceNo: formData.license20,
               licenceValidUpto: formatDateForAPI(formData.license20ExpiryDate),
+              hospitalCode: '',
             },
             {
               licenceTypeId: licenseTypes.LICENSE_21?.id || 3,
               licenceNo: formData.license21,
               licenceValidUpto: formatDateForAPI(formData.license21ExpiryDate),
+              hospitalCode: '',
             },
             {
               licenceTypeId: licenseTypes.LICENSE_20B?.id || 2,
               licenceNo: formData.license20b,
               licenceValidUpto: formatDateForAPI(formData.license20bExpiryDate),
+              hospitalCode: '',
             },
             {
               licenceTypeId: licenseTypes.LICENSE_21B?.id || 4,
               licenceNo: formData.license21b,
               licenceValidUpto: formatDateForAPI(formData.license21bExpiryDate),
+              hospitalCode: '',
             },
           ],
         },
-        customerDocs: uploadedDocs,
+        customerDocs: prepareCustomerDocs(),
         isBuyer: formData.isBuyer,
         customerGroupId: formData.customerGroupId,
         generalDetails: {
@@ -870,10 +1186,13 @@ const PharmacyWholesalerRetailerForm = () => {
           address2: formData.address2 || '',
           address3: formData.address3 || '',
           address4: formData.address4 || '',
-          pincode: parseInt(formData.pincode),
-          area: formData.area,
-          cityId: parseInt(formData.cityId),
-          stateId: parseInt(formData.stateId),
+          pincode: parseInt(formData.pincode, 10),
+          area: formData.area || '',
+          areaId: formData.areaId ? parseInt(formData.areaId, 10) : null,
+          cityId: parseInt(formData.cityId, 10),
+          stateId: parseInt(formData.stateId, 10),
+          ownerName: '',
+          clinicName: '',
         },
         securityDetails: {
           mobile: formData.mobileNumber,
@@ -884,32 +1203,41 @@ const PharmacyWholesalerRetailerForm = () => {
         ...(formData.stockists &&
           formData.stockists.length > 0 && {
             suggestedDistributors: formData?.stockists.map(stockist => ({
-              distributorCode: stockist.code,
-              distributorName: stockist.name,
-              city: stockist.city,
-              customerId: stockist.name,
+              distributorCode: stockist.code || '',
+              distributorName: stockist.name || '',
+              city: stockist.city || '',
+              customerId: isEditMode && customerId ? parseInt(customerId, 10) : stockist.name,
             })),
           }),
         isChildCustomer: false,
+        ...(isEditMode && customerId ? { customerId: parseInt(customerId, 10) } : {}),
       };
 
-      console.log('Registration data:', registrationData);
+      console.log(isEditMode ? 'Update data:' : 'Registration data:', registrationData);
 
-      const response = await customerAPI.createCustomer(registrationData);
+      let response;
+      if (isEditMode && customerId) {
+        // Update existing customer - use POST to create endpoint with customerId in payload
+        response = await customerAPI.createCustomer(registrationData);
+      } else {
+        // Create new customer
+        response = await customerAPI.createCustomer(registrationData);
+      }
 
       if (response.success) {
         Toast.show({
           type: 'success',
-          text1: 'Registration Successful',
-          text2: response.message || 'Customer registered successfully',
+          text1: isEditMode ? 'Update Successful' : 'Registration Successful',
+          text2: response.message || (isEditMode ? 'Customer details updated successfully' : 'Customer registered successfully'),
           position: 'top',
         });
 
-        // Navigate to success screen with registration details
+        // Navigate to success screen for both create and edit
         navigation.navigate('RegistrationSuccess', {
           type: 'pharmacy',
-          registrationCode: response.data?.id || response.data?.id || 'SUCCESS',
-          customerId: response.data?.id,
+          registrationCode: isEditMode ? customerId : (response.data?.id || response.data?.id || 'SUCCESS'),
+          codeType: 'Pharmacy',
+          ...(isEditMode ? { isEditMode: true } : { customerId: response.data?.id }),
         });
       } else {
         // Handle specific validation errors
@@ -1034,20 +1362,27 @@ const PharmacyWholesalerRetailerForm = () => {
 
   const handleFileUpload = async (field, file) => {
     // keep original behaviour for document Ids and formData
-    if (file && file.id) {
-      setDocumentIds(prev => ({ ...prev, [field]: file.id }));
+    if (file && (file.id || file.docId)) {
+      const fileId = file.id || file.docId;
+      setDocumentIds(prev => ({ ...prev, [field]: fileId }));
     }
     setFormData(prev => ({ ...prev, [`${field}File`]: file }));
     setErrors(prev => ({ ...prev, [`${field}File`]: null }));
 
     // Add complete document object to uploaded list with docTypeId
-    if (file && file.id) {
+    // For edit mode: include docId if it's an existing file
+    if (file && (file.id || file.docId)) {
       const docObject = {
         s3Path: file.s3Path || file.uri,
         docTypeId: file.docTypeId,
         fileName: file.fileName || file.name,
-        id: file.id,
+        id: file.id || file.docId, // Use id for new uploads, docId for existing files
+        ...(file.docId ? { docId: file.docId } : {}), // Include docId if it exists
       };
+      // Remove old doc if it exists (for edit mode file replacement)
+      if (isEditMode && file.docId) {
+        setUploadedDocs(prev => prev.filter(doc => doc.docId !== file.docId && doc.id !== file.docId));
+      }
       setUploadedDocs(prev => [...prev, docObject]);
     }
 
@@ -1253,11 +1588,14 @@ const PharmacyWholesalerRetailerForm = () => {
 
   const handleFileDelete = field => {
     const file = formData[`${field}File`];
-    if (file && file.id) {
-      setUploadedDocs(prev => prev.filter(doc => doc.id !== file.id));
+    // Handle both new uploads (file.id) and existing files from edit mode (file.docId)
+    if (file && (file.id || file.docId)) {
+      const fileId = file.id || file.docId;
+      setUploadedDocs(prev => prev.filter(doc => doc.id !== fileId && doc.docId !== fileId));
     }
     setDocumentIds(prev => ({ ...prev, [field]: null }));
     setFormData(prev => ({ ...prev, [`${field}File`]: null }));
+    setErrors(prev => ({ ...prev, [`${field}File`]: null }));
   };
 
   // Handle OCR extracted data for license uploads
@@ -1452,9 +1790,35 @@ const handleLicenseOcrData = async (ocrData) => {
     }));
   };
 
+  // Show loading indicator while fetching customer data
+  if (loadingCustomerData) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <AppText style={{ marginTop: 16, color: '#666' }}>Loading customer details...</AppText>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+
+      {/* Custom Header for Edit Mode */}
+      {isEditMode && (
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerList' })}
+            style={styles.backButton}
+          >
+            <ChevronLeft />
+          </TouchableOpacity>
+          <AppText style={styles.headerTitle}>Edit</AppText>
+        </View>
+      )}
 
       <KeyboardAvoidingView
         style={styles.flexContainer}
@@ -1463,7 +1827,10 @@ const handleLicenseOcrData = async (ocrData) => {
         <ScrollView
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isEditMode && { paddingHorizontal: 16 }
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           <Animated.View

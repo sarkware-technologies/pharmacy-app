@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -96,11 +96,16 @@ const DoctorRegistrationForm = () => {
     mode,
     isEditMode,
     customerId,
-    customerData,
+    customerData: routeCustomerData,
     editData,
     isOnboardMode,
     hidePanGst,
   } = route.params || {};
+
+  // Edit mode detection
+  const inEditMode = mode === 'edit' || isEditMode || !!customerId;
+  const [loadingCustomerData, setLoadingCustomerData] = useState(false);
+  const isMounted = useRef(true);
 
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
@@ -247,6 +252,15 @@ const DoctorRegistrationForm = () => {
   // Uploaded documents with full details including docTypeId
   const [uploadedDocs, setUploadedDocs] = useState([]);
 
+  // Set navigation header - hide default header in edit mode, show custom header
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: !inEditMode, // Hide default header in edit mode
+      title: inEditMode ? 'Edit' : 'Register',
+      headerBackTitleVisible: false,
+    });
+  }, [navigation, inEditMode]);
+
   useEffect(() => {
     // Entry animation
     Animated.parallel([
@@ -265,8 +279,23 @@ const DoctorRegistrationForm = () => {
     // Load initial data (only customer groups and license types, no cities/states)
     loadInitialData();
 
+    // Handle edit mode - fetch customer details
+    if (inEditMode) {
+      if (routeCustomerData) {
+        // Use provided customer data
+        populateFormFromCustomerData(routeCustomerData);
+      } else if (editData && routeCustomerData) {
+        // Use pre-fetched edit data (backward compatibility)
+        populateFormFromCustomerData(routeCustomerData);
+      } else if (customerId) {
+        // Fetch customer details from API
+        fetchCustomerDetailsForEdit();
+      }
+    }
+
     // Cleanup function to reset states when component unmounts
     return () => {
+      isMounted.current = false;
       setLoading(false);
       setShowOTP({ mobile: false, email: false });
       setOtpValues({ mobile: ['', '', '', ''], email: ['', '', '', ''] });
@@ -348,6 +377,211 @@ const DoctorRegistrationForm = () => {
       }
     } catch (error) {
       console.error('Error loading customer groups:', error);
+    }
+  };
+
+  // Fetch customer details for edit mode
+  const fetchCustomerDetailsForEdit = async () => {
+    if (!customerId) return;
+    
+    setLoadingCustomerData(true);
+    try {
+      const response = await customerAPI.getCustomerDetails(customerId, false);
+      if (response.success && response.data) {
+        populateFormFromCustomerData(response.data);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to load customer details',
+          position: 'top',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching customer details:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to load customer details. Please try again.',
+        position: 'top',
+      });
+    } finally {
+      setLoadingCustomerData(false);
+    }
+  };
+
+  // Populate form from customer data (API response) - matches PharmacyRetailer.js pattern
+  const populateFormFromCustomerData = (data) => {
+    try {
+      const generalDetails = data.generalDetails || {};
+      const securityDetails = data.securityDetails || {};
+      const licenceDetails = data.licenceDetails || {};
+      const docType = data.docType || [];
+      const groupDetails = data.groupDetails || {};
+
+      // Format date from API ISO format to ISO format (FloatingDateInput expects ISO)
+      // Also handles invalid dates properly to prevent NaN/NAN/NAN
+      const formatDate = (isoDate) => {
+        if (!isoDate) return null;
+        try {
+          const date = new Date(isoDate);
+          // Check if date is valid
+          if (isNaN(date.getTime())) {
+            console.warn('Invalid date received:', isoDate);
+            return null;
+          }
+          // Return ISO format as FloatingDateInput expects ISO
+          return date.toISOString();
+        } catch (error) {
+          console.error('Error formatting date:', error, isoDate);
+          return null;
+        }
+      };
+
+      // Find license documents (Clinic Registration and Practice License for Doctor)
+      const clinicLicense = licenceDetails.licence?.find(l => 
+        l.licenceTypeCode === 'CLINIC_REG' || 
+        l.licenceTypeCode === 'REG' ||
+        l.docTypeId === 10
+      );
+      const practiceLicense = licenceDetails.licence?.find(l => 
+        l.licenceTypeCode === 'PRACTICE_LIC' || 
+        l.licenceTypeCode === 'PRLIC' ||
+        l.docTypeId === 8
+      );
+
+      // Find document files
+      const clinicRegDoc = docType.find(d => d.doctypeId === '10' || d.doctypeName === 'CLINIC REGISTRATION');
+      const practiceLicDoc = docType.find(d => d.doctypeId === '8' || d.doctypeName === 'PRACTICE LICENSE');
+      const addressProofDoc = docType.find(d => d.doctypeId === '11' || d.doctypeName === 'ADDRESS PROOF');
+      const clinicImageDoc = docType.find(d => d.doctypeId === '1' || d.doctypeName === 'CLINIC IMAGE');
+      const panDoc = docType.find(d => d.doctypeId === '7' || d.doctypeName === 'PAN CARD');
+      const gstDoc = docType.find(d => d.doctypeId === '2' || d.doctypeName === 'GSTIN');
+
+      // Populate form data
+      setFormData(prev => ({
+        ...prev,
+        // License Details
+        clinicRegistrationNumber: clinicLicense?.licenceNo || '',
+        clinicRegistrationDate: formatDate(clinicLicense?.licenceValidUpto),
+        clinicRegistrationFile: clinicRegDoc ? {
+          fileName: clinicRegDoc.fileName || 'CLINIC REGISTRATION',
+          s3Path: clinicRegDoc.s3Path || '',
+          docId: clinicRegDoc.docId || '',
+        } : null,
+        practiceLicenseNumber: practiceLicense?.licenceNo || '',
+        practiceLicenseDate: formatDate(practiceLicense?.licenceValidUpto),
+        practiceLicenseFile: practiceLicDoc ? {
+          fileName: practiceLicDoc.fileName || 'PRACTICE LICENSE',
+          s3Path: practiceLicDoc.s3Path || '',
+          docId: practiceLicDoc.docId || '',
+        } : null,
+        addressProofFile: addressProofDoc ? {
+          fileName: addressProofDoc.fileName || 'ADDRESS PROOF',
+          s3Path: addressProofDoc.s3Path || '',
+          docId: addressProofDoc.docId || '',
+        } : null,
+        clinicImageFile: clinicImageDoc ? {
+          fileName: clinicImageDoc.fileName || 'CLINIC IMAGE',
+          s3Path: clinicImageDoc.s3Path || '',
+          docId: clinicImageDoc.docId || '',
+        } : null,
+        
+        // General Details
+        doctorName: generalDetails.ownerName || '',
+        speciality: generalDetails.specialist || '',
+        clinicName: generalDetails.customerName || '',
+        address1: generalDetails.address1 || '',
+        address2: generalDetails.address2 || '',
+        address3: generalDetails.address3 || '',
+        address4: generalDetails.address4 || '',
+        pincode: String(generalDetails.pincode || ''),
+        area: generalDetails.area || '',
+        areaId: generalDetails.areaId ? String(generalDetails.areaId) : null,
+        city: generalDetails.cityName || '',
+        cityId: generalDetails.cityId ? String(generalDetails.cityId) : null,
+        state: generalDetails.stateName || '',
+        stateId: generalDetails.stateId ? String(generalDetails.stateId) : null,
+
+        // Security Details
+        mobileNumber: securityDetails.mobile || '',
+        emailAddress: securityDetails.email || '',
+        panNumber: securityDetails.panNumber || '',
+        panFile: panDoc ? {
+          fileName: panDoc.fileName || 'PAN CARD',
+          s3Path: panDoc.s3Path || '',
+          docId: panDoc.docId || '',
+        } : null,
+        gstNumber: securityDetails.gstNumber || '',
+        gstFile: gstDoc ? {
+          fileName: gstDoc.fileName || 'GSTIN',
+          s3Path: gstDoc.s3Path || '',
+          docId: gstDoc.docId || '',
+        } : null,
+
+        // Customer group
+        customerGroupId: groupDetails.customerGroupId || 1,
+        markAsBuyingEntity: data.isBuyer || false,
+      }));
+
+      // Set document IDs for existing documents
+      if (clinicRegDoc) {
+        setUploadedDocIds(prev => [...prev, clinicRegDoc.docId]);
+      }
+      if (practiceLicDoc) {
+        setUploadedDocIds(prev => [...prev, practiceLicDoc.docId]);
+      }
+      if (addressProofDoc) {
+        setUploadedDocIds(prev => [...prev, addressProofDoc.docId]);
+      }
+      if (clinicImageDoc) {
+        setUploadedDocIds(prev => [...prev, clinicImageDoc.docId]);
+      }
+      if (panDoc) {
+        setUploadedDocIds(prev => [...prev, panDoc.docId]);
+      }
+      if (gstDoc) {
+        setUploadedDocIds(prev => [...prev, gstDoc.docId]);
+      }
+
+      // Set verification status
+      setVerificationStatus({
+        mobile: data.isMobileVerified || false,
+        email: data.isEmailVerified || false,
+        pan: !!panDoc,
+        gst: !!gstDoc,
+      });
+
+      // Set uploaded documents
+      // Set uploaded documents - include both id and docId for edit mode
+      const uploadedDocsList = docType.map(doc => ({
+        id: doc.docId, // Use docId as id for existing documents
+        docId: doc.docId,
+        docTypeId: parseInt(doc.doctypeId),
+        fileName: doc.fileName,
+        s3Path: doc.s3Path,
+      }));
+      setUploadedDocs(uploadedDocsList);
+
+      // Trigger pincode lookup to populate area, city, state dropdowns
+      if (generalDetails.pincode) {
+        lookupByPincode(String(generalDetails.pincode));
+      }
+
+      Toast.show({
+        type: 'success',
+        text1: 'Edit Mode',
+        text2: 'Customer data loaded successfully',
+        position: 'top',
+      });
+    } catch (error) {
+      console.error('Error populating form from customer data:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to populate form data',
+        position: 'top',
+      });
     }
   };
 
@@ -457,224 +691,6 @@ const DoctorRegistrationForm = () => {
     };
   }, [otpTimers, showOTP]);
 
-  // Handle Edit Mode - Populate form with existing customer data
-  useEffect(() => {
-    if (isEditMode && customerData && editData) {
-      console.log('📝 Populating form in EDIT mode');
-      console.log('Customer Data:', customerData);
-      console.log('Edit Data:', editData);
-
-      // Find license details
-      const clinicLicense = customerData.licenceDetails?.licence?.find(
-        l => l.licenceTypeCode === 'REG' || l.docTypeId === 8,
-      );
-      const practiceLicense = customerData.licenceDetails?.licence?.find(
-        l => l.licenceTypeCode === 'PRLIC' || l.docTypeId === 10,
-      );
-
-      // Find document files
-      const clinicRegDoc = customerData.docType?.find(d => d.doctypeId === '8');
-      const practiceLicDoc = customerData.docType?.find(
-        d => d.doctypeId === '10',
-      );
-      const addressProofDoc = customerData.docType?.find(
-        d => d.doctypeId === '11',
-      );
-      const clinicImageDoc = customerData.docType?.find(
-        d => d.doctypeId === '1',
-      );
-      const panDoc = customerData.docType?.find(d => d.doctypeId === '7');
-      const gstDoc = customerData.docType?.find(d => d.doctypeId === '2');
-
-      // Format dates from ISO to DD/MM/YYYY
-      const formatDate = isoDate => {
-        if (!isoDate) return '';
-        const date = new Date(isoDate);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
-      };
-
-      // Populate form data
-      setFormData(prev => ({
-        ...prev,
-        // License Details
-        clinicRegistrationNumber: clinicLicense?.licenceNo || '',
-        clinicRegistrationDate:
-          formatDate(clinicLicense?.licenceValidUpto) || '',
-        clinicRegistrationFile: clinicRegDoc
-          ? {
-            uri: clinicRegDoc.s3Path,
-            name: clinicRegDoc.fileName,
-            type: clinicRegDoc.fileName?.endsWith('.pdf')
-              ? 'application/pdf'
-              : 'image/jpeg',
-            id: clinicRegDoc.docId,
-            s3Path: clinicRegDoc.s3Path,
-            docTypeId: clinicRegDoc.doctypeId,
-          }
-          : null,
-
-        practiceLicenseNumber: practiceLicense?.licenceNo || '',
-        practiceLicenseDate:
-          formatDate(practiceLicense?.licenceValidUpto) || '',
-        practiceLicenseFile: practiceLicDoc
-          ? {
-            uri: practiceLicDoc.s3Path,
-            name: practiceLicDoc.fileName,
-            type: practiceLicDoc.fileName?.endsWith('.pdf')
-              ? 'application/pdf'
-              : 'image/jpeg',
-            id: practiceLicDoc.docId,
-            s3Path: practiceLicDoc.s3Path,
-            docTypeId: practiceLicDoc.doctypeId,
-          }
-          : null,
-
-        addressProofFile: addressProofDoc
-          ? {
-            uri: addressProofDoc.s3Path,
-            name: addressProofDoc.fileName,
-            type: addressProofDoc.fileName?.endsWith('.pdf')
-              ? 'application/pdf'
-              : 'image/jpeg',
-            id: addressProofDoc.docId,
-            s3Path: addressProofDoc.s3Path,
-            docTypeId: addressProofDoc.doctypeId,
-          }
-          : null,
-
-        clinicImageFile: clinicImageDoc
-          ? {
-            uri: clinicImageDoc.s3Path,
-            name: clinicImageDoc.fileName,
-            type: 'image/jpeg',
-            id: clinicImageDoc.docId,
-            s3Path: clinicImageDoc.s3Path,
-            docTypeId: clinicImageDoc.doctypeId,
-          }
-          : null,
-
-        // General Details
-        doctorName: customerData.generalDetails?.customerName || '',
-        speciality: customerData.generalDetails?.specialist || '',
-        clinicName: customerData.generalDetails?.clinicName || '',
-        address1: customerData.generalDetails?.address1 || '',
-        address2: customerData.generalDetails?.address2 || '',
-        address3: customerData.generalDetails?.address3 || '',
-        address4: customerData.generalDetails?.address4 || '',
-        pincode: customerData.generalDetails?.pincode
-          ? String(customerData.generalDetails.pincode)
-          : '',
-        area: customerData.generalDetails?.area || '',
-        city: customerData.generalDetails?.cityName || '',
-        cityId: customerData.generalDetails?.cityId || null,
-        state: customerData.generalDetails?.stateName || '',
-        stateId: customerData.generalDetails?.stateId || null,
-
-        // Security Details
-        mobileNumber: customerData.securityDetails?.mobile || '',
-        emailAddress: customerData.securityDetails?.email || '',
-        panNumber: customerData.securityDetails?.panNumber || '',
-        gstNumber: customerData.securityDetails?.gstNumber || '',
-
-        panFile: panDoc
-          ? {
-            uri: panDoc.s3Path,
-            name: panDoc.fileName,
-            type: panDoc.fileName?.endsWith('.pdf')
-              ? 'application/pdf'
-              : 'image/jpeg',
-            id: panDoc.docId,
-            s3Path: panDoc.s3Path,
-            docTypeId: panDoc.doctypeId,
-          }
-          : null,
-
-        gstFile: gstDoc
-          ? {
-            uri: gstDoc.s3Path,
-            name: gstDoc.fileName,
-            type: gstDoc.fileName?.endsWith('.pdf')
-              ? 'application/pdf'
-              : 'image/jpeg',
-            id: gstDoc.docId,
-            s3Path: gstDoc.s3Path,
-            docTypeId: gstDoc.doctypeId,
-          }
-          : null,
-
-        // Group Details
-        customerGroup: customerData.groupDetails?.customerGroupId || null,
-
-        // Mapping
-        selectedHospitals: customerData.mapping?.hospitals || [],
-        selectedPharmacies: customerData.mapping?.pharmacy || [],
-
-        // Suggested Distributors
-        suggestedDistributors: customerData.suggestedDistributors || [
-          { distributorName: '', distributorCode: '', city: '' },
-        ],
-      }));
-
-      // Set verification status if already verified
-      setVerificationStatus({
-        mobile: customerData.isMobileVerified || false,
-        email: customerData.isEmailVerified || false,
-        pan: !!customerData.securityDetails?.panNumber,
-        gst: !!customerData.securityDetails?.gstNumber,
-      });
-
-      // Set uploaded docs for submission
-      const allDocs = [];
-      if (clinicRegDoc)
-        allDocs.push({
-          s3Path: clinicRegDoc.s3Path,
-          docTypeId: clinicRegDoc.doctypeId,
-          fileName: clinicRegDoc.fileName,
-          id: clinicRegDoc.docId,
-        });
-      if (practiceLicDoc)
-        allDocs.push({
-          s3Path: practiceLicDoc.s3Path,
-          docTypeId: practiceLicDoc.doctypeId,
-          fileName: practiceLicDoc.fileName,
-          id: practiceLicDoc.docId,
-        });
-      if (addressProofDoc)
-        allDocs.push({
-          s3Path: addressProofDoc.s3Path,
-          docTypeId: addressProofDoc.doctypeId,
-          fileName: addressProofDoc.fileName,
-          id: addressProofDoc.docId,
-        });
-      if (clinicImageDoc)
-        allDocs.push({
-          s3Path: clinicImageDoc.s3Path,
-          docTypeId: clinicImageDoc.doctypeId,
-          fileName: clinicImageDoc.fileName,
-          id: clinicImageDoc.docId,
-        });
-      if (panDoc)
-        allDocs.push({
-          s3Path: panDoc.s3Path,
-          docTypeId: panDoc.doctypeId,
-          fileName: panDoc.fileName,
-          id: panDoc.docId,
-        });
-      if (gstDoc)
-        allDocs.push({
-          s3Path: gstDoc.s3Path,
-          docTypeId: gstDoc.doctypeId,
-          fileName: gstDoc.fileName,
-          id: gstDoc.docId,
-        });
-      setUploadedDocs(allDocs);
-
-      console.log('✅ Form populated successfully for edit mode');
-    }
-  }, [isEditMode, customerData, editData]);
 
   const handleVerify = async field => {
     // Validate the field before showing OTP
@@ -975,27 +991,37 @@ const DoctorRegistrationForm = () => {
     setErrors(prev => ({ ...prev, [field]: null }));
 
     // Add doc ID to uploaded list
-    if (file && file.id) {
-      setUploadedDocIds(prev => [...prev, file.id]);
+    // For edit mode: include docId if it's an existing file
+    if (file && (file.id || file.docId)) {
+      const fileId = file.id || file.docId;
+      setUploadedDocIds(prev => [...prev, fileId]);
 
       // Add complete document object to uploaded list with docTypeId
       const docObject = {
         s3Path: file.s3Path || file.uri,
         docTypeId: file.docTypeId,
         fileName: file.fileName || file.name,
-        id: file.id,
+        id: file.id || file.docId, // Use id for new uploads, docId for existing files
+        ...(file.docId ? { docId: file.docId } : {}), // Include docId if it exists
       };
+      // Remove old doc if it exists (for edit mode file replacement)
+      if (inEditMode && file.docId) {
+        setUploadedDocs(prev => prev.filter(doc => doc.docId !== file.docId && doc.id !== file.docId));
+      }
       setUploadedDocs(prev => [...prev, docObject]);
     }
   };
 
   const handleFileDelete = field => {
     const file = formData[field];
-    if (file && file.id) {
-      setUploadedDocIds(prev => prev.filter(id => id !== file.id));
-      setUploadedDocs(prev => prev.filter(doc => doc.id !== file.id));
+    // Handle both new uploads (file.id) and existing files from edit mode (file.docId)
+    if (file && (file.id || file.docId)) {
+      const fileId = file.id || file.docId;
+      setUploadedDocIds(prev => prev.filter(id => id !== fileId));
+      setUploadedDocs(prev => prev.filter(doc => doc.id !== fileId && doc.docId !== fileId));
     }
     setFormData(prev => ({ ...prev, [field]: null }));
+    setErrors(prev => ({ ...prev, [field]: null }));
   };
 
   // Handle OCR extracted data for clinic/practice license uploads
@@ -1046,12 +1072,34 @@ const DoctorRegistrationForm = () => {
   };
 
 
-  const formatDateForAPI = (date) => {
+  // Helper function to format dates for API submission
+  // Handles both ISO format and DD/MM/YYYY format dates
+  const formatDateForAPI = date => {
     if (!date) return null;
-    const d = new Date(date);
-    // Add time component to avoid timezone issues
-    d.setHours(23, 59, 59, 999);
-    return d.toISOString();
+    try {
+      let d;
+      // If date is in DD/MM/YYYY format (from FloatingDateInput display)
+      if (typeof date === 'string' && date.includes('/') && !date.includes('T')) {
+        const [day, month, year] = date.split('/');
+        d = new Date(Number(year), Number(month) - 1, Number(day));
+      } else {
+        // ISO format or Date object
+        d = new Date(date);
+      }
+      
+      // Check if date is valid
+      if (isNaN(d.getTime())) {
+        console.warn('Invalid date for API:', date);
+        return null;
+      }
+      
+      // Add time component to avoid timezone issues
+      d.setHours(23, 59, 59, 999);
+      return d.toISOString();
+    } catch (error) {
+      console.error('Error formatting date for API:', error, date);
+      return null;
+    }
   };
   const handleLicenseOcrData = async (ocrData) => {
     console.log('OCR Data Received:', ocrData);
@@ -1230,7 +1278,13 @@ const DoctorRegistrationForm = () => {
   };
 
   const handleCancel = () => {
-    setShowCancelModal(true);
+    if (inEditMode) {
+      // In edit mode, navigate to CustomerStack which contains CustomerList
+      navigation.navigate('CustomerStack', { screen: 'CustomerList' });
+    } else {
+      // In registration mode, show cancel confirmation modal
+      setShowCancelModal(true);
+    }
   };
 
   const handleRegister = async () => {
@@ -1248,6 +1302,21 @@ const DoctorRegistrationForm = () => {
     setLoading(true);
 
     try {
+      // Prepare customerDocs array with proper structure
+      const prepareCustomerDocs = () => {
+        return uploadedDocs.map(doc => ({
+          s3Path: doc.s3Path,
+          docTypeId: String(doc.docTypeId),
+          fileName: doc.fileName,
+          ...(inEditMode && customerId ? {
+            customerId: String(customerId),
+            id: String(doc.docId || doc.id || ''),
+          } : {
+            id: String(doc.id || ''),
+          }),
+        }));
+      };
+
       // Prepare registration payload for Doctor
       const registrationData = {
         typeId: typeId || 3, // Doctor type ID
@@ -1263,15 +1332,17 @@ const DoctorRegistrationForm = () => {
               licenceTypeId: licenseTypes.CLINIC_REGISTRATION?.id || 6,
               licenceNo: formData.clinicRegistrationNumber,
               licenceValidUpto: formatDateForAPI(formData.clinicRegistrationDate),
+              hospitalCode: '',
             },
             {
               licenceTypeId: licenseTypes.PRACTICE_LICENSE?.id || 7,
               licenceNo: formData.practiceLicenseNumber,
               licenceValidUpto: formatDateForAPI(formData.practiceLicenseDate),
+              hospitalCode: '',
             },
           ],
         },
-        customerDocs: uploadedDocs,
+        customerDocs: prepareCustomerDocs(),
         isBuyer: formData.isBuyer || true,
         customerGroupId: formData.customerGroupId,
         generalDetails: {
@@ -1280,12 +1351,14 @@ const DoctorRegistrationForm = () => {
           address2: formData.address2 || '',
           address3: formData.address3 || '',
           address4: formData.address4 || '',
-          pincode: parseInt(formData.pincode),
-          area: formData.area,
-          cityId: formData.cityId,
-          stateId: formData.stateId,
+          pincode: parseInt(formData.pincode, 10),
+          area: formData.area || '',
+          areaId: formData.areaId ? parseInt(formData.areaId, 10) : null,
+          cityId: parseInt(formData.cityId, 10),
+          stateId: parseInt(formData.stateId, 10),
           clinicName: formData.clinicName || '',
           specialist: formData.speciality,
+          ownerName: '',
         },
         securityDetails: {
           mobile: formData.mobileNumber,
@@ -1296,32 +1369,41 @@ const DoctorRegistrationForm = () => {
         ...(formData.stockists &&
           formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({
-            distributorCode: stockist.code,
-            distributorName: stockist.name,
-            city: stockist.city,
-            customerId: stockist.name,
+            distributorCode: stockist.code || '',
+            distributorName: stockist.name || '',
+            city: stockist.city || '',
+            customerId: inEditMode && customerId ? parseInt(customerId, 10) : stockist.name,
           })),
         }),
         isChildCustomer: false,
+        ...(inEditMode && customerId ? { customerId: parseInt(customerId, 10) } : {}),
       };
 
-      const response = await customerAPI.createCustomer(registrationData);
+      console.log(inEditMode ? 'Update data:' : 'Registration data:', registrationData);
+
+      let response;
+      if (inEditMode && customerId) {
+        // Update existing customer - use POST to create endpoint with customerId in payload
+        response = await customerAPI.createCustomer(registrationData);
+      } else {
+        // Create new customer
+        response = await customerAPI.createCustomer(registrationData);
+      }
 
       if (response.success) {
         Toast.show({
           type: 'success',
-          text1: 'Success',
-          text2: 'Doctor registered successfully!',
+          text1: inEditMode ? 'Update Successful' : 'Registration Successful',
+          text2: response.message || (inEditMode ? 'Customer details updated successfully' : 'Doctor registered successfully!'),
           position: 'top',
         });
 
-        // Navigate to success screen with registration details
+        // Navigate to success screen for both create and edit
         navigation.navigate('RegistrationSuccess', {
           type: 'doctor',
-          registrationCode:
-            response.data?.id || response.data?.data?.id || 'SUCCESS',
-          customerId: response.data?.id,
+          registrationCode: inEditMode ? customerId : (response.data?.id || response.data?.data?.id || 'SUCCESS'),
           codeType: 'Doctor',
+          ...(inEditMode ? { isEditMode: true } : { customerId: response.data?.id }),
         });
       } else {
         // Handle validation errors
@@ -1468,9 +1550,35 @@ const DoctorRegistrationForm = () => {
     );
   };
 
+  // Show loading indicator while fetching customer data
+  if (loadingCustomerData) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <AppText style={{ marginTop: 16, color: '#666' }}>Loading customer details...</AppText>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+
+      {/* Custom Header for Edit Mode */}
+      {inEditMode && (
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerList' })}
+            style={styles.backButton}
+          >
+            <ChevronLeft />
+          </TouchableOpacity>
+          <AppText style={styles.headerTitle}>Edit</AppText>
+        </View>
+      )}
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -1479,7 +1587,10 @@ const DoctorRegistrationForm = () => {
         <ScrollView
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            inEditMode && { paddingHorizontal: 16 }
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           <Animated.View

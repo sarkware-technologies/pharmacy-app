@@ -1,5 +1,5 @@
 /* eslint-disable no-dupe-keys */
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -83,12 +83,16 @@ const PrivateRegistrationForm = () => {
     mode,
     isEditMode,
     editData,
-    customerData,
+    customerData: routeCustomerData,
     isStaging,
   } = route.params || {};
 
   // Determine if we're in edit mode - check multiple flags for backward compatibility
   const inEditMode = mode === 'edit' || isEditMode || !!customerId;
+  const [loadingCustomerData, setLoadingCustomerData] = useState(false);
+  const [uploadedDocs, setUploadedDocs] = useState([]);
+
+  const isMounted = useRef(true);
 
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
@@ -153,7 +157,6 @@ const PrivateRegistrationForm = () => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [loadingCustomerData, setLoadingCustomerData] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   // Store original type data when editing
@@ -293,6 +296,15 @@ const PrivateRegistrationForm = () => {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const otpSlideAnim = useRef(new Animated.Value(-50)).current;
 
+  // Set navigation header - hide default header in edit mode, show custom header
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: !inEditMode, // Hide default header in edit mode
+      title: inEditMode ? 'Edit' : 'Register',
+      headerBackTitleVisible: false,
+    });
+  }, [navigation, inEditMode]);
+
   useEffect(() => {
     console.log('🚀 PrivateRegistration Form Mounted');
     console.log('📦 Route Params:', {
@@ -300,7 +312,7 @@ const PrivateRegistrationForm = () => {
       isEditMode,
       customerId,
       hasEditData: !!editData,
-      hasCustomerData: !!customerData,
+      hasCustomerData: !!routeCustomerData,
       inEditMode,
     });
 
@@ -322,28 +334,23 @@ const PrivateRegistrationForm = () => {
     // Note: States and cities are now loaded via pincode lookup only
     loadInitialData();
 
-    // EFFICIENT EDIT MODE HANDLING
-    // If editData is already provided (from onboard/edit button), use it directly
-    // This avoids an additional API call
-    if (inEditMode && editData) {
-      console.log('✅ Using pre-fetched edit data (efficient mode)');
-      console.log('📋 Edit Data Preview:', {
-        customerId: editData.customerId,
-        name: editData.name,
-        clinicName: editData.clinicName,
-        mobile: editData.mobile,
-        email: editData.email,
-      });
-      populateFormFromEditData(editData);
+    // Handle edit mode - fetch customer details
+    if (inEditMode) {
+      if (routeCustomerData) {
+        // Use provided customer data
+        populateFormFromCustomerData(routeCustomerData);
+      } else if (editData) {
+        // Use pre-fetched edit data (backward compatibility)
+        populateFormFromEditData(editData);
+      } else if (customerId) {
+        // Fetch customer details from API
+        fetchCustomerDetailsForEdit();
+      }
     }
-    // Fallback: If in edit mode but no editData provided, fetch from API
-    else if (inEditMode && customerId) {
-      console.log('⚠️ Fetching customer details from API (fallback mode)');
-      console.log('🆔 Customer ID:', customerId);
-      fetchCustomerDetails();
-    } else {
-      console.log('🆕 Creating new registration (not edit mode)');
-    }
+
+    return () => {
+      isMounted.current = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -363,7 +370,158 @@ const PrivateRegistrationForm = () => {
   };
   // Legacy function removed - cities now loaded via pincode lookup only
 
-  // EFFICIENT: Populate form using pre-fetched and transformed data
+  // Populate form from customer data (API response) - matches PharmacyRetailer.js pattern
+  const populateFormFromCustomerData = (data) => {
+    try {
+      const generalDetails = data.generalDetails || {};
+      const securityDetails = data.securityDetails || {};
+      const licenceDetails = data.licenceDetails || {};
+      const docType = data.docType || [];
+      const mapping = data.mapping || {};
+      const groupDetails = data.groupDetails || {};
+
+      // Format date from API ISO format to ISO format (FloatingDateInput expects ISO)
+      // Also handles invalid dates properly to prevent NaN/NAN/NAN
+      const formatDate = (isoDate) => {
+        if (!isoDate) return null;
+        try {
+          const date = new Date(isoDate);
+          // Check if date is valid
+          if (isNaN(date.getTime())) {
+            console.warn('Invalid date received:', isoDate);
+            return null;
+          }
+          // Return ISO format as FloatingDateInput expects ISO
+          return date.toISOString();
+        } catch (error) {
+          console.error('Error formatting date:', error, isoDate);
+          return null;
+        }
+      };
+
+      // Find license documents (Registration for Private Hospital)
+      const registrationLicense = licenceDetails.licence?.find(l => l.licenceTypeCode === 'REG' || l.licenceTypeName === 'Registration');
+
+      // Find document files
+      const registrationDoc = docType.find(d => d.doctypeId === '8' || d.doctypeName === 'REGISTRATION');
+      const clinicImageDoc = docType.find(d => d.doctypeId === '1' || d.doctypeName === 'CLINIC IMAGE');
+      const panDoc = docType.find(d => d.doctypeId === '7' || d.doctypeName === 'PAN CARD');
+      const gstDoc = docType.find(d => d.doctypeId === '2' || d.doctypeName === 'GSTIN');
+
+      // Populate form data
+      setFormData(prev => ({
+        ...prev,
+        // License Details
+        registrationNumber: registrationLicense?.licenceNo || '',
+        registrationDate: formatDate(registrationLicense?.licenceValidUpto),
+        licenseFile: registrationDoc ? {
+          fileName: registrationDoc.fileName || 'REGISTRATION',
+          s3Path: registrationDoc.s3Path || '',
+          docId: registrationDoc.docId || '',
+        } : null,
+        licenseImage: clinicImageDoc ? {
+          fileName: clinicImageDoc.fileName || 'CLINIC IMAGE',
+          s3Path: clinicImageDoc.s3Path || '',
+          docId: clinicImageDoc.docId || '',
+        } : null,
+        
+        // General Details
+        clinicName: generalDetails.customerName || '',
+        shortName: generalDetails.shortName || '',
+        address1: generalDetails.address1 || '',
+        address2: generalDetails.address2 || '',
+        address3: generalDetails.address3 || '',
+        address4: generalDetails.address4 || '',
+        pincode: String(generalDetails.pincode || ''),
+        area: generalDetails.area || '',
+        areaId: generalDetails.areaId ? String(generalDetails.areaId) : null,
+        city: generalDetails.cityName || '',
+        cityId: generalDetails.cityId ? String(generalDetails.cityId) : null,
+        state: generalDetails.stateName || '',
+        stateId: generalDetails.stateId ? String(generalDetails.stateId) : null,
+        ownerName: generalDetails.ownerName || '',
+        specialist: generalDetails.specialist || '',
+
+        // Security Details
+        mobileNumber: securityDetails.mobile || '',
+        emailAddress: securityDetails.email || '',
+        panNumber: securityDetails.panNumber || '',
+        panFile: panDoc ? {
+          fileName: panDoc.fileName || 'PAN CARD',
+          s3Path: panDoc.s3Path || '',
+          docId: panDoc.docId || '',
+        } : null,
+        gstNumber: securityDetails.gstNumber || '',
+        gstFile: gstDoc ? {
+          fileName: gstDoc.fileName || 'GSTIN',
+          s3Path: gstDoc.s3Path || '',
+          docId: gstDoc.docId || '',
+        } : null,
+
+        // Customer group
+        customerGroup: groupDetails.customerGroupName || '9-DOCTOR SUPPLY',
+        markAsBuyingEntity: data.isBuyer || false,
+
+        // Mapping
+        selectedHospitals: mapping.groupHospitals || [],
+        selectedPharmacies: mapping.pharmacy || [],
+      }));
+
+      // Set document IDs for existing documents
+      if (registrationDoc) {
+        setDocumentIds(prev => [...prev, { field: 'licenseFile', docId: registrationDoc.docId }]);
+      }
+      if (clinicImageDoc) {
+        setDocumentIds(prev => [...prev, { field: 'licenseImage', docId: clinicImageDoc.docId }]);
+      }
+      if (panDoc) {
+        setDocumentIds(prev => [...prev, { field: 'panFile', docId: panDoc.docId }]);
+      }
+      if (gstDoc) {
+        setDocumentIds(prev => [...prev, { field: 'gstFile', docId: gstDoc.docId }]);
+      }
+
+      // Set verification status
+      setVerificationStatus({
+        mobile: data.isMobileVerified || false,
+        email: data.isEmailVerified || false,
+        pan: !!panDoc,
+        gst: !!gstDoc,
+      });
+
+      // Set uploaded documents - include both id and docId for edit mode
+      const uploadedDocsList = docType.map(doc => ({
+        id: doc.docId, // Use docId as id for existing documents
+        docId: doc.docId,
+        docTypeId: parseInt(doc.doctypeId),
+        fileName: doc.fileName,
+        s3Path: doc.s3Path,
+      }));
+      setUploadedDocs(uploadedDocsList);
+
+      // Trigger pincode lookup to populate area, city, state dropdowns
+      if (generalDetails.pincode) {
+        lookupByPincode(String(generalDetails.pincode));
+      }
+
+      Toast.show({
+        type: 'success',
+        text1: 'Edit Mode',
+        text2: 'Customer data loaded successfully',
+        position: 'top',
+      });
+    } catch (error) {
+      console.error('Error populating form from customer data:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to populate form data',
+        position: 'top',
+      });
+    }
+  };
+
+  // EFFICIENT: Populate form using pre-fetched and transformed data (legacy - kept for backward compatibility)
   const populateFormFromEditData = data => {
     try {
       console.log(
@@ -372,15 +530,15 @@ const PrivateRegistrationForm = () => {
       );
 
       // Store original type data
-      if (customerData) {
+      if (routeCustomerData) {
         console.log('📋 Setting original type data from customerData');
         setOriginalTypeData({
-          typeId: customerData.typeId,
-          typeName: customerData.customerType,
-          categoryId: customerData.categoryId,
-          categoryName: customerData.customerCategory,
-          subCategoryId: customerData.subCategoryId,
-          subCategoryName: customerData.customerSubcategory,
+          typeId: routeCustomerData.typeId,
+          typeName: routeCustomerData.customerType,
+          categoryId: routeCustomerData.categoryId,
+          categoryName: routeCustomerData.customerCategory,
+          subCategoryId: routeCustomerData.subCategoryId,
+          subCategoryName: routeCustomerData.customerSubcategory,
         });
       }
 
@@ -474,7 +632,37 @@ const PrivateRegistrationForm = () => {
     }
   };
 
-  // Function to fetch and populate customer details for editing
+  // Fetch customer details for edit mode
+  const fetchCustomerDetailsForEdit = async () => {
+    if (!customerId) return;
+    
+    setLoadingCustomerData(true);
+    try {
+      const response = await customerAPI.getCustomerDetails(customerId, false);
+      if (response.success && response.data) {
+        populateFormFromCustomerData(response.data);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to load customer details',
+          position: 'top',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching customer details:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to load customer details. Please try again.',
+        position: 'top',
+      });
+    } finally {
+      setLoadingCustomerData(false);
+    }
+  };
+
+  // Function to fetch and populate customer details for editing (legacy - kept for backward compatibility)
   const fetchCustomerDetails = async () => {
     setLoadingCustomerData(true);
     try {
@@ -1038,15 +1226,43 @@ const PrivateRegistrationForm = () => {
   };
 
   const handleCancel = () => {
-    setShowCancelModal(true);
+    if (inEditMode) {
+      // In edit mode, navigate to CustomerStack which contains CustomerList
+      navigation.navigate('CustomerStack', { screen: 'CustomerList' });
+    } else {
+      // In registration mode, show cancel confirmation modal
+      setShowCancelModal(true);
+    }
   };
 
-   const formatDateForAPI = (date) => {
+  // Helper function to format dates for API submission
+  // Handles both ISO format and DD/MM/YYYY format dates
+  const formatDateForAPI = date => {
     if (!date) return null;
-    const d = new Date(date);
-    // Add time component to avoid timezone issues
-    d.setHours(23, 59, 59, 999);
-    return d.toISOString();
+    try {
+      let d;
+      // If date is in DD/MM/YYYY format (from FloatingDateInput display)
+      if (typeof date === 'string' && date.includes('/') && !date.includes('T')) {
+        const [day, month, year] = date.split('/');
+        d = new Date(Number(year), Number(month) - 1, Number(day));
+      } else {
+        // ISO format or Date object
+        d = new Date(date);
+      }
+      
+      // Check if date is valid
+      if (isNaN(d.getTime())) {
+        console.warn('Invalid date for API:', date);
+        return null;
+      }
+      
+      // Add time component to avoid timezone issues
+      d.setHours(23, 59, 59, 999);
+      return d.toISOString();
+    } catch (error) {
+      console.error('Error formatting date for API:', error, date);
+      return null;
+    }
   };
 
   const getCustomerGroupId = groupName => {
@@ -1105,6 +1321,69 @@ const PrivateRegistrationForm = () => {
         ? originalTypeData.subCategoryId
         : subCategoryId || 1;
 
+      // Prepare customerDocs array with proper structure
+      const prepareCustomerDocs = () => {
+        const docs = [];
+        // Collect all documents
+        if (formData.licenseFile?.id || formData.licenseFile?.docId) {
+          const doc = formData.licenseFile;
+          docs.push({
+            s3Path: doc.s3Path || doc.uri,
+            docTypeId: String(doc.docTypeId || ''),
+            fileName: doc.fileName || doc.name,
+            ...(inEditMode && customerId ? {
+              customerId: String(customerId),
+              id: String(doc.docId || doc.id || ''),
+            } : {
+              id: String(doc.id || ''),
+            }),
+          });
+        }
+        if (formData.licenseImage?.id || formData.licenseImage?.docId) {
+          const doc = formData.licenseImage;
+          docs.push({
+            s3Path: doc.s3Path || doc.uri,
+            docTypeId: String(doc.docTypeId || ''),
+            fileName: doc.fileName || doc.name,
+            ...(inEditMode && customerId ? {
+              customerId: String(customerId),
+              id: String(doc.docId || doc.id || ''),
+            } : {
+              id: String(doc.id || ''),
+            }),
+          });
+        }
+        if (formData.panFile?.id || formData.panFile?.docId) {
+          const doc = formData.panFile;
+          docs.push({
+            s3Path: doc.s3Path || doc.uri,
+            docTypeId: String(doc.docTypeId || ''),
+            fileName: doc.fileName || doc.name,
+            ...(inEditMode && customerId ? {
+              customerId: String(customerId),
+              id: String(doc.docId || doc.id || ''),
+            } : {
+              id: String(doc.id || ''),
+            }),
+          });
+        }
+        if (formData.gstFile?.id || formData.gstFile?.docId) {
+          const doc = formData.gstFile;
+          docs.push({
+            s3Path: doc.s3Path || doc.uri,
+            docTypeId: String(doc.docTypeId || ''),
+            fileName: doc.fileName || doc.name,
+            ...(inEditMode && customerId ? {
+              customerId: String(customerId),
+              id: String(doc.docId || doc.id || ''),
+            } : {
+              id: String(doc.id || ''),
+            }),
+          });
+        }
+        return docs;
+      };
+
       // Prepare the request payload
       const requestPayload = {
         typeId: finalTypeId,
@@ -1119,11 +1398,12 @@ const PrivateRegistrationForm = () => {
             {
               licenceTypeId: licenseTypes.REGISTRATION?.id || 7, // Use dynamic license type ID
               licenceNo: formData.registrationNumber,
-              licenceValidUpto:formatDateForAPI(formData.registrationDate)
+              licenceValidUpto: formatDateForAPI(formData.registrationDate),
+              hospitalCode: '',
             },
           ],
         },
-        customerDocs: [],
+        customerDocs: prepareCustomerDocs(),
         isBuyer: formData.markAsBuyingEntity,
         customerGroupId: getCustomerGroupId(formData.customerGroup),
         generalDetails: {
@@ -1133,10 +1413,13 @@ const PrivateRegistrationForm = () => {
           address2: formData.address2 || '',
           address3: formData.address3 || '',
           address4: formData.address4 || '',
-          pincode: parseInt(formData.pincode),
-          area: formData.area || 'Default',
-          cityId: formData.cityId, // Use actual cityId from API
-          stateId: formData.stateId, // Use actual stateId from API
+          pincode: parseInt(formData.pincode, 10),
+          area: formData.area || '',
+          areaId: formData.areaId ? parseInt(formData.areaId, 10) : null,
+          cityId: parseInt(formData.cityId, 10),
+          stateId: parseInt(formData.stateId, 10),
+          ownerName: '',
+          clinicName: '',
         },
         securityDetails: {
           mobile: formData.mobileNumber,
@@ -1147,48 +1430,36 @@ const PrivateRegistrationForm = () => {
         ...(stockists &&
           stockists.length > 0 && {
           suggestedDistributors: stockists.map(stockist => ({
-            distributorCode: stockist.code,
-            distributorName: stockist.name,
-            city: stockist.city,
-            customerId: stockist.name,
+            distributorCode: stockist.code || '',
+            distributorName: stockist.name || '',
+            city: stockist.city || '',
+            customerId: inEditMode && customerId ? parseInt(customerId, 10) : stockist.name,
           })),
         }),
         isChildCustomer: false,
+        ...(inEditMode && customerId ? { customerId: parseInt(customerId, 10) } : {}),
       };
 
-      // If editing, add the customerId to the payload
-      if (isEditMode) {
-        requestPayload.id = customerId;
-      }
+      console.log(inEditMode ? 'Update data:' : 'Registration data:', requestPayload);
 
-      console.log('Registration payload:', requestPayload);
-
-      // Call create or update customer API
-      const response = isEditMode
-        ? await customerAPI.updateCustomer(customerId, requestPayload)
-        : await customerAPI.createCustomer(requestPayload);
+      // Call create customer API for both create and edit (with customerId in payload)
+      const response = await customerAPI.createCustomer(requestPayload);
 
       if (response.success && response.data) {
         Toast.show({
           type: 'success',
-          text1: isEditMode ? 'Update Successful' : 'Registration Successful',
-          text2: isEditMode
-            ? `Customer updated successfully`
-            : `Customer registered with code: ${response.data.code || response.data.id
-            }`,
-          visibilityTime: 5000,
+          text1: inEditMode ? 'Update Successful' : 'Registration Successful',
+          text2: response.message || (inEditMode ? 'Customer details updated successfully' : 'Customer registered successfully'),
           position: 'top',
         });
 
-        // Navigate to success page or back to list
-        if (isEditMode) {
-          navigation.goBack();
-        } else {
-          navigation.navigate('RegistrationSuccess', {
-            customerCode: response?.data?.id || `HOSP ${response.data.id}`,
-            customerId: response?.data?.id,
-          });
-        }
+        // Navigate to success screen for both create and edit
+        navigation.navigate('RegistrationSuccess', {
+          type: 'hospital',
+          registrationCode: inEditMode ? customerId : (response?.data?.id || `HOSP ${response.data.id}`),
+          codeType: 'Private Clinic',
+          ...(inEditMode ? { isEditMode: true } : { customerId: response?.data?.id }),
+        });
       } else {
         throw new Error(response.message || 'Registration failed');
       }
@@ -1351,15 +1622,14 @@ const PrivateRegistrationForm = () => {
     );
   };
 
-  // Show loading spinner while fetching customer data
+  // Show loading indicator while fetching customer data
   if (loadingCustomerData) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <AppText style={styles.loadingText}>
-            Loading customer details...
-          </AppText>
+          <AppText style={{ marginTop: 16, color: '#666' }}>Loading customer details...</AppText>
         </View>
       </SafeAreaView>
     );
@@ -1369,6 +1639,19 @@ const PrivateRegistrationForm = () => {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
+      {/* Custom Header for Edit Mode */}
+      {inEditMode && (
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerList' })}
+            style={styles.backButton}
+          >
+            <ChevronLeft />
+          </TouchableOpacity>
+          <AppText style={styles.headerTitle}>Edit</AppText>
+        </View>
+      )}
+
       <KeyboardAvoidingView
         style={styles.flexContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -1376,7 +1659,10 @@ const PrivateRegistrationForm = () => {
         <ScrollView
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            inEditMode && { paddingHorizontal: 16 }
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           <Animated.View
@@ -1406,7 +1692,15 @@ const PrivateRegistrationForm = () => {
                   setErrors(prev => ({ ...prev, licenseFile: null }));
                 }}
                 onFileDelete={() => {
+                  const file = formData.licenseFile;
+                  // Handle both new uploads (file.id) and existing files from edit mode (file.docId)
+                  if (file && (file.id || file.docId)) {
+                    const fileId = file.id || file.docId;
+                    setUploadedDocs(prev => prev.filter(doc => doc.id !== fileId && doc.docId !== fileId));
+                    setDocumentIds(prev => prev.filter(doc => doc.docId !== fileId));
+                  }
                   setFormData(prev => ({ ...prev, licenseFile: null }));
+                  setErrors(prev => ({ ...prev, licenseFile: null }));
                 }}
                 onOcrDataExtracted={async (ocrData) => {
                   console.log('OCR Data Received:', ocrData);
