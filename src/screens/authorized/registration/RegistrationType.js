@@ -260,7 +260,7 @@ const RegistrationType = () => {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-        <View style={styles.header}>
+        {/* <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.backButton}
@@ -268,7 +268,7 @@ const RegistrationType = () => {
             <ChevronLeft />
           </TouchableOpacity>
           <AppText style={styles.headerTitle}>Registration</AppText>
-        </View>
+        </View> */}
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -280,7 +280,7 @@ const RegistrationType = () => {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-        <View style={styles.header}>
+        {/* <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.backButton}
@@ -288,7 +288,7 @@ const RegistrationType = () => {
             <ChevronLeft />
           </TouchableOpacity>
           <AppText style={styles.headerTitle}>Registration</AppText>
-        </View>
+        </View> */}
         <View style={styles.errorContainer}>
           <AppText style={styles.errorText}>Error loading customer types</AppText>
           <TouchableOpacity
@@ -307,7 +307,7 @@ const RegistrationType = () => {
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
       
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
@@ -315,7 +315,7 @@ const RegistrationType = () => {
           <ChevronLeft />
         </TouchableOpacity>
         <AppText style={styles.headerTitle}>Registration</AppText>
-      </View>
+      </View> */}
 
       {/* Selection Section - Always visible at top */}
       <ScrollView

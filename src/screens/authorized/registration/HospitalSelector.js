@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from '../../../components';
 import { customerAPI } from '../../../api/customer';
 import PhamacySearchNotFound from '../../../components/icons/PhamacySearchNotFound';
 import AddNewHospitalModal from './AddNewHospitalModal';
@@ -22,18 +22,28 @@ import AddNewHospitalModal from './AddNewHospitalModal';
 const HospitalSelector = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { onSelect, selectedHospitals = [], allowMultiple = false } = route.params || {};
-  
+  const {
+    onSelect,
+    selectedHospitals = [],
+    allowMultiple = false,
+  } = route.params || {};
+
   const [searchQuery, setSearchQuery] = useState('');
   // Support both single and multiple selection
-  const [selectedItems, setSelectedItems] = useState(allowMultiple ? selectedHospitals : []);
-  const [selectedItem, setSelectedItem] = useState(!allowMultiple && selectedHospitals?.length > 0 ? selectedHospitals[0] : null);
-  
+  const [selectedItems, setSelectedItems] = useState(
+    allowMultiple ? selectedHospitals : [],
+  );
+  const [selectedItem, setSelectedItem] = useState(
+    !allowMultiple && selectedHospitals?.length > 0
+      ? selectedHospitals[0]
+      : null,
+  );
+
   // Hospital data states
   const [hospitalsData, setHospitalsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Filter states
   const [selectedStates, setSelectedStates] = useState([]);
   const [selectedCities, setSelectedCities] = useState([]);
@@ -41,12 +51,12 @@ const HospitalSelector = () => {
   const [citiesList, setCitiesList] = useState([]);
   const [statesLoading, setStatesLoading] = useState(false);
   const [citiesLoading, setCitiesLoading] = useState(false);
-  
+
   // Filter dropdowns
   const [showStateDropdown, setShowStateDropdown] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
-    const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
-  
+  const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
+
   // Animation
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -66,14 +76,14 @@ const HospitalSelector = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch states and hospitals on component mount
   useEffect(() => {
     fetchStates();
     fetchHospitals();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch hospitals when filters or search changes
@@ -81,7 +91,7 @@ const HospitalSelector = () => {
     if (!loading) {
       fetchHospitals();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStates, selectedCities, searchQuery]);
 
   // Fetch cities when state is selected
@@ -94,23 +104,37 @@ const HospitalSelector = () => {
       setSelectedCities([]);
     }
   }, [selectedStates]);
- const handleAddNewHospital = () => {
+  const handleAddNewHospital = () => {
     setShowAddHospitalModal(true);
   };
 
-  
+  const handleReset = () => {
+    if (allowMultiple) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItem(null);
+    }
+  };
+
   const fetchHospitals = async () => {
     try {
       setLoading(true);
       setError(null);
       console.log('HospitalSelector: Fetching hospitals with filters...');
-      
+
       // Build state and city IDs arrays
       const stateIds = selectedStates.map(s => Number(s.id));
       const cityIds = selectedCities.map(c => Number(c.id));
-      
-      console.log('HospitalSelector: Filter params - stateIds:', stateIds, 'cityIds:', cityIds, 'searchText:', searchQuery);
-      
+
+      console.log(
+        'HospitalSelector: Filter params - stateIds:',
+        stateIds,
+        'cityIds:',
+        cityIds,
+        'searchText:',
+        searchQuery,
+      );
+
       // Build payload matching the API requirements
       const payload = {
         typeCode: ['HOSP'],
@@ -118,7 +142,7 @@ const HospitalSelector = () => {
         page: 1,
         limit: 20,
       };
-      
+
       // Add optional filters
       if (stateIds.length > 0) {
         payload.stateIds = stateIds;
@@ -129,13 +153,16 @@ const HospitalSelector = () => {
       if (searchQuery && searchQuery.trim().length > 0) {
         payload.searchText = searchQuery.trim();
       }
-      
-      console.log('HospitalSelector: API payload being sent:', JSON.stringify(payload));
-      
+
+      console.log(
+        'HospitalSelector: API payload being sent:',
+        JSON.stringify(payload),
+      );
+
       // Call API directly with correct payload
       const response = await customerAPI.getCustomersListHospitals(payload);
       console.log('HospitalSelector: Hospitals API response:', response);
-      
+
       if (response?.customers && Array.isArray(response.customers)) {
         // Transform API response to match expected format
         const transformedHospitals = response.customers.map(customer => ({
@@ -147,7 +174,11 @@ const HospitalSelector = () => {
           customerId: customer.customerId,
           customerCode: customer.customerCode,
         }));
-        console.log('HospitalSelector: Transformed hospitals:', transformedHospitals.length, 'items');
+        console.log(
+          'HospitalSelector: Transformed hospitals:',
+          transformedHospitals.length,
+          'items',
+        );
         setHospitalsData(transformedHospitals);
       } else {
         console.log('HospitalSelector: Invalid hospitals response format');
@@ -166,10 +197,10 @@ const HospitalSelector = () => {
     try {
       setStatesLoading(true);
       console.log('HospitalSelector: Fetching states...');
-      
+
       const response = await customerAPI.getStatesList(1, 20);
       console.log('HospitalSelector: States API response:', response);
-      
+
       if (response?.data?.states && Array.isArray(response.data.states)) {
         // Transform state response
         const transformedStates = response.data.states.map(state => ({
@@ -188,14 +219,14 @@ const HospitalSelector = () => {
     }
   };
 
-  const fetchCitiesForStates = async (states) => {
+  const fetchCitiesForStates = async states => {
     try {
       setCitiesLoading(true);
       console.log('HospitalSelector: Fetching cities for states...');
-      
+
       const response = await customerAPI.getCitiesList(1, 20);
       console.log('HospitalSelector: Cities API response:', response);
-      
+
       if (response?.data?.cities && Array.isArray(response.data.cities)) {
         // Filter cities by all selected states and transform
         const stateIds = states.map(s => Number(s.id));
@@ -217,7 +248,7 @@ const HospitalSelector = () => {
     }
   };
 
-  const handleStateToggle = (state) => {
+  const handleStateToggle = state => {
     const isSelected = selectedStates.some(s => s.id === state.id);
     if (isSelected) {
       setSelectedStates(selectedStates.filter(s => s.id !== state.id));
@@ -226,7 +257,7 @@ const HospitalSelector = () => {
     }
   };
 
-  const handleCityToggle = (city) => {
+  const handleCityToggle = city => {
     const isSelected = selectedCities.some(c => c.id === city.id);
     if (isSelected) {
       setSelectedCities(selectedCities.filter(c => c.id !== city.id));
@@ -239,7 +270,7 @@ const HospitalSelector = () => {
     // Search is handled by API call through useEffect
   };
 
-  const handleToggleHospital = (hospital) => {
+  const handleToggleHospital = hospital => {
     if (allowMultiple) {
       // Multiple selection - checkbox behavior
       const isSelected = selectedItems.some(h => h.id === hospital.id);
@@ -270,21 +301,18 @@ const HospitalSelector = () => {
     navigation.goBack();
   };
 
-
-
-    const handleHospitalSubmit = (newHospital) => {
+  const handleHospitalSubmit = newHospital => {
     // Add the new pharmacy to selected items
     setSelectedItems([...selectedItems, newHospital]);
     // Optionally refresh the pharmacy list
     fetchHospitals();
   };
 
-
   const renderHospitalItem = ({ item }) => {
-    const isSelected = allowMultiple 
+    const isSelected = allowMultiple
       ? selectedItems.some(h => h.id === item.id)
       : selectedItem?.id === item.id;
-    
+
     return (
       <TouchableOpacity
         style={styles.hospitalItem}
@@ -294,22 +322,29 @@ const HospitalSelector = () => {
         <View style={styles.radioContainer}>
           {allowMultiple ? (
             // Checkbox for multiple selection
-            <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+            <View
+              style={[styles.checkbox, isSelected && styles.checkboxSelected]}
+            >
               {isSelected && <Icon name="checkmark" size={16} color="#fff" />}
             </View>
           ) : (
             // Radio button for single selection
-            <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
+            <View
+              style={[
+                styles.radioCircle,
+                isSelected && styles.radioCircleSelected,
+              ]}
+            >
               {isSelected && <View style={styles.radioInner} />}
             </View>
           )}
         </View>
-        
+
         <View style={styles.hospitalInfo}>
           <AppText style={styles.hospitalName}>{item.name}</AppText>
           <AppText style={styles.hospitalCode}>{item.code}</AppText>
         </View>
-        
+
         <AppText style={styles.hospitalCity}>{item.city}</AppText>
       </TouchableOpacity>
     );
@@ -321,29 +356,33 @@ const HospitalSelector = () => {
     //   <Icon name="search" size={40} color="#999" />
     //   <AppText style={styles.emptyText}>No hospitals found</AppText>
     // </View>
-      <View style={styles.emptyContainer}>
-              <PhamacySearchNotFound width={40} height={40} color="#999" />
-              <AppText style={styles.emptyTitle}>Hospital Not Found</AppText>
-              <AppText style={styles.emptySubtitle}>Hospital not found. You can add a new hospital to continue</AppText>
-              <TouchableOpacity
-                style={styles.addNewPharmacyButtonEmpty}
-                onPress={handleAddNewHospital}
-              >
-                <AppText style={styles.addNewPharmacyTextEmpty}>+Add New Hospital</AppText>
-              </TouchableOpacity>
-            </View>
+    <View style={styles.emptyContainer}>
+      <PhamacySearchNotFound width={40} height={40} color="#999" />
+      <AppText style={styles.emptyTitle}>Hospital Not Found</AppText>
+      <AppText style={styles.emptySubtitle}>
+        Hospital not found. You can add a new hospital to continue
+      </AppText>
+      <TouchableOpacity
+        style={styles.addNewPharmacyButtonEmpty}
+        onPress={handleAddNewHospital}
+      >
+        <AppText style={styles.addNewPharmacyTextEmpty}>
+          +Add New Hospital
+        </AppText>
+      </TouchableOpacity>
+    </View>
   );
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.closeButton}
-        >          
+        >
           <Icon name="close" size={24} color="#333" />
         </TouchableOpacity>
         <AppText style={styles.headerTitle}>Select Hospital</AppText>
@@ -357,9 +396,17 @@ const HospitalSelector = () => {
           onPress={() => setShowStateDropdown(!showStateDropdown)}
         >
           <AppText style={styles.filterDropdownText}>
-            {selectedStates.length > 0 ? `${selectedStates.length} State${selectedStates.length !== 1 ? 's' : ''}` : 'Select State'}
+            {selectedStates.length > 0
+              ? `${selectedStates.length} State${
+                  selectedStates.length !== 1 ? 's' : ''
+                }`
+              : 'Select State'}
           </AppText>
-          <Icon name={showStateDropdown ? 'chevron-up' : 'chevron-down'} size={16} color="#666" />
+          <Icon
+            name={showStateDropdown ? 'chevron-up' : 'chevron-down'}
+            size={16}
+            color="#666"
+          />
         </TouchableOpacity>
 
         {/* City Dropdown */}
@@ -368,9 +415,17 @@ const HospitalSelector = () => {
           onPress={() => setShowCityDropdown(!showCityDropdown)}
         >
           <AppText style={styles.filterDropdownText}>
-            {selectedCities.length > 0 ? `${selectedCities.length} Cit${selectedCities.length !== 1 ? 'ies' : 'y'}` : 'Select City'}
+            {selectedCities.length > 0
+              ? `${selectedCities.length} Cit${
+                  selectedCities.length !== 1 ? 'ies' : 'y'
+                }`
+              : 'Select City'}
           </AppText>
-          <Icon name={showCityDropdown ? 'chevron-up' : 'chevron-down'} size={16} color="#666" />
+          <Icon
+            name={showCityDropdown ? 'chevron-up' : 'chevron-down'}
+            size={16}
+            color="#666"
+          />
         </TouchableOpacity>
       </View>
 
@@ -402,17 +457,28 @@ const HospitalSelector = () => {
                     style={styles.dropdownItem}
                     onPress={() => handleStateToggle(state)}
                   >
-                    <View style={[styles.checkboxSmall, isSelected && styles.checkboxSmallSelected]}>
-                      {isSelected && <Icon name="checkmark" size={14} color="#fff" />}
+                    <View
+                      style={[
+                        styles.checkboxSmall,
+                        isSelected && styles.checkboxSmallSelected,
+                      ]}
+                    >
+                      {isSelected && (
+                        <Icon name="checkmark" size={14} color="#fff" />
+                      )}
                     </View>
-                    <AppText style={styles.dropdownItemText}>{state.name}</AppText>
+                    <AppText style={styles.dropdownItemText}>
+                      {state.name}
+                    </AppText>
                   </TouchableOpacity>
                 );
               })}
             </ScrollView>
           ) : (
             <View style={styles.dropdownEmptyContainer}>
-              <AppText style={styles.dropdownEmptyText}>No states available</AppText>
+              <AppText style={styles.dropdownEmptyText}>
+                No states available
+              </AppText>
             </View>
           )}
         </View>
@@ -435,24 +501,35 @@ const HospitalSelector = () => {
                     style={styles.dropdownItem}
                     onPress={() => handleCityToggle(city)}
                   >
-                    <View style={[styles.checkboxSmall, isSelected && styles.checkboxSmallSelected]}>
-                      {isSelected && <Icon name="checkmark" size={14} color="#fff" />}
+                    <View
+                      style={[
+                        styles.checkboxSmall,
+                        isSelected && styles.checkboxSmallSelected,
+                      ]}
+                    >
+                      {isSelected && (
+                        <Icon name="checkmark" size={14} color="#fff" />
+                      )}
                     </View>
-                    <AppText style={styles.dropdownItemText}>{city.name}</AppText>
+                    <AppText style={styles.dropdownItemText}>
+                      {city.name}
+                    </AppText>
                   </TouchableOpacity>
                 );
               })}
             </ScrollView>
           ) : (
             <View style={styles.dropdownEmptyContainer}>
-              <AppText style={styles.dropdownEmptyText}>No cities available</AppText>
+              <AppText style={styles.dropdownEmptyText}>
+                No cities available
+              </AppText>
             </View>
           )}
         </View>
       )}
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>        
+      <View style={styles.searchContainer}>
         <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
         <AppInput
           style={styles.searchInput}
@@ -463,10 +540,9 @@ const HospitalSelector = () => {
           placeholderTextColor="#777777"
         />
 
-       <TouchableOpacity onPress={() => setSearchQuery('')}>
-    <Icon name="close" size={15} color="#999" style={styles.closeIcon} />
-  </TouchableOpacity>
-
+        <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <Icon name="close" size={15} color="#999" style={styles.closeIcon} />
+        </TouchableOpacity>
       </View>
 
       {/* Header Row */}
@@ -489,10 +565,7 @@ const HospitalSelector = () => {
           <Icon name="alert-circle" size={40} color="#EF4444" />
           <AppText style={styles.errorText}>Error loading hospitals</AppText>
           <AppText style={styles.errorSubText}>{error}</AppText>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={fetchHospitals}
-          >
+          <TouchableOpacity style={styles.retryButton} onPress={fetchHospitals}>
             <AppText style={styles.retryButtonText}>Retry</AppText>
           </TouchableOpacity>
         </View>
@@ -510,14 +583,20 @@ const HospitalSelector = () => {
       {/* Bottom Button */}
       {(allowMultiple ? selectedItems.length > 0 : selectedItem) && (
         <View style={styles.bottomContainer}>
-          <TouchableOpacity
-            style={styles.continueButton}
-            onPress={handleContinue}
-          >
-            <AppText style={styles.continueButtonText}>
-              Continue ({allowMultiple ? selectedItems.length : 1} selected)
-            </AppText>
-          </TouchableOpacity>
+          <View style={styles.bottomRow}>
+            {/* RESET BUTTON */}
+            <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+              <AppText style={styles.resetButtonText}>Reset</AppText>
+            </TouchableOpacity>
+
+            {/* CONTINUE BUTTON */}
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={handleContinue}
+            >
+              <AppText style={styles.continueButtonText}>Continue</AppText>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -670,22 +749,19 @@ const styles = StyleSheet.create({
   },
   searchIcon: {
     marginRight: 12,
-       
-
   },
 
   closeIcon: {
-   
-     backgroundColor: '#EDEDED',
-     borderRadius:50,
-     padding:2
+    backgroundColor: '#EDEDED',
+    borderRadius: 50,
+    padding: 2,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     height: 20,
     color: '#333',
-    paddingVertical: 0, 
+    paddingVertical: 0,
   },
   headerRow: {
     flexDirection: 'row',
@@ -817,7 +893,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
- 
+
   noResultsContainer: {
     flex: 1,
     alignItems: 'center',
@@ -863,19 +939,23 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
   },
-  continueButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
+
   continueButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
 
-   emptyContainer: {
+  continueButton: {
+    flex: 1.3,
+    paddingVertical: 16,
+    borderRadius: 50,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -909,6 +989,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.primary,
     fontWeight: '600',
+  },
+
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 14,
+  },
+
+  resetButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#E58A28', // orange border
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  resetButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#E58A28', // orange text
   },
 });
 

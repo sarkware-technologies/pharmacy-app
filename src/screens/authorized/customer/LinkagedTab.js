@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unstable-nested-components */
 /* eslint-disable no-dupe-keys */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,89 +16,25 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconFeather from 'react-native-vector-icons/Feather';
 import IconMaterial from 'react-native-vector-icons/MaterialIcons';
-import { 
-  ApproveConfirmModal, 
-  LinkDivisionsModal, 
+import {
+  ApproveConfirmModal,
+  LinkDivisionsModal,
   RejectCustomerModal,
-  TagHospitalModal 
+  TagHospitalModal,
 } from '../../../components/OnboardConfirmModel';
 import FilterModal from '../../../components/FilterModal';
 import { customerAPI } from '../../../api/customer';
 import { getDistributors } from '../../../api/distributor';
 import { useSelector } from 'react-redux';
 import { selectCurrentCustomerId } from '../../../redux/slices/customerSlice';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from '../../../components';
 import { colors } from '../../../styles/colors';
-import Distributors from "../../../components/icons/Distributors"
-import Divisions from "../../../components/icons/Divisions"
-import Field from "../../../components/icons/Field"
-import CustomerHierarchy from "../../../components/icons/CustomerHierarchy"
-
-
- 
+import Distributors from '../../../components/icons/Distributors';
+import Divisions from '../../../components/icons/Divisions';
+import Field from '../../../components/icons/Field';
+import CustomerHierarchy from '../../../components/icons/CustomerHierarchy';
 
 const { width } = Dimensions.get('window');
-
-// Mock data for different customer types
-const mockLinkagedData = {
-  doctor: {
-    linkedPharmacies: [
-      { id: 1, name: 'Jahangir Pharmacies', code: '3645', location: 'Pune', status: 'pending' },
-      { id: 2, name: 'Ruby hall pharmacies', code: '1645', location: 'Pune', status: 'pending' },
-      { id: 3, name: 'Sai shreepharmacies', code: '4645', location: 'Pune', status: 'pending' },
-      { id: 4, name: 'Columbia pharmacies', code: '2645', location: 'Pune', status: 'pending' },
-    ],
-  },
-  hospital: {
-    parentHospital: {
-      name: 'Tata Group',
-      code: '1563',
-      type: 'Group Hospital'
-    },
-    childHospitals: [
-      { id: 1, name: 'Tata Memorial MUM', code: '1563', type: 'Hospital', status: 'pending' },
-      { id: 2, name: 'Tata Memorial HYD', code: '1563', type: 'Hospital', status: 'pending' },
-      { id: 3, name: 'Tata Memorial JAM', code: '1563', type: 'Hospital', status: 'pending' },
-    ],
-    linkedPharmacies: [
-      { id: 1, name: 'Jahangir Pharmacies', code: '3645', location: 'Pune', status: 'pending' },
-      { id: 2, name: 'Ruby hall pharmacies', code: '1645', location: 'Pune', status: 'pending' },
-      { id: 3, name: 'Sai shreepharmacies', code: '4645', location: 'Pune', status: 'pending' },
-      { id: 4, name: 'Columbia pharmacies', code: '2645', location: 'Pune', status: 'pending' },
-    ],
-    linkedDoctors: []
-  },
-  pharmacy: {
-    linkedDoctors: [],
-    linkedHospitals: []
-  }
-};
-
-// Static distributor data
-const mockDistributors = {
-  preferred: [
-    {
-      id: 1,
-      name: 'Mahalaxmi Distributors',
-      code: '10106555',
-      location: 'One city',
-      city: 'Pune',
-      division: 'SPLL',
-      allDivisions: false,
-      margin: 15,
-      rateType: 'Net Rate',
-    }
-  ],
-  all: [
-    { id: 1, name: 'Mahalaxmi distributors', code: '10106555', city: 'Pune', supplyType: 'Net Rate (DM)' },
-    { id: 2, name: 'Rupesh stores', code: '10106555', city: 'Pune', supplyType: 'Chargeback (CM)' },
-    { id: 3, name: 'Tapadiya distributors', code: '10106555', city: 'Pune', supplyType: 'Net Rate (DM)' },
-    { id: 4, name: 'Sai shree memo', code: '10106555', city: 'Pune', supplyType: 'Net Rate (DM)' },
-    { id: 5, name: 'Rupesh stores', code: '10106555', city: 'Pune', supplyType: 'Chargeback (CM)' },
-    { id: 6, name: 'Tapadiya distributors', code: '10106555', city: 'Pune', supplyType: 'Net Rate (DM)' },
-    { id: 7, name: 'Sai shree memo', code: '10106555', city: 'Pune', supplyType: 'Net Rate (DM)' },
-  ]
-};
 
 // Static divisions data
 const mockDivisions = {
@@ -124,38 +60,117 @@ const mockDivisions = {
     { id: 7, name: 'VICTRIX SUN', code: '1044', selected: true },
     { id: 8, name: 'Sun Exports USA', code: '1044', selected: true },
     { id: 9, name: 'Bonesta', code: '1044', selected: true },
-  ]
+  ],
 };
 
 // Static field data
 const mockFieldData = [
-  { id: 1, name: 'Abhishek Suryawanshi', code: 'SUN12345', designation: 'Customer executive' },
+  {
+    id: 1,
+    name: 'Abhishek Suryawanshi',
+    code: 'SUN12345',
+    designation: 'Customer executive',
+  },
   { id: 2, name: 'Akshav Pawar', code: 'SUN12345', designation: 'NSM' },
-  { id: 3, name: 'Sachin Patil', code: 'SUN12345', designation: 'Filed officer' },
+  {
+    id: 3,
+    name: 'Sachin Patil',
+    code: 'SUN12345',
+    designation: 'Filed officer',
+  },
   { id: 4, name: 'Rushikesh Mahajan', code: 'SUN12345', designation: 'ZSM' },
   { id: 5, name: 'Akshay Amanakar', code: 'SUN12345', designation: 'ASM' },
-  { id: 6, name: 'Omkar Ankam', code: 'SUN12345', designation: 'Filed officer' },
-  { id: 7, name: 'Vrushal Shinde', code: 'SUN12345', designation: 'Customer executive' },
-  { id: 8, name: 'Sagar Kadam', code: 'SUN12345', designation: 'Customer executive' },
-  { id: 9, name: 'Sanket Kulkarni', code: 'SUN12345', designation: 'Customer executive' },
+  {
+    id: 6,
+    name: 'Omkar Ankam',
+    code: 'SUN12345',
+    designation: 'Filed officer',
+  },
+  {
+    id: 7,
+    name: 'Vrushal Shinde',
+    code: 'SUN12345',
+    designation: 'Customer executive',
+  },
+  {
+    id: 8,
+    name: 'Sagar Kadam',
+    code: 'SUN12345',
+    designation: 'Customer executive',
+  },
+  {
+    id: 9,
+    name: 'Sanket Kulkarni',
+    code: 'SUN12345',
+    designation: 'Customer executive',
+  },
 ];
 
-export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mappingData = null, hasApprovePermission = false, isCustomerActive = false }) => {
+export const LinkagedTab = ({
+  customerType = 'Hospital',
+  customerId = null,
+  mappingData = null,
+  hasApprovePermission = false,
+  isCustomerActive = false,
+}) => {
   const [activeSubTab, setActiveSubTab] = useState('divisions');
   const [activeDistributorTab, setActiveDistributorTab] = useState('preferred');
   const [showDivisionModal, setShowDivisionModal] = useState(false);
-  const [selectedDivisions, setSelectedDivisions] = useState(mockDivisions.other.filter(d => d.selected));
-  const [allDivisionsSelected, setAllDivisionsSelected] = useState(mockDivisions.allDivisions.filter(d => d.selected));
+  const [selectedDivisions, setSelectedDivisions] = useState(
+    mockDivisions.other.filter(d => d.selected),
+  );
+  const [allDivisionsSelected, setAllDivisionsSelected] = useState(
+    mockDivisions.allDivisions.filter(d => d.selected),
+  );
+  // Debounced search for All Distributors (prevents reloading whole page on each keystroke)
   const [searchText, setSearchText] = useState('');
-  
-  // Get logged-in user data
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const DEBOUNCE_DELAY = 400; // ms
+  const searchDebounceRef = useRef(null);
+
+  // All-distributors supply-type state & dropdown control
+  const [allDistributorSupplyType, setAllDistributorSupplyType] = useState({});
+  const [showAllSupplyDropdown, setShowAllSupplyDropdown] = useState({});
+
+  const toggleAllSupplyDropdown = distributorId => {
+    setShowAllSupplyDropdown(prev => ({
+      ...prev,
+      [distributorId]: !prev[distributorId],
+    }));
+  };
+
+  const handleAllDistributorSupplySelect = (distributorId, value) => {
+    setAllDistributorSupplyType(prev => ({
+      ...prev,
+      [distributorId]: value,
+    }));
+    setShowAllSupplyDropdown(prev => ({
+      ...prev,
+      [distributorId]: false,
+    }));
+  };
+
+  // update debouncedSearch after a pause in typing
+  useEffect(() => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchText.trim());
+    }, DEBOUNCE_DELAY);
+
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [searchText]);
+
   const loggedInUser = useSelector(state => state.auth.user);
-  
-  // Get customerId from Redux (set by CustomerDetail)
   const reduxCustomerId = useSelector(selectCurrentCustomerId);
-  // Use Redux customerId if available, otherwise fall back to prop
   const effectiveCustomerId = reduxCustomerId || customerId;
-  
+
   // Modal states
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showLinkDivisionsModal, setShowLinkDivisionsModal] = useState(false);
@@ -169,8 +184,8 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
   const [expandedHospitals, setExpandedHospitals] = useState({});
   const [expandedGroupHospitals, setExpandedGroupHospitals] = useState({});
   const [activeGroupHospitalTab, setActiveGroupHospitalTab] = useState({});
-  
-  // Toast states 
+
+  // Toast states
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
@@ -183,17 +198,19 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
   // Distributors states
   const [allDistributorsData, setAllDistributorsData] = useState([]);
   const [filteredDistributorsData, setFilteredDistributorsData] = useState([]);
-  const [preferredDistributorsData, setPreferredDistributorsData] = useState([]);
+  const [preferredDistributorsData, setPreferredDistributorsData] = useState(
+    [],
+  );
   const [distributorsLoading, setDistributorsLoading] = useState(false);
   const [distributorsError, setDistributorsError] = useState(null);
-  
+
   // Filter states for distributors
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [distributorFilters, setDistributorFilters] = useState({
     state: [],
     city: [],
   });
-  
+
   // Preferred distributors mode and selection
   const [preferredViewMode, setPreferredViewMode] = useState('selection'); // 'selection' or 'edit'
   const [selectedDistributors, setSelectedDistributors] = useState([]);
@@ -215,92 +232,125 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
   const [divisionsError, setDivisionsError] = useState(null);
   const [linkingDivisions, setLinkingDivisions] = useState(false);
 
-    // Tab scroll ref for centering active tab
-    const tabScrollRef = useRef(null);
-    const tabRefs = useRef({});
-
+  // Tab scroll ref for centering active tab
+  const tabScrollRef = useRef(null);
+  const tabRefs = useRef({});
 
   // Show toast notification
   const showToast = (message, type = 'success') => {
     setToastMessage(message);
     setToastType(type);
     setToastVisible(true);
-    
+
     setTimeout(() => {
       setToastVisible(false);
     }, 3000);
   };
 
+  const handleTabPress = async tabName => {
+    // First reset the list and set active tab
+    setActiveSubTab(tabName);
 
+    // Scroll the tab into visible area after a small delay to ensure layout is ready
+    setTimeout(() => {
+      if (tabRefs.current[tabName] && tabScrollRef.current) {
+        tabRefs.current[tabName].measureLayout(
+          tabScrollRef.current.getNode
+            ? tabScrollRef.current.getNode()
+            : tabScrollRef.current,
+          (x, y, w, h) => {
+            const screenWidth = Dimensions.get('window').width;
+            // Center the tab in the screen
+            const scrollX = x - screenWidth / 2 + w / 2;
 
-    const handleTabPress = async (tabName) => {
-      // First reset the list and set active tab
-      setActiveSubTab(tabName);
-  
-      // Scroll the tab into visible area after a small delay to ensure layout is ready
-      setTimeout(() => {
-        if (tabRefs.current[tabName] && tabScrollRef.current) {
-          tabRefs.current[tabName].measureLayout(
-            tabScrollRef.current.getNode ? tabScrollRef.current.getNode() : tabScrollRef.current,
-            (x, y, w, h) => {
-              const screenWidth = Dimensions.get('window').width;
-              // Center the tab in the screen
-              const scrollX = x - (screenWidth / 2) + (w / 2);
-  
-              tabScrollRef.current?.scrollTo({
-                x: Math.max(0, scrollX),
-                animated: true
-              });
-            },
-            () => {
-              console.log('measureLayout failed');
-            }
-          );
-        }
-      }, 100);
-    };
+            tabScrollRef.current?.scrollTo({
+              x: Math.max(0, scrollX),
+              animated: true,
+            });
+          },
+          () => {
+            console.log('measureLayout failed');
+          },
+        );
+      }
+    }, 100);
+  };
+
+  // derived local filter for Preferred Distributors (client-side search)
+  const filteredPreferredDistributors = useMemo(() => {
+    const q = (preferredSearchText || '').trim().toLowerCase();
+    if (!q) return preferredDistributorsData || [];
+
+    return (preferredDistributorsData || []).filter(d => {
+      const name = (d.name || '').toLowerCase();
+      const code = (d.code || '').toLowerCase();
+      const city = (d.cityName || d.city || '').toLowerCase();
+      // match on name, code or city (you can add other fields if needed)
+      return name.includes(q) || code.includes(q) || city.includes(q);
+    });
+  }, [preferredSearchText, preferredDistributorsData]);
 
   // Fetch divisions data on component mount
   useEffect(() => {
     const fetchDivisionsData = async () => {
-      console.log('LinkagedTab: Fetching divisions for customerId:', effectiveCustomerId);
+      console.log(
+        'LinkagedTab: Fetching divisions for customerId:',
+        effectiveCustomerId,
+      );
       if (!effectiveCustomerId) {
-        console.log('LinkagedTab: No customerId provided, skipping divisions fetch');
+        console.log(
+          'LinkagedTab: No customerId provided, skipping divisions fetch',
+        );
         return;
       }
-      
+
       try {
         setDivisionsLoading(true);
         setDivisionsError(null);
-        
+
         // Fetch customer's linked divisions
         console.log('LinkagedTab: Calling getCustomerDivisions API...');
-        const customerDivisionsResponse = await customerAPI.getCustomerDivisions(effectiveCustomerId);
-        console.log('LinkagedTab: Customer divisions API response:', customerDivisionsResponse);
-        
+        const customerDivisionsResponse =
+          await customerAPI.getCustomerDivisions(effectiveCustomerId);
+        console.log(
+          'LinkagedTab: Customer divisions API response:',
+          customerDivisionsResponse,
+        );
+
         // Fetch all available divisions
         console.log('LinkagedTab: Calling getAllDivisions API...');
         const allDivisionsResponse = await customerAPI.getAllDivisions();
-        console.log('LinkagedTab: All divisions API response:', allDivisionsResponse);
-        
+        console.log(
+          'LinkagedTab: All divisions API response:',
+          allDivisionsResponse,
+        );
+
         let openedDivisions = [];
         let otherDivisions = [];
-        
+
         // Process customer's linked divisions (opened)
-        if (customerDivisionsResponse?.data && Array.isArray(customerDivisionsResponse.data)) {
+        if (
+          customerDivisionsResponse?.data &&
+          Array.isArray(customerDivisionsResponse.data)
+        ) {
           openedDivisions = customerDivisionsResponse.data;
           console.log('LinkagedTab: Opened divisions:', openedDivisions.length);
         }
-        
+
         // Process all available divisions and filter out already linked ones
-        if (allDivisionsResponse?.data?.divisions && Array.isArray(allDivisionsResponse.data.divisions)) {
-          const linkedDivisionIds = openedDivisions.map(d => Number(d.divisionId));
+        if (
+          allDivisionsResponse?.data?.divisions &&
+          Array.isArray(allDivisionsResponse.data.divisions)
+        ) {
+          const linkedDivisionIds = openedDivisions.map(d =>
+            Number(d.divisionId),
+          );
           otherDivisions = allDivisionsResponse.data.divisions.filter(
-            d => !linkedDivisionIds.includes(Number(d.divisionId))
+            d => !linkedDivisionIds.includes(Number(d.divisionId)),
           );
           console.log('LinkagedTab: Other divisions:', otherDivisions.length);
         }
-        
+
         setOpenedDivisionsData(openedDivisions);
         setOtherDivisionsData(otherDivisions);
       } catch (error) {
@@ -323,7 +373,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
         setFieldTeamLoading(true);
         setFieldTeamError(null);
         const response = await customerAPI.getCompanyUsers(1, 20);
-        
+
         if (response?.data?.companyUsers) {
           setFieldTeamData(response.data.companyUsers);
         } else {
@@ -346,24 +396,27 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
     if (mappingData) {
       console.log('=== MAPPING DATA RECEIVED IN LINKAGED TAB ===');
       console.log('Full Mapping Data:', mappingData);
-      
+
       // Log individual sections
       console.log('--- Hospitals ---');
       console.log('Hospitals:', mappingData.hospitals || []);
       console.log('Hospital Count:', mappingData.hospitals?.length || 0);
-      
+
       console.log('--- Doctors ---');
       console.log('Doctors:', mappingData.doctors || []);
       console.log('Doctor Count:', mappingData.doctors?.length || 0);
-      
+
       console.log('--- Pharmacies ---');
       console.log('Pharmacies:', mappingData.pharmacy || []);
       console.log('Pharmacy Count:', mappingData.pharmacy?.length || 0);
-      
+
       console.log('--- Group Hospitals ---');
       console.log('Group Hospitals:', mappingData.groupHospitals || []);
-      console.log('Group Hospital Count:', mappingData.groupHospitals?.length || 0);
-      
+      console.log(
+        'Group Hospital Count:',
+        mappingData.groupHospitals?.length || 0,
+      );
+
       // Store mapping data in state
       setHierarchyMappingData(mappingData);
     }
@@ -376,25 +429,47 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
         return;
       }
 
-      console.log('LinkagedTab: Fetching preferred distributors for customerId:', effectiveCustomerId);
-      
+      console.log(
+        'LinkagedTab: Fetching preferred distributors for customerId:',
+        effectiveCustomerId,
+      );
+
       try {
         setDistributorsLoading(true);
         setDistributorsError(null);
-        
+
         // Call API to get linked distributors and divisions
-        const response = await customerAPI.getLinkedDistributorDivisions(effectiveCustomerId);
-        console.log('LinkagedTab: Linked distributor divisions API response:', response);
-        
-        if (response?.data?.customer?.distributorDetails && Array.isArray(response.data.customer.distributorDetails)) {
-          console.log('LinkagedTab: Setting preferredDistributorsData with', response.data.customer.distributorDetails.length, 'distributors');
-          setPreferredDistributorsData(response.data.customer.distributorDetails);
+        const response = await customerAPI.getLinkedDistributorDivisions(
+          effectiveCustomerId,
+        );
+        console.log(
+          'LinkagedTab: Linked distributor divisions API response:',
+          response,
+        );
+
+        if (
+          response?.data?.customer?.distributorDetails &&
+          Array.isArray(response.data.customer.distributorDetails)
+        ) {
+          console.log(
+            'LinkagedTab: Setting preferredDistributorsData with',
+            response.data.customer.distributorDetails.length,
+            'distributors',
+          );
+          setPreferredDistributorsData(
+            response.data.customer.distributorDetails,
+          );
         } else {
-          console.log('LinkagedTab: Invalid preferred distributors response format');
+          console.log(
+            'LinkagedTab: Invalid preferred distributors response format',
+          );
           setPreferredDistributorsData([]);
         }
       } catch (error) {
-        console.error('LinkagedTab: Error fetching preferred distributors:', error);
+        console.error(
+          'LinkagedTab: Error fetching preferred distributors:',
+          error,
+        );
         setDistributorsError(error.message);
         setPreferredDistributorsData([]);
       } finally {
@@ -405,25 +480,30 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
     fetchPreferredDistributorsData();
   }, [activeDistributorTab, effectiveCustomerId]);
 
-  // Fetch all distributors when All Distributors tab is active
   useEffect(() => {
     const fetchDistributorsData = async () => {
       if (activeDistributorTab !== 'all') {
         return;
       }
 
-      console.log('LinkagedTab: Fetching all distributors...');
-      
+      console.log('LinkagedTab: Fetching all distributors...', {
+        query: debouncedSearch,
+      });
+
       try {
         setDistributorsLoading(true);
         setDistributorsError(null);
-        
-        // Call API to get all distributors with pagination
-        const response = await getDistributors(1, 100, searchText);
+
+        // Call API to get all distributors with pagination (search uses debouncedSearch)
+        const response = await getDistributors(1, 100, debouncedSearch);
         console.log('LinkagedTab: Distributors API response:', response);
-        
+
         if (response?.distributors && Array.isArray(response.distributors)) {
-          console.log('LinkagedTab: Setting allDistributorsData with', response.distributors.length, 'distributors');
+          console.log(
+            'LinkagedTab: Setting allDistributorsData with',
+            response.distributors.length,
+            'distributors',
+          );
           setAllDistributorsData(response.distributors);
           setFilteredDistributorsData(response.distributors);
         } else {
@@ -442,7 +522,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
     };
 
     fetchDistributorsData();
-  }, [activeDistributorTab, searchText]);
+  }, [activeDistributorTab, debouncedSearch]);
 
   // Apply filters to distributors
   useEffect(() => {
@@ -454,30 +534,36 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
     let filtered = [...allDistributorsData];
 
     // Apply state filter
-    if (distributorFilters.state.length > 0 && !distributorFilters.state.includes('All')) {
-      filtered = filtered.filter(distributor => 
-        distributorFilters.state.includes(distributor.stateName)
+    if (
+      distributorFilters.state.length > 0 &&
+      !distributorFilters.state.includes('All')
+    ) {
+      filtered = filtered.filter(distributor =>
+        distributorFilters.state.includes(distributor.stateName),
       );
     }
 
     // Apply city filter
-    if (distributorFilters.city.length > 0 && !distributorFilters.city.includes('All')) {
-      filtered = filtered.filter(distributor => 
-        distributorFilters.city.includes(distributor.cityName)
+    if (
+      distributorFilters.city.length > 0 &&
+      !distributorFilters.city.includes('All')
+    ) {
+      filtered = filtered.filter(distributor =>
+        distributorFilters.city.includes(distributor.cityName),
       );
     }
 
     setFilteredDistributorsData(filtered);
   }, [allDistributorsData, distributorFilters]);
 
-  const handleFilterApply = (filters) => {
+  const handleFilterApply = filters => {
     setDistributorFilters({
       state: filters.state || [],
       city: filters.city || [],
     });
   };
-  
-  const toggleDistributorSelection = (distributorId) => {
+
+  const toggleDistributorSelection = distributorId => {
     setSelectedDistributors(prev => {
       if (prev.includes(distributorId)) {
         return prev.filter(id => id !== distributorId);
@@ -486,7 +572,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
       }
     });
   };
-  
+
   const handleContinueToEdit = () => {
     if (selectedDistributors.length > 0) {
       setPreferredViewMode('edit');
@@ -494,87 +580,112 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
       showToast('Please select at least one distributor', 'error');
     }
   };
-  
+
   // Check if all required fields are filled for linking
   const isLinkButtonDisabled = () => {
     if (linkingDistributors) return true;
-    
-    const selectedDists = preferredDistributorsData.filter(d => selectedDistributors.includes(d.id));
-    
+
+    const selectedDists = preferredDistributorsData.filter(d =>
+      selectedDistributors.includes(d.id),
+    );
+
     for (const distributor of selectedDists) {
       // Check if margin is filled
-      if (!distributorMargins[distributor.id] || distributorMargins[distributor.id] === '') {
+      if (
+        !distributorMargins[distributor.id] ||
+        distributorMargins[distributor.id] === ''
+      ) {
         return true;
       }
-      
+
       // Check if rate type is selected (Net Rate or Chargeback)
-      if (!distributorRateType[distributor.id] || 
-          (distributorRateType[distributor.id] !== 'Net Rate' && distributorRateType[distributor.id] !== 'Chargeback')) {
+      if (
+        !distributorRateType[distributor.id] ||
+        (distributorRateType[distributor.id] !== 'Net Rate' &&
+          distributorRateType[distributor.id] !== 'Chargeback')
+      ) {
         return true;
       }
     }
-    
+
     return false;
   };
-  
+
   const handleLinkDistributors = async () => {
     if (!effectiveCustomerId) {
       showToast('Customer ID not found', 'error');
       return;
     }
-    
+
     // Validate all required fields
-    const selectedDists = preferredDistributorsData.filter(d => selectedDistributors.includes(d.id));
-    
+    const selectedDists = preferredDistributorsData.filter(d =>
+      selectedDistributors.includes(d.id),
+    );
+
     for (const distributor of selectedDists) {
       // Check if margin is filled
-      if (!distributorMargins[distributor.id] || distributorMargins[distributor.id] === '') {
+      if (
+        !distributorMargins[distributor.id] ||
+        distributorMargins[distributor.id] === ''
+      ) {
         showToast(`Please enter margin for ${distributor.name}`, 'error');
         return;
       }
-      
+
       // Check if rate type is selected (Net Rate or Chargeback)
-      if (!distributorRateType[distributor.id] || 
-          (distributorRateType[distributor.id] !== 'Net Rate' && distributorRateType[distributor.id] !== 'Chargeback')) {
+      if (
+        !distributorRateType[distributor.id] ||
+        (distributorRateType[distributor.id] !== 'Net Rate' &&
+          distributorRateType[distributor.id] !== 'Chargeback')
+      ) {
         showToast(`Please select rate type for ${distributor.name}`, 'error');
         return;
       }
     }
-    
+
     try {
       setLinkingDistributors(true);
-      
+
       // Build the mappings array from selected distributors
-      const mappings = selectedDists
-        .map(distributor => ({
-          distributorId: Number(distributor.id),
-          divisions: openedDivisionsData.map(div => ({
-            id: Number(div.divisionId),
-            isActive: true
-          })),
-          supplyModeId: 3, // Default supply mode
-          margin: Number(distributorMargins[distributor.id] || 0)
-        }));
-      
+      const mappings = selectedDists.map(distributor => ({
+        distributorId: Number(distributor.id),
+        divisions: openedDivisionsData.map(div => ({
+          id: Number(div.divisionId),
+          isActive: true,
+        })),
+        supplyModeId: 3, // Default supply mode
+        margin: Number(distributorMargins[distributor.id] || 0),
+      }));
+
       const payload = { mappings };
-      
+
       console.log('Linking distributors with payload:', payload);
-      
-      const response = await customerAPI.linkDistributorDivisions(effectiveCustomerId, payload);
-      
+
+      const response = await customerAPI.linkDistributorDivisions(
+        effectiveCustomerId,
+        payload,
+      );
+
       console.log('Link distributors API response:', response);
-      
+
       showToast('Distributors linked successfully!', 'success');
-      
+
       // Go back to selection mode
       setPreferredViewMode('selection');
       setSelectedDistributors([]);
-      
+
       // Refresh preferred distributors list
       if (effectiveCustomerId) {
-        const updatedResponse = await customerAPI.getLinkedDistributorDivisions(effectiveCustomerId);
-        if (updatedResponse?.data?.customer?.distributorDetails && Array.isArray(updatedResponse.data.customer.distributorDetails)) {
-          setPreferredDistributorsData(updatedResponse.data.customer.distributorDetails);
+        const updatedResponse = await customerAPI.getLinkedDistributorDivisions(
+          effectiveCustomerId,
+        );
+        if (
+          updatedResponse?.data?.customer?.distributorDetails &&
+          Array.isArray(updatedResponse.data.customer.distributorDetails)
+        ) {
+          setPreferredDistributorsData(
+            updatedResponse.data.customer.distributorDetails,
+          );
         }
       }
     } catch (error) {
@@ -585,28 +696,28 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
     }
   };
 
-  const handleApprove = (item) => {
+  const handleApprove = item => {
     setSelectedItem(item);
     setShowApproveModal(true);
   };
 
-  const handleReject = (item) => {
+  const handleReject = item => {
     setSelectedItem(item);
     setShowRejectModal(true);
   };
-  
-  const handleApproveConfirm = async (comment) => {
+
+  const handleApproveConfirm = async comment => {
     try {
       const workflowId = selectedItem?.workflowId || selectedItem?.id;
       const actorId = loggedInUser?.userId || loggedInUser?.id;
-      
+
       const actionData = {
         stepOrder: 3,
         parallelGroup: 1,
         actorId: actorId,
-        action: "APPROVE",
-        comments: comment || "Approved",
-        actionData: {}
+        action: 'APPROVE',
+        comments: comment || 'Approved',
+        actionData: {},
       };
 
       console.log('Approving item:', selectedItem?.name);
@@ -615,7 +726,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
       console.log('Action Data:', actionData);
 
       const response = await customerAPI.workflowAction(workflowId, actionData);
-      
+
       setShowApproveModal(false);
       showToast(`${selectedItem?.name} approved successfully!`, 'success');
       setSelectedItem(null);
@@ -626,19 +737,19 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
       setSelectedItem(null);
     }
   };
-  
+
   const handleRejectConfirm = async () => {
     try {
       const workflowId = selectedItem?.workflowId || selectedItem?.id;
       const actorId = loggedInUser?.userId || loggedInUser?.id;
-      
+
       const actionData = {
         stepOrder: 3,
         parallelGroup: 1,
         actorId: actorId,
-        action: "REJECT",
-        comments: "Rejected",
-        actionData: {}
+        action: 'REJECT',
+        comments: 'Rejected',
+        actionData: {},
       };
 
       console.log('Rejecting item:', selectedItem?.name);
@@ -647,7 +758,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
       console.log('Action Data:', actionData);
 
       const response = await customerAPI.workflowAction(workflowId, actionData);
-      
+
       setShowRejectModal(false);
       showToast(`${selectedItem?.name} rejected!`, 'error');
       setSelectedItem(null);
@@ -658,14 +769,14 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
       setSelectedItem(null);
     }
   };
-  
-  const handleLinkDivisionsConfirmModal = (comment) => {
+
+  const handleLinkDivisionsConfirmModal = comment => {
     // TODO: API integration
     console.log('Link Divisions with comment:', comment);
     setShowLinkDivisionsModal(false);
     showToast('Divisions linked successfully!', 'success');
   };
-  
+
   const handleTagConfirm = () => {
     // TODO: API integration
     console.log('Tagged');
@@ -707,47 +818,72 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
   };
 
   // Add distributor from "All" to "Preferred"
-  const handleAddDistributor = async (distributor) => {
-    const alreadyExists = preferredDistributorsData.find(d => d.id === distributor.id);
+  const handleAddDistributor = async distributor => {
+    const alreadyExists = preferredDistributorsData.find(
+      d => d.id === distributor.id,
+    );
     if (alreadyExists) {
-      showToast(`${distributor.name} is already in preferred distributors!`, 'error');
+      showToast(
+        `${distributor.name} is already in preferred distributors!`,
+        'error',
+      );
       return;
     }
 
     try {
       console.log('Adding distributor:', distributor.id);
-      
+
       // Build the mapping payload with opened divisions
+      // Build the mapping payload with opened divisions and the selected supply type
       const mappingsPayload = {
         mappings: [
           {
             distributorId: Number(distributor.id),
             divisions: openedDivisionsData.map(d => ({
               id: Number(d.divisionId),
-              isActive: true
+              isActive: true,
             })),
             supplyModeId: 3,
-            margin: 1
-          }
-        ]
+            margin: 1,
+            // optional: include chosen rate type so backend can know the preference
+            rateType:
+              allDistributorSupplyType[distributor.id] ||
+              distributor.inviteStatusId == 2 ? 'Chargeback (CM)' :
+              'NetRate (DM)'
+          },
+        ],
       };
 
+
       console.log('Link distributor payload:', mappingsPayload);
-      
+
       // Call API to link distributor
-      const response = await customerAPI.linkDistributorDivisions(effectiveCustomerId, mappingsPayload);
+      const response = await customerAPI.linkDistributorDivisions(
+        effectiveCustomerId,
+        mappingsPayload,
+      );
       console.log('Link distributor API response:', response);
 
       // Add to preferred distributors locally
       setPreferredDistributorsData(prev => [...prev, distributor]);
-      
-      showToast(`${distributor.name} added to preferred distributors!`, 'success');
-      
+
+      showToast(
+        `${distributor.name} added to preferred distributors!`,
+        'success',
+      );
+
       // Refresh preferred distributors list
       if (effectiveCustomerId) {
-        const updatedResponse = await customerAPI.getLinkedDistributorDivisions(effectiveCustomerId);
-        if (updatedResponse?.data?.customer?.distributorDetails && Array.isArray(updatedResponse.data.customer.distributorDetails)) {
-          setPreferredDistributorsData(updatedResponse.data.customer.distributorDetails);
+        const updatedResponse = await customerAPI.getLinkedDistributorDivisions(
+          effectiveCustomerId,
+        );
+        if (
+          updatedResponse?.data?.customer?.distributorDetails &&
+          Array.isArray(updatedResponse.data.customer.distributorDetails)
+        ) {
+          setPreferredDistributorsData(
+            updatedResponse.data.customer.distributorDetails,
+          );
         }
       }
     } catch (error) {
@@ -757,8 +893,10 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
   };
 
   // Remove distributor from "Preferred"
-  const handleRemoveDistributor = (distributorId) => {
-    setPreferredDistributorsData(prev => prev.filter(d => d.id !== distributorId));
+  const handleRemoveDistributor = distributorId => {
+    setPreferredDistributorsData(prev =>
+      prev.filter(d => d.id !== distributorId),
+    );
     // Clean up dropdown states for removed distributor
     setDistributorRateType(prev => {
       const updated = { ...prev };
@@ -777,11 +915,11 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
   const handleRateTypeSelect = (distributorId, rateType) => {
     setDistributorRateType(prev => ({
       ...prev,
-      [distributorId]: rateType
+      [distributorId]: rateType,
     }));
     setShowRateTypeDropdown(prev => ({
       ...prev,
-      [distributorId]: false
+      [distributorId]: false,
     }));
   };
 
@@ -789,32 +927,32 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
   const handleDivisionSelect = (distributorId, division) => {
     setDistributorDivision(prev => ({
       ...prev,
-      [distributorId]: division
+      [distributorId]: division,
     }));
     setShowDivisionDropdown(prev => ({
       ...prev,
-      [distributorId]: false
+      [distributorId]: false,
     }));
   };
 
   // Toggle rate type dropdown
-  const toggleRateTypeDropdown = (distributorId) => {
+  const toggleRateTypeDropdown = distributorId => {
     setShowRateTypeDropdown(prev => ({
       ...prev,
-      [distributorId]: !prev[distributorId]
+      [distributorId]: !prev[distributorId],
     }));
   };
 
   // Toggle division dropdown
-  const toggleDivisionDropdown = (distributorId) => {
+  const toggleDivisionDropdown = distributorId => {
     setShowDivisionDropdown(prev => ({
       ...prev,
-      [distributorId]: !prev[distributorId]
+      [distributorId]: !prev[distributorId],
     }));
   };
 
   // Toggle division selection in "Other Division"
-  const toggleOtherDivisionSelection = (division) => {
+  const toggleOtherDivisionSelection = division => {
     setSelectedDivisions(prev => {
       const exists = prev.find(d => d.divisionId === division.divisionId);
       if (exists) {
@@ -826,7 +964,8 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
   };
 
   // Move selected divisions from "Other" to "Opened"
-  const handleLinkDivisionsConfirm = (comment) => {
+  // Move selected divisions from "Other" to "Opened"
+  const handleLinkDivisionsConfirm = comment => {
     if (selectedDivisions.length === 0) {
       showToast('Please select at least one division', 'error');
       return;
@@ -834,17 +973,22 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
 
     // Move selected divisions to opened
     setOpenedDivisionsData(prev => [...prev, ...selectedDivisions]);
-    
+
     // Remove from other divisions
     const selectedIds = selectedDivisions.map(d => d.divisionId);
-    setOtherDivisionsData(prev => prev.filter(d => !selectedIds.includes(d.divisionId)));
-    
+    setOtherDivisionsData(prev =>
+      prev.filter(d => !selectedIds.includes(d.divisionId)),
+    );
+
     // Clear selection
     setSelectedDivisions([]);
-    
+
     // Close modal
     setShowDivisionModal(false);
-    
+
+    // Switch to Distributors tab so user can continue
+    setActiveSubTab('distributors');
+
     showToast('Divisions linked successfully!', 'success');
   };
 
@@ -857,10 +1001,10 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
 
     try {
       setLinkingDivisions(true);
-      
+
       // Filter only divisions with divisionId and format for API
       const validDivisions = selectedDivisions.filter(d => d.divisionId);
-      
+
       if (validDivisions.length === 0) {
         showToast('No valid divisions selected', 'error');
         setLinkingDivisions(false);
@@ -870,58 +1014,78 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
       const divisionsPayload = {
         divisions: validDivisions.map(division => ({
           divisionId: Number(division.divisionId),
-          isActive: true
-        }))
+          isActive: true,
+        })),
       };
 
       console.log('Linking divisions with payload:', divisionsPayload);
-      
+
       // Call API to link divisions
-      const response = await customerAPI.linkDivisions(effectiveCustomerId, divisionsPayload);
-      
+      const response = await customerAPI.linkDivisions(
+        effectiveCustomerId,
+        divisionsPayload,
+      );
+
       console.log('Link divisions API response:', response);
 
-      // Move valid selected divisions to opened
+      // Move valid selected divisions to opened locally (so UI updates immediately)
       setOpenedDivisionsData(prev => [...prev, ...validDivisions]);
-      
-      // Remove from other divisions
+
+      // Remove from other divisions locally
       const selectedIds = validDivisions.map(d => d.divisionId);
-      setOtherDivisionsData(prev => prev.filter(d => !selectedIds.includes(d.divisionId)));
-      
+      setOtherDivisionsData(prev =>
+        prev.filter(d => !selectedIds.includes(d.divisionId)),
+      );
+
       // Clear selection
       setSelectedDivisions([]);
-      
+
+      // Switch to Distributors tab so user can proceed
+      setTimeout(() => {
+        setActiveSubTab('distributors');
+      }, 500);
+
       showToast('Divisions linked successfully!', 'success');
-      
-      // Refresh divisions data after linking
+
+      // Refresh divisions data after linking (optional, you already have this)
       if (effectiveCustomerId) {
         try {
           // Fetch updated customer divisions (opened)
-          const customerDivisionsResponse = await customerAPI.getCustomerDivisions(effectiveCustomerId);
-          
+          const customerDivisionsResponse =
+            await customerAPI.getCustomerDivisions(effectiveCustomerId);
+
           // Fetch all available divisions
           const allDivisionsResponse = await customerAPI.getAllDivisions();
-          
+
           let updatedOpenedDivisions = [];
           let updatedOtherDivisions = [];
-          
+
           // Process customer's linked divisions (opened)
-          if (customerDivisionsResponse?.data && Array.isArray(customerDivisionsResponse.data)) {
+          if (
+            customerDivisionsResponse?.data &&
+            Array.isArray(customerDivisionsResponse.data)
+          ) {
             updatedOpenedDivisions = customerDivisionsResponse.data;
           }
-          
+
           // Process all available divisions and filter out already linked ones
-          if (allDivisionsResponse?.data?.divisions && Array.isArray(allDivisionsResponse.data.divisions)) {
-            const linkedDivisionIds = updatedOpenedDivisions.map(d => Number(d.divisionId));
+          if (
+            allDivisionsResponse?.data?.divisions &&
+            Array.isArray(allDivisionsResponse.data.divisions)
+          ) {
+            const linkedDivisionIds = updatedOpenedDivisions.map(d =>
+              Number(d.divisionId),
+            );
             updatedOtherDivisions = allDivisionsResponse.data.divisions.filter(
-              d => !linkedDivisionIds.includes(Number(d.divisionId))
+              d => !linkedDivisionIds.includes(Number(d.divisionId)),
             );
           }
-          
+
           setOpenedDivisionsData(updatedOpenedDivisions);
           setOtherDivisionsData(updatedOtherDivisions);
         } catch (error) {
           console.error('Error refreshing divisions after linking:', error);
+          // don't block the user for refresh errors
         }
       }
     } catch (error) {
@@ -932,23 +1096,64 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
     }
   };
 
+  // Simple skeleton placeholders for distributor rows
+  const DistributorListSkeleton = ({ rows = 5 }) => {
+    return (
+      <View style={{ paddingHorizontal: 20 }}>
+        {Array.from({ length: rows }).map((_, i) => (
+          <View key={`skeleton-${i}`} style={styles.skeletonRow}>
+            <View style={styles.skeletonLeft}>
+              <View style={styles.skeletonTitle} />
+              <View style={styles.skeletonSubTitle} />
+            </View>
+
+            <View style={styles.skeletonMiddle}>
+              <View style={styles.skeletonStatus} />
+            </View>
+
+            <View style={styles.skeletonRight}>
+              <View style={styles.skeletonAddButton} />
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   const renderDistributorsTab = () => (
     <View style={styles.tabContent}>
       {/* Sub tabs for Preferred and All Distributors */}
       <View style={styles.distributorTabs}>
         <TouchableOpacity
-          style={[styles.distributorTab, activeDistributorTab === 'preferred' && styles.activeDistributorTab]}
+          style={[
+            styles.distributorTab,
+            activeDistributorTab === 'preferred' && styles.activeDistributorTab,
+          ]}
           onPress={() => setActiveDistributorTab('preferred')}
         >
-          <AppText style={[styles.distributorTabText, activeDistributorTab === 'preferred' && styles.activeDistributorTabText]}>
+          <AppText
+            style={[
+              styles.distributorTabText,
+              activeDistributorTab === 'preferred' &&
+                styles.activeDistributorTabText,
+            ]}
+          >
             Preferred Distributors
           </AppText>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.distributorTab, activeDistributorTab === 'all' && styles.activeDistributorTab]}
+          style={[
+            styles.distributorTab,
+            activeDistributorTab === 'all' && styles.activeDistributorTab,
+          ]}
           onPress={() => setActiveDistributorTab('all')}
         >
-          <AppText style={[styles.distributorTabText, activeDistributorTab === 'all' && styles.activeDistributorTabText]}>
+          <AppText
+            style={[
+              styles.distributorTabText,
+              activeDistributorTab === 'all' && styles.activeDistributorTabText,
+            ]}
+          >
             All Distributors
           </AppText>
         </TouchableOpacity>
@@ -960,7 +1165,9 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
           <View style={styles.preferredSelectionContainer}>
             {/* Suggested Stockist Header */}
             <View style={styles.suggestedSection}>
-              <AppText style={styles.suggestedTitle}>Suggested Stockist by MR</AppText>
+              <AppText style={styles.suggestedTitle}>
+                Suggested Stockist by MR
+              </AppText>
               <TouchableOpacity style={styles.infoIcon}>
                 <Icon name="information-outline" size={20} color="#333" />
               </TouchableOpacity>
@@ -968,27 +1175,37 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
 
             {/* Filters */}
             <View style={styles.preferredFiltersRow}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.preferredFilterDropdown}
                 onPress={() => setShowFilterModal(true)}
               >
                 <AppText style={styles.preferredFilterText}>
-                  {distributorFilters.state.length > 0 && !distributorFilters.state.includes('All')
+                  {distributorFilters.state.length > 0 &&
+                  !distributorFilters.state.includes('All')
                     ? `State (${distributorFilters.state.length})`
                     : 'State'}
                 </AppText>
-                <IconMaterial name="keyboard-arrow-down" size={20} color="#999" />
+                <IconMaterial
+                  name="keyboard-arrow-down"
+                  size={20}
+                  color="#999"
+                />
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.preferredFilterDropdown}
                 onPress={() => setShowFilterModal(true)}
               >
                 <AppText style={styles.preferredFilterText}>
-                  {distributorFilters.city.length > 0 && !distributorFilters.city.includes('All')
+                  {distributorFilters.city.length > 0 &&
+                  !distributorFilters.city.includes('All')
                     ? `City (${distributorFilters.city.length})`
                     : 'City'}
                 </AppText>
-                <IconMaterial name="keyboard-arrow-down" size={20} color="#999" />
+                <IconMaterial
+                  name="keyboard-arrow-down"
+                  size={20}
+                  color="#999"
+                />
               </TouchableOpacity>
             </View>
 
@@ -1009,315 +1226,488 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
               <View style={styles.preferredCheckboxHeader}>
                 <View style={styles.preferredCheckboxPlaceholder} />
               </View>
-              <AppText style={[styles.preferredHeaderText, { flex: 1 }]}>Distributor Details</AppText>
+              <AppText style={[styles.preferredHeaderText, { flex: 1 }]}>
+                Distributor Details
+              </AppText>
+              <AppText
+                style={[
+                  styles.preferredHeaderText,
+                  { flex: 1, textAlign: 'right' },
+                ]}
+              >
+                Stockist Type
+              </AppText>
             </View>
 
             {/* Distributor List */}
             <ScrollView style={styles.preferredListContainer}>
-              {preferredDistributorsData.length === 0 ? (
+              {(preferredDistributorsData?.length || 0) === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Icon name="package-variant-closed" size={40} color="#999" />
-                  <AppText style={styles.emptyText}>No preferred distributors added yet</AppText>
-                  <AppText style={styles.emptySubText}>Add distributors from "All Distributors" tab</AppText>
+                  <AppText style={styles.emptyText}>
+                    No preferred distributors added yet
+                  </AppText>
+                  <AppText style={styles.emptySubText}>
+                    Add distributors from "All Distributors" tab
+                  </AppText>
                 </View>
               ) : (
-                preferredDistributorsData.map((distributor) => (
-                  <TouchableOpacity 
-                    key={distributor.id} 
-                    style={styles.preferredDistributorRow}
-                    onPress={() => toggleDistributorSelection(distributor.id)}
-                  >
-                    <View style={styles.preferredCheckboxContainer}>
-                      <View style={[
-                        styles.preferredCheckbox,
-                        selectedDistributors.includes(distributor.id) && styles.preferredCheckboxSelected
-                      ]}>
-                        {selectedDistributors.includes(distributor.id) && (
-                          <Icon name="check" size={16} color="#fff" />
-                        )}
-                      </View>
+                <>
+                  {filteredPreferredDistributors.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                      <Icon name="search" size={40} color="#999" />
+                      <AppText style={styles.emptyText}>No matches</AppText>
+                      <AppText style={styles.emptySubText}>
+                        Try a different name or code
+                      </AppText>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <AppText style={styles.preferredDistributorName}>{distributor.name}</AppText>
-                      <AppText style={styles.preferredDistributorCode}>{distributor.code} |</AppText>
-                    </View>
-                  </TouchableOpacity>
-                ))
+                  ) : (
+                    filteredPreferredDistributors.map(
+                      distributor => (
+                        console.log('Rendering distributor:', distributor),
+                        (
+                          <TouchableOpacity
+                            key={distributor.id}
+                            style={styles.preferredDistributorRow}
+                            onPress={() =>
+                              toggleDistributorSelection(distributor.id)
+                            }
+                          >
+                            <View style={styles.preferredCheckboxContainer}>
+                              <View
+                                style={[
+                                  styles.preferredCheckbox,
+                                  selectedDistributors.includes(
+                                    distributor.id,
+                                  ) && styles.preferredCheckboxSelected,
+                                ]}
+                              >
+                                {selectedDistributors.includes(
+                                  distributor.id,
+                                ) && (
+                                  <Icon name="check" size={16} color="#fff" />
+                                )}
+                              </View>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <AppText style={styles.preferredDistributorName}>
+                                {distributor.name}
+                              </AppText>
+                              <AppText style={styles.preferredDistributorCode}>
+                                {distributor.code} |{' '}
+                                {distributor.cityName ||
+                                  distributor.city ||
+                                  'N/A'}
+                              </AppText>
+                            </View>
+                            <View
+                              style={{
+                                flex: 1,
+                                alignItems: 'flex-end',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <AppText
+                                style={[
+                                  styles.preferredDistributorType,
+                                  { textAlign: 'right' },
+                                ]}
+                              >
+                                {distributor.stockistType || ''}
+                              </AppText>
+                            </View>
+                          </TouchableOpacity>
+                        )
+                      ),
+                    )
+                  )}
+                </>
               )}
             </ScrollView>
 
             {/* Continue Button */}
             <View style={styles.preferredFooter}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.preferredContinueButton,
-                  selectedDistributors.length === 0 && styles.preferredContinueButtonDisabled
+                  selectedDistributors.length === 0 &&
+                    styles.preferredContinueButtonDisabled,
                 ]}
                 onPress={handleContinueToEdit}
                 disabled={selectedDistributors.length === 0}
               >
-                <AppText style={styles.preferredContinueButtonText}>Continue</AppText>
+                <AppText style={styles.preferredContinueButtonText}>
+                  Continue
+                </AppText>
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           // Edit Mode - Existing detailed view
           <View style={styles.editModeContainer}>
-          <ScrollView style={styles.scrollContent}>
-            {/* Back button */}
-            <TouchableOpacity 
-              style={styles.backToSelectionButton}
-              onPress={() => setPreferredViewMode('selection')}
-            >
-              <Icon name="arrow-left" size={20} color="#FF6B00" />
-              <AppText style={styles.backToSelectionText}>Back to Selection</AppText>
-            </TouchableOpacity>
-
-            {/* Suggested Stockist */}
-            <View style={styles.suggestedSection}>
-              <AppText style={styles.suggestedTitle}>Suggested Stockist by MR</AppText>
-              <TouchableOpacity style={styles.infoIcon}>
-                <Icon name="information-outline" size={20} color="#666" />
+            <ScrollView style={styles.scrollContent}>
+              {/* Back button */}
+              <TouchableOpacity
+                style={styles.backToSelectionButton}
+                onPress={() => setPreferredViewMode('selection')}
+              >
+                <Icon name="arrow-left" size={20} color="#FF6B00" />
+                <AppText style={styles.backToSelectionText}>
+                  Back to Selection
+                </AppText>
               </TouchableOpacity>
-            </View>
 
-            {preferredDistributorsData
-              .filter(d => selectedDistributors.includes(d.id))
-              .map((distributor) => (
-              <View key={distributor.id} style={styles.distributorCard}>
-                <View style={styles.distributorHeader}>
-                  <AppText style={styles.distributorName}>{distributor.name}</AppText>
-                  <View style={styles.marginContainer}>
-                    <AppText style={styles.marginLabel}>Margin</AppText>
-                    <View style={styles.marginInputContainer}>
-                      <AppInput
-                        style={styles.marginInput}
-                        placeholder="0"
-                        keyboardType="numeric"
-                        value={distributorMargins[distributor.id]?.toString() || ''}
-                        onChangeText={(value) => {
-                          setDistributorMargins(prev => ({
-                            ...prev,
-                            [distributor.id]: value
-                          }));
-                        }}
-                      />
-                      <AppText style={styles.marginPercent}>%</AppText>
+              {/* Suggested Stockist */}
+              <View style={styles.suggestedSection}>
+                <AppText style={styles.suggestedTitle}>
+                  Suggested Stockist by MR
+                </AppText>
+                <TouchableOpacity style={styles.infoIcon}>
+                  <Icon name="information-outline" size={20} color="#666" />
+                </TouchableOpacity>
+              </View>
+
+              {preferredDistributorsData
+                .filter(d => selectedDistributors.includes(d.id))
+                .map(distributor => (
+                  <View key={distributor.id} style={styles.distributorCard}>
+                    <View style={styles.distributorHeader}>
+                      <AppText style={styles.distributorName}>
+                        {distributor.name}
+                      </AppText>
+                      <View style={styles.marginContainer}>
+                        <AppText style={styles.marginLabel}>Margin</AppText>
+                        <View style={styles.marginInputContainer}>
+                          <AppInput
+                            style={styles.marginInput}
+                            placeholder="0"
+                            keyboardType="numeric"
+                            value={
+                              distributorMargins[distributor.id]?.toString() ||
+                              ''
+                            }
+                            onChangeText={value => {
+                              setDistributorMargins(prev => ({
+                                ...prev,
+                                [distributor.id]: value,
+                              }));
+                            }}
+                          />
+                          <AppText style={styles.marginPercent}>%</AppText>
+                        </View>
+                      </View>
+                    </View>
+
+                    <AppText style={styles.distributorInfo}>
+                      {distributor.code} | {distributor.cityName || 'N/A'} |{' '}
+                      {distributor.stateName || 'N/A'}
+                    </AppText>
+
+                    <View style={styles.distributorActions}>
+                      <View style={styles.dropdownsRow}>
+                        {/* Organization Dropdown */}
+                        <View style={styles.dropdownWrapper}>
+                          <TouchableOpacity
+                            style={styles.dropdown}
+                            onPress={() =>
+                              toggleDivisionDropdown(distributor.id)
+                            }
+                          >
+                            <AppText style={styles.dropdownText}>
+                              {distributorDivision[distributor.id] || 'SPILL'}
+                            </AppText>
+                            <IconMaterial
+                              name="keyboard-arrow-down"
+                              size={20}
+                              color="#666"
+                            />
+                          </TouchableOpacity>
+                          {showDivisionDropdown[distributor.id] && (
+                            <View style={styles.dropdownMenu}>
+                              <TouchableOpacity
+                                style={styles.dropdownMenuItem}
+                                onPress={() =>
+                                  handleDivisionSelect(distributor.id, 'SPILL')
+                                }
+                              >
+                                <AppText style={styles.dropdownMenuText}>
+                                  SPILL
+                                </AppText>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.dropdownMenuItem}
+                                onPress={() =>
+                                  handleDivisionSelect(distributor.id, 'BOTH')
+                                }
+                              >
+                                <AppText style={styles.dropdownMenuText}>
+                                  BOTH
+                                </AppText>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+
+                        {/* All Divisions Dropdown */}
+                        <View style={styles.dropdownWrapper}>
+                          <TouchableOpacity
+                            style={styles.dropdown}
+                            onPress={() =>
+                              toggleRateTypeDropdown(distributor.id)
+                            }
+                          >
+                            <AppText style={styles.dropdownText}>
+                              {distributorRateType[distributor.id] ||
+                                'All Divisions'}
+                            </AppText>
+                            <IconMaterial
+                              name="keyboard-arrow-down"
+                              size={20}
+                              color="#666"
+                            />
+                          </TouchableOpacity>
+                          {showRateTypeDropdown[distributor.id] && (
+                            <View style={styles.dropdownMenu}>
+                              <TouchableOpacity
+                                style={styles.dropdownMenuItem}
+                                onPress={() =>
+                                  handleRateTypeSelect(
+                                    distributor.id,
+                                    'All Divisions',
+                                  )
+                                }
+                              >
+                                <AppText style={styles.dropdownMenuText}>
+                                  All Divisions
+                                </AppText>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.dropdownMenuItem}
+                                onPress={() =>
+                                  handleRateTypeSelect(distributor.id, 't4')
+                                }
+                              >
+                                <AppText style={styles.dropdownMenuText}>
+                                  t4
+                                </AppText>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.dropdownMenuItem}
+                                onPress={() =>
+                                  handleRateTypeSelect(distributor.id, 'test35')
+                                }
+                              >
+                                <AppText style={styles.dropdownMenuText}>
+                                  test35
+                                </AppText>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => handleRemoveDistributor(distributor.id)}
+                      >
+                        <AppText style={styles.removeText}>Remove</AppText>
+                        <IconFeather name="trash-2" size={16} color="#FF6B00" />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.rateTypeRow}>
+                      <TouchableOpacity
+                        style={styles.radioButton}
+                        onPress={() =>
+                          handleRateTypeSelect(distributor.id, 'NetRate (DM)')
+                        }
+                      >
+                        <View
+                          style={[
+                            styles.radioOuter,
+                            distributorRateType[distributor.id] ===
+                              'NetRate (DM)' && styles.radioSelected,
+                          ]}
+                        >
+                          {distributorRateType[distributor.id] ===
+                            'NetRate (DM)' && (
+                            <View style={styles.radioInner} />
+                          )}
+                        </View>
+                        <AppText style={styles.radioText}>NetRate (DM)</AppText>
+                      </TouchableOpacity>
+
+                      {/* <TouchableOpacity
+                        style={styles.radioButton}
+                        onPress={() =>
+                          handleRateTypeSelect(
+                            distributor.id,
+                            'Chargeback (CM)',
+                          )
+                        }
+                      >
+                        <View
+                          style={[
+                            styles.radioOuter,
+                            distributorRateType[distributor.id] ===
+                              'Chargeback (CM)' && styles.radioSelected,
+                          ]}
+                        >
+                          {distributorRateType[distributor.id] ===
+                            'Chargeback (CM)' && (
+                            <View style={styles.radioInner} />
+                          )}
+                        </View>
+                        <AppText style={styles.radioText}>
+                          Chargeback (CMW)
+                        </AppText>
+                      </TouchableOpacity> */}
                     </View>
                   </View>
-                </View>
-                
-                <AppText style={styles.distributorInfo}>
-                  {distributor.code} | {distributor.cityName || 'N/A'} | {distributor.stateName || 'N/A'}
+                ))}
+
+              {/* Add More Stockist Preference */}
+              <View style={styles.addMoreSection}>
+                <AppText style={styles.addMoreTitle}>
+                  + Add More Stockist Preference
                 </AppText>
 
-                <View style={styles.distributorActions}>
-                  <View style={styles.dropdownsRow}>
-                    {/* Organization Dropdown */}
-                    <View style={styles.dropdownWrapper}>
-                      <TouchableOpacity 
-                        style={styles.dropdown}
-                        onPress={() => toggleDivisionDropdown(distributor.id)}
-                      >
-                        <AppText style={styles.dropdownText}>
-                          {distributorDivision[distributor.id] || 'SPILL'}
-                        </AppText>
-                        <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
-                      </TouchableOpacity>
-                      {showDivisionDropdown[distributor.id] && (
-                        <View style={styles.dropdownMenu}>
-                          <TouchableOpacity 
-                            style={styles.dropdownMenuItem}
-                            onPress={() => handleDivisionSelect(distributor.id, 'SPILL')}
-                          >
-                            <AppText style={styles.dropdownMenuText}>SPILL</AppText>
-                          </TouchableOpacity>
-                          <TouchableOpacity 
-                            style={styles.dropdownMenuItem}
-                            onPress={() => handleDivisionSelect(distributor.id, 'BOTH')}
-                          >
-                            <AppText style={styles.dropdownMenuText}>BOTH</AppText>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                    
-                    {/* All Divisions Dropdown */}
-                    <View style={styles.dropdownWrapper}>
-                      <TouchableOpacity 
-                        style={styles.dropdown}
-                        onPress={() => toggleRateTypeDropdown(distributor.id)}
-                      >
-                        <AppText style={styles.dropdownText}>
-                          {distributorRateType[distributor.id] || 'All Divisions'}
-                        </AppText>
-                        <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
-                      </TouchableOpacity>
-                      {showRateTypeDropdown[distributor.id] && (
-                        <View style={styles.dropdownMenu}>
-                          <TouchableOpacity 
-                            style={styles.dropdownMenuItem}
-                            onPress={() => handleRateTypeSelect(distributor.id, 'All Divisions')}
-                          >
-                            <AppText style={styles.dropdownMenuText}>All Divisions</AppText>
-                          </TouchableOpacity>
-                          <TouchableOpacity 
-                            style={styles.dropdownMenuItem}
-                            onPress={() => handleRateTypeSelect(distributor.id, 't4')}
-                          >
-                            <AppText style={styles.dropdownMenuText}>t4</AppText>
-                          </TouchableOpacity>
-                          <TouchableOpacity 
-                            style={styles.dropdownMenuItem}
-                            onPress={() => handleRateTypeSelect(distributor.id, 'test35')}
-                          >
-                            <AppText style={styles.dropdownMenuText}>test35</AppText>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-
-                  <TouchableOpacity 
-                    style={styles.removeButton}
-                    onPress={() => handleRemoveDistributor(distributor.id)}
-                  >
-                    <AppText style={styles.removeText}>Remove</AppText>
-                    <IconFeather name="trash-2" size={16} color="#FF6B00" />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.rateTypeRow}>
-                  <TouchableOpacity 
-                    style={styles.radioButton}
-                    onPress={() => handleRateTypeSelect(distributor.id, 'Net Rate')}
-                  >
-                    <View style={[styles.radioOuter, distributorRateType[distributor.id] === 'Net Rate' && styles.radioSelected]}>
-                      {distributorRateType[distributor.id] === 'Net Rate' && <View style={styles.radioInner} />}
-                    </View>
-                    <AppText style={styles.radioText}>Net Rate</AppText>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.radioButton}
-                    onPress={() => handleRateTypeSelect(distributor.id, 'Chargeback')}
-                  >
-                    <View style={[styles.radioOuter, distributorRateType[distributor.id] === 'Chargeback' && styles.radioSelected]}>
-                      {distributorRateType[distributor.id] === 'Chargeback' && <View style={styles.radioInner} />}
-                    </View>
-                    <AppText style={styles.radioText}>Chargeback</AppText>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-            
-            {/* Add More Stockist Preference */}
-            <View style={styles.addMoreSection}>
-              <AppText style={styles.addMoreTitle}>+ Add More Stockist Preference</AppText>
-              
-              {/* Search Bar */}
-              <View style={styles.addMoreSearchContainer}>
-                <IconFeather name="search" size={20} color="#999" />
-                <AppInput
-                  style={styles.searchInput}
-                  placeholder="Search stockist here"
-                  placeholderTextColor="#999"
-                  value={addMoreSearchText}
-                  onChangeText={setAddMoreSearchText}
-                />
-              </View>
-              
-              {/* Available Distributors List */}
-              {allDistributorsData
-                .filter(d => !selectedDistributors.includes(d.id))
-                .filter(d => 
-                  addMoreSearchText === '' || 
-                  d.name?.toLowerCase().includes(addMoreSearchText.toLowerCase()) ||
-                  d.code?.toLowerCase().includes(addMoreSearchText.toLowerCase())
-                )
-                .slice(0, 10)
-                .map((distributor) => (
-                  <TouchableOpacity 
-                    key={distributor.id} 
-                    style={styles.addMoreDistributorItem}
-                    onPress={() => {
-                      setSelectedDistributors(prev => [...prev, distributor.id]);
-                      setAddMoreSearchText('');
+                {/* Search Bar */}
+                <View style={styles.addMoreSearchContainer}>
+                  <IconFeather name="search" size={20} color="#999" />
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      flex: 1,
                     }}
                   >
-                    <View style={styles.addMoreDistributorInfo}>
-                      <AppText style={styles.addMoreDistributorName}>
-                        Stockist name {distributor.name}
-                      </AppText>
-                      <AppText style={styles.addMoreDistributorCity}>
-                        {distributor.cityName || 'Pune'}
-                      </AppText>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                    <AppInput
+                      style={styles.searchInput}
+                      placeholder="Search distributor name or code"
+                      placeholderTextColor="#999"
+                      value={preferredSearchText}
+                      onChangeText={setPreferredSearchText}
+                    />
+                    {preferredSearchText ? (
+                      <TouchableOpacity
+                        onPress={() => setPreferredSearchText('')}
+                        style={{ padding: 8 }}
+                      >
+                        <IconMaterial name="close" size={18} color="#999" />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                </View>
+
+                {/* Available Distributors List */}
+                {allDistributorsData
+                  .filter(d => !selectedDistributors.includes(d.id))
+                  .filter(
+                    d =>
+                      addMoreSearchText === '' ||
+                      d.name
+                        ?.toLowerCase()
+                        .includes(addMoreSearchText.toLowerCase()) ||
+                      d.code
+                        ?.toLowerCase()
+                        .includes(addMoreSearchText.toLowerCase()),
+                  )
+                  .slice(0, 10)
+                  .map(distributor => (
+                    <TouchableOpacity
+                      key={distributor.id}
+                      style={styles.addMoreDistributorItem}
+                      onPress={() => {
+                        setSelectedDistributors(prev => [
+                          ...prev,
+                          distributor.id,
+                        ]);
+                        setAddMoreSearchText('');
+                      }}
+                    >
+                      <View style={styles.addMoreDistributorInfo}>
+                        <AppText style={styles.addMoreDistributorName}>
+                          Stockist name {distributor.name}
+                        </AppText>
+                        <AppText style={styles.addMoreDistributorCity}>
+                          {distributor.cityName || 'Pune'}
+                        </AppText>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+              </View>
+            </ScrollView>
+
+            {/* Sticky Link Distributors Button */}
+            <View style={styles.stickyButtonContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.linkDistributorsButton,
+                  isLinkButtonDisabled() &&
+                    styles.linkDistributorsButtonDisabled,
+                ]}
+                onPress={handleLinkDistributors}
+                disabled={isLinkButtonDisabled()}
+              >
+                <AppText style={styles.linkDistributorsButtonText}>
+                  {linkingDistributors ? 'Linking...' : 'Link Distributors'}
+                </AppText>
+              </TouchableOpacity>
             </View>
-          </ScrollView>
-          
-          {/* Sticky Link Distributors Button */}
-          <View style={styles.stickyButtonContainer}>
-            <TouchableOpacity 
-              style={[
-                styles.linkDistributorsButton,
-                isLinkButtonDisabled() && styles.linkDistributorsButtonDisabled
-              ]}
-              onPress={handleLinkDistributors}
-              disabled={isLinkButtonDisabled()}
-            >
-              <AppText style={styles.linkDistributorsButtonText}>
-                {linkingDistributors ? 'Linking...' : 'Link Distributors'}
-              </AppText>
-            </TouchableOpacity>
-          </View>
           </View>
         )
       ) : (
         <ScrollView style={styles.scrollContent}>
-          {distributorsLoading ? (
-            <View style={styles.loadingContainer}>
-              <Icon name="loading" size={40} color="#FF6B00" />
-              <AppText style={styles.loadingText}>Loading distributors...</AppText>
-            </View>
-          ) : distributorsError ? (
+          {distributorsError ? (
             <View style={styles.errorContainer}>
               <Icon name="alert-circle" size={40} color="#EF4444" />
-              <AppText style={styles.errorText}>Error loading distributors</AppText>
+              <AppText style={styles.errorText}>
+                Error loading distributors
+              </AppText>
               <AppText style={styles.errorSubText}>{distributorsError}</AppText>
             </View>
           ) : (
             <>
               {/* Filters */}
               <View style={styles.filterRow}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.filterIcon}
                   onPress={() => setShowFilterModal(true)}
                 >
                   <Icon name="tune" size={20} color="#666" />
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.filterDropdown}
                   onPress={() => setShowFilterModal(true)}
                 >
                   <AppText style={styles.filterText}>
-                    {distributorFilters.state.length > 0 && !distributorFilters.state.includes('All')
+                    {distributorFilters.state.length > 0 &&
+                    !distributorFilters.state.includes('All')
                       ? `State (${distributorFilters.state.length})`
                       : 'State'}
                   </AppText>
-                  <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
+                  <IconMaterial
+                    name="keyboard-arrow-down"
+                    size={20}
+                    color="#666"
+                  />
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.filterDropdown}
                   onPress={() => setShowFilterModal(true)}
                 >
                   <AppText style={styles.filterText}>
-                    {distributorFilters.city.length > 0 && !distributorFilters.city.includes('All')
+                    {distributorFilters.city.length > 0 &&
+                    !distributorFilters.city.includes('All')
                       ? `City (${distributorFilters.city.length})`
                       : 'City'}
                   </AppText>
-                  <IconMaterial name="keyboard-arrow-down" size={20} color="#666" />
+                  <IconMaterial
+                    name="keyboard-arrow-down"
+                    size={20}
+                    color="#666"
+                  />
                 </TouchableOpacity>
               </View>
 
@@ -1335,44 +1725,132 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
 
               {/* Table Header */}
               <View style={styles.tableHeader}>
-                <AppText style={[styles.tableHeaderText, { flex: 1.5 }]}>Name, Code & City</AppText>
-                <AppText style={[styles.tableHeaderText, { flex: 1, textAlign: 'center' }]}>Supply type</AppText>
-                <AppText style={[styles.tableHeaderText, { flex: 0.6, textAlign: 'right' }]}>Action</AppText>
+                <AppText style={[styles.tableHeaderText, { flex: 1.5 }]}>
+                  Name, Code & City
+                </AppText>
+                <AppText
+                  style={[
+                    styles.tableHeaderText,
+                    { flex: 1, textAlign: 'center' },
+                  ]}
+                >
+                  Supply type
+                </AppText>
+                <AppText
+                  style={[
+                    styles.tableHeaderText,
+                    { flex: 0.6, textAlign: 'right' },
+                  ]}
+                >
+                  Action
+                </AppText>
               </View>
 
-              {/* Distributor List */}
-              {filteredDistributorsData.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                  <Icon name="package-variant-closed" size={40} color="#999" />
-                  <AppText style={styles.emptyText}>
-                    {allDistributorsData.length === 0 
-                      ? 'No distributors available' 
-                      : 'No distributors match the selected filters'}
+              {/* Distributor List Area: show skeleton while loading, error or actual rows otherwise */}
+              {distributorsLoading ? (
+                <DistributorListSkeleton rows={6} />
+              ) : distributorsError ? (
+                <View style={styles.errorContainer}>
+                  <Icon name="alert-circle" size={40} color="#EF4444" />
+                  <AppText style={styles.errorText}>
+                    Error loading distributors
+                  </AppText>
+                  <AppText style={styles.errorSubText}>
+                    {distributorsError}
                   </AppText>
                 </View>
               ) : (
-                filteredDistributorsData.map((distributor) => (
-                  <View key={`${distributor.id}-${distributor.name}`} style={styles.distributorRow}>
-                    <View style={[styles.distributorInfoColumn, { flex: 1.5 }]}>
-                      <AppText style={styles.distributorRowName}>{distributor.name}</AppText>
-                      <AppText style={styles.distributorRowCode}>{distributor.code} | {distributor.cityName || 'N/A'}</AppText>
+                <>
+                  {filteredDistributorsData.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                      <Icon
+                        name="package-variant-closed"
+                        size={40}
+                        color="#999"
+                      />
+                      <AppText style={styles.emptyText}>
+                        {allDistributorsData.length === 0
+                          ? 'No distributors available'
+                          : 'No distributors match the selected filters'}
+                      </AppText>
                     </View>
-                    <View style={[styles.supplyTypeColumn, { flex: 1 }]}>
-                      <TouchableOpacity style={styles.supplyTypeDropdown}>
-                        <AppText style={styles.supplyTypeText}>{distributor.inviteStatusName || 'Net Rate (DM)'}</AppText>
-                        <IconMaterial name="keyboard-arrow-down" size={20} color="#999" />
-                      </TouchableOpacity>
-                    </View>
-                    <View style={[styles.actionColumn, { flex: 0.6 }]}>
-                      <TouchableOpacity 
-                        style={styles.addButton}
-                        onPress={() => handleAddDistributor(distributor)}
+                  ) : (
+                    filteredDistributorsData.map(distributor => (
+                      <View
+                        key={`${distributor.id}-${distributor.name}`}
+                        style={styles.distributorRow}
                       >
-                        <AppText style={styles.addButtonText}>+ Add</AppText>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))
+                        <View
+                          style={[styles.distributorInfoColumn, { flex: 1.5 }]}
+                        >
+                          <AppText style={styles.distributorRowName}>
+                            {distributor.name}
+                          </AppText>
+                          <AppText style={styles.distributorRowCode}>
+                            {distributor.code} | {distributor.cityName || 'N/A'}
+                          </AppText>
+                        </View>
+
+<View style={[styles.supplyTypeColumn, styles.supplyTypeWrapper, { flex: 1 }]}>
+  <TouchableOpacity
+    style={styles.supplyTypeDropdown}
+    onPress={() => toggleAllSupplyDropdown(distributor.id)}
+    activeOpacity={0.85}
+    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+  >
+    <AppText style={styles.supplyTypeText}>
+      {allDistributorSupplyType[distributor.id] ||
+        (distributor.inviteStatusId === 2 ? 'Chargeback (CM)' : 'NetRate (DM)')}
+    </AppText>
+    <IconMaterial name="keyboard-arrow-down" size={20} color="#999" />
+  </TouchableOpacity>
+
+  {showAllSupplyDropdown[distributor.id] && (
+    <View
+      style={[
+        styles.dropdownMenu,
+        styles.supplyDropdownMenu, // extra positioning/width
+      ]}
+      pointerEvents="box-none"
+    >
+      <TouchableOpacity
+        style={styles.dropdownMenuItem}
+        onPress={() =>
+          handleAllDistributorSupplySelect(distributor.id, 'NetRate (DM)')
+        }
+        hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+      >
+        <AppText style={styles.dropdownMenuText}>NetRate (DM)</AppText>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.dropdownMenuItem}
+        onPress={() =>
+          handleAllDistributorSupplySelect(distributor.id, 'Chargeback (CM)')
+        }
+        hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+      >
+        <AppText style={styles.dropdownMenuText}>Chargeback (CM)</AppText>
+      </TouchableOpacity>
+    </View>
+  )}
+</View>
+
+
+                        <View style={[styles.actionColumn, { flex: 0.6 }]}>
+                          <TouchableOpacity
+                            style={styles.addButton}
+                            onPress={() => handleAddDistributor(distributor)}
+                          >
+                            <AppText style={styles.addButtonText}>
+                              + Add
+                            </AppText>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))
+                  )}
+                </>
               )}
             </>
           )}
@@ -1396,27 +1874,40 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
         </View>
       ) : (
         <>
-          <ScrollView 
+          <ScrollView
             style={styles.scrollContent}
             contentContainerStyle={[
-              (hasApprovePermission || isCustomerActive) && styles.scrollContentWithButton
+              (hasApprovePermission || isCustomerActive) &&
+                styles.scrollContentWithButton,
             ]}
           >
             <View style={styles.divisionsContainer}>
-              <View style={[styles.divisionColumn, !(hasApprovePermission || isCustomerActive) && styles.divisionColumnFullWidth]}>
+              <View
+                style={[
+                  styles.divisionColumn,
+                  !(hasApprovePermission || isCustomerActive) &&
+                    styles.divisionColumnFullWidth,
+                ]}
+              >
                 <AppText style={styles.columnTitle}>Opened Division</AppText>
                 <AppText style={styles.columnSubtitle}>Name & Code</AppText>
-                
+
                 {openedDivisionsData.length === 0 ? (
                   <View style={styles.emptyDivisionContainer}>
-                    <AppText style={styles.emptyDivisionText}>No divisions opened yet</AppText>
+                    <AppText style={styles.emptyDivisionText}>
+                      No divisions opened yet
+                    </AppText>
                   </View>
                 ) : (
-                  openedDivisionsData.map((division) => (
+                  openedDivisionsData.map(division => (
                     <View key={division.divisionId} style={styles.divisionItem}>
                       <View>
-                        <AppText style={styles.divisionName}>{division.divisionName}</AppText>
-                        <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
+                        <AppText style={styles.divisionName}>
+                          {division.divisionName}
+                        </AppText>
+                        <AppText style={styles.divisionCode}>
+                          {division.divisionCode}
+                        </AppText>
                       </View>
                     </View>
                   ))
@@ -1432,26 +1923,39 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
                     </TouchableOpacity> */}
                   </View>
                   <AppText style={styles.columnSubtitle}>Name & Code</AppText>
-                  
+
                   {otherDivisionsData.length === 0 ? (
                     <View style={styles.emptyDivisionContainer}>
-                      <AppText style={styles.emptyDivisionText}>No other divisions available</AppText>
+                      <AppText style={styles.emptyDivisionText}>
+                        No other divisions available
+                      </AppText>
                     </View>
                   ) : (
-                    otherDivisionsData.map((division) => (
-                      <TouchableOpacity 
-                        key={`other-${division.divisionId}`} 
+                    otherDivisionsData.map(division => (
+                      <TouchableOpacity
+                        key={`other-${division.divisionId}`}
                         style={styles.checkboxItem}
                         onPress={() => toggleOtherDivisionSelection(division)}
                       >
-                        <View style={[styles.checkbox, selectedDivisions.find(d => d.divisionId === division.divisionId) && styles.checkboxSelected]}>
-                          {selectedDivisions.find(d => d.divisionId === division.divisionId) && (
-                            <Icon name="check" size={16} color="#fff" />
-                          )}
+                        <View
+                          style={[
+                            styles.checkbox,
+                            selectedDivisions.find(
+                              d => d.divisionId === division.divisionId,
+                            ) && styles.checkboxSelected,
+                          ]}
+                        >
+                          {selectedDivisions.find(
+                            d => d.divisionId === division.divisionId,
+                          ) && <Icon name="check" size={16} color="#fff" />}
                         </View>
                         <View>
-                          <AppText style={styles.divisionName}>{division.divisionName}</AppText>
-                          <AppText style={styles.divisionCode}>{division.divisionCode}</AppText>
+                          <AppText style={styles.divisionName}>
+                            {division.divisionName}
+                          </AppText>
+                          <AppText style={styles.divisionCode}>
+                            {division.divisionCode}
+                          </AppText>
                         </View>
                       </TouchableOpacity>
                     ))
@@ -1464,8 +1968,12 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
           {/* Sticky Continue Button at Bottom - Only show if user has approve permission or customer is active */}
           {(hasApprovePermission || isCustomerActive) && (
             <View style={styles.stickyButtonContainer}>
-              <TouchableOpacity 
-                style={[styles.continueButton, (linkingDivisions || selectedDivisions.length === 0) && styles.continueButtonDisabled]}
+              <TouchableOpacity
+                style={[
+                  styles.continueButton,
+                  (linkingDivisions || selectedDivisions.length === 0) &&
+                    styles.continueButtonDisabled,
+                ]}
                 onPress={handleLinkDivisionsAPI}
                 disabled={linkingDivisions || selectedDivisions.length === 0}
               >
@@ -1498,23 +2006,37 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
       ) : fieldTeamData.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Icon name="account-multiple-outline" size={40} color="#999" />
-          <AppText style={styles.emptyText}>No field team members found</AppText>
+          <AppText style={styles.emptyText}>
+            No field team members found
+          </AppText>
         </View>
       ) : (
         <ScrollView style={styles.scrollContent}>
           <View style={styles.fieldHeader}>
-            <AppText style={styles.fieldHeaderText}>Employee Name & Code</AppText>
-            <AppText style={[styles.fieldHeaderText, styles.fieldHeaderDesignation]}>Designation</AppText>
+            <AppText style={styles.fieldHeaderText}>
+              Employee Name & Code
+            </AppText>
+            <AppText
+              style={[styles.fieldHeaderText, styles.fieldHeaderDesignation]}
+            >
+              Designation
+            </AppText>
           </View>
 
           {fieldTeamData.map((employee, index) => (
             <View key={employee.id || index} style={styles.fieldRow}>
               <View style={styles.employeeInfo}>
-                <AppText style={styles.employeeName}>{employee.userName}</AppText>
-                <AppText style={styles.employeeCode}>{employee.userCode}</AppText>
+                <AppText style={styles.employeeName}>
+                  {employee.userName}
+                </AppText>
+                <AppText style={styles.employeeCode}>
+                  {employee.userCode}
+                </AppText>
               </View>
               <View style={styles.employeeDesignationContainer}>
-                <AppText style={styles.employeeDesignation}>{employee.designation}</AppText>
+                <AppText style={styles.employeeDesignation}>
+                  {employee.designation}
+                </AppText>
               </View>
             </View>
           ))}
@@ -1532,7 +2054,9 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
             <View style={styles.emptyContainer}>
               <Icon name="inbox" size={50} color="#999" />
               <AppText style={styles.emptyText}>No data found</AppText>
-              <AppText style={styles.emptySubText}>Linked data will appear here</AppText>
+              <AppText style={styles.emptySubText}>
+                Linked data will appear here
+              </AppText>
             </View>
           </ScrollView>
         </View>
@@ -1542,7 +2066,7 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
     // For Doctors - show linked pharmacies
     if (customerType === 'Doctors') {
       const linkedPharmacies = hierarchyMappingData?.pharmacy || [];
-      
+
       if (linkedPharmacies.length === 0) {
         return (
           <View style={styles.tabContent}>
@@ -1550,7 +2074,9 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
               <View style={styles.emptyContainer}>
                 <Icon name="inbox" size={50} color="#999" />
                 <AppText style={styles.emptyText}>No data found</AppText>
-                <AppText style={styles.emptySubText}>Linked pharmacies will appear here</AppText>
+                <AppText style={styles.emptySubText}>
+                  Linked pharmacies will appear here
+                </AppText>
               </View>
             </ScrollView>
           </View>
@@ -1561,18 +2087,26 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
         <View style={styles.tabContent}>
           <ScrollView style={styles.scrollContent}>
             <View style={styles.hierarchySection}>
-              <AppText style={styles.hierarchySectionTitle}>Linked Pharmacies</AppText>
-              
+              <AppText style={styles.hierarchySectionTitle}>
+                Linked Pharmacies
+              </AppText>
+
               <View style={styles.hierarchyHeader}>
-                <AppText style={styles.hierarchyHeaderText}>Pharmacy Details</AppText>
+                <AppText style={styles.hierarchyHeaderText}>
+                  Pharmacy Details
+                </AppText>
                 <AppText style={styles.hierarchyHeaderText}>Action</AppText>
               </View>
 
-              {linkedPharmacies.map((pharmacy) => (
+              {linkedPharmacies.map(pharmacy => (
                 <View key={pharmacy.customerId} style={styles.hierarchyRow}>
                   <View style={styles.hierarchyInfo}>
-                    <AppText style={styles.hierarchyName}>{pharmacy.customerName}</AppText>
-                    <AppText style={styles.hierarchyCode}>{pharmacy.customerCode} | {pharmacy.cityName}</AppText>
+                    <AppText style={styles.hierarchyName}>
+                      {pharmacy.customerName}
+                    </AppText>
+                    <AppText style={styles.hierarchyCode}>
+                      {pharmacy.customerCode} | {pharmacy.cityName}
+                    </AppText>
                   </View>
                 </View>
               ))}
@@ -1580,8 +2114,8 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
           </ScrollView>
         </View>
       );
-    } 
-    
+    }
+
     // For Hospitals - show linked pharmacies and doctors
     else if (customerType === 'Hospital') {
       const linkedPharmacies = hierarchyMappingData?.pharmacy || [];
@@ -1594,37 +2128,47 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
         return (
           <View style={styles.tabContent}>
             <ScrollView style={styles.scrollContent}>
-              {childHospitals.map((hospital) => (
+              {childHospitals.map(hospital => (
                 <View key={hospital.customerId} style={styles.hospitalCard}>
                   {/* Hospital Header */}
                   <View style={styles.hospitalCardHeader}>
                     <View style={styles.hospitalCardInfo}>
-                      <AppText style={styles.hospitalCardName}>{hospital.customerName}</AppText>
-                      <AppText style={styles.hospitalCardCode}>{hospital.customerCode} | {hospital.cityName}</AppText>
+                      <AppText style={styles.hospitalCardName}>
+                        {hospital.customerName}
+                      </AppText>
+                      <AppText style={styles.hospitalCardCode}>
+                        {hospital.customerCode} | {hospital.cityName}
+                      </AppText>
                     </View>
                   </View>
 
                   {/* Expandable Section */}
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.expandableHeader}
-                    onPress={() => setExpandedHospitals(prev => ({
-                      ...prev,
-                      [hospital.customerId]: !prev[hospital.customerId]
-                    }))}
+                    onPress={() =>
+                      setExpandedHospitals(prev => ({
+                        ...prev,
+                        [hospital.customerId]: !prev[hospital.customerId],
+                      }))
+                    }
                   >
                     <View style={styles.expandableContent}>
                       <AppText style={styles.expandableText}>
-                        {linkedPharmacies.length > 0 && linkedDoctors.length > 0 
-                          ? 'Linked Pharmacies & Doctors' 
-                          : linkedPharmacies.length > 0 
-                          ? 'Linked Pharmacies' 
+                        {linkedPharmacies.length > 0 && linkedDoctors.length > 0
+                          ? 'Linked Pharmacies & Doctors'
+                          : linkedPharmacies.length > 0
+                          ? 'Linked Pharmacies'
                           : 'Linked Doctors'}
                       </AppText>
                     </View>
-                    <Icon 
-                      name={expandedHospitals[hospital.customerId] ? "chevron-up" : "chevron-down"} 
-                      size={20} 
-                      color="#666" 
+                    <Icon
+                      name={
+                        expandedHospitals[hospital.customerId]
+                          ? 'chevron-up'
+                          : 'chevron-down'
+                      }
+                      size={20}
+                      color="#666"
                     />
                   </TouchableOpacity>
 
@@ -1634,12 +2178,21 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
                       {/* Linked Pharmacies */}
                       {linkedPharmacies.length > 0 && (
                         <View style={styles.linkedItemsSection}>
-                          <AppText style={styles.linkedItemsTitle}>Linked Pharmacies</AppText>
-                          {linkedPharmacies.map((pharmacy) => (
-                            <View key={pharmacy.customerId} style={styles.linkedItemRow}>
+                          <AppText style={styles.linkedItemsTitle}>
+                            Linked Pharmacies
+                          </AppText>
+                          {linkedPharmacies.map(pharmacy => (
+                            <View
+                              key={pharmacy.customerId}
+                              style={styles.linkedItemRow}
+                            >
                               <View style={styles.linkedItemInfo}>
-                                <AppText style={styles.linkedItemName}>{pharmacy.customerName}</AppText>
-                                <AppText style={styles.linkedItemCode}>{pharmacy.customerCode} | {pharmacy.cityName}</AppText>
+                                <AppText style={styles.linkedItemName}>
+                                  {pharmacy.customerName}
+                                </AppText>
+                                <AppText style={styles.linkedItemCode}>
+                                  {pharmacy.customerCode} | {pharmacy.cityName}
+                                </AppText>
                               </View>
                             </View>
                           ))}
@@ -1649,12 +2202,21 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
                       {/* Linked Doctors */}
                       {linkedDoctors.length > 0 && (
                         <View style={styles.linkedItemsSection}>
-                          <AppText style={styles.linkedItemsTitle}>Linked Doctors</AppText>
-                          {linkedDoctors.map((doctor) => (
-                            <View key={doctor.customerId} style={styles.linkedItemRow}>
+                          <AppText style={styles.linkedItemsTitle}>
+                            Linked Doctors
+                          </AppText>
+                          {linkedDoctors.map(doctor => (
+                            <View
+                              key={doctor.customerId}
+                              style={styles.linkedItemRow}
+                            >
                               <View style={styles.linkedItemInfo}>
-                                <AppText style={styles.linkedItemName}>{doctor.customerName}</AppText>
-                                <AppText style={styles.linkedItemCode}>{doctor.customerCode} | {doctor.cityName}</AppText>
+                                <AppText style={styles.linkedItemName}>
+                                  {doctor.customerName}
+                                </AppText>
+                                <AppText style={styles.linkedItemCode}>
+                                  {doctor.customerCode} | {doctor.cityName}
+                                </AppText>
                               </View>
                             </View>
                           ))}
@@ -1674,41 +2236,76 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
         return (
           <View style={styles.tabContent}>
             <ScrollView style={styles.scrollContent}>
-              {groupHospitals.map((hospital) => (
+              {groupHospitals.map(hospital => (
                 <View key={hospital.customerId} style={styles.accordionCard}>
                   {/* Hospital Header */}
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.accordionHeader}
-                    onPress={() => setExpandedGroupHospitals(prev => ({
-                      ...prev,
-                      [hospital.customerId]: !prev[hospital.customerId]
-                    }))}
+                    onPress={() =>
+                      setExpandedGroupHospitals(prev => ({
+                        ...prev,
+                        [hospital.customerId]: !prev[hospital.customerId],
+                      }))
+                    }
                   >
                     <View style={styles.accordionHeaderInfo}>
-                      <AppText style={styles.accordionHospitalName}>{hospital.customerName}</AppText>
-                      <AppText style={styles.accordionHospitalCode}>{hospital.customerCode} | {hospital.cityName}</AppText>
-                      
+                      <AppText style={styles.accordionHospitalName}>
+                        {hospital.customerName}
+                      </AppText>
+                      <AppText style={styles.accordionHospitalCode}>
+                        {hospital.customerCode} | {hospital.cityName}
+                      </AppText>
+
                       {expandedGroupHospitals[hospital.customerId] && (
                         <View style={styles.accordionTabsContainer}>
                           <TouchableOpacity
-                            style={[styles.accordionTab, activeGroupHospitalTab[hospital.customerId] === 'doctors' && styles.activeAccordionTab]}
-                            onPress={() => setActiveGroupHospitalTab(prev => ({
-                              ...prev,
-                              [hospital.customerId]: 'doctors'
-                            }))}
+                            style={[
+                              styles.accordionTab,
+                              activeGroupHospitalTab[hospital.customerId] ===
+                                'doctors' && styles.activeAccordionTab,
+                            ]}
+                            onPress={() =>
+                              setActiveGroupHospitalTab(prev => ({
+                                ...prev,
+                                [hospital.customerId]: 'doctors',
+                              }))
+                            }
                           >
-                            <AppText style={[styles.accordionTabText, activeGroupHospitalTab[hospital.customerId] === 'doctors' && styles.activeAccordionTabText]}>
+                            <AppText
+                              style={[
+                                styles.accordionTabText,
+                                activeGroupHospitalTab[hospital.customerId] ===
+                                  'doctors' && styles.activeAccordionTabText,
+                              ]}
+                            >
                               Doctors
                             </AppText>
                           </TouchableOpacity>
                           <TouchableOpacity
-                            style={[styles.accordionTab, (!activeGroupHospitalTab[hospital.customerId] || activeGroupHospitalTab[hospital.customerId] === 'pharmacies') && styles.activeAccordionTab]}
-                            onPress={() => setActiveGroupHospitalTab(prev => ({
-                              ...prev,
-                              [hospital.customerId]: 'pharmacies'
-                            }))}
+                            style={[
+                              styles.accordionTab,
+                              (!activeGroupHospitalTab[hospital.customerId] ||
+                                activeGroupHospitalTab[hospital.customerId] ===
+                                  'pharmacies') &&
+                                styles.activeAccordionTab,
+                            ]}
+                            onPress={() =>
+                              setActiveGroupHospitalTab(prev => ({
+                                ...prev,
+                                [hospital.customerId]: 'pharmacies',
+                              }))
+                            }
                           >
-                            <AppText style={[styles.accordionTabText, (!activeGroupHospitalTab[hospital.customerId] || activeGroupHospitalTab[hospital.customerId] === 'pharmacies') && styles.activeAccordionTabText]}>
+                            <AppText
+                              style={[
+                                styles.accordionTabText,
+                                (!activeGroupHospitalTab[hospital.customerId] ||
+                                  activeGroupHospitalTab[
+                                    hospital.customerId
+                                  ] === 'pharmacies') &&
+                                  styles.activeAccordionTabText,
+                              ]}
+                            >
                               Pharmacies
                             </AppText>
                           </TouchableOpacity>
@@ -1721,52 +2318,90 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
                   {expandedGroupHospitals[hospital.customerId] && (
                     <View style={styles.accordionContent}>
                       {/* Pharmacies Tab */}
-                      {(!activeGroupHospitalTab[hospital.customerId] || activeGroupHospitalTab[hospital.customerId] === 'pharmacies') && (
+                      {(!activeGroupHospitalTab[hospital.customerId] ||
+                        activeGroupHospitalTab[hospital.customerId] ===
+                          'pharmacies') && (
                         <View style={styles.accordionItemsContainer}>
                           {linkedPharmacies.length > 0 ? (
                             <>
                               <View style={styles.accordionItemsHeader}>
-                                <AppText style={styles.accordionItemsHeaderText}>Pharmacy Details</AppText>
-                                <AppText style={styles.accordionItemsHeaderText}>Action</AppText>
+                                <AppText
+                                  style={styles.accordionItemsHeaderText}
+                                >
+                                  Pharmacy Details
+                                </AppText>
+                                <AppText
+                                  style={styles.accordionItemsHeaderText}
+                                >
+                                  Action
+                                </AppText>
                               </View>
                               {linkedPharmacies.map((pharmacy, index) => (
-                                <View key={`${hospital.customerId}-pharmacy-${pharmacy.customerId}-${index}`} style={styles.accordionItemRow}>
+                                <View
+                                  key={`${hospital.customerId}-pharmacy-${pharmacy.customerId}-${index}`}
+                                  style={styles.accordionItemRow}
+                                >
                                   <View style={styles.accordionItemInfo}>
-                                    <AppText style={styles.accordionItemName}>{pharmacy.customerName}</AppText>
-                                    <AppText style={styles.accordionItemCode}>{pharmacy.customerCode} | {pharmacy.cityName}</AppText>
+                                    <AppText style={styles.accordionItemName}>
+                                      {pharmacy.customerName}
+                                    </AppText>
+                                    <AppText style={styles.accordionItemCode}>
+                                      {pharmacy.customerCode} |{' '}
+                                      {pharmacy.cityName}
+                                    </AppText>
                                   </View>
                                 </View>
                               ))}
                             </>
                           ) : (
                             <View style={styles.emptyAccordionContent}>
-                              <AppText style={styles.emptyAccordionText}>No pharmacies linked</AppText>
+                              <AppText style={styles.emptyAccordionText}>
+                                No pharmacies linked
+                              </AppText>
                             </View>
                           )}
                         </View>
                       )}
 
                       {/* Doctors Tab */}
-                      {activeGroupHospitalTab[hospital.customerId] === 'doctors' && (
+                      {activeGroupHospitalTab[hospital.customerId] ===
+                        'doctors' && (
                         <View style={styles.accordionItemsContainer}>
                           {linkedDoctors.length > 0 ? (
                             <>
                               <View style={styles.accordionItemsHeader}>
-                                <AppText style={styles.accordionItemsHeaderText}>Doctor Details</AppText>
-                                <AppText style={styles.accordionItemsHeaderText}>Action</AppText>
+                                <AppText
+                                  style={styles.accordionItemsHeaderText}
+                                >
+                                  Doctor Details
+                                </AppText>
+                                <AppText
+                                  style={styles.accordionItemsHeaderText}
+                                >
+                                  Action
+                                </AppText>
                               </View>
                               {linkedDoctors.map((doctor, index) => (
-                                <View key={`${hospital.customerId}-doctor-${doctor.customerId}-${index}`} style={styles.accordionItemRow}>
+                                <View
+                                  key={`${hospital.customerId}-doctor-${doctor.customerId}-${index}`}
+                                  style={styles.accordionItemRow}
+                                >
                                   <View style={styles.accordionItemInfo}>
-                                    <AppText style={styles.accordionItemName}>{doctor.customerName}</AppText>
-                                    <AppText style={styles.accordionItemCode}>{doctor.customerCode} | {doctor.cityName}</AppText>
+                                    <AppText style={styles.accordionItemName}>
+                                      {doctor.customerName}
+                                    </AppText>
+                                    <AppText style={styles.accordionItemCode}>
+                                      {doctor.customerCode} | {doctor.cityName}
+                                    </AppText>
                                   </View>
                                 </View>
                               ))}
                             </>
                           ) : (
                             <View style={styles.emptyAccordionContent}>
-                              <AppText style={styles.emptyAccordionText}>No doctors linked</AppText>
+                              <AppText style={styles.emptyAccordionText}>
+                                No doctors linked
+                              </AppText>
                             </View>
                           )}
                         </View>
@@ -1781,7 +2416,8 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
       }
 
       // Check if we have any other data
-      const hasOtherData = linkedPharmacies.length > 0 || linkedDoctors.length > 0;
+      const hasOtherData =
+        linkedPharmacies.length > 0 || linkedDoctors.length > 0;
 
       if (!hasOtherData) {
         return (
@@ -1790,7 +2426,9 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
               <View style={styles.emptyContainer}>
                 <Icon name="inbox" size={50} color="#999" />
                 <AppText style={styles.emptyText}>No data found</AppText>
-                <AppText style={styles.emptySubText}>Linked pharmacies, doctors and hospitals will appear here</AppText>
+                <AppText style={styles.emptySubText}>
+                  Linked pharmacies, doctors and hospitals will appear here
+                </AppText>
               </View>
             </ScrollView>
           </View>
@@ -1803,18 +2441,26 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
             {/* Linked Pharmacies Section */}
             {linkedPharmacies.length > 0 && (
               <View style={styles.hierarchySection}>
-                <AppText style={styles.hierarchySectionTitle}>Linked Pharmacies</AppText>
-                
+                <AppText style={styles.hierarchySectionTitle}>
+                  Linked Pharmacies
+                </AppText>
+
                 <View style={styles.hierarchyHeader}>
-                  <AppText style={styles.hierarchyHeaderText}>Pharmacy Details</AppText>
+                  <AppText style={styles.hierarchyHeaderText}>
+                    Pharmacy Details
+                  </AppText>
                   <AppText style={styles.hierarchyHeaderText}>Action</AppText>
                 </View>
 
-                {linkedPharmacies.map((pharmacy) => (
+                {linkedPharmacies.map(pharmacy => (
                   <View key={pharmacy.customerId} style={styles.hierarchyRow}>
                     <View style={styles.hierarchyInfo}>
-                      <AppText style={styles.hierarchyName}>{pharmacy.customerName}</AppText>
-                      <AppText style={styles.hierarchyCode}>{pharmacy.customerCode} | {pharmacy.cityName}</AppText>
+                      <AppText style={styles.hierarchyName}>
+                        {pharmacy.customerName}
+                      </AppText>
+                      <AppText style={styles.hierarchyCode}>
+                        {pharmacy.customerCode} | {pharmacy.cityName}
+                      </AppText>
                     </View>
                   </View>
                 ))}
@@ -1824,18 +2470,26 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
             {/* Linked Doctors Section */}
             {linkedDoctors.length > 0 && (
               <View style={styles.hierarchySection}>
-                <AppText style={styles.hierarchySectionTitle}>Linked Doctors</AppText>
-                
+                <AppText style={styles.hierarchySectionTitle}>
+                  Linked Doctors
+                </AppText>
+
                 <View style={styles.hierarchyHeader}>
-                  <AppText style={styles.hierarchyHeaderText}>Doctor Details</AppText>
+                  <AppText style={styles.hierarchyHeaderText}>
+                    Doctor Details
+                  </AppText>
                   <AppText style={styles.hierarchyHeaderText}>Action</AppText>
                 </View>
 
-                {linkedDoctors.map((doctor) => (
+                {linkedDoctors.map(doctor => (
                   <View key={doctor.customerId} style={styles.hierarchyRow}>
                     <View style={styles.hierarchyInfo}>
-                      <AppText style={styles.hierarchyName}>{doctor.customerName}</AppText>
-                      <AppText style={styles.hierarchyCode}>{doctor.customerCode} | {doctor.cityName}</AppText>
+                      <AppText style={styles.hierarchyName}>
+                        {doctor.customerName}
+                      </AppText>
+                      <AppText style={styles.hierarchyCode}>
+                        {doctor.customerCode} | {doctor.cityName}
+                      </AppText>
                     </View>
                   </View>
                 ))}
@@ -1845,18 +2499,26 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
             {/* Group Hospitals Section */}
             {groupHospitals.length > 0 && (
               <View style={styles.hierarchySection}>
-                <AppText style={styles.hierarchySectionTitle}>Group Hospitals</AppText>
-                
+                <AppText style={styles.hierarchySectionTitle}>
+                  Group Hospitals
+                </AppText>
+
                 <View style={styles.hierarchyHeader}>
-                  <AppText style={styles.hierarchyHeaderText}>Hospital Details</AppText>
+                  <AppText style={styles.hierarchyHeaderText}>
+                    Hospital Details
+                  </AppText>
                   <AppText style={styles.hierarchyHeaderText}>Action</AppText>
                 </View>
 
-                {groupHospitals.map((hospital) => (
+                {groupHospitals.map(hospital => (
                   <View key={hospital.customerId} style={styles.hierarchyRow}>
                     <View style={styles.hierarchyInfo}>
-                      <AppText style={styles.hierarchyName}>{hospital.customerName}</AppText>
-                      <AppText style={styles.hierarchyCode}>{hospital.customerCode} | {hospital.cityName}</AppText>
+                      <AppText style={styles.hierarchyName}>
+                        {hospital.customerName}
+                      </AppText>
+                      <AppText style={styles.hierarchyCode}>
+                        {hospital.customerCode} | {hospital.cityName}
+                      </AppText>
                     </View>
                   </View>
                 ))}
@@ -1892,19 +2554,29 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
           </View>
 
           <ScrollView style={styles.divisionModalList}>
-            {mockDivisions.allDivisions.map((division) => (
-              <TouchableOpacity 
-                key={division.id} 
+            {mockDivisions.allDivisions.map(division => (
+              <TouchableOpacity
+                key={division.id}
                 style={styles.divisionModalItem}
                 onPress={() => toggleDivisionSelection(division, true)}
               >
-                <View style={[styles.checkbox, allDivisionsSelected.find(d => d.id === division.id) && styles.checkboxSelected]}>
+                <View
+                  style={[
+                    styles.checkbox,
+                    allDivisionsSelected.find(d => d.id === division.id) &&
+                      styles.checkboxSelected,
+                  ]}
+                >
                   {allDivisionsSelected.find(d => d.id === division.id) && (
                     <Icon name="check" size={16} color="#fff" />
                   )}
                 </View>
-                <AppText style={styles.divisionModalName}>{division.name}</AppText>
-                <AppText style={styles.divisionModalCode}>{division.code}</AppText>
+                <AppText style={styles.divisionModalName}>
+                  {division.name}
+                </AppText>
+                <AppText style={styles.divisionModalCode}>
+                  {division.code}
+                </AppText>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -1914,83 +2586,132 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
   );
 
   return (
-
     <>
-    <View style={styles.container}>
-      {/* Sub-tabs */}
+      <View style={styles.container}>
+        {/* Sub-tabs */}
 
-          <ScrollView
-              ref={tabScrollRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.subTabsContainer}
-              scrollEventThrottle={16}
+        <ScrollView
+          ref={tabScrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.subTabsContainer}
+          scrollEventThrottle={16}
+        >
+          {/* Divisions Tab - Always visible */}
+          <TouchableOpacity
+            ref={ref => (tabRefs.current['divisions'] = ref)}
+            style={[
+              styles.subTab,
+              activeSubTab === 'divisions' && styles.activeSubTab,
+            ]}
+            onPress={() => handleTabPress('divisions')}
+          >
+            <Divisions color={activeSubTab === 'divisions' ? '#000' : '#999'} />
+            <AppText
+              style={[
+                styles.subTabText,
+                activeSubTab === 'divisions' && styles.activeSubTabText,
+              ]}
             >
-              
+              Divisions
+            </AppText>
+          </TouchableOpacity>
 
+          {/* Distributors Tab - Disabled if no opened divisions */}
+          <TouchableOpacity
+            style={[
+              styles.subTab,
+              activeSubTab === 'distributors' && styles.activeSubTab,
+              openedDivisionsData.length === 0 && styles.disabledTab,
+            ]}
+            ref={ref => (tabRefs.current['distributors'] = ref)}
+            onPress={() =>
+              openedDivisionsData.length > 0 && handleTabPress('distributors')
+            }
+            disabled={openedDivisionsData.length === 0}
+          >
+            <Distributors
+              color={
+                openedDivisionsData.length > 0
+                  ? activeSubTab === 'distributors'
+                    ? '#000'
+                    : '#999'
+                  : '#CCC'
+              }
+            />
 
+            <AppText
+              style={[
+                styles.subTabText,
+                activeSubTab === 'distributors' && styles.activeSubTabText,
+                openedDivisionsData.length === 0 && styles.disabledTabText,
+              ]}
+            >
+              Distributors
+            </AppText>
+          </TouchableOpacity>
 
-            {/* Divisions Tab - Always visible */}
-        <TouchableOpacity
+          {/* Field Tab - Disabled if no opened divisions */}
+          <TouchableOpacity
+            style={[
+              styles.subTab,
+              activeSubTab === 'field' && styles.activeSubTab,
+              openedDivisionsData.length === 0 && styles.disabledTab,
+            ]}
+            ref={ref => (tabRefs.current['field'] = ref)}
+            onPress={() =>
+              openedDivisionsData.length > 0 && handleTabPress('field')
+            }
+            disabled={openedDivisionsData.length === 0}
+          >
+            <Field
+              color={
+                openedDivisionsData.length > 0
+                  ? activeSubTab === 'field'
+                    ? '#000'
+                    : '#999'
+                  : '#CCC'
+              }
+            />
+            <AppText
+              style={[
+                styles.subTabText,
+                activeSubTab === 'field' && styles.activeSubTabText,
+                openedDivisionsData.length === 0 && styles.disabledTabText,
+              ]}
+            >
+              Field
+            </AppText>
+          </TouchableOpacity>
 
-        ref={(ref) => tabRefs.current['divisions'] = ref}
-          style={[styles.subTab, activeSubTab === 'divisions' && styles.activeSubTab]}
-
-           onPress={() => handleTabPress('divisions')}
-        >
-
-          <Divisions color={activeSubTab === 'divisions' ? '#000' : '#999'}/>
-          <AppText style={[styles.subTabText, activeSubTab === 'divisions' && styles.activeSubTabText]}>
-            Divisions
-          </AppText>
-        </TouchableOpacity>
-
-        {/* Distributors Tab - Disabled if no opened divisions */}
-        <TouchableOpacity
-          style={[styles.subTab, activeSubTab === 'distributors' && styles.activeSubTab, openedDivisionsData.length === 0 && styles.disabledTab]}
-          ref={(ref) => tabRefs.current['distributors'] = ref}
-          onPress={() => openedDivisionsData.length > 0 && handleTabPress('distributors')}
-          disabled={openedDivisionsData.length === 0}
-        >
-          
-
-                      <Distributors color={openedDivisionsData.length > 0 ? (activeSubTab === 'distributors' ? '#000' : '#999') : '#CCC'}/>
-
-          <AppText style={[styles.subTabText, activeSubTab === 'distributors' && styles.activeSubTabText, openedDivisionsData.length === 0 && styles.disabledTabText]}>
-            Distributors
-          </AppText>
-        </TouchableOpacity>
-
-        {/* Field Tab - Disabled if no opened divisions */}
-        <TouchableOpacity
-          style={[styles.subTab, activeSubTab === 'field' && styles.activeSubTab, openedDivisionsData.length === 0 && styles.disabledTab]}
-          ref={(ref) => tabRefs.current['field'] = ref}
-
-          onPress={() => openedDivisionsData.length > 0 && handleTabPress('field')}
-          disabled={openedDivisionsData.length === 0}
-        >
-       
-
-            <Field color={openedDivisionsData.length > 0 ? (activeSubTab === 'field' ? '#000' : '#999') : '#CCC'}/>
-          <AppText style={[styles.subTabText, activeSubTab === 'field' && styles.activeSubTabText, openedDivisionsData.length === 0 && styles.disabledTabText]}>
-            Field
-          </AppText>
-        </TouchableOpacity>
-
-        {/* Customer Hierarchy Tab - Always visible */}
-        <TouchableOpacity
-          style={[styles.subTab, activeSubTab === 'hierarchy' && styles.activeSubTab]}
-          onPress={() => handleTabPress('hierarchy')}
-          ref={(ref) => tabRefs.current['hierarchy'] = ref}
-
-        >
-
-         <CustomerHierarchy color={openedDivisionsData.length > 0 ? (activeSubTab === 'hierarchy' ? '#000' : '#999') : '#CCC'}/>
-          <AppText style={[styles.subTabText, activeSubTab === 'hierarchy' && styles.activeSubTabText]}>
-            Customer Hierarchy
-          </AppText>
-        </TouchableOpacity>
-            </ScrollView>
+          {/* Customer Hierarchy Tab - Always visible */}
+          <TouchableOpacity
+            style={[
+              styles.subTab,
+              activeSubTab === 'hierarchy' && styles.activeSubTab,
+            ]}
+            onPress={() => handleTabPress('hierarchy')}
+            ref={ref => (tabRefs.current['hierarchy'] = ref)}
+          >
+            <CustomerHierarchy
+              color={
+                openedDivisionsData.length > 0
+                  ? activeSubTab === 'hierarchy'
+                    ? '#000'
+                    : '#999'
+                  : '#CCC'
+              }
+            />
+            <AppText
+              style={[
+                styles.subTabText,
+                activeSubTab === 'hierarchy' && styles.activeSubTabText,
+              ]}
+            >
+              Customer Hierarchy
+            </AppText>
+          </TouchableOpacity>
+        </ScrollView>
         {/* Divisions Tab - Always visible */}
         {/* <TouchableOpacity
           style={[styles.subTab, activeSubTab === 'divisions' && styles.activeSubTab]}
@@ -2037,51 +2758,53 @@ export const LinkagedTab = ({ customerType = 'Hospital', customerId = null, mapp
           </AppText>
         </TouchableOpacity> */}
 
-      {/* Content based on active sub-tab */}
-      {activeSubTab === 'distributors' && renderDistributorsTab()}
-      {activeSubTab === 'divisions' && renderDivisionsTab()}
-      {activeSubTab === 'field' && renderFieldTab()}
-      {activeSubTab === 'hierarchy' && renderCustomerHierarchyTab()}
+        {/* Content based on active sub-tab */}
+        {activeSubTab === 'distributors' && renderDistributorsTab()}
+        {activeSubTab === 'divisions' && renderDivisionsTab()}
+        {activeSubTab === 'field' && renderFieldTab()}
+        {activeSubTab === 'hierarchy' && renderCustomerHierarchyTab()}
 
-      {/* Modals */}
-      <DivisionSelectionModal />
-      
-      <LinkDivisionsModal
-        visible={showLinkDivisionsModal}
-        onClose={() => setShowLinkDivisionsModal(false)}
-        onConfirm={handleLinkDivisionsConfirm}
-      />
+        {/* Modals */}
+        <DivisionSelectionModal />
 
-      <TagHospitalModal
-        visible={showTagModal}
-        onClose={() => setShowTagModal(false)}
-        onConfirm={handleTagConfirm}
-        hospitalName="this hospital"
-        teamName="Instra Team"
-      />
-      
-      {/* Filter Modal for Distributors */}
-      <FilterModal
-        visible={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
-        onApply={handleFilterApply}
-      />
-      
-      {/* Toast Notification */}
-      {toastVisible && (
-        <View style={styles.toastContainer}>
-          <View style={[
-            styles.toast,
-            toastType === 'success' ? styles.toastSuccess : styles.toastError
-          ]}>
-            <AppText style={styles.toastText}>{toastMessage}</AppText>
+        <LinkDivisionsModal
+          visible={showLinkDivisionsModal}
+          onClose={() => setShowLinkDivisionsModal(false)}
+          onConfirm={handleLinkDivisionsConfirm}
+        />
+
+        <TagHospitalModal
+          visible={showTagModal}
+          onClose={() => setShowTagModal(false)}
+          onConfirm={handleTagConfirm}
+          hospitalName="this hospital"
+          teamName="Instra Team"
+        />
+
+        {/* Filter Modal for Distributors */}
+        <FilterModal
+          visible={showFilterModal}
+          onClose={() => setShowFilterModal(false)}
+          onApply={handleFilterApply}
+        />
+
+        {/* Toast Notification */}
+        {toastVisible && (
+          <View style={styles.toastContainer}>
+            <View
+              style={[
+                styles.toast,
+                toastType === 'success'
+                  ? styles.toastSuccess
+                  : styles.toastError,
+              ]}
+            >
+              <AppText style={styles.toastText}>{toastMessage}</AppText>
+            </View>
           </View>
-        </View>
-      )}
-    </View>
-
-      
-            </>
+        )}
+      </View>
+    </>
   );
 };
 
@@ -2089,23 +2812,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+     overflow: 'visible', 
   },
   subTabsContainer: {
     flexDirection: 'row',
     backgroundColor: '#fff',
     paddingVertical: 8,
     maxHeight: 60,
-    marginHorizontal:16,
-    marginTop:10
-    
+    marginHorizontal: 16,
+    marginTop: 10,
   },
   subTab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical:8,
-     paddingHorizontal:15,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
     borderRadius: 8,
     marginHorizontal: 4,
     borderWidth: 1,
@@ -2137,6 +2860,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
+     overflow: 'visible',   
   },
   scrollContentWithButton: {
     paddingBottom: 100, // Add padding to ensure last item is visible above sticky button
@@ -2962,6 +3686,17 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     zIndex: 1000,
+    backgroundColor: '#fff',
+  borderRadius: 6,
+  paddingVertical: 4,
+  marginTop: 6,
+  elevation: 4,
+  shadowColor: '#000',
+  shadowOpacity: 0.1,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 4 },
+
+
   },
   dropdownMenuItem: {
     paddingHorizontal: 16,
@@ -3438,10 +4173,142 @@ const styles = StyleSheet.create({
     color: '#999',
   },
 
+  // Skeleton styles for distributor rows
+  skeletonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  skeletonLeft: {
+    flex: 1.5,
+    paddingRight: 12,
+  },
+  skeletonMiddle: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  skeletonRight: {
+    flex: 0.6,
+    alignItems: 'flex-end',
+  },
+  skeletonTitle: {
+    height: 16,
+    width: '70%',
+    backgroundColor: '#eee',
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  skeletonSubTitle: {
+    height: 12,
+    width: '40%',
+    backgroundColor: '#f3f3f3',
+    borderRadius: 4,
+  },
+  skeletonStatus: {
+    height: 16,
+    width: '50%',
+    backgroundColor: '#f3f3f3',
+    borderRadius: 4,
+  },
+  skeletonAddButton: {
+    height: 20,
+    width: 48,
+    backgroundColor: '#ffece0',
+    borderRadius: 4,
+  },
+supplyTypeWrapper: {
+  position: 'relative',
+  overflow: 'visible',
+  zIndex: 50,
+},
 
+supplyTypeDropdown: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+  backgroundColor: '#fff',
+  borderWidth: 1,
+  borderColor: '#D9D9D9',
+  borderRadius: 8,
+  minWidth: 120,
+  zIndex: 51,
+},
 
+/* BASE DROPDOWN MENU (GLOBAL) */
+dropdownMenu: {
+  position: 'absolute',
+  top: 40, // ensures it drops below the button
+  right: 0, // align to right always
+  minWidth: 180,
+  backgroundColor: '#fff',
+  borderRadius: 8,
+  overflow: 'visible',
 
-   
+  // FIX CLIPPING
+  zIndex: 9999,
+  elevation: 15,
+
+  // Stronger shadow for visibility
+  shadowColor: '#000',
+  shadowOpacity: 0.2,
+  shadowRadius: 10,
+  shadowOffset: { width: 0, height: 4 },
+},
+
+/* DROPDOWN FOR SUPPLY TYPE (OVERRIDE SIZE/POSITION) */
+supplyDropdownMenu: {
+  position: 'absolute',
+  top: 42,
+  right: -10,  // move slightly outward so it doesn't overlap text
+  width: 200,
+  backgroundColor: '#fff',
+  borderRadius: 8,
+  paddingVertical: 6,
+
+  // FIX CLIPPING
+  overflow: 'visible',
+  zIndex: 9999,
+  elevation: 20,
+
+  // Improve shadow
+  shadowColor: '#000',
+  shadowOpacity: 0.25,
+  shadowRadius: 12,
+  shadowOffset: { width: 0, height: 6 },
+},
+
+dropdownMenuItem: {
+  paddingVertical: 14,
+  paddingHorizontal: 16,
+  borderBottomWidth: 1,
+  borderBottomColor: '#F0F0F0',
+  backgroundColor: '#fff',
+
+  // Increase tap area
+  minHeight: 44,
+  justifyContent: 'center',
+
+  // Makes touch detection easy
+  zIndex: 9999,
+},
+
+dropdownMenuText: {
+  fontSize: 14,
+  color: '#333',
+  zIndex: 9999,
+},
+
+supplyTypeText: {
+  fontSize: 14,
+  color: '#333',
+  marginRight: 6,
+},
+
 
 });
 

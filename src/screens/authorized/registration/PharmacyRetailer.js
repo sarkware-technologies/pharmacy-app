@@ -353,7 +353,7 @@ useEffect(() => {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: !isEditMode, // Hide default header in edit mode
-      title: isEditMode ? 'Edit' : 'Register',
+      title: isEditMode ? 'Edit' : 'Registration',
       headerBackTitleVisible: false,
     });
   }, [navigation, isEditMode]);
