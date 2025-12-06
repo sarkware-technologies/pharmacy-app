@@ -256,7 +256,7 @@ const DoctorRegistrationForm = () => {
   // Set navigation header - hide default header in edit mode, show custom header
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown: !inEditMode, // Hide default header in edit mode
+      headerShown: inEditMode, // Hide default header in edit mode
       title: inEditMode ? 'Edit' : 'Register',
       headerBackTitleVisible: false,
     });

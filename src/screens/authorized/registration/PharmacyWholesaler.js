@@ -204,7 +204,7 @@ const PharmacyWholesalerForm = () => {
   // Set navigation header - hide default header in edit mode, show custom header
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown: !isEditMode, // Hide default header in edit mode
+      headerShown: isEditMode, // Hide default header in edit mode
       title: isEditMode ? 'Edit' : 'Register',
       headerBackTitleVisible: false,
     });
@@ -1943,6 +1943,152 @@ const PharmacyWholesalerForm = () => {
                 </AppText>
               )}
               {renderOTPInput('email')}
+
+               {/* PAN and GST fields - Hidden in onboard mode */}
+                <>
+                  {/* PAN Upload */}
+                  <FileUploadComponent
+                    placeholder="Upload PAN"
+                    accept={['pdf', 'jpg', 'png', 'jpeg']}
+                    maxSize={15 * 1024 * 1024}
+                    docType={DOC_TYPES.PAN}
+                    initialFile={formData.panFile}
+                    onFileUpload={file => handleFileUpload('panFile', file)}
+                    onFileDelete={() => handleFileDelete('panFile')}
+                    mandatory={true}
+                    errorMessage={errors.panFile}
+                    onOcrDataExtracted={ocrData => {
+                      console.log('PAN OCR Data:', ocrData);
+                      if (ocrData.panNumber) {
+                        setFormData(prev => ({
+                          ...prev,
+                          panNumber: ocrData.panNumber,
+                        }));
+                        // Auto-verify when PAN is populated from OCR
+                        setVerificationStatus(prev => ({ ...prev, pan: true }));
+                      }
+                    }}
+                  />
+
+                  {/* PAN Number */}
+                  <CustomInput
+                    placeholder="PAN Number"
+                    value={formData.panNumber}
+                    onChangeText={text => {
+                      const upperText = text.toUpperCase();
+                      setFormData(prev => ({ ...prev, panNumber: upperText }));
+                      setErrors(prev => ({ ...prev, panNumber: null }));
+                    }}
+                    autoCapitalize="characters"
+                    maxLength={10}
+                    mandatory
+                    editable={!verificationStatus.pan}
+                    error={errors.panNumber}
+                    rightComponent={
+                      <TouchableOpacity
+                        style={[
+                          styles.inlineVerifyButton,
+                          verificationStatus.pan && styles.verifiedButton,
+                        ]}
+                        onPress={() => {
+                          if (!verificationStatus.pan) {
+                            // Verify PAN format
+                            if (
+                              /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)
+                            ) {
+                              setVerificationStatus(prev => ({
+                                ...prev,
+                                pan: true,
+                              }));
+                            } else {
+                              Alert.alert(
+                                'Invalid PAN',
+                                'Please enter a valid PAN number',
+                              );
+                            }
+                          }
+                        }}
+                        disabled={verificationStatus.pan}
+                      >
+                        <AppText
+                          style={[
+                            styles.inlineVerifyText,
+                            verificationStatus.pan && styles.verifiedText,
+                          ]}
+                        >
+                          {verificationStatus.pan ? (
+                            'Verified'
+                          ) : (
+                            <>
+                              Verify
+                              <AppText style={styles.inlineAsterisk}>*</AppText>
+                            </>
+                          )}
+                        </AppText>
+                      </TouchableOpacity>
+                    }
+                  />
+
+                  {
+                    verificationStatus.pan &&
+                    <TouchableOpacity
+                      style={styles.linkButton}
+                      onPress={() => {
+                        Toast.show({
+                          type: 'info',
+                          text1: 'Fetch GST',
+                          text2: 'Fetching GST details from PAN...',
+                        });
+                        // Here you would call API to fetch GST from PAN
+                        // and populate the GST dropdown options
+                      }}
+                    >
+                      <FetchGst />
+                      <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
+                    </TouchableOpacity>
+                  }
+
+
+                  {/* GST Upload */}
+                  <FileUploadComponent
+                    placeholder="Upload GST"
+                    accept={['pdf', 'jpg', 'png', 'jpeg']}
+                    maxSize={15 * 1024 * 1024}
+                    docType={DOC_TYPES.GST}
+                    initialFile={formData.gstFile}
+                    onFileUpload={file => handleFileUpload('gstFile', file)}
+                    onFileDelete={() => handleFileDelete('gstFile')}
+                    onOcrDataExtracted={ocrData => {
+                      console.log('GST OCR Data:', ocrData);
+                      if (ocrData.gstNumber) {
+                        setFormData(prev => ({
+                          ...prev,
+                          gstNumber: ocrData.gstNumber,
+                        }));
+                        if (ocrData.isGstValid) {
+                          setVerificationStatus(prev => ({ ...prev, gst: true }));
+                        }
+                      }
+                    }}
+                  />
+
+                  {/* GST Number */}
+                  <CustomInput
+                    placeholder="GST number"
+                    value={formData.gstNumber}
+                    onChangeText={text => {
+                      const filtered = text
+                        .replace(/[^A-Za-z0-9]/g, '')
+                        .toUpperCase();
+                      setFormData(prev => ({ ...prev, gstNumber: filtered }));
+                      setErrors(prev => ({ ...prev, gstNumber: null }));
+                    }}
+                    autoCapitalize="characters"
+                    keyboardType="default"
+                    maxLength={15}
+                    error={errors.gstNumber}
+                  />
+                </>
 
              
             </View>

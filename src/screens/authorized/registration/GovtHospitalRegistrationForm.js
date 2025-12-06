@@ -215,7 +215,7 @@ const GovtHospitalRegistrationForm = () => {
   // Set navigation header - hide default header in edit mode, show custom header
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown: !isEditMode, // Hide default header in edit mode
+      headerShown: isEditMode, // Hide default header in edit mode
       title: isEditMode ? 'Edit' : 'Register',
       headerBackTitleVisible: false,
     });
