@@ -144,6 +144,7 @@ const PharmacyRegistrationForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [registering, setRegistering] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   // OTP states
   const [showOTP, setShowOTP] = useState({
@@ -973,6 +974,41 @@ useEffect(() => {
     );
   };
 
+  // Validation function that checks form without setting errors (for button state)
+  const checkFormValidity = () => {
+    // Validate required fields
+    if (!formData.license20) return false;
+    if (!documentIds.license20) return false;
+    if (!formData.license20ExpiryDate) return false;
+    if (!formData.license21) return false;
+    if (!documentIds.license21) return false;
+    if (!formData.license21ExpiryDate) return false;
+    if (!documentIds.pharmacyImage) return false;
+    if (!formData.pharmacyName) return false;
+    if (!formData.address1) return false;
+    if (
+      !formData.pincode ||
+      formData.pincode.length !== 6 ||
+      !/^[1-9]\d{5}$/.test(formData.pincode)
+    ) return false;
+    if (!formData.area || formData.area.trim().length === 0) return false;
+    if (!formData.cityId) return false;
+    if (!formData.stateId) return false;
+    if (!formData.mobileNumber || formData.mobileNumber.length !== 10) return false;
+    if (!verificationStatus.mobile) return false;
+    if (!formData.emailAddress || !formData.emailAddress.includes('@')) return false;
+    if (!verificationStatus.email) return false;
+    if (!formData.address2) return false;
+    if (!formData.address3) return false;
+    if (
+      !formData.panNumber ||
+      !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)
+    ) return false;
+    if (!formData.panFile && !documentIds.pan) return false;
+    if (formData.gstNumber && !isValidGST(formData.gstNumber)) return false;
+    return true;
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -1051,6 +1087,43 @@ useEffect(() => {
       /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
     return gstRegex.test(gst);
   };
+
+  // Check form validity whenever form data, document IDs, or verification status changes
+  useEffect(() => {
+    // Validate required fields
+    let isValid = true;
+    if (!formData.license20) isValid = false;
+    else if (!documentIds.license20) isValid = false;
+    else if (!formData.license20ExpiryDate) isValid = false;
+    else if (!formData.license21) isValid = false;
+    else if (!documentIds.license21) isValid = false;
+    else if (!formData.license21ExpiryDate) isValid = false;
+    else if (!documentIds.pharmacyImage) isValid = false;
+    else if (!formData.pharmacyName) isValid = false;
+    else if (!formData.address1) isValid = false;
+    else if (
+      !formData.pincode ||
+      formData.pincode.length !== 6 ||
+      !/^[1-9]\d{5}$/.test(formData.pincode)
+    ) isValid = false;
+    else if (!formData.area || formData.area.trim().length === 0) isValid = false;
+    else if (!formData.cityId) isValid = false;
+    else if (!formData.stateId) isValid = false;
+    else if (!formData.mobileNumber || formData.mobileNumber.length !== 10) isValid = false;
+    else if (!verificationStatus.mobile) isValid = false;
+    else if (!formData.emailAddress || !formData.emailAddress.includes('@')) isValid = false;
+    else if (!verificationStatus.email) isValid = false;
+    else if (!formData.address2) isValid = false;
+    else if (!formData.address3) isValid = false;
+    else if (
+      !formData.panNumber ||
+      !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)
+    ) isValid = false;
+    else if (!formData.panFile && !documentIds.pan) isValid = false;
+    else if (formData.gstNumber && !isValidGST(formData.gstNumber)) isValid = false;
+    
+    setIsFormValid(isValid);
+  }, [formData, documentIds, verificationStatus]);
   // Helper function to format dates for API submission
   // Handles both ISO format and DD/MM/YYYY format dates
   const formatDateForAPI = date => {
@@ -2721,6 +2794,7 @@ useEffect(() => {
               <TouchableOpacity
                 style={[
                   styles.registerButton,
+                  !isFormValid && styles.registerButtonDisabled,
                   registering && styles.disabledButton,
                 ]}
                 onPress={handleRegister}
@@ -2729,7 +2803,10 @@ useEffect(() => {
                 {registering ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <AppText style={styles.registerButtonText}>
+                  <AppText style={[
+                    styles.registerButtonText,
+                    !isFormValid && styles.registerButtonTextDisabled,
+                  ]}>
                     {isEditMode ? 'Update' : 'Register'}
                   </AppText>
                 )}
@@ -3305,10 +3382,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  registerButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+    elevation: 0,
+    shadowOpacity: 0,
+  },
   registerButtonText: {
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',
+  },
+  registerButtonTextDisabled: {
+    color: '#fff',
   },
   disabledButton: {
     opacity: 0.6,

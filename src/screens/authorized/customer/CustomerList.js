@@ -960,10 +960,8 @@ const CustomerList = ({ navigation }) => {
             {/* <AppText style={styles.customerName}>{item.customerName}<AppText style={styles.customerNameIcon}><ChevronRight height={11} color={colors.primary} /></AppText></AppText> */}
 
             <View style={styles.customerNameRow}>
-              <AppText style={styles.customerName}>{item.customerName}</AppText>
-
-          
-              <ChevronRight height={12} color={colors.primary} />
+              <AppText style={styles.customerName}>{item.customerName} <ChevronRight height={12} color={colors.primary}  />  </AppText>
+              
             </View>
             <View style={styles.actionsContainer}>
               {item.statusName === 'NOT-ONBOARDED' && (

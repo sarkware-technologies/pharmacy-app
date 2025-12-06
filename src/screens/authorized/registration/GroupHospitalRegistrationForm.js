@@ -132,6 +132,7 @@ const GroupHospitalRegistrationForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
   const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
 
   // Document IDs for API submission
@@ -1074,6 +1075,32 @@ const GroupHospitalRegistrationForm = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  // Check form validity whenever form data, document IDs, or verification status changes
+  useEffect(() => {
+    // Validate required fields
+    let isValid = true;
+    if (!formData.registrationNumber) isValid = false;
+    else if (!formData.registrationCertificateFile) isValid = false;
+    else if (!formData.registrationDate) isValid = false;
+    else if (!formData.hospitalName) isValid = false;
+    else if (!formData.address1) isValid = false;
+    else if (!formData.address2) isValid = false;
+    else if (!formData.address3) isValid = false;
+    else if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode)) isValid = false;
+    else if (!formData.area || formData.area.trim().length === 0) isValid = false;
+    else if (!formData.cityId) isValid = false;
+    else if (!formData.stateId) isValid = false;
+    else if (!formData.mobileNumber || formData.mobileNumber.length !== 10) isValid = false;
+    else if (!verificationStatus.mobile) isValid = false;
+    else if (!formData.emailAddress || !formData.emailAddress.includes('@')) isValid = false;
+    else if (!verificationStatus.email) isValid = false;
+    else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
+    else if (!formData.panFile) isValid = false;
+    else if (!formData.linkedHospitals || formData.linkedHospitals.length === 0) isValid = false;
+    
+    setIsFormValid(isValid);
+  }, [formData, verificationStatus]);
 
   const handleNextStep = () => {
     handleSubmit();
@@ -2267,7 +2294,11 @@ const GroupHospitalRegistrationForm = () => {
           style={[{ flex: 1 }, { transform: [{ scale: buttonScaleAnim }] }]}
         >
           <TouchableOpacity
-            style={[styles.registerButton, loading && styles.disabledButton]}
+            style={[
+              styles.registerButton,
+              !isFormValid && styles.registerButtonDisabled,
+              loading && styles.disabledButton,
+            ]}
             onPress={handleNextStep}
             activeOpacity={0.8}
             disabled={loading}
@@ -2275,7 +2306,12 @@ const GroupHospitalRegistrationForm = () => {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <AppText style={styles.registerButtonText}>Register</AppText>
+              <AppText style={[
+                styles.registerButtonText,
+                !isFormValid && styles.registerButtonTextDisabled,
+              ]}>
+                {isEditMode ? 'Update' : 'Register'}
+              </AppText>
             )}
           </TouchableOpacity>
         </Animated.View>
@@ -3014,10 +3050,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  registerButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+    elevation: 0,
+    shadowOpacity: 0,
+  },
   registerButtonText: {
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',
+  },
+  registerButtonTextDisabled: {
+    color: '#fff',
   },
   modalOverlay: {
     flex: 1,

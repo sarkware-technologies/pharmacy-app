@@ -129,6 +129,7 @@ const PharmacyWholesalerForm = () => {
   // Error state
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   // Dropdown data
   const [customerGroups, setCustomerGroups] = useState([]);
@@ -1056,6 +1057,36 @@ const PharmacyWholesalerForm = () => {
       /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
     return gstRegex.test(gst);
   };
+
+  // Check form validity whenever form data, document IDs, or verification status changes
+  useEffect(() => {
+    // Validate required fields
+    let isValid = true;
+    if (!formData.license20b) isValid = false;
+    else if (!formData.license20bFile) isValid = false;
+    else if (!formData.license20bExpiryDate) isValid = false;
+    else if (!formData.license21b) isValid = false;
+    else if (!formData.license21bFile) isValid = false;
+    else if (!formData.license21bExpiryDate) isValid = false;
+    else if (!formData.pharmacyImageFile) isValid = false;
+    else if (!formData.pharmacyName) isValid = false;
+    else if (!formData.address1) isValid = false;
+    else if (!formData.address2) isValid = false;
+    else if (!formData.address3) isValid = false;
+    else if (!formData.area || formData.area.trim().length === 0) isValid = false;
+    else if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode)) isValid = false;
+    else if (!formData.cityId) isValid = false;
+    else if (!formData.stateId) isValid = false;
+    else if (!formData.mobileNumber || formData.mobileNumber.length !== 10) isValid = false;
+    else if (!verificationStatus.mobile) isValid = false;
+    else if (!formData.emailAddress || !formData.emailAddress.includes('@')) isValid = false;
+    else if (!verificationStatus.email) isValid = false;
+    else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
+    else if (!formData.panFile) isValid = false;
+    else if (formData.gstNumber && !isValidGST(formData.gstNumber)) isValid = false;
+    
+    setIsFormValid(isValid);
+  }, [formData, verificationStatus]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -2230,6 +2261,7 @@ const PharmacyWholesalerForm = () => {
               <TouchableOpacity
                 style={[
                   styles.registerButton,
+                  !isFormValid && styles.registerButtonDisabled,
                   loading && styles.disabledButton,
                 ]}
                 onPress={handleRegister}
@@ -2238,7 +2270,12 @@ const PharmacyWholesalerForm = () => {
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <AppText style={styles.registerButtonText}>Register</AppText>
+                  <AppText style={[
+                    styles.registerButtonText,
+                    !isFormValid && styles.registerButtonTextDisabled,
+                  ]}>
+                    {isEditMode ? 'Update' : 'Register'}
+                  </AppText>
                 )}
               </TouchableOpacity>
             </View>
@@ -2739,10 +2776,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  registerButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+    elevation: 0,
+    shadowOpacity: 0,
+  },
   registerButtonText: {
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',
+  },
+  registerButtonTextDisabled: {
+    color: '#fff',
   },
   modalOverlay: {
     flex: 1,

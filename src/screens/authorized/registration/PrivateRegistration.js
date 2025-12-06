@@ -160,6 +160,7 @@ const PrivateRegistrationForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   // Store original type data when editing
   const [originalTypeData, setOriginalTypeData] = useState({
@@ -1226,6 +1227,32 @@ const PrivateRegistrationForm = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  // Check form validity whenever form data or verification status changes
+  useEffect(() => {
+    // Validate required fields
+    let isValid = true;
+    if (!formData.registrationNumber) isValid = false;
+    else if (!formData.registrationDate) isValid = false;
+    else if (!formData.licenseFile) isValid = false;
+    else if (!formData.clinicName) isValid = false;
+    else if (!formData.address1) isValid = false;
+    else if (!formData.address2) isValid = false;
+    else if (!formData.address3) isValid = false;
+    else if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode)) isValid = false;
+    else if (!formData.area || formData.area.trim().length === 0) isValid = false;
+    else if (!formData.cityId) isValid = false;
+    else if (!formData.stateId) isValid = false;
+    else if (!formData.mobileNumber || formData.mobileNumber.length !== 10) isValid = false;
+    else if (!formData.emailAddress || !formData.emailAddress.includes('@')) isValid = false;
+    else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
+    else if (!formData.panFile) isValid = false;
+    else if (formData.gstNumber && formData.gstNumber.trim() != '' && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.gstNumber)) isValid = false;
+    else if (!inEditMode && !verificationStatus.mobile) isValid = false;
+    else if (!inEditMode && !verificationStatus.email) isValid = false;
+    
+    setIsFormValid(isValid);
+  }, [formData, verificationStatus, inEditMode]);
 
   const handleCancel = () => {
     if (inEditMode) {
@@ -2806,7 +2833,10 @@ const PrivateRegistrationForm = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.registerButton}
+                style={[
+                  styles.registerButton,
+                  !isFormValid && styles.registerButtonDisabled,
+                ]}
                 onPress={handleSubmit}
                 disabled={loading}
                 activeOpacity={0.8}
@@ -2814,7 +2844,10 @@ const PrivateRegistrationForm = () => {
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <AppText style={styles.registerButtonText}>
+                  <AppText style={[
+                    styles.registerButtonText,
+                    !isFormValid && styles.registerButtonTextDisabled,
+                  ]}>
                     {inEditMode ? 'Update' : 'Register'}
                   </AppText>
                 )}
@@ -3632,10 +3665,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  registerButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+    elevation: 0,
+    shadowOpacity: 0,
+  },
   registerButtonText: {
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',
+  },
+  registerButtonTextDisabled: {
+    color: '#fff',
   },
   modalOverlay: {
     flex: 1,
