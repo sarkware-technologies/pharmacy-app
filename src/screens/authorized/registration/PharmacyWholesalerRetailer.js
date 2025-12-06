@@ -2968,7 +2968,8 @@ const handleLicenseOcrData = async (ocrData) => {
       <AddNewHospitalModal
         visible={showAddHospitalModal}
         onClose={() => setShowAddHospitalModal(false)}
-        pharmacyName={formData.pharmacyName}
+        mappingName={formData.pharmacyName}
+         mappingLabel="Retail Cum Wholesaler"
         onAdd={hospital => {
           // Console the raw response from AddNewHospitalModal
           console.log('=== Hospital Response from AddNewHospitalModal ===');
@@ -3012,7 +3013,8 @@ const handleLicenseOcrData = async (ocrData) => {
       <AddNewDoctorModal
         visible={showAddDoctorModal}
         onClose={() => setShowAddDoctorModal(false)}
-        pharmacyName={formData.pharmacyName}
+        mappingName={formData.pharmacyName}
+         mappingLabel="Retail Cum Wholesaler"
         onAdd={doctor => {
           // Console the raw response from AddNewDoctorModal
           console.log('=== Doctor Response from AddNewDoctorModal ===');

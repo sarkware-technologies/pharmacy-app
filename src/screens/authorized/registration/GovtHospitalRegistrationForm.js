@@ -2538,7 +2538,8 @@ const GovtHospitalRegistrationForm = () => {
       {/* Add New Hospital Modal */}
       <AddNewHospitalModal
         visible={showAddHospitalModal}
-        pharmacyName={formData.hospitalName}
+        mappingName={formData.hospitalName}
+        mappingLabel="Govt"
         onClose={() => setShowAddHospitalModal(false)}
         onAdd={(hospital) => {
           setFormData(prev => ({
@@ -2553,8 +2554,8 @@ const GovtHospitalRegistrationForm = () => {
       <AddNewPharmacyModal
         visible={showAddPharmacyModal}
         onClose={() => setShowAddPharmacyModal(false)}
-        hospitalName={formData.hospitalName}
-        parentHospital={true}
+        mappingName={formData.hospitalName}
+        mappingLabel="Govt"
         onSubmit={(pharmacy) => {
           console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
           console.log('Full Response:', pharmacy);

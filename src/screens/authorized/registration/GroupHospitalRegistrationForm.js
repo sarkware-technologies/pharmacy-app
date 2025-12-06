@@ -2374,7 +2374,8 @@ const GroupHospitalRegistrationForm = () => {
       {/* Add New Hospital Modal */}
       <AddNewHospitalModal
         visible={showAddHospitalModal}
-        pharmacyName={formData.hospitalName}
+        mappingName={formData.hospitalName}
+        mappingLabel="Private - Group Hospital / GBU"
         onClose={() => setShowAddHospitalModal(false)}
         onAdd={hospital => {
           setFormData(prev => ({

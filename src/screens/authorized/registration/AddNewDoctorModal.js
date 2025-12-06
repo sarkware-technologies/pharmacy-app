@@ -43,7 +43,7 @@ const MOCK_AREAS = [
   { id: 5, name: 'Sadar' },
 ];
 
-const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) => {
+const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, mappingLabel }) => {
   const [doctorForm, setDoctorForm] = useState({
     // License Details
     clinicRegistrationCertificateFile: null,
@@ -348,12 +348,28 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
 
   const handleVerify = async (field) => {
     // Validate the field before showing OTP
-    if (field === 'mobile' && (!doctorForm.mobileNumber || doctorForm.mobileNumber.length !== 10)) {
-      setDoctorErrors(prev => ({ ...prev, mobileNumber: 'Please enter valid 10-digit mobile number' }));
+
+
+     if (
+      field === 'mobile' &&
+      (!doctorForm.mobileNumber ||
+        !/^[6-9]\d{9}$/.test(doctorForm.mobileNumber))
+    ) {
+      setDoctorErrors(prev => ({
+        ...prev,
+        mobileNumber: 'Please enter valid 10-digit mobile number',
+      }));
       return;
     }
-    if (field === 'email' && (!doctorForm.emailAddress || !doctorForm.emailAddress.includes('@'))) {
-      setDoctorErrors(prev => ({ ...prev, emailAddress: 'Please enter valid email address' }));
+    if (
+      field === 'email' &&
+      (!doctorForm.emailAddress ||
+        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(doctorForm.emailAddress))
+    ) {
+      setDoctorErrors(prev => ({
+        ...prev,
+        emailAddress: 'Please enter a valid email address',
+      }));
       return;
     }
 
@@ -1558,9 +1574,9 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, pharmacyName }) 
 
           {/* Mapping Section */}
           <AppText style={styles.modalSectionLabel}>Mapping</AppText>
-          <AppText style={styles.modalFieldLabel}>Only Wholesaler</AppText>
+          <AppText style={styles.modalFieldLabel}>{mappingLabel||"Hospital"}</AppText>
           <View style={[styles.mappingPharmacyBox, { marginBottom: 20 }]}>
-            <AppText style={styles.mappingPharmacyText}>{pharmacyName || 'Pharmacy name will appear here'}</AppText>
+            <AppText style={styles.mappingPharmacyText}>{mappingName || 'Pharmacy name will appear here'}</AppText>
           </View>
 
           {/* Action Buttons */}
@@ -1920,7 +1936,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.loginInputBorderColor,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -2153,7 +2169,7 @@ const styles = StyleSheet.create({
   },
   floatingLabel: {
     position: 'absolute',
-    top: -6,
+    top: -10,
     left: 12,
     fontSize: 12,
     fontWeight: '500',
@@ -2170,7 +2186,8 @@ const styles = StyleSheet.create({
 
   placeholderText: {
     fontSize: 16,
-    color: '#999',
+    color: colors.gray,
+     marginLeft: 8
   },
   inputText: {
     fontSize: 16,
@@ -2194,6 +2211,10 @@ const styles = StyleSheet.create({
   },
   dropdownContainer: {
     marginBottom: 18  ,
+  },
+   asteriskPrimary: {
+    color: "red",
+    fontSize:16
   },
 });
 

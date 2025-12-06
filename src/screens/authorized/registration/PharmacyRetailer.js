@@ -2803,7 +2803,8 @@ useEffect(() => {
       <AddNewHospitalModal
         visible={showAddHospitalModal}
         onClose={() => setShowAddHospitalModal(false)}
-        pharmacyName={formData.pharmacyName}
+        mappingName={formData.pharmacyName}
+        mappingLabel="Only Retailer"
         onAdd={hospital => {
           // Console the raw response from AddNewHospitalModal
           console.log('=== Hospital Response from AddNewHospitalModal ===');
@@ -2847,7 +2848,8 @@ useEffect(() => {
       <AddNewDoctorModal
         visible={showAddDoctorModal}
         onClose={() => setShowAddDoctorModal(false)}
-        pharmacyName={formData.pharmacyName}
+        mappingName={formData.pharmacyName}
+        mappingLabel="Only Retailer"
         onAdd={doctor => {
           // Console the raw response from AddNewDoctorModal
           console.log('=== Doctor Response from AddNewDoctorModal ===');
@@ -2923,84 +2925,9 @@ to Cancel the Onboarding?`}
         </View>
       </Modal>
 
-      {/* Add New Hospital Modal */}
-      <AddNewHospitalModal
-        visible={showAddHospitalModal}
-        onClose={() => setShowAddHospitalModal(false)}
-        onAdd={hospital => {
-          console.log('=== Hospital Response from AddNewHospitalModal ===');
-          console.log('Full Response:', hospital);
-          console.log('Hospital ID:', hospital.id || hospital.customerId);
-          console.log('=== End Hospital Response ===');
+ 
 
-          const hospitalData = {
-            id: hospital.id || hospital.customerId,
-            name: hospital.name || hospital.hospitalName,
-            code: hospital.code || hospital.shortName,
-            customerId: hospital.id || hospital.customerId,
-            stateId: hospital.stateId,
-            cityId: hospital.cityId,
-            area: hospital.area,
-            city: hospital.city,
-            state: hospital.state,
-            mobileNumber: hospital.mobileNumber,
-            emailAddress: hospital.emailAddress,
-            isNew: true,
-            ...hospital,
-          };
-
-          console.log('=== Adding Hospital to selectedHospitals ===');
-          console.log('Hospital Data:', hospitalData);
-          console.log('=== End Hospital Data ===');
-
-          setFormData(prev => ({
-            ...prev,
-            selectedHospitals: [
-              ...(prev.selectedHospitals || []),
-              hospitalData,
-            ],
-          }));
-          setShowAddHospitalModal(false);
-        }}
-      />
-
-      {/* Add New Doctor Modal */}
-      <AddNewDoctorModal
-        visible={showAddDoctorModal}
-        onClose={() => setShowAddDoctorModal(false)}
-        onAdd={doctor => {
-          console.log('=== Doctor Response from AddNewDoctorModal ===');
-          console.log('Full Response:', doctor);
-          console.log('Doctor ID:', doctor.id || doctor.customerId);
-          console.log('=== End Doctor Response ===');
-
-          const doctorData = {
-            id: doctor.id || doctor.customerId,
-            name: doctor.name || doctor.doctorName,
-            code: doctor.code || doctor.shortName,
-            customerId: doctor.id || doctor.customerId,
-            stateId: doctor.stateId,
-            cityId: doctor.cityId,
-            area: doctor.area,
-            city: doctor.city,
-            state: doctor.state,
-            mobileNumber: doctor.mobileNumber,
-            emailAddress: doctor.emailAddress,
-            isNew: true,
-            ...doctor,
-          };
-
-          console.log('=== Adding Doctor to selectedDoctors ===');
-          console.log('Doctor Data:', doctorData);
-          console.log('=== End Doctor Data ===');
-
-          setFormData(prev => ({
-            ...prev,
-            selectedDoctors: [...(prev.selectedDoctors || []), doctorData],
-          }));
-          setShowAddDoctorModal(false);
-        }}
-      />
+    
     </SafeAreaView>
   );
 };

@@ -12,7 +12,6 @@ import {
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
 import Toast from 'react-native-toast-message';
@@ -21,7 +20,6 @@ import FileUploadComponent from '../../../components/FileUploadComponent';
 import AddressInputWithLocation from '../../../components/AddressInputWithLocation';
 import CustomInput from '../../../components/CustomInput';
 import { AppText, AppInput } from "../../../components"
-import Calendar from '../../../components/icons/Calendar';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
 
@@ -33,7 +31,7 @@ const DOC_TYPES = {
 };
 
 
-const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, categoryId, subCategoryId, pharmacyName }) => {
+const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, categoryId, subCategoryId, mappingName, mappingLabel }) => {
   const [hospitalForm, setHospitalForm] = useState({
     category: 'Private',
     subCategory: 'Individual Hospital',
@@ -257,13 +255,27 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
 
   const handleVerify = async (field) => {
-    // Validate the field before showing OTP
-    if (field === 'mobile' && (!hospitalForm.mobileNumber || hospitalForm.mobileNumber.length !== 10)) {
-      setHospitalErrors(prev => ({ ...prev, mobileNumber: 'Please enter valid 10-digit mobile number' }));
+
+    if (
+      field === 'mobile' &&
+      (!hospitalForm.mobileNumber ||
+        !/^[6-9]\d{9}$/.test(hospitalForm.mobileNumber))
+    ) {
+      setHospitalErrors(prev => ({
+        ...prev,
+        mobileNumber: 'Please enter valid 10-digit mobile number',
+      }));
       return;
     }
-    if (field === 'email' && (!hospitalForm.emailAddress || !hospitalForm.emailAddress.includes('@'))) {
-      setHospitalErrors(prev => ({ ...prev, emailAddress: 'Please enter valid email address' }));
+    if (
+      field === 'email' &&
+      (!hospitalForm.emailAddress ||
+        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(hospitalForm.emailAddress))
+    ) {
+      setHospitalErrors(prev => ({
+        ...prev,
+        emailAddress: 'Please enter a valid email address',
+      }));
       return;
     }
 
@@ -1406,9 +1418,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
           {/* Mapping Section */}
           <AppText style={styles.modalSectionLabel}>Mapping</AppText>
-          <AppText style={styles.modalFieldLabel}>Hospital</AppText>
+          <AppText style={styles.modalFieldLabel}>{mappingLabel || "Hospital"}</AppText>
           <View style={[styles.mappingPharmacyBox, { marginBottom: 20 }]}>
-            <AppText style={styles.mappingPharmacyText}>{pharmacyName || 'Hospital name will appear here'}</AppText>
+            <AppText style={styles.mappingPharmacyText}>{mappingName}</AppText>
           </View>
 
           {/* Add Stockist Section (Optional) */}
@@ -1876,7 +1888,7 @@ const styles = StyleSheet.create({
   },
   floatingLabel: {
     position: 'absolute',
-    top: -6,
+    top: -10,
     left: 12,
     fontSize: 12,
     fontWeight: '500',
@@ -1890,7 +1902,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.loginInputBorderColor,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -2072,7 +2084,8 @@ const styles = StyleSheet.create({
 
   placeholderText: {
     fontSize: 16,
-    color: '#999',
+   color: colors.gray,
+     marginLeft: 8
   },
   inputText: {
     fontSize: 16,
@@ -2095,6 +2108,11 @@ const styles = StyleSheet.create({
   },
   dropdownContainer: {
     marginBottom: 18  ,
+  },
+
+   asteriskPrimary: {
+    color: "red",
+    fontSize:16
   },
 });
 

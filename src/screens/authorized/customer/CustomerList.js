@@ -341,8 +341,9 @@ const CustomerList = ({ navigation }) => {
           statusId: selectedFilters.statusId,
           cityIds: selectedFilters.cityIds,
           isLoadMore: false,
-          isStaging: isStaging,
-          ...(isStaging && { statusIds: [5] })
+          isStaging: true,
+          // ...(isStaging && { statusIds: [5] })
+          statusIds: [5]
         }));
       } else {
         const statusIds = getStatusIdsForTab(activeTab);

@@ -32,7 +32,6 @@ import AddNewDoctorModal from './AddNewDoctorModal';
 import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
-import ArrowDown from '../../../components/icons/ArrowDown';
 import FloatingDateInput from '../../../components/FloatingDateInput';
 
 
@@ -2346,7 +2345,8 @@ to Cancel the Onboarding?`}
       <AddNewHospitalModal
         visible={showAddHospitalModal}
         onClose={() => setShowAddHospitalModal(false)}
-        pharmacyName={formData.pharmacyName}
+        mappingName={formData.pharmacyName}
+        mappingLabel="Only Wholesaler"
         onAdd={hospital => {
           console.log('=== Hospital Response from AddNewHospitalModal ===');
           console.log('Full Response:', hospital);
@@ -2388,7 +2388,8 @@ to Cancel the Onboarding?`}
       <AddNewDoctorModal
         visible={showAddDoctorModal}
         onClose={() => setShowAddDoctorModal(false)}
-        pharmacyName={formData.pharmacyName}
+        mappingName={formData.pharmacyName}
+        mappingLabel="Only Wholesaler"
         onAdd={doctor => {
           console.log('=== Doctor Response from AddNewDoctorModal ===');
           console.log('Full Response:', doctor);

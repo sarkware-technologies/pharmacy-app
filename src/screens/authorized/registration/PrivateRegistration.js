@@ -87,6 +87,8 @@ const PrivateRegistrationForm = () => {
     isStaging,
   } = route.params || {};
 
+  
+
   // Determine if we're in edit mode - check multiple flags for backward compatibility
   const inEditMode = mode === 'edit' || isEditMode || !!customerId;
   const [loadingCustomerData, setLoadingCustomerData] = useState(false);
@@ -1437,10 +1439,16 @@ const PrivateRegistrationForm = () => {
           })),
         }),
         isChildCustomer: false,
-        ...(inEditMode && customerId ? { customerId: parseInt(customerId, 10) } : {}),
       };
 
-      console.log(inEditMode ? 'Update data:' : 'Registration data:', requestPayload);
+    
+
+      // If editing, add the customerId to the payload
+      if (isEditMode) {
+        requestPayload.id = customerId;
+      }
+
+      console.log('Registration payload:', requestPayload);
 
       // Call create customer API for both create and edit (with customerId in payload)
       const response = await customerAPI.createCustomer(requestPayload);
@@ -2819,7 +2827,9 @@ const PrivateRegistrationForm = () => {
       {/* Add New Hospital Modal */}
       <AddNewHospitalModal
         visible={showHospitalModal}
-        pharmacyName={formData.clinicName}
+        mappingName={formData.clinicName}
+        mappingLabel="Private Hospital"
+        
         onClose={() => setShowHospitalModal(false)}
         onSubmit={hospital => {
           setFormData(prev => ({
@@ -2834,7 +2844,8 @@ const PrivateRegistrationForm = () => {
       <AddNewPharmacyModal
         visible={showPharmacyModal}
         onClose={() => setShowPharmacyModal(false)}
-        hospitalName={formData.clinicName}
+         mappingName={formData.clinicName}
+        mappingLabel="Private Hospital"
         onSubmit={pharmacy => {
           console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
           console.log('Full Response:', pharmacy);

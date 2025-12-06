@@ -12,7 +12,6 @@ import {
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
 import Toast from 'react-native-toast-message';
@@ -21,10 +20,8 @@ import FileUploadComponent from '../../../components/FileUploadComponent';
 import AddressInputWithLocation from '../../../components/AddressInputWithLocation';
 import CustomInput from '../../../components/CustomInput';
 import { AppText, AppInput } from "../../../components";
-import Calendar from '../../../components/icons/Calendar';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
-import { formatPrice } from '../../../utils/getInitials';
 
 const DOC_TYPES = {
   LICENSE_20B: 3,
@@ -33,9 +30,6 @@ const DOC_TYPES = {
   PAN: 7,
   GST: 2,
 };
-
-
-
 
 
 const MOCK_AREAS = [
@@ -47,7 +41,7 @@ const MOCK_AREAS = [
   { id: 5, name: 'Sadar' },
 ];
 
-const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorName, parentHospital = null }) => {
+const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingLabel, parentHospital = null }) => {
   const [pharmacyForm, setPharmacyForm] = useState({
     licenseType: 'Only Retail', // 'Only Retail', 'Only Wholesaler', 'Retail Cum Wholesaler'
     licenseTypeId: 1,
@@ -373,12 +367,27 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
   // OTP Verification Handlers (from AddNewHospitalModal)
   const handleVerify = async (field) => {
     // Validate the field before showing OTP
-    if (field === 'mobile' && (!pharmacyForm.mobileNumber || pharmacyForm.mobileNumber.length !== 10)) {
-      setPharmacyErrors(prev => ({ ...prev, mobileNumber: 'Please enter valid 10-digit mobile number' }));
+
+     if (
+      field === 'mobile' &&
+      (!pharmacyForm.mobileNumber ||
+        !/^[6-9]\d{9}$/.test(pharmacyForm.mobileNumber))
+    ) {
+      setPharmacyErrors(prev => ({
+        ...prev,
+        mobileNumber: 'Please enter valid 10-digit mobile number',
+      }));
       return;
     }
-    if (field === 'email' && (!pharmacyForm.emailAddress || !pharmacyForm.emailAddress.includes('@'))) {
-      setPharmacyErrors(prev => ({ ...prev, emailAddress: 'Please enter valid email address' }));
+    if (
+      field === 'email' &&
+      (!pharmacyForm.emailAddress ||
+        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(pharmacyForm.emailAddress))
+    ) {
+      setPharmacyErrors(prev => ({
+        ...prev,
+        emailAddress: 'Please enter a valid email address',
+      }));
       return;
     }
 
@@ -1910,12 +1919,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, hospitalName, doctorN
             <>
               <AppText style={styles.modalFieldLabel}>{'Parent Group Hospital'}</AppText>
               <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
-                <AppText style={styles.mappingNameText}>{hospitalName || doctorName || 'Name will appear here'}</AppText>
+                <AppText style={styles.mappingNameText}>{ 'Name will appear here'}</AppText>
               </View></>
           }
-          <AppText style={styles.modalFieldLabel}>{hospitalName ? 'Hospital' : 'Hospital'}</AppText>
+          <AppText style={styles.modalFieldLabel}>{mappingLabel || "Hospital"}</AppText>
           <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
-            <AppText style={styles.mappingNameText}>{hospitalName || doctorName || 'Name will appear here'}</AppText>
+            <AppText style={styles.mappingNameText}>{mappingName}</AppText>
           </View>
 
           {/* Action Buttons */}
@@ -2294,7 +2303,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.loginInputBorderColor,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -2327,7 +2336,7 @@ const styles = StyleSheet.create({
   },
   floatingLabel: {
     position: 'absolute',
-    top: -6,
+    top: -10,
     left: 12,
     fontSize: 12,
     fontWeight: '500',
@@ -2500,7 +2509,8 @@ const styles = StyleSheet.create({
 
   placeholderText: {
     fontSize: 16,
-    color: '#999',
+    color: colors.gray,
+     marginLeft: 8
   },
   inputText: {
     fontSize: 16,
@@ -2527,7 +2537,11 @@ const styles = StyleSheet.create({
   },
   sectionTopSpacing: {
     marginTop: 20
-  }
+  },
+   asteriskPrimary: {
+    color: "red",
+    fontSize:16
+  },
 });
 
 export default AddNewPharmacyModal;

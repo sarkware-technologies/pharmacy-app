@@ -2703,7 +2703,8 @@ const DoctorRegistrationForm = () => {
       <AddNewHospitalModal
         visible={showHospitalModal}
         onClose={() => setShowHospitalModal(false)}
-        pharmacyName={formData.doctorName}
+        mappingName={formData.doctorName}
+        mappingLabel="Doctor"
         onSubmit={hospital => {
           setShowHospitalModal(false);
           // Handle hospital submission if needed
@@ -2720,8 +2721,8 @@ const DoctorRegistrationForm = () => {
       <AddNewPharmacyModal
         visible={showPharmacyModal}
         onClose={() => setShowPharmacyModal(false)}
-        pharmacyName={formData.doctorName}
-        doctorName={formData.doctorName}
+        mappingName={formData.doctorName}
+        mappingLabel="Doctor"
         onSubmit={pharmacy => {
           setShowPharmacyModal(false);
           // Handle pharmacy submission if needed
