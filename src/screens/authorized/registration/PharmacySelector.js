@@ -28,7 +28,15 @@ import AddNewPharmacyModal from './AddNewPharmacyModal';
 const PharmacySelector = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { onSelect, selectedPharmacies = [] } = route.params || {};
+  const { onSelect, selectedPharmacies = [] , parentHospitalName, mappingName, mappingLabel} = route.params || {};
+
+
+  
+
+
+
+
+  
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState(selectedPharmacies || []);
@@ -464,7 +472,7 @@ const PharmacySelector = () => {
       )}
 
       {/* Bottom Button */}
-      {selectedItems.length > 0 && (
+      {/* {selectedItems.length > 0 && ( */}
         <View style={styles.bottomContainer}>
           <TouchableOpacity
             style={styles.addNewButton}
@@ -481,11 +489,14 @@ const PharmacySelector = () => {
             </AppText>
           </TouchableOpacity>
         </View>
-      )}
+      {/* )} */}
 
       {/* Add New Pharmacy Modal */}
       <AddNewPharmacyModal
         visible={showAddPharmacyModal}
+        mappingName={mappingName} 
+        mappingLabel={mappingLabel}
+        parentHospitalName={parentHospitalName}
         onClose={() => setShowAddPharmacyModal(false)}
         onSubmit={handlePharmacySubmit}
       />

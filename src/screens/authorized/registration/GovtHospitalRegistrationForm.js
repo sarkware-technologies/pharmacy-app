@@ -2190,11 +2190,17 @@ const GovtHospitalRegistrationForm = () => {
                     </View>
                   )}
 
+
+               
+
                   {/* Add Pharmacy Link */}
                   <TouchableOpacity
                     style={styles.addPharmacyLink}
                     onPress={() => {
                       navigation.navigate('PharmacySelector', {
+                        parentHospitalName:hospital.name,
+                        mappingLabel:"Govt",
+                        mappingName:formData.hospitalName,
                         selectedPharmacies: hospital.pharmacies || [],
                         onSelect: (pharmacies) => {
                           setFormData(prev => ({

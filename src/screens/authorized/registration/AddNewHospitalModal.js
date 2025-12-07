@@ -1411,7 +1411,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           </View>
 
           {/* Add Stockist Section (Optional) */}
-          <AppText style={styles.modalSectionLabel2}> Stockist Suggestions <AppText style={styles.optionalText}> (Optional)</AppText></AppText>
+        <AppText style={styles.modalSectionLabel2}> Stockist Suggestions <AppText style={styles.optionalText}> (Optional)</AppText></AppText>
           <CustomInput
             placeholder="Name of the Stockist"
             value={hospitalForm.stockistName}

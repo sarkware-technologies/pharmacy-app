@@ -2096,6 +2096,10 @@ const GroupHospitalRegistrationForm = () => {
                       style={styles.addPharmacyLink}
                       onPress={() => {
                         navigation.navigate('PharmacySelector', {
+                           parentHospitalName:hospital.name,
+                        mappingLabel:"Private - Group Hospital / GBU",
+                        mappingName:formData.hospitalName,
+                        selectedPharmacies: hospital.pharmacies || [],
                           selectedPharmacies: hospital.pharmacies || [],
                           onSelect: pharmacies => {
                             setFormData(prev => ({

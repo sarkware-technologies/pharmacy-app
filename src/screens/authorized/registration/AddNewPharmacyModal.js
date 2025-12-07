@@ -42,7 +42,7 @@ const MOCK_AREAS = [
   { id: 5, name: 'Sadar' },
 ];
 
-const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingLabel, parentHospital = null }) => {
+const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingLabel, parentHospitalName = null }) => {
   const [pharmacyForm, setPharmacyForm] = useState({
     licenseType: 'Only Retail', // 'Only Retail', 'Only Wholesaler', 'Retail Cum Wholesaler'
     licenseTypeId: 1,
@@ -80,6 +80,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
     panNumber: '',
     gstFile: null,
     gstNumber: '',
+    stockistName: '',
+    stockistCode: '',
+    stockistCity: '',
   });
 
   const [pharmacyErrors, setPharmacyErrors] = useState({});
@@ -330,6 +333,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
       panNumber: '',
       gstFile: null,
       gstNumber: '',
+      stockistName: '',
+      stockistCode: '',
+      stockistCity: '',
     });
     setPharmacyErrors({});
     setVerificationStatus({ mobile: false, email: false, pan: false });
@@ -836,11 +842,13 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           panNumber: pharmacyForm.panNumber,
           ...(pharmacyForm.gstNumber ? { gstNumber: pharmacyForm.gstNumber } : {}),
         },
-        suggestedDistributors: [{
-          distributorCode: '',
-          distributorName: '',
-          city: ''
-        }],
+        suggestedDistributors: pharmacyForm.stockistName || pharmacyForm.stockistCode || pharmacyForm.stockistCity ? [
+          {
+            distributorCode: pharmacyForm.stockistCode || '',
+            distributorName: pharmacyForm.stockistName || '',
+            city: pharmacyForm.stockistCity || ''
+          }
+        ] : [],
         isChildCustomer: true
       };
 
@@ -1898,17 +1906,40 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           {/* Mapping Section */}
           <AppText style={styles.modalSectionLabel}>Mapping</AppText>
 
-          {parentHospital &&
+          {parentHospitalName &&
             <>
               <AppText style={styles.modalFieldLabel}>{'Parent Group Hospital'}</AppText>
               <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
-                <AppText style={styles.mappingNameText}>{ 'Name will appear here'}</AppText>
-              </View></>
+                <AppText style={styles.mappingNameText}>{parentHospitalName}</AppText>
+            </View></>
           }
           <AppText style={styles.modalFieldLabel}>{mappingLabel || "Hospital"}</AppText>
           <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
             <AppText style={styles.mappingNameText}>{mappingName}</AppText>
           </View>
+
+
+          {/* Add Stockist Section (Optional) */}
+
+           {parentHospitalName &&
+                  <><AppText style={styles.modalSectionLabel2}> Stockist Suggestions <AppText style={styles.optionalText}> (Optional)</AppText></AppText>
+                    <CustomInput
+                      placeholder="Name of the Stockist"
+                      value={pharmacyForm.stockistName}
+                      onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, stockistName: text }))}
+                    />
+                    <CustomInput
+                      placeholder="Distributor Code"
+                      value={pharmacyForm.stockistCode}
+                      onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, stockistCode: text }))}
+                    />
+                    <CustomInput
+                      placeholder="City"
+                      value={pharmacyForm.stockistCity}
+                      onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, stockistCity: text }))}
+                    /></>
+
+           }
 
           {/* Action Buttons */}
           <View style={styles.modalActionButtons}>
@@ -2524,6 +2555,15 @@ const styles = StyleSheet.create({
    asteriskPrimary: {
     color: "red",
     fontSize:16
+  },
+   modalSectionLabel2: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginTop: 16,
+    marginBottom: 12,
+    paddingLeft: 12,
+    marginLeft: -16,
   },
 });
 

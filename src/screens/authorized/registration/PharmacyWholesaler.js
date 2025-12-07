@@ -1319,7 +1319,7 @@ const PharmacyWholesalerForm = () => {
           ],
         },
         customerDocs: prepareCustomerDocs(),
-        isBuyer: false,
+        isBuyer: true,
         customerGroupId: formData.customerGroupId,
         generalDetails: {
           name: formData.pharmacyName,
@@ -1342,13 +1342,13 @@ const PharmacyWholesalerForm = () => {
           panNumber: formData.panNumber,
           ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
-        mapping: {
-          hospitals:
-            formData.selectedHospitals?.map(h => ({
-              id: Number(h.id),
-              isNew: false,
-            })) || [],
-        },
+        // mapping: {
+        //   hospitals:
+        //     formData.selectedHospitals?.map(h => ({
+        //       id: Number(h.id),
+        //       isNew: false,
+        //     })) || [],
+        // },
         ...(formData.stockists &&
           formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({

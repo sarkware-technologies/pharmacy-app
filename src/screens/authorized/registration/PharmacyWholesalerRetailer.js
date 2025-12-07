@@ -136,7 +136,7 @@ const PharmacyWholesalerRetailerForm = () => {
 
     // Customer group
     customerGroupId: 1,
-    isBuyer: false,
+    isBuyer: true,
 
     // Stockist Suggestions
     suggestedDistributors: [],
@@ -328,7 +328,7 @@ const PharmacyWholesalerRetailerForm = () => {
         customerGroupId: 1,
         isIPD: false,
         isGOVT: false,
-        isBuyer: false,
+        isBuyer: true,
 
         // Stockist Suggestions
         suggestedDistributors: [],
@@ -612,7 +612,7 @@ const PharmacyWholesalerRetailerForm = () => {
 
         // Customer group
         customerGroupId: groupDetails.customerGroupId || 1,
-        isBuyer: data.isBuyer || false,
+        isBuyer: data.isBuyer || true,
 
         // Stockist Suggestions
         stockists: data.suggestedDistributors?.map(dist => ({
