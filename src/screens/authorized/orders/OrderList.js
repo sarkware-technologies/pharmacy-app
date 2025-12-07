@@ -68,7 +68,7 @@ const OrderList = () => {
   // Tab scroll ref for centering active tab
   const tabScrollRef = useRef(null);
   const tabRefs = useRef({});
-  
+
   useEffect(() => {
     const unsubscribe = navigation.getParent()?.addListener("tabPress", e => {
       const parent = navigation.getParent();
@@ -230,33 +230,33 @@ const OrderList = () => {
 
 
 
-    // Handle tab press with centering
-    const handleTabPress = async (tabName) => {
-      // First reset the list and set active tab
-      setActiveTab(tabName);
-  
-      // Scroll the tab into visible area after a small delay to ensure layout is ready
-      setTimeout(() => {
-        if (tabRefs.current[tabName] && tabScrollRef.current) {
-          tabRefs.current[tabName].measureLayout(
-            tabScrollRef.current.getNode ? tabScrollRef.current.getNode() : tabScrollRef.current,
-            (x, y, w, h) => {
-              const screenWidth = Dimensions.get('window').width;
-              // Center the tab in the screen
-              const scrollX = x - (screenWidth / 2) + (w / 2);
-  
-              tabScrollRef.current?.scrollTo({
-                x: Math.max(0, scrollX),
-                animated: true
-              });
-            },
-            () => {
-              console.log('measureLayout failed');
-            }
-          );
-        }
-      }, 100);
-    };
+  // Handle tab press with centering
+  const handleTabPress = async (tabName) => {
+    // First reset the list and set active tab
+    setActiveTab(tabName);
+
+    // Scroll the tab into visible area after a small delay to ensure layout is ready
+    setTimeout(() => {
+      if (tabRefs.current[tabName] && tabScrollRef.current) {
+        tabRefs.current[tabName].measureLayout(
+          tabScrollRef.current.getNode ? tabScrollRef.current.getNode() : tabScrollRef.current,
+          (x, y, w, h) => {
+            const screenWidth = Dimensions.get('window').width;
+            // Center the tab in the screen
+            const scrollX = x - (screenWidth / 2) + (w / 2);
+
+            tabScrollRef.current?.scrollTo({
+              x: Math.max(0, scrollX),
+              animated: true
+            });
+          },
+          () => {
+            console.log('measureLayout failed');
+          }
+        );
+      }
+    }, 100);
+  };
 
   const checkAction = (instance) => {
     let action = true;
@@ -283,20 +283,19 @@ const OrderList = () => {
     });
   }
 
-  const handleAction = async (type, instance, orderId) => {
+  const handleAction = async (type, instance, orderId, item) => {
 
     if (instance && Object.keys(instance).length !== 0) {
       if (instance?.stepInstances && instance?.workflowInstance && instance?.stepInstances.length && instance?.stepInstances[0].stepInstanceStatus == "PENDING") {
         const payload = {
           "stepOrder": instance?.stepInstances[0]?.stepOrder,
-          "parallelGroup": instance?.stepInstances[0]?.stepOrder,
+          "parallelGroup": instance?.stepInstances[0]?.parallelGroup,
           "action": type,
           "comments": "Approved after review",
-          "actorId": instance?.stepInstances[0]?.assignedUserId,
+          "actorId": parseInt(instance?.stepInstances[0]?.assignedUserId),
           "dataChanges": {}
         }
         const response = await OrderAction(instance?.workflowInstance?.id, payload);
-        console.log(response);
         if (response?.action == type) {
           const orderlist = orders.map((e) => {
             if (e.orderId !== orderId) return e;
@@ -408,7 +407,7 @@ const OrderList = () => {
         </View>
 
         {/* Tabs */}
-        <ScrollView  ref={tabScrollRef} horizontal showsHorizontalScrollIndicator={false} style={{ ...styles.tabContainer, ...{ height: 55 } }}  scrollEventThrottle={16}>
+        <ScrollView ref={tabScrollRef} horizontal showsHorizontalScrollIndicator={false} style={{ ...styles.tabContainer, ...{ height: 55 } }} scrollEventThrottle={16}>
           {tabs.map((tab) => (
             <TouchableOpacity
               key={tab}
@@ -627,13 +626,13 @@ const OrderItem = React.memo(
         <View style={styles.orderFooter}>
           <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
             <AppText style={[styles.statusText, { color: statusColors.text }]}>
-              {item.statusName}
+              {item?.instance?.stepInstances?.[0]?.stepInstanceStatus ?? item.statusName}
             </AppText>
           </View>
 
           {checkAction(item?.instance) && (
             <View style={{ display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", gap: 15 }}>
-              <TouchableOpacity onPress={() => !checkAction(item?.instance) ? actionToast() : handleAction("APPROVE", item?.instance, item.orderId)} disabled={!checkAction(item?.instance)} style={[{ backgroundColor: "#F7941E", display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, gap: 5 }, !checkAction(item?.instance) && { opacity: 0.5 }]}>
+              <TouchableOpacity onPress={() => !checkAction(item?.instance) ? actionToast() : handleAction("APPROVE", item?.instance, item.orderId, item)} disabled={!checkAction(item?.instance)} style={[{ backgroundColor: "#F7941E", display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, gap: 5 }, !checkAction(item?.instance) && { opacity: 0.5 }]}>
                 {/* <TouchableOpacity onPress={() => handleAction("APPROVE", item?.instance)} style={[{ backgroundColor: "#F7941E", display: 'flex', justifyContent: "center", flexDirection: "row", alignItems: "center", paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, gap: 5 }, !checkAction(item?.instance) && { opacity: 0.5 }]}> */}
                 <Svg width="13" height="9" viewBox="0 0 13 9" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <Path d="M11.4167 0.75L4.08333 8.08333L0.75 4.75" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -642,7 +641,7 @@ const OrderItem = React.memo(
                   Confirm
                 </AppText>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => !checkAction(item?.instance) ? actionToast() : handleAction("REJECT", item?.instance, item.orderId)} disabled={!checkAction(item?.instance)} style={!checkAction(item?.instance) && { opacity: 0.5 }}>
+              <TouchableOpacity onPress={() => !checkAction(item?.instance) ? actionToast() : handleAction("REJECT", item?.instance, item.orderId, item)} disabled={!checkAction(item?.instance)} style={!checkAction(item?.instance) && { opacity: 0.5 }}>
                 <Svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <Path d="M13.75 13.75L7.75 7.75M7.75 13.75L13.75 7.75M20.75 10.75C20.75 5.227 16.273 0.75 10.75 0.75C5.227 0.75 0.75 5.227 0.75 10.75C0.75 16.273 5.227 20.75 10.75 20.75C16.273 20.75 20.75 16.273 20.75 10.75Z" stroke="#2B2B2B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </Svg>

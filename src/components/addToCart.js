@@ -22,6 +22,7 @@ const AddToCartWidget = ({
   handleQuantityChange,
   handleDelete,
   handleAddToCart,
+  disabled = false,
   ...props
 }) => {
   return (
@@ -31,13 +32,13 @@ const AddToCartWidget = ({
           <View style={styles.quantityBox}>
             <TouchableOpacity
               disabled={loading}
-              style={styles.quantityButton}
+              style={[styles.quantityButton,disabled && { opacity: 0.5 }]}
               onPress={() => !loading ? handleQuantityChange?.(item, "minus") : null}
             >
               <Icon name="remove" size={20} color={colors.primary} />
             </TouchableOpacity>
 
-            <AppText style={styles.quantityText}>
+            <AppText style={[styles.quantityText,disabled && { opacity: 0.5 }]}>
               {loading ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
@@ -47,7 +48,7 @@ const AddToCartWidget = ({
 
             <TouchableOpacity
               disabled={loading}
-              style={styles.quantityButton}
+              style={[styles.quantityButton,disabled && { opacity: 0.5 }]}
               onPress={() => !loading ? handleQuantityChange?.(item, "plus") : null}
             >
               <Icon name="add" size={20} color={colors.primary} />
@@ -56,7 +57,7 @@ const AddToCartWidget = ({
 
           <TouchableOpacity
             disabled={loading}
-            style={styles.deleteButton}
+            style={[styles.deleteButton,disabled && { opacity: 0.5 }]}
             onPress={() => !loading ? handleDelete?.(item) : null}
           >
             <Delete />
@@ -65,7 +66,7 @@ const AddToCartWidget = ({
       ) : (
         <TouchableOpacity
           disabled={loading}
-          style={[styles.addToCartButton, loading && { opacity: 0.8 }]}
+          style={[styles.addToCartButton, loading && { opacity: 0.8 },disabled && { opacity: 0.5 }]}
           onPress={() => !loading ? handleAddToCart?.(item) : null}
         >
           <View style={{ flexDirection: "row" }}>

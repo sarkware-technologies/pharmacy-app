@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   StatusBar,
   StyleSheet,
   TouchableWithoutFeedback,
@@ -29,6 +28,7 @@ import SearchAndProduct from './SearchAndProduct';
 import CommentSection from "../../../components/icons/commentSection"
 import { useSelector } from 'react-redux';
 import { formatRelativeTime, getInitials } from '../../../utils/getInitials';
+import { ScrollView } from 'react-native-gesture-handler';
 
 const ClockIcon = () => (
   <Svg width="23" height="20" viewBox="0 0 23 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -224,7 +224,7 @@ const OrderDetailsScreen = () => {
           "action": type,
           "comments": "Approved after review",
           "actorId": instance?.stepInstances[0]?.assignedUserId,
-          "dataChanges": {}
+          dataChanges: { orderLines: productList }
         }
         const response = await OrderAction(instance?.workflowInstance?.id, payload);
         Toast.show({
@@ -376,7 +376,7 @@ const OrderDetailsScreen = () => {
           )}
         </View>
         <View style={styles.statusBadge}>
-          <AppText style={[styles.statusText]}>{orderDetails?.statusName}</AppText>
+          <AppText style={[styles.statusText]}>{instance?.stepInstances?.[0]?.stepInstanceStatus??orderDetails?.statusName}</AppText>
         </View>
       </View>
       {!orderDetails ? (
@@ -447,7 +447,7 @@ const OrderDetailsScreen = () => {
                     </View>
                     <View style={styles.expandedItem}>
                       <AppText style={[styles.expandedLabel, { textAlign: "right" }]}>Supply Type</AppText>
-                      <AppText style={[styles.expandedValue, { textAlign: "right" }]}>{orderDetails.supplyType ?? '-'}</AppText>
+                      <AppText style={[styles.expandedValue, { textAlign: "right" }]}>{orderDetails?.supplyMode ?? '-'}</AppText>
                     </View>
                   </View>
                   <View style={{ display: "flex", flexDirection: 'row', justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -530,7 +530,7 @@ const OrderDetailsScreen = () => {
                 {productList.map((product, index) => (
                   <View key={index} style={styles.productCard}>
                     <View style={styles.productHeader}>
-                      <CustomCheckbox checkboxStyle={{ borderWidth: 1 }} size={14} title={
+                      <CustomCheckbox disabled={!checkAction()} checkboxStyle={{ borderWidth: 1 }} size={14} title={
                         <AppText style={styles.productName}>{product?.productName ?? '-'}</AppText>
                       } />
                       <AppText style={styles.productCode}>{product?.productCode ?? '-'}</AppText>
@@ -555,7 +555,7 @@ const OrderDetailsScreen = () => {
                       <View style={styles.actionTabs}>
                         <View style={styles.actionTab}>
                           <AppText style={styles.actionTabLabel}>Mapping</AppText>
-                          <TouchableOpacity>
+                          <TouchableOpacity style={[!checkActionshow() && { opacity: 0.5 }]} disabled={!checkActionshow()}>
                             <View style={{ display: "flex", alignItems: "center", gap: 5, flexDirection: "row" }}>
                               <AppText style={styles.changeText}>
                                 Change
@@ -567,20 +567,20 @@ const OrderDetailsScreen = () => {
                             </View>
                           </TouchableOpacity>
                         </View>
-                        <TouchableOpacity style={styles.actionTab} onPress={() => {
+                        <TouchableOpacity style={[styles.actionTab, !checkActionshow() && { opacity: 0.5 }]} disabled={!checkActionshow()} onPress={() => {
                           setShowComment(product)
                           setComment("");
                         }}>
                           <AppText style={styles.actionTabLabel}>Comment</AppText>
                           <CommentIcon />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.actionTab}>
+                        <TouchableOpacity style={[styles.actionTab, !checkActionshow() && { opacity: 0.5 }]} disabled={!checkActionshow()}>
                           <AppText style={styles.actionTabLabel}>Activity</AppText>
                           <HistoryIcon />
                         </TouchableOpacity>
                       </View>
                       <View style={styles.quantityControls}>
-                        <AddToCartWidget handleDelete={add_handleDelete} item={product} isInCart={true} quantity={product?.quantity} handleQuantityChange={(item, type) => handleQuantityChange(item, type)} />
+                        <AddToCartWidget disabled={!checkActionshow()} handleDelete={add_handleDelete} item={product} isInCart={true} quantity={product?.quantity} handleQuantityChange={(item, type) => handleQuantityChange(item, type)} />
                       </View>
                     </View>
                   </View>
@@ -597,7 +597,7 @@ const OrderDetailsScreen = () => {
         </View>
       ) : (
         <>
-          {checkActionshow("HOLD") && (
+          {checkActionshow() && (
             <View style={styles.bottomActions}>
               <TouchableOpacity onPress={() => handleAction("HOLD")} style={[styles.holdButton, !checkAction("HOLD") && { opacity: 0.5 }]} disabled={!checkAction("HOLD")} >
                 <HoldIcon />
@@ -700,12 +700,10 @@ const OrderDetailsScreen = () => {
                 </TouchableOpacity>
               </View>
               {showComment && showComment?.comments && showComment?.comments?.length > 0 ? (
-                <View style={{ maxHeight: 200, paddingHorizontal: 20, marginBottom: 10 }}>
-                  <FlatList
-                    data={showComment?.comments || []}
-                    keyExtractor={(item, index) => index.toString()}
-                    renderItem={({ item }) => (
-                      <View style={styles.commentItem}>
+                <View style={{ maxHeight: 180, paddingHorizontal: 20, marginBottom: 10, overflow: "scroll" }}>
+                  <ScrollView>
+                    {showComment?.comments.map((item, index) => (
+                      <View style={styles.commentItem} key={index + "comment"}>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                           <View
                             style={{
@@ -728,8 +726,8 @@ const OrderDetailsScreen = () => {
                         </View>
                         <AppText style={styles.commentDate}>{formatRelativeTime(item?.createdAt)}</AppText>
                       </View>
-                    )}
-                  />
+                    ))}
+                  </ScrollView>
                 </View>
               ) : (
                 <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
@@ -1340,6 +1338,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primaryText,
     fontFamily: Fonts.Bold
+  },
+  noCommentsText: {
+    textAlign: "center",
+    paddingTop: 15
   }
 });
 
