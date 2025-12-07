@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
@@ -65,12 +66,16 @@ const PharmacyRegistrationForm = () => {
     subCategoryId,
     mode,
     customerId,
+    isStaging,
     customerData: routeCustomerData,
   } = route.params || {};
 
-  // Edit mode detection
+  // Edit mode and onboard mode detection
   const isEditMode = mode === 'edit' || !!customerId;
+  const isOnboardMode = mode === 'onboard';
   const [loadingCustomerData, setLoadingCustomerData] = useState(false);
+    const loggedInUser = useSelector(state => state.auth.user);
+  
 
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
@@ -349,14 +354,13 @@ useEffect(() => {
   const [showHospitalModal, setShowHospitalModal] = useState(false);
   const [showPharmacyModal, setShowPharmacyModal] = useState(false);
 
-  // Set navigation header - hide default header in edit mode, show custom header
+  // Set navigation header - hide default header in edit/onboard mode, show custom header
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown: isEditMode, // Hide default header in edit mode
-      title: isEditMode ? 'Edit' : 'Registration',
+      headerShown: false, // Always hide default header, we use custom header
       headerBackTitleVisible: false,
     });
-  }, [navigation, isEditMode]);
+  }, [navigation]);
 
   useEffect(() => {
     // Entry animation
@@ -376,13 +380,13 @@ useEffect(() => {
     // Load initial data
     loadInitialData();
 
-    // Handle edit mode - fetch customer details
-    if (isEditMode) {
+    // Handle edit mode and onboard mode - fetch customer details
+    if (isEditMode || isOnboardMode) {
       if (routeCustomerData) {
         // Use provided customer data
         populateFormFromCustomerData(routeCustomerData);
       } else if (customerId) {
-        // Fetch customer details from API
+        // Fetch customer details from API (same API for both edit and onboard)
         fetchCustomerDetailsForEdit();
       }
     }
@@ -399,13 +403,15 @@ useEffect(() => {
     await fetchLicenseTypes();
   };
 
-  // Fetch customer details for edit mode
+  // Fetch customer details for edit mode and onboard mode (same API)
   const fetchCustomerDetailsForEdit = async () => {
     if (!customerId) return;
     
     setLoadingCustomerData(true);
     try {
-      const response = await customerAPI.getCustomerDetails(customerId, false);
+      // For onboard mode, always use isStaging = false. For edit mode, use the passed value
+      const useStaging = isOnboardMode ? false : (isStaging !== undefined ? isStaging : false);
+      const response = await customerAPI.getCustomerDetails(customerId, useStaging);
       if (response.success && response.data) {
         populateFormFromCustomerData(response.data);
       } else {
@@ -458,16 +464,35 @@ useEffect(() => {
         }
       };
 
-      // Find license documents
-      const license20 = licenceDetails.licence?.find(l => l.licenceTypeCode === 'LIC20' || l.licenceTypeName === '20');
-      const license21 = licenceDetails.licence?.find(l => l.licenceTypeCode === 'LIC21' || l.licenceTypeName === '21');
+      // Helper function to find documents by type (handles both string and number doctypeId)
+      const findDocByType = (docTypeId, docTypeName) => {
+        return docType.find(d => 
+          String(d.doctypeId) === String(docTypeId) || 
+          d.doctypeName === docTypeName ||
+          d.doctypeName?.toUpperCase() === docTypeName?.toUpperCase()
+        );
+      };
 
-      // Find document files
-      const license20Doc = docType.find(d => d.doctypeId === '3' || d.doctypeName === 'LICENCE 20');
-      const license21Doc = docType.find(d => d.doctypeId === '5' || d.doctypeName === 'LICENCE 21');
-      const pharmacyImageDoc = docType.find(d => d.doctypeId === '1' || d.doctypeName === 'CLINIC IMAGE');
-      const panDoc = docType.find(d => d.doctypeId === '7' || d.doctypeName === 'PAN CARD');
-      const gstDoc = docType.find(d => d.doctypeId === '2' || d.doctypeName === 'GSTIN');
+      // Find license documents - also match by docTypeId from license
+      const license20 = licenceDetails.licence?.find(l => 
+        l.licenceTypeCode === 'LIC20' || 
+        l.licenceTypeName === '20' ||
+        String(l.docTypeId) === '3'
+      );
+      const license21 = licenceDetails.licence?.find(l => 
+        l.licenceTypeCode === 'LIC21' || 
+        l.licenceTypeName === '21' ||
+        String(l.docTypeId) === '5'
+      );
+
+      // Find document files - use helper function for robust matching
+      const license20Doc = findDocByType('3', 'LICENCE 20') || 
+        (license20?.docTypeId ? findDocByType(String(license20.docTypeId), 'LICENCE 20') : null);
+      const license21Doc = findDocByType('5', 'LICENCE 21') || 
+        (license21?.docTypeId ? findDocByType(String(license21.docTypeId), 'LICENCE 21') : null);
+      const pharmacyImageDoc = findDocByType('1', 'CLINIC IMAGE');
+      const panDoc = findDocByType('7', 'PAN CARD');
+      const gstDoc = findDocByType('2', 'GSTIN');
 
       // Populate form data
       setFormData(prev => ({
@@ -476,21 +501,30 @@ useEffect(() => {
         license20: license20?.licenceNo || '',
         license20ExpiryDate: formatDate(license20?.licenceValidUpto),
         license20File: license20Doc ? {
+          id: license20Doc.docId || '',
+          docId: license20Doc.docId || '',
           fileName: license20Doc.fileName || 'LICENCE 20',
           s3Path: license20Doc.s3Path || '',
-          docId: license20Doc.docId || '',
+          uri: license20Doc.s3Path || '',
+          docTypeId: parseInt(license20Doc.doctypeId) || 3,
         } : null,
         license21: license21?.licenceNo || '',
         license21ExpiryDate: formatDate(license21?.licenceValidUpto),
         license21File: license21Doc ? {
+          id: license21Doc.docId || '',
+          docId: license21Doc.docId || '',
           fileName: license21Doc.fileName || 'LICENCE 21',
           s3Path: license21Doc.s3Path || '',
-          docId: license21Doc.docId || '',
+          uri: license21Doc.s3Path || '',
+          docTypeId: parseInt(license21Doc.doctypeId) || 5,
         } : null,
         pharmacyImageFile: pharmacyImageDoc ? {
+          id: pharmacyImageDoc.docId || '',
+          docId: pharmacyImageDoc.docId || '',
           fileName: pharmacyImageDoc.fileName || 'CLINIC IMAGE',
           s3Path: pharmacyImageDoc.s3Path || '',
-          docId: pharmacyImageDoc.docId || '',
+          uri: pharmacyImageDoc.s3Path || '',
+          docTypeId: parseInt(pharmacyImageDoc.doctypeId) || 1,
         } : null,
         
         // General Details
@@ -513,15 +547,21 @@ useEffect(() => {
         emailAddress: securityDetails.email || '',
         panNumber: securityDetails.panNumber || '',
         panFile: panDoc ? {
+          id: panDoc.docId || '',
+          docId: panDoc.docId || '',
           fileName: panDoc.fileName || 'PAN CARD',
           s3Path: panDoc.s3Path || '',
-          docId: panDoc.docId || '',
+          uri: panDoc.s3Path || '',
+          docTypeId: parseInt(panDoc.doctypeId) || 7,
         } : null,
         gstNumber: securityDetails.gstNumber || '',
         gstFile: gstDoc ? {
+          id: gstDoc.docId || '',
+          docId: gstDoc.docId || '',
           fileName: gstDoc.fileName || 'GSTIN',
           s3Path: gstDoc.s3Path || '',
-          docId: gstDoc.docId || '',
+          uri: gstDoc.s3Path || '',
+          docTypeId: parseInt(gstDoc.doctypeId) || 2,
         } : null,
 
         // Customer group
@@ -1071,12 +1111,69 @@ useEffect(() => {
   };
 
   const handleCancel = () => {
-    if (isEditMode) {
-      // In edit mode, navigate to CustomerStack which contains CustomerList
+    if (isEditMode || isOnboardMode) {
+      // In edit mode or onboard mode, navigate to CustomerStack which contains CustomerList
       navigation.navigate('CustomerStack', { screen: 'CustomerList' });
     } else {
       // In registration mode, show cancel confirmation modal
       setShowCancelModal(true);
+    }
+  };
+
+  // Handle assign to customer (onboard functionality)
+  const handleAssignToCustomer = async () => {
+    try {
+      setRegistering(true);
+
+      // Prepare the onboard payload with only editable fields
+      const payload = {
+        customerId: customerId,
+        distributorId: loggedInUser?.distributorId || 1,
+        updatedFields: {
+          // Only send fields that were editable
+          address1: formData.address1,
+          address2: formData.address2,
+          address3: formData.address3,
+          address4: formData.address4,
+          pincode: formData.pincode,
+          area: formData.area,
+          mobileNumber: formData.mobileNumber,
+          emailAddress: formData.emailAddress,
+        },
+      };
+
+      // Call onboard API
+      const response = await customerAPI.onboardCustomer(payload, isStaging);
+
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Customer assigned successfully!',
+          position: 'top',
+        });
+
+        setTimeout(() => {
+          navigation.navigate('CustomerStack', { screen: 'CustomerList' });
+        }, 1500);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: response.message || 'Failed to assign customer',
+          position: 'top',
+        });
+      }
+    } catch (error) {
+      console.error('Error assigning customer:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'An error occurred while assigning customer',
+        position: 'top',
+      });
+    } finally {
+      setRegistering(false);
     }
   };
 
@@ -1819,8 +1916,8 @@ useEffect(() => {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* Custom Header for Edit Mode */}
-      {isEditMode && (
+      {/* Custom Header for Edit Mode and Onboard Mode */}
+      {(isEditMode || isOnboardMode) && (
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerList' })}
@@ -1828,7 +1925,9 @@ useEffect(() => {
           >
             <ChevronLeft />
           </TouchableOpacity>
-          <AppText style={styles.headerTitle}>Edit</AppText>
+          <AppText style={styles.headerTitle}>
+            {isOnboardMode ? 'Registration-Existing' : 'Edit'}
+          </AppText>
         </View>
       )}
 
@@ -2783,34 +2882,73 @@ useEffect(() => {
 
             {/* Action Buttons */}
             <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleCancel}
-                disabled={registering}
-              >
-                <AppText style={styles.cancelButtonText}>Cancel</AppText>
-              </TouchableOpacity>
+              {isOnboardMode ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.assignButton}
+                    onPress={handleAssignToCustomer}
+                    disabled={registering}
+                  >
+                    {registering ? (
+                      <ActivityIndicator color={colors.primary} />
+                    ) : (
+                      <AppText style={styles.assignButtonText}>Assign to Customer</AppText>
+                    )}
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.registerButton,
-                  !isFormValid && styles.registerButtonDisabled,
-                  registering && styles.disabledButton,
-                ]}
-                onPress={handleRegister}
-                disabled={registering}
-              >
-                {registering ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <AppText style={[
-                    styles.registerButtonText,
-                    !isFormValid && styles.registerButtonTextDisabled,
-                  ]}>
-                    {isEditMode ? 'Update' : 'Register'}
-                  </AppText>
-                )}
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.registerButton,
+                      !isFormValid && styles.registerButtonDisabled,
+                      registering && styles.disabledButton,
+                    ]}
+                    onPress={handleRegister}
+                    disabled={registering}
+                  >
+                    {registering ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <AppText style={[
+                        styles.registerButtonText,
+                        !isFormValid && styles.registerButtonTextDisabled,
+                      ]}>
+                        Register
+                      </AppText>
+                    )}
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={handleCancel}
+                    disabled={registering}
+                  >
+                    <AppText style={styles.cancelButtonText}>Cancel</AppText>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.registerButton,
+                      !isFormValid && styles.registerButtonDisabled,
+                      registering && styles.disabledButton,
+                    ]}
+                    onPress={handleRegister}
+                    disabled={registering}
+                  >
+                    {registering ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <AppText style={[
+                        styles.registerButtonText,
+                        !isFormValid && styles.registerButtonTextDisabled,
+                      ]}>
+                        {isEditMode ? 'Update' : 'Register'}
+                      </AppText>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </Animated.View>
         </ScrollView>
@@ -3366,6 +3504,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  assignButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  assignButtonText: {
     fontSize: 16,
     color: colors.primary,
     fontWeight: '600',

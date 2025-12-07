@@ -151,6 +151,11 @@ const initialState = {
   otpVerificationError: null,
   resetPasswordLoading: false,
   resetPasswordError: null,
+  // Store login credentials to recover on error
+  savedCredentials: {
+    phoneOrEmail: null,
+    password: null,
+  },
 };
 
 const authSlice = createSlice({
@@ -172,6 +177,20 @@ const authSlice = createSlice({
     clearDevelopmentOtp: (state) => {
       state.developmentOtp = null; // Allow clearing OTP after it's been used
     },
+    saveLoginCredentials: (state, action) => {
+      // Save credentials to Redux for recovery on error
+      state.savedCredentials.phoneOrEmail = action.payload.phoneOrEmail || state.savedCredentials.phoneOrEmail;
+      state.savedCredentials.password = action.payload.password || state.savedCredentials.password;
+    },
+    clearLoginCredentials: (state) => {
+      // Clear saved credentials (on successful login)
+      state.savedCredentials.phoneOrEmail = null;
+      state.savedCredentials.password = null;
+    },
+    restoreLoginCredentials: (state) => {
+      // Restore credentials from saved state (on error)
+      // This is handled in the component, but we keep the state available
+    },
   },
   extraReducers: (builder) => {
     // Login
@@ -186,6 +205,7 @@ const authSlice = createSlice({
         state.sessionId = action.payload.data.sessionId;
         state.phoneOrEmail = action.payload.phoneOrEmail; // Store the phone/email
         state.developmentOtp = action.payload.data.developmentOtp; // Store OTP for development
+        // Don't clear credentials here - wait for successful OTP verification
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -206,6 +226,9 @@ const authSlice = createSlice({
         state.user = action.payload.data.user;
         state.sessionId = null; // Clear session after successful verification
         state.developmentOtp = null; // Clear OTP after successful verification
+        // Clear saved credentials on successful login
+        state.savedCredentials.phoneOrEmail = null;
+        state.savedCredentials.password = null;
       })
       .addCase(verifyOTP.rejected, (state, action) => {
         state.otpVerificationLoading = false;
@@ -331,5 +354,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, clearSession, clearDevelopmentOtp } = authSlice.actions;
+export const { clearError, clearSession, clearDevelopmentOtp, saveLoginCredentials, clearLoginCredentials, restoreLoginCredentials } = authSlice.actions;
 export default authSlice.reducer;

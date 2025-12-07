@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import { colors } from '../../styles/colors';
-import { login, clearError } from '../../redux/slices/authSlice';
+import { login, clearError, saveLoginCredentials, clearLoginCredentials } from '../../redux/slices/authSlice';
 import SunLogo from '../../components/icons/SunLogo';
 import LoginPic from '../../components/icons/LoginPic';
 import InputUser from '../../components/icons/InputUser';
@@ -37,7 +37,7 @@ const LoginScreen = () => {
     
     const dispatch = useDispatch();
     const navigation = useNavigation();
-    const { isLoading, error, sessionId } = useSelector((state) => state.auth);
+    const { isLoading, error, sessionId, savedCredentials } = useSelector((state) => state.auth);
     
     // Animation values
     const headerSlideAnim = useRef(new Animated.Value(-250)).current;
@@ -74,9 +74,17 @@ const LoginScreen = () => {
         ]).start();
     };
 
+    // Load credentials from Redux on mount
     useEffect(() => {
-
         dispatch(clearError());
+        
+        // Restore credentials from Redux if they exist
+        if (savedCredentials?.phoneOrEmail && !phoneOrEmail) {
+            setPhoneOrEmail(savedCredentials.phoneOrEmail);
+        }
+        if (savedCredentials?.password && !password) {
+            setPassword(savedCredentials.password);
+        }
         
         Animated.parallel([
             // Initial fade in
@@ -107,7 +115,7 @@ const LoginScreen = () => {
             }),
         ]).start();
 
-    }, []);
+    }, [dispatch]);
 
 
     useEffect(() => {
@@ -178,16 +186,38 @@ const LoginScreen = () => {
         };
     }, []);
 
+    // Save credentials to Redux whenever they change
+    useEffect(() => {
+        if (phoneOrEmail || password) {
+            dispatch(saveLoginCredentials({ 
+                phoneOrEmail: phoneOrEmail || savedCredentials?.phoneOrEmail || '', 
+                password: password || savedCredentials?.password || '' 
+            }));
+        }
+    }, [phoneOrEmail, password, dispatch]);
+
     useEffect(() => {
         if (error) {
             setLoginError('Invalid credentials. Please try again.');
             shakeError();
             setTimeout(() => setLoginError(null), 3000);
+            
+            // Restore credentials from Redux if they got cleared
+            setTimeout(() => {
+                if (!phoneOrEmail && savedCredentials?.phoneOrEmail) {
+                    setPhoneOrEmail(savedCredentials.phoneOrEmail);
+                }
+                if (!password && savedCredentials?.password) {
+                    setPassword(savedCredentials.password);
+                }
+            }, 100);
         }
-    }, [error]);
+    }, [error, phoneOrEmail, password, savedCredentials]);
 
     useEffect(() => {
         if (sessionId) {
+            // Credentials will be cleared in Redux when OTP is verified successfully
+            // Don't clear here - wait for successful OTP verification
             navigation.navigate('OTP');
         }
     }, [sessionId, navigation]);
@@ -203,6 +233,10 @@ const LoginScreen = () => {
 
     const handleLogin = () => {
         if (phoneOrEmail && password) {
+            // Save credentials to Redux before login attempt
+            // This ensures they persist even if navigation happens
+            dispatch(saveLoginCredentials({ phoneOrEmail, password }));
+            
             dispatch(login({ phoneOrEmail, password }));
         }
     };

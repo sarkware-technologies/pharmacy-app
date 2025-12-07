@@ -523,8 +523,22 @@ export const customerAPI = {
                 unverified: 0, // Can be fetched separately if needed
                 rejected: 0 // Can be fetched separately if needed
             };
+            } catch (error) {
+                console.error('Error fetching tab counts:', error);
+                throw error;
+            }
+        },
+
+    // Onboard customer (assign customer to distributor)
+    onboardCustomer: async (payload, isStaging = false) => {
+        try {
+            const endpoint = isStaging 
+                ? '/user-management/customer/onboard/staging'
+                : '/user-management/customer/onboard';
+            const response = await apiClient.post(endpoint, payload);
+            return response;
         } catch (error) {
-            console.error('Error fetching tab counts:', error);
+            console.error('Error onboarding customer:', error);
             throw error;
         }
     }

@@ -20,7 +20,7 @@ import {
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
@@ -89,8 +89,12 @@ const PrivateRegistrationForm = () => {
 
   
 
+  // Get logged-in user for assign functionality
+  const loggedInUser = useSelector(state => state.auth.user);
+
   // Determine if we're in edit mode - check multiple flags for backward compatibility
   const inEditMode = mode === 'edit' || isEditMode || !!customerId;
+  const isOnboardMode = mode === 'onboard';
   const [loadingCustomerData, setLoadingCustomerData] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState([]);
 
@@ -299,14 +303,13 @@ const PrivateRegistrationForm = () => {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const otpSlideAnim = useRef(new Animated.Value(-50)).current;
 
-  // Set navigation header - hide default header in edit mode, show custom header
+  // Set navigation header - hide default header in edit/onboard mode, show custom header
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown: !inEditMode, // Hide default header in edit mode
-      title: inEditMode ? 'Edit' : 'Register',
+      headerShown: false, // Always hide default header, we use custom header
       headerBackTitleVisible: false,
     });
-  }, [navigation, inEditMode]);
+  }, [navigation]);
 
   useEffect(() => {
     console.log('🚀 PrivateRegistration Form Mounted');
@@ -402,14 +405,28 @@ const PrivateRegistrationForm = () => {
         }
       };
 
-      // Find license documents (Registration for Private Hospital)
-      const registrationLicense = licenceDetails.licence?.find(l => l.licenceTypeCode === 'REG' || l.licenceTypeName === 'Registration');
+      // Helper function to find documents by type (handles both string and number doctypeId)
+      const findDocByType = (docTypeId, docTypeName) => {
+        return docType.find(d => 
+          String(d.doctypeId) === String(docTypeId) || 
+          d.doctypeName === docTypeName ||
+          d.doctypeName?.toUpperCase() === docTypeName?.toUpperCase()
+        );
+      };
 
-      // Find document files
-      const registrationDoc = docType.find(d => d.doctypeId === '8' || d.doctypeName === 'REGISTRATION');
-      const clinicImageDoc = docType.find(d => d.doctypeId === '1' || d.doctypeName === 'CLINIC IMAGE');
-      const panDoc = docType.find(d => d.doctypeId === '7' || d.doctypeName === 'PAN CARD');
-      const gstDoc = docType.find(d => d.doctypeId === '2' || d.doctypeName === 'GSTIN');
+      // Find license documents (Registration for Private Hospital) - also match by docTypeId
+      const registrationLicense = licenceDetails.licence?.find(l => 
+        l.licenceTypeCode === 'REG' || 
+        l.licenceTypeName === 'Registration' ||
+        String(l.docTypeId) === '8'
+      );
+
+      // Find document files - use helper function for robust matching
+      const registrationDoc = findDocByType('8', 'REGISTRATION') || 
+        (registrationLicense?.docTypeId ? findDocByType(String(registrationLicense.docTypeId), 'REGISTRATION') : null);
+      const clinicImageDoc = findDocByType('1', 'CLINIC IMAGE');
+      const panDoc = findDocByType('7', 'PAN CARD');
+      const gstDoc = findDocByType('2', 'GSTIN');
 
       // Populate form data
       setFormData(prev => ({
@@ -418,14 +435,20 @@ const PrivateRegistrationForm = () => {
         registrationNumber: registrationLicense?.licenceNo || '',
         registrationDate: formatDate(registrationLicense?.licenceValidUpto),
         licenseFile: registrationDoc ? {
+          id: registrationDoc.docId || '',
+          docId: registrationDoc.docId || '',
           fileName: registrationDoc.fileName || 'REGISTRATION',
           s3Path: registrationDoc.s3Path || '',
-          docId: registrationDoc.docId || '',
+          uri: registrationDoc.s3Path || '',
+          docTypeId: parseInt(registrationDoc.doctypeId) || 8,
         } : null,
         licenseImage: clinicImageDoc ? {
+          id: clinicImageDoc.docId || '',
+          docId: clinicImageDoc.docId || '',
           fileName: clinicImageDoc.fileName || 'CLINIC IMAGE',
           s3Path: clinicImageDoc.s3Path || '',
-          docId: clinicImageDoc.docId || '',
+          uri: clinicImageDoc.s3Path || '',
+          docTypeId: parseInt(clinicImageDoc.doctypeId) || 1,
         } : null,
         
         // General Details
@@ -450,15 +473,21 @@ const PrivateRegistrationForm = () => {
         emailAddress: securityDetails.email || '',
         panNumber: securityDetails.panNumber || '',
         panFile: panDoc ? {
+          id: panDoc.docId || '',
+          docId: panDoc.docId || '',
           fileName: panDoc.fileName || 'PAN CARD',
           s3Path: panDoc.s3Path || '',
-          docId: panDoc.docId || '',
+          uri: panDoc.s3Path || '',
+          docTypeId: parseInt(panDoc.doctypeId) || 7,
         } : null,
         gstNumber: securityDetails.gstNumber || '',
         gstFile: gstDoc ? {
+          id: gstDoc.docId || '',
+          docId: gstDoc.docId || '',
           fileName: gstDoc.fileName || 'GSTIN',
           s3Path: gstDoc.s3Path || '',
-          docId: gstDoc.docId || '',
+          uri: gstDoc.s3Path || '',
+          docTypeId: parseInt(gstDoc.doctypeId) || 2,
         } : null,
 
         // Customer group
@@ -635,13 +664,15 @@ const PrivateRegistrationForm = () => {
     }
   };
 
-  // Fetch customer details for edit mode
+  // Fetch customer details for edit mode and onboard mode (same API)
   const fetchCustomerDetailsForEdit = async () => {
     if (!customerId) return;
     
     setLoadingCustomerData(true);
     try {
-      const response = await customerAPI.getCustomerDetails(customerId, false);
+      // For onboard mode, always use isStaging = false. For edit mode, use the passed value
+      const useStaging = isOnboardMode ? false : (isStaging !== undefined ? isStaging : false);
+      const response = await customerAPI.getCustomerDetails(customerId, useStaging);
       if (response.success && response.data) {
         populateFormFromCustomerData(response.data);
       } else {
@@ -1255,12 +1286,69 @@ const PrivateRegistrationForm = () => {
   }, [formData, verificationStatus, inEditMode]);
 
   const handleCancel = () => {
-    if (inEditMode) {
-      // In edit mode, navigate to CustomerStack which contains CustomerList
+    if (inEditMode || isOnboardMode) {
+      // In edit mode or onboard mode, navigate to CustomerStack which contains CustomerList
       navigation.navigate('CustomerStack', { screen: 'CustomerList' });
     } else {
       // In registration mode, show cancel confirmation modal
       setShowCancelModal(true);
+    }
+  };
+
+  // Handle assign to customer (onboard functionality)
+  const handleAssignToCustomer = async () => {
+    try {
+      setLoading(true);
+
+      // Prepare the onboard payload with only editable fields
+      const payload = {
+        customerId: customerId,
+        distributorId: loggedInUser?.distributorId || 1,
+        updatedFields: {
+          // Only send fields that were editable
+          address1: formData.address1,
+          address2: formData.address2,
+          address3: formData.address3,
+          address4: formData.address4,
+          pincode: formData.pincode,
+          area: formData.area,
+          mobileNumber: formData.mobileNumber,
+          emailAddress: formData.emailAddress,
+        },
+      };
+
+      // Call onboard API
+      const response = await customerAPI.onboardCustomer(payload, isStaging);
+
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Customer assigned successfully!',
+          position: 'top',
+        });
+
+        setTimeout(() => {
+          navigation.navigate('CustomerStack', { screen: 'CustomerList' });
+        }, 1500);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: response.message || 'Failed to assign customer',
+          position: 'top',
+        });
+      }
+    } catch (error) {
+      console.error('Error assigning customer:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'An error occurred while assigning customer',
+        position: 'top',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1674,8 +1762,8 @@ const PrivateRegistrationForm = () => {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* Custom Header for Edit Mode */}
-      {inEditMode && (
+      {/* Custom Header for Edit Mode and Onboard Mode */}
+      {(inEditMode || isOnboardMode) && (
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerList' })}
@@ -1683,7 +1771,9 @@ const PrivateRegistrationForm = () => {
           >
             <ChevronLeft />
           </TouchableOpacity>
-          <AppText style={styles.headerTitle}>Edit</AppText>
+          <AppText style={styles.headerTitle}>
+            {isOnboardMode ? 'Registration-Existing' : 'Edit'}
+          </AppText>
         </View>
       )}
 
@@ -2823,35 +2913,75 @@ const PrivateRegistrationForm = () => {
 
             {/* Action Buttons */}
             <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleCancel}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <AppText style={styles.cancelButtonText}>Cancel</AppText>
-              </TouchableOpacity>
+              {isOnboardMode ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.assignButton}
+                    onPress={handleAssignToCustomer}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color={colors.primary} />
+                    ) : (
+                      <AppText style={styles.assignButtonText}>Assign to Customer</AppText>
+                    )}
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.registerButton,
-                  !isFormValid && styles.registerButtonDisabled,
-                ]}
-                onPress={handleSubmit}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <AppText style={[
-                    styles.registerButtonText,
-                    !isFormValid && styles.registerButtonTextDisabled,
-                  ]}>
-                    {inEditMode ? 'Update' : 'Register'}
-                  </AppText>
-                )}
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.registerButton,
+                      !isFormValid && styles.registerButtonDisabled,
+                    ]}
+                    onPress={handleSubmit}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <AppText style={[
+                        styles.registerButtonText,
+                        !isFormValid && styles.registerButtonTextDisabled,
+                      ]}>
+                        Register
+                      </AppText>
+                    )}
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={handleCancel}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                  >
+                    <AppText style={styles.cancelButtonText}>Cancel</AppText>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.registerButton,
+                      !isFormValid && styles.registerButtonDisabled,
+                    ]}
+                    onPress={handleSubmit}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <AppText style={[
+                        styles.registerButtonText,
+                        !isFormValid && styles.registerButtonTextDisabled,
+                      ]}>
+                        {inEditMode ? 'Update' : 'Register'}
+                      </AppText>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </Animated.View>
         </ScrollView>
@@ -3653,6 +3783,20 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
+  assignButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  assignButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
+  },
   registerButton: {
     flex: 1,
     paddingVertical: 16,
@@ -3979,6 +4123,20 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  assignButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  assignButtonText: {
+    fontSize: 16,
     color: colors.primary,
     fontWeight: '600',
   },

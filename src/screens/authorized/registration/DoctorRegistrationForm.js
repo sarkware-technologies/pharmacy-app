@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
@@ -98,12 +98,16 @@ const DoctorRegistrationForm = () => {
     customerId,
     customerData: routeCustomerData,
     editData,
-    isOnboardMode,
+    isStaging,
     hidePanGst,
   } = route.params || {};
 
-  // Edit mode detection
+  // Get logged-in user for assign functionality
+  const loggedInUser = useSelector(state => state.auth.user);
+
+  // Edit mode and onboard mode detection
   const inEditMode = mode === 'edit' || isEditMode || !!customerId;
+  const isOnboardMode = mode === 'onboard';
   const [loadingCustomerData, setLoadingCustomerData] = useState(false);
   const isMounted = useRef(true);
 
@@ -280,8 +284,8 @@ const DoctorRegistrationForm = () => {
     // Load initial data (only customer groups and license types, no cities/states)
     loadInitialData();
 
-    // Handle edit mode - fetch customer details
-    if (inEditMode) {
+    // Handle edit mode and onboard mode - fetch customer details
+    if (inEditMode || isOnboardMode) {
       if (routeCustomerData) {
         // Use provided customer data
         populateFormFromCustomerData(routeCustomerData);
@@ -289,7 +293,7 @@ const DoctorRegistrationForm = () => {
         // Use pre-fetched edit data (backward compatibility)
         populateFormFromCustomerData(routeCustomerData);
       } else if (customerId) {
-        // Fetch customer details from API
+        // Fetch customer details from API (same API for both edit and onboard)
         fetchCustomerDetailsForEdit();
       }
     }
@@ -381,13 +385,15 @@ const DoctorRegistrationForm = () => {
     }
   };
 
-  // Fetch customer details for edit mode
+  // Fetch customer details for edit mode and onboard mode (same API)
   const fetchCustomerDetailsForEdit = async () => {
     if (!customerId) return;
     
     setLoadingCustomerData(true);
     try {
-      const response = await customerAPI.getCustomerDetails(customerId, false);
+      // For onboard mode, always use isStaging = false. For edit mode, use the passed value
+      const useStaging = isOnboardMode ? false : (isStaging !== undefined ? isStaging : false);
+      const response = await customerAPI.getCustomerDetails(customerId, useStaging);
       if (response.success && response.data) {
         populateFormFromCustomerData(response.data);
       } else {
@@ -439,25 +445,36 @@ const DoctorRegistrationForm = () => {
         }
       };
 
-      // Find license documents (Clinic Registration and Practice License for Doctor)
+      // Helper function to find documents by type (handles both string and number doctypeId)
+      const findDocByType = (docTypeId, docTypeName) => {
+        return docType.find(d => 
+          String(d.doctypeId) === String(docTypeId) || 
+          d.doctypeName === docTypeName ||
+          d.doctypeName?.toUpperCase() === docTypeName?.toUpperCase()
+        );
+      };
+
+      // Find license documents (Clinic Registration and Practice License for Doctor) - also match by docTypeId
       const clinicLicense = licenceDetails.licence?.find(l => 
         l.licenceTypeCode === 'CLINIC_REG' || 
         l.licenceTypeCode === 'REG' ||
-        l.docTypeId === 10
+        String(l.docTypeId) === '10'
       );
       const practiceLicense = licenceDetails.licence?.find(l => 
         l.licenceTypeCode === 'PRACTICE_LIC' || 
         l.licenceTypeCode === 'PRLIC' ||
-        l.docTypeId === 8
+        String(l.docTypeId) === '8'
       );
 
-      // Find document files
-      const clinicRegDoc = docType.find(d => d.doctypeId === '10' || d.doctypeName === 'CLINIC REGISTRATION');
-      const practiceLicDoc = docType.find(d => d.doctypeId === '8' || d.doctypeName === 'PRACTICE LICENSE');
-      const addressProofDoc = docType.find(d => d.doctypeId === '11' || d.doctypeName === 'ADDRESS PROOF');
-      const clinicImageDoc = docType.find(d => d.doctypeId === '1' || d.doctypeName === 'CLINIC IMAGE');
-      const panDoc = docType.find(d => d.doctypeId === '7' || d.doctypeName === 'PAN CARD');
-      const gstDoc = docType.find(d => d.doctypeId === '2' || d.doctypeName === 'GSTIN');
+      // Find document files - use helper function for robust matching
+      const clinicRegDoc = findDocByType('10', 'CLINIC REGISTRATION') || 
+        (clinicLicense?.docTypeId ? findDocByType(String(clinicLicense.docTypeId), 'CLINIC REGISTRATION') : null);
+      const practiceLicDoc = findDocByType('8', 'PRACTICE LICENSE') || 
+        (practiceLicense?.docTypeId ? findDocByType(String(practiceLicense.docTypeId), 'PRACTICE LICENSE') : null);
+      const addressProofDoc = findDocByType('11', 'ADDRESS PROOF');
+      const clinicImageDoc = findDocByType('1', 'CLINIC IMAGE');
+      const panDoc = findDocByType('7', 'PAN CARD');
+      const gstDoc = findDocByType('2', 'GSTIN');
 
       // Populate form data
       setFormData(prev => ({
@@ -466,26 +483,38 @@ const DoctorRegistrationForm = () => {
         clinicRegistrationNumber: clinicLicense?.licenceNo || '',
         clinicRegistrationDate: formatDate(clinicLicense?.licenceValidUpto),
         clinicRegistrationFile: clinicRegDoc ? {
+          id: clinicRegDoc.docId || '',
+          docId: clinicRegDoc.docId || '',
           fileName: clinicRegDoc.fileName || 'CLINIC REGISTRATION',
           s3Path: clinicRegDoc.s3Path || '',
-          docId: clinicRegDoc.docId || '',
+          uri: clinicRegDoc.s3Path || '',
+          docTypeId: parseInt(clinicRegDoc.doctypeId) || 10,
         } : null,
         practiceLicenseNumber: practiceLicense?.licenceNo || '',
         practiceLicenseDate: formatDate(practiceLicense?.licenceValidUpto),
         practiceLicenseFile: practiceLicDoc ? {
+          id: practiceLicDoc.docId || '',
+          docId: practiceLicDoc.docId || '',
           fileName: practiceLicDoc.fileName || 'PRACTICE LICENSE',
           s3Path: practiceLicDoc.s3Path || '',
-          docId: practiceLicDoc.docId || '',
+          uri: practiceLicDoc.s3Path || '',
+          docTypeId: parseInt(practiceLicDoc.doctypeId) || 8,
         } : null,
         addressProofFile: addressProofDoc ? {
+          id: addressProofDoc.docId || '',
+          docId: addressProofDoc.docId || '',
           fileName: addressProofDoc.fileName || 'ADDRESS PROOF',
           s3Path: addressProofDoc.s3Path || '',
-          docId: addressProofDoc.docId || '',
+          uri: addressProofDoc.s3Path || '',
+          docTypeId: parseInt(addressProofDoc.doctypeId) || 11,
         } : null,
         clinicImageFile: clinicImageDoc ? {
+          id: clinicImageDoc.docId || '',
+          docId: clinicImageDoc.docId || '',
           fileName: clinicImageDoc.fileName || 'CLINIC IMAGE',
           s3Path: clinicImageDoc.s3Path || '',
-          docId: clinicImageDoc.docId || '',
+          uri: clinicImageDoc.s3Path || '',
+          docTypeId: parseInt(clinicImageDoc.doctypeId) || 1,
         } : null,
         
         // General Details
@@ -509,15 +538,21 @@ const DoctorRegistrationForm = () => {
         emailAddress: securityDetails.email || '',
         panNumber: securityDetails.panNumber || '',
         panFile: panDoc ? {
+          id: panDoc.docId || '',
+          docId: panDoc.docId || '',
           fileName: panDoc.fileName || 'PAN CARD',
           s3Path: panDoc.s3Path || '',
-          docId: panDoc.docId || '',
+          uri: panDoc.s3Path || '',
+          docTypeId: parseInt(panDoc.doctypeId) || 7,
         } : null,
         gstNumber: securityDetails.gstNumber || '',
         gstFile: gstDoc ? {
+          id: gstDoc.docId || '',
+          docId: gstDoc.docId || '',
           fileName: gstDoc.fileName || 'GSTIN',
           s3Path: gstDoc.s3Path || '',
-          docId: gstDoc.docId || '',
+          uri: gstDoc.s3Path || '',
+          docTypeId: parseInt(gstDoc.doctypeId) || 2,
         } : null,
 
         // Customer group
@@ -1312,8 +1347,8 @@ const DoctorRegistrationForm = () => {
   }, [formData, verificationStatus]);
 
   const handleCancel = () => {
-    if (inEditMode) {
-      // In edit mode, navigate to CustomerStack which contains CustomerList
+    if (inEditMode || isOnboardMode) {
+      // In edit mode or onboard mode, navigate to CustomerStack which contains CustomerList
       navigation.navigate('CustomerStack', { screen: 'CustomerList' });
     } else {
       // In registration mode, show cancel confirmation modal
@@ -1601,8 +1636,8 @@ const DoctorRegistrationForm = () => {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* Custom Header for Edit Mode */}
-      {inEditMode && (
+      {/* Custom Header for Edit Mode and Onboard Mode */}
+      {(inEditMode || isOnboardMode) && (
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerList' })}
@@ -1610,7 +1645,9 @@ const DoctorRegistrationForm = () => {
           >
             <ChevronLeft />
           </TouchableOpacity>
-          <AppText style={styles.headerTitle}>Edit</AppText>
+          <AppText style={styles.headerTitle}>
+            {isOnboardMode ? 'Registration-Existing' : 'Edit'}
+          </AppText>
         </View>
       )}
 
@@ -2662,36 +2699,77 @@ const DoctorRegistrationForm = () => {
 
             {/* Action Buttons */}
             <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleCancel}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <AppText style={styles.cancelButtonText}>Cancel</AppText>
-              </TouchableOpacity>
+              {isOnboardMode ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.assignButton}
+                    onPress={handleAssignToCustomer}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color={colors.primary} />
+                    ) : (
+                      <AppText style={styles.assignButtonText}>Assign to Customer</AppText>
+                    )}
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.registerButton,
-                  !isFormValid && styles.registerButtonDisabled,
-                  loading && styles.disabledButton,
-                ]}
-                onPress={handleRegister}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <AppText style={[
-                    styles.registerButtonText,
-                    !isFormValid && styles.registerButtonTextDisabled,
-                  ]}>
-                    {inEditMode ? 'Update' : 'Register'}
-                  </AppText>
-                )}
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.registerButton,
+                      !isFormValid && styles.registerButtonDisabled,
+                      loading && styles.disabledButton,
+                    ]}
+                    onPress={handleRegister}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <AppText style={[
+                        styles.registerButtonText,
+                        !isFormValid && styles.registerButtonTextDisabled,
+                      ]}>
+                        Register
+                      </AppText>
+                    )}
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={handleCancel}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                  >
+                    <AppText style={styles.cancelButtonText}>Cancel</AppText>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.registerButton,
+                      !isFormValid && styles.registerButtonDisabled,
+                      loading && styles.disabledButton,
+                    ]}
+                    onPress={handleRegister}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <AppText style={[
+                        styles.registerButtonText,
+                        !isFormValid && styles.registerButtonTextDisabled,
+                      ]}>
+                        {inEditMode ? 'Update' : 'Register'}
+                      </AppText>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </Animated.View>
         </ScrollView>
@@ -3362,6 +3440,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  assignButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  assignButtonText: {
     fontSize: 16,
     color: colors.primary,
     fontWeight: '600',

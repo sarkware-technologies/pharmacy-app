@@ -1119,7 +1119,8 @@ const CustomerList = ({ navigation }) => {
                 style={styles.onboardButton}
                 onPress={() => {
                   const customerId = item.customerId || item.stgCustomerId;
-                  const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
+                  // For onboard mode, always use isStaging = false
+                  const isStaging = false;
                   handleOnboardCustomer(
                     navigation,
                     customerId,
