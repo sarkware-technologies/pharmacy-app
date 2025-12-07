@@ -235,7 +235,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
       await lookupByPincode(filtered);
       }
     }
-  };
+
 
   // Sync pincode lookup results to local state
   useEffect(() => {

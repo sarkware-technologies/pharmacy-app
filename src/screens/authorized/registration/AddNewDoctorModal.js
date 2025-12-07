@@ -160,7 +160,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
       await lookupByPincode(filtered);
       }
     }
-  };
+ 
 
   // Auto-populate city, state, and area when pincode lookup completes
   useEffect(() => {

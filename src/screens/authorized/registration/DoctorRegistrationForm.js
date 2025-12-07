@@ -163,7 +163,7 @@ const DoctorRegistrationForm = () => {
     gstFile: null,
 
     // Mapping
-    markAsBuyingEntity: false,
+    markAsBuyingEntity: true,
     selectedCategory: '',
     selectedHospitals: null,
     selectedPharmacies: [],
@@ -174,6 +174,9 @@ const DoctorRegistrationForm = () => {
     // Stockist Suggestions
     stockists: [{ name: '', code: '', city: '' }],
   });
+
+  console.log(formData);
+  
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -385,7 +388,7 @@ const DoctorRegistrationForm = () => {
   // Fetch customer details for edit mode
   const fetchCustomerDetailsForEdit = async () => {
     if (!customerId) return;
-    
+
     setLoadingCustomerData(true);
     try {
       const response = await customerAPI.getCustomerDetails(customerId, false);
@@ -441,13 +444,13 @@ const DoctorRegistrationForm = () => {
       };
 
       // Find license documents (Clinic Registration and Practice License for Doctor)
-      const clinicLicense = licenceDetails.licence?.find(l => 
-        l.licenceTypeCode === 'CLINIC_REG' || 
+      const clinicLicense = licenceDetails.licence?.find(l =>
+        l.licenceTypeCode === 'CLINIC_REG' ||
         l.licenceTypeCode === 'REG' ||
         l.docTypeId === 10
       );
-      const practiceLicense = licenceDetails.licence?.find(l => 
-        l.licenceTypeCode === 'PRACTICE_LIC' || 
+      const practiceLicense = licenceDetails.licence?.find(l =>
+        l.licenceTypeCode === 'PRACTICE_LIC' ||
         l.licenceTypeCode === 'PRLIC' ||
         l.docTypeId === 8
       );
@@ -488,7 +491,7 @@ const DoctorRegistrationForm = () => {
           s3Path: clinicImageDoc.s3Path || '',
           docId: clinicImageDoc.docId || '',
         } : null,
-        
+
         // General Details
         doctorName: generalDetails.ownerName || '',
         speciality: generalDetails.specialist || '',
@@ -911,7 +914,7 @@ const DoctorRegistrationForm = () => {
     await handleVerify(field);
   };
 
- 
+
 
 
 
@@ -942,7 +945,7 @@ const DoctorRegistrationForm = () => {
     }
   };
 
- 
+
 
   const formatDate = dateString => {
     if (!dateString) return '';
@@ -1033,10 +1036,10 @@ const DoctorRegistrationForm = () => {
   // Helper function to split address into address1, address2, address3
   const splitAddress = (address) => {
     if (!address) return { address1: '', address2: '', address3: '' };
-    
+
     // Split by commas first
     const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
-    
+
     if (parts.length >= 3) {
       return {
         address1: parts[0],
@@ -1072,7 +1075,7 @@ const DoctorRegistrationForm = () => {
         };
       }
     }
-    
+
     return { address1: '', address2: '', address3: '' };
   };
 
@@ -1091,13 +1094,13 @@ const DoctorRegistrationForm = () => {
         // ISO format or Date object
         d = new Date(date);
       }
-      
+
       // Check if date is valid
       if (isNaN(d.getTime())) {
         console.warn('Invalid date for API:', date);
         return null;
       }
-      
+
       // Add time component to avoid timezone issues
       d.setHours(23, 59, 59, 999);
       return d.toISOString();
@@ -1164,7 +1167,7 @@ const DoctorRegistrationForm = () => {
         }
       }
     }
-    
+
     // Populate pincode
     if (ocrData.pincode && !formData.pincode) {
       updates.pincode = ocrData.pincode;
@@ -1272,6 +1275,10 @@ const DoctorRegistrationForm = () => {
       newErrors.panFile = 'PAN document is required';
     }
 
+    if (!formData.markAsBuyingEntity && formData.selectedPharmacies.length === 0) {
+      newErrors.pharmaciesMapping = "Pharmacy mapping is mandatory for non buying entities";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1305,7 +1312,7 @@ const DoctorRegistrationForm = () => {
     else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
     else if (!formData.panFile) isValid = false;
     else if (formData.gstNumber && formData.gstNumber.trim() !== '' && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.gstNumber)) isValid = false;
-    
+
     setIsFormValid(isValid);
   }, [formData, verificationStatus]);
 
@@ -1375,7 +1382,7 @@ const DoctorRegistrationForm = () => {
           ],
         },
         customerDocs: prepareCustomerDocs(),
-        isBuyer: formData.isBuyer || true,
+        isBuyer: formData.markAsBuyingEntity,
         customerGroupId: formData.customerGroupId,
         generalDetails: {
           name: formData.doctorName,
@@ -1407,6 +1414,25 @@ const DoctorRegistrationForm = () => {
             customerId: inEditMode && customerId ? parseInt(customerId, 10) : stockist.name,
           })),
         }),
+        mapping:
+          formData.selectedHospitals?.length > 0 ||
+            formData.selectedPharmacies?.length > 0
+            ? {
+              ...(formData.selectedHospitals?.length > 0 && {
+                hospitals: formData.selectedHospitals.map(h => ({
+                  id: Number(h.id),
+                  isNew: false,
+                })),
+              }),
+
+              ...(formData.selectedPharmacies?.length > 0 && {
+                pharmacy: formData.selectedPharmacies.map(p => ({
+                  id: Number(p.id),
+                  isNew: false,
+                })),
+              }),
+            }
+            : undefined,
         isChildCustomer: false,
         ...(inEditMode && customerId ? { customerId: parseInt(customerId, 10) } : {}),
       };
@@ -1502,6 +1528,9 @@ const DoctorRegistrationForm = () => {
       ),
     }));
   };
+
+
+  console.log(formData);
 
   // DropdownModal Component
   // eslint-disable-next-line react/no-unstable-nested-components
@@ -1746,7 +1775,7 @@ const DoctorRegistrationForm = () => {
                 mandatory={true}
               />
 
-            
+
 
               <FloatingDateInput
                 label="Expiry Date"
@@ -1793,7 +1822,7 @@ const DoctorRegistrationForm = () => {
                 onFileDelete={() => handleFileDelete('clinicImageFile')}
               />
 
-              
+
             </View>
 
             {/* General Details Section */}
@@ -2421,24 +2450,24 @@ const DoctorRegistrationForm = () => {
                           ? [formData.selectedHospitals]
                           : [],
                         onSelect: hospitals => {
-                            setFormData(prev => ({
-                              ...prev,
-                              selectedHospitals: hospitals,
-                            }));
-                          },
+                          setFormData(prev => ({
+                            ...prev,
+                            selectedHospitals: hospitals,
+                          }));
+                        },
                       });
                     }}
                     activeOpacity={0.7}
                   >
                     <AppText style={styles.hospitalSelectorText}>
-                    
 
-                        {formData.selectedHospitals && formData.selectedHospitals.length > 0
-                          ? formData.selectedHospitals.map(h => h.name).join(', ')
-                          : 'Search hospital name/code'}
-                        
 
-                        
+                      {formData.selectedHospitals && formData.selectedHospitals.length > 0
+                        ? formData.selectedHospitals.map(h => h.name).join(', ')
+                        : 'Search hospital name/code'}
+
+
+
                     </AppText>
                     <Icon name="arrow-drop-down" size={24} color="#333" />
                   </TouchableOpacity>
@@ -2472,15 +2501,15 @@ const DoctorRegistrationForm = () => {
                     }}
                     activeOpacity={0.7}
                   >
-                     <AppText style={[
-                styles.selectorPlaceholder,
-                formData.selectedPharmacies.length !== 0 && { color: '#333' }
-              ]}>
-                {formData.selectedPharmacies && formData.selectedPharmacies.length > 0
-                  ? `${formData.selectedPharmacies.length} Pharmacies Selected`
-                  : 'Select pharmacy name/code'}
-              </AppText>
-              <ArrowDown color='#333' />
+                    <AppText style={[
+                      styles.selectorPlaceholder,
+                      formData.selectedPharmacies.length !== 0 && { color: '#333' }
+                    ]}>
+                      {formData.selectedPharmacies && formData.selectedPharmacies.length > 0
+                        ? `${formData.selectedPharmacies.length} Pharmacies Selected`
+                        : 'Select pharmacy name/code'}
+                    </AppText>
+                    <ArrowDown color='#333' />
                   </TouchableOpacity>
                   {formData.selectedPharmacies.length > 0 && (
                     <View style={styles.selectedItemsContainer}>
@@ -2490,7 +2519,7 @@ const DoctorRegistrationForm = () => {
                           key={pharmacy.id || index}
                           style={styles.selectedItemChip}
                         >
-                          <AppText style={{ color: '#333'} }>{pharmacy.name} </AppText>
+                          <AppText style={{ color: '#333' }}>{pharmacy.name} </AppText>
                           <TouchableOpacity
                             onPress={() => {
                               setFormData(prev => ({
@@ -2518,6 +2547,12 @@ const DoctorRegistrationForm = () => {
                     </AppText>
                   </TouchableOpacity>
                 </>
+              )}
+
+              {errors.pharmaciesMapping && (
+                <AppText style={styles.errorText}>
+                  {errors.pharmaciesMapping}
+                </AppText>
               )}
 
               {/* <View style={styles.divider} /> */}
@@ -2749,11 +2784,11 @@ const DoctorRegistrationForm = () => {
         mappingName={formData.doctorName}
         mappingLabel="Doctor"
         onSubmit={hospital => {
- console.log('=== Hospital Response from AddNewHospitalModal ===');
+          console.log('=== Hospital Response from AddNewHospitalModal ===');
           console.log('Full Response:', hospital);
           console.log('Hospital ID:', hospital.id || hospital.customerId);
           console.log('=== End Hospital Response ===');
-           const hospitalData = {
+          const hospitalData = {
             id: hospital.id || hospital.customerId,
             name: hospital.name || hospital.hospitalName,
             code: hospital.code || hospital.shortName,
@@ -2769,7 +2804,7 @@ const DoctorRegistrationForm = () => {
             ...hospital,
           };
 
-            setFormData(prev => ({
+          setFormData(prev => ({
             ...prev,
             selectedHospitals: [
               ...(prev.selectedHospitals || []),
@@ -2799,7 +2834,7 @@ const DoctorRegistrationForm = () => {
         onSubmit={pharmacy => {
 
 
-            console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
+          console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
           console.log('Full Response:', pharmacy);
           console.log('Pharmacy ID:', pharmacy.id || pharmacy.customerId);
           console.log('=== End Pharmacy Response ===');
@@ -2811,7 +2846,7 @@ const DoctorRegistrationForm = () => {
             code: pharmacy.code || ''
           };
 
-           setFormData(prev => ({
+          setFormData(prev => ({
             ...prev,
             selectedPharmacies: [
               ...(prev.selectedPharmacies || []),
@@ -3648,7 +3683,7 @@ const styles = StyleSheet.create({
   },
   asteriskPrimary: {
     color: "red",
-    fontSize:16
+    fontSize: 16
   }
 });
 

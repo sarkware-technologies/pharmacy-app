@@ -134,7 +134,7 @@ const GovtHospitalRegistrationForm = () => {
     nin: '',
 
     // Mapping
-    markAsBuyingEntity: false,
+    markAsBuyingEntity: true,
     linkedHospitals: [],
     linkedPharmacies: [],
     customerGroupId: 12,
@@ -1208,6 +1208,10 @@ const GovtHospitalRegistrationForm = () => {
       newErrors.linkedHospitals = 'At least one linked hospital is required';
     }
 
+       if (!formData.markAsBuyingEntity && formData.linkedPharmacies.length === 0) {
+      newErrors.pharmaciesMapping = "Pharmacy mapping is mandatory for non buying entities";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1301,7 +1305,7 @@ const GovtHospitalRegistrationForm = () => {
           ]
         },
         customerDocs: prepareCustomerDocs(),
-        isBuyer: formData.markAsBuyingEntity || false,
+        isBuyer: formData.markAsBuyingEntity,
         customerGroupId: formData.customerGroupId || 1,
         generalDetails: {
           name: formData.hospitalName,
@@ -1333,6 +1337,26 @@ const GovtHospitalRegistrationForm = () => {
             customerId: isEditMode && customerId ? parseInt(customerId, 10) : stockist.name,
           }))
         }),
+
+         mapping:
+          formData.linkedHospitals?.length > 0 ||
+            formData.linkedHospitals?.length > 0
+            ? {
+              ...(formData.linkedHospitals?.length > 0 && {
+                hospitals: formData.linkedHospitals.map(h => ({
+                  id: Number(h.id),
+                  isNew: false,
+                })),
+              }),
+
+              ...(formData.linkedPharmacies?.length > 0 && {
+                pharmacy: formData.linkedPharmacies.map(p => ({
+                  id: Number(p.id),
+                  isNew: false,
+                })),
+              }),
+            }
+            : undefined,
         isChildCustomer: false,
         ...(isEditMode && customerId ? { customerId: parseInt(customerId, 10) } : {}),
       };
@@ -2335,7 +2359,11 @@ const GovtHospitalRegistrationForm = () => {
         </>
       )}
 
-
+  {errors.pharmaciesMapping && (
+                <AppText style={styles.errorText}>
+                  {errors.pharmaciesMapping}
+                </AppText>
+              )}
 
 
 

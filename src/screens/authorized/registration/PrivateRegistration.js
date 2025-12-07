@@ -143,7 +143,7 @@ const PrivateRegistrationForm = () => {
     gstFile: null,
 
     // Mapping
-    markAsBuyingEntity: false,
+    markAsBuyingEntity: true,
     selectedCategory: {
       isManufacturer: false,
       isDistributor: false,
@@ -1251,6 +1251,10 @@ const PrivateRegistrationForm = () => {
       }
     }
 
+     if (!formData.markAsBuyingEntity && formData.selectedPharmacies.length === 0) {
+      newErrors.pharmaciesMapping = "Pharmacy mapping is mandatory for non buying entities";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1549,6 +1553,25 @@ const PrivateRegistrationForm = () => {
             customerId: inEditMode && customerId ? parseInt(customerId, 10) : stockist.name,
           })),
         }),
+        mapping:
+          formData.selectedHospitals?.length > 0 ||
+            formData.selectedPharmacies?.length > 0
+            ? {
+              ...(formData.selectedHospitals?.length > 0 && {
+                hospitals: formData.selectedHospitals.map(h => ({
+                  id: Number(h.id),
+                  isNew: false,
+                })),
+              }),
+
+              ...(formData.selectedPharmacies?.length > 0 && {
+                pharmacy: formData.selectedPharmacies.map(p => ({
+                  id: Number(p.id),
+                  isNew: false,
+                })),
+              }),
+            }
+            : undefined,
         isChildCustomer: false,
       };
 
@@ -2770,6 +2793,11 @@ const PrivateRegistrationForm = () => {
                   </TouchableOpacity>
                 </>
               )}
+               {errors.pharmaciesMapping && (
+                              <AppText style={styles.errorText}>
+                                {errors.pharmaciesMapping}
+                              </AppText>
+                            )}
 
               {/* <View style={styles.divider} /> */}
               <View style={styles.customerGroupContainer}>

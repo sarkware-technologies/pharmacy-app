@@ -24,7 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/Ionicons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import { colors } from '../../../styles/colors';
 import CustomInput from '../../../components/CustomInput';
 import AddressInputWithLocation from '../../../components/AddressInputWithLocation';
@@ -40,6 +40,8 @@ import RemoveHospitalCloseIcon from '../../../components/icons/RemoveHospitalClo
 import { customerAPI } from '../../../api/customer';
 import { AppText, AppInput } from '../../../components';
 import AddNewHospitalModal from './AddNewHospitalModal';
+import AddNewPharmacyModal from './AddNewPharmacyModal';
+
 import Toast from 'react-native-toast-message';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
@@ -122,9 +124,13 @@ const GroupHospitalRegistrationForm = () => {
     gstNumber: '',
 
     // Mapping
-    markAsBuyingEntity: false,
+    markAsBuyingEntity: true,
     linkedHospitals: [],
+     linkedPharmacies: [],
     customerGroup: '10-VQ',
+     selectedCategory: {
+      pharmacy: false,
+    },
   });
 
   // State for managing stockists
@@ -170,6 +176,7 @@ const GroupHospitalRegistrationForm = () => {
   const [showCityModal, setShowCityModal] = useState(false);
   const [showStateModal, setShowStateModal] = useState(false);
   const [showGstModal, setShowGstModal] = useState(false);
+  const [showAddPharmacyModal, setShowAddPharmacyModal] = useState(false);
 
   // OTP states
   const [showOTP, setShowOTP] = useState({
@@ -1094,6 +1101,11 @@ const GroupHospitalRegistrationForm = () => {
       newErrors.panFile = 'PAN document is required';
     }
 
+    
+       if (!formData.markAsBuyingEntity && formData.linkedPharmacies.length === 0) {
+      newErrors.pharmaciesMapping = "Pharmacy mapping is mandatory for non buying entities";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1186,7 +1198,7 @@ const GroupHospitalRegistrationForm = () => {
           ],
         },
         customerDocs: prepareCustomerDocs(),
-        isBuyer: formData.markAsBuyingEntity || false,
+        isBuyer: formData.markAsBuyingEntity ,
         customerGroupId: formData.customerGroupId || 1,
         generalDetails: {
           name: formData.hospitalName,
@@ -1218,6 +1230,27 @@ const GroupHospitalRegistrationForm = () => {
             customerId: isEditMode && customerId ? parseInt(customerId, 10) : stockist.name,
           })),
         }),
+
+          mapping:
+          formData.linkedHospitals?.length > 0 ||
+            formData.linkedHospitals?.length > 0
+            ? {
+              ...(formData.linkedHospitals?.length > 0 && {
+                hospitals: formData.linkedHospitals.map(h => ({
+                  id: Number(h.id),
+                  isNew: false,
+                })),
+              }),
+
+              ...(formData.linkedPharmacies?.length > 0 && {
+                pharmacy: formData.linkedPharmacies.map(p => ({
+                  id: Number(p.id),
+                  isNew: false,
+                })),
+              }),
+            }
+            : undefined,
+
         isChildCustomer: false,
         ...(isEditMode && customerId ? { customerId: parseInt(customerId, 10) } : {}),
       };
@@ -2132,6 +2165,115 @@ const GroupHospitalRegistrationForm = () => {
           <AppText style={styles.addNewLinkText}>+ Add New Hospital</AppText>
         </TouchableOpacity>
 
+
+        
+              <View style={styles.categoryOptions}>
+        
+                <TouchableOpacity
+                  style={[
+                    styles.checkboxButton,
+                    formData.selectedCategory.pharmacy && styles.checkboxButtonActive,
+                  ]}
+                  onPress={() => setFormData(prev => ({
+                    ...prev,
+                    selectedCategory: {
+                      ...prev.selectedCategory,
+                      pharmacy: !prev.selectedCategory.pharmacy
+                    }
+                  }))}
+                  activeOpacity={0.7}
+                >
+                  <View style={[
+                    styles.checkbox,
+                    formData.selectedCategory.pharmacy && styles.checkboxSelected
+                  ]}>
+                    {formData.selectedCategory.pharmacy && (
+                      <AppText style={styles.checkboxTick}>✓</AppText>
+                    )}
+                  </View>
+                  <AppText style={styles.checkboxLabel}>Pharmacy</AppText>
+                </TouchableOpacity>
+        
+        
+              </View>
+        
+              {formData.selectedCategory.pharmacy && (
+                <>
+                  <View style={styles.pharmacySelectionContainer}>
+        
+                    <TouchableOpacity
+                      style={[styles.selectorInput, errors.linkedHospitals && styles.inputError]}
+                      onPress={() => {
+                        navigation.navigate('PharmacySelector', {
+                          selectedPharmacies: formData.linkedPharmacies || [],
+                          onSelect: (pharmacies) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              linkedPharmacies: pharmacies
+                            }));
+                          }
+                        });
+                      }}
+                      activeOpacity={0.7}
+                    >
+        
+                      <AppText style={[
+                        styles.selectorPlaceholder,
+                        formData.linkedPharmacies.length !== 0 && { color: '#333' }
+                      ]}>
+                        {formData.linkedPharmacies && formData.linkedPharmacies.length > 0
+                          ? `${formData.linkedPharmacies.length} Pharmacies Selected`
+                          : 'Select pharmacy name/code'}
+                      </AppText>
+                      <ArrowDown color='#333' />
+        
+                    </TouchableOpacity>
+                  </View>
+        
+                  {/* Selected Pharmacies Display */}
+        
+                  {formData.linkedPharmacies.length > 0 && (
+                    <View style={styles.selectedItemsContainer}>
+        
+                      {/* Selected Pharmacies List */}
+                      {formData.linkedPharmacies.map((pharmacy, index) => (
+        
+        
+                        <View key={pharmacy.id || index} style={styles.selectedItemChip}>
+                          <AppText style={{ color: '#333'} }>{pharmacy.name}  </AppText>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                linkedPharmacies: prev.linkedPharmacies.filter((_, i) => i !== index)
+                              }));
+                            }}
+                          >
+                            <DoctorDeleteIcon />
+                          </TouchableOpacity>
+                        </View>
+        
+                      ))}
+                    </View>)}
+        
+                  <TouchableOpacity
+                    style={styles.addNewLink}
+                    onPress={() => setShowAddPharmacyModal(true)}
+                  >
+                    <AppText style={styles.addNewLinkText}>+ Add New Pharmacy</AppText>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              
+        
+          {errors.pharmaciesMapping && (
+                        <AppText style={styles.errorText}>
+                          {errors.pharmaciesMapping}
+                        </AppText>
+                      )}
+        
+
         {/* <View style={styles.divider} /> */}
         <View style={styles.customerGroupContainer}>
           {/* Customer Group - Radio Buttons Grid */}
@@ -2554,6 +2696,47 @@ const GroupHospitalRegistrationForm = () => {
           setShowAddHospitalModal(false);
         }}
       />
+
+      <AddNewPharmacyModal
+              visible={showAddPharmacyModal}
+              onClose={() => setShowAddPharmacyModal(false)}
+              mappingName={formData.hospitalName}
+              mappingLabel="Private - Group Hospital / GBU"
+              onSubmit={(pharmacy) => {
+                console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
+                console.log('Full Response:', pharmacy);
+                console.log('Pharmacy ID:', pharmacy.id || pharmacy.customerId);
+                console.log('=== End Pharmacy Response ===');
+      
+                // Create pharmacy object for display
+                const newPharmacyItem = {
+                  id: pharmacy.id || pharmacy.customerId,
+                  name: pharmacy.pharmacyName || pharmacy.name,
+                  code: pharmacy.code || ''
+                };
+      
+                // Add pharmacy to form data with mapping structure
+                setFormData(prev => ({
+                  ...prev,
+                  linkedPharmacies: [
+                    ...(prev.linkedPharmacies || []),
+                    newPharmacyItem
+                  ],
+                  mapping: {
+                    ...prev.mapping,
+                    pharmacy: [
+                      ...(prev.mapping?.pharmacy || []),
+                      {
+                        id: pharmacy.id || pharmacy.customerId,
+                        isNew: true
+                      }
+                    ]
+                  }
+                }));
+      
+                setShowAddPharmacyModal(false);
+              }}
+            />
     </SafeAreaView>
   );
 };
@@ -3551,6 +3734,70 @@ const styles = StyleSheet.create({
   linkText: {
     color: colors.primary,
   },
+
+    categoryOptions: {
+    marginBottom: 20,
+  },
+  checkboxButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  checkboxButtonActive: {
+    opacity: 0.8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    backgroundColor: '#fff',
+  },
+  checkboxSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  checkboxTick: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  checkboxInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: '#333',
+  },
+  
+  selectedItemsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    flex: 1,
+    marginBottom: 16,
+  },
+  selectedItemChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F5F5F6',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: "#ccc",
+  },
+
+
 });
 
 export default GroupHospitalRegistrationForm;

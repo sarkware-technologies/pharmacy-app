@@ -165,7 +165,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         }
       }
     }
-  };
+
 
   // Sync pincode lookup results to local state
   useEffect(() => {

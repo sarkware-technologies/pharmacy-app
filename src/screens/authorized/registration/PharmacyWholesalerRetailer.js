@@ -1124,6 +1124,13 @@ const PharmacyWholesalerRetailerForm = () => {
       if (gstError) newErrors.gstNumber = gstError;
     }
 
+     if (
+    formData.selectedDoctors.length > 0 && formData.selectedHospitals.length > 0
+    ) {
+      newErrors.mapping = "You can select only one: doctor OR hospital (not both)";
+    }
+
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1347,6 +1354,23 @@ const PharmacyWholesalerRetailerForm = () => {
           ownerName: '',
           clinicName: '',
         },
+
+          mapping:
+        formData.selectedHospitals?.length > 0
+          ? {
+              hospitals: formData.selectedHospitals.map(h => ({
+                id: Number(h.id),
+                isNew: false,
+              })),
+            }
+          : formData.selectedDoctors?.length > 0
+          ? {
+              doctors: formData.selectedDoctors.map(d => ({
+                id: Number(d.id),
+                isNew: false,
+              })),
+            }
+          : undefined,
         securityDetails: {
           mobile: formData.mobileNumber,
           email: formData.emailAddress || '',
@@ -2899,6 +2923,12 @@ const handleLicenseOcrData = async (ocrData) => {
                     </TouchableOpacity>
                   </>
                 )}
+
+                 {errors.mapping && (
+                                <AppText style={styles.errorText}>
+                                  {errors.mapping}
+                                </AppText>
+                              )}
               </View>
 
               {/* <View style={styles.divider} /> */}

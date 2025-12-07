@@ -1110,6 +1110,12 @@ useEffect(() => {
       if (gstError) newErrors.gstNumber = gstError;
     }
 
+    if (
+    formData.selectedDoctors.length > 0 && formData.selectedHospitals.length > 0
+    ) {
+      newErrors.mapping = "You can select only one: doctor OR hospital (not both)";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1331,6 +1337,23 @@ useEffect(() => {
           panNumber: formData.panNumber,
           ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
+
+         mapping:
+        formData.selectedHospitals?.length > 0
+          ? {
+              hospitals: formData.selectedHospitals.map(h => ({
+                id: Number(h.id),
+                isNew: false,
+              })),
+            }
+          : formData.selectedDoctors?.length > 0
+          ? {
+              doctors: formData.selectedDoctors.map(d => ({
+                id: Number(d.id),
+                isNew: false,
+              })),
+            }
+          : undefined,
         ...(formData.stockists &&
           formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({
@@ -2737,6 +2760,11 @@ useEffect(() => {
                     </TouchableOpacity>
                   </>
                 )}
+                   {errors.mapping && (
+                                <AppText style={styles.errorText}>
+                                  {errors.mapping}
+                                </AppText>
+                              )}
               </View>
 
               {/* <View style={styles.divider} /> */}

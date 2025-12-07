@@ -1191,6 +1191,14 @@ const PharmacyWholesalerForm = () => {
     if (!formData.panFile) {
       newErrors.panFile = 'PAN document is required';
     }
+
+    if (
+    formData.selectedDoctors.length > 0 && formData.selectedHospitals.length > 0
+    ) {
+      newErrors.mapping = "You can select only one: doctor OR hospital (not both)";
+    }
+
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1262,6 +1270,7 @@ const PharmacyWholesalerForm = () => {
     }
   };
 
+  
   const handleRegister = async () => {
     console.log('handleRegister is called');
     if (!validateForm()) {
@@ -1342,13 +1351,22 @@ const PharmacyWholesalerForm = () => {
           panNumber: formData.panNumber,
           ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
-        // mapping: {
-        //   hospitals:
-        //     formData.selectedHospitals?.map(h => ({
-        //       id: Number(h.id),
-        //       isNew: false,
-        //     })) || [],
-        // },
+       mapping:
+        formData.selectedHospitals?.length > 0
+          ? {
+              hospitals: formData.selectedHospitals.map(h => ({
+                id: Number(h.id),
+                isNew: false,
+              })),
+            }
+          : formData.selectedDoctors?.length > 0
+          ? {
+              doctors: formData.selectedDoctors.map(d => ({
+                id: Number(d.id),
+                isNew: false,
+              })),
+            }
+          : undefined,
         ...(formData.stockists &&
           formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({
@@ -2367,7 +2385,15 @@ const PharmacyWholesalerForm = () => {
 
                   </>
                 )}
+
+                  {errors.mapping && (
+                <AppText style={styles.errorText}>
+                  {errors.mapping}
+                </AppText>
+              )}
               </View>
+
+             
 
               <View style={styles.customerGroupContainer}>
                 <AppText style={styles.sectionLabel}>Customer Group</AppText>
