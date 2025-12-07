@@ -25,6 +25,7 @@ import { AppText, AppInput, CustomInput } from "../../../components"
 import Calendar from '../../../components/icons/Calendar';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
+import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler } from '../../../utils/formValidation';
 
 const DOC_TYPES = {
   LICENSE_20B: 3,
@@ -123,36 +124,40 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
 
   // Handle pincode change and trigger lookup
   const handlePincodeChange = async (text) => {
-    if (/^\d{0,6}$/.test(text)) {
-      setDoctorForm(prev => ({ ...prev, pincode: text }));
-      setDoctorErrors(prev => ({ ...prev, pincode: null }));
+    // Filter pincode input to only allow digits
+    const filtered = createFilteredInputHandler('pincode', null, 6)(text);
+    // If filtered text is different, it means invalid characters were typed, so don't proceed
+    if (filtered !== text && text.length > filtered.length) return;
 
-      // If user is editing pincode manually, clear any OCR/upload-derived area list
-      if (uploadedAreas && uploadedAreas.length > 0) {
-        setUploadedAreas([]); // prefer manual lookup results from pincode
-      }
+    setDoctorForm(prev => ({ ...prev, pincode: filtered }));
+    setDoctorErrors(prev => ({ ...prev, pincode: null }));
 
-      // Clear previous selections when pincode becomes incomplete
-      if (text.length < 6) {
-        setDoctorForm(prev => ({
-          ...prev,
-          area: '',
-          areaId: null,
-          city: '',
-          cityId: null,
-          state: '',
-          stateId: null,
-        }));
-        clearData();
-        // Clear local state arrays
-        setCities([]);
-        setStates([]);
-        return;
-      }
+    // If user is editing pincode manually, clear any OCR/upload-derived area list
+    if (uploadedAreas && uploadedAreas.length > 0) {
+      setUploadedAreas([]); // prefer manual lookup results from pincode
+    }
 
-      // Trigger lookup when pincode is complete (6 digits)
-      if (text.length === 6) {
-        await lookupByPincode(text);
+    // Clear previous selections when pincode becomes incomplete
+    if (filtered.length < 6) {
+      setDoctorForm(prev => ({
+        ...prev,
+        area: '',
+        areaId: null,
+        city: '',
+        cityId: null,
+        state: '',
+        stateId: null,
+      }));
+      clearData();
+      // Clear local state arrays
+      setCities([]);
+      setStates([]);
+      return;
+    }
+
+    // Trigger lookup when pincode is complete (6 digits)
+    if (filtered.length === 6) {
+      await lookupByPincode(filtered);
       }
     }
   };
@@ -597,47 +602,32 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
 
 
 
-    // Doctor Name validation
-    if (!doctorForm.doctorName || doctorForm.doctorName.trim() === '') {
-      newErrors.doctorName = 'Doctor name is required';
-    } else if (doctorForm.doctorName.trim().length < 3) {
+    // Doctor Name validation using reusable validation utility
+    const doctorNameError = validateField('nameOfDoctor', doctorForm.doctorName, true, 'Doctor name is required');
+    if (doctorNameError) newErrors.doctorName = doctorNameError;
+    if (doctorForm.doctorName && doctorForm.doctorName.trim().length < 3) {
       newErrors.doctorName = 'Doctor name must be at least 3 characters';
     }
 
-    // Speciality validation
-    if (!doctorForm.speciality || doctorForm.speciality.trim() === '') {
-      newErrors.speciality = 'Speciality is required';
-    }
+    // Speciality validation using reusable validation utility
+    const specialityError = validateField('speciality', doctorForm.speciality, true, 'Speciality is required');
+    if (specialityError) newErrors.speciality = specialityError;
 
-    // Address 1 validation
-    if (!doctorForm.address1 || doctorForm.address1.trim() === '') {
-      newErrors.address1 = 'Address 1 is required';
-    }
+    // Address validation using reusable validation utility
+    const address1Error = validateField('address1', doctorForm.address1, true, 'Address 1 is required');
+    if (address1Error) newErrors.address1 = address1Error;
 
+    const address2Error = validateField('address2', doctorForm.address2, true, 'Address 2 is required');
+    if (address2Error) newErrors.address2 = address2Error;
 
-    // Address 2 validation
-    if (!doctorForm.address2 || doctorForm.address2.trim() === '') {
-      newErrors.address2 = 'Address 2 is required';
-    }
+    const address3Error = validateField('address3', doctorForm.address3, true, 'Address 3 is required');
+    if (address3Error) newErrors.address3 = address3Error;
 
+    const pincodeError = validateField('pincode', doctorForm.pincode, true, 'Valid 6-digit pincode is required');
+    if (pincodeError) newErrors.pincode = pincodeError;
 
-
-    // Address 3 validation
-    if (!doctorForm.address3 || doctorForm.address3.trim() === '') {
-      newErrors.address3 = 'Address 3 is required';
-    }
-
-    // Pincode validation
-    if (!doctorForm.pincode || doctorForm.pincode.trim() === '') {
-      newErrors.pincode = 'Pincode is required';
-    } else if (!/^[1-9]\d{5}$/.test(doctorForm.pincode)) {
-      newErrors.pincode = 'Valid 6-digit pincode is required';
-    }
-
-    // Area validation
-    if (!doctorForm.area || doctorForm.area.trim() === '') {
-      newErrors.area = 'Area is required';
-    }
+    const areaError = validateField('area', doctorForm.area, true, 'Area is required');
+    if (areaError) newErrors.area = areaError;
 
     // City validation
     if (!doctorForm.city || !doctorForm.cityId) {
@@ -649,38 +639,31 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
       newErrors.state = 'State is required';
     }
 
-    // Mobile Number validation
-    if (!doctorForm.mobileNumber || doctorForm.mobileNumber.trim() === '') {
-      newErrors.mobileNumber = 'Mobile number is required';
-    } else if (!/^\d{10}$/.test(doctorForm.mobileNumber)) {
-      newErrors.mobileNumber = 'Mobile number must be 10 digits';
-    } else if (!verificationStatus.mobile) {
+    // Mobile Number validation using reusable validation utility
+    const mobileError = validateField('mobileNo', doctorForm.mobileNumber, true, 'Valid 10-digit mobile number is required');
+    if (mobileError) newErrors.mobileNumber = mobileError;
+    if (!verificationStatus.mobile) {
       newErrors.mobileVerification = 'Please verify mobile number';
     }
 
-    // Email Address validation
-    if (!doctorForm.emailAddress || doctorForm.emailAddress.trim() === '') {
-      newErrors.emailAddress = 'Email address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(doctorForm.emailAddress)) {
-      newErrors.emailAddress = 'Please enter a valid email address';
-    } else if (!verificationStatus.email) {
+    // Email Address validation using reusable validation utility
+    const emailError = validateField('emailAddress', doctorForm.emailAddress, true, 'Valid email address is required');
+    if (emailError) newErrors.emailAddress = emailError;
+    if (!verificationStatus.email) {
       newErrors.emailVerification = 'Please verify email address';
     }
 
-    // PAN validation
+    // PAN validation using reusable validation utility
     if (!doctorForm.panFile && !documentIds.pan) {
       newErrors.panFile = 'PAN document is required';
     }
-    if (!doctorForm.panNumber || doctorForm.panNumber.trim() === '') {
-      newErrors.panNumber = 'PAN number is required';
-    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(doctorForm.panNumber)) {
-      newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
-    }
+    const panError = validateField('panNo', doctorForm.panNumber, true, 'Valid PAN number is required (e.g., ABCDE1234F)');
+    if (panError) newErrors.panNumber = panError;
 
-    // GST validation
-    if (doctorForm.gstNumber.trim() !== '' &&
-      !/^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/.test(doctorForm.gstNumber)) {
-      newErrors.gstNumber = 'Invalid GST format';
+    // GST validation using reusable validation utility
+    if (doctorForm.gstNumber && doctorForm.gstNumber.trim() !== '') {
+      const gstError = validateField('gstNo', doctorForm.gstNumber, false, 'Invalid GST format');
+      if (gstError) newErrors.gstNumber = gstError;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -1013,12 +996,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Clinic Registration number"
             value={doctorForm.clinicRegistrationNumber}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('clinicRegistrationNumber', (text) => {
               setDoctorForm(prev => ({ ...prev, clinicRegistrationNumber: text }));
               if (doctorErrors.clinicRegistrationNumber) {
                 setDoctorErrors(prev => ({ ...prev, clinicRegistrationNumber: null }));
               }
-            }}
+            })}
             mandatory={true}
             error={doctorErrors.clinicRegistrationNumber}
           />
@@ -1059,12 +1042,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Practice License Number"
             value={doctorForm.practiceLicenseNumber}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('practiceLicenseNumber', (text) => {
               setDoctorForm(prev => ({ ...prev, practiceLicenseNumber: text }));
               if (doctorErrors.practiceLicenseNumber) {
                 setDoctorErrors(prev => ({ ...prev, practiceLicenseNumber: null }));
               }
-            }}
+            })}
             mandatory={true}
             error={doctorErrors.practiceLicenseNumber}
           />
@@ -1125,12 +1108,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Name of the Doctor"
             value={doctorForm.doctorName}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('doctorName', (text) => {
               setDoctorForm(prev => ({ ...prev, doctorName: text }));
               if (doctorErrors.doctorName) {
                 setDoctorErrors(prev => ({ ...prev, doctorName: null }));
               }
-            }}
+            })}
             mandatory={true}
             error={doctorErrors.doctorName}
           />
@@ -1142,12 +1125,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Speciality"
             value={doctorForm.speciality}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('speciality', (text) => {
               setDoctorForm(prev => ({ ...prev, speciality: text }));
               if (doctorErrors.speciality) {
                 setDoctorErrors(prev => ({ ...prev, speciality: null }));
               }
-            }}
+            })}
             mandatory={true}
             error={doctorErrors.speciality}
           />
@@ -1158,21 +1141,20 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Clinic Name"
             value={doctorForm.clinicName}
-            onChangeText={(text) => {
-              setDoctorForm(prev => ({ ...prev, speciality: text }));
-
-            }}
+            onChangeText={createFilteredInputHandler('clinicName', (text) => {
+              setDoctorForm(prev => ({ ...prev, clinicName: text }));
+            })}
           />
 
           <AddressInputWithLocation
             label="Address 1"
             value={doctorForm.address1}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('address1', (text) => {
               setDoctorForm(prev => ({ ...prev, address1: text }));
               if (doctorErrors.address1) {
                 setDoctorErrors(prev => ({ ...prev, address1: null }));
               }
-            }}
+            })}
             placeholder="Address 1 "
             error={doctorErrors.address1}
             mandatory={true}
@@ -1220,7 +1202,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Address 2"
             value={doctorForm.address2}
-            onChangeText={(text) => setDoctorForm(prev => ({ ...prev, address2: text }))}
+            onChangeText={createFilteredInputHandler('address2', (text) => setDoctorForm(prev => ({ ...prev, address2: text })))}
             mandatory={true}
             error={doctorErrors.address2}
           />
@@ -1228,7 +1210,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Address 3"
             value={doctorForm.address3}
-            onChangeText={(text) => setDoctorForm(prev => ({ ...prev, address3: text }))}
+            onChangeText={createFilteredInputHandler('address3', (text) => setDoctorForm(prev => ({ ...prev, address3: text })))}
             mandatory={true}
             error={doctorErrors.address3}
 
@@ -1237,7 +1219,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Address 4"
             value={doctorForm.address4}
-            onChangeText={(text) => setDoctorForm(prev => ({ ...prev, address4: text }))}
+            onChangeText={createFilteredInputHandler('address4', (text) => setDoctorForm(prev => ({ ...prev, address4: text })))}
           />
 
 
@@ -1359,14 +1341,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Mobile number"
             value={doctorForm.mobileNumber}
-            onChangeText={(text) => {
-              if (/^\d{0,10}$/.test(text)) {
-                setDoctorForm(prev => ({ ...prev, mobileNumber: text }));
-                if (doctorErrors.mobileNumber) {
-                  setDoctorErrors(prev => ({ ...prev, mobileNumber: null, mobileVerification: null }));
-                }
+            onChangeText={createFilteredInputHandler('mobileNumber', (text) => {
+              setDoctorForm(prev => ({ ...prev, mobileNumber: text }));
+              if (doctorErrors.mobileNumber) {
+                setDoctorErrors(prev => ({ ...prev, mobileNumber: null, mobileVerification: null }));
               }
-            }}
+            }, 10)}
             keyboardType="phone-pad"
             maxLength={10}
             editable={!verificationStatus.mobile}
@@ -1414,12 +1394,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Email Address"
             value={doctorForm.emailAddress}
-            onChangeText={(text) => {
-              setDoctorForm(prev => ({ ...prev, emailAddress: text }));
+            onChangeText={createFilteredInputHandler('emailAddress', (text) => {
+              setDoctorForm(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
               if (doctorErrors.emailAddress) {
                 setDoctorErrors(prev => ({ ...prev, emailAddress: null, emailVerification: null }));
               }
-            }}
+            })}
             keyboardType="email-address"
             autoCapitalize="none"
             editable={!verificationStatus.email}
@@ -1488,13 +1468,13 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="PAN number"
             value={doctorForm.panNumber}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('panNumber', (text) => {
               const upperText = text.toUpperCase();
               setDoctorForm(prev => ({ ...prev, panNumber: upperText }));
               if (doctorErrors.panNumber) {
                 setDoctorErrors(prev => ({ ...prev, panNumber: null }));
               }
-            }}
+            }, 10)}
             maxLength={10}
             autoCapitalize="characters"
             mandatory={true}
@@ -1562,12 +1542,13 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
             maxLength={15}
             autoCapitalize="characters"
             value={doctorForm.gstNumber}
-            onChangeText={(text) => {
-              setDoctorForm(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
+            onChangeText={createFilteredInputHandler('gstNumber', (text) => {
+              const upperText = text.toUpperCase();
+              setDoctorForm(prev => ({ ...prev, gstNumber: upperText }));
               if (doctorErrors.gstNumber) {
                 setDoctorErrors(prev => ({ ...prev, gstNumber: null }));
               }
-            }}
+            }, 15)}
 
             error={doctorErrors.gstNumber}
           />

@@ -195,7 +195,7 @@ const CustomerList = ({ navigation }) => {
           page: 1,
           limit: 10,
           isLoadMore: false,
-          isStaging: true,
+          isStaging: false,
           typeCode: [],
           categoryCode: [],
           subCategoryCode: [],
@@ -341,8 +341,8 @@ const CustomerList = ({ navigation }) => {
           statusId: selectedFilters.statusId,
           cityIds: selectedFilters.cityIds,
           isLoadMore: false,
-          isStaging: true,
-          // ...(isStaging && { statusIds: [5] })
+          isStaging: isStaging,
+          ...(isStaging && { statusIds: [5] }),
           statusIds: [5]
         }));
       } else {
@@ -379,7 +379,7 @@ const CustomerList = ({ navigation }) => {
         limit: 10,
         ...filters,
         isLoadMore: false,
-        isStaging: true,
+        isStaging: isStaging,
         ...(isStaging && { statusIds: [5] })
       }));
     } else {

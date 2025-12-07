@@ -44,6 +44,7 @@ import Toast from 'react-native-toast-message';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
+import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler } from '../../../utils/formValidation';
 
 const { width, height } = Dimensions.get('window');
 
@@ -266,28 +267,32 @@ const GroupHospitalRegistrationForm = () => {
 
   // Handle pincode change and trigger lookup
   const handlePincodeChange = async text => {
-    if (/^\d{0,6}$/.test(text)) {
-      setFormData(prev => ({ ...prev, pincode: text }));
-      setErrors(prev => ({ ...prev, pincode: null }));
+    // Filter pincode input to only allow digits
+    const filtered = createFilteredInputHandler('pincode', null, 6)(text);
+    // If filtered text is different, it means invalid characters were typed, so don't proceed
+    if (filtered !== text && text.length > filtered.length) return;
 
-      // Clear previous selections when pincode changes
-      if (text.length < 6) {
-        setFormData(prev => ({
-          ...prev,
-          area: '',
-          areaId: null,
-          city: '',
-          cityId: null,
-          state: '',
-          stateId: null,
-        }));
-        clearData();
-      }
+    setFormData(prev => ({ ...prev, pincode: filtered }));
+    setErrors(prev => ({ ...prev, pincode: null }));
 
-      // Trigger lookup when pincode is complete (6 digits)
-      if (text.length === 6) {
-        await lookupByPincode(text);
-      }
+    // Clear previous selections when pincode changes
+    if (filtered.length < 6) {
+      setFormData(prev => ({
+        ...prev,
+        area: '',
+        areaId: null,
+        city: '',
+        cityId: null,
+        state: '',
+        stateId: null,
+      }));
+      clearData();
+      return;
+    }
+
+    // Trigger lookup when pincode is complete (6 digits)
+    if (filtered.length === 6) {
+      await lookupByPincode(filtered);
     }
   };
 
@@ -1031,28 +1036,25 @@ const GroupHospitalRegistrationForm = () => {
       }
     }
 
-    // General Details
-    if (!formData.hospitalName) {
-      newErrors.hospitalName = 'Hospital name is required';
-    }
-    if (!formData.address1) {
-      newErrors.address1 = 'Address is required';
-    }
+    // General Details validation using reusable validation utility
+    const hospitalNameError = validateField('hospitalName', formData.hospitalName, true, 'Hospital name is required');
+    if (hospitalNameError) newErrors.hospitalName = hospitalNameError;
 
-    if (!formData.address2) {
-      newErrors.address2 = 'Address 2 is required';
-    }
+    const address1Error = validateField('address1', formData.address1, true, 'Address 1 is required');
+    if (address1Error) newErrors.address1 = address1Error;
 
-    if (!formData.address3) {
-      newErrors.address3 = 'Address 3 is required';
-    }
-    if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode)) {
-      newErrors.pincode = 'Valid 6-digit pincode is required';
-    }
+    const address2Error = validateField('address2', formData.address2, true, 'Address 2 is required');
+    if (address2Error) newErrors.address2 = address2Error;
 
-    if (!formData.area || formData.area.trim().length === 0) {
-      newErrors.area = 'Area is required';
-    }
+    const address3Error = validateField('address3', formData.address3, true, 'Address 3 is required');
+    if (address3Error) newErrors.address3 = address3Error;
+
+    const pincodeError = validateField('pincode', formData.pincode, true, 'Valid 6-digit pincode is required');
+    if (pincodeError) newErrors.pincode = pincodeError;
+
+    const areaError = validateField('area', formData.area, true, 'Area is required');
+    if (areaError) newErrors.area = areaError;
+
     if (!formData.cityId) {
       newErrors.city = 'City is required';
     }
@@ -1060,36 +1062,27 @@ const GroupHospitalRegistrationForm = () => {
       newErrors.state = 'State is required';
     }
 
-    // Security Details
-    if (!formData.mobileNumber || formData.mobileNumber.length !== 10) {
-      newErrors.mobileNumber = 'Valid 10-digit mobile number is required';
-    }
+    // Security Details validation using reusable validation utility
+    const mobileError = validateField('mobileNo', formData.mobileNumber, true, 'Valid 10-digit mobile number is required');
+    if (mobileError) newErrors.mobileNumber = mobileError;
     if (!verificationStatus.mobile) {
       newErrors.mobileVerification = 'Mobile number verification is required';
     }
-    if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
-      newErrors.emailAddress = 'Valid email address is required';
-    }
+
+    const emailError = validateField('emailAddress', formData.emailAddress, true, 'Valid email address is required');
+    if (emailError) newErrors.emailAddress = emailError;
     if (!verificationStatus.email) {
       newErrors.emailVerification = 'Email verification is required';
     }
 
     // PAN validation
-    if (!formData.panNumber || formData.panNumber.trim() === '') {
-      newErrors.panNumber = 'PAN number is required';
-    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
-      newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
-    }
+    const panError = validateField('panNo', formData.panNumber, true, 'Valid PAN number is required (e.g., ABCDE1234F)');
+    if (panError) newErrors.panNumber = panError;
 
     // GST is optional - only validate if provided
     if (formData.gstNumber && formData.gstNumber.trim() !== '') {
-      if (
-        !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
-          formData.gstNumber,
-        )
-      ) {
-        newErrors.gstNumber = 'Invalid GST format (e.g., 27ASDSD1234F1Z5)';
-      }
+      const gstError = validateField('gstNo', formData.gstNumber, false, 'Invalid GST format (e.g., 27ASDSD1234F1Z5)');
+      if (gstError) newErrors.gstNumber = gstError;
     }
 
     // Linked Hospitals validation
@@ -1419,10 +1412,10 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Hospital Registration Number"
           value={formData.registrationNumber}
-          onChangeText={text => {
+          onChangeText={createFilteredInputHandler('registrationNumber', (text) => {
             setFormData(prev => ({ ...prev, registrationNumber: text }));
             setErrors(prev => ({ ...prev, registrationNumber: null }));
-          }}
+          })}
           error={errors.registrationNumber}
           autoCapitalize="characters"
           mandatory={true}
@@ -1476,10 +1469,10 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Hospital name"
           value={formData.hospitalName}
-          onChangeText={text => {
+          onChangeText={createFilteredInputHandler('hospitalName', (text) => {
             setFormData(prev => ({ ...prev, hospitalName: text }));
             setErrors(prev => ({ ...prev, hospitalName: null }));
-          }}
+          })}
           error={errors.hospitalName}
           mandatory={true}
         />
@@ -1487,17 +1480,17 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Short name"
           value={formData.shortName}
-          onChangeText={text =>
+          onChangeText={createFilteredInputHandler('shortName', (text) =>
             setFormData(prev => ({ ...prev, shortName: text }))
-          }
+          )}
         />
 
         <AddressInputWithLocation
           placeholder="Address 1"
           value={formData.address1}
-          onChangeText={text =>
+          onChangeText={createFilteredInputHandler('address1', (text) =>
             setFormData(prev => ({ ...prev, address1: text }))
-          }
+          )}
           error={errors.address1}
           mandatory={true}
           onLocationSelect={async locationData => {
@@ -1540,9 +1533,9 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Address 2"
           value={formData.address2}
-          onChangeText={text =>
+          onChangeText={createFilteredInputHandler('address2', (text) =>
             setFormData(prev => ({ ...prev, address2: text }))
-          }
+          )}
           mandatory
           error={errors.address2}
         />
@@ -1550,9 +1543,9 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Address 3"
           value={formData.address3}
-          onChangeText={text =>
+          onChangeText={createFilteredInputHandler('address3', (text) =>
             setFormData(prev => ({ ...prev, address3: text }))
-          }
+          )}
           mandatory
           error={errors.address3}
         />
@@ -1560,9 +1553,9 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Address 4"
           value={formData.address4}
-          onChangeText={text =>
+          onChangeText={createFilteredInputHandler('address4', (text) =>
             setFormData(prev => ({ ...prev, address4: text }))
-          }
+          )}
         />
 
         <CustomInput
@@ -1691,10 +1684,10 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Mobile number"
           value={formData.mobileNumber}
-          onChangeText={text => {
+          onChangeText={createFilteredInputHandler('mobileNumber', (text) => {
             setFormData(prev => ({ ...prev, mobileNumber: text }));
             setErrors(prev => ({ ...prev, mobileNumber: null }));
-          }}
+          }, 10)}
           keyboardType="phone-pad"
           maxLength={10}
           mandatory
@@ -1739,10 +1732,10 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Email address"
           value={formData.emailAddress}
-          onChangeText={text => {
-            setFormData(prev => ({ ...prev, emailAddress: text }));
+          onChangeText={createFilteredInputHandler('emailAddress', (text) => {
+            setFormData(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
             setErrors(prev => ({ ...prev, emailAddress: null }));
-          }}
+          })}
           keyboardType="email-address"
           autoCapitalize="none"
           mandatory
@@ -1804,12 +1797,11 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="PAN Number"
           value={formData.panNumber}
-          onChangeText={text => {
-            // Allow only letters and numbers - remove any special characters
-            const filtered = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-            setFormData(prev => ({ ...prev, panNumber: filtered }));
+          onChangeText={createFilteredInputHandler('panNumber', (text) => {
+            const upperText = text.toUpperCase();
+            setFormData(prev => ({ ...prev, panNumber: upperText }));
             setErrors(prev => ({ ...prev, panNumber: null }));
-          }}
+          }, 10)}
           autoCapitalize="characters"
           keyboardType="default"
           maxLength={10}
@@ -1896,10 +1888,11 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="GST Number"
           value={formData.gstNumber}
-          onChangeText={text => {
-            setFormData(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
+          onChangeText={createFilteredInputHandler('gstNumber', (text) => {
+            const upperText = text.toUpperCase();
+            setFormData(prev => ({ ...prev, gstNumber: upperText }));
             setErrors(prev => ({ ...prev, gstNumber: null }));
-          }}
+          }, 15)}
           autoCapitalize="characters"
           maxLength={15}
           error={errors.gstNumber}
@@ -2253,33 +2246,33 @@ const GroupHospitalRegistrationForm = () => {
             <CustomInput
               placeholder="Name of the stockist"
               value={stockist.name}
-              onChangeText={text => {
+              onChangeText={createFilteredInputHandler('nameOfStockist', (text) => {
                 setStockists(prev =>
                   prev.map((s, i) => (i === index ? { ...s, name: text } : s)),
                 );
-              }}
+              })}
             />
 
             <CustomInput
               placeholder="Distributor Code"
               value={stockist.distributorCode}
-              onChangeText={text => {
+              onChangeText={createFilteredInputHandler('distributorCode', (text) => {
                 setStockists(prev =>
                   prev.map((s, i) =>
                     i === index ? { ...s, distributorCode: text } : s,
                   ),
                 );
-              }}
+              })}
             />
 
             <CustomInput
               placeholder="City"
               value={stockist.city}
-              onChangeText={text => {
+              onChangeText={createFilteredInputHandler('city', (text) => {
                 setStockists(prev =>
                   prev.map((s, i) => (i === index ? { ...s, city: text } : s)),
                 );
-              }}
+              })}
             />
           </View>
         ))}

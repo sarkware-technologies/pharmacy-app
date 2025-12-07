@@ -38,6 +38,7 @@ import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
+import { validateForm as validateFormFields, validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler } from '../../../utils/formValidation';
 
 // Default document types for file uploads (will be updated from API for licenses)
 const DOC_TYPES = {
@@ -210,9 +211,12 @@ const PharmacyRegistrationForm = () => {
 
  // Handle pincode change and trigger lookup
 const handlePincodeChange = async text => {
-  if (!/^\d{0,6}$/.test(text)) return; // allow only digits up to 6
+  // Filter pincode input to only allow digits
+  const filtered = createFilteredInputHandler('pincode', null, 6)(text);
+  // If filtered text is different, it means invalid characters were typed, so don't proceed
+  if (filtered !== text && text.length > filtered.length) return;
 
-  setFormData(prev => ({ ...prev, pincode: text }));
+  setFormData(prev => ({ ...prev, pincode: filtered }));
   setErrors(prev => ({ ...prev, pincode: null }));
 
   // If user is editing pincode manually, clear any OCR/upload-derived area list
@@ -221,7 +225,7 @@ const handlePincodeChange = async text => {
   }
 
   // Clear previous selections when pincode becomes incomplete
-  if (text.length < 6) {
+  if (filtered.length < 6) {
     setFormData(prev => ({
       ...prev,
       area: '',
@@ -240,10 +244,10 @@ const handlePincodeChange = async text => {
   }
 
   // Trigger lookup when pincode is complete (6 digits)
-  if (text.length === 6) {
+  if (filtered.length === 6) {
     // call lookup and receive returned arrays (hook now returns them)
     const { areas: lkAreas = [], cities: lkCities = [], states: lkStates = [] } =
-      (await lookupByPincode(text)) || {};
+      (await lookupByPincode(filtered)) || {};
 
     // Apply to local component state so dropdowns read correct lists
     if (Array.isArray(lkAreas)) setAreas(lkAreas);
@@ -1024,26 +1028,19 @@ useEffect(() => {
     if (!documentIds.license21) return false;
     if (!formData.license21ExpiryDate) return false;
     if (!documentIds.pharmacyImage) return false;
-    if (!formData.pharmacyName) return false;
-    if (!formData.address1) return false;
-    if (
-      !formData.pincode ||
-      formData.pincode.length !== 6 ||
-      !/^[1-9]\d{5}$/.test(formData.pincode)
-    ) return false;
-    if (!formData.area || formData.area.trim().length === 0) return false;
+    if (!formData.pharmacyName || validateField('nameOfPharmacy', formData.pharmacyName, true)) return false;
+    if (!formData.address1 || validateField('address1', formData.address1, true)) return false;
+    if (!formData.address2 || validateField('address2', formData.address2, true)) return false;
+    if (!formData.address3 || validateField('address3', formData.address3, true)) return false;
+    if (!isValidPincode(formData.pincode)) return false;
+    if (!formData.area || validateField('area', formData.area, true)) return false;
     if (!formData.cityId) return false;
     if (!formData.stateId) return false;
-    if (!formData.mobileNumber || formData.mobileNumber.length !== 10) return false;
+    if (!isValidMobile(formData.mobileNumber)) return false;
     if (!verificationStatus.mobile) return false;
-    if (!formData.emailAddress || !formData.emailAddress.includes('@')) return false;
+    if (!isValidEmail(formData.emailAddress)) return false;
     if (!verificationStatus.email) return false;
-    if (!formData.address2) return false;
-    if (!formData.address3) return false;
-    if (
-      !formData.panNumber ||
-      !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)
-    ) return false;
+    if (!isValidPAN(formData.panNumber)) return false;
     if (!formData.panFile && !documentIds.pan) return false;
     if (formData.gstNumber && !isValidGST(formData.gstNumber)) return false;
     return true;
@@ -1052,7 +1049,7 @@ useEffect(() => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Validate required fields
+    // License Details validation
     if (!formData.license20)
       newErrors.license20 = 'License 20 number is required';
     if (!documentIds.license20)
@@ -1067,45 +1064,52 @@ useEffect(() => {
       newErrors.license21ExpiryDate = 'License 21 expiry date is required';
     if (!documentIds.pharmacyImage)
       newErrors.pharmacyImageFile = 'Pharmacy image is required';
-    if (!formData.pharmacyName)
-      newErrors.pharmacyName = 'Pharmacy name is required';
-    if (!formData.address1) newErrors.address1 = 'Address is required';
-    if (
-      !formData.pincode ||
-      formData.pincode.length !== 6 ||
-      !/^[1-9]\d{5}$/.test(formData.pincode)
-    )
-      newErrors.pincode = 'Valid 6-digit pincode is required';
 
-    if (!formData.area || formData.area.trim().length === 0) {
-      newErrors.area = 'Area is required';
-    }
+    // General Details validation using reusable validation utility
+    const nameOfPharmacyError = validateField('nameOfPharmacy', formData.pharmacyName, true, 'Pharmacy name is required');
+    if (nameOfPharmacyError) newErrors.pharmacyName = nameOfPharmacyError;
+
+    const address1Error = validateField('address1', formData.address1, true, 'Address 1 is required');
+    if (address1Error) newErrors.address1 = address1Error;
+
+    const address2Error = validateField('address2', formData.address2, true, 'Address 2 is required');
+    if (address2Error) newErrors.address2 = address2Error;
+
+    const address3Error = validateField('address3', formData.address3, true, 'Address 3 is required');
+    if (address3Error) newErrors.address3 = address3Error;
+
+    const pincodeError = validateField('pincode', formData.pincode, true, 'Valid 6-digit pincode is required');
+    if (pincodeError) newErrors.pincode = pincodeError;
+
+    const areaError = validateField('area', formData.area, true, 'Area is required');
+    if (areaError) newErrors.area = areaError;
+
     if (!formData.cityId) newErrors.cityId = 'City is required';
     if (!formData.stateId) newErrors.stateId = 'State is required';
-    if (!formData.mobileNumber || formData.mobileNumber.length !== 10)
-      newErrors.mobileNumber = 'Valid 10-digit mobile number is required';
+
+    // Security Details validation using reusable validation utility
+    const mobileError = validateField('mobileNo', formData.mobileNumber, true, 'Valid 10-digit mobile number is required');
+    if (mobileError) newErrors.mobileNumber = mobileError;
     if (!verificationStatus.mobile)
       newErrors.mobileVerification = 'Mobile number verification is required';
-    if (!formData.emailAddress || !formData.emailAddress.includes('@')) {
-      newErrors.emailAddress = 'Valid email address is required';
-    }
+
+    const emailError = validateField('emailAddress', formData.emailAddress, true, 'Valid email address is required');
+    if (emailError) newErrors.emailAddress = emailError;
     if (!verificationStatus.email)
       newErrors.emailVerification = 'Email verification is required';
-    if (!formData.address2) newErrors.address2 = 'Address 2 is required';
-    if (!formData.address3) newErrors.address3 = 'Address 3 is required';
-    if (
-      !formData.panNumber ||
-      !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)
-    ) {
-      newErrors.panNumber = 'Valid PAN number is required (e.g., ABCDE1234F)';
-    }
+
+    const panError = validateField('panNo', formData.panNumber, true, 'Valid PAN number is required (e.g., ABCDE1234F)');
+    if (panError) newErrors.panNumber = panError;
 
     if (!formData.panFile && !documentIds.pan) {
       newErrors.panFile = 'PAN document is required';
     }
 
-    if (formData.gstNumber && !isValidGST(formData.gstNumber))
-      newErrors.gstNumber = 'GST number must be valid (e.g., 27ASDSD1234F1Z5)';
+    if (formData.gstNumber) {
+      const gstError = validateField('gstNo', formData.gstNumber, false, 'GST number must be valid (e.g., 27ASDSD1234F1Z5)');
+      if (gstError) newErrors.gstNumber = gstError;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1178,12 +1182,6 @@ useEffect(() => {
   };
 
   // GST validation function
-  const isValidGST = gst => {
-    // GST format: 2 digits (state code) + 10 alphanumeric + 1 letter + 1 digit + 1 letter = 15 characters
-    const gstRegex =
-      /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
-    return gstRegex.test(gst);
-  };
 
   // Check form validity whenever form data, document IDs, or verification status changes
   useEffect(() => {
@@ -1986,10 +1984,10 @@ useEffect(() => {
               <CustomInput
                 placeholder="Drug license number"
                 value={formData.license20}
-                onChangeText={text => {
+                onChangeText={createFilteredInputHandler('license20', (text) => {
                   setFormData(prev => ({ ...prev, license20: text }));
                   setErrors(prev => ({ ...prev, license20: null }));
-                }}
+                })}
                 mandatory={true}
                 error={errors.license20}
               />
@@ -2034,10 +2032,10 @@ useEffect(() => {
               <CustomInput
                 placeholder="Drug license number"
                 value={formData.license21}
-                onChangeText={text => {
+                onChangeText={createFilteredInputHandler('license21', (text) => {
                   setFormData(prev => ({ ...prev, license21: text }));
                   setErrors(prev => ({ ...prev, license21: null }));
-                }}
+                })}
                 mandatory={true}
                 error={errors.license21}
               />
@@ -2084,10 +2082,10 @@ useEffect(() => {
               <CustomInput
                 placeholder="Name of the Pharmacy"
                 value={formData.pharmacyName}
-                onChangeText={text => {
+                onChangeText={createFilteredInputHandler('pharmacyName', (text) => {
                   setFormData(prev => ({ ...prev, pharmacyName: text }));
                   setErrors(prev => ({ ...prev, pharmacyName: null }));
-                }}
+                })}
                 mandatory={true}
                 error={errors.pharmacyName}
               />
@@ -2095,9 +2093,9 @@ useEffect(() => {
               <CustomInput
                 placeholder="Enter OP, IP, Cathlab etc"
                 value={formData.shortName}
-                onChangeText={text =>
+                onChangeText={createFilteredInputHandler('shortName', (text) =>
                   setFormData(prev => ({ ...prev, shortName: text }))
-                }
+                )}
               />
 
               <AddressInputWithLocation
@@ -2154,10 +2152,10 @@ useEffect(() => {
               <CustomInput
                 placeholder="Address 2"
                 value={formData.address2}
-                onChangeText={text => {
+                onChangeText={createFilteredInputHandler('address2', (text) => {
                   setFormData(prev => ({ ...prev, address2: text }));
                   setErrors(prev => ({ ...prev, address2: null }));
-                }}
+                })}
                 mandatory={true}
                 error={errors.address2}
               />
@@ -2165,10 +2163,10 @@ useEffect(() => {
               <CustomInput
                 placeholder="Address 3"
                 value={formData.address3}
-                onChangeText={text => {
+                onChangeText={createFilteredInputHandler('address3', (text) => {
                   setFormData(prev => ({ ...prev, address3: text }));
                   setErrors(prev => ({ ...prev, address3: null }));
-                }}
+                })}
                 mandatory={true}
                 error={errors.address3}
               />
@@ -2176,9 +2174,9 @@ useEffect(() => {
               <CustomInput
                 placeholder="Address 4"
                 value={formData.address4}
-                onChangeText={text =>
+                onChangeText={createFilteredInputHandler('address4', (text) =>
                   setFormData(prev => ({ ...prev, address4: text }))
-                }
+                )}
               />
 
               <CustomInput
@@ -2310,12 +2308,10 @@ useEffect(() => {
               <CustomInput
                 placeholder="Mobile Number"
                 value={formData.mobileNumber}
-                onChangeText={text => {
-                  if (/^\d{0,10}$/.test(text)) {
-                    setFormData(prev => ({ ...prev, mobileNumber: text }));
-                    setErrors(prev => ({ ...prev, mobileNumber: null }));
-                  }
-                }}
+                onChangeText={createFilteredInputHandler('mobileNumber', (text) => {
+                  setFormData(prev => ({ ...prev, mobileNumber: text }));
+                  setErrors(prev => ({ ...prev, mobileNumber: null }));
+                }, 10)}
                 maxLength={10}
                 keyboardType="phone-pad"
                 mandatory
@@ -2369,13 +2365,13 @@ useEffect(() => {
               <CustomInput
                 placeholder="Email Address"
                 value={formData.emailAddress}
-                onChangeText={text => {
+                onChangeText={createFilteredInputHandler('emailAddress', (text) => {
                   setFormData(prev => ({
                     ...prev,
                     emailAddress: text.toLowerCase(),
                   }));
                   setErrors(prev => ({ ...prev, emailAddress: null }));
-                }}
+                })}
                 keyboardType="email-address"
                 mandatory
                 editable={!verificationStatus.email}
@@ -2452,11 +2448,11 @@ useEffect(() => {
               <CustomInput
                 placeholder="PAN Number"
                 value={formData.panNumber}
-                onChangeText={text => {
+                onChangeText={createFilteredInputHandler('panNumber', (text) => {
                   const upperText = text.toUpperCase();
                   setFormData(prev => ({ ...prev, panNumber: upperText }));
                   setErrors(prev => ({ ...prev, panNumber: null }));
-                }}
+                }, 10)}
                 autoCapitalize="characters"
                 maxLength={10}
                 mandatory
@@ -2550,14 +2546,11 @@ useEffect(() => {
               <CustomInput
                 placeholder="GST number"
                 value={formData.gstNumber}
-                onChangeText={text => {
-                  // Allow only letters and numbers - remove any special characters
-                  const filtered = text
-                    .replace(/[^A-Za-z0-9]/g, '')
-                    .toUpperCase();
-                  setFormData(prev => ({ ...prev, gstNumber: filtered }));
+                onChangeText={createFilteredInputHandler('gstNumber', (text) => {
+                  const upperText = text.toUpperCase();
+                  setFormData(prev => ({ ...prev, gstNumber: upperText }));
                   setErrors(prev => ({ ...prev, gstNumber: null }));
-                }}
+                }, 15)}
                 autoCapitalize="characters"
                 keyboardType="default"
                 maxLength={15}

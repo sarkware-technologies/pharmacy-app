@@ -22,6 +22,7 @@ import CustomInput from '../../../components/CustomInput';
 import { AppText, AppInput } from "../../../components";
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
+import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler } from '../../../utils/formValidation';
 
 const DOC_TYPES = {
   LICENSE_20B: 3,
@@ -195,36 +196,40 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
 
   // Handle pincode change and trigger lookup
   const handlePincodeChange = async (text) => {
-    if (/^\d{0,6}$/.test(text)) {
-      setPharmacyForm(prev => ({ ...prev, pincode: text }));
-      setPharmacyErrors(prev => ({ ...prev, pincode: null }));
+    // Filter pincode input to only allow digits
+    const filtered = createFilteredInputHandler('pincode', null, 6)(text);
+    // If filtered text is different, it means invalid characters were typed, so don't proceed
+    if (filtered !== text && text.length > filtered.length) return;
 
-      // If user is editing pincode manually, clear any OCR/upload-derived area list
-      if (uploadedAreas && uploadedAreas.length > 0) {
-        setUploadedAreas([]); // prefer manual lookup results from pincode
-      }
+    setPharmacyForm(prev => ({ ...prev, pincode: filtered }));
+    setPharmacyErrors(prev => ({ ...prev, pincode: null }));
 
-      // Clear previous selections when pincode becomes incomplete
-      if (text.length < 6) {
-        setPharmacyForm(prev => ({
-          ...prev,
-          area: '',
-          areaId: null,
-          city: '',
-          cityId: null,
-          state: '',
-          stateId: null,
-        }));
-        clearData();
-        // Clear local state arrays
-        setCities([]);
-        setStates([]);
-        return;
-      }
+    // If user is editing pincode manually, clear any OCR/upload-derived area list
+    if (uploadedAreas && uploadedAreas.length > 0) {
+      setUploadedAreas([]); // prefer manual lookup results from pincode
+    }
 
-      // Trigger lookup when pincode is complete (6 digits)
-      if (text.length === 6) {
-        await lookupByPincode(text);
+    // Clear previous selections when pincode becomes incomplete
+    if (filtered.length < 6) {
+      setPharmacyForm(prev => ({
+        ...prev,
+        area: '',
+        areaId: null,
+        city: '',
+        cityId: null,
+        state: '',
+        stateId: null,
+      }));
+      clearData();
+      // Clear local state arrays
+      setCities([]);
+      setStates([]);
+      return;
+    }
+
+    // Trigger lookup when pincode is complete (6 digits)
+    if (filtered.length === 6) {
+      await lookupByPincode(filtered);
       }
     }
   };
@@ -678,41 +683,28 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
       newErrors.pharmacyImageFile = 'Pharmacy image is required';
     }
 
-    // Pharmacy Name validation
-    if (!pharmacyForm.pharmacyName || pharmacyForm.pharmacyName.trim() === '') {
-      newErrors.pharmacyName = 'Pharmacy name is required';
-    } else if (pharmacyForm.pharmacyName.trim().length < 3) {
+    // Pharmacy Name validation using reusable validation utility
+    const pharmacyNameError = validateField('nameOfPharmacy', pharmacyForm.pharmacyName, true, 'Pharmacy name is required');
+    if (pharmacyNameError) newErrors.pharmacyName = pharmacyNameError;
+    if (pharmacyForm.pharmacyName && pharmacyForm.pharmacyName.trim().length < 3) {
       newErrors.pharmacyName = 'Pharmacy name must be at least 3 characters';
     }
 
-    // Owner Name validation
-    // if (!pharmacyForm.ownerName || pharmacyForm.ownerName.trim() === '') {
-    //   newErrors.ownerName = 'Owner name is required';
-    // }
+    // Address validation using reusable validation utility
+    const address1Error = validateField('address1', pharmacyForm.address1, true, 'Address 1 is required');
+    if (address1Error) newErrors.address1 = address1Error;
 
-    // Address 1 validation
-    if (!pharmacyForm.address1 || pharmacyForm.address1.trim() === '') {
-      newErrors.address1 = 'Address 1 is required';
-    }
+    const address2Error = validateField('address2', pharmacyForm.address2, true, 'Address 2 is required');
+    if (address2Error) newErrors.address2 = address2Error;
 
-    if (!pharmacyForm.address2 || pharmacyForm.address2.trim() === '') {
-      newErrors.address2 = 'Address 2 is required';
-    }
+    const address3Error = validateField('address3', pharmacyForm.address3, true, 'Address 3 is required');
+    if (address3Error) newErrors.address3 = address3Error;
 
-    if (!pharmacyForm.address3 || pharmacyForm.address3.trim() === '') {
-      newErrors.address3 = 'Address 3 is required';
-    }
-    // Pincode validation
-    if (!pharmacyForm.pincode || pharmacyForm.pincode.trim() === '') {
-      newErrors.pincode = 'Pincode is required';
-    } else if (!/^[1-9]\d{5}$/.test(pharmacyForm.pincode)) {
-      newErrors.pincode = 'Valid 6-digit pincode is required';
-    }
+    const pincodeError = validateField('pincode', pharmacyForm.pincode, true, 'Valid 6-digit pincode is required');
+    if (pincodeError) newErrors.pincode = pincodeError;
 
-    // Area validation
-    if (!pharmacyForm.area || pharmacyForm.area.trim() === '') {
-      newErrors.area = 'Area is required';
-    }
+    const areaError = validateField('area', pharmacyForm.area, true, 'Area is required');
+    if (areaError) newErrors.area = areaError;
 
     // City validation
     if (!pharmacyForm.city || !pharmacyForm.cityId) {
@@ -724,38 +716,31 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
       newErrors.state = 'State is required';
     }
 
-    // Mobile Number validation
-    if (!pharmacyForm.mobileNumber || pharmacyForm.mobileNumber.trim() === '') {
-      newErrors.mobileNumber = 'Mobile number is required';
-    } else if (!/^\d{10}$/.test(pharmacyForm.mobileNumber)) {
-      newErrors.mobileNumber = 'Mobile number must be 10 digits';
-    } else if (!verificationStatus.mobile) {
+    // Mobile Number validation using reusable validation utility
+    const mobileError = validateField('mobileNo', pharmacyForm.mobileNumber, true, 'Valid 10-digit mobile number is required');
+    if (mobileError) newErrors.mobileNumber = mobileError;
+    if (!verificationStatus.mobile) {
       newErrors.mobileVerification = 'Please verify mobile number';
     }
 
-    // Email Address validation
-    if (!pharmacyForm.emailAddress || pharmacyForm.emailAddress.trim() === '') {
-      newErrors.emailAddress = 'Email address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pharmacyForm.emailAddress)) {
-      newErrors.emailAddress = 'Please enter a valid email address';
-    } else if (!verificationStatus.email) {
+    // Email Address validation using reusable validation utility
+    const emailError = validateField('emailAddress', pharmacyForm.emailAddress, true, 'Valid email address is required');
+    if (emailError) newErrors.emailAddress = emailError;
+    if (!verificationStatus.email) {
       newErrors.emailVerification = 'Please verify email address';
     }
 
-    // PAN validation
+    // PAN validation using reusable validation utility
     if (!pharmacyForm.panFile && !documentIds.pan) {
       newErrors.panFile = 'PAN document is required';
     }
-    if (!pharmacyForm.panNumber || pharmacyForm.panNumber.trim() === '') {
-      newErrors.panNumber = 'PAN number is required';
-    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pharmacyForm.panNumber)) {
-      newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
-    }
+    const panError = validateField('panNo', pharmacyForm.panNumber, true, 'Valid PAN number is required (e.g., ABCDE1234F)');
+    if (panError) newErrors.panNumber = panError;
 
-    // GST validation
-    if (pharmacyForm.gstNumber && pharmacyForm.gstNumber.trim() !== '' &&
-      !/^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/.test(pharmacyForm.gstNumber)) {
-      newErrors.gstNumber = 'Invalid GST format';
+    // GST validation using reusable validation utility
+    if (pharmacyForm.gstNumber && pharmacyForm.gstNumber.trim() !== '') {
+      const gstError = validateField('gstNo', pharmacyForm.gstNumber, false, 'Invalid GST format');
+      if (gstError) newErrors.gstNumber = gstError;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -1146,12 +1131,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               <CustomInput
                 placeholder="Drug license number"
                 value={pharmacyForm.license20}
-                onChangeText={(text) => {
+                onChangeText={createFilteredInputHandler('license20', (text) => {
                   setPharmacyForm(prev => ({ ...prev, license20: text }));
                   if (pharmacyErrors.license20) {
                     setPharmacyErrors(prev => ({ ...prev, license20: null }));
                   }
-                }}
+                })}
                 mandatory={true}
                 error={pharmacyErrors.license20}
               />
@@ -1191,12 +1176,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               <CustomInput
                 placeholder="Drug license number"
                 value={pharmacyForm.license21}
-                onChangeText={(text) => {
+                onChangeText={createFilteredInputHandler('license21', (text) => {
                   setPharmacyForm(prev => ({ ...prev, license21: text }));
                   if (pharmacyErrors.license21) {
                     setPharmacyErrors(prev => ({ ...prev, license21: null }));
                   }
-                }}
+                })}
                 mandatory={true}
                 error={pharmacyErrors.license21}
               />
@@ -1392,12 +1377,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               <CustomInput
                 placeholder="Drug license number"
                 value={pharmacyForm.license20b}
-                onChangeText={(text) => {
+                onChangeText={createFilteredInputHandler('license20b', (text) => {
                   setPharmacyForm(prev => ({ ...prev, license20b: text }));
                   if (pharmacyErrors.license20b) {
                     setPharmacyErrors(prev => ({ ...prev, license20b: null }));
                   }
-                }}
+                })}
                 mandatory={true}
                 error={pharmacyErrors.license20b}
               />
@@ -1437,12 +1422,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               <CustomInput
                 placeholder="Drug license number"
                 value={pharmacyForm.license21b}
-                onChangeText={(text) => {
+                onChangeText={createFilteredInputHandler('license21b', (text) => {
                   setPharmacyForm(prev => ({ ...prev, license21b: text }));
                   if (pharmacyErrors.license21b) {
                     setPharmacyErrors(prev => ({ ...prev, license21b: null }));
                   }
-                }}
+                })}
                 mandatory={true}
                 error={pharmacyErrors.license21b}
               />
@@ -1483,12 +1468,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="Name of the Pharmacy"
             value={pharmacyForm.pharmacyName}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('pharmacyName', (text) => {
               setPharmacyForm(prev => ({ ...prev, pharmacyName: text }));
               if (pharmacyErrors.pharmacyName) {
                 setPharmacyErrors(prev => ({ ...prev, pharmacyName: null }));
               }
-            }}
+            })}
             mandatory={true}
             error={pharmacyErrors.pharmacyName}
           />
@@ -1496,24 +1481,24 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="Enter OP, IP, Cathlab etc"
             value={pharmacyForm.ownerName}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('shortName', (text) => {
               setPharmacyForm(prev => ({ ...prev, ownerName: text }));
               if (pharmacyErrors.ownerName) {
                 setPharmacyErrors(prev => ({ ...prev, ownerName: null }));
               }
-            }}
+            })}
             mandatory={false}
           />
 
           <AddressInputWithLocation
             label="Address 1"
             value={pharmacyForm.address1}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('address1', (text) => {
               setPharmacyForm(prev => ({ ...prev, address1: text }));
               if (pharmacyErrors.address1) {
                 setPharmacyErrors(prev => ({ ...prev, address1: null }));
               }
-            }}
+            })}
             placeholder="Address 1 "
             error={pharmacyErrors.address1}
             mandatory={true}
@@ -1559,7 +1544,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="Address 2"
             value={pharmacyForm.address2}
-            onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address2: text }))}
+            onChangeText={createFilteredInputHandler('address2', (text) => setPharmacyForm(prev => ({ ...prev, address2: text })))}
             mandatory
             error={pharmacyErrors.address2}
           />
@@ -1567,7 +1552,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="Address 3"
             value={pharmacyForm.address3}
-            onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address3: text }))}
+            onChangeText={createFilteredInputHandler('address3', (text) => setPharmacyForm(prev => ({ ...prev, address3: text })))}
             mandatory
             error={pharmacyErrors.address3}
           />
@@ -1575,7 +1560,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="Address 4"
             value={pharmacyForm.address4}
-            onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, address4: text }))}
+            onChangeText={createFilteredInputHandler('address4', (text) => setPharmacyForm(prev => ({ ...prev, address4: text })))}
           />
 
           <CustomInput
@@ -1699,14 +1684,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="Mobile number"
             value={pharmacyForm.mobileNumber}
-            onChangeText={(text) => {
-              if (/^\d{0,10}$/.test(text)) {
-                setPharmacyForm(prev => ({ ...prev, mobileNumber: text }));
-                if (pharmacyErrors.mobileNumber) {
-                  setPharmacyErrors(prev => ({ ...prev, mobileNumber: null, mobileVerification: null }));
-                }
+            onChangeText={createFilteredInputHandler('mobileNumber', (text) => {
+              setPharmacyForm(prev => ({ ...prev, mobileNumber: text }));
+              if (pharmacyErrors.mobileNumber) {
+                setPharmacyErrors(prev => ({ ...prev, mobileNumber: null, mobileVerification: null }));
               }
-            }}
+            }, 10)}
             keyboardType="phone-pad"
             maxLength={10}
             mandatory={true}
@@ -1755,12 +1738,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="Email Address"
             value={pharmacyForm.emailAddress}
-            onChangeText={(text) => {
-              setPharmacyForm(prev => ({ ...prev, emailAddress: text }));
+            onChangeText={createFilteredInputHandler('emailAddress', (text) => {
+              setPharmacyForm(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
               if (pharmacyErrors.emailAddress) {
                 setPharmacyErrors(prev => ({ ...prev, emailAddress: null, emailVerification: null }));
               }
-            }}
+            })}
             keyboardType="email-address"
             autoCapitalize="none"
             mandatory={true}
@@ -1831,13 +1814,13 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="PAN number"
             value={pharmacyForm.panNumber}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('panNumber', (text) => {
               const upperText = text.toUpperCase();
               setPharmacyForm(prev => ({ ...prev, panNumber: upperText }));
               if (pharmacyErrors.panNumber) {
                 setPharmacyErrors(prev => ({ ...prev, panNumber: null }));
               }
-            }}
+            }, 10)}
             maxLength={10}
             autoCapitalize="characters"
             mandatory={true}
@@ -1900,12 +1883,13 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="GST number"
             value={pharmacyForm.gstNumber}
-            onChangeText={(text) => {
-              setPharmacyForm(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
+            onChangeText={createFilteredInputHandler('gstNumber', (text) => {
+              const upperText = text.toUpperCase();
+              setPharmacyForm(prev => ({ ...prev, gstNumber: upperText }));
               if (pharmacyErrors.gstNumber) {
                 setPharmacyErrors(prev => ({ ...prev, gstNumber: null }));
               }
-            }}
+            }, 15)}
             maxLength={15}
             autoCapitalize="characters"
             error={pharmacyErrors.gstNumber}

@@ -22,6 +22,7 @@ import CustomInput from '../../../components/CustomInput';
 import { AppText, AppInput } from "../../../components"
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
+import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler } from '../../../utils/formValidation';
 
 const DOC_TYPES = {
   REGISTRATION_CERTIFICATE: 8,
@@ -124,9 +125,13 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
   // Handle pincode change and trigger lookup
   const handlePincodeChange = async (text) => {
-    if (/^\d{0,6}$/.test(text)) {
-      setHospitalForm(prev => ({ ...prev, pincode: text }));
-      setHospitalErrors(prev => ({ ...prev, pincode: null }));
+    // Filter pincode input to only allow digits
+    const filtered = createFilteredInputHandler('pincode', null, 6)(text);
+    // If filtered text is different, it means invalid characters were typed, so don't proceed
+    if (filtered !== text && text.length > filtered.length) return;
+
+    setHospitalForm(prev => ({ ...prev, pincode: filtered }));
+    setHospitalErrors(prev => ({ ...prev, pincode: null }));
 
       // If user is editing pincode manually, clear any OCR/upload-derived area list
       if (uploadedAreas && uploadedAreas.length > 0) {
@@ -134,7 +139,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       }
 
       // Clear previous selections when pincode becomes incomplete
-      if (text.length < 6) {
+      if (filtered.length < 6) {
         setHospitalForm(prev => ({
           ...prev,
           area: '',
@@ -152,9 +157,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       }
 
       // Trigger lookup when pincode is complete (6 digits)
-      if (text.length === 6) {
+      if (filtered.length === 6) {
         try {
-          await lookupByPincode(text);
+          await lookupByPincode(filtered);
         } catch (err) {
           console.warn('Pincode lookup failed', err);
         }
@@ -524,39 +529,28 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       newErrors.image = 'Hospital image is required';
     }
 
-    // Hospital Name validation
-    if (!hospitalForm.hospitalName || hospitalForm.hospitalName.trim() === '') {
-      newErrors.hospitalName = 'Hospital name is required';
-    } else if (hospitalForm.hospitalName.trim().length < 3) {
+    // Hospital Name validation using reusable validation utility
+    const hospitalNameError = validateField('hospitalName', hospitalForm.hospitalName, true, 'Hospital name is required');
+    if (hospitalNameError) newErrors.hospitalName = hospitalNameError;
+    if (hospitalForm.hospitalName && hospitalForm.hospitalName.trim().length < 3) {
       newErrors.hospitalName = 'Hospital name must be at least 3 characters';
     }
 
-    // Address 1 validation
-    if (!hospitalForm.address1 || hospitalForm.address1.trim() === '') {
-      newErrors.address1 = 'Address 1 is required';
-    }
+    // Address validation using reusable validation utility
+    const address1Error = validateField('address1', hospitalForm.address1, true, 'Address 1 is required');
+    if (address1Error) newErrors.address1 = address1Error;
 
-    // Address 2 validation
-    if (!hospitalForm.address2 || hospitalForm.address2.trim() === '') {
-      newErrors.address2 = 'Address 2 is required';
-    }
+    const address2Error = validateField('address2', hospitalForm.address2, true, 'Address 2 is required');
+    if (address2Error) newErrors.address2 = address2Error;
 
-    // Address 3 validation
-    if (!hospitalForm.address3 || hospitalForm.address3.trim() === '') {
-      newErrors.address3 = 'Address 3 is required';
-    }
+    const address3Error = validateField('address3', hospitalForm.address3, true, 'Address 3 is required');
+    if (address3Error) newErrors.address3 = address3Error;
 
-    // Pincode validation
-    if (!hospitalForm.pincode || hospitalForm.pincode.trim() === '') {
-      newErrors.pincode = 'Pincode is required';
-    } else if (!/^[1-9]\d{5}$/.test(hospitalForm.pincode)) {
-      newErrors.pincode = 'Valid 6-digit pincode is required';
-    }
+    const pincodeError = validateField('pincode', hospitalForm.pincode, true, 'Valid 6-digit pincode is required');
+    if (pincodeError) newErrors.pincode = pincodeError;
 
-    // Area validation
-    if (!hospitalForm.area || hospitalForm.area.trim() === '') {
-      newErrors.area = 'Area is required';
-    }
+    const areaError = validateField('area', hospitalForm.area, true, 'Area is required');
+    if (areaError) newErrors.area = areaError;
 
     // City validation
     if (!hospitalForm.city || !hospitalForm.cityId) {
@@ -568,37 +562,31 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       newErrors.state = 'State is required';
     }
 
-    // Mobile Number validation
-    if (!hospitalForm.mobileNumber || hospitalForm.mobileNumber.trim() === '') {
-      newErrors.mobileNumber = 'Mobile number is required';
-    } else if (!/^\d{10}$/.test(hospitalForm.mobileNumber)) {
-      newErrors.mobileNumber = 'Mobile number must be 10 digits';
-    } else if (!verificationStatus.mobile) {
+    // Mobile Number validation using reusable validation utility
+    const mobileError = validateField('mobileNo', hospitalForm.mobileNumber, true, 'Valid 10-digit mobile number is required');
+    if (mobileError) newErrors.mobileNumber = mobileError;
+    if (!verificationStatus.mobile) {
       newErrors.mobileVerification = 'Please verify mobile number';
     }
 
-    // Email Address validation
-    if (!hospitalForm.emailAddress || hospitalForm.emailAddress.trim() === '') {
-      newErrors.emailAddress = 'Email address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hospitalForm.emailAddress)) {
-      newErrors.emailAddress = 'Please enter a valid email address';
-    } else if (!verificationStatus.email) {
+    // Email Address validation using reusable validation utility
+    const emailError = validateField('emailAddress', hospitalForm.emailAddress, true, 'Valid email address is required');
+    if (emailError) newErrors.emailAddress = emailError;
+    if (!verificationStatus.email) {
       newErrors.emailVerification = 'Please verify email address';
     }
 
-    // PAN validation
+    // PAN validation using reusable validation utility
     if (!hospitalForm.panFile && !documentIds.pan) {
       newErrors.panFile = 'PAN document is required';
     }
-    if (!hospitalForm.panNumber || hospitalForm.panNumber.trim() === '') {
-      newErrors.panNumber = 'PAN number is required';
-    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(hospitalForm.panNumber)) {
-      newErrors.panNumber = 'Invalid PAN format (e.g., ABCDE1234F)';
-    }
+    const panError = validateField('panNo', hospitalForm.panNumber, true, 'Valid PAN number is required (e.g., ABCDE1234F)');
+    if (panError) newErrors.panNumber = panError;
 
-    if (hospitalForm.gstNumber && hospitalForm.gstNumber.trim() !== '' &&
-      !/^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/.test(hospitalForm.gstNumber)) {
-      newErrors.gstNumber = 'Invalid GST format';
+    // GST validation using reusable validation utility
+    if (hospitalForm.gstNumber && hospitalForm.gstNumber.trim() !== '') {
+      const gstError = validateField('gstNo', hospitalForm.gstNumber, false, 'Invalid GST format');
+      if (gstError) newErrors.gstNumber = gstError;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -1011,12 +999,12 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Enter hospital name"
             value={hospitalForm.hospitalName}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('hospitalName', (text) => {
               setHospitalForm(prev => ({ ...prev, hospitalName: text }));
               if (hospitalErrors.hospitalName) {
                 setHospitalErrors(prev => ({ ...prev, hospitalName: null }));
               }
-            }}
+            })}
             mandatory={true}
             error={hospitalErrors.hospitalName}
           />
@@ -1024,18 +1012,18 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Enter Short name"
             value={hospitalForm.shortName}
-            onChangeText={(text) => setHospitalForm(prev => ({ ...prev, shortName: text }))}
+            onChangeText={createFilteredInputHandler('shortName', (text) => setHospitalForm(prev => ({ ...prev, shortName: text })))}
           />
 
           <AddressInputWithLocation
             label="Address 1"
             value={hospitalForm.address1}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('address1', (text) => {
               setHospitalForm(prev => ({ ...prev, address1: text }));
               if (hospitalErrors.address1) {
                 setHospitalErrors(prev => ({ ...prev, address1: null }));
               }
-            }}
+            })}
             placeholder="Address 1 "
             error={hospitalErrors.address1}
             mandatory={true}
@@ -1081,7 +1069,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Address 2"
             value={hospitalForm.address2}
-            onChangeText={(text) => setHospitalForm(prev => ({ ...prev, address2: text }))}
+            onChangeText={createFilteredInputHandler('address2', (text) => setHospitalForm(prev => ({ ...prev, address2: text })))}
             mandatory={true}
             error={hospitalErrors.address2}
           />
@@ -1089,7 +1077,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Address 3"
             value={hospitalForm.address3}
-            onChangeText={(text) => setHospitalForm(prev => ({ ...prev, address3: text }))}
+            onChangeText={createFilteredInputHandler('address3', (text) => setHospitalForm(prev => ({ ...prev, address3: text })))}
             mandatory={true}
             error={hospitalErrors.address3}
           />
@@ -1097,7 +1085,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Address 4"
             value={hospitalForm.address4}
-            onChangeText={(text) => setHospitalForm(prev => ({ ...prev, address4: text }))}
+            onChangeText={createFilteredInputHandler('address4', (text) => setHospitalForm(prev => ({ ...prev, address4: text })))}
           />
 
           <CustomInput
@@ -1216,14 +1204,12 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Mobile number"
             value={hospitalForm.mobileNumber}
-            onChangeText={(text) => {
-              if (/^\d{0,10}$/.test(text)) {
-                setHospitalForm(prev => ({ ...prev, mobileNumber: text }));
-                if (hospitalErrors.mobileNumber) {
-                  setHospitalErrors(prev => ({ ...prev, mobileNumber: null, mobileVerification: null }));
-                }
+            onChangeText={createFilteredInputHandler('mobileNumber', (text) => {
+              setHospitalForm(prev => ({ ...prev, mobileNumber: text }));
+              if (hospitalErrors.mobileNumber) {
+                setHospitalErrors(prev => ({ ...prev, mobileNumber: null, mobileVerification: null }));
               }
-            }}
+            }, 10)}
             keyboardType="phone-pad"
             maxLength={10}
             editable={!verificationStatus.mobile}
@@ -1270,12 +1256,12 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Email Address"
             value={hospitalForm.emailAddress}
-            onChangeText={(text) => {
-              setHospitalForm(prev => ({ ...prev, emailAddress: text }));
+            onChangeText={createFilteredInputHandler('emailAddress', (text) => {
+              setHospitalForm(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
               if (hospitalErrors.emailAddress) {
                 setHospitalErrors(prev => ({ ...prev, emailAddress: null, emailVerification: null }));
               }
-            }}
+            })}
             keyboardType="email-address"
             autoCapitalize="none"
             editable={!verificationStatus.email}
@@ -1342,13 +1328,13 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             maxLength={10}
             autoCapitalize="characters"
             value={hospitalForm.panNumber}
-            onChangeText={(text) => {
+            onChangeText={createFilteredInputHandler('panNumber', (text) => {
               const upperText = text.toUpperCase();
               setHospitalForm(prev => ({ ...prev, panNumber: upperText }));
               if (hospitalErrors.panNumber) {
                 setHospitalErrors(prev => ({ ...prev, panNumber: null }));
               }
-            }}
+            }, 10)}
             mandatory={true}
             error={hospitalErrors.panNumber}
             editable={!verificationStatus.pan}
@@ -1407,12 +1393,13 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             maxLength={15}
             autoCapitalize="characters"
             value={hospitalForm.gstNumber}
-            onChangeText={(text) => {
-              setHospitalForm(prev => ({ ...prev, gstNumber: text.toUpperCase() }));
+            onChangeText={createFilteredInputHandler('gstNumber', (text) => {
+              const upperText = text.toUpperCase();
+              setHospitalForm(prev => ({ ...prev, gstNumber: upperText }));
               if (hospitalErrors.gstNumber) {
                 setHospitalErrors(prev => ({ ...prev, gstNumber: null }));
               }
-            }}
+            }, 15)}
             error={hospitalErrors.gstNumber}
           />
 
@@ -1428,17 +1415,17 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Name of the Stockist"
             value={hospitalForm.stockistName}
-            onChangeText={(text) => setHospitalForm(prev => ({ ...prev, stockistName: text }))}
+            onChangeText={createFilteredInputHandler('nameOfStockist', (text) => setHospitalForm(prev => ({ ...prev, stockistName: text })))}
           />
           <CustomInput
             placeholder="Distributor Code"
             value={hospitalForm.stockistCode}
-            onChangeText={(text) => setHospitalForm(prev => ({ ...prev, stockistCode: text }))}
+            onChangeText={createFilteredInputHandler('distributorCode', (text) => setHospitalForm(prev => ({ ...prev, stockistCode: text })))}
           />
           <CustomInput
             placeholder="City"
             value={hospitalForm.stockistCity}
-            onChangeText={(text) => setHospitalForm(prev => ({ ...prev, stockistCity: text }))}
+            onChangeText={createFilteredInputHandler('city', (text) => setHospitalForm(prev => ({ ...prev, stockistCity: text })))}
           />
 
           {/* Action Buttons */}
