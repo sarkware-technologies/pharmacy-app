@@ -750,7 +750,7 @@ useEffect(() => {
     if (
       field === 'email' &&
       (!formData.emailAddress ||
-        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
+        !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
     ) {
       setErrors(prev => ({
         ...prev,
@@ -2010,7 +2010,7 @@ useEffect(() => {
                 onChangeText={createFilteredInputHandler('license20', (text) => {
                   setFormData(prev => ({ ...prev, license20: text }));
                   setErrors(prev => ({ ...prev, license20: null }));
-                })}
+                }, 50)}
                 mandatory={true}
                 error={errors.license20}
               />
@@ -2058,7 +2058,7 @@ useEffect(() => {
                 onChangeText={createFilteredInputHandler('license21', (text) => {
                   setFormData(prev => ({ ...prev, license21: text }));
                   setErrors(prev => ({ ...prev, license21: null }));
-                })}
+                }, 50)}
                 mandatory={true}
                 error={errors.license21}
               />
@@ -2108,7 +2108,7 @@ useEffect(() => {
                 onChangeText={createFilteredInputHandler('pharmacyName', (text) => {
                   setFormData(prev => ({ ...prev, pharmacyName: text }));
                   setErrors(prev => ({ ...prev, pharmacyName: null }));
-                })}
+                }, 40)}
                 mandatory={true}
                 error={errors.pharmacyName}
               />
@@ -2116,18 +2116,18 @@ useEffect(() => {
               <CustomInput
                 placeholder="Enter OP, IP, Cathlab etc"
                 value={formData.shortName}
-                onChangeText={createFilteredInputHandler('shortName', (text) =>
-                  setFormData(prev => ({ ...prev, shortName: text }))
+                onChangeText={createFilteredInputHandler('opIpCathlab', (text) =>
+                  setFormData(prev => ({ ...prev, shortName: text })), 30
                 )}
               />
 
               <AddressInputWithLocation
                 placeholder="Address 1"
                 value={formData.address1}
-                onChangeText={text => {
-                  setFormData(prev => ({ ...prev, address1: text }));
-                  setErrors(prev => ({ ...prev, address1: null }));
-                }}
+                   onChangeText={createFilteredInputHandler('address1', (text) => {
+                               setFormData(prev => ({ ...prev, address1: text }));
+                                setErrors(prev => ({ ...prev, address1: null }));
+                              }, 40)}
                 mandatory={true}
                 error={errors.address1}
                 onLocationSelect={async locationData => {
@@ -2178,7 +2178,7 @@ useEffect(() => {
                 onChangeText={createFilteredInputHandler('address2', (text) => {
                   setFormData(prev => ({ ...prev, address2: text }));
                   setErrors(prev => ({ ...prev, address2: null }));
-                })}
+                }, 40)}
                 mandatory={true}
                 error={errors.address2}
               />
@@ -2189,7 +2189,7 @@ useEffect(() => {
                 onChangeText={createFilteredInputHandler('address3', (text) => {
                   setFormData(prev => ({ ...prev, address3: text }));
                   setErrors(prev => ({ ...prev, address3: null }));
-                })}
+                }, 60)}
                 mandatory={true}
                 error={errors.address3}
               />
@@ -2198,7 +2198,7 @@ useEffect(() => {
                 placeholder="Address 4"
                 value={formData.address4}
                 onChangeText={createFilteredInputHandler('address4', (text) =>
-                  setFormData(prev => ({ ...prev, address4: text }))
+                  setFormData(prev => ({ ...prev, address4: text })), 60
                 )}
               />
 
@@ -2394,7 +2394,7 @@ useEffect(() => {
                     emailAddress: text.toLowerCase(),
                   }));
                   setErrors(prev => ({ ...prev, emailAddress: null }));
-                })}
+                }, 241)}
                 keyboardType="email-address"
                 mandatory
                 editable={!verificationStatus.email}
@@ -2871,23 +2871,24 @@ useEffect(() => {
                   <CustomInput
                     placeholder={`Name of the Stockist ${index + 1}`}
                     value={stockist.name}
-                    onChangeText={text =>
-                      handleStockistChange(index, 'name', text)
-                    }
+                    onChangeText={createFilteredInputHandler('nameOfStockist', (text) =>
+                                       handleStockistChange(index, 'name', text), 40
+                                       )}
                   />
                   <CustomInput
                     placeholder={`Distributor Code`}
                     value={stockist.code}
-                    onChangeText={text =>
-                      handleStockistChange(index, 'code', text)
-                    }
+                    onChangeText={createFilteredInputHandler('distributorCode', (text) =>
+                                     handleStockistChange(index, 'code', text), 20
+                                     )}
                   />
                   <CustomInput
                     placeholder={`City`}
                     value={stockist.city}
-                    onChangeText={text =>
-                      handleStockistChange(index, 'city', text)
-                    }
+                 
+                                        onChangeText={createFilteredInputHandler('distributorCity', (text) =>
+                                     handleStockistChange(index, 'city', text), 40
+                                     )}
                   />
                 </View>
               ))}

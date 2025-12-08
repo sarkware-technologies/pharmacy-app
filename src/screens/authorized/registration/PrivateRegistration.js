@@ -989,7 +989,7 @@ const PrivateRegistrationForm = () => {
         requestData.mobile = formData.mobileNumber;
       } else if (field === 'email') {
         if (!formData.emailAddress ||
-        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress)) {
+      !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress)) {
           Toast.show({
             type: 'error',
             text1: 'Invalid Email',
@@ -2011,7 +2011,7 @@ const PrivateRegistrationForm = () => {
                 onChangeText={createFilteredInputHandler('registrationNumber', (text) => {
                   setFormData(prev => ({ ...prev, registrationNumber: text }));
                   setErrors(prev => ({ ...prev, registrationNumber: null }));
-                })}
+                }, 20)}
                 error={errors.registrationNumber}
                 autoCapitalize="characters"
                 mandatory={true}
@@ -2070,7 +2070,7 @@ const PrivateRegistrationForm = () => {
                 onChangeText={createFilteredInputHandler('clinicName', (text) => {
                   setFormData(prev => ({ ...prev, clinicName: text }));
                   setErrors(prev => ({ ...prev, clinicName: null }));
-                })}
+                }, 40)}
                 error={errors.clinicName}
                 mandatory={true}
               />
@@ -2079,17 +2079,17 @@ const PrivateRegistrationForm = () => {
                 placeholder="Enter short name"
                 value={formData.shortName}
                 onChangeText={createFilteredInputHandler('shortName', (text) =>
-                  setFormData(prev => ({ ...prev, shortName: text }))
+                  setFormData(prev => ({ ...prev, shortName: text })), 25
                 )}
               />
 
               <AddressInputWithLocation
                 placeholder="Address 1"
                 value={formData.address1}
-                onChangeText={text => {
-                  setFormData(prev => ({ ...prev, address1: text }));
-                  setErrors(prev => ({ ...prev, address1: null }));
-                }}
+              onChangeText={createFilteredInputHandler('address1', (text) => {
+                             setFormData(prev => ({ ...prev, address1: text }));
+                              setErrors(prev => ({ ...prev, address1: null }));
+                            }, 40)}
                 mandatory={true}
                 error={errors.address1}
                 onLocationSelect={async locationData => {
@@ -2138,7 +2138,7 @@ const PrivateRegistrationForm = () => {
                 placeholder="Address 2"
                 value={formData.address2}
                 onChangeText={createFilteredInputHandler('address2', (text) =>
-                  setFormData(prev => ({ ...prev, address2: text }))
+                  setFormData(prev => ({ ...prev, address2: text })), 40
                 )}
                 error={errors.address2}
                 mandatory={true}
@@ -2148,7 +2148,7 @@ const PrivateRegistrationForm = () => {
                 placeholder="Address 3"
                 value={formData.address3}
                 onChangeText={createFilteredInputHandler('address3', (text) =>
-                  setFormData(prev => ({ ...prev, address3: text }))
+                  setFormData(prev => ({ ...prev, address3: text })), 60
                 )}
                 error={errors.address3}
                 mandatory={true}
@@ -2158,7 +2158,7 @@ const PrivateRegistrationForm = () => {
                 placeholder="Address 4"
                 value={formData.address4}
                 onChangeText={createFilteredInputHandler('address4', (text) =>
-                  setFormData(prev => ({ ...prev, address4: text }))
+                  setFormData(prev => ({ ...prev, address4: text })), 60
                 )}
               />
 
@@ -2360,7 +2360,7 @@ const PrivateRegistrationForm = () => {
                     emailAddress: text.toLowerCase(),
                   }));
                   setErrors(prev => ({ ...prev, emailAddress: null }));
-                })}
+                }, 241)}
                 keyboardType="email-address"
                 mandatory
                 editable={!verificationStatus.email}
@@ -2887,7 +2887,7 @@ const PrivateRegistrationForm = () => {
                           i === index ? { ...s, name: text } : s,
                         ),
                       );
-                    })}
+                    }, 40)}
                   />
 
                   <CustomInput
@@ -2899,19 +2899,19 @@ const PrivateRegistrationForm = () => {
                           i === index ? { ...s, distributorCode: text } : s,
                         ),
                       );
-                    })}
+                    }, 20)}
                   />
 
                   <CustomInput
                     placeholder="City"
                     value={stockist.city}
-                    onChangeText={createFilteredInputHandler('city', (text) => {
+                    onChangeText={createFilteredInputHandler('distributorCity', (text) => {
                       setStockists(prev =>
                         prev.map((s, i) =>
                           i === index ? { ...s, city: text } : s,
                         ),
                       );
-                    })}
+                    }, 40)}
                   />
                 </View>
               ))}

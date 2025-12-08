@@ -393,7 +393,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
     if (
       field === 'email' &&
       (!pharmacyForm.emailAddress ||
-        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(pharmacyForm.emailAddress))
+         !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(pharmacyForm.emailAddress))
     ) {
       setPharmacyErrors(prev => ({
         ...prev,
@@ -1144,7 +1144,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                   if (pharmacyErrors.license20) {
                     setPharmacyErrors(prev => ({ ...prev, license20: null }));
                   }
-                })}
+                }, 50)}
                 mandatory={true}
                 error={pharmacyErrors.license20}
               />
@@ -1189,7 +1189,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                   if (pharmacyErrors.license21) {
                     setPharmacyErrors(prev => ({ ...prev, license21: null }));
                   }
-                })}
+                }, 50)}
                 mandatory={true}
                 error={pharmacyErrors.license21}
               />
@@ -1390,7 +1390,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                   if (pharmacyErrors.license20b) {
                     setPharmacyErrors(prev => ({ ...prev, license20b: null }));
                   }
-                })}
+                }, 50)}
                 mandatory={true}
                 error={pharmacyErrors.license20b}
               />
@@ -1435,7 +1435,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                   if (pharmacyErrors.license21b) {
                     setPharmacyErrors(prev => ({ ...prev, license21b: null }));
                   }
-                })}
+                }, 50)}
                 mandatory={true}
                 error={pharmacyErrors.license21b}
               />
@@ -1481,7 +1481,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               if (pharmacyErrors.pharmacyName) {
                 setPharmacyErrors(prev => ({ ...prev, pharmacyName: null }));
               }
-            })}
+            }, 40)}
             mandatory={true}
             error={pharmacyErrors.pharmacyName}
           />
@@ -1489,12 +1489,12 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="Enter OP, IP, Cathlab etc"
             value={pharmacyForm.ownerName}
-            onChangeText={createFilteredInputHandler('shortName', (text) => {
+            onChangeText={createFilteredInputHandler('opIpCathlab', (text) => {
               setPharmacyForm(prev => ({ ...prev, ownerName: text }));
               if (pharmacyErrors.ownerName) {
                 setPharmacyErrors(prev => ({ ...prev, ownerName: null }));
               }
-            })}
+            },30)}
             mandatory={false}
           />
 
@@ -1506,7 +1506,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               if (pharmacyErrors.address1) {
                 setPharmacyErrors(prev => ({ ...prev, address1: null }));
               }
-            })}
+            }, 40)}
             placeholder="Address 1 "
             error={pharmacyErrors.address1}
             mandatory={true}
@@ -1552,7 +1552,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="Address 2"
             value={pharmacyForm.address2}
-            onChangeText={createFilteredInputHandler('address2', (text) => setPharmacyForm(prev => ({ ...prev, address2: text })))}
+            onChangeText={createFilteredInputHandler('address2', (text) => setPharmacyForm(prev => ({ ...prev, address2: text })), 40)}
             mandatory
             error={pharmacyErrors.address2}
           />
@@ -1560,7 +1560,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="Address 3"
             value={pharmacyForm.address3}
-            onChangeText={createFilteredInputHandler('address3', (text) => setPharmacyForm(prev => ({ ...prev, address3: text })))}
+            onChangeText={createFilteredInputHandler('address3', (text) => setPharmacyForm(prev => ({ ...prev, address3: text })), 60)}
             mandatory
             error={pharmacyErrors.address3}
           />
@@ -1568,7 +1568,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="Address 4"
             value={pharmacyForm.address4}
-            onChangeText={createFilteredInputHandler('address4', (text) => setPharmacyForm(prev => ({ ...prev, address4: text })))}
+            onChangeText={createFilteredInputHandler('address4', (text) => setPharmacyForm(prev => ({ ...prev, address4: text })), 60)}
           />
 
           <CustomInput
@@ -1751,7 +1751,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               if (pharmacyErrors.emailAddress) {
                 setPharmacyErrors(prev => ({ ...prev, emailAddress: null, emailVerification: null }));
               }
-            })}
+            }, 241)}
             keyboardType="email-address"
             autoCapitalize="none"
             mandatory={true}
@@ -1926,17 +1926,17 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                     <CustomInput
                       placeholder="Name of the Stockist"
                       value={pharmacyForm.stockistName}
-                      onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, stockistName: text }))}
+                      onChangeText={createFilteredInputHandler('nameOfStockist', (text) => setPharmacyForm(prev => ({ ...prev, stockistName: text })), 40)}
                     />
                     <CustomInput
                       placeholder="Distributor Code"
                       value={pharmacyForm.stockistCode}
-                      onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, stockistCode: text }))}
+                        onChangeText={createFilteredInputHandler('distributorCode', (text) => setPharmacyForm(prev => ({ ...prev, stockistCode: text })), 20)}
                     />
                     <CustomInput
                       placeholder="City"
                       value={pharmacyForm.stockistCity}
-                      onChangeText={(text) => setPharmacyForm(prev => ({ ...prev, stockistCity: text }))}
+                         onChangeText={createFilteredInputHandler('distributorCity', (text) => setPharmacyForm(prev => ({ ...prev, stockistCity: text })), 40)}
                     /></>
 
            }

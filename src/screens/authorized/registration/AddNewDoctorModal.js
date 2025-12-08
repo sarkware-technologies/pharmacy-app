@@ -369,7 +369,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
     if (
       field === 'email' &&
       (!doctorForm.emailAddress ||
-        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(doctorForm.emailAddress))
+         !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(doctorForm.emailAddress))
     ) {
       setDoctorErrors(prev => ({
         ...prev,
@@ -1001,7 +1001,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
               if (doctorErrors.clinicRegistrationNumber) {
                 setDoctorErrors(prev => ({ ...prev, clinicRegistrationNumber: null }));
               }
-            })}
+            }, 20)}
             mandatory={true}
             error={doctorErrors.clinicRegistrationNumber}
           />
@@ -1047,7 +1047,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
               if (doctorErrors.practiceLicenseNumber) {
                 setDoctorErrors(prev => ({ ...prev, practiceLicenseNumber: null }));
               }
-            })}
+            }, 20)}
             mandatory={true}
             error={doctorErrors.practiceLicenseNumber}
           />
@@ -1113,7 +1113,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
               if (doctorErrors.doctorName) {
                 setDoctorErrors(prev => ({ ...prev, doctorName: null }));
               }
-            })}
+            }, 40)}
             mandatory={true}
             error={doctorErrors.doctorName}
           />
@@ -1130,7 +1130,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
               if (doctorErrors.speciality) {
                 setDoctorErrors(prev => ({ ...prev, speciality: null }));
               }
-            })}
+            }, 40)}
             mandatory={true}
             error={doctorErrors.speciality}
           />
@@ -1143,7 +1143,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
             value={doctorForm.clinicName}
             onChangeText={createFilteredInputHandler('clinicName', (text) => {
               setDoctorForm(prev => ({ ...prev, clinicName: text }));
-            })}
+            }, 40)}
           />
 
           <AddressInputWithLocation
@@ -1154,7 +1154,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
               if (doctorErrors.address1) {
                 setDoctorErrors(prev => ({ ...prev, address1: null }));
               }
-            })}
+            }, 40)}
             placeholder="Address 1 "
             error={doctorErrors.address1}
             mandatory={true}
@@ -1202,7 +1202,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Address 2"
             value={doctorForm.address2}
-            onChangeText={createFilteredInputHandler('address2', (text) => setDoctorForm(prev => ({ ...prev, address2: text })))}
+            onChangeText={createFilteredInputHandler('address2', (text) => setDoctorForm(prev => ({ ...prev, address2: text })), 40)}
             mandatory={true}
             error={doctorErrors.address2}
           />
@@ -1210,7 +1210,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Address 3"
             value={doctorForm.address3}
-            onChangeText={createFilteredInputHandler('address3', (text) => setDoctorForm(prev => ({ ...prev, address3: text })))}
+            onChangeText={createFilteredInputHandler('address3', (text) => setDoctorForm(prev => ({ ...prev, address3: text })), 60)}
             mandatory={true}
             error={doctorErrors.address3}
 
@@ -1219,7 +1219,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <CustomInput
             placeholder="Address 4"
             value={doctorForm.address4}
-            onChangeText={createFilteredInputHandler('address4', (text) => setDoctorForm(prev => ({ ...prev, address4: text })))}
+            onChangeText={createFilteredInputHandler('address4', (text) => setDoctorForm(prev => ({ ...prev, address4: text })), 60)}
           />
 
 
@@ -1399,7 +1399,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
               if (doctorErrors.emailAddress) {
                 setDoctorErrors(prev => ({ ...prev, emailAddress: null, emailVerification: null }));
               }
-            })}
+            }, 241)}
             keyboardType="email-address"
             autoCapitalize="none"
             editable={!verificationStatus.email}

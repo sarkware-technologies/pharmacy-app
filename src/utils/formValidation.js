@@ -8,7 +8,7 @@
 
  // Validation rules based on JSON schema
 const VALIDATION_RULES = {
-  hospitalRegistrationNo: {
+  registrationNumber: {
     type: ['string', 'null'],
     maxLength: 20,
     pattern: /^[A-Za-z0-9]+$/,
@@ -26,6 +26,7 @@ const VALIDATION_RULES = {
     pattern: /^[A-Za-z0-9]+$/,
     required: false,
   },
+
   drugLicenseNo: {
     type: ['string', 'null'],
     maxLength: 50,
@@ -172,11 +173,20 @@ const VALIDATION_RULES = {
     pattern: /^[A-Za-z0-9]+$/,
     required: false,
   },
+
+   distributorCity: {
+    type: ['string', 'null'],
+    maxLength: 40,
+    pattern: /^[A-Za-z ]+$/,
+    required: false,
+  },
 };
 
 // Email validation regex
-const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+// const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
+const EMAIL_REGEX =
+/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 // PAN validation regex (standard format: ABCDE1234F)
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 
@@ -217,6 +227,7 @@ const getFieldLabel = (fieldName) => {
     gstNo: 'GST number',
     nameOfStockist: 'Stockist name',
     distributorCode: 'Distributor code',
+    distributorCity:"Distributor City"
   };
 
   return labels[fieldName] || fieldName;
@@ -425,9 +436,16 @@ export const filterInputByPattern = (schemaFieldName, text, maxLength = null) =>
   const maxLen = maxLength || rule.maxLength;
 
   // For email, don't filter characters aggressively; just enforce max length
-  if (rule.format === 'email') {
-    return maxLen ? text.slice(0, maxLen) : text;
+if (rule.format === 'email') {
+const allowed = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~@-]+$/;
+  let filtered = '';
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (allowed.test(ch)) filtered += ch;
+    if (maxLen && filtered.length >= maxLen) break;
   }
+  return filtered;
+}
 
   if (rule.pattern) {
     let filtered = '';
@@ -449,6 +467,7 @@ export const FIELD_NAME_MAPPING = {
   // Pharmacy fields
   pharmacyName: 'nameOfPharmacy',
   shortName: 'shortName',
+
 
   // Hospital fields
   hospitalName: 'hospitalName',

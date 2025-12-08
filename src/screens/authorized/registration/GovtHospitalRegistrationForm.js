@@ -718,7 +718,7 @@ const GovtHospitalRegistrationForm = () => {
     if (
       field === 'email' &&
       (!formData.emailAddress ||
-        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
+        !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
     ) {
       setErrors(prev => ({
         ...prev,
@@ -1555,10 +1555,10 @@ const GovtHospitalRegistrationForm = () => {
           placeholder="Hospital Code "
           value={formData.registrationNumber}
 
-          onChangeText={createFilteredInputHandler('registrationNumber', (text) => {
+          onChangeText={createFilteredInputHandler('hospitalCode', (text) => {
             setFormData(prev => ({ ...prev, registrationNumber: text }))
             setErrors(prev => ({ ...prev, registrationNumber: null }));
-          })}
+          }, 20)}
           error={errors.registrationNumber}
           autoCapitalize="characters"
           mandatory={false}
@@ -1570,7 +1570,7 @@ const GovtHospitalRegistrationForm = () => {
           onChangeText={createFilteredInputHandler('nin', (text) => {
             setFormData(prev => ({ ...prev, nin: text }));
             setErrors(prev => ({ ...prev, nin: null }));
-          })}
+          }, 20)}
           error={errors.nin}
           autoCapitalize="characters"
           mandatory={false}
@@ -1626,7 +1626,7 @@ const GovtHospitalRegistrationForm = () => {
           onChangeText={createFilteredInputHandler('hospitalName', (text) => {
             setFormData(prev => ({ ...prev, hospitalName: text }))
             setErrors(prev => ({ ...prev, hospitalName: null }))
-          })}
+          }, 40)}
           error={errors.hospitalName}
           mandatory={true}
         />
@@ -1634,16 +1634,16 @@ const GovtHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Short name"
           value={formData.shortName}
-          onChangeText={createFilteredInputHandler('shortName', (text) => setFormData(prev => ({ ...prev, shortName: text })))}
+          onChangeText={createFilteredInputHandler('shortName', (text) => setFormData(prev => ({ ...prev, shortName: text })), 25)}
         />
 
         <AddressInputWithLocation
           placeholder="Address 1"
           value={formData.address1}
           onChangeText={createFilteredInputHandler('address1', (text) => {
-            setFormData(prev => ({ ...prev, address1: text }));
-            setErrors(prev => ({ ...prev, address1: null }));
-          })}
+                           setFormData(prev => ({ ...prev, address1: text }));
+                            setErrors(prev => ({ ...prev, address1: null }));
+                          }, 40)}
           mandatory={true}
           error={errors.address1}
           onLocationSelect={async (locationData) => {
@@ -1680,7 +1680,7 @@ const GovtHospitalRegistrationForm = () => {
           onChangeText={createFilteredInputHandler('address2', (text) => {
             setFormData(prev => ({ ...prev, address2: text }));
             setErrors(prev => ({ ...prev, address2: null }));
-          })}
+          }, 40)}
           error={errors.address2}
           mandatory={true}
         />
@@ -1691,7 +1691,7 @@ const GovtHospitalRegistrationForm = () => {
           onChangeText={createFilteredInputHandler('address3', (text) => {
             setFormData(prev => ({ ...prev, address3: text }));
             setErrors(prev => ({ ...prev, address3: null }));
-          })}
+          }, 60)}
           error={errors.address3}
           mandatory={true}
         />
@@ -1699,7 +1699,7 @@ const GovtHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Address 4"
           value={formData.address4}
-          onChangeText={createFilteredInputHandler('address4', (text) => setFormData(prev => ({ ...prev, address4: text })))}
+          onChangeText={createFilteredInputHandler('address4', (text) => setFormData(prev => ({ ...prev, address4: text })), 60)}
         />
 
         <CustomInput
@@ -1875,7 +1875,7 @@ const GovtHospitalRegistrationForm = () => {
           onChangeText={createFilteredInputHandler('emailAddress', (text) => {
             setFormData(prev => ({ ...prev, emailAddress: text.toLowerCase() }));
             setErrors(prev => ({ ...prev, emailAddress: null }));
-          })}
+          }, 241)}
           keyboardType="email-address"
           mandatory
           editable={!verificationStatus.email}
@@ -2443,7 +2443,7 @@ const GovtHospitalRegistrationForm = () => {
               setStockists(prev => prev.map((s, i) =>
                 i === index ? { ...s, name: text } : s
               ));
-            })}
+            }, 40)}
           />
 
           <CustomInput
@@ -2453,17 +2453,17 @@ const GovtHospitalRegistrationForm = () => {
               setStockists(prev => prev.map((s, i) =>
                 i === index ? { ...s, distributorCode: text } : s
               ));
-            })}
+            }, 20)}
           />
 
           <CustomInput
             placeholder="City"
             value={stockist.city}
-            onChangeText={createFilteredInputHandler('city', (text) => {
+            onChangeText={createFilteredInputHandler('distributorCity', (text) => {
               setStockists(prev => prev.map((s, i) =>
                 i === index ? { ...s, city: text } : s
               ));
-            })}
+            }, 40)}
           />
         </View>
       ))}

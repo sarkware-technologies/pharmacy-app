@@ -834,7 +834,7 @@ const PharmacyWholesalerRetailerForm = () => {
     if (
       field === 'email' &&
       (!formData.emailAddress ||
-        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
+        !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
     ) {
       setErrors(prev => ({
         ...prev,
@@ -1962,11 +1962,11 @@ const handleLicenseOcrData = async (ocrData) => {
     // Apply filtering based on field type
     let filteredValue = value;
     if (field === 'name') {
-      filteredValue = createFilteredInputHandler('nameOfStockist', null)(value);
+      filteredValue = createFilteredInputHandler('nameOfStockist', null, 40)(value);
     } else if (field === 'code') {
-      filteredValue = createFilteredInputHandler('distributorCode', null)(value);
+      filteredValue = createFilteredInputHandler('distributorCode', null, 20)(value);
     } else if (field === 'city') {
-      filteredValue = createFilteredInputHandler('city', null)(value);
+      filteredValue = createFilteredInputHandler('distributorCity', null, 40)(value);
     }
     
     setFormData(prev => ({
@@ -2067,7 +2067,7 @@ const handleLicenseOcrData = async (ocrData) => {
                 onChangeText={createFilteredInputHandler('license20', (text) => {
                   setFormData(prev => ({ ...prev, license20: text }));
                   setErrors(prev => ({ ...prev, license20: null }));
-                })}
+                }, 50)}
                 mandatory={true}
                 error={errors.license20}
               />
@@ -2114,7 +2114,7 @@ const handleLicenseOcrData = async (ocrData) => {
                 onChangeText={createFilteredInputHandler('license21', (text) => {
                   setFormData(prev => ({ ...prev, license21: text }));
                   setErrors(prev => ({ ...prev, license21: null }));
-                })}
+                }, 50)}
                 mandatory={true}
                 error={errors.license21}
               />
@@ -2160,7 +2160,7 @@ const handleLicenseOcrData = async (ocrData) => {
                 onChangeText={createFilteredInputHandler('license20b', (text) => {
                   setFormData(prev => ({ ...prev, license20b: text }));
                   setErrors(prev => ({ ...prev, license20b: null }));
-                })}
+                }, 50)}
                 mandatory={true}
                 error={errors.license20b}
               />
@@ -2210,7 +2210,7 @@ const handleLicenseOcrData = async (ocrData) => {
                 onChangeText={createFilteredInputHandler('license21b', (text) => {
                   setFormData(prev => ({ ...prev, license21b: text }));
                   setErrors(prev => ({ ...prev, license21b: null }));
-                })}
+                }, 50)}
                 mandatory={true}
                 error={errors.license21b}
               />
@@ -2261,7 +2261,7 @@ const handleLicenseOcrData = async (ocrData) => {
                 onChangeText={createFilteredInputHandler('pharmacyName', (text) => {
                   setFormData(prev => ({ ...prev, pharmacyName: text }));
                   setErrors(prev => ({ ...prev, pharmacyName: null }));
-                })}
+                }, 40)}
                 mandatory={true}
                 error={errors.pharmacyName}
               />
@@ -2269,18 +2269,19 @@ const handleLicenseOcrData = async (ocrData) => {
               <CustomInput
                 placeholder="Enter OP, IP, Cathlab etc"
                 value={formData.shortName}
-                onChangeText={createFilteredInputHandler('shortName', (text) =>
-                  setFormData(prev => ({ ...prev, shortName: text }))
+                onChangeText={createFilteredInputHandler('opIpCathlab', (text) =>
+                  setFormData(prev => ({ ...prev, shortName: text })), 30
                 )}
               />
 
               <AddressInputWithLocation
                 placeholder="Address 1"
                 value={formData.address1}
-                onChangeText={text => {
-                  setFormData(prev => ({ ...prev, address1: text }));
-                  setErrors(prev => ({ ...prev, address1: null }));
-                }}
+                 onChangeText={createFilteredInputHandler('address1', (text) => {
+                                setFormData(prev => ({ ...prev, address1: text }));
+                                 setErrors(prev => ({ ...prev, address1: null }));
+                               }, 40)}
+               
                 mandatory={true}
                 error={errors.address1}
                 onLocationSelect={async locationData => {
@@ -2331,7 +2332,7 @@ const handleLicenseOcrData = async (ocrData) => {
                 onChangeText={createFilteredInputHandler('address2', (text) => {
                   setFormData(prev => ({ ...prev, address2: text }));
                   setErrors(prev => ({ ...prev, address2: null }));
-                })}
+                }, 40)}
                 mandatory={true}
                 error={errors.address2}
               />
@@ -2342,7 +2343,7 @@ const handleLicenseOcrData = async (ocrData) => {
                 onChangeText={createFilteredInputHandler('address3', (text) => {
                   setFormData(prev => ({ ...prev, address3: text }));
                   setErrors(prev => ({ ...prev, address3: null }));
-                })}
+                }, 60)}
                 mandatory={true}
                 error={errors.address3}
               />
@@ -2351,7 +2352,7 @@ const handleLicenseOcrData = async (ocrData) => {
                 placeholder="Address 4"
                 value={formData.address4}
                 onChangeText={createFilteredInputHandler('address4', (text) =>
-                  setFormData(prev => ({ ...prev, address4: text }))
+                  setFormData(prev => ({ ...prev, address4: text })), 60
                 )}
               />
 
@@ -2549,7 +2550,7 @@ const handleLicenseOcrData = async (ocrData) => {
                     emailAddress: text.toLowerCase(),
                   }));
                   setErrors(prev => ({ ...prev, emailAddress: null }));
-                })}
+                }, 241)}
                 keyboardType="email-address"
                 mandatory
                 editable={!verificationStatus.email}

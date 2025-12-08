@@ -658,7 +658,7 @@ const PharmacyWholesalerForm = () => {
     if (
       field === 'email' &&
       (!formData.emailAddress ||
-        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
+        !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress))
     ) {
       setErrors(prev => ({
         ...prev,
@@ -1154,7 +1154,7 @@ const PharmacyWholesalerForm = () => {
     const address1Error = validateField('address1', formData.address1, true, 'Address 1 is required');
     if (address1Error) newErrors.address1 = address1Error;
 
-    const address2Error = validateField('address2', formData.address2, true, 'Address 2 is required');
+    const address2Error = validateField('address2', formData.address2, true, 'Address 2 is required with correct length');
     if (address2Error) newErrors.address2 = address2Error;
 
     const address3Error = validateField('address3', formData.address3, true, 'Address 3 is required');
@@ -1651,7 +1651,7 @@ const PharmacyWholesalerForm = () => {
                 onChangeText={createFilteredInputHandler('license20b', (text) => {
                   setFormData(prev => ({ ...prev, license20b: text }));
                   setErrors(prev => ({ ...prev, license20b: null }));
-                })}
+                }, 50)}
                 mandatory={true}
                 error={errors.license20b}
               />
@@ -1699,7 +1699,7 @@ const PharmacyWholesalerForm = () => {
                 onChangeText={createFilteredInputHandler('license21b', (text) => {
                   setFormData(prev => ({ ...prev, license21b: text }));
                   setErrors(prev => ({ ...prev, license21b: null }));
-                })}
+                }, 50)}
                 mandatory={true}
                 error={errors.license21b}
               />
@@ -1751,7 +1751,7 @@ const PharmacyWholesalerForm = () => {
                 onChangeText={createFilteredInputHandler('pharmacyName', (text) => {
                   setFormData(prev => ({ ...prev, pharmacyName: text }));
                   setErrors(prev => ({ ...prev, pharmacyName: null }));
-                })}
+                }, 40)}
                 mandatory={true}
                 error={errors.pharmacyName}
               />
@@ -1759,18 +1759,22 @@ const PharmacyWholesalerForm = () => {
               <CustomInput
                 placeholder="Enter OP, IP, Cathlab etc"
                 value={formData.shortName}
-                onChangeText={createFilteredInputHandler('shortName', (text) =>
-                  setFormData(prev => ({ ...prev, shortName: text }))
+                onChangeText={createFilteredInputHandler('opIpCathlab', (text) =>
+                  setFormData(prev => ({ ...prev, shortName: text })), 30
                 )}
               />
 
               <AddressInputWithLocation
                 placeholder="Address 1"
                 value={formData.address1}
-                onChangeText={text => {
-                  setFormData(prev => ({ ...prev, address1: text }));
+            
+
+                    onChangeText={createFilteredInputHandler('address1', (text) => {
+                 setFormData(prev => ({ ...prev, address1: text }));
                   setErrors(prev => ({ ...prev, address1: null }));
-                }}
+                }, 40)}
+
+
                 mandatory={true}
                 error={errors.address1}
                 onLocationSelect={async (locationData) => {
@@ -1818,7 +1822,7 @@ const PharmacyWholesalerForm = () => {
                 onChangeText={createFilteredInputHandler('address2', (text) => {
                   setFormData(prev => ({ ...prev, address2: text }));
                   setErrors(prev => ({ ...prev, address2: null }));
-                })}
+                }, 40)}
                 mandatory={true}
                 error={errors.address2}
               />
@@ -1829,7 +1833,7 @@ const PharmacyWholesalerForm = () => {
                 onChangeText={createFilteredInputHandler('address3', (text) => {
                   setFormData(prev => ({ ...prev, address3: text }));
                   setErrors(prev => ({ ...prev, address3: null }));
-                })}
+                }, 60)}
                 mandatory={true}
                 error={errors.address3}
               />
@@ -1838,7 +1842,7 @@ const PharmacyWholesalerForm = () => {
                 placeholder="Address 4"
                 value={formData.address4}
                 onChangeText={createFilteredInputHandler('address4', (text) =>
-                  setFormData(prev => ({ ...prev, address4: text }))
+                  setFormData(prev => ({ ...prev, address4: text })), 60
                 )}
               />
 
@@ -2022,7 +2026,7 @@ const PharmacyWholesalerForm = () => {
                     emailAddress: text.toLowerCase(),
                   }));
                   setErrors(prev => ({ ...prev, emailAddress: null }));
-                })}
+                }, 241)}
                 keyboardType="email-address"
                 mandatory
                 editable={!verificationStatus.email}
@@ -2492,23 +2496,28 @@ const PharmacyWholesalerForm = () => {
                   <CustomInput
                     placeholder={`Name of the Stockist ${index + 1}`}
                     value={stockist.name}
-                    onChangeText={text =>
-                      handleStockistChange(index, 'name', text)
-                    }
+                    onChangeText={createFilteredInputHandler('nameOfStockist', (text) =>
+                    handleStockistChange(index, 'name', text), 40
+                    )}
+
+                    
                   />
                   <CustomInput
                     placeholder={`Distributor Code`}
                     value={stockist.code}
-                    onChangeText={text =>
-                      handleStockistChange(index, 'code', text)
-                    }
+                
+
+                     onChangeText={createFilteredInputHandler('distributorCode', (text) =>
+                    handleStockistChange(index, 'code', text), 20
+                    )}
                   />
                   <CustomInput
                     placeholder={`City`}
                     value={stockist.city}
-                    onChangeText={text =>
-                      handleStockistChange(index, 'city', text)
-                    }
+                  
+                       onChangeText={createFilteredInputHandler('distributorCity', (text) =>
+                    handleStockistChange(index, 'city', text), 40
+                    )}
                   />
                 </View>
               ))}

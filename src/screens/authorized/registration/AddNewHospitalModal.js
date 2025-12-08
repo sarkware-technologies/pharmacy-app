@@ -275,7 +275,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     if (
       field === 'email' &&
       (!hospitalForm.emailAddress ||
-        !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(hospitalForm.emailAddress))
+         !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(hospitalForm.emailAddress))
     ) {
       setHospitalErrors(prev => ({
         ...prev,
@@ -952,12 +952,14 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Hospital registration number"
             value={hospitalForm.registrationNumber}
-            onChangeText={(text) => {
+         
+
+            onChangeText={createFilteredInputHandler('registrationNumber', (text) => {
               setHospitalForm(prev => ({ ...prev, registrationNumber: text }));
               if (hospitalErrors.registrationNumber) {
                 setHospitalErrors(prev => ({ ...prev, registrationNumber: null }));
               }
-            }}
+            }, 40)}
             mandatory={true}
             error={hospitalErrors.registrationNumber}
           />
@@ -1004,7 +1006,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
               if (hospitalErrors.hospitalName) {
                 setHospitalErrors(prev => ({ ...prev, hospitalName: null }));
               }
-            })}
+            }, 40)}
             mandatory={true}
             error={hospitalErrors.hospitalName}
           />
@@ -1012,7 +1014,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Enter Short name"
             value={hospitalForm.shortName}
-            onChangeText={createFilteredInputHandler('shortName', (text) => setHospitalForm(prev => ({ ...prev, shortName: text })))}
+            onChangeText={createFilteredInputHandler('shortName', (text) => setHospitalForm(prev => ({ ...prev, shortName: text })), 25)}
           />
 
           <AddressInputWithLocation
@@ -1023,7 +1025,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
               if (hospitalErrors.address1) {
                 setHospitalErrors(prev => ({ ...prev, address1: null }));
               }
-            })}
+            }, 40)}
             placeholder="Address 1 "
             error={hospitalErrors.address1}
             mandatory={true}
@@ -1069,7 +1071,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Address 2"
             value={hospitalForm.address2}
-            onChangeText={createFilteredInputHandler('address2', (text) => setHospitalForm(prev => ({ ...prev, address2: text })))}
+            onChangeText={createFilteredInputHandler('address2', (text) => setHospitalForm(prev => ({ ...prev, address2: text })), 40)}
             mandatory={true}
             error={hospitalErrors.address2}
           />
@@ -1077,7 +1079,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Address 3"
             value={hospitalForm.address3}
-            onChangeText={createFilteredInputHandler('address3', (text) => setHospitalForm(prev => ({ ...prev, address3: text })))}
+            onChangeText={createFilteredInputHandler('address3', (text) => setHospitalForm(prev => ({ ...prev, address3: text })), 60)}
             mandatory={true}
             error={hospitalErrors.address3}
           />
@@ -1085,7 +1087,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Address 4"
             value={hospitalForm.address4}
-            onChangeText={createFilteredInputHandler('address4', (text) => setHospitalForm(prev => ({ ...prev, address4: text })))}
+            onChangeText={createFilteredInputHandler('address4', (text) => setHospitalForm(prev => ({ ...prev, address4: text })), 60)}
           />
 
           <CustomInput
@@ -1261,7 +1263,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
               if (hospitalErrors.emailAddress) {
                 setHospitalErrors(prev => ({ ...prev, emailAddress: null, emailVerification: null }));
               }
-            })}
+            }, 241)}
             keyboardType="email-address"
             autoCapitalize="none"
             editable={!verificationStatus.email}
@@ -1415,17 +1417,17 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Name of the Stockist"
             value={hospitalForm.stockistName}
-            onChangeText={createFilteredInputHandler('nameOfStockist', (text) => setHospitalForm(prev => ({ ...prev, stockistName: text })))}
+            onChangeText={createFilteredInputHandler('nameOfStockist', (text) => setHospitalForm(prev => ({ ...prev, stockistName: text })), 40)}
           />
           <CustomInput
             placeholder="Distributor Code"
             value={hospitalForm.stockistCode}
-            onChangeText={createFilteredInputHandler('distributorCode', (text) => setHospitalForm(prev => ({ ...prev, stockistCode: text })))}
+            onChangeText={createFilteredInputHandler('distributorCode', (text) => setHospitalForm(prev => ({ ...prev, stockistCode: text })), 20)}
           />
           <CustomInput
             placeholder="City"
             value={hospitalForm.stockistCity}
-            onChangeText={createFilteredInputHandler('city', (text) => setHospitalForm(prev => ({ ...prev, stockistCity: text })))}
+            onChangeText={createFilteredInputHandler('distributorCity', (text) => setHospitalForm(prev => ({ ...prev, stockistCity: text })), 40)}
           />
 
           {/* Action Buttons */}
