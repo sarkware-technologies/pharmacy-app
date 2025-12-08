@@ -1542,7 +1542,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
             maxLength={15}
             autoCapitalize="characters"
             value={doctorForm.gstNumber}
-            onChangeText={createFilteredInputHandler('gstNumber', (text) => {
+            onChangeText={createFilteredInputHandler('panNo', (text) => {
               const upperText = text.toUpperCase();
               setDoctorForm(prev => ({ ...prev, gstNumber: upperText }));
               if (doctorErrors.gstNumber) {

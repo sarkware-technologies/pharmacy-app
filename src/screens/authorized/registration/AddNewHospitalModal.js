@@ -1395,7 +1395,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             maxLength={15}
             autoCapitalize="characters"
             value={hospitalForm.gstNumber}
-            onChangeText={createFilteredInputHandler('gstNumber', (text) => {
+            onChangeText={createFilteredInputHandler('panNo', (text) => {
               const upperText = text.toUpperCase();
               setHospitalForm(prev => ({ ...prev, gstNumber: upperText }));
               if (hospitalErrors.gstNumber) {

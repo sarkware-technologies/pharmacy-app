@@ -1154,7 +1154,7 @@ const PharmacyWholesalerForm = () => {
     const address1Error = validateField('address1', formData.address1, true, 'Address 1 is required');
     if (address1Error) newErrors.address1 = address1Error;
 
-    const address2Error = validateField('address2', formData.address2, true, 'Address 2 is required with correct length');
+    const address2Error = validateField('address2', formData.address2, true, 'Address 2 is required');
     if (address2Error) newErrors.address2 = address2Error;
 
     const address3Error = validateField('address3', formData.address3, true, 'Address 3 is required');
@@ -2210,7 +2210,7 @@ const PharmacyWholesalerForm = () => {
                   <CustomInput
                     placeholder="GST number"
                     value={formData.gstNumber}
-                    onChangeText={createFilteredInputHandler('gstNumber', (text) => {
+                    onChangeText={createFilteredInputHandler('panNo', (text) => {
                       const upperText = text.toUpperCase();
                       setFormData(prev => ({ ...prev, gstNumber: upperText }));
                       setErrors(prev => ({ ...prev, gstNumber: null }));

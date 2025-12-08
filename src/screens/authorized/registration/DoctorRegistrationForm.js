@@ -2342,7 +2342,8 @@ const DoctorRegistrationForm = () => {
                   <CustomInput
                     placeholder="GST number"
                     value={formData.gstNumber}
-                    onChangeText={createFilteredInputHandler('gstNumber', (text) => {
+                    //
+                    onChangeText={createFilteredInputHandler('panNo', (text) => {
                       const upperText = text.toUpperCase();
                       setFormData(prev => ({ ...prev, gstNumber: upperText }));
                       setErrors(prev => ({ ...prev, gstNumber: null }));

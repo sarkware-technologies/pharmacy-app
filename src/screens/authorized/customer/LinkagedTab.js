@@ -2759,11 +2759,15 @@ export const LinkagedTab = ({
         </TouchableOpacity> */}
 
         {/* Content based on active sub-tab */}
+
+         <ScrollView
+      style={{ flex: 1 }}
+    >
         {activeSubTab === 'distributors' && renderDistributorsTab()}
         {activeSubTab === 'divisions' && renderDivisionsTab()}
         {activeSubTab === 'field' && renderFieldTab()}
         {activeSubTab === 'hierarchy' && renderCustomerHierarchyTab()}
-
+  </ScrollView>
         {/* Modals */}
         <DivisionSelectionModal />
 
@@ -2823,7 +2827,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   subTab: {
-    flex: 1,
+    // flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

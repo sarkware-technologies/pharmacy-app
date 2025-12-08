@@ -1891,7 +1891,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="GST number"
             value={pharmacyForm.gstNumber}
-            onChangeText={createFilteredInputHandler('gstNumber', (text) => {
+            onChangeText={createFilteredInputHandler('panNo', (text) => {
               const upperText = text.toUpperCase();
               setPharmacyForm(prev => ({ ...prev, gstNumber: upperText }));
               if (pharmacyErrors.gstNumber) {

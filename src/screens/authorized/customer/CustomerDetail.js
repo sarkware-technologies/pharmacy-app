@@ -32,7 +32,7 @@ import Download from '../../../components/icons/Download';
 import AppText from "../../../components/AppText"
 
 import { Link } from '@react-navigation/native';
-import RejectCustomerModal from '../../../components/modals/RejectCustomerModal'; 
+import RejectCustomerModal from '../../../components/modals/RejectCustomerModal';
 import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModal';
 
 import CloseCircle from '../../../components/icons/CloseCircle';
@@ -44,22 +44,23 @@ const { width } = Dimensions.get('window');
 const CustomerDetail = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { customer } = route.params;
-  
+
   const [activeTab, setActiveTab] = useState('details');
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  
+  const [customerGroups, setCustomerGroups] = useState([]);
+
   // Get customer data from Redux
   const { selectedCustomer, detailsLoading, detailsError } = useSelector(
     (state) => state.customer
   );
-  
+
   // Get logged in user
   const { loggedInUser } = useSelector((state) => state.auth);
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -71,7 +72,7 @@ const CustomerDetail = ({ navigation, route }) => {
     const customerId = customer?.stgCustomerId || customer?.customerId;
     // Set isStaging=false only for NOT-ONBOARDED status, true for PENDING
     const isStaging = customer?.statusName === 'NOT-ONBOARDED' ? false : (customer?.statusName === 'PENDING' ? true : false);
-    
+
     if (customerId) {
       console.log('Fetching customer details for:', { customerId, isStaging });
       // Save customerId to Redux for use in LinkagedTab
@@ -81,17 +82,33 @@ const CustomerDetail = ({ navigation, route }) => {
         isStaging
       }));
     }
-    
+
     // Cleanup: clear selected customer when component unmounts or customer changes
     return () => {
       dispatch(clearSelectedCustomer());
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer?.stgCustomerId, customer?.customerId, dispatch]);
 
   console.log('CustomerDetail - selectedCustomer:', selectedCustomer);
   console.log('CustomerDetail - detailsLoading:', detailsLoading);
   console.log('CustomerDetail - detailsError:', detailsError);
+
+
+
+   const loadCustomerGroups = async () => {
+      try {
+        const groupsResponse = await customerAPI.getCustomerGroups();
+        if (groupsResponse.success && groupsResponse.data) {
+          console.log('Customer groups:', groupsResponse.data);
+          setCustomerGroups(groupsResponse.data || []);
+        }
+      } catch (error) {
+        console.error('Error loading customer groups:', error);
+      }
+    };
+
+    
 
   // Helper function to determine required license fields based on registration type
   const getRequiredLicenseFields = (typeId, categoryId) => {
@@ -144,58 +161,58 @@ const CustomerDetail = ({ navigation, route }) => {
   // Map license data from API to display format
   const mapLicenseData = () => {
     if (!selectedCustomer?.licenceDetails?.licence) return [];
-    
+
     return requiredLicenseFields.map(field => {
       const license = selectedCustomer.licenceDetails.licence.find(
         lic => lic.licenceTypeId === field.licenseTypeId
       );
-      
+
       // Find corresponding document by matching docTypeId (from license) or doctypeName
       const document = selectedCustomer.docType?.find(
         doc => {
           // First, try to match using the docTypeId from the license object (most accurate)
           if (license?.docTypeId) {
-            const licenseDocTypeId = typeof license.docTypeId === 'string' 
-              ? parseInt(license.docTypeId, 10) 
+            const licenseDocTypeId = typeof license.docTypeId === 'string'
+              ? parseInt(license.docTypeId, 10)
               : license.docTypeId;
-            const docTypeId = typeof doc.docTypeId === 'string' 
-              ? parseInt(doc.docTypeId, 10) 
+            const docTypeId = typeof doc.docTypeId === 'string'
+              ? parseInt(doc.docTypeId, 10)
               : (doc.docTypeId || (typeof doc.doctypeId === 'string' ? parseInt(doc.doctypeId, 10) : doc.doctypeId));
-            
+
             if (licenseDocTypeId === docTypeId) {
               return true;
             }
           }
-          
+
           // Match by docTypeId from field definition
           if (doc.docTypeId !== undefined) {
-            const docTypeId = typeof doc.docTypeId === 'string' 
-              ? parseInt(doc.docTypeId, 10) 
+            const docTypeId = typeof doc.docTypeId === 'string'
+              ? parseInt(doc.docTypeId, 10)
               : (doc.docTypeId || (typeof doc.doctypeId === 'string' ? parseInt(doc.doctypeId, 10) : doc.doctypeId));
             if (field.docTypeIds?.includes(docTypeId)) {
               return true;
             }
           }
-          
+
           // Also check doctypeId (alternative field name)
           if (doc.doctypeId !== undefined) {
-            const doctypeId = typeof doc.doctypeId === 'string' 
-              ? parseInt(doc.doctypeId, 10) 
+            const doctypeId = typeof doc.doctypeId === 'string'
+              ? parseInt(doc.doctypeId, 10)
               : doc.doctypeId;
             if (field.docTypeIds?.includes(doctypeId)) {
               return true;
             }
           }
-          
+
           // Match by doctypeName as fallback
           if (doc.doctypeName) {
             const docNameUpper = doc.doctypeName.toUpperCase();
-            return field.docTypeNames?.some(name => 
-              docNameUpper.includes(name.toUpperCase()) || 
+            return field.docTypeNames?.some(name =>
+              docNameUpper.includes(name.toUpperCase()) ||
               name.toUpperCase().includes(docNameUpper)
             );
           }
-          
+
           return false;
         }
       );
@@ -203,7 +220,7 @@ const CustomerDetail = ({ navigation, route }) => {
       return {
         label: field.label,
         licenseNumber: license?.licenceNo || '',
-        expiry: license?.licenceValidUpto 
+        expiry: license?.licenceValidUpto
           ? new Date(license.licenceValidUpto).toLocaleDateString('en-GB').replace(/\//g, '-')
           : '',
         document: document || null,
@@ -212,6 +229,9 @@ const CustomerDetail = ({ navigation, route }) => {
   };
 
   const licenseData = mapLicenseData();
+
+  console.log(selectedCustomer);
+
 
   // Format customer data from API response to match the UI structure
   const customerData = selectedCustomer ? {
@@ -231,12 +251,12 @@ const CustomerDetail = ({ navigation, route }) => {
     gst: selectedCustomer.securityDetails?.gstNumber || '',
     // Store actual document objects with s3Path
     documents: {
-      electricityBill: selectedCustomer.docType?.find(d => d.doctypeName === 'ELECTRICITY BILL') || null,
+      addressProof: selectedCustomer.docType?.find(d => d.doctypeName === 'ADDRESS PROOF') || null,
       panDoc: selectedCustomer.docType?.find(d => d.doctypeName === 'PAN CARD') || null,
       gstDoc: selectedCustomer.docType?.find(d => d.doctypeName === 'GSTIN') || null,
-      image: selectedCustomer.docType?.find(d => 
-        d.doctypeName === 'PHARMACY IMAGE' || 
-        d.doctypeName === 'HOSPITAL IMAGE' || 
+      image: selectedCustomer.docType?.find(d =>
+        d.doctypeName === 'PHARMACY IMAGE' ||
+        d.doctypeName === 'HOSPITAL IMAGE' ||
         d.doctypeName === 'CLINIC IMAGE' ||
         d.doctypeName?.toLowerCase().includes('image')
       ) || null,
@@ -254,7 +274,7 @@ const CustomerDetail = ({ navigation, route }) => {
     pan: '',
     gst: '',
     documents: {
-      electricityBill: null,
+      addressProof: null,
       panDoc: null,
       gstDoc: null,
       image: null,
@@ -264,10 +284,10 @@ const CustomerDetail = ({ navigation, route }) => {
 
   // Get customer name for header
   const getCustomerName = () => {
-    if(selectedCustomer?.clinicName ){
+    if (selectedCustomer?.clinicName) {
       return selectedCustomer?.clinicName;
-    }else if (selectedCustomer?.generalDetails?.ownerName) {
-      return `${selectedCustomer.generalDetails.ownerName}`;  
+    } else if (selectedCustomer?.generalDetails?.ownerName) {
+      return `${selectedCustomer.generalDetails.ownerName}`;
     } else if (selectedCustomer?.generalDetails?.customerName) {
       return selectedCustomer.generalDetails.customerName;
     } else if (customer?.customerName) {
@@ -295,16 +315,22 @@ const CustomerDetail = ({ navigation, route }) => {
         useNativeDriver: true,
       }),
     ]).start();
+
+
+    loadCustomerGroups()
+
   }, []);
 
-  const AnimatedSection = ({ children, delay = 0 }) => {
+  console.log(customerGroups);
+  
+
+  const AnimatedSection = ({ children }) => {
     const sectionAnim = useRef(new Animated.Value(0)).current;
-    
+
     useEffect(() => {
       Animated.timing(sectionAnim, {
         toValue: 1,
         duration: 500,
-        delay,
         useNativeDriver: true,
       }).start();
     }, []);
@@ -340,7 +366,7 @@ const CustomerDetail = ({ navigation, route }) => {
 
     const fetchSignedUrl = async () => {
       if (!selectedDocument?.s3Path) return;
-      
+
       setLoadingDoc(true);
       try {
         const response = await customerAPI.getDocumentSignedUrl(selectedDocument.s3Path);
@@ -377,15 +403,15 @@ const CustomerDetail = ({ navigation, route }) => {
                 <CloseCircle />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.documentImageContainer}>
               {loadingDoc ? (
                 <ActivityIndicator size="large" color={colors.primary} />
-              ) : signedUrl && (selectedDocument?.fileName?.toLowerCase().endsWith('.jpg') || 
-                                selectedDocument?.fileName?.toLowerCase().endsWith('.jpeg') || 
-                                selectedDocument?.fileName?.toLowerCase().endsWith('.png')) ? (
-                <Image 
-                  source={{ uri: signedUrl }} 
+              ) : signedUrl && (selectedDocument?.fileName?.toLowerCase().endsWith('.jpg') ||
+                selectedDocument?.fileName?.toLowerCase().endsWith('.jpeg') ||
+                selectedDocument?.fileName?.toLowerCase().endsWith('.png')) ? (
+                <Image
+                  source={{ uri: signedUrl }}
                   style={{ width: '100%', height: 300 }}
                   resizeMode="contain"
                 />
@@ -403,7 +429,7 @@ const CustomerDetail = ({ navigation, route }) => {
   };
 
   const InfoRow = ({ label, value, icon, onPress }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.infoRow}
       onPress={onPress}
       disabled={!onPress}
@@ -421,14 +447,15 @@ const CustomerDetail = ({ navigation, route }) => {
     </TouchableOpacity>
   );
 
-  const openDocument = (docInfo) => { console.log("openDocument is called"); console.log(docInfo);
+  const openDocument = (docInfo) => {
+    console.log("openDocument is called"); console.log(docInfo);
     if (typeof docInfo !== 'string') {
       // For actual document object from API
       setSelectedDocument(docInfo);
       setShowDocumentModal(true);
     } else {
       Alert.alert("Info", "No document available");
-    }    
+    }
   };
 
   const downloadDocument = async (docInfo) => {
@@ -461,7 +488,7 @@ const CustomerDetail = ({ navigation, route }) => {
       const actorId = loggedInUser?.userId || loggedInUser?.id;
       const parallelGroupId = selectedCustomer?.instance?.stepInstances[0]?.parallelGroup;
       const stepOrderId = selectedCustomer?.instance?.stepInstances[0]?.stepOrder;
-      
+
       const actionDataPayload = {
         stepOrder: stepOrderId,
         parallelGroup: parallelGroupId,
@@ -480,10 +507,10 @@ const CustomerDetail = ({ navigation, route }) => {
       };
 
       const response = await customerAPI.workflowAction(instanceId, actionDataPayload);
-      
+
       setApproveModalVisible(false);
       showToast(`Customer approved successfully!`, 'success');
-      
+
       // Navigate back after approval
       setTimeout(() => {
         navigation.goBack();
@@ -504,7 +531,7 @@ const CustomerDetail = ({ navigation, route }) => {
       const actorId = loggedInUser?.userId || loggedInUser?.id;
       const parallelGroupId = selectedCustomer?.instance?.stepInstances[0]?.parallelGroup;
       const stepOrderId = selectedCustomer?.instance?.stepInstances[0]?.stepOrder;
-      
+
       const actionDataPayload = {
         stepOrder: stepOrderId,
         parallelGroup: parallelGroupId,
@@ -523,10 +550,10 @@ const CustomerDetail = ({ navigation, route }) => {
       };
 
       const response = await customerAPI.workflowAction(instanceId, actionDataPayload);
-      
+
       setRejectModalVisible(false);
       showToast(`Customer rejected!`, 'error');
-      
+
       // Navigate back after rejection
       setTimeout(() => {
         navigation.goBack();
@@ -542,286 +569,337 @@ const CustomerDetail = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      <View style={styles.container}>        
+      <View style={styles.container}>
         {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft color="#333" />
-        </TouchableOpacity>
-        <AppText style={styles.headerTitle}>{getCustomerName()}</AppText>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'details' && styles.activeTab]}
-          onPress={() => setActiveTab('details')}
-        >
-          <Details color={activeTab === 'details' ? colors.primary : '#999'} />
-          <AppText style={[styles.tabText, activeTab === 'details' && styles.activeTabText]}>
-            Details
-          </AppText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'linkaged' && styles.activeTab]}
-          onPress={() => setActiveTab('linkaged')}
-        >
-          <Linkage color={activeTab === 'linkaged' ? colors.primary : '#999'} />
-          <AppText style={[styles.tabText, activeTab === 'linkaged' && styles.activeTabText]}>
-            Linkaged
-          </AppText>
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
-      {activeTab === 'details' && (
-        <ScrollView 
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          {detailsLoading ? (
-            <SkeletonDetailPage />
-          ) : !selectedCustomer ? (
-            <View style={{ padding: 20 }}>
-              <AppText>No customer data available</AppText>
-            </View>
-          ) : (
-            <Animated.View
-              style={{
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-              }}
-            >
-          {/* Details Section */}
-          <AnimatedSection delay={100}>
-            <AppText style={styles.sectionTitle}>Details</AppText>
-            <View style={styles.card}>
-              <View style={{ display: 'flex', flexDirection: 'row', gap: 120 }}>
-                <InfoRow label="Code" value={customerData.code} />
-                <InfoRow label="Mobile Number" value={customerData.mobileNumber} />
-              </View>
-              
-              <InfoRow label="Email Address" value={customerData.email} />
-            </View>
-          </AnimatedSection>
-
-          {/* Address Details */}
-          <AnimatedSection delay={200}>
-            <View style={styles.sectionHeader}>
-              <AppText style={styles.sectionTitle}>Address Details</AppText>
-              {customerData.documents.electricityBill && (
-                <View style={{...styles.fileLinkGroup, marginTop: 4}}>
-                  <AppText style={styles.linkText}>{customerData.documents.electricityBill?.fileName || customerData.documents.electricityBill}</AppText>
-                  <View style={{...styles.iconGroup, width: 60, justifyContent: 'space-around'}}>
-                    <TouchableOpacity
-                      onPress={() => openDocument(customerData.documents.electricityBill)}
-                      style={styles.linkButton}
-                    ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                    <AppText style={{ color: '#777' }}>|</AppText>
-                    <TouchableOpacity
-                      onPress={() => downloadDocument(customerData.documents.electricityBill)}
-                      style={styles.linkButton}
-                    ><Download width={16} color={colors.primary} /></TouchableOpacity>
-                  </View>
-                </View>
-              )}
-              
-            </View>
-            <View style={styles.card}>
-              <InfoRow label="Address" value={customerData.address} />
-              <View style={{...styles.rowContainer, marginTop: 5, paddingBottom: 10}}>
-                <View style={[styles.halfRow, { marginRight: 8 }]}>
-                  <AppText style={styles.infoLabel}>Pincode</AppText>
-                  <AppText style={styles.infoValue}>{customerData.pincode}</AppText>
-                </View>
-                <View style={[styles.halfRow, { marginLeft: 8 }]}>
-                  <AppText style={styles.infoLabel}>City</AppText>
-                  <AppText style={styles.infoValue}>{customerData.city}</AppText>
-                </View>
-                <View style={[styles.halfRow, { marginLeft: 8 }]}>
-                  <AppText style={styles.infoLabel}>State</AppText>
-                  <AppText style={styles.infoValue}>{customerData.state}</AppText>
-                </View>
-              </View>
-            </View>
-          </AnimatedSection>
-
-          {/* License Details */}
-          {customerData.licenseData && customerData.licenseData.length > 0 && (
-            <AnimatedSection delay={300}>
-              <AppText style={styles.sectionTitle}>License Details</AppText>
-              <View style={styles.card}>
-                {customerData.licenseData.map((license, index) => (
-                  <View key={index}>
-                    <View style={[styles.licenseRow, index > 0 && { marginTop: 10 }]}>
-                      <View style={styles.licenseInfo}>
-                        <AppText style={styles.infoLabel}>{license.label}</AppText>
-                        <AppText style={styles.infoValue}>{license.licenseNumber}</AppText>
-                      </View>
-                      <View style={styles.licenseExpiry}>
-                        <AppText style={styles.infoLabel}>Expiry</AppText>
-                        <AppText style={styles.infoValue}>{license.expiry}</AppText>
-                      </View>
-                    </View>
-                    
-                    {license.document && (
-                      <>
-                        <AppText style={styles.uploadedFileLabel}>Uploaded file</AppText>
-                        <View style={[styles.fileRow, index === customerData.licenseData.length - 1 && { marginBottom: 8 }]}>
-                          <AppText style={styles.fileName}>{license.document?.fileName || ''}</AppText>
-                          <View style={styles.iconGroup}>
-                            <TouchableOpacity 
-                              style={styles.uploadedFile}
-                              onPress={() => openDocument(license.document)}
-                            >
-                              <EyeOpen width={18} color={colors.primary} />
-                            </TouchableOpacity>
-                            <AppText style={{ color: '#777' }}>|</AppText>
-                            <TouchableOpacity 
-                              style={styles.uploadedFile}
-                              onPress={() => downloadDocument(license.document)}
-                            >
-                              <Download width={16} color={colors.primary} />
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                      </>
-                    )}
-                  </View>
-                ))}
-              </View>
-            </AnimatedSection>
-          )}
-
-          {/* Security Details */}
-          <AnimatedSection delay={400}>
-            <AppText style={styles.sectionTitle}>Security Details</AppText>
-            <View style={styles.card}>
-              <View style={styles.otherDetailRow}>
-                <View style={styles.otherDetailItem}>
-                  <AppText style={styles.infoLabel}>PAN</AppText>
-                  <View style={styles.valueWithIcons}>
-                    <AppText style={styles.infoValue}>{customerData.pan}</AppText>
-                    {customerData.documents.panDoc && (
-                      <View style={styles.iconGroup}>
-                        <TouchableOpacity 
-                          style={styles.uploadedFile}
-                          onPress={() => openDocument(customerData.documents.panDoc)}
-                        ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                        <AppText style={{ color: '#777' }}>|</AppText>
-                        <TouchableOpacity 
-                          style={styles.uploadedFile}
-                          onPress={() => downloadDocument(customerData.documents.panDoc)}                        
-                        ><Download width={16} color={colors.primary} /></TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                </View>
-                <View style={[styles.otherDetailItem, { marginLeft: 16 }]}>
-                  <AppText style={styles.infoLabel}>GST</AppText>
-                  <View style={styles.valueWithIcons}>
-                    <AppText style={styles.infoValue}>{customerData.gst}</AppText>
-                    {customerData.documents.gstDoc && (
-                      <View style={styles.iconGroup}>
-                        <TouchableOpacity 
-                          style={styles.uploadedFile}
-                          onPress={() => openDocument(customerData.documents.gstDoc)}
-                        ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                        <AppText style={{ color: '#777' }}>|</AppText>
-                        <TouchableOpacity 
-                          style={styles.uploadedFile}
-                          onPress={() => downloadDocument(customerData.documents.gstDoc)}                        
-                        ><Download width={16} color={colors.primary} /></TouchableOpacity>
-                      </View>
-                    )}
-                    </View>
-                  </View>
-                </View>
-              </View>
-          </AnimatedSection>
-
-          {/* Image */}
-          {customerData.documents.image && (
-            <AnimatedSection delay={500}>
-              <AppText style={styles.sectionTitle}>Image</AppText>
-              <View style={{...styles.card, borderBottomWidth: 0, paddingBottom: 20}}>
-                <View style={styles.valueWithIcons}>
-                  <AppText style={styles.imageName}>{customerData.documents.image?.fileName || customerData.documents.image}</AppText>
-                  <View style={{...styles.iconGroup}}>
-                    <TouchableOpacity 
-                      style={styles.uploadedFile}
-                      onPress={() => openDocument(customerData.documents.image)}
-                    ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                    <AppText style={{ color: '#777' }}>|</AppText>              
-                    <TouchableOpacity 
-                          style={{...styles.uploadedFile}}
-                          onPress={() => downloadDocument(customerData.documents.image)}                        
-                        ><Download width={16} color={colors.primary} /></TouchableOpacity>
-                        </View>
-                </View>
-              </View>
-            </AnimatedSection>
-          )}
-            </Animated.View>
-          )}
-        </ScrollView>
-      )}
-
-      {activeTab === 'linkaged' && <LinkagedTab 
-        customerType={customerData.customerType} 
-        customerId={customerData.customerId} 
-        mappingData={selectedCustomer?.mapping} 
-        hasApprovePermission={customer?.action === 'APPROVE'}
-        isCustomerActive={customer?.statusName === 'ACTIVE' || selectedCustomer?.statusName === 'ACTIVE'}
-      />}
-
-      {/* Action Buttons - Show only on Details tab and if customer action is APPROVE */}
-      {activeTab === 'details' && customer?.action === 'APPROVE' && (
-        <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity 
-            style={styles.rejectButton}
-            onPress={() => setRejectModalVisible(true)}
-            disabled={actionLoading}
-          >
-            <Icon name="close-circle" size={20} color={colors.primary} />
-            <AppText style={styles.rejectButtonText}>Reject</AppText>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <ChevronLeft color="#333" />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.approveButton}
-            onPress={() => setApproveModalVisible(true)}
-            disabled={actionLoading}
+          <AppText style={styles.headerTitle}>{getCustomerName()}</AppText>
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'details' && styles.activeTab]}
+            onPress={() => setActiveTab('details')}
           >
-            {actionLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Icon name="checkmark-circle" size={20} color="#fff" />
-                <AppText style={styles.approveButtonText}>Approve</AppText>
-              </>
-            )}
+            <Details color={activeTab === 'details' ? colors.primary : '#999'} />
+            <AppText style={[styles.tabText, activeTab === 'details' && styles.activeTabText]}>
+              Details
+            </AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'linkaged' && styles.activeTab]}
+            onPress={() => setActiveTab('linkaged')}
+          >
+            <Linkage color={activeTab === 'linkaged' ? colors.primary : '#999'} />
+            <AppText style={[styles.tabText, activeTab === 'linkaged' && styles.activeTabText]}>
+              Linkaged
+            </AppText>
           </TouchableOpacity>
         </View>
-      )}
 
-      <DocumentModal />
-      
-      {/* Approve Modal */}
-      <ApproveCustomerModal
-        visible={approveModalVisible}
-        onClose={() => setApproveModalVisible(false)}
-        onConfirm={handleApproveConfirm}
-        title="Approve Customer"
-        actionType="approve"
-        loading={actionLoading}
-      />
-      
-      {/* Reject Modal */}
-      <RejectCustomerModal
-        visible={rejectModalVisible}
-        onClose={() => setRejectModalVisible(false)}
-        onConfirm={handleRejectConfirm}
-        loading={actionLoading}
-      />
+        {/* Content */}
+        {activeTab === 'details' && (
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
+            {detailsLoading ? (
+              <SkeletonDetailPage />
+            ) : !selectedCustomer ? (
+              <View style={{ padding: 20 }}>
+                <AppText>No customer data available</AppText>
+              </View>
+            ) : (
+              <Animated.View
+                style={{
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+                }}
+              >
+
+                {console.log(customerData)
+                }
+                {/* Details Section */}
+                <AnimatedSection >
+                  <AppText style={styles.sectionTitle}>Details</AppText>
+                  <View style={styles.card}>
+                    <View style={{ display: 'flex', flexDirection: 'row', gap: 120 }}>
+                      <InfoRow label="Code" value={customerData.code} />
+                      <InfoRow label="Mobile Number" value={customerData.mobileNumber} />
+                    </View>
+
+                    <InfoRow label="Email Address" value={customerData.email} />
+                  </View>
+                </AnimatedSection>
+
+                {/* Address Details */}
+                <AnimatedSection >
+                  <View style={styles.sectionHeader}>
+                    <AppText style={styles.sectionTitle}>Address Details</AppText>
+                    {customerData.documents.addressProof && (
+                      // <View style={{...styles.fileLinkGroup, marginTop: 4}}>
+                      //   <AppText style={styles.linkText}>{customerData.documents.addressProof?.fileName || customerData.documents.addressProof}</AppText>
+                      //   <View style={{...styles.iconGroup, width: 60, justifyContent: 'space-around'}}>
+                      //     <TouchableOpacity
+                      //       onPress={() => openDocument(customerData.documents.addressProof)}
+                      //       style={styles.linkButton}
+                      //     ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                      //     <AppText style={{ color: '#777' }}>|</AppText>
+                      //     <TouchableOpacity
+                      //       onPress={() => downloadDocument(customerData.documents.addressProof)}
+                      //       style={styles.linkButton}
+                      //     ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                      //   </View>
+                      // </View>
+
+                      <View style={{ ...styles.fileLinkGroup, marginTop: 4 }}>
+                        <AppText
+                          style={styles.linkText}
+                          numberOfLines={1}
+                          ellipsizeMode="middle"
+                        >
+                          {customerData.documents.addressProof?.fileName ||
+                            customerData.documents.addressProof}
+                        </AppText>
+
+                        <View style={{ ...styles.iconGroup, width: 60, justifyContent: 'space-around' }}>
+                          <TouchableOpacity onPress={() => openDocument(customerData.documents.addressProof)}>
+                            <EyeOpen width={18} color={colors.primary} />
+                          </TouchableOpacity>
+
+                          <AppText style={{ color: '#777' }}>|</AppText>
+
+                          <TouchableOpacity onPress={() => downloadDocument(customerData.documents.addressProof)}>
+                            <Download width={16} color={colors.primary} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+
+                  </View>
+                  <View style={styles.card}>
+                    <InfoRow label="Address" value={customerData.address} />
+                    <View style={{ ...styles.rowContainer, marginTop: 5, paddingBottom: 10 }}>
+                      <View style={[styles.halfRow, { marginRight: 8 }]}>
+                        <AppText style={styles.infoLabel}>Pincode</AppText>
+                        <AppText style={styles.infoValue}>{customerData.pincode}</AppText>
+                      </View>
+                      <View style={[styles.halfRow, { marginLeft: 8 }]}>
+                        <AppText style={styles.infoLabel}>City</AppText>
+                        <AppText style={styles.infoValue}>{customerData.city}</AppText>
+                      </View>
+                      <View style={[styles.halfRow, { marginLeft: 8 }]}>
+                        <AppText style={styles.infoLabel}>State</AppText>
+                        <AppText style={styles.infoValue}>{customerData.state}</AppText>
+                      </View>
+                    </View>
+                  </View>
+                </AnimatedSection>
+
+                {/* License Details */}
+                {customerData.licenseData && customerData.licenseData.length > 0 && (
+                  <AnimatedSection >
+                    <AppText style={styles.sectionTitle}>License Details</AppText>
+                    <View style={styles.card}>
+                      {customerData.licenseData.map((license, index) => (
+                        <View key={index}>
+                          <View style={[styles.licenseRow, index > 0 && { marginTop: 10 }]}>
+                            <View style={styles.licenseInfo}>
+                              <AppText style={styles.infoLabel}>{license.label}</AppText>
+                              <AppText style={styles.infoValue}>{license.licenseNumber}</AppText>
+                            </View>
+                            <View style={styles.licenseExpiry}>
+                              <AppText style={styles.infoLabel}>Expiry</AppText>
+                              <AppText style={styles.infoValue}>{license.expiry}</AppText>
+                            </View>
+                          </View>
+
+                          {license.document && (
+                            <>
+                              <AppText style={styles.uploadedFileLabel}>Uploaded file</AppText>
+                              <View style={[styles.fileRow, index === customerData.licenseData.length - 1 && { marginBottom: 8 }]}>
+                                <AppText style={styles.fileName}>{license.document?.fileName || ''}</AppText>
+                                <View style={styles.iconGroup}>
+                                  <TouchableOpacity
+                                    style={styles.uploadedFile}
+                                    onPress={() => openDocument(license.document)}
+                                  >
+                                    <EyeOpen width={18} color={colors.primary} />
+                                  </TouchableOpacity>
+                                  <AppText style={{ color: '#777' }}>|</AppText>
+                                  <TouchableOpacity
+                                    style={styles.uploadedFile}
+                                    onPress={() => downloadDocument(license.document)}
+                                  >
+                                    <Download width={16} color={colors.primary} />
+                                  </TouchableOpacity>
+                                </View>
+                              </View>
+                            </>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  </AnimatedSection>
+                )}
+
+
+                {/* Image */}
+                {customerData.documents.image && (
+                  <AnimatedSection >
+                    <AppText style={styles.sectionTitle}>Image</AppText>
+                    <View style={styles.card}>
+                      <View style={styles.valueWithIcons}>
+                        <AppText style={styles.imageName}>{customerData.documents.image?.fileName || customerData.documents.image}</AppText>
+                        <View style={{ ...styles.iconGroup }}>
+                          <TouchableOpacity
+                            style={styles.uploadedFile}
+                            onPress={() => openDocument(customerData.documents.image)}
+                          ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                          <AppText style={{ color: '#777' }}>|</AppText>
+                          <TouchableOpacity
+                            style={{ ...styles.uploadedFile }}
+                            onPress={() => downloadDocument(customerData.documents.image)}
+                          ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  </AnimatedSection>
+                )}
+                {/* Security Details */}
+                <AnimatedSection >
+                  <AppText style={styles.sectionTitle}>Security Details</AppText>
+                  <View style={styles.card}>
+                    <View style={styles.otherDetailRow}>
+                      <View style={styles.otherDetailItem}>
+                        <AppText style={styles.infoLabel}>PAN</AppText>
+                        <View style={styles.valueWithIcons}>
+                          <AppText style={styles.infoValue}>{customerData.pan}</AppText>
+                          {customerData.documents.panDoc && (
+                            <View style={styles.iconGroup}>
+                              <TouchableOpacity
+                                style={styles.uploadedFile}
+                                onPress={() => openDocument(customerData.documents.panDoc)}
+                              ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                              <AppText style={{ color: '#777' }}>|</AppText>
+                              <TouchableOpacity
+                                style={styles.uploadedFile}
+                                onPress={() => downloadDocument(customerData.documents.panDoc)}
+                              ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                      <View style={[styles.otherDetailItem, { marginLeft: 16 }]}>
+                        <AppText style={styles.infoLabel}>GST</AppText>
+                        <View style={styles.valueWithIcons}>
+                          <AppText style={styles.infoValue}>{customerData.gst}</AppText>
+                          {customerData.documents.gstDoc && (
+                            <View style={styles.iconGroup}>
+                              <TouchableOpacity
+                                style={styles.uploadedFile}
+                                onPress={() => openDocument(customerData.documents.gstDoc)}
+                              ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                              <AppText style={{ color: '#777' }}>|</AppText>
+                              <TouchableOpacity
+                                style={styles.uploadedFile}
+                                onPress={() => downloadDocument(customerData.documents.gstDoc)}
+                              ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                </AnimatedSection>
+
+                {/* Customer Group */}
+                {customerData.documents.image && (
+                  <AnimatedSection >
+                    <AppText style={styles.sectionTitle}>Image</AppText>
+                    <View style={styles.card}>
+                      <View style={styles.valueWithIcons}>
+                        <AppText style={styles.imageName}>{customerData.documents.image?.fileName || customerData.documents.image}</AppText>
+                        <View style={{ ...styles.iconGroup }}>
+                          <TouchableOpacity
+                            style={styles.uploadedFile}
+                            onPress={() => openDocument(customerData.documents.image)}
+                          ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                          <AppText style={{ color: '#777' }}>|</AppText>
+                          <TouchableOpacity
+                            style={{ ...styles.uploadedFile }}
+                            onPress={() => downloadDocument(customerData.documents.image)}
+                          ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  </AnimatedSection>
+                )}
+
+
+              </Animated.View>
+            )}
+          </ScrollView>
+        )}
+
+        {activeTab === 'linkaged' && <LinkagedTab
+          customerType={customerData.customerType}
+          customerId={customerData.customerId}
+          mappingData={selectedCustomer?.mapping}
+          hasApprovePermission={customer?.action === 'APPROVE'}
+          isCustomerActive={customer?.statusName === 'ACTIVE' || selectedCustomer?.statusName === 'ACTIVE'}
+        />}
+
+        {/* Action Buttons - Show only on Details tab and if customer action is APPROVE */}
+        {activeTab === 'details' && customer?.action === 'APPROVE' && (
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity
+              style={styles.rejectButton}
+              onPress={() => setRejectModalVisible(true)}
+              disabled={actionLoading}
+            >
+              <Icon name="close-circle" size={20} color={colors.primary} />
+              <AppText style={styles.rejectButtonText}>Reject</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.approveButton}
+              onPress={() => setApproveModalVisible(true)}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Icon name="checkmark-circle" size={20} color="#fff" />
+                  <AppText style={styles.approveButtonText}>Approve</AppText>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <DocumentModal />
+
+        {/* Approve Modal */}
+        <ApproveCustomerModal
+          visible={approveModalVisible}
+          onClose={() => setApproveModalVisible(false)}
+          onConfirm={handleApproveConfirm}
+          title="Approve Customer"
+          actionType="approve"
+          loading={actionLoading}
+        />
+
+        {/* Reject Modal */}
+        <RejectCustomerModal
+          visible={rejectModalVisible}
+          onClose={() => setRejectModalVisible(false)}
+          onConfirm={handleRejectConfirm}
+          loading={actionLoading}
+        />
       </View>
     </SafeAreaView>
   );
@@ -914,7 +992,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#333',
     marginTop: 16,
     marginBottom: 12,
@@ -936,10 +1014,11 @@ const styles = StyleSheet.create({
   },
   infoContent: {
     flex: 1,
+    marginBottom: 5
   },
   infoLabel: {
     fontSize: 13,
-    color: '#999',
+    color: '#909090',
     marginBottom: 4,
   },
   infoValue: {
@@ -964,12 +1043,16 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 12,
     color: '#777777',
-    marginRight: 0,
+
+
+    flexShrink: 1,
+    marginRight: 8,
   },
   fileLinkGroup: {
     flexDirection: 'row',
-    rowGap: 12,
-    alignItems: 'center'
+    alignItems: 'center',
+    flexShrink: 1,
+    maxWidth: "50%"
   },
   iconGroup: {
     flexDirection: 'row',
@@ -1117,6 +1200,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
+
+
 });
 
 export default CustomerDetail;
