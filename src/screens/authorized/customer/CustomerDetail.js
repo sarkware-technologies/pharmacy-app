@@ -96,19 +96,19 @@ const CustomerDetail = ({ navigation, route }) => {
 
 
 
-   const loadCustomerGroups = async () => {
-      try {
-        const groupsResponse = await customerAPI.getCustomerGroups();
-        if (groupsResponse.success && groupsResponse.data) {
-          console.log('Customer groups:', groupsResponse.data);
-          setCustomerGroups(groupsResponse.data || []);
-        }
-      } catch (error) {
-        console.error('Error loading customer groups:', error);
+  const loadCustomerGroups = async () => {
+    try {
+      const groupsResponse = await customerAPI.getCustomerGroups();
+      if (groupsResponse.success && groupsResponse.data) {
+        console.log('Customer groups:', groupsResponse.data);
+        setCustomerGroups(groupsResponse.data || []);
       }
-    };
+    } catch (error) {
+      console.error('Error loading customer groups:', error);
+    }
+  };
 
-    
+
 
   // Helper function to determine required license fields based on registration type
   const getRequiredLicenseFields = (typeId, categoryId) => {
@@ -159,74 +159,100 @@ const CustomerDetail = ({ navigation, route }) => {
   const requiredLicenseFields = getRequiredLicenseFields(typeId, categoryId);
 
   // Map license data from API to display format
-  const mapLicenseData = () => {
-    if (!selectedCustomer?.licenceDetails?.licence) return [];
+  // const mapLicenseData = () => {
+  //   if (!selectedCustomer?.licenceDetails?.licence) return [];
 
-    return requiredLicenseFields.map(field => {
-      const license = selectedCustomer.licenceDetails.licence.find(
-        lic => lic.licenceTypeId === field.licenseTypeId
-      );
+  //   return requiredLicenseFields.map(field => {
+  //     const license = selectedCustomer.licenceDetails.licence.find(
+  //       lic => lic.licenceTypeId === field.licenseTypeId
+  //     );
 
-      // Find corresponding document by matching docTypeId (from license) or doctypeName
-      const document = selectedCustomer.docType?.find(
-        doc => {
-          // First, try to match using the docTypeId from the license object (most accurate)
-          if (license?.docTypeId) {
-            const licenseDocTypeId = typeof license.docTypeId === 'string'
-              ? parseInt(license.docTypeId, 10)
-              : license.docTypeId;
-            const docTypeId = typeof doc.docTypeId === 'string'
-              ? parseInt(doc.docTypeId, 10)
-              : (doc.docTypeId || (typeof doc.doctypeId === 'string' ? parseInt(doc.doctypeId, 10) : doc.doctypeId));
+  //     // Find corresponding document by matching docTypeId (from license) or doctypeName
+  //     const document = selectedCustomer.docType?.find(
+  //       doc => {
+  //         // First, try to match using the docTypeId from the license object (most accurate)
+  //         if (license?.docTypeId) {
+  //           const licenseDocTypeId = typeof license.docTypeId === 'string'
+  //             ? parseInt(license.docTypeId, 10)
+  //             : license.docTypeId;
+  //           const docTypeId = typeof doc.docTypeId === 'string'
+  //             ? parseInt(doc.docTypeId, 10)
+  //             : (doc.docTypeId || (typeof doc.doctypeId === 'string' ? parseInt(doc.doctypeId, 10) : doc.doctypeId));
 
-            if (licenseDocTypeId === docTypeId) {
-              return true;
-            }
-          }
+  //           if (licenseDocTypeId === docTypeId) {
+  //             return true;
+  //           }
+  //         }
 
-          // Match by docTypeId from field definition
-          if (doc.docTypeId !== undefined) {
-            const docTypeId = typeof doc.docTypeId === 'string'
-              ? parseInt(doc.docTypeId, 10)
-              : (doc.docTypeId || (typeof doc.doctypeId === 'string' ? parseInt(doc.doctypeId, 10) : doc.doctypeId));
-            if (field.docTypeIds?.includes(docTypeId)) {
-              return true;
-            }
-          }
+  //         // Match by docTypeId from field definition
+  //         if (doc.docTypeId !== undefined) {
+  //           const docTypeId = typeof doc.docTypeId === 'string'
+  //             ? parseInt(doc.docTypeId, 10)
+  //             : (doc.docTypeId || (typeof doc.doctypeId === 'string' ? parseInt(doc.doctypeId, 10) : doc.doctypeId));
+  //           if (field.docTypeIds?.includes(docTypeId)) {
+  //             return true;
+  //           }
+  //         }
 
-          // Also check doctypeId (alternative field name)
-          if (doc.doctypeId !== undefined) {
-            const doctypeId = typeof doc.doctypeId === 'string'
-              ? parseInt(doc.doctypeId, 10)
-              : doc.doctypeId;
-            if (field.docTypeIds?.includes(doctypeId)) {
-              return true;
-            }
-          }
+  //         // Also check doctypeId (alternative field name)
+  //         if (doc.doctypeId !== undefined) {
+  //           const doctypeId = typeof doc.doctypeId === 'string'
+  //             ? parseInt(doc.doctypeId, 10)
+  //             : doc.doctypeId;
+  //           if (field.docTypeIds?.includes(doctypeId)) {
+  //             return true;
+  //           }
+  //         }
 
-          // Match by doctypeName as fallback
-          if (doc.doctypeName) {
-            const docNameUpper = doc.doctypeName.toUpperCase();
-            return field.docTypeNames?.some(name =>
-              docNameUpper.includes(name.toUpperCase()) ||
-              name.toUpperCase().includes(docNameUpper)
-            );
-          }
+  //         // Match by doctypeName as fallback
+  //         if (doc.doctypeName) {
+  //           const docNameUpper = doc.doctypeName.toUpperCase();
+  //           return field.docTypeNames?.some(name =>
+  //             docNameUpper.includes(name.toUpperCase()) ||
+  //             name.toUpperCase().includes(docNameUpper)
+  //           );
+  //         }
 
-          return false;
-        }
-      );
+    
+          
+          
+  //         return false;
+  //       }
+  //     );
 
-      return {
-        label: field.label,
-        licenseNumber: license?.licenceNo || '',
-        expiry: license?.licenceValidUpto
-          ? new Date(license.licenceValidUpto).toLocaleDateString('en-GB').replace(/\//g, '-')
-          : '',
-        document: document || null,
-      };
-    });
-  };
+  //     return {
+  //       label: field.label,
+  //       licenseNumber: license?.licenceNo || '',
+  //       expiry: license?.licenceValidUpto
+  //         ? new Date(license.licenceValidUpto).toLocaleDateString('en-GB').replace(/\//g, '-')
+  //         : '',
+  //       document: document || null,
+  //     };
+  //   });
+  // };
+
+const mapLicenseData = () => {
+  const licenseList = selectedCustomer?.licenceDetails?.licence || [];
+  const docList = selectedCustomer?.docType || [];
+
+  return licenseList.map(lic => {
+    // Match simply using names
+    const document = docList.find(
+      doc => doc.doctypeName?.toUpperCase() === lic.licenceTypeName?.toUpperCase()
+    ) || null;
+
+    return {
+      label: lic.licenceTypeName || '',
+      licenseNumber: lic.licenceNo || '',
+      expiry: lic.licenceValidUpto
+        ? new Date(lic.licenceValidUpto).toLocaleDateString('en-GB').replace(/\//g, '-')
+        : '',
+      document
+    };
+  });
+};
+
+
 
   const licenseData = mapLicenseData();
 
@@ -238,6 +264,11 @@ const CustomerDetail = ({ navigation, route }) => {
     code: selectedCustomer.customerCode || selectedCustomer.id || '',
     mobileNumber: selectedCustomer.securityDetails?.mobile || '',
     email: selectedCustomer.securityDetails?.email || '',
+    customerGroupId: selectedCustomer?.customerGroupId || '',
+    customerGroupName:
+      customerGroups?.find(
+        g => g.customerGroupId === selectedCustomer?.customerGroupId
+      )?.customerGroupName || 'N/A',
     address: [
       selectedCustomer.generalDetails?.address1,
       selectedCustomer.generalDetails?.address2,
@@ -322,7 +353,7 @@ const CustomerDetail = ({ navigation, route }) => {
   }, []);
 
   console.log(customerGroups);
-  
+
 
   const AnimatedSection = ({ children }) => {
     const sectionAnim = useRef(new Animated.Value(0)).current;
@@ -665,7 +696,7 @@ const CustomerDetail = ({ navigation, route }) => {
                             customerData.documents.addressProof}
                         </AppText>
 
-                        <View style={{ ...styles.iconGroup, width: 60, justifyContent: 'space-around' }}>
+                        <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
                           <TouchableOpacity onPress={() => openDocument(customerData.documents.addressProof)}>
                             <EyeOpen width={18} color={colors.primary} />
                           </TouchableOpacity>
@@ -721,8 +752,9 @@ const CustomerDetail = ({ navigation, route }) => {
                             <>
                               <AppText style={styles.uploadedFileLabel}>Uploaded file</AppText>
                               <View style={[styles.fileRow, index === customerData.licenseData.length - 1 && { marginBottom: 8 }]}>
-                                <AppText style={styles.fileName}>{license.document?.fileName || ''}</AppText>
-                                <View style={styles.iconGroup}>
+                                <AppText style={styles.fileName} numberOfLines={1}
+                                  ellipsizeMode="tail">{license.document?.fileName || ''}</AppText>
+                                <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
                                   <TouchableOpacity
                                     style={styles.uploadedFile}
                                     onPress={() => openDocument(license.document)}
@@ -753,8 +785,9 @@ const CustomerDetail = ({ navigation, route }) => {
                     <AppText style={styles.sectionTitle}>Image</AppText>
                     <View style={styles.card}>
                       <View style={styles.valueWithIcons}>
-                        <AppText style={styles.imageName}>{customerData.documents.image?.fileName || customerData.documents.image}</AppText>
-                        <View style={{ ...styles.iconGroup }}>
+                        <AppText style={styles.imageName} numberOfLines={1}
+                          ellipsizeMode="tail">{customerData.documents.image?.fileName || customerData.documents.image}</AppText>
+                        <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
                           <TouchableOpacity
                             style={styles.uploadedFile}
                             onPress={() => openDocument(customerData.documents.image)}
@@ -779,7 +812,7 @@ const CustomerDetail = ({ navigation, route }) => {
                         <View style={styles.valueWithIcons}>
                           <AppText style={styles.infoValue}>{customerData.pan}</AppText>
                           {customerData.documents.panDoc && (
-                            <View style={styles.iconGroup}>
+                            <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
                               <TouchableOpacity
                                 style={styles.uploadedFile}
                                 onPress={() => openDocument(customerData.documents.panDoc)}
@@ -793,48 +826,47 @@ const CustomerDetail = ({ navigation, route }) => {
                           )}
                         </View>
                       </View>
-                      <View style={[styles.otherDetailItem, { marginLeft: 16 }]}>
-                        <AppText style={styles.infoLabel}>GST</AppText>
-                        <View style={styles.valueWithIcons}>
-                          <AppText style={styles.infoValue}>{customerData.gst}</AppText>
-                          {customerData.documents.gstDoc && (
-                            <View style={styles.iconGroup}>
-                              <TouchableOpacity
-                                style={styles.uploadedFile}
-                                onPress={() => openDocument(customerData.documents.gstDoc)}
-                              ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                              <AppText style={{ color: '#777' }}>|</AppText>
-                              <TouchableOpacity
-                                style={styles.uploadedFile}
-                                onPress={() => downloadDocument(customerData.documents.gstDoc)}
-                              ><Download width={16} color={colors.primary} /></TouchableOpacity>
-                            </View>
-                          )}
-                        </View>
-                      </View>
+
+
+                      {(customerData.documents.gstDoc || customerData.gstNumber) &&
+
+                        <View style={[styles.otherDetailItem, { marginLeft: 0 }]}>
+                          <AppText style={styles.infoLabel}>GST</AppText>
+                          <View style={styles.valueWithIcons}>
+                            {customerData.gstNumber &&
+                              <AppText style={styles.infoValue}>{customerData.gstNumber}</AppText>
+                            }
+                            {customerData.documents.gstDoc && (
+                              <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
+                                <TouchableOpacity
+                                  style={styles.uploadedFile}
+                                  onPress={() => openDocument(customerData.documents.gstDoc)}
+                                ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                                <AppText style={{ color: '#777' }}>|</AppText>
+                                <TouchableOpacity
+                                  style={styles.uploadedFile}
+                                  onPress={() => downloadDocument(customerData.documents.gstDoc)}
+                                ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                              </View>
+                            )}
+                          </View>
+                        </View>}
+
                     </View>
                   </View>
                 </AnimatedSection>
 
                 {/* Customer Group */}
-                {customerData.documents.image && (
-                  <AnimatedSection >
-                    <AppText style={styles.sectionTitle}>Image</AppText>
-                    <View style={styles.card}>
-                      <View style={styles.valueWithIcons}>
-                        <AppText style={styles.imageName}>{customerData.documents.image?.fileName || customerData.documents.image}</AppText>
-                        <View style={{ ...styles.iconGroup }}>
-                          <TouchableOpacity
-                            style={styles.uploadedFile}
-                            onPress={() => openDocument(customerData.documents.image)}
-                          ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                          <AppText style={{ color: '#777' }}>|</AppText>
-                          <TouchableOpacity
-                            style={{ ...styles.uploadedFile }}
-                            onPress={() => downloadDocument(customerData.documents.image)}
-                          ><Download width={16} color={colors.primary} /></TouchableOpacity>
-                        </View>
+                {customerData.customerGroupId && (
+                  <AnimatedSection  >
+                    <AppText style={styles.sectionTitle}>Customer Group</AppText>
+
+                
+                    <View style={[styles.card, { marginBottom: 20 }]}>
+                           <View style={styles.infoContent}>
+                      <AppText style={styles.infoValue}>{customerData.customerGroupName}</AppText>
                       </View>
+
                     </View>
                   </AnimatedSection>
                 )}
@@ -1052,12 +1084,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexShrink: 1,
-    maxWidth: "50%"
+    maxWidth: "55%"
   },
   iconGroup: {
     flexDirection: 'row',
-    rowGap: 12,
-    marginRight: 'auto'
+    // rowGap: 17,
+    marginRight: 'auto',
+    // width:50,
+    alignItems: "center",
+    gap: 4
   },
   licenseRow: {
     flexDirection: 'row',
@@ -1069,7 +1104,7 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   uploadedFile: {
-    paddingHorizontal: 10,
+    // paddingHorizontal: 10,
   },
   uploadedFileLabel: {
     fontSize: 13,
@@ -1080,22 +1115,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    width: "100%",
+    gap: 10
   },
   fileName: {
     fontSize: 14,
-    width: '50%',
+    // width: '50%',
     color: '#777777',
+    flexShrink: 1,
   },
   otherDetailRow: {
     flexDirection: 'row',
+    justifyContent: "space-around",
+    width: "100%",
+
+
   },
   otherDetailItem: {
     flex: 1,
+    flexShrink: 1
   },
   valueWithIcons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    width: "100%",
+    gap: 10
   },
   imageRow: {
     flexDirection: 'row',
@@ -1105,6 +1150,7 @@ const styles = StyleSheet.create({
   imageName: {
     fontSize: 14,
     color: '#777777',
+    flexShrink: 1,
   },
   modalOverlay: {
     flex: 1,

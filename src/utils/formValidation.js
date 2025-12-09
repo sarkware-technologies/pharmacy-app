@@ -151,16 +151,15 @@ const VALIDATION_RULES = {
   panNo: {
     type: ['string', 'null'],
     maxLength: 40,
-    pattern: /^[A-Z0-9]+$/,
+    pattern: /^[0-9A-Za-z]+$/,  
     required: false,
   },
-  gstNo: {
-    type: ['string', 'null'],
-    maxLength: 18,
-    // GST regex expects state code(2 digits) + PAN(10 chars) + entity code(1) + Z + checksum(1)
-    pattern: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
-    required: false,
-  },
+ gstNo: {
+  type: ['string', 'null'],
+  maxLength: 15,         // GST is 15 chars
+ pattern: /^[0-9A-Za-z]+$/,  
+  required: false,
+},
   nameOfStockist: {
     type: ['string', 'null'],
     maxLength: 40,
@@ -528,6 +527,10 @@ export const createFilteredInputHandler = (formFieldName, originalHandler, maxLe
   };
 };
 
+export const filterForField = (formFieldName, value, maxLength = null) => {
+  const schemaFieldName = FIELD_NAME_MAPPING[formFieldName] || formFieldName;
+  return filterInputByPattern(schemaFieldName, value, maxLength);
+};
 export default {
   validateField,
   validateFields,

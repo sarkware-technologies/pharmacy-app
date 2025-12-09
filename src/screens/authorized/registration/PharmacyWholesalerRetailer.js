@@ -38,7 +38,7 @@ import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
-import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler } from '../../../utils/formValidation';
+import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler, filterForField } from '../../../utils/formValidation';
 
 // Default document types for file uploads (will be updated from API for licenses)
 const DOC_TYPES = {
@@ -1832,23 +1832,23 @@ const handleLicenseOcrData = async (ocrData) => {
 
   // Pharmacy name
   if (ocrData.pharmacyName && !formData.pharmacyName) {
-    updates.pharmacyName = ocrData.pharmacyName;
+    updates.pharmacyName = filterForField('pharmacyName', ocrData.pharmacyName, 40);;
   }
 
   // Address parsing
   if (ocrData.address) {
     const addressParts = splitAddress(ocrData.address);
-    if (!formData.address1 && addressParts.address1) updates.address1 = addressParts.address1;
-    if (!formData.address2 && addressParts.address2) updates.address2 = addressParts.address2;
-    if (!formData.address3 && addressParts.address3) updates.address3 = addressParts.address3;
+    if (!formData.address1 && addressParts.address1) updates.address1 = filterForField('address1', addressParts.address1, 40);
+    if (!formData.address2 && addressParts.address2) updates.address2 = filterForField('address2', addressParts.address2, 40);
+    if (!formData.address3 && addressParts.address3) updates.address3 = filterForField('address3', addressParts.address3, 60);
   }
 
   // License number
   if (ocrData.licenseNumber) {
-    if (!formData.license20) updates.license20 = ocrData.licenseNumber;
-    else if (!formData.license21) updates.license21 = ocrData.licenseNumber;
-    else if (!formData.license20b) updates.license20b = ocrData.licenseNumber;
-    else if (!formData.license21b) updates.license21b = ocrData.licenseNumber;
+    if (!formData.license20) updates.license20 = filterForField('license20', ocrData.licenseNumber, 50);
+    else if (!formData.license21) updates.license21 = filterForField('license21', ocrData.licenseNumber, 50);
+    else if (!formData.license20b) updates.license20b = filterForField('license20b', ocrData.licenseNumber, 50);
+    else if (!formData.license21b) updates.license21b = filterForField('license21b', ocrData.licenseNumber, 50);
   }
 
   // Expiry date
@@ -1924,7 +1924,7 @@ const handleLicenseOcrData = async (ocrData) => {
 
   // Pincode — use directly, no lookup
   if (ocrData.Pincode || ocrData.pincode) {
-    updates.pincode = String(ocrData.Pincode || ocrData.pincode);
+    updates.pincode =filterForField('pincode', String(ocrData.Pincode || ocrData.pincode), 6);
   }
 
   // Apply updates
@@ -2726,7 +2726,7 @@ const handleLicenseOcrData = async (ocrData) => {
               <CustomInput
                 placeholder="GST number"
                 value={formData.gstNumber}
-                onChangeText={createFilteredInputHandler('panNo', (text) => {
+                onChangeText={createFilteredInputHandler('gstNumber', (text) => {
                   const upperText = text.toUpperCase();
                   setFormData(prev => ({ ...prev, gstNumber: upperText }));
                   setErrors(prev => ({ ...prev, gstNumber: null }));
@@ -3021,7 +3021,7 @@ const handleLicenseOcrData = async (ocrData) => {
                 Add suggested stockists for this pharmacy
               </AppText> */}
 
-              {formData?.stockists.map((stockist, index) => (
+              {formData?.stockists?.map((stockist, index) => (
                 <View key={index} style={styles.stockistContainer}>
                   {index > 0 && (
                     <View style={styles.stockistHeader}>

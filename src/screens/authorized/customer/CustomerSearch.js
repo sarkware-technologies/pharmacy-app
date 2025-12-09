@@ -3,17 +3,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   FlatList,
   Animated,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Modal,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Image,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
@@ -23,16 +30,51 @@ import { fetchCustomersList, resetCustomersList, selectCustomers, selectLoadingS
 import { SkeletonList } from '../../../components/SkeletonLoader';
 import FilterModal from '../../../components/FilterModal';
 import CustomerSearchResultsIcon from '../../../components/icons/CustomerSearchResultsIcon';
+import { customerAPI } from '../../../api/customer';
+import Toast from 'react-native-toast-message';
+import { handleOnboardCustomer } from '../../../utils/customerNavigationHelper';
+import Phone from '../../../components/icons/Phone';
+import Edit from '../../../components/icons/Edit';
+import Download from '../../../components/icons/Download';
+import AddrLine from '../../../components/icons/AddrLine';
+import Email from '../../../components/icons/Email';
+import Locked from '../../../components/icons/Locked';
+import UnLocked from '../../../components/icons/UnLocked';
+import AlertFilled from '../../../components/icons/AlertFilled';
+import CloseCircle from '../../../components/icons/CloseCircle';
+import EyeOpen from '../../../components/icons/EyeOpen';
+import ChevronRight from '../../../components/icons/ChevronRight';
+import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModal';
+import RejectCustomerModal from '../../../components/modals/RejectCustomerModal';
 
 const CustomerSearch = ({ navigation }) => {
   const dispatch = useDispatch();
   const customers = useSelector(selectCustomers);
   const { listLoading } = useSelector(selectLoadingStates);
   
+  // Get logged-in user data
+  const loggedInUser = useSelector(state => state.auth.user);
+  
   const [searchText, setSearchText] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [recentSearches, setRecentSearches] = useState([]);
+  const [recentSearches] = useState([]);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+  
+  // State for modals and actions (same as CustomerList)
+  const [approveModalVisible, setApproveModalVisible] = useState(false);
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [selectedCustomerForAction, setSelectedCustomerForAction] = useState(null);
+  
+  // Documents modal state
+  const [showDocumentsModal, setShowDocumentsModal] = useState(false);
+  const [customerDocuments, setCustomerDocuments] = useState(null);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [selectedDocumentForPreview, setSelectedDocumentForPreview] = useState(null);
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewSignedUrl, setPreviewSignedUrl] = useState(null);
+  
+  // Block/Unblock state
+  const [blockUnblockLoading, setBlockUnblockLoading] = useState(false);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -98,7 +140,6 @@ const CustomerSearch = ({ navigation }) => {
         isLoadMore: false,
       }));
     } else {
-      setSearchResults([]);
       dispatch(resetCustomersList());
     }
   };
@@ -133,100 +174,517 @@ const CustomerSearch = ({ navigation }) => {
     });
   };
 
+  // Status color helpers (same as CustomerList)
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'ACTIVE':
+      case 'ACCEPTED':
+      case 'APPROVED':
+      case 'UN-VERIFIED':
+        return 'rgba(34, 197, 94, 0.1)';
+      case 'PENDING':
+        return 'rgba(251, 146, 60, 0.1)';
+      case 'LOCKED':
+        return 'rgba(239, 68, 68, 0.1)';
+      case 'DRAFT':
+        return 'rgba(156, 163, 175, 0.08)';
+      case 'NOT ONBOARDED':
+      case 'NOT-ONBOARDED':
+        return '#FFF3E0';
+      default:
+        return '#F5F5F5';
+    }
+  };
+
+  const getStatusTextColor = (status) => {
+    switch (status) {
+      case 'ACTIVE':
+      case 'ACCEPTED':
+      case 'APPROVED':
+      case 'UN-VERIFIED':
+        return '#22C55E';
+      case 'PENDING':
+        return '#FB923C';
+      case 'LOCKED':
+        return '#EF4444';
+      case 'DRAFT':
+        return '#9CA3AF';
+      case 'NOT ONBOARDED':
+      case 'NOT-ONBOARDED':
+        return '#F57C00';
+      default:
+        return '#666';
+    }
+  };
+
+  // Fetch customer documents
+  const fetchCustomerDocuments = async (customer) => {
+    setLoadingDocuments(true);
+    try {
+      const customerId = customer?.stgCustomerId || customer?.customerId;
+      const isStaging = customer?.statusName === 'NOT-ONBOARDED' ? false : (customer?.statusName === 'PENDING' ? true : false);
+
+      const response = await customerAPI.getCustomerDetails(customerId, isStaging);
+
+      if (response?.data) {
+        const details = response.data;
+        const docs = {
+          gst: details.securityDetails?.gstNumber || null,
+          gstDoc: details.docType?.find(d => d.doctypeName === 'GSTIN') || null,
+          pan: details.securityDetails?.panNumber || null,
+          panDoc: details.docType?.find(d => d.doctypeName === 'PAN CARD') || null,
+          registrationCertificate: details.docType?.find(d => d.doctypeName === 'REGISTRATION') || null,
+          practiceCertificate: details.docType?.find(d => d.doctypeName === 'PRACTICE') || null,
+          electricityBill: details.docType?.find(d => d.doctypeName === 'ELECTRICITY BILL') || null,
+          image: details.docType?.find(d => d.doctypeName === 'IMAGE') || null,
+          allDocuments: details.docType || []
+        };
+        setCustomerDocuments(docs);
+        setShowDocumentsModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching customer documents:', error);
+      Alert.alert('Error', 'Failed to load customer documents');
+    } finally {
+      setLoadingDocuments(false);
+    }
+  };
+
+  // Preview document
+  const previewDocument = async (doc) => {
+    if (!doc || !doc.s3Path) {
+      Alert.alert('Info', 'Document not available');
+      return;
+    }
+
+    setSelectedDocumentForPreview(doc);
+    setPreviewModalVisible(true);
+    setPreviewLoading(true);
+
+    try {
+      const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
+      if (response?.data?.signedUrl) {
+        setPreviewSignedUrl(response.data.signedUrl);
+      }
+    } catch (error) {
+      console.error('Error fetching document URL:', error);
+      Alert.alert('Error', 'Failed to load document');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  // Download document
+  const downloadDocument = async (doc) => {
+    if (!doc || !doc.s3Path) {
+      Alert.alert('Info', 'Document not available for download');
+      return;
+    }
+
+    try {
+      const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
+      if (response?.data?.signedUrl) {
+        await Linking.openURL(response.data.signedUrl);
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      Alert.alert('Error', 'Failed to download document');
+    }
+  };
+
+  // Handle approve customer
+  const handleApprovePress = (customer) => {
+    setSelectedCustomerForAction(customer);
+    setApproveModalVisible(true);
+  };
+
+  const handleApproveConfirm = async (comment) => {
+    try {
+      const instanceId = selectedCustomerForAction?.instaceId || selectedCustomerForAction?.instaceId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      const parellGroupId = selectedCustomerForAction?.instance?.stepInstances[0]?.parallelGroup;
+      const stepOrderId = selectedCustomerForAction?.instance?.stepInstances[0]?.stepOrder;
+
+      const actionDataPyaload = {
+        stepOrder: stepOrderId,
+        parallelGroup: parellGroupId,
+        actorId: actorId,
+        action: "APPROVE",
+        comments: comment || "Approved",
+        instanceId: instanceId,
+        actionData: {
+          field: "status",
+          newValue: "Approved"
+        },
+        dataChanges: {
+          previousStatus: "Pending",
+          newStatus: "Approved"
+        }
+      };
+
+      await customerAPI.workflowAction(instanceId, actionDataPyaload);
+
+      setApproveModalVisible(false);
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: `Customer ${selectedCustomerForAction?.customerName} approved successfully!`,
+        position: 'top',
+      });
+      setSelectedCustomerForAction(null);
+
+      // Refresh the customer list after approval
+      dispatch(resetCustomersList());
+      dispatch(fetchCustomersList({
+        page: 1,
+        limit: 20,
+        searchText: searchText,
+        isLoadMore: false,
+      }));
+    } catch (error) {
+      console.error('Error approving customer:', error);
+      setApproveModalVisible(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: `Failed to approve customer: ${error.message}`,
+        position: 'top',
+      });
+      setSelectedCustomerForAction(null);
+    }
+  };
+
+  // Handle reject customer
+  const handleRejectPress = (customer) => {
+    setSelectedCustomerForAction(customer);
+    setRejectModalVisible(true);
+  };
+
+  const handleRejectConfirm = async (comment) => {
+    try {
+      const instanceId = selectedCustomerForAction?.instaceId || selectedCustomerForAction?.stgCustomerId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      const parellGroupId = selectedCustomerForAction?.instance?.stepInstances[0]?.parallelGroup;
+      const stepOrderId = selectedCustomerForAction?.instance?.stepInstances[0]?.stepOrder;
+
+      const actionDataPyaload = {
+        stepOrder: stepOrderId,
+        parallelGroup: parellGroupId,
+        actorId: actorId,
+        action: "REJECT",
+        comments: comment || "Rejected",
+        instanceId: instanceId,
+        actionData: {
+          field: "status",
+          newValue: "Rejected"
+        },
+        dataChanges: {
+          previousStatus: "Pending",
+          newStatus: "Rejected"
+        }
+      };
+
+      await customerAPI.workflowAction(instanceId, actionDataPyaload);
+
+      setRejectModalVisible(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Rejected',
+        text2: `Customer ${selectedCustomerForAction?.customerName} rejected!`,
+        position: 'top',
+      });
+      setSelectedCustomerForAction(null);
+
+      // Refresh the customer list after rejection
+      dispatch(resetCustomersList());
+      dispatch(fetchCustomersList({
+        page: 1,
+        limit: 20,
+        searchText: searchText,
+        isLoadMore: false,
+      }));
+    } catch (error) {
+      console.error('Error rejecting customer:', error);
+      setRejectModalVisible(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: `Failed to reject customer: ${error.message}`,
+        position: 'top',
+      });
+      setSelectedCustomerForAction(null);
+    }
+  };
+
+  // Handle block customer
+  const handleBlockCustomer = async (customer) => {
+    try {
+      setBlockUnblockLoading(true);
+      const customerId = customer?.stgCustomerId || customer?.customerId;
+      const distributorId = loggedInUser?.distributorId || 1;
+
+      await customerAPI.blockUnblockCustomer(
+        [customerId],
+        distributorId,
+        false // isActive = false for blocking
+      );
+
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: `Customer ${customer?.customerName} blocked successfully!`,
+        position: 'top',
+      });
+
+      // Refresh the customer list
+      dispatch(resetCustomersList());
+      dispatch(fetchCustomersList({
+        page: 1,
+        limit: 20,
+        searchText: searchText,
+        isLoadMore: false,
+      }));
+    } catch (error) {
+      console.error('Error blocking customer:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: `Failed to block customer: ${error.message}`,
+        position: 'top',
+      });
+    } finally {
+      setBlockUnblockLoading(false);
+    }
+  };
+
+  // Handle unblock customer
+  const handleUnblockCustomer = async (customer) => {
+    try {
+      setBlockUnblockLoading(true);
+      const customerId = customer?.stgCustomerId || customer?.customerId;
+      const distributorId = loggedInUser?.distributorId || 1;
+
+      await customerAPI.blockUnblockCustomer(
+        [customerId],
+        distributorId,
+        true // isActive = true for unblocking
+      );
+
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: `Customer ${customer?.customerName} unblocked successfully!`,
+        position: 'top',
+      });
+
+      // Refresh the customer list
+      dispatch(resetCustomersList());
+      dispatch(fetchCustomersList({
+        page: 1,
+        limit: 20,
+        searchText: searchText,
+        isLoadMore: false,
+      }));
+    } catch (error) {
+      console.error('Error unblocking customer:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: `Failed to unblock customer: ${error.message}`,
+        position: 'top',
+      });
+    } finally {
+      setBlockUnblockLoading(false);
+    }
+  };
+
+  // Render customer item (same as CustomerList)
   const renderSearchResult = ({ item, index }) => {
-    const handleViewDetails = () => {
-      console.log('Navigating to CustomerDetail with customer:', item);
-      navigation.navigate('CustomerDetail', { customer: item });
-    };
-
-    // Get status badge color and text based on item.statusName
-    const getStatusStyle = () => {
-      const status = item.statusName?.toUpperCase();
-      switch (status) {
-        case 'ACTIVE':
-          return { bg: '#E8F5E9', text: '#2E7D32', label: 'Active' };
-        case 'LOCKED':
-        case 'BLOCKED':
-          return { bg: '#FFEBEE', text: '#C62828', label: 'Blocked' };
-        case 'PENDING':
-          return { bg: '#FFF3E0', text: '#E65100', label: 'Pending' };
-        case 'NOT-ONBOARDED':
-          return { bg: '#E3F2FD', text: '#1565C0', label: 'Not Onboarded' };
-        case 'UN-VERIFIED':
-          return { bg: '#F3E5F5', text: '#7B1FA2', label: 'Un-Verified' };
-        case 'REJECTED':
-          return { bg: '#FFEBEE', text: '#C62828', label: 'Rejected' };
-        case 'APPROVED':
-          return { bg: '#E8F5E9', text: '#2E7D32', label: 'Approved' };
-        default:
-          return status ? { bg: '#F5F5F5', text: '#666', label: status } : null;
-      }
-    };
-
-    // Get action badge color and text based on item.action
-    const getActionStyle = () => {
-      const action = item.action?.toUpperCase();
-      switch (action) {
-        case 'APPROVE':
-          return { bg: '#E8F5E9', text: '#2E7D32', label: 'Approve' };
-        case 'REJECT':
-          return { bg: '#FFEBEE', text: '#C62828', label: 'Reject' };
-        case 'BLOCK':
-          return { bg: '#FFF3E0', text: '#E65100', label: 'Block' };
-        case 'ACCEPT':
-          return { bg: '#E3F2FD', text: '#1565C0', label: 'Accept' };
-        default:
-          return null;
-      }
-    };
-
-    const statusStyle = getStatusStyle();
-    const actionStyle = getActionStyle();
-
     return (
-      <TouchableOpacity
+      <Animated.View
         style={[
-          styles.resultItem,
+          styles.customerCard,
           {
-            opacity: 1,
+            opacity: fadeAnim,
+            transform: [
+              {
+                translateY: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [30, 0],
+                }),
+              },
+            ],
           },
         ]}
-        onPress={handleViewDetails}
-        activeOpacity={0.7}
       >
-        <View style={styles.resultContent}>
-          <AppText style={styles.resultName}>{item.customerName || item.name}</AppText>
-          <View style={styles.resultRightContent}>
-            {statusStyle && (
-              <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                <AppText style={[styles.statusBadgeText, { color: statusStyle.text }]}>
-                  {statusStyle.label}
-                </AppText>
-              </View>
-            )}
-            {actionStyle && (
-              <View style={[styles.actionBadge, { backgroundColor: actionStyle.bg }]}>
-                <AppText style={[styles.actionBadgeText, { color: actionStyle.text }]}>
-                  {actionStyle.label}
-                </AppText>
-              </View>
-            )}
-            <Icon name="chevron-forward" size={20} color="#999" />
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
+        >
+          <View style={styles.customerHeader}>
+            <View style={styles.customerNameRow}>
+              <AppText
+                style={styles.customerName}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.customerName}
+              </AppText>
+              <ChevronRight
+                height={12}
+                color={colors.primary}
+                style={{ marginLeft: 6 }}
+              />
+            </View>
+            <View style={styles.actionsContainer}>
+              {item.statusName === 'NOT-ONBOARDED' && (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => {
+                    const customerId = item.customerId || item.stgCustomerId;
+                    const isStaging = false;
+                    handleOnboardCustomer(
+                      navigation,
+                      customerId,
+                      isStaging,
+                      customerAPI,
+                      (toastConfig) => Toast.show(toastConfig),
+                      item.statusName
+                    );
+                  }}
+                >
+                  <Edit color="#666" />
+                </TouchableOpacity>
+              )}
+
+              {(item.statusName?.toLowerCase() === 'approved' || item.statusName?.toLowerCase() === 'active') && (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => {
+                    const customerId = item.customerId || item.stgCustomerId;
+                    const isStaging = false;
+                    handleOnboardCustomer(
+                      navigation,
+                      customerId,
+                      isStaging,
+                      customerAPI,
+                      (toastConfig) => Toast.show(toastConfig),
+                      item.statusName
+                    );
+                  }}
+                >
+                  <Edit color="#666" />
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => fetchCustomerDocuments(item)}
+              >
+                <Download color="#666" />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-        <View style={styles.resultMeta}>
-          <Icon name="qr-code-outline" size={14} color="#999" />
-          <AppText style={styles.resultMetaText}>{item.customerCode || item.code}</AppText>
-          <AppText style={styles.divider}>|</AppText>
-          <AppText style={styles.resultMetaText}>{item.cityName || item.location}</AppText>
-        </View>
-        <View style={styles.resultActions}>
-          <Icon name="call-outline" size={16} color="#999" />
-          <AppText style={styles.contactText}>{item.mobile || 'N/A'}</AppText>
-          <Icon name="mail-outline" size={16} color="#999" style={styles.mailIcon} />
-          <AppText style={styles.contactText}>{item.email || 'N/A'}</AppText>
-        </View>
-      </TouchableOpacity>
+
+          <View style={styles.customerInfo}>
+            <View style={styles.infoRow}>
+              <AddrLine color="#999" />
+              <AppText style={styles.infoText}>{item.customerCode || item.stgCustomerId}</AppText>
+              <AppText style={styles.divider}>|</AppText>
+              {item.cityName && (<><AppText style={styles.infoText}>{item.cityName}</AppText>
+                <AppText style={styles.divider}>|</AppText></>)}
+
+              <AppText style={styles.infoText}>{item.groupName}</AppText>
+              <AppText style={styles.divider}>|</AppText>
+              <AppText
+                style={[styles.infoText, { flex: 1, maxWidth: 80 }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.customerType}
+              </AppText>
+
+              {item.customerType === 'Hospital' && (
+                <AlertFilled color="#999" style={styles.infoIcon} />
+              )}
+            </View>
+            <View style={styles.contactRow}>
+              <Phone color="#999" />
+              <AppText style={{ ...styles.contactText, marginRight: 15 }}>{item.mobile}</AppText>
+              <Email color="#999" style={styles.mailIcon} />
+              <AppText
+                style={[styles.contactText, { flex: 1, maxWidth: "100%" }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.email}
+              </AppText>
+            </View>
+          </View>
+
+          <View style={styles.statusRow}>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
+              <AppText style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
+                {item.statusName}
+              </AppText>
+            </View>
+            {item.statusName === 'LOCKED' ? (
+              <TouchableOpacity
+                style={styles.unlockButton}
+                onPress={() => handleUnblockCustomer(item)}
+                disabled={blockUnblockLoading}
+              >
+                <UnLocked fill="#EF4444" />
+                <AppText style={styles.unlockButtonText}>Unblock</AppText>
+              </TouchableOpacity>
+            ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
+              <TouchableOpacity
+                style={styles.blockButton}
+                onPress={() => handleBlockCustomer(item)}
+                disabled={blockUnblockLoading}
+              >
+                <Locked fill="#666" />
+                <AppText style={styles.blockButtonText}>Block</AppText>
+              </TouchableOpacity>
+            ) : item.statusName === 'PENDING' && item.action === 'APPROVE' ? (
+              <View style={styles.pendingActions}>
+                <TouchableOpacity
+                  style={styles.approveButton}
+                  onPress={() => handleApprovePress(item)}
+                >
+                  <View style={styles.approveButtonContent}>
+                    <Icon name="checkmark-outline" size={18} color="white" />
+                    <AppText style={styles.approveButtonText}>Approve</AppText>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.rejectButton}
+                  onPress={() => handleRejectPress(item)}
+                >
+                  <CloseCircle color='#000'/>
+                </TouchableOpacity>
+              </View>
+            ) : item.statusName === 'NOT-ONBOARDED' ? (
+              <TouchableOpacity
+                style={styles.onboardButton}
+                onPress={() => {
+                  const customerId = item.customerId || item.stgCustomerId;
+                  const isStaging = false;
+                  handleOnboardCustomer(
+                    navigation,
+                    customerId,
+                    isStaging,
+                    customerAPI,
+                    (toastConfig) => Toast.show(toastConfig),
+                    item.statusName
+                  );
+                }}>
+                <AppText style={styles.onboardButtonText}>Onboard</AppText>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
@@ -288,7 +746,6 @@ const CustomerSearch = ({ navigation }) => {
             <TouchableOpacity
               onPress={() => {
                 setSearchText('');
-                setSearchResults([]);
                 dispatch(resetCustomersList());
               }}
               style={styles.clearButton}
@@ -375,8 +832,205 @@ const CustomerSearch = ({ navigation }) => {
           setFilterModalVisible(false);
         }}
       />
+
+      {/* Documents Modal */}
+      <Modal
+        visible={showDocumentsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDocumentsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.documentsModalContent}>
+            <View style={styles.documentsModalHeader}>
+              <AppText style={styles.documentsModalTitle}>All Documents</AppText>
+              <TouchableOpacity onPress={() => setShowDocumentsModal(false)}>
+                <CloseCircle />
+              </TouchableOpacity>
+            </View>
+
+            {loadingDocuments ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <AppText style={styles.loadingText}>Loading documents...</AppText>
+              </View>
+            ) : customerDocuments && customerDocuments.allDocuments && customerDocuments.allDocuments.length > 0 ? (
+              <ScrollView style={styles.documentsListContainer} showsVerticalScrollIndicator={false}>
+                <View style={styles.documentsTopRow}>
+                  {customerDocuments.gstDoc && (
+                    <View style={styles.documentCardSmall}>
+                      <View style={styles.documentCardContentSmall}>
+                        <View style={styles.documentCardLeftSmall}>
+                          <Icon name="document-outline" size={20} color={colors.primary} />
+                          <View style={styles.documentInfoSmall}>
+                            <AppText style={styles.documentFileNameSmall} numberOfLines={1}>
+                              {customerDocuments.gstDoc.fileName || 'GST'}
+                            </AppText>
+                            <AppText style={styles.documentTypeSmall}>{customerDocuments.gstDoc.doctypeName}</AppText>
+                          </View>
+                        </View>
+                        <View style={styles.documentActionsSmall}>
+                          <TouchableOpacity
+                            style={styles.documentActionButtonSmall}
+                            onPress={() => previewDocument(customerDocuments.gstDoc)}
+                          >
+                            <EyeOpen width={16} color={colors.primary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.documentActionButtonSmall}
+                            onPress={() => downloadDocument(customerDocuments.gstDoc)}
+                          >
+                            <Download width={16} color={colors.primary} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+                  {customerDocuments.panDoc && (
+                    <View style={styles.documentCardSmall}>
+                      <View style={styles.documentCardContentSmall}>
+                        <View style={styles.documentCardLeftSmall}>
+                          <Icon name="document-outline" size={20} color={colors.primary} />
+                          <View style={styles.documentInfoSmall}>
+                            <AppText style={styles.documentFileNameSmall} numberOfLines={1}>
+                              {customerDocuments.panDoc.fileName || 'PAN'}
+                            </AppText>
+                            <AppText style={styles.documentTypeSmall}>{customerDocuments.panDoc.doctypeName}</AppText>
+                          </View>
+                        </View>
+                        <View style={styles.documentActionsSmall}>
+                          <TouchableOpacity
+                            style={styles.documentActionButtonSmall}
+                            onPress={() => previewDocument(customerDocuments.panDoc)}
+                          >
+                            <EyeOpen width={16} color={colors.primary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.documentActionButtonSmall}
+                            onPress={() => downloadDocument(customerDocuments.panDoc)}
+                          >
+                            <Download width={16} color={colors.primary} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+                </View>
+
+                {customerDocuments.allDocuments
+                  .filter(doc => doc.doctypeName !== 'GSTIN' && doc.doctypeName !== 'PAN CARD')
+                  .map((doc, index) => (
+                    <View key={index} style={styles.documentCard}>
+                      <View style={styles.documentCardContent}>
+                        <View style={styles.documentCardLeft}>
+                          <Icon name="document-outline" size={24} color={colors.primary} />
+                          <View style={styles.documentInfo}>
+                            <AppText style={styles.documentFileName} numberOfLines={1}>
+                              {doc.fileName || doc.doctypeName}
+                            </AppText>
+                            <AppText style={styles.documentType}>{doc.doctypeName}</AppText>
+                          </View>
+                        </View>
+                        <View style={styles.documentActions}>
+                          <TouchableOpacity
+                            style={styles.documentActionButton}
+                            onPress={() => previewDocument(doc)}
+                          >
+                            <EyeOpen width={18} color={colors.primary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.documentActionButton}
+                            onPress={() => downloadDocument(doc)}
+                          >
+                            <Download width={18} color={colors.primary} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.noDocumentsContainer}>
+                <Icon name="document-outline" size={48} color="#ccc" />
+                <AppText style={styles.noDocumentsText}>No documents available</AppText>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Document Preview Modal */}
+      <Modal
+        visible={previewModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewModalVisible(false)}
+      >
+        <View style={styles.previewModalOverlay}>
+          <View style={styles.previewModalContent}>
+            <View style={styles.previewModalHeader}>
+              <AppText style={styles.previewModalTitle} numberOfLines={1}>
+                {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
+              </AppText>
+              <TouchableOpacity onPress={() => setPreviewModalVisible(false)}>
+                <CloseCircle />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.previewContainer}>
+              {previewLoading ? (
+                <ActivityIndicator size="large" color={colors.primary} />
+              ) : previewSignedUrl && (selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpg') ||
+                selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpeg') ||
+                selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.png')) ? (
+                <Image
+                  source={{ uri: previewSignedUrl }}
+                  style={styles.previewImage}
+                  resizeMode="contain"
+                />
+              ) : (
+                <View style={styles.documentPreviewPlaceholder}>
+                  <Icon name="document-text-outline" size={64} color="#999" />
+                  <AppText style={styles.documentPreviewText}>{selectedDocumentForPreview?.fileName}</AppText>
+                </View>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={styles.downloadButtonInPreview}
+              onPress={() => downloadDocument(selectedDocumentForPreview)}
+            >
+              <Download width={20} color="#fff" />
+              <AppText style={styles.downloadButtonText}>Download</AppText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Approve Customer Modal */}
+      <ApproveCustomerModal
+        visible={approveModalVisible}
+        onClose={() => {
+          setApproveModalVisible(false);
+          setSelectedCustomerForAction(null);
+        }}
+        onConfirm={handleApproveConfirm}
+        customerName={selectedCustomerForAction?.customerName}
+      />
+
+      {/* Reject Customer Modal */}
+      <RejectCustomerModal
+        visible={rejectModalVisible}
+        onClose={() => {
+          setRejectModalVisible(false);
+          setSelectedCustomerForAction(null);
+        }}
+        onConfirm={handleRejectConfirm}
+        customerName={selectedCustomerForAction?.customerName}
+      />
     </SafeAreaView>
   );
+
 };
 
 const styles = StyleSheet.create({
@@ -386,7 +1040,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f0f0f0',
   },
   header: {
     flexDirection: 'row',
@@ -425,10 +1079,11 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   recentSearchContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: 'red',
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+
   },
   recentSearchTitle: {
     paddingHorizontal: 16,
@@ -588,6 +1243,257 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+
+
+   customerCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 16,
+    padding: 16
+  },
+  customerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  customerNameRow: {
+    gap: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    maxWidth: "80%",     // ⬅ LEFT BLOCK TAKES 80%
+    flexShrink: 1,       // ⬅ allow text to shrink
+  },
+  customerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    flexShrink: 1,       // ⬅ allows truncation
+
+  },
+
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    padding: 4,
+    marginTop: 2,
+  },
+  customerInfo: {
+    marginBottom: 12,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    flex: 1,
+  },
+  infoText: {
+    fontSize: 13,
+    color: '#666',
+    marginLeft: 4,
+    flexShrink: 1,
+  },
+  divider: {
+    color: '#999',
+    marginHorizontal: 4,
+  },
+  infoIcon: {
+    marginLeft: 4,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  contactText: {
+    fontSize: 13,
+    color: '#666',
+    marginLeft: 6,
+  },
+  mailIcon: {
+    marginLeft: 16,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  blockButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#999',
+  },
+  blockButtonText: {
+    marginLeft: 4,
+    fontSize: 14,
+    color: '#666',
+  },
+  onboardButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+  },
+  onboardButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  unlockButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D32F2F',
+  },
+  unlockButtonText: {
+    marginLeft: 4,
+    fontSize: 14,
+    color: '#D32F2F',
+  },
+  pendingActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  approveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    gap: 4,
+  },
+  approveButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',   // ⬅️ PERFECT vertical alignment
+  },
+
+  approveButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginLeft: 4,          // ⬅️ spacing between icon & text
+  },
+
+
+  rejectButton: {
+    padding: 4,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  downloadModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  documentItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  documentLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  documentText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#333',
   },
 });
 

@@ -34,7 +34,7 @@ import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
-import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler } from '../../../utils/formValidation';
+import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler, filterForField } from '../../../utils/formValidation';
 
 
 
@@ -1031,20 +1031,23 @@ const PharmacyWholesalerForm = () => {
 
     // Populate pharmacy name if available
     if (ocrData.pharmacyName && !formData.pharmacyName) {
-      updates.pharmacyName = ocrData.pharmacyName;
+      updates.pharmacyName = filterForField('pharmacyName', ocrData.pharmacyName, 40);
+
+      
     }
 
     // Split and populate address fields if available
     if (ocrData.address) {
       const addressParts = splitAddress(ocrData.address);
       if (!formData.address1 && addressParts.address1) {
-        updates.address1 = addressParts.address1;
+        updates.address1 = filterForField('address1', addressParts.address1, 40);
+         
       }
       if (!formData.address2 && addressParts.address2) {
-        updates.address2 = addressParts.address2;
+        updates.address2 = filterForField('address2', addressParts.address2, 40);
       }
       if (!formData.address3 && addressParts.address3) {
-        updates.address3 = addressParts.address3;
+        updates.address3 = filterForField('address3', addressParts.address3, 60);
       }
     }
 
@@ -1053,15 +1056,17 @@ const PharmacyWholesalerForm = () => {
       // Determine which license field to populate based on which file was just uploaded
       // This is a simplified approach - you may need to pass additional context
       if (!formData.license20b) {
-        updates.license20b = ocrData.licenseNumber;
+        updates.license20b = filterForField('license20b', ocrData.licenseNumber, 50);
+        
       } else if (!formData.license21b) {
-        updates.license21b = ocrData.licenseNumber;
+        updates.license21b = filterForField('license21b', ocrData.licenseNumber, 50);
+        
       }
     }
 
     // Populate pincode
     if (ocrData.pincode && !formData.pincode) {
-      updates.pincode = ocrData.pincode;
+      updates.pincode = filterForField('pincode', ocrData.pincode, 6);
     }
 
     // Populate expiry date if available
@@ -1571,6 +1576,8 @@ const PharmacyWholesalerForm = () => {
       </SafeAreaView>
     );
   }
+  console.log(formData);
+  
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -2210,7 +2217,7 @@ const PharmacyWholesalerForm = () => {
                   <CustomInput
                     placeholder="GST number"
                     value={formData.gstNumber}
-                    onChangeText={createFilteredInputHandler('panNo', (text) => {
+                    onChangeText={createFilteredInputHandler('gstNumber', (text) => {
                       const upperText = text.toUpperCase();
                       setFormData(prev => ({ ...prev, gstNumber: upperText }));
                       setErrors(prev => ({ ...prev, gstNumber: null }));

@@ -46,7 +46,7 @@ import Toast from 'react-native-toast-message';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
-import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler } from '../../../utils/formValidation';
+import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler, filterForField } from '../../../utils/formValidation';
 
 const { width, height } = Dimensions.get('window');
 
@@ -762,29 +762,36 @@ const GroupHospitalRegistrationForm = () => {
     const updates = {};
 
     // Populate hospital name if available
+
+
+
     if (ocrData.hospitalName && !formData.hospitalName) {
-      updates.hospitalName = ocrData.hospitalName;
-    }
+          updates.hospitalName = filterForField('hospitalName', ocrData.hospitalName, 40);
+        }
+    
+        if (ocrData.pharmacyName && !formData.hospitalName) {
+          updates.hospitalName = filterForField('hospitalName', ocrData.pharmacyName, 40);
+        }
 
     // Split and populate address fields if available
     if (ocrData.address) {
       const addressParts = splitAddress(ocrData.address);
       if (!formData.address1 && addressParts.address1) {
-        updates.address1 = addressParts.address1;
+        updates.address1 = filterForField('address1', addressParts.address1, 40);
       }
       if (!formData.address2 && addressParts.address2) {
-        updates.address2 = addressParts.address2;
+        updates.address2 = filterForField('address2', addressParts.address2, 40);
       }
       if (!formData.address3 && addressParts.address3) {
-        updates.address3 = addressParts.address3;
+        updates.address3 = filterForField('address3', addressParts.address3, 60);
       }
     }
 
     // Populate registration number if available (also check licenseNumber as fallback)
     if (ocrData.registrationNumber && !formData.registrationNumber) {
-      updates.registrationNumber = ocrData.registrationNumber;
+      updates.registrationNumber = filterForField('hospitalCode', ocrData.registrationNumber, 20);
     } else if (ocrData.licenseNumber && !formData.registrationNumber) {
-      updates.registrationNumber = ocrData.licenseNumber;
+      updates.registrationNumber = filterForField('hospitalCode', ocrData.licenseNumber, 20);
     }
 
     // Populate registration date if available
@@ -808,7 +815,7 @@ const GroupHospitalRegistrationForm = () => {
     
     // Populate pincode
     if (ocrData.pincode && !formData.pincode) {
-      updates.pincode = ocrData.pincode;
+      updates.pincode = filterForField('pincode', ocrData.pincode, 6);
     }
 
     // Apply all updates first
@@ -1445,7 +1452,7 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Hospital Registration Number"
           value={formData.registrationNumber}
-          onChangeText={createFilteredInputHandler('registrationNumber', (text) => {
+          onChangeText={createFilteredInputHandler('hospitalCode', (text) => {
             setFormData(prev => ({ ...prev, registrationNumber: text }));
             setErrors(prev => ({ ...prev, registrationNumber: null }));
           }, 20)}
@@ -1924,7 +1931,7 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="GST Number"
           value={formData.gstNumber}
-          onChangeText={createFilteredInputHandler('panNo', (text) => {
+          onChangeText={createFilteredInputHandler('gstNumber', (text) => {
             const upperText = text.toUpperCase();
             setFormData(prev => ({ ...prev, gstNumber: upperText }));
             setErrors(prev => ({ ...prev, gstNumber: null }));

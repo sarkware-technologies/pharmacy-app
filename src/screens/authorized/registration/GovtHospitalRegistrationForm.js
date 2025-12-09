@@ -45,7 +45,7 @@ import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
-import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler } from '../../../utils/formValidation';
+import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler, filterForField } from '../../../utils/formValidation';
 
 const { width, height } = Dimensions.get('window');
 
@@ -480,7 +480,7 @@ const GovtHospitalRegistrationForm = () => {
   // Fetch customer details for edit mode and onboard mode (same API)
   const fetchCustomerDetailsForEdit = async () => {
     if (!customerId) return;
-    
+
     setLoadingCustomerData(true);
     try {
       // For onboard mode, always use isStaging = false. For edit mode, use the passed value
@@ -539,23 +539,23 @@ const GovtHospitalRegistrationForm = () => {
 
       // Helper function to find documents by type (handles both string and number doctypeId)
       const findDocByType = (docTypeId, docTypeName) => {
-        return docType.find(d => 
-          String(d.doctypeId) === String(docTypeId) || 
+        return docType.find(d =>
+          String(d.doctypeId) === String(docTypeId) ||
           d.doctypeName === docTypeName ||
           d.doctypeName?.toUpperCase() === docTypeName?.toUpperCase()
         );
       };
 
       // Find license documents (Registration Certificate for Government Hospital) - also match by docTypeId
-      const registrationLicense = licenceDetails.licence?.find(l => 
-        l.licenceTypeCode === 'REG' || 
+      const registrationLicense = licenceDetails.licence?.find(l =>
+        l.licenceTypeCode === 'REG' ||
         l.licenceTypeName === 'Registration' ||
         l.hospitalCode ||
         String(l.docTypeId) === '8'
       );
 
       // Find document files - use helper function for robust matching
-      const registrationDoc = findDocByType('8', 'REGISTRATION') || 
+      const registrationDoc = findDocByType('8', 'REGISTRATION') ||
         (registrationLicense?.docTypeId ? findDocByType(String(registrationLicense.docTypeId), 'REGISTRATION') : null);
       const hospitalImageDoc = findDocByType('1', 'CLINIC IMAGE');
       const panDoc = findDocByType('7', 'PAN CARD');
@@ -583,7 +583,7 @@ const GovtHospitalRegistrationForm = () => {
           uri: hospitalImageDoc.s3Path || '',
           docTypeId: parseInt(hospitalImageDoc.doctypeId) || 1,
         } : null,
-        
+
         // General Details
         hospitalName: generalDetails.customerName || '',
         shortName: generalDetails.shortName || '',
@@ -701,7 +701,7 @@ const GovtHospitalRegistrationForm = () => {
   }, [otpTimers, showOTP]);
 
 
-  
+
   const handleVerify = async (field) => {
     // Validate field before verification
     if (
@@ -841,10 +841,10 @@ const GovtHospitalRegistrationForm = () => {
   // Helper function to split address into address1, address2, address3
   const splitAddress = (address) => {
     if (!address) return { address1: '', address2: '', address3: '' };
-    
+
     // Split by commas first
     const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
-    
+
     if (parts.length >= 3) {
       return {
         address1: parts[0],
@@ -880,7 +880,7 @@ const GovtHospitalRegistrationForm = () => {
         };
       }
     }
-    
+
     return { address1: '', address2: '', address3: '' };
   };
 
@@ -892,28 +892,32 @@ const GovtHospitalRegistrationForm = () => {
 
     // Populate hospital name if available
     if (ocrData.hospitalName && !formData.hospitalName) {
-      updates.hospitalName = ocrData.hospitalName;
+      updates.hospitalName = filterForField('hospitalName', ocrData.hospitalName, 40);
+    }
+
+    if (ocrData.pharmacyName && !formData.hospitalName) {
+      updates.hospitalName = filterForField('hospitalName', ocrData.pharmacyName, 40);
     }
 
     // Split and populate address fields if available
     if (ocrData.address) {
       const addressParts = splitAddress(ocrData.address);
       if (!formData.address1 && addressParts.address1) {
-        updates.address1 = addressParts.address1;
+        updates.address1 = filterForField('address1', addressParts.address1, 40);
       }
       if (!formData.address2 && addressParts.address2) {
-        updates.address2 = addressParts.address2;
+        updates.address2 = filterForField('address2', addressParts.address2, 40);
       }
       if (!formData.address3 && addressParts.address3) {
-        updates.address3 = addressParts.address3;
+        updates.address3 = filterForField('address3', addressParts.address3, 60);
       }
     }
 
     // Populate registration number if available (also check licenseNumber as fallback)
     if (ocrData.registrationNumber && !formData.registrationNumber) {
-      updates.registrationNumber = ocrData.registrationNumber;
+      updates.registrationNumber = filterForField('hospitalCode', ocrData.registrationNumber, 20);
     } else if (ocrData.licenseNumber && !formData.registrationNumber) {
-      updates.registrationNumber = ocrData.licenseNumber;
+      updates.registrationNumber = filterForField('hospitalCode', ocrData.licenseNumber, 20);
     }
 
     // Populate registration date if available (also check expiryDate for expiry)
@@ -934,10 +938,10 @@ const GovtHospitalRegistrationForm = () => {
         // Note: You may need to add a separate expiryDate field if required
       }
     }
-    
+
     // Populate pincode and trigger lookup
     if (ocrData.pincode && !formData.pincode) {
-      updates.pincode = ocrData.pincode;
+      updates.pincode = filterForField('pincode', ocrData.pincode, 6);
     }
 
     // Apply all updates first
@@ -1103,13 +1107,13 @@ const GovtHospitalRegistrationForm = () => {
         // ISO format or Date object
         d = new Date(date);
       }
-      
+
       // Check if date is valid
       if (isNaN(d.getTime())) {
         console.warn('Invalid date for API:', date);
         return null;
       }
-      
+
       // Add time component to avoid timezone issues
       d.setHours(23, 59, 59, 999);
       return d.toISOString();
@@ -1144,7 +1148,7 @@ const GovtHospitalRegistrationForm = () => {
       today.setHours(0, 0, 0, 0);
 
 
-  
+
       if (selected > today) {
         newErrors.registrationDate = 'Future date is not allowed';
       }
@@ -1208,7 +1212,7 @@ const GovtHospitalRegistrationForm = () => {
       newErrors.linkedHospitals = 'At least one linked hospital is required';
     }
 
-       if (!formData.markAsBuyingEntity && formData.linkedPharmacies.length === 0) {
+    if (!formData.markAsBuyingEntity && formData.linkedPharmacies.length === 0) {
       newErrors.pharmaciesMapping = "Pharmacy mapping is mandatory for non buying entities";
     }
 
@@ -1239,7 +1243,7 @@ const GovtHospitalRegistrationForm = () => {
     else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
     else if (!formData.panFile) isValid = false;
     else if (!formData.linkedHospitals || formData.linkedHospitals.length === 0) isValid = false;
-    
+
     setIsFormValid(isValid);
   }, [formData, verificationStatus]);
 
@@ -1338,7 +1342,7 @@ const GovtHospitalRegistrationForm = () => {
           }))
         }),
 
-         mapping:
+        mapping:
           formData.linkedHospitals?.length > 0 ||
             formData.linkedHospitals?.length > 0
             ? {
@@ -1576,7 +1580,7 @@ const GovtHospitalRegistrationForm = () => {
           mandatory={false}
         />
 
-    
+
 
         <FloatingDateInput
           label="Legal Start Date"
@@ -1591,7 +1595,7 @@ const GovtHospitalRegistrationForm = () => {
 
         <FileUploadComponent
           placeholder="Official Letter on Dept. Letterhead"
-         accept={['pdf', 'jpg', 'png', 'jpeg']}
+          accept={['pdf', 'jpg', 'png', 'jpeg']}
           maxSize={15 * 1024 * 1024}
           docType={DOC_TYPES.HOSPITAL_IMAGE}
           initialFile={formData.hospitalImageFile}
@@ -1600,7 +1604,7 @@ const GovtHospitalRegistrationForm = () => {
           errorMessage={errors.hospitalImageFile}
         />
 
-       
+
 
       </View>
     </Animated.View>
@@ -1641,9 +1645,9 @@ const GovtHospitalRegistrationForm = () => {
           placeholder="Address 1"
           value={formData.address1}
           onChangeText={createFilteredInputHandler('address1', (text) => {
-                           setFormData(prev => ({ ...prev, address1: text }));
-                            setErrors(prev => ({ ...prev, address1: null }));
-                          }, 40)}
+            setFormData(prev => ({ ...prev, address1: text }));
+            setErrors(prev => ({ ...prev, address1: null }));
+          }, 40)}
           mandatory={true}
           error={errors.address1}
           onLocationSelect={async (locationData) => {
@@ -2032,7 +2036,7 @@ const GovtHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="GST Number"
           value={formData.gstNumber}
-          onChangeText={createFilteredInputHandler('panNo', (text) => {
+          onChangeText={createFilteredInputHandler('gstNumber', (text) => {
             const upperText = text.toUpperCase();
             setFormData(prev => ({ ...prev, gstNumber: upperText }));
             setErrors(prev => ({ ...prev, gstNumber: null }));
@@ -2215,16 +2219,16 @@ const GovtHospitalRegistrationForm = () => {
                   )}
 
 
-               
+
 
                   {/* Add Pharmacy Link */}
                   <TouchableOpacity
                     style={styles.addPharmacyLink}
                     onPress={() => {
                       navigation.navigate('PharmacySelector', {
-                        parentHospitalName:hospital.name,
-                        mappingLabel:"Govt",
-                        mappingName:formData.hospitalName,
+                        parentHospitalName: hospital.name,
+                        mappingLabel: "Govt",
+                        mappingName: formData.hospitalName,
                         selectedPharmacies: hospital.pharmacies || [],
                         onSelect: (pharmacies) => {
                           setFormData(prev => ({
@@ -2334,7 +2338,7 @@ const GovtHospitalRegistrationForm = () => {
 
 
                 <View key={pharmacy.id || index} style={styles.selectedItemChip}>
-                  <AppText style={{ color: '#333'} }>{pharmacy.name}  </AppText>
+                  <AppText style={{ color: '#333' }}>{pharmacy.name}  </AppText>
                   <TouchableOpacity
                     onPress={() => {
                       setFormData(prev => ({
@@ -2359,11 +2363,11 @@ const GovtHospitalRegistrationForm = () => {
         </>
       )}
 
-  {errors.pharmaciesMapping && (
-                <AppText style={styles.errorText}>
-                  {errors.pharmaciesMapping}
-                </AppText>
-              )}
+      {errors.pharmaciesMapping && (
+        <AppText style={styles.errorText}>
+          {errors.pharmaciesMapping}
+        </AppText>
+      )}
 
 
 
@@ -2970,11 +2974,11 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   errorTextDropdown: {
-      color: colors.error,
-      fontSize: 12,
-      // marginBottom: 12,
-      marginLeft: 4,
-    },
+    color: colors.error,
+    fontSize: 12,
+    // marginBottom: 12,
+    marginLeft: 4,
+  },
   uploadButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -3923,7 +3927,7 @@ const styles = StyleSheet.create({
   },
   asteriskPrimary: {
     color: "red",
-    fontSize:16
+    fontSize: 16
   }
 });
 
