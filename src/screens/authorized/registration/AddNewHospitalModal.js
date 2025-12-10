@@ -22,7 +22,7 @@ import CustomInput from '../../../components/CustomInput';
 import { AppText, AppInput } from "../../../components"
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
-import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler } from '../../../utils/formValidation';
+import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler, filterForField } from '../../../utils/formValidation';
 
 const DOC_TYPES = {
   REGISTRATION_CERTIFICATE: 8,
@@ -133,38 +133,38 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     setHospitalForm(prev => ({ ...prev, pincode: filtered }));
     setHospitalErrors(prev => ({ ...prev, pincode: null }));
 
-      // If user is editing pincode manually, clear any OCR/upload-derived area list
-      if (uploadedAreas && uploadedAreas.length > 0) {
-        setUploadedAreas([]); // prefer manual lookup results from pincode
-      }
+    // If user is editing pincode manually, clear any OCR/upload-derived area list
+    if (uploadedAreas && uploadedAreas.length > 0) {
+      setUploadedAreas([]); // prefer manual lookup results from pincode
+    }
 
-      // Clear previous selections when pincode becomes incomplete
-      if (filtered.length < 6) {
-        setHospitalForm(prev => ({
-          ...prev,
-          area: '',
-          areaId: null,
-          city: '',
-          cityId: null,
-          state: '',
-          stateId: null,
-        }));
-        clearData();
-        // Clear local state arrays
-        setCities([]);
-        setStates([]);
-        return;
-      }
+    // Clear previous selections when pincode becomes incomplete
+    if (filtered.length < 6) {
+      setHospitalForm(prev => ({
+        ...prev,
+        area: '',
+        areaId: null,
+        city: '',
+        cityId: null,
+        state: '',
+        stateId: null,
+      }));
+      clearData();
+      // Clear local state arrays
+      setCities([]);
+      setStates([]);
+      return;
+    }
 
-      // Trigger lookup when pincode is complete (6 digits)
-      if (filtered.length === 6) {
-        try {
-          await lookupByPincode(filtered);
-        } catch (err) {
-          console.warn('Pincode lookup failed', err);
-        }
+    // Trigger lookup when pincode is complete (6 digits)
+    if (filtered.length === 6) {
+      try {
+        await lookupByPincode(filtered);
+      } catch (err) {
+        console.warn('Pincode lookup failed', err);
       }
     }
+  }
 
 
   // Sync pincode lookup results to local state
@@ -275,7 +275,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     if (
       field === 'email' &&
       (!hospitalForm.emailAddress ||
-         !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(hospitalForm.emailAddress))
+        !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(hospitalForm.emailAddress))
     ) {
       setHospitalErrors(prev => ({
         ...prev,
@@ -492,7 +492,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     setHospitalForm(prev => ({ ...prev, [`${field}File`]: null }));
   };
 
-    const formatDateForAPI = (date) => {
+  const formatDateForAPI = (date) => {
     if (!date) return null;
     const d = new Date(date);
     // Add time component to avoid timezone issues
@@ -790,7 +790,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             errorMessage={hospitalErrors.registrationCertificate}
             onOcrDataExtracted={async (ocrData) => {
               console.log('Registration Certificate OCR Data:', ocrData);
-              
+
               // Helper function to split address
               const splitAddress = (address) => {
                 if (!address) return { address1: '', address2: '', address3: '' };
@@ -823,35 +823,40 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 }
                 return { address1: '', address2: '', address3: '' };
               };
-              
+
               const updates = {};
-              
+
               // Populate hospital name if available
               if (ocrData.hospitalName && !hospitalForm.hospitalName) {
-                updates.hospitalName = ocrData.hospitalName;
+                updates.hospitalName = filterForField('hospitalName', ocrData.hospitalName, 40);
               }
-              
+
+              if (ocrData.pharmacyName && !hospitalForm.hospitalName) {
+                updates.hospitalName = filterForField('hospitalName', ocrData.pharmacyName, 40);
+              }
+
+
               // Split and populate address fields
               if (ocrData.address) {
                 const addressParts = splitAddress(ocrData.address);
                 if (!hospitalForm.address1 && addressParts.address1) {
-                  updates.address1 = addressParts.address1;
+                  updates.address1 = filterForField('address1', addressParts.address1, 40);
                 }
                 if (!hospitalForm.address2 && addressParts.address2) {
-                  updates.address2 = addressParts.address2;
+                  updates.address2 = filterForField('address2', addressParts.address2, 40);
                 }
                 if (!hospitalForm.address3 && addressParts.address3) {
-                  updates.address3 = addressParts.address3;
+                  updates.address3 = filterForField('address3', addressParts.address3, 60);
                 }
               }
-              
+
               // Populate registration number if available
               if (ocrData.registrationNumber && !hospitalForm.registrationNumber) {
-                updates.registrationNumber = ocrData.registrationNumber;
+                updates.registrationNumber = filterForField('hospitalCode', ocrData.registrationNumber, 20);
               } else if (ocrData.licenseNumber && !hospitalForm.registrationNumber) {
-                updates.registrationNumber = ocrData.licenseNumber;
+                updates.registrationNumber = filterForField('hospitalCode', ocrData.licenseNumber, 20);
               }
-              
+
               // Populate registration date if available
               if (ocrData.issueDate && !hospitalForm.registrationDate) {
                 const parts = ocrData.issueDate.split('-');
@@ -859,7 +864,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                   updates.registrationDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
                 }
               }
-              
+
               // Populate expiry date if available
               if (ocrData.expiryDate) {
                 const parts = ocrData.expiryDate.split('-');
@@ -868,12 +873,12 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                   // Store if needed
                 }
               }
-              
+
               // Populate pincode
               if (ocrData.pincode && !hospitalForm.pincode) {
-                updates.pincode = ocrData.pincode;
+                updates.pincode = filterForField('pincode', ocrData.pincode, 6);
               }
-              
+
               // -----------------------------
               //  🔥 DIRECTLY USE OCR LOCATION
               // -----------------------------
@@ -883,18 +888,18 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 // Build CITIES (flat)
                 const extractedCities = Array.isArray(location.cities)
                   ? location.cities.map(c => ({
-                      id: c.value,
-                      name: c.label,
-                    }))
+                    id: c.value,
+                    name: c.label,
+                  }))
                   : [];
 
                 // Build STATES (flat)
                 const extractedStates = Array.isArray(location.states)
                   ? location.states.map(s => ({
-                      id: s.value,
-                      name: s.label,
-                      gstCode: s.gstCode,
-                    }))
+                    id: s.value,
+                    name: s.label,
+                    gstCode: s.gstCode,
+                  }))
                   : [];
 
                 // Build AREAS (take from first city)
@@ -932,7 +937,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                   updates.areaId = extractedAreas[0].id;
                 }
               }
-              
+
               if (Object.keys(updates).length > 0) {
                 setHospitalForm(prev => ({ ...prev, ...updates }));
                 const errorUpdates = {};
@@ -941,7 +946,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 });
                 setHospitalErrors(prev => ({ ...prev, ...errorUpdates }));
               }
-              
+
               // Trigger pincode lookup if pincode is available and valid (6 digits) and locationDetails not available
               if (!location && (ocrData.pincode || ocrData.Pincode) && /^\d{6}$/.test(String(ocrData.pincode || ocrData.Pincode))) {
                 await lookupByPincode(String(ocrData.pincode || ocrData.Pincode));
@@ -952,7 +957,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <CustomInput
             placeholder="Hospital registration number"
             value={hospitalForm.registrationNumber}
-         
+
 
             onChangeText={createFilteredInputHandler('registrationNumber', (text) => {
               setHospitalForm(prev => ({ ...prev, registrationNumber: text }));
@@ -972,7 +977,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             mandatory={true}
             value={hospitalForm.registrationDate}
             error={hospitalErrors.registrationDate}
-  
+
             onChange={(date) => {
               setHospitalForm(prev => ({ ...prev, registrationDate: date }));
               setHospitalErrors(prev => ({ ...prev, registrationDate: null }));
@@ -986,7 +991,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             color={colors.textSecondary}
           /></AppText>
           <FileUploadComponent
-            placeholder="Uplaod"
+            placeholder="Upload"
             accept={['jpg', 'png', 'jpeg']}
             maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.HOSPITAL_IMAGE}
@@ -1395,7 +1400,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             maxLength={15}
             autoCapitalize="characters"
             value={hospitalForm.gstNumber}
-            onChangeText={createFilteredInputHandler('panNo', (text) => {
+            onChangeText={createFilteredInputHandler('gstNumber', (text) => {
               const upperText = text.toUpperCase();
               setHospitalForm(prev => ({ ...prev, gstNumber: upperText }));
               if (hospitalErrors.gstNumber) {
@@ -1413,7 +1418,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           </View>
 
           {/* Add Stockist Section (Optional) */}
-        <AppText style={styles.modalSectionLabel2}> Stockist Suggestions <AppText style={styles.optionalText}> (Optional)</AppText></AppText>
+          <AppText style={styles.modalSectionLabel2}> Stockist Suggestions <AppText style={styles.optionalText}> (Optional)</AppText></AppText>
           <CustomInput
             placeholder="Name of the Stockist"
             value={hospitalForm.stockistName}
@@ -1453,7 +1458,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           </View>
         </ScrollView>
         <Toast topOffset={20} />
-        
+
         {/* Area Selection Modal */}
         <Modal
           visible={showAreaModal}
@@ -1477,8 +1482,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                     uploadedAreas && uploadedAreas.length > 0
                       ? uploadedAreas
                       : Array.isArray(pincodeAreas)
-                      ? pincodeAreas
-                      : []
+                        ? pincodeAreas
+                        : []
                   }
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={({ item }) => (
@@ -1538,8 +1543,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                     cities.length > 0
                       ? cities
                       : pincodeCities.length > 0
-                      ? pincodeCities
-                      : []
+                        ? pincodeCities
+                        : []
                   }
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={({ item }) => (
@@ -1599,8 +1604,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                     states.length > 0
                       ? states
                       : pincodeStates.length > 0
-                      ? pincodeStates
-                      : []
+                        ? pincodeStates
+                        : []
                   }
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={({ item }) => (
@@ -2073,8 +2078,8 @@ const styles = StyleSheet.create({
 
   placeholderText: {
     fontSize: 16,
-   color: colors.gray,
-     marginLeft: 8
+    color: colors.gray,
+    marginLeft: 8
   },
   inputText: {
     fontSize: 16,
@@ -2096,12 +2101,12 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   dropdownContainer: {
-    marginBottom: 18  ,
+    marginBottom: 18,
   },
 
-   asteriskPrimary: {
+  asteriskPrimary: {
     color: "red",
-    fontSize:16
+    fontSize: 16
   },
 });
 

@@ -1032,8 +1032,6 @@ const PharmacyWholesalerForm = () => {
     // Populate pharmacy name if available
     if (ocrData.pharmacyName && !formData.pharmacyName) {
       updates.pharmacyName = filterForField('pharmacyName', ocrData.pharmacyName, 40);
-
-      
     }
 
     // Split and populate address fields if available

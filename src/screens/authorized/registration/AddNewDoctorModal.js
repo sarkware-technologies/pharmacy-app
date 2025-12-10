@@ -25,7 +25,7 @@ import { AppText, AppInput, CustomInput } from "../../../components"
 import Calendar from '../../../components/icons/Calendar';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
-import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler } from '../../../utils/formValidation';
+import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler, filterForField } from '../../../utils/formValidation';
 
 const DOC_TYPES = {
   LICENSE_20B: 3,
@@ -158,9 +158,183 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
     // Trigger lookup when pincode is complete (6 digits)
     if (filtered.length === 6) {
       await lookupByPincode(filtered);
+    }
+  }
+
+
+  const handleLicenseOcrData = async (ocrData) => {
+    console.log('Clinic Registration OCR Data:', ocrData);
+
+    // Helper function to split address
+    const splitAddress = (address) => {
+      if (!address) return { address1: '', address2: '', address3: '' };
+      const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
+      if (parts.length >= 3) {
+        return {
+          address1: parts[0],
+          address2: parts.slice(1, -1).join(', '),
+          address3: parts[parts.length - 1],
+        };
+      } else if (parts.length === 2) {
+        return { address1: parts[0], address2: parts[1], address3: '' };
+      } else if (parts.length === 1) {
+        const addr = parts[0];
+        if (addr.length > 100) {
+          return {
+            address1: addr.substring(0, 50).trim(),
+            address2: addr.substring(50, 100).trim(),
+            address3: addr.substring(100).trim(),
+          };
+        } else if (addr.length > 50) {
+          return {
+            address1: addr.substring(0, 50).trim(),
+            address2: addr.substring(50).trim(),
+            address3: '',
+          };
+        } else {
+          return { address1: addr, address2: '', address3: '' };
+        }
+      }
+      return { address1: '', address2: '', address3: '' };
+    };
+
+    const updates = {};
+
+    // Populate clinic name if available
+    if (ocrData.clinicName && !doctorForm.clinicName) {
+      updates.clinicName = filterForField('clinicName', ocrData.clinicName, 40);
+    } else if (ocrData.hospitalName && !doctorForm.clinicName) {
+      updates.clinicName = filterForField('clinicName', ocrData.hospitalName, 40);
+    }
+    else if (ocrData.pharmacyName && !doctorForm.clinicName) {
+      updates.clinicName = filterForField('clinicName', ocrData.pharmacyName, 40);
+    }
+
+    // Split and populate address fields
+    if (ocrData.address) {
+      const addressParts = splitAddress(ocrData.address);
+      if (!doctorForm.address1 && addressParts.address1) {
+        updates.address1 = filterForField('address1', addressParts.address1, 40);
+      }
+      if (!doctorForm.address2 && addressParts.address2) {
+        updates.address2 = filterForField('address2', addressParts.address2, 40);
+      }
+      if (!doctorForm.address3 && addressParts.address3) {
+        updates.address3 = filterForField('address3', addressParts.address3, 60);
       }
     }
- 
+
+    // Populate registration number if available
+
+
+    if (ocrData.registrationNumber && !doctorForm.clinicRegistrationNumber) {
+      updates.clinicRegistrationNumber = filterForField('clinicRegistrationNumber', ocrData.registrationNumber, 20);
+    } else if (ocrData.licenseNumber) {
+      if (!doctorForm.clinicRegistrationNumber) {
+        updates.clinicRegistrationNumber = filterForField('clinicRegistrationNumber', ocrData.licenseNumber, 20);
+      } else if (!doctorForm.practiceLicenseNumber) {
+        updates.practiceLicenseNumber = filterForField('practiceLicenseNumber', ocrData.licenseNumber, 20);
+      }
+    }
+
+
+    // Populate expiry date if available
+    if (ocrData.expiryDate) {
+      const parts = ocrData.expiryDate.split('-');
+      if (parts.length === 3) {
+        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        if (!doctorForm.clinicRegistrationExpiryDate) {
+          updates.clinicRegistrationExpiryDate = formattedDate;
+          updates.practiceLicenseExpiryDate = formattedDate;
+
+
+        }
+      }
+    }
+
+
+
+
+
+
+    // Populate pincode
+    if (ocrData.pincode && !doctorForm.pincode) {
+      updates.pincode = filterForField('pincode', ocrData.pincode, 6);
+    }
+
+    // -----------------------------
+    //  🔥 DIRECTLY USE OCR LOCATION
+    // -----------------------------
+    const location = ocrData.locationDetails;
+
+    if (location) {
+      // Build CITIES (flat)
+      const extractedCities = Array.isArray(location.cities)
+        ? location.cities.map(c => ({
+          id: c.value,
+          name: c.label,
+        }))
+        : [];
+
+      // Build STATES (flat)
+      const extractedStates = Array.isArray(location.states)
+        ? location.states.map(s => ({
+          id: s.value,
+          name: s.label,
+          gstCode: s.gstCode,
+        }))
+        : [];
+
+      // Build AREAS (take from first city)
+      let extractedAreas = [];
+      if (
+        Array.isArray(location.cities) &&
+        location.cities.length > 0 &&
+        Array.isArray(location.cities[0].area)
+      ) {
+        extractedAreas = location.cities[0].area.map(a => ({
+          id: a.value,
+          name: a.label,
+          cityId: location.cities[0].value,
+        }));
+      }
+
+      // UPDATE STATE VALUES DIRECTLY (NO API CALL)
+      setCities(extractedCities);
+      setStates(extractedStates);
+      if (extractedAreas.length > 0) setUploadedAreas(extractedAreas);
+
+      // Set selected values if not already filled
+      if (extractedCities.length > 0) {
+        updates.city = extractedCities[0].name;
+        updates.cityId = extractedCities[0].id;
+      }
+
+      if (extractedStates.length > 0) {
+        updates.state = extractedStates[0].name;
+        updates.stateId = extractedStates[0].id;
+      }
+
+      if (extractedAreas.length > 0) {
+        updates.area = extractedAreas[0].name;
+        updates.areaId = extractedAreas[0].id;
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      setDoctorForm(prev => ({ ...prev, ...updates }));
+      const errorUpdates = {};
+      Object.keys(updates).forEach(key => {
+        errorUpdates[key] = null;
+      });
+      setDoctorErrors(prev => ({ ...prev, ...errorUpdates }));
+    }
+
+    // Trigger pincode lookup if pincode is available and valid (6 digits) and locationDetails not available
+    if (!location && (ocrData.pincode || ocrData.Pincode) && /^\d{6}$/.test(String(ocrData.pincode || ocrData.Pincode))) {
+      await lookupByPincode(String(ocrData.pincode || ocrData.Pincode));
+    }
+  };
 
   // Auto-populate city, state, and area when pincode lookup completes
   useEffect(() => {
@@ -355,7 +529,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
     // Validate the field before showing OTP
 
 
-     if (
+    if (
       field === 'mobile' &&
       (!doctorForm.mobileNumber ||
         !/^[6-9]\d{9}$/.test(doctorForm.mobileNumber))
@@ -369,7 +543,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
     if (
       field === 'email' &&
       (!doctorForm.emailAddress ||
-         !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(doctorForm.emailAddress))
+        !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(doctorForm.emailAddress))
     ) {
       setDoctorErrors(prev => ({
         ...prev,
@@ -835,161 +1009,10 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
             onFileUpload={(file) => handleFileUpload('clinicRegistrationCertificate', file)}
             onFileDelete={() => handleFileDelete('clinicRegistrationCertificate')}
             errorMessage={doctorErrors.clinicRegistrationCertificateFile}
-            onOcrDataExtracted={async (ocrData) => {
-              console.log('Clinic Registration OCR Data:', ocrData);
-              
-              // Helper function to split address
-              const splitAddress = (address) => {
-                if (!address) return { address1: '', address2: '', address3: '' };
-                const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
-                if (parts.length >= 3) {
-                  return {
-                    address1: parts[0],
-                    address2: parts.slice(1, -1).join(', '),
-                    address3: parts[parts.length - 1],
-                  };
-                } else if (parts.length === 2) {
-                  return { address1: parts[0], address2: parts[1], address3: '' };
-                } else if (parts.length === 1) {
-                  const addr = parts[0];
-                  if (addr.length > 100) {
-                    return {
-                      address1: addr.substring(0, 50).trim(),
-                      address2: addr.substring(50, 100).trim(),
-                      address3: addr.substring(100).trim(),
-                    };
-                  } else if (addr.length > 50) {
-                    return {
-                      address1: addr.substring(0, 50).trim(),
-                      address2: addr.substring(50).trim(),
-                      address3: '',
-                    };
-                  } else {
-                    return { address1: addr, address2: '', address3: '' };
-                  }
-                }
-                return { address1: '', address2: '', address3: '' };
-              };
-              
-              const updates = {};
-              
-              // Populate clinic name if available
-              if (ocrData.clinicName && !doctorForm.clinicName) {
-                updates.clinicName = ocrData.clinicName;
-              } else if (ocrData.hospitalName && !doctorForm.clinicName) {
-                updates.clinicName = ocrData.hospitalName;
-              }
-              
-              // Split and populate address fields
-              if (ocrData.address) {
-                const addressParts = splitAddress(ocrData.address);
-                if (!doctorForm.address1 && addressParts.address1) {
-                  updates.address1 = addressParts.address1;
-                }
-                if (!doctorForm.address2 && addressParts.address2) {
-                  updates.address2 = addressParts.address2;
-                }
-                if (!doctorForm.address3 && addressParts.address3) {
-                  updates.address3 = addressParts.address3;
-                }
-              }
-              
-              // Populate registration number if available
-              if (ocrData.registrationNumber && !doctorForm.clinicRegistrationNumber) {
-                updates.clinicRegistrationNumber = ocrData.registrationNumber;
-              } else if (ocrData.licenseNumber && !doctorForm.clinicRegistrationNumber) {
-                updates.clinicRegistrationNumber = ocrData.licenseNumber;
-              }
-              
-              // Populate expiry date if available
-              if (ocrData.expiryDate) {
-                const parts = ocrData.expiryDate.split('-');
-                if (parts.length === 3) {
-                  const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                  if (!doctorForm.clinicRegistrationExpiryDate) {
-                    updates.clinicRegistrationExpiryDate = formattedDate;
-                  }
-                }
-              }
-              
-              // Populate pincode
-              if (ocrData.pincode && !doctorForm.pincode) {
-                updates.pincode = ocrData.pincode;
-              }
-              
-              // -----------------------------
-              //  🔥 DIRECTLY USE OCR LOCATION
-              // -----------------------------
-              const location = ocrData.locationDetails;
+            onOcrDataExtracted={handleLicenseOcrData}
 
-              if (location) {
-                // Build CITIES (flat)
-                const extractedCities = Array.isArray(location.cities)
-                  ? location.cities.map(c => ({
-                      id: c.value,
-                      name: c.label,
-                    }))
-                  : [];
 
-                // Build STATES (flat)
-                const extractedStates = Array.isArray(location.states)
-                  ? location.states.map(s => ({
-                      id: s.value,
-                      name: s.label,
-                      gstCode: s.gstCode,
-                    }))
-                  : [];
 
-                // Build AREAS (take from first city)
-                let extractedAreas = [];
-                if (
-                  Array.isArray(location.cities) &&
-                  location.cities.length > 0 &&
-                  Array.isArray(location.cities[0].area)
-                ) {
-                  extractedAreas = location.cities[0].area.map(a => ({
-                    id: a.value,
-                    name: a.label,
-                    cityId: location.cities[0].value,
-                  }));
-                }
-
-                // UPDATE STATE VALUES DIRECTLY (NO API CALL)
-                setCities(extractedCities);
-                setStates(extractedStates);
-                if (extractedAreas.length > 0) setUploadedAreas(extractedAreas);
-
-                // Set selected values if not already filled
-                if (extractedCities.length > 0) {
-                  updates.city = extractedCities[0].name;
-                  updates.cityId = extractedCities[0].id;
-                }
-
-                if (extractedStates.length > 0) {
-                  updates.state = extractedStates[0].name;
-                  updates.stateId = extractedStates[0].id;
-                }
-
-                if (extractedAreas.length > 0) {
-                  updates.area = extractedAreas[0].name;
-                  updates.areaId = extractedAreas[0].id;
-                }
-              }
-              
-              if (Object.keys(updates).length > 0) {
-                setDoctorForm(prev => ({ ...prev, ...updates }));
-                const errorUpdates = {};
-                Object.keys(updates).forEach(key => {
-                  errorUpdates[key] = null;
-                });
-                setDoctorErrors(prev => ({ ...prev, ...errorUpdates }));
-              }
-              
-              // Trigger pincode lookup if pincode is available and valid (6 digits) and locationDetails not available
-              if (!location && (ocrData.pincode || ocrData.Pincode) && /^\d{6}$/.test(String(ocrData.pincode || ocrData.Pincode))) {
-                await lookupByPincode(String(ocrData.pincode || ocrData.Pincode));
-              }
-            }}
           />
 
 
@@ -1028,11 +1051,15 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
             placeholder="Upload License"
             accept={['pdf', 'jpg', 'png']}
             maxSize={15 * 1024 * 1024}
-            docType={DOC_TYPES.LICENSE_21B}
+            docType={DOC_TYPES.LICENSE_20B}
             initialFile={doctorForm.practiceLicenseFile}
             onFileUpload={(file) => handleFileUpload('practiceLicense', file)}
             onFileDelete={() => handleFileDelete('practiceLicense')}
             errorMessage={doctorErrors.practiceLicenseFile}
+            onOcrDataExtracted={handleLicenseOcrData}
+
+
+
           />
 
 
@@ -1053,10 +1080,10 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           />
 
 
-         
 
 
-<FloatingDateInput
+
+          <FloatingDateInput
             label="Expiry Date"
             mandatory={true}
             value={doctorForm.practiceLicenseExpiryDate}
@@ -1099,7 +1126,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
 
 
 
-         
+
 
           {/* General Details */}
           <AppText style={styles.modalSectionLabel}>General Details <AppText style={styles.mandatory}>*</AppText></AppText>
@@ -1542,7 +1569,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
             maxLength={15}
             autoCapitalize="characters"
             value={doctorForm.gstNumber}
-            onChangeText={createFilteredInputHandler('panNo', (text) => {
+            onChangeText={createFilteredInputHandler('gstNumber', (text) => {
               const upperText = text.toUpperCase();
               setDoctorForm(prev => ({ ...prev, gstNumber: upperText }));
               if (doctorErrors.gstNumber) {
@@ -1555,7 +1582,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
 
           {/* Mapping Section */}
           <AppText style={styles.modalSectionLabel}>Mapping</AppText>
-          <AppText style={styles.modalFieldLabel}>{mappingLabel||"Hospital"}</AppText>
+          <AppText style={styles.modalFieldLabel}>{mappingLabel || "Hospital"}</AppText>
           <View style={[styles.mappingPharmacyBox, { marginBottom: 20 }]}>
             <AppText style={styles.mappingPharmacyText}>{mappingName || 'Pharmacy name will appear here'}</AppText>
           </View>
@@ -1607,8 +1634,8 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
                     uploadedAreas && uploadedAreas.length > 0
                       ? uploadedAreas
                       : Array.isArray(areas)
-                      ? areas
-                      : []
+                        ? areas
+                        : []
                   }
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={({ item }) => (
@@ -1668,8 +1695,8 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
                     cities.length > 0
                       ? cities
                       : pincodeCities.length > 0
-                      ? pincodeCities
-                      : []
+                        ? pincodeCities
+                        : []
                   }
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={({ item }) => (
@@ -1729,8 +1756,8 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
                     states.length > 0
                       ? states
                       : pincodeStates.length > 0
-                      ? pincodeStates
-                      : []
+                        ? pincodeStates
+                        : []
                   }
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={({ item }) => (
@@ -2168,7 +2195,7 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 16,
     color: colors.gray,
-     marginLeft: 8
+    marginLeft: 8
   },
   inputText: {
     fontSize: 16,
@@ -2191,11 +2218,11 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   dropdownContainer: {
-    marginBottom: 18  ,
+    marginBottom: 18,
   },
-   asteriskPrimary: {
+  asteriskPrimary: {
     color: "red",
-    fontSize:16
+    fontSize: 16
   },
 });
 

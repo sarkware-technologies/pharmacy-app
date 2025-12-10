@@ -1832,7 +1832,7 @@ const handleLicenseOcrData = async (ocrData) => {
 
   // Pharmacy name
   if (ocrData.pharmacyName && !formData.pharmacyName) {
-    updates.pharmacyName = filterForField('pharmacyName', ocrData.pharmacyName, 40);;
+    updates.pharmacyName = filterForField('pharmacyName', ocrData.pharmacyName, 40);
   }
 
   // Address parsing

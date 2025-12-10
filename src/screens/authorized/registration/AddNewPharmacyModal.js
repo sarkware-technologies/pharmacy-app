@@ -22,7 +22,7 @@ import CustomInput from '../../../components/CustomInput';
 import { AppText, AppInput } from "../../../components";
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
-import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler } from '../../../utils/formValidation';
+import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler, filterForField } from '../../../utils/formValidation';
 
 const DOC_TYPES = {
   LICENSE_20B: 3,
@@ -191,6 +191,164 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
   };
 
 
+  const handleLicenseOcrData = async (ocrData) => {
+    console.log('License OCR Data:', ocrData);
+
+    // Helper function to split address
+    const splitAddress = (address) => {
+      if (!address) return { address1: '', address2: '', address3: '' };
+      const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
+      if (parts.length >= 3) {
+        return {
+          address1: parts[0],
+          address2: parts.slice(1, -1).join(', '),
+          address3: parts[parts.length - 1],
+        };
+      } else if (parts.length === 2) {
+        return { address1: parts[0], address2: parts[1], address3: '' };
+      } else if (parts.length === 1) {
+        const addr = parts[0];
+        if (addr.length > 100) {
+          return {
+            address1: addr.substring(0, 50).trim(),
+            address2: addr.substring(50, 100).trim(),
+            address3: addr.substring(100).trim(),
+          };
+        } else if (addr.length > 50) {
+          return {
+            address1: addr.substring(0, 50).trim(),
+            address2: addr.substring(50).trim(),
+            address3: '',
+          };
+        } else {
+          return { address1: addr, address2: '', address3: '' };
+        }
+      }
+      return { address1: '', address2: '', address3: '' };
+    };
+
+    const updates = {};
+
+    // Populate pharmacy name if available
+    if (ocrData.pharmacyName && !pharmacyForm.pharmacyName) {
+      updates.pharmacyName = filterForField('pharmacyName', ocrData.pharmacyName, 40);
+    }
+
+    // Split and populate address fields
+    if (ocrData.address) {
+      const addressParts = splitAddress(ocrData.address);
+      if (!pharmacyForm.address1 && addressParts.address1) {
+        updates.address1 = filterForField('address1', addressParts.address1, 40);
+      }
+      if (!pharmacyForm.address2 && addressParts.address2) {
+        updates.address2 = filterForField('address2', addressParts.address2, 40);
+      }
+      if (!pharmacyForm.address3 && addressParts.address3) {
+        updates.address3 = filterForField('address3', addressParts.address3, 60);
+      }
+    }
+
+    // Populate license number if available
+    if (ocrData.licenseNumber) {
+      if (!pharmacyForm.license20) updates.license20 = filterForField('license20', ocrData.licenseNumber, 50);
+      else if (!pharmacyForm.license21) updates.license21 = filterForField('license21', ocrData.licenseNumber, 50);
+      else if (!pharmacyForm.license20b) updates.license20b = filterForField('license20b', ocrData.licenseNumber, 50);
+      else if (!pharmacyForm.license21b) updates.license21b = filterForField('license21b', ocrData.licenseNumber, 50);
+    }
+
+
+
+
+    // Populate expiry date if available
+    if (ocrData.expiryDate) {
+      const parts = ocrData.expiryDate.split("-");
+      if (parts.length === 3) {
+        const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        if (!pharmacyForm.license20ExpiryDate) updates.license20ExpiryDate = formatted;
+        else if (!pharmacyForm.license21ExpiryDate) updates.license21ExpiryDate = formatted;
+        else if (!pharmacyForm.license20bExpiryDate) updates.license20bExpiryDate = formatted;
+        else if (!pharmacyForm.license21bExpiryDate) updates.license21bExpiryDate = formatted;
+      }
+    }
+
+    // Populate pincode
+    if (ocrData.pincode && !pharmacyForm.pincode) {
+      updates.pincode = filterForField('pincode', ocrData.pincode, 6);
+    }
+
+    // -----------------------------
+    //  🔥 DIRECTLY USE OCR LOCATION
+    // -----------------------------
+    const location = ocrData.locationDetails;
+
+    if (location) {
+      // Build CITIES (flat)
+      const extractedCities = Array.isArray(location.cities)
+        ? location.cities.map(c => ({
+          id: c.value,
+          name: c.label,
+        }))
+        : [];
+
+      // Build STATES (flat)
+      const extractedStates = Array.isArray(location.states)
+        ? location.states.map(s => ({
+          id: s.value,
+          name: s.label,
+          gstCode: s.gstCode,
+        }))
+        : [];
+
+      // Build AREAS (take from first city)
+      let extractedAreas = [];
+      if (
+        Array.isArray(location.cities) &&
+        location.cities.length > 0 &&
+        Array.isArray(location.cities[0].area)
+      ) {
+        extractedAreas = location.cities[0].area.map(a => ({
+          id: a.value,
+          name: a.label,
+          cityId: location.cities[0].value,
+        }));
+      }
+
+      // UPDATE STATE VALUES DIRECTLY (NO API CALL)
+      setCities(extractedCities);
+      setStates(extractedStates);
+      if (extractedAreas.length > 0) setUploadedAreas(extractedAreas);
+
+      // Set selected values if not already filled
+      if (extractedCities.length > 0) {
+        updates.city = extractedCities[0].name;
+        updates.cityId = extractedCities[0].id;
+      }
+
+      if (extractedStates.length > 0) {
+        updates.state = extractedStates[0].name;
+        updates.stateId = extractedStates[0].id;
+      }
+
+      if (extractedAreas.length > 0) {
+        updates.area = extractedAreas[0].name;
+        updates.areaId = extractedAreas[0].id;
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      setPharmacyForm(prev => ({ ...prev, ...updates }));
+      const errorUpdates = {};
+      Object.keys(updates).forEach(key => {
+        errorUpdates[key] = null;
+      });
+      setPharmacyErrors(prev => ({ ...prev, ...errorUpdates }));
+    }
+
+    // Trigger pincode lookup if pincode is available and valid (6 digits) and locationDetails not available
+    if (!location && (ocrData.pincode || ocrData.Pincode) && /^\d{6}$/.test(String(ocrData.pincode || ocrData.Pincode))) {
+      await lookupByPincode(String(ocrData.pincode || ocrData.Pincode));
+    }
+  };
 
   useEffect(() => {
     loadInitialData();
@@ -233,8 +391,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
     // Trigger lookup when pincode is complete (6 digits)
     if (filtered.length === 6) {
       await lookupByPincode(filtered);
-      }
     }
+  }
 
 
   // Sync pincode lookup results to local state
@@ -379,7 +537,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
   const handleVerify = async (field) => {
     // Validate the field before showing OTP
 
-     if (
+    if (
       field === 'mobile' &&
       (!pharmacyForm.mobileNumber ||
         !/^[6-9]\d{9}$/.test(pharmacyForm.mobileNumber))
@@ -393,7 +551,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
     if (
       field === 'email' &&
       (!pharmacyForm.emailAddress ||
-         !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(pharmacyForm.emailAddress))
+        !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(pharmacyForm.emailAddress))
     ) {
       setPharmacyErrors(prev => ({
         ...prev,
@@ -633,7 +791,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
     }
 
 
-  
+
 
     if (pharmacyForm.licenseTypeId && pharmacyForm.licenseTypeId !== 2) {
       // 20 License validation
@@ -659,7 +817,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
       }
     }
 
-      if (pharmacyForm.licenseTypeId && pharmacyForm.licenseTypeId !== 1) {
+    if (pharmacyForm.licenseTypeId && pharmacyForm.licenseTypeId !== 1) {
       // 20b License validation
       if (!pharmacyForm.license20bFile && !documentIds.license20b) {
         newErrors.license20bFile = '20 B license document is required';
@@ -768,7 +926,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
     setLoading(true);
 
     try {
-  
+
       // Prepare registration payload matching the API structure
       const registrationData = {
         typeId: 1,
@@ -787,13 +945,13 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                   licenceTypeId: licenseTypes.LICENSE_20?.id || 1,
                   licenceNo: pharmacyForm.license20,
                   licenceValidUpto: formatDateForAPI(pharmacyForm.license20ExpiryDate)
-                   
+
                 },
                 {
                   licenceTypeId: licenseTypes.LICENSE_21?.id || 3,
                   licenceNo: pharmacyForm.license21,
                   licenceValidUpto: formatDateForAPI(pharmacyForm.license21ExpiryDate)
-                    
+
                 },
               ]
               : []),
@@ -805,13 +963,13 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                   licenceTypeId: licenseTypes.LICENSE_20B?.id || 2,
                   licenceNo: pharmacyForm.license20b,
                   licenceValidUpto: formatDateForAPI(pharmacyForm.license20bExpiryDate)
-                 
+
                 },
                 {
                   licenceTypeId: licenseTypes.LICENSE_21B?.id || 4,
                   licenceNo: pharmacyForm.license21b,
                   licenceValidUpto: formatDateForAPI(pharmacyForm.license21bExpiryDate)
-                  
+
                 },
               ]
               : []),
@@ -854,7 +1012,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
 
       console.log('Pharmacy registration payload:', registrationData);
       console.log(pharmacyForm);
-      
+
       console.log('=== Calling API: customerAPI.createCustomer ===');
 
       const response = await customerAPI.createCustomer(registrationData);
@@ -893,7 +1051,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
         });
       }
     }
-    
+
     catch (error) {
       console.error('Pharmacy registration error:', error);
       Toast.show({
@@ -909,7 +1067,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
 
 
   console.log(pharmacyErrors);
-  
+
   return (
     <Modal
       visible={visible}
@@ -984,157 +1142,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                 onFileUpload={(file) => handleFileUpload('license20', file)}
                 onFileDelete={() => handleFileDelete('license20')}
                 errorMessage={pharmacyErrors.license20File}
-                onOcrDataExtracted={async (ocrData) => {
-                  console.log('License OCR Data:', ocrData);
-
-                  // Helper function to split address
-                  const splitAddress = (address) => {
-                    if (!address) return { address1: '', address2: '', address3: '' };
-                    const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
-                    if (parts.length >= 3) {
-                      return {
-                        address1: parts[0],
-                        address2: parts.slice(1, -1).join(', '),
-                        address3: parts[parts.length - 1],
-                      };
-                    } else if (parts.length === 2) {
-                      return { address1: parts[0], address2: parts[1], address3: '' };
-                    } else if (parts.length === 1) {
-                      const addr = parts[0];
-                      if (addr.length > 100) {
-                        return {
-                          address1: addr.substring(0, 50).trim(),
-                          address2: addr.substring(50, 100).trim(),
-                          address3: addr.substring(100).trim(),
-                        };
-                      } else if (addr.length > 50) {
-                        return {
-                          address1: addr.substring(0, 50).trim(),
-                          address2: addr.substring(50).trim(),
-                          address3: '',
-                        };
-                      } else {
-                        return { address1: addr, address2: '', address3: '' };
-                      }
-                    }
-                    return { address1: '', address2: '', address3: '' };
-                  };
-
-                  const updates = {};
-
-                  // Populate pharmacy name if available
-                  if (ocrData.pharmacyName && !pharmacyForm.pharmacyName) {
-                    updates.pharmacyName = ocrData.pharmacyName;
-                  }
-
-                  // Split and populate address fields
-                  if (ocrData.address) {
-                    const addressParts = splitAddress(ocrData.address);
-                    if (!pharmacyForm.address1 && addressParts.address1) {
-                      updates.address1 = addressParts.address1;
-                    }
-                    if (!pharmacyForm.address2 && addressParts.address2) {
-                      updates.address2 = addressParts.address2;
-                    }
-                    if (!pharmacyForm.address3 && addressParts.address3) {
-                      updates.address3 = addressParts.address3;
-                    }
-                  }
-
-                  // Populate license number if available
-                  if (ocrData.licenseNumber && !pharmacyForm.license20) {
-                    updates.license20 = ocrData.licenseNumber;
-                  }
-
-                  // Populate expiry date if available
-                  if (ocrData.expiryDate) {
-                    const parts = ocrData.expiryDate.split('-');
-                    if (parts.length === 3) {
-                      const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                      if (!pharmacyForm.license20ExpiryDate) {
-                        updates.license20ExpiryDate = formattedDate;
-                      }
-                    }
-                  }
-
-                  // Populate pincode
-                  if (ocrData.pincode && !pharmacyForm.pincode) {
-                    updates.pincode = ocrData.pincode;
-                  }
-                  
-                  // -----------------------------
-                  //  🔥 DIRECTLY USE OCR LOCATION
-                  // -----------------------------
-                  const location = ocrData.locationDetails;
-
-                  if (location) {
-                    // Build CITIES (flat)
-                    const extractedCities = Array.isArray(location.cities)
-                      ? location.cities.map(c => ({
-                          id: c.value,
-                          name: c.label,
-                        }))
-                      : [];
-
-                    // Build STATES (flat)
-                    const extractedStates = Array.isArray(location.states)
-                      ? location.states.map(s => ({
-                          id: s.value,
-                          name: s.label,
-                          gstCode: s.gstCode,
-                        }))
-                      : [];
-
-                    // Build AREAS (take from first city)
-                    let extractedAreas = [];
-                    if (
-                      Array.isArray(location.cities) &&
-                      location.cities.length > 0 &&
-                      Array.isArray(location.cities[0].area)
-                    ) {
-                      extractedAreas = location.cities[0].area.map(a => ({
-                        id: a.value,
-                        name: a.label,
-                        cityId: location.cities[0].value,
-                      }));
-                    }
-
-                    // UPDATE STATE VALUES DIRECTLY (NO API CALL)
-                    setCities(extractedCities);
-                    setStates(extractedStates);
-                    if (extractedAreas.length > 0) setUploadedAreas(extractedAreas);
-
-                    // Set selected values if not already filled
-                    if (extractedCities.length > 0) {
-                      updates.city = extractedCities[0].name;
-                      updates.cityId = extractedCities[0].id;
-                    }
-
-                    if (extractedStates.length > 0) {
-                      updates.state = extractedStates[0].name;
-                      updates.stateId = extractedStates[0].id;
-                    }
-
-                    if (extractedAreas.length > 0) {
-                      updates.area = extractedAreas[0].name;
-                      updates.areaId = extractedAreas[0].id;
-                    }
-                  }
-                  
-                  if (Object.keys(updates).length > 0) {
-                    setPharmacyForm(prev => ({ ...prev, ...updates }));
-                    const errorUpdates = {};
-                    Object.keys(updates).forEach(key => {
-                      errorUpdates[key] = null;
-                    });
-                    setPharmacyErrors(prev => ({ ...prev, ...errorUpdates }));
-                  }
-                  
-                  // Trigger pincode lookup if pincode is available and valid (6 digits) and locationDetails not available
-                  if (!location && (ocrData.pincode || ocrData.Pincode) && /^\d{6}$/.test(String(ocrData.pincode || ocrData.Pincode))) {
-                    await lookupByPincode(String(ocrData.pincode || ocrData.Pincode));
-                  }
-                }}
+                onOcrDataExtracted={handleLicenseOcrData}
               />
               <CustomInput
                 placeholder="Drug license number"
@@ -1179,6 +1187,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                 onFileUpload={(file) => handleFileUpload('license21', file)}
                 onFileDelete={() => handleFileDelete('license21')}
                 errorMessage={pharmacyErrors.license21File}
+
+                onOcrDataExtracted={handleLicenseOcrData}
               />
 
               <CustomInput
@@ -1209,7 +1219,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           )}
 
 
-           {pharmacyForm.licenseTypeId !== 1 && (
+          {pharmacyForm.licenseTypeId !== 1 && (
 
             <>
               {/* 20b License */}
@@ -1230,157 +1240,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                 onFileUpload={(file) => handleFileUpload('license20b', file)}
                 onFileDelete={() => handleFileDelete('license20b')}
                 errorMessage={pharmacyErrors.license20bFile}
-                onOcrDataExtracted={async (ocrData) => {
-                  console.log('License OCR Data:', ocrData);
-
-                  // Helper function to split address
-                  const splitAddress = (address) => {
-                    if (!address) return { address1: '', address2: '', address3: '' };
-                    const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
-                    if (parts.length >= 3) {
-                      return {
-                        address1: parts[0],
-                        address2: parts.slice(1, -1).join(', '),
-                        address3: parts[parts.length - 1],
-                      };
-                    } else if (parts.length === 2) {
-                      return { address1: parts[0], address2: parts[1], address3: '' };
-                    } else if (parts.length === 1) {
-                      const addr = parts[0];
-                      if (addr.length > 100) {
-                        return {
-                          address1: addr.substring(0, 50).trim(),
-                          address2: addr.substring(50, 100).trim(),
-                          address3: addr.substring(100).trim(),
-                        };
-                      } else if (addr.length > 50) {
-                        return {
-                          address1: addr.substring(0, 50).trim(),
-                          address2: addr.substring(50).trim(),
-                          address3: '',
-                        };
-                      } else {
-                        return { address1: addr, address2: '', address3: '' };
-                      }
-                    }
-                    return { address1: '', address2: '', address3: '' };
-                  };
-
-                  const updates = {};
-
-                  // Populate pharmacy name if available
-                  if (ocrData.pharmacyName && !pharmacyForm.pharmacyName) {
-                    updates.pharmacyName = ocrData.pharmacyName;
-                  }
-
-                  // Split and populate address fields
-                  if (ocrData.address) {
-                    const addressParts = splitAddress(ocrData.address);
-                    if (!pharmacyForm.address1 && addressParts.address1) {
-                      updates.address1 = addressParts.address1;
-                    }
-                    if (!pharmacyForm.address2 && addressParts.address2) {
-                      updates.address2 = addressParts.address2;
-                    }
-                    if (!pharmacyForm.address3 && addressParts.address3) {
-                      updates.address3 = addressParts.address3;
-                    }
-                  }
-
-                  // Populate license number if available
-                  if (ocrData.licenseNumber && !pharmacyForm.license20b) {
-                    updates.license20b = ocrData.licenseNumber;
-                  }
-
-                  // Populate expiry date if available
-                  if (ocrData.expiryDate) {
-                    const parts = ocrData.expiryDate.split('-');
-                    if (parts.length === 3) {
-                      const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                      if (!pharmacyForm.license20bExpiryDate) {
-                        updates.license20bExpiryDate = formattedDate;
-                      }
-                    }
-                  }
-
-                  // Populate pincode
-                  if (ocrData.pincode && !pharmacyForm.pincode) {
-                    updates.pincode = ocrData.pincode;
-                  }
-                  
-                  // -----------------------------
-                  //  🔥 DIRECTLY USE OCR LOCATION
-                  // -----------------------------
-                  const location = ocrData.locationDetails;
-
-                  if (location) {
-                    // Build CITIES (flat)
-                    const extractedCities = Array.isArray(location.cities)
-                      ? location.cities.map(c => ({
-                          id: c.value,
-                          name: c.label,
-                        }))
-                      : [];
-
-                    // Build STATES (flat)
-                    const extractedStates = Array.isArray(location.states)
-                      ? location.states.map(s => ({
-                          id: s.value,
-                          name: s.label,
-                          gstCode: s.gstCode,
-                        }))
-                      : [];
-
-                    // Build AREAS (take from first city)
-                    let extractedAreas = [];
-                    if (
-                      Array.isArray(location.cities) &&
-                      location.cities.length > 0 &&
-                      Array.isArray(location.cities[0].area)
-                    ) {
-                      extractedAreas = location.cities[0].area.map(a => ({
-                        id: a.value,
-                        name: a.label,
-                        cityId: location.cities[0].value,
-                      }));
-                    }
-
-                    // UPDATE STATE VALUES DIRECTLY (NO API CALL)
-                    setCities(extractedCities);
-                    setStates(extractedStates);
-                    if (extractedAreas.length > 0) setUploadedAreas(extractedAreas);
-
-                    // Set selected values if not already filled
-                    if (extractedCities.length > 0) {
-                      updates.city = extractedCities[0].name;
-                      updates.cityId = extractedCities[0].id;
-                    }
-
-                    if (extractedStates.length > 0) {
-                      updates.state = extractedStates[0].name;
-                      updates.stateId = extractedStates[0].id;
-                    }
-
-                    if (extractedAreas.length > 0) {
-                      updates.area = extractedAreas[0].name;
-                      updates.areaId = extractedAreas[0].id;
-                    }
-                  }
-                  
-                  if (Object.keys(updates).length > 0) {
-                    setPharmacyForm(prev => ({ ...prev, ...updates }));
-                    const errorUpdates = {};
-                    Object.keys(updates).forEach(key => {
-                      errorUpdates[key] = null;
-                    });
-                    setPharmacyErrors(prev => ({ ...prev, ...errorUpdates }));
-                  }
-                  
-                  // Trigger pincode lookup if pincode is available and valid (6 digits) and locationDetails not available
-                  if (!location && (ocrData.pincode || ocrData.Pincode) && /^\d{6}$/.test(String(ocrData.pincode || ocrData.Pincode))) {
-                    await lookupByPincode(String(ocrData.pincode || ocrData.Pincode));
-                  }
-                }}
+                onOcrDataExtracted={handleLicenseOcrData}
               />
               <CustomInput
                 placeholder="Drug license number"
@@ -1425,6 +1285,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                 onFileUpload={(file) => handleFileUpload('license21b', file)}
                 onFileDelete={() => handleFileDelete('license21b')}
                 errorMessage={pharmacyErrors.license21bFile}
+
+                onOcrDataExtracted={handleLicenseOcrData}
               />
 
               <CustomInput
@@ -1494,7 +1356,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               if (pharmacyErrors.ownerName) {
                 setPharmacyErrors(prev => ({ ...prev, ownerName: null }));
               }
-            },30)}
+            }, 30)}
             mandatory={false}
           />
 
@@ -1891,7 +1753,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <CustomInput
             placeholder="GST number"
             value={pharmacyForm.gstNumber}
-            onChangeText={createFilteredInputHandler('panNo', (text) => {
+            onChangeText={createFilteredInputHandler('gstNumber', (text) => {
               const upperText = text.toUpperCase();
               setPharmacyForm(prev => ({ ...prev, gstNumber: upperText }));
               if (pharmacyErrors.gstNumber) {
@@ -1911,7 +1773,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               <AppText style={styles.modalFieldLabel}>{'Parent Group Hospital'}</AppText>
               <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
                 <AppText style={styles.mappingNameText}>{parentHospitalName}</AppText>
-            </View></>
+              </View></>
           }
           <AppText style={styles.modalFieldLabel}>{mappingLabel || "Hospital"}</AppText>
           <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
@@ -1921,25 +1783,25 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
 
           {/* Add Stockist Section (Optional) */}
 
-           {parentHospitalName &&
-                  <><AppText style={styles.modalSectionLabel2}> Stockist Suggestions <AppText style={styles.optionalText}> (Optional)</AppText></AppText>
-                    <CustomInput
-                      placeholder="Name of the Stockist"
-                      value={pharmacyForm.stockistName}
-                      onChangeText={createFilteredInputHandler('nameOfStockist', (text) => setPharmacyForm(prev => ({ ...prev, stockistName: text })), 40)}
-                    />
-                    <CustomInput
-                      placeholder="Distributor Code"
-                      value={pharmacyForm.stockistCode}
-                        onChangeText={createFilteredInputHandler('distributorCode', (text) => setPharmacyForm(prev => ({ ...prev, stockistCode: text })), 20)}
-                    />
-                    <CustomInput
-                      placeholder="City"
-                      value={pharmacyForm.stockistCity}
-                         onChangeText={createFilteredInputHandler('distributorCity', (text) => setPharmacyForm(prev => ({ ...prev, stockistCity: text })), 40)}
-                    /></>
+          {parentHospitalName &&
+            <><AppText style={styles.modalSectionLabel2}> Stockist Suggestions <AppText style={styles.optionalText}> (Optional)</AppText></AppText>
+              <CustomInput
+                placeholder="Name of the Stockist"
+                value={pharmacyForm.stockistName}
+                onChangeText={createFilteredInputHandler('nameOfStockist', (text) => setPharmacyForm(prev => ({ ...prev, stockistName: text })), 40)}
+              />
+              <CustomInput
+                placeholder="Distributor Code"
+                value={pharmacyForm.stockistCode}
+                onChangeText={createFilteredInputHandler('distributorCode', (text) => setPharmacyForm(prev => ({ ...prev, stockistCode: text })), 20)}
+              />
+              <CustomInput
+                placeholder="City"
+                value={pharmacyForm.stockistCity}
+                onChangeText={createFilteredInputHandler('distributorCity', (text) => setPharmacyForm(prev => ({ ...prev, stockistCity: text })), 40)}
+              /></>
 
-           }
+          }
 
           {/* Action Buttons */}
           <View style={styles.modalActionButtons}>
@@ -1986,8 +1848,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                     uploadedAreas && uploadedAreas.length > 0
                       ? uploadedAreas
                       : Array.isArray(pincodeAreas)
-                      ? pincodeAreas
-                      : []
+                        ? pincodeAreas
+                        : []
                   }
                   keyExtractor={(item) => String(item.id)}
                   renderItem={({ item }) => (
@@ -2047,8 +1909,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                     cities.length > 0
                       ? cities
                       : pincodeCities.length > 0
-                      ? pincodeCities
-                      : []
+                        ? pincodeCities
+                        : []
                   }
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={({ item }) => (
@@ -2108,8 +1970,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                     states.length > 0
                       ? states
                       : pincodeStates.length > 0
-                      ? pincodeStates
-                      : []
+                        ? pincodeStates
+                        : []
                   }
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={({ item }) => (
@@ -2524,7 +2386,7 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 16,
     color: colors.gray,
-     marginLeft: 8
+    marginLeft: 8
   },
   inputText: {
     fontSize: 16,
@@ -2547,16 +2409,16 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   dropdownContainer: {
-    marginBottom: 18  ,
+    marginBottom: 18,
   },
   sectionTopSpacing: {
     marginTop: 20
   },
-   asteriskPrimary: {
+  asteriskPrimary: {
     color: "red",
-    fontSize:16
+    fontSize: 16
   },
-   modalSectionLabel2: {
+  modalSectionLabel2: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1A1A1A',
