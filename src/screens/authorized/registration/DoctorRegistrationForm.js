@@ -1698,7 +1698,7 @@ const DoctorRegistrationForm = () => {
 
               <FileUploadComponent
                 placeholder="Upload Certificate"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={
                   licenseTypes.CLINIC_REGISTRATION?.docTypeId ||
@@ -1752,7 +1752,7 @@ const DoctorRegistrationForm = () => {
 
               <FileUploadComponent
                 placeholder="Upload"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={
                   licenseTypes.PRACTICE_LICENSE?.docTypeId ||
@@ -1840,7 +1840,7 @@ const DoctorRegistrationForm = () => {
               </AppText>
 
               <CustomInput
-                placeholder="Name of the Doctor"
+                placeholder="Name of the doctor"
                 value={formData.doctorName}
                 onChangeText={createFilteredInputHandler('doctorName', (text) => {
                   setFormData(prev => ({ ...prev, doctorName: text }));

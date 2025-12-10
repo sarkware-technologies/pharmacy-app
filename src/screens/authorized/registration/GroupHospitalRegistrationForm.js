@@ -1437,7 +1437,7 @@ const GroupHospitalRegistrationForm = () => {
 
         <FileUploadComponent
           placeholder="Upload registration certificate"
-          accept={['pdf', 'jpg', 'png']}
+          accept={['pdf', 'jpg', 'png', 'jpeg']}
           maxSize={15 * 1024 * 1024}
           docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
           initialFile={formData.registrationCertificateFile}

@@ -1640,7 +1640,7 @@ const PharmacyWholesalerForm = () => {
 
               <FileUploadComponent
                 placeholder="Upload 20B license"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={licenseTypes.LICENSE_20B?.docTypeId || 4}
                 initialFile={formData.license20bFile}
@@ -1688,7 +1688,7 @@ const PharmacyWholesalerForm = () => {
 
               <FileUploadComponent
                 placeholder="Upload 21B license"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={licenseTypes.LICENSE_21B?.docTypeId || 6}
                 initialFile={formData.license21bFile}

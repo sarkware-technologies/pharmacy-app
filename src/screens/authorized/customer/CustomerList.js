@@ -149,6 +149,7 @@ const CustomerList = ({ navigation }) => {
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewSignedUrl, setPreviewSignedUrl] = useState(null);
+const [isPreviewing, setIsPreviewing] = useState(false);
 
   // Block/Unblock state
   const [blockUnblockLoading, setBlockUnblockLoading] = useState(false);
@@ -548,28 +549,39 @@ const CustomerList = ({ navigation }) => {
   };
 
   // Preview document
-  const previewDocument = async (doc) => {
-    if (!doc || !doc.s3Path) {
-      Alert.alert('Info', 'Document not available');
-      return;
-    }
+const previewDocument = async (doc) => {
+  // ⛔ Ignore if already running
+  if (isPreviewing) return;
 
-    setSelectedDocumentForPreview(doc);
-    setPreviewModalVisible(true);
-    setPreviewLoading(true);
+  // 🔒 Lock
+  setIsPreviewing(true);
 
-    try {
-      const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
-      if (response?.data?.signedUrl) {
-        setPreviewSignedUrl(response.data.signedUrl);
-      }
-    } catch (error) {
-      console.error('Error fetching document URL:', error);
-      Alert.alert('Error', 'Failed to load document');
-    } finally {
-      setPreviewLoading(false);
+
+  if (!doc || !doc.s3Path) {
+    Alert.alert('Info', 'Document not available');
+    setIsPreviewing(false); // unlock
+    return;
+  }
+
+  setSelectedDocumentForPreview(doc);
+  setPreviewModalVisible(true);
+  setPreviewLoading(true);
+
+  try {
+    const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
+    if (response?.data?.signedUrl) {
+      setPreviewSignedUrl(response.data.signedUrl);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching document URL:', error);
+    Alert.alert('Error', 'Failed to load document');
+  } finally {
+    setPreviewLoading(false);
+
+    // 🔓 Unlock after load completes
+    setIsPreviewing(false);
+  }
+};
 
   // Download document
   const downloadDocument = async (doc) => {
@@ -1280,7 +1292,10 @@ const CustomerList = ({ navigation }) => {
       visible={previewModalVisible}
       transparent
       animationType="fade"
-      onRequestClose={() => setPreviewModalVisible(false)}
+      onRequestClose={() => {setPreviewModalVisible(false);
+            setIsPreviewing(false)
+
+            }}
     >
       <View style={styles.previewModalOverlay}>
         <View style={styles.previewModalContent}>
@@ -1288,7 +1303,10 @@ const CustomerList = ({ navigation }) => {
             <AppText style={styles.previewModalTitle} numberOfLines={1}>
               {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
             </AppText>
-            <TouchableOpacity onPress={() => setPreviewModalVisible(false)}>
+            <TouchableOpacity onPress={() => {setPreviewModalVisible(false);
+            setIsPreviewing(false)
+
+            }}>
               <CloseCircle />
             </TouchableOpacity>
           </View>

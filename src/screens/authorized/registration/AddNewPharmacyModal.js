@@ -1135,7 +1135,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               </View>
               <FileUploadComponent
                 placeholder="Upload 20 license"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={licenseTypes.LICENSE_20?.docTypeId || 3}
                 initialFile={pharmacyForm.license20File}
@@ -1180,7 +1180,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               </View>
               <FileUploadComponent
                 placeholder="Upload 21 license"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={licenseTypes.LICENSE_21?.docTypeId || 5}
                 initialFile={pharmacyForm.license21File}
@@ -1233,7 +1233,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               </View>
               <FileUploadComponent
                 placeholder="Upload 20B license"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={licenseTypes.LICENSE_20B?.docTypeId || 4}
                 initialFile={pharmacyForm.license20bFile}
@@ -1278,7 +1278,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
               </View>
               <FileUploadComponent
                 placeholder="Upload 21B license"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={licenseTypes.LICENSE_21B?.docTypeId || 6}
                 initialFile={pharmacyForm.license21bFile}

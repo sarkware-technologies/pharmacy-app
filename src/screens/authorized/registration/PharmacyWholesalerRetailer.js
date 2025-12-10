@@ -2051,7 +2051,7 @@ const handleLicenseOcrData = async (ocrData) => {
 
               <FileUploadComponent
                 placeholder="Upload 20 license"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={licenseTypes.LICENSE_20?.docTypeId || 3}
                 initialFile={formData.license20File}
@@ -2098,7 +2098,7 @@ const handleLicenseOcrData = async (ocrData) => {
 
               <FileUploadComponent
                 placeholder="Upload 21 license"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={licenseTypes.LICENSE_21?.docTypeId || 5}
                 initialFile={formData.license21File}
@@ -2144,7 +2144,7 @@ const handleLicenseOcrData = async (ocrData) => {
 
               <FileUploadComponent
                 placeholder="Upload 20B license"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={licenseTypes.LICENSE_20B?.docTypeId || 4}
                 initialFile={formData.license20bFile}
@@ -2194,7 +2194,7 @@ const handleLicenseOcrData = async (ocrData) => {
 
               <FileUploadComponent
                 placeholder="Upload 21B license"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={licenseTypes.LICENSE_21B?.docTypeId || 6}
                 initialFile={formData.license21bFile}

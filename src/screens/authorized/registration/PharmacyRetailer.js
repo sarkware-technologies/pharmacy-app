@@ -1994,7 +1994,7 @@ useEffect(() => {
 
               <FileUploadComponent
                 placeholder="Upload 20 license"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024} // 15MB
                 docType={licenseTypes.LICENSE_20?.docTypeId || 3}
                 initialFile={formData.license20File}
@@ -2042,7 +2042,7 @@ useEffect(() => {
 
               <FileUploadComponent
                 placeholder="Upload 21 license"
-                accept={['pdf', 'jpg', 'png']}
+                accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024} // 15MB
                 docType={licenseTypes.LICENSE_21?.docTypeId || 5}
                 initialFile={formData.license21File}

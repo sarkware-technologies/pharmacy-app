@@ -1002,7 +1002,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <AppText style={styles.fieldLabel}>Clinic registration<AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
             placeholder="Upload Certificate"
-            accept={['pdf', 'jpg', 'png']}
+            accept={['pdf', 'jpg', 'png', 'jpeg']}
             maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.LICENSE_20B}
             initialFile={doctorForm.clinicRegistrationCertificateFile}
@@ -1049,7 +1049,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           <AppText style={[styles.fieldLabel, styles.sectionTopSpacing]}>Practice license<AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
             placeholder="Upload License"
-            accept={['pdf', 'jpg', 'png']}
+            accept={['pdf', 'jpg', 'png', 'jpeg']}
             maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.LICENSE_20B}
             initialFile={doctorForm.practiceLicenseFile}

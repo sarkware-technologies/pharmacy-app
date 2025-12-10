@@ -236,10 +236,17 @@ const mapLicenseData = () => {
   const docList = selectedCustomer?.docType || [];
 
   return licenseList.map(lic => {
-    // Match simply using names
-    const document = docList.find(
-      doc => doc.doctypeName?.toUpperCase() === lic.licenceTypeName?.toUpperCase()
-    ) || null;
+    // 1️⃣ Try match by NAME (case-insensitive)
+    let document =
+      docList.find(
+        doc =>
+          doc.doctypeName?.toUpperCase() === lic.licenceTypeName?.toUpperCase()
+      ) || null;
+
+    // 2️⃣ If NOT matched — try match by ID
+    if (!document && lic.docTypeId) {
+      document = docList.find(doc => doc.doctypeId == lic.docTypeId) || null;
+    }
 
     return {
       label: lic.licenceTypeName || '',
@@ -251,6 +258,7 @@ const mapLicenseData = () => {
     };
   });
 };
+
 
 
 
@@ -893,7 +901,7 @@ const mapLicenseData = () => {
               onPress={() => setRejectModalVisible(true)}
               disabled={actionLoading}
             >
-              <Icon name="close-circle" size={20} color={colors.primary} />
+              <Icon name="close-circle-outline" size={20} color={colors.primary} />
               <AppText style={styles.rejectButtonText}>Reject</AppText>
             </TouchableOpacity>
             <TouchableOpacity
@@ -905,7 +913,8 @@ const mapLicenseData = () => {
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
-                  <Icon name="checkmark-circle" size={20} color="#fff" />
+                  <Icon name="checkmark-outline" size={20} color="#fff" />
+                  
                   <AppText style={styles.approveButtonText}>Approve</AppText>
                 </>
               )}
