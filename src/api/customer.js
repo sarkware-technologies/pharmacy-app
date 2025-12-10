@@ -473,6 +473,15 @@ export const customerAPI = {
         }
     },
 
+     getCustomersListMappingHospitals: async (payload) => {
+        try {
+            const response = await apiClient.post('/user-management/customer/mapping-customer-list', payload);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching hospitals list:', error);
+            throw error;
+        }
+    },
     // Get doctors list with filters
     getDoctorsList: async (typeCode = ['DOCT'], customerGroupId = 1, page = 1, limit = 20, stateIds = [], cityIds = [], searchText = '') => {
         try {

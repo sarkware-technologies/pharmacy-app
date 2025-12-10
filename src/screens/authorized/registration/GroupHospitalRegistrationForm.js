@@ -2008,9 +2008,11 @@ const GroupHospitalRegistrationForm = () => {
                       ...h,
                       pharmacies: h.pharmacies || [],
                     })),
-                  }));
+                  }
+                 ));
                   setErrors(prev => ({ ...prev, linkedHospitals: null }));
                 },
+                formType:"PGH"
               });
             }}
             activeOpacity={0.7}
@@ -2037,6 +2039,7 @@ const GroupHospitalRegistrationForm = () => {
                   }));
                   setErrors(prev => ({ ...prev, linkedHospitals: null }));
                 },
+                categoryCode: ["OR", "RCW", "OW", "PRI"]
               });
             }}
             activeOpacity={0.7}

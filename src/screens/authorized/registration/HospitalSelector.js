@@ -26,7 +26,12 @@ const HospitalSelector = () => {
     onSelect,
     selectedHospitals = [],
     allowMultiple = false,
+    mappingFor,
+    categoryCode = false,
+    subCategoryCode = false,
+    customerGroupId
   } = route.params || {};
+
 
   const [searchQuery, setSearchQuery] = useState('');
   // Support both single and multiple selection
@@ -141,6 +146,14 @@ const HospitalSelector = () => {
         statusIds: [7, 2], // ACTIVE and APPROVED
         page: 1,
         limit: 20,
+        mappingFor: mappingFor || "HOSP",
+        ...(categoryCode
+          ? { categoryCode: categoryCode }
+          : {}),
+        ...(subCategoryCode ? { subCategoryCode: subCategoryCode } : {}),
+        ...(customerGroupId ? { customerGroupId: customerGroupId } : {})
+
+
       };
 
       // Add optional filters
@@ -160,7 +173,7 @@ const HospitalSelector = () => {
       );
 
       // Call API directly with correct payload
-      const response = await customerAPI.getCustomersListHospitals(payload);
+      const response = await customerAPI.getCustomersListMappingHospitals(payload);
       console.log('HospitalSelector: Hospitals API response:', response);
 
       if (response?.customers && Array.isArray(response.customers)) {
@@ -397,9 +410,8 @@ const HospitalSelector = () => {
         >
           <AppText style={styles.filterDropdownText}>
             {selectedStates.length > 0
-              ? `${selectedStates.length} State${
-                  selectedStates.length !== 1 ? 's' : ''
-                }`
+              ? `${selectedStates.length} State${selectedStates.length !== 1 ? 's' : ''
+              }`
               : 'Select State'}
           </AppText>
           <Icon
@@ -416,9 +428,8 @@ const HospitalSelector = () => {
         >
           <AppText style={styles.filterDropdownText}>
             {selectedCities.length > 0
-              ? `${selectedCities.length} Cit${
-                  selectedCities.length !== 1 ? 'ies' : 'y'
-                }`
+              ? `${selectedCities.length} Cit${selectedCities.length !== 1 ? 'ies' : 'y'
+              }`
               : 'Select City'}
           </AppText>
           <Icon

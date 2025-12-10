@@ -2113,7 +2113,10 @@ const GovtHospitalRegistrationForm = () => {
                   }))
                 }));
                 setErrors(prev => ({ ...prev, linkedHospitals: null }));
-              }
+              },
+              mappingFor:"GOV",
+              categoryCode:["GOV"]
+
             });
           }}
           activeOpacity={0.7}
@@ -2140,7 +2143,9 @@ const GovtHospitalRegistrationForm = () => {
                   }))
                 }));
                 setErrors(prev => ({ ...prev, linkedHospitals: null }));
-              }
+              },
+               mappingFor:"GOV",
+              categoryCode:["GOV"]
             });
           }}
           activeOpacity={0.7}

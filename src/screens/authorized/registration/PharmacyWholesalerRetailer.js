@@ -2813,6 +2813,8 @@ const handleLicenseOcrData = async (ocrData) => {
                               selectedHospitals: hospitals,
                             }));
                           },
+                          mappingFor:"PCM",
+                          customerGroupId:formData.customerGroupId
                         });
                       }}
                       activeOpacity={0.7}

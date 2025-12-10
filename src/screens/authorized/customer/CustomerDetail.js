@@ -236,30 +236,30 @@ const mapLicenseData = () => {
   const docList = selectedCustomer?.docType || [];
 
   return licenseList.map(lic => {
-    // 1️⃣ Try match by NAME (case-insensitive)
-    let document =
-      docList.find(
-        doc =>
-          doc.doctypeName?.toUpperCase() === lic.licenceTypeName?.toUpperCase()
-      ) || null;
+    const licName = String(lic.licenceTypeName || "").toUpperCase().trim();
 
-    // 2️⃣ If NOT matched — try match by ID
-    if (!document && lic.docTypeId) {
-      document = docList.find(doc => doc.doctypeId == lic.docTypeId) || null;
-    }
+    // Extract trailing token from licenceTypeName
+    const licToken = licName.match(/([A-Z0-9]+)$/)?.[1] || "";
+
+    let document = null;
+
+    // 1️⃣ Find match by trailing token (smart matching)
+    document = docList.find(doc => {
+      const docName = String(doc.doctypeName || "").toUpperCase().trim();
+      const docToken = docName.match(/([A-Z0-9]+)$/)?.[1] || "";
+      return docToken === licToken;
+    }) || null;
 
     return {
-      label: lic.licenceTypeName || '',
-      licenseNumber: lic.licenceNo || '',
+      label: lic.licenceTypeName || "",
+      licenseNumber: lic.licenceNo || "",
       expiry: lic.licenceValidUpto
-        ? new Date(lic.licenceValidUpto).toLocaleDateString('en-GB').replace(/\//g, '-')
-        : '',
+        ? new Date(lic.licenceValidUpto).toLocaleDateString("en-GB").replace(/\//g, "-")
+        : "",
       document
     };
   });
 };
-
-
 
 
   const licenseData = mapLicenseData();
@@ -836,13 +836,13 @@ const mapLicenseData = () => {
                       </View>
 
 
-                      {(customerData.documents.gstDoc || customerData.gstNumber) &&
+                      {(customerData.documents.gstDoc || customerData.gst) &&
 
                         <View style={[styles.otherDetailItem, { marginLeft: 0 }]}>
                           <AppText style={styles.infoLabel}>GST</AppText>
                           <View style={styles.valueWithIcons}>
-                            {customerData.gstNumber &&
-                              <AppText style={styles.infoValue}>{customerData.gstNumber}</AppText>
+                            {customerData.gst &&
+                              <AppText style={styles.infoValue}>{customerData.gst}</AppText>
                             }
                             {customerData.documents.gstDoc && (
                               <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>

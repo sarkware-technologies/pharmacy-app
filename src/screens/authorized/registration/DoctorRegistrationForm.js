@@ -2463,6 +2463,7 @@ const DoctorRegistrationForm = () => {
                             selectedHospitals: hospitals,
                           }));
                         },
+                        mappingFor:"HOSP"
                       });
                     }}
                     activeOpacity={0.7}

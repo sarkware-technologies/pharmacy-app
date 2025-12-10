@@ -2666,6 +2666,8 @@ const PrivateRegistrationForm = () => {
                               selectedHospitals: hospitals,
                             }));
                           },
+                          mappingFor:"HOSP",
+                          subCategoryCode:["PGH"]
                         });
                       }}
                       activeOpacity={0.7}

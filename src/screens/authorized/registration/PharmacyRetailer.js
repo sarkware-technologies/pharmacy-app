@@ -2659,6 +2659,8 @@ useEffect(() => {
                               selectedHospitals: hospitals,
                             }));
                           },
+                          mappingFor:"PCM",
+                          customerGroupId:formData.customerGroupId
                         });
                       }}
                       activeOpacity={0.7}
