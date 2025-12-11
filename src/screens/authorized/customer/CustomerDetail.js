@@ -59,7 +59,8 @@ const CustomerDetail = ({ navigation, route }) => {
   );
 
   // Get logged in user
-  const { loggedInUser } = useSelector((state) => state.auth);
+   const loggedInUser = useSelector(state => state.auth.user);
+ 
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;

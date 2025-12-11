@@ -610,6 +610,8 @@ const previewDocument = async (doc) => {
   const handleApproveConfirm = async (comment) => {
     console.log(selectedCustomerForAction, 'selectedCustomerForAction')
     try {
+          
+
       const workflowId = selectedCustomerForAction?.workflowId || selectedCustomerForAction?.stgCustomerId;
       const instanceId = selectedCustomerForAction?.instaceId || selectedCustomerForAction?.instaceId;
       const actorId = loggedInUser?.userId || loggedInUser?.id;
