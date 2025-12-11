@@ -56,6 +56,9 @@ import { SkeletonList } from '../../../components/SkeletonLoader';
 import { AppText, AppInput } from "../../../components"
 import Toast from 'react-native-toast-message';
 import { handleOnboardCustomer } from '../../../utils/customerNavigationHelper';
+import PermissionWrapper from "../../../utils/RBAC/permissionWrapper"
+import PERMISSIONS from "../../../utils/RBAC/permissionENUM"
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -149,7 +152,7 @@ const CustomerList = ({ navigation }) => {
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewSignedUrl, setPreviewSignedUrl] = useState(null);
-const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
 
   // Block/Unblock state
   const [blockUnblockLoading, setBlockUnblockLoading] = useState(false);
@@ -549,39 +552,39 @@ const [isPreviewing, setIsPreviewing] = useState(false);
   };
 
   // Preview document
-const previewDocument = async (doc) => {
-  // ⛔ Ignore if already running
-  if (isPreviewing) return;
+  const previewDocument = async (doc) => {
+    // ⛔ Ignore if already running
+    if (isPreviewing) return;
 
-  // 🔒 Lock
-  setIsPreviewing(true);
+    // 🔒 Lock
+    setIsPreviewing(true);
 
 
-  if (!doc || !doc.s3Path) {
-    Alert.alert('Info', 'Document not available');
-    setIsPreviewing(false); // unlock
-    return;
-  }
-
-  setSelectedDocumentForPreview(doc);
-  setPreviewModalVisible(true);
-  setPreviewLoading(true);
-
-  try {
-    const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
-    if (response?.data?.signedUrl) {
-      setPreviewSignedUrl(response.data.signedUrl);
+    if (!doc || !doc.s3Path) {
+      Alert.alert('Info', 'Document not available');
+      setIsPreviewing(false); // unlock
+      return;
     }
-  } catch (error) {
-    console.error('Error fetching document URL:', error);
-    Alert.alert('Error', 'Failed to load document');
-  } finally {
-    setPreviewLoading(false);
 
-    // 🔓 Unlock after load completes
-    setIsPreviewing(false);
-  }
-};
+    setSelectedDocumentForPreview(doc);
+    setPreviewModalVisible(true);
+    setPreviewLoading(true);
+
+    try {
+      const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
+      if (response?.data?.signedUrl) {
+        setPreviewSignedUrl(response.data.signedUrl);
+      }
+    } catch (error) {
+      console.error('Error fetching document URL:', error);
+      Alert.alert('Error', 'Failed to load document');
+    } finally {
+      setPreviewLoading(false);
+
+      // 🔓 Unlock after load completes
+      setIsPreviewing(false);
+    }
+  };
 
   // Download document
   const downloadDocument = async (doc) => {
@@ -610,7 +613,7 @@ const previewDocument = async (doc) => {
   const handleApproveConfirm = async (comment) => {
     console.log(selectedCustomerForAction, 'selectedCustomerForAction')
     try {
-          
+
 
       const workflowId = selectedCustomerForAction?.workflowId || selectedCustomerForAction?.stgCustomerId;
       const instanceId = selectedCustomerForAction?.instaceId || selectedCustomerForAction?.instaceId;
@@ -1125,7 +1128,7 @@ const previewDocument = async (doc) => {
                   style={styles.rejectButton}
                   onPress={() => handleRejectPress(item)}
                 >
-                  <CloseCircle color='#000'/>
+                  <CloseCircle color='#000' />
                 </TouchableOpacity>
               </View>
             ) : item.statusName === 'NOT-ONBOARDED' ? (
@@ -1294,10 +1297,11 @@ const previewDocument = async (doc) => {
       visible={previewModalVisible}
       transparent
       animationType="fade"
-      onRequestClose={() => {setPreviewModalVisible(false);
-            setIsPreviewing(false)
+      onRequestClose={() => {
+        setPreviewModalVisible(false);
+        setIsPreviewing(false)
 
-            }}
+      }}
     >
       <View style={styles.previewModalOverlay}>
         <View style={styles.previewModalContent}>
@@ -1305,8 +1309,9 @@ const previewDocument = async (doc) => {
             <AppText style={styles.previewModalTitle} numberOfLines={1}>
               {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
             </AppText>
-            <TouchableOpacity onPress={() => {setPreviewModalVisible(false);
-            setIsPreviewing(false)
+            <TouchableOpacity onPress={() => {
+              setPreviewModalVisible(false);
+              setIsPreviewing(false)
 
             }}>
               <CloseCircle />
@@ -1397,9 +1402,11 @@ const previewDocument = async (doc) => {
           </TouchableOpacity>
           <AppText style={styles.headerTitle}>Customers</AppText>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('RegistrationType')}>
-              <AppText style={styles.createButtonText}>CREATE</AppText>
-            </TouchableOpacity>
+            <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_CREATE_CUSTOMER}>
+              <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('RegistrationType')}>
+                <AppText style={styles.createButtonText}>CREATE</AppText>
+              </TouchableOpacity>
+            </PermissionWrapper>
             <TouchableOpacity>
               <Bell color="#333" />
             </TouchableOpacity>

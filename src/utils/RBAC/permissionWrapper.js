@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const PermissionWrapper = ({ permission, children }) => {
+const PermissionWrapper = ({ permission, children }) => {
     const [allowed, setAllowed] = useState(true);
 
     useEffect(() => {
         const checkPermission = async () => {
-            const str = await AsyncStorage.getItem("USER_PERMISSIONS");
+            const str = await AsyncStorage.getItem("permissions");
             if (!str) {
                 setAllowed(false);
                 return;
@@ -27,3 +27,6 @@ export const PermissionWrapper = ({ permission, children }) => {
 
     return <>{children}</>;
 };
+
+
+export default PermissionWrapper;
