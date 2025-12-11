@@ -37,6 +37,8 @@ import ChargebackListing from '../screens/authorized/chargeback/ChargebackListin
 
 import NetRateListing from '../screens/authorized/netrate/NetRateListing';
 import MoreMenu from "../components/MoreMenu"
+import PermissionWrapper from '../utils/RBAC/permissionWrapper';
+import PERMISSIONS from '../utils/RBAC/permissionENUM';
 
 // Placeholder screens for other tabs
 const HomeScreen = () => (
@@ -82,8 +84,8 @@ const CustomerStack = () => {
     }}
   >
     <Stack.Screen name="CustomerList" component={CustomerList} />
-    <Stack.Screen 
-      name="CustomerDetail" 
+    <Stack.Screen
+      name="CustomerDetail"
       component={CustomerDetail}
       options={{
         tabBarStyle: { display: 'none' }
@@ -178,14 +180,14 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
 
             const isFocused =
               route.name === 'More'
-                ? showMore || isCurrentDynamicTab 
+                ? showMore || isCurrentDynamicTab
                 : state.index === state.routes.findIndex(
                   (r) => r.name === route.name
                 );
 
             const onPress = () => {
               if (route.name === 'More') {
-                setShowMore(true); 
+                setShowMore(true);
                 return;
               }
               setShowMore(false);
@@ -207,26 +209,28 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
             });
 
             return (
-              <TouchableOpacity
-                key={index}
-                onPress={onPress}
-                style={styles.tabItem}
-                activeOpacity={0.7}
-              >
-                {isFocused && (
-                  <View style={{ borderBottomColor: "#F7941E", borderBottomWidth: 4, width: "100%", position: "absolute", top: 0, borderBottomLeftRadius: 10, borderBottomRightRadius: 10 }}></View>
-                )}
-                {iconName}
-                <AppText
-                  style={[
-                    styles.tabLabel,
-                    { color: isFocused ? colors.primary : '#999' },
-                    isFocused && styles.activeTabLabel,
-                  ]}
+              <PermissionWrapper key={index} permission={options.permission}>
+                <TouchableOpacity
+
+                  onPress={onPress}
+                  style={styles.tabItem}
+                  activeOpacity={0.7}
                 >
-                  {label}
-                </AppText>
-              </TouchableOpacity>
+                  {isFocused && (
+                    <View style={{ borderBottomColor: "#F7941E", borderBottomWidth: 4, width: "100%", position: "absolute", top: 0, borderBottomLeftRadius: 10, borderBottomRightRadius: 10 }}></View>
+                  )}
+                  {iconName}
+                  <AppText
+                    style={[
+                      styles.tabLabel,
+                      { color: isFocused ? colors.primary : '#999' },
+                      isFocused && styles.activeTabLabel,
+                    ]}
+                  >
+                    {label}
+                  </AppText>
+                </TouchableOpacity>
+              </PermissionWrapper>
             );
           })}
       </View>
@@ -276,7 +280,9 @@ const BottomTabNavigator = () => {
           tabBarIcon: ({ focused, color }) => (
             <Customer color={color} />
           ),
+          permission: [PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_PAGE_VIEW]
         }}
+
       />
       <Tab.Screen
         name="Orders"
