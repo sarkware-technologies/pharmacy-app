@@ -189,6 +189,9 @@ const initialState = {
   cities: [],
   states: [],
   
+  // Navigation flags
+  shouldResetToAllTab: false,
+  
   // Pagination
   currentPage: 1,
   totalPages: 1,
@@ -305,6 +308,12 @@ const customerSlice = createSlice({
       state.listError = null;
       state.listLoadingMore = false;
       state.listLoading = false;
+    },
+    setShouldResetToAllTab: (state, action) => {
+      state.shouldResetToAllTab = action.payload;
+    },
+    clearShouldResetToAllTab: (state) => {
+      state.shouldResetToAllTab = false;
     },
     setTabCounts: (state, action) => {
       state.tabCounts = action.payload;
@@ -540,6 +549,8 @@ export const {
   clearErrors,
   clearSuccessFlags,
   resetCustomersList,
+  setShouldResetToAllTab,
+  clearShouldResetToAllTab,
   setTabCounts
 } = customerSlice.actions;
 

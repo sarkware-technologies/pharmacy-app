@@ -51,6 +51,7 @@ import AlertCircle from '../../../components/icons/AlertCircle';
 import EditCustomer from '../../../components/icons/EditCustomer';
 import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModal';
 import RejectCustomerModal from '../../../components/modals/RejectCustomerModal';
+import WorkflowTimelineModal from '../../../components/modals/WorkflowTimelineModal';
 import { customerAPI } from '../../../api/customer';
 import { SkeletonList } from '../../../components/SkeletonLoader';
 import { AppText, AppInput } from "../../../components"
@@ -78,6 +79,7 @@ import {
   resetCustomersList,
   setTabCounts, // Import setTabCounts action
   selectTabCounts, // Import selectTabCounts selector
+  clearShouldResetToAllTab, // Import clear flag action
 } from '../../../redux/slices/customerSlice';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
 import ChevronRight from '../../../components/icons/ChevronRight';
@@ -107,6 +109,7 @@ const CustomerList = ({ navigation }) => {
   const filters = useSelector(selectFilters); // Get filters from Redux
   const listError = useSelector(state => state.customer.error);
   const tabCounts = useSelector(selectTabCounts); // Re-added tabCounts selector
+  const shouldResetToAllTab = useSelector(state => state.customer.shouldResetToAllTab); // Get reset flag
 
   // Console log tab counts for debugging
   useEffect(() => {
@@ -126,6 +129,7 @@ const CustomerList = ({ navigation }) => {
   const [downloadModalVisible, setDownloadModalVisible] = useState(false);
   const [documentModalVisible, setDocumentModalVisible] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [isHardRefreshing, setIsHardRefreshing] = useState(false);
 
   const [selectedFilters, setSelectedFilters] = useState({
     typeCode: '',
@@ -140,6 +144,9 @@ const CustomerList = ({ navigation }) => {
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState(null);
+  const [workflowTimelineVisible, setWorkflowTimelineVisible] = useState(false);
+  const [workflowData, setWorkflowData] = useState(null);
+  const [workflowLoading, setWorkflowLoading] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
@@ -165,9 +172,14 @@ const CustomerList = ({ navigation }) => {
   // Tab scroll ref for centering active tab
   const tabScrollRef = useRef(null);
   const tabRefs = useRef({});
+  const isHardRefreshRef = useRef(false); // Track if we're doing a hard refresh
+  const currentTabForDataRef = useRef(activeTab); // Track which tab's data is currently displayed
 
   // No client-side filtering - API handles filtering based on statusIds
-  const filteredCustomers = customers;
+  // Don't show customers if:
+  // 1. We're hard refreshing (prevents showing stale search results)
+  // 2. The displayed data doesn't match the current active tab (prevents showing wrong tab's data)
+  const filteredCustomers = (isHardRefreshing || currentTabForDataRef.current !== activeTab) ? [] : customers;
 
   // Map tab to statusIds
   const getStatusIdsForTab = (tab) => {
@@ -189,8 +201,11 @@ const CustomerList = ({ navigation }) => {
   // Fetch customers on mount and when tab changes
   useEffect(() => {
     const initializeData = async () => {
-      // Reset customers list and pagination when tab changes
+      // Immediately clear customers list when tab changes (prevents showing wrong tab's data)
       dispatch(resetCustomersList());
+      
+      // Update ref to track that we're switching tabs (data doesn't match yet)
+      currentTabForDataRef.current = null;
 
       // Fetch customers based on active tab with page: 1
       if (activeTab === 'all') {
@@ -251,8 +266,72 @@ const CustomerList = ({ navigation }) => {
       }
     };
 
-    initializeData();
+    // Only initialize if not hard refreshing (to prevent double fetch)
+    if (!isHardRefreshRef.current) {
+      initializeData();
+    } else {
+      // Reset the ref after skipping
+      isHardRefreshRef.current = false;
+    }
   }, [activeTab, dispatch]); // Only trigger on tab change
+
+  // Update the ref when new data arrives for the current tab
+  useEffect(() => {
+    if (!listLoading && customers.length > 0) {
+      // Data has loaded, update ref to match current tab
+      currentTabForDataRef.current = activeTab;
+    } else if (!listLoading && customers.length === 0) {
+      // No data loaded, but loading is complete - still update ref to allow empty state
+      currentTabForDataRef.current = activeTab;
+    }
+  }, [listLoading, customers.length, activeTab]);
+
+  // Handle reset to "all" tab when returning from search - Hard Refresh
+  useFocusEffect(
+    React.useCallback(() => {
+      if (shouldResetToAllTab) {
+        console.log('🔄 Hard refresh triggered from CustomerSearch');
+        
+        // Set hard refreshing flag to show loading and prevent stale data
+        setIsHardRefreshing(true);
+        isHardRefreshRef.current = true; // Set ref to prevent useEffect from running
+        
+        // Clear the flag first
+        dispatch(clearShouldResetToAllTab());
+        
+        // Clear Redux customers list completely
+        dispatch(resetCustomersList());
+        
+        // Force reset to "all" tab immediately (this will trigger useEffect, but ref will prevent it)
+        setActiveTab('all');
+        currentTabForDataRef.current = null; // Clear ref to prevent showing stale data
+        
+        // Force fetch "all" tab data immediately (hard refresh)
+        const payload = {
+          page: 1,
+          limit: 10,
+          isLoadMore: false,
+          isStaging: false,
+          typeCode: [],
+          categoryCode: [],
+          subCategoryCode: [],
+          sortBy: '',
+          sortDirection: 'ASC'
+        };
+        
+        console.log('🔄 Fetching "all" tab data with payload:', payload);
+        dispatch(fetchCustomersList(payload));
+      }
+    }, [shouldResetToAllTab, dispatch])
+  );
+
+  // Clear hard refreshing flag when loading completes
+  useEffect(() => {
+    if (isHardRefreshing && !listLoading) {
+      console.log('🔄 Hard refresh completed');
+      setIsHardRefreshing(false);
+    }
+  }, [isHardRefreshing, listLoading]);
 
 
   // useFocusEffect(
@@ -333,8 +412,8 @@ const CustomerList = ({ navigation }) => {
 
     const delayDebounceFn = setTimeout(() => {
       dispatch(resetCustomersList());
-      if (activeTab === 'all' || activeTab === 'waitingForApproval') {
-        const isStaging = activeTab === 'waitingForApproval';
+      if (activeTab === 'all') {
+        // All tab - regular endpoint, no staging
         dispatch(fetchCustomersList({
           page: 1,
           limit: 10,
@@ -345,9 +424,23 @@ const CustomerList = ({ navigation }) => {
           statusId: selectedFilters.statusId,
           cityIds: selectedFilters.cityIds,
           isLoadMore: false,
-          isStaging: isStaging,
-          ...(isStaging && { statusIds: [5] }),
-          statusIds: [5]
+          isStaging: false
+        }));
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+        // Waiting for Approval and Rejected - staging endpoint
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: 10,
+          searchText: searchText,
+          typeCode: selectedFilters.typeCode,
+          categoryCode: selectedFilters.categoryCode,
+          subCategoryCode: selectedFilters.subCategoryCode,
+          statusId: selectedFilters.statusId,
+          cityIds: selectedFilters.cityIds,
+          isLoadMore: false,
+          isStaging: true,
+          statusIds: statusIds
         }));
       } else {
         const statusIds = getStatusIdsForTab(activeTab);
@@ -376,23 +469,35 @@ const CustomerList = ({ navigation }) => {
   const onRefresh = async () => {
     setIsRefreshing(true);
     dispatch(resetCustomersList());
-    if (activeTab === 'all' || activeTab === 'waitingForApproval') {
-      const isStaging = activeTab === 'waitingForApproval';
+    if (activeTab === 'all') {
+      // All tab - regular endpoint, no staging
       await dispatch(fetchCustomersList({
         page: 1,
         limit: 10,
         ...filters,
         isLoadMore: false,
-        isStaging: isStaging,
-        ...(isStaging && { statusIds: [5] })
+        isStaging: false
       }));
-    } else {
+    } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+      // Waiting for Approval and Rejected - staging endpoint
       const statusIds = getStatusIdsForTab(activeTab);
       await dispatch(fetchCustomersList({
         page: 1,
         limit: 10,
         ...filters,
         isLoadMore: false,
+        isStaging: true,
+        statusIds: statusIds
+      }));
+    } else {
+      // Not Onboarded and Unverified - regular endpoint with statusIds
+      const statusIds = getStatusIdsForTab(activeTab);
+      await dispatch(fetchCustomersList({
+        page: 1,
+        limit: 10,
+        ...filters,
+        isLoadMore: false,
+        isStaging: false,
         statusIds: statusIds
       }));
     }
@@ -445,6 +550,56 @@ const CustomerList = ({ navigation }) => {
   const handleLoadMore = () => {
     if (hasMore && !listLoadingMore) {
       loadMoreCustomers();
+    }
+  };
+
+  // Handle workflow timeline fetch
+  const handleViewWorkflowTimeline = async (customerId, customerName, customerType) => {
+    try {
+      setWorkflowLoading(true);
+      setWorkflowTimelineVisible(true);
+      
+      const response = await customerAPI.getWorkflowProgression([customerId]);
+      console.log('📊 Workflow API Response:', JSON.stringify(response, null, 2));
+      
+      // Handle response structure
+      // API returns: { status: "success", message: "...", data: [{ workflow }] }
+      // apiClient.post returns the parsed JSON directly, so response = { status, message, data: [...] }
+      // response.data is the array of workflows: [{ instanceId, workflowStatus, progressions, ... }]
+      if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+        const workflow = response.data[0];
+        console.log('✅ Extracted workflow:', {
+          instanceId: workflow.instanceId,
+          workflowStatus: workflow.workflowStatus,
+          progressionsCount: workflow.progressions?.length || 0,
+          approversCount: workflow.progressions?.[0]?.approvers?.length || 0
+        });
+        
+        // Spread the workflow object and add customer info
+        setWorkflowData({
+          ...workflow, // Spread workflow object: { instanceId, workflowStatus, progressions, ... }
+          customerName,
+          customerType
+        });
+      } else {
+        console.log('❌ No workflow data found in response');
+        setWorkflowData(null);
+        Toast.show({
+          type: 'info',
+          text1: 'No workflow data',
+          text2: 'Workflow progression data is not available for this customer.',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching workflow progression:', error);
+      setWorkflowData(null);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to fetch workflow progression',
+      });
+    } finally {
+      setWorkflowLoading(false);
     }
   };
 
@@ -645,14 +800,32 @@ const CustomerList = ({ navigation }) => {
       setSelectedCustomerForAction(null);
 
       // Refresh the customer list after approval
-      const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
-      dispatch(fetchCustomersList({
-        page: 1,
-        limit: pagination.limit,
-        searchText: filters.searchText,
-        isStaging: isStaging,
-        ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
-      }));
+      if (activeTab === 'all') {
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false
+        }));
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: true,
+          statusIds: statusIds
+        }));
+      } else {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false,
+          statusIds: statusIds
+        }));
+      }
     } catch (error) {
       console.error('Error approving customer:', error);
       setApproveModalVisible(false);
@@ -702,14 +875,32 @@ const CustomerList = ({ navigation }) => {
       setSelectedCustomerForAction(null);
 
       // Refresh the customer list after rejection
-      const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
-      dispatch(fetchCustomersList({
-        page: 1,
-        limit: pagination.limit,
-        searchText: filters.searchText,
-        isStaging: isStaging,
-        ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
-      }));
+      if (activeTab === 'all') {
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false
+        }));
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: true,
+          statusIds: statusIds
+        }));
+      } else {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false,
+          statusIds: statusIds
+        }));
+      }
     } catch (error) {
       console.error('Error rejecting customer:', error);
       setRejectModalVisible(false);
@@ -734,14 +925,32 @@ const CustomerList = ({ navigation }) => {
       showToast(`Customer ${customer?.customerName} blocked successfully!`, 'success');
 
       // Refresh the customer list
-      const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
-      dispatch(fetchCustomersList({
-        page: 1,
-        limit: pagination.limit,
-        searchText: filters.searchText,
-        isStaging: isStaging,
-        ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
-      }));
+      if (activeTab === 'all') {
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false
+        }));
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: true,
+          statusIds: statusIds
+        }));
+      } else {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false,
+          statusIds: statusIds
+        }));
+      }
     } catch (error) {
       console.error('Error blocking customer:', error);
       showToast(`Failed to block customer: ${error.message}`, 'error');
@@ -767,14 +976,32 @@ const CustomerList = ({ navigation }) => {
       showToast(`Customer ${customer?.customerName} unblocked successfully!`, 'success');
 
       // Refresh the customer list
-      const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
-      dispatch(fetchCustomersList({
-        page: 1,
-        limit: pagination.limit,
-        searchText: filters.searchText,
-        isStaging: isStaging,
-        ...(isStaging && { statusIds: [5] }) // Send statusIds: [5] only for staging requests
-      }));
+      if (activeTab === 'all') {
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false
+        }));
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: true,
+          statusIds: statusIds
+        }));
+      } else {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false,
+          statusIds: statusIds
+        }));
+      }
     } catch (error) {
       console.error('Error unblocking customer:', error);
       showToast(`Failed to unblock customer: ${error.message}`, 'error');
@@ -942,12 +1169,26 @@ const CustomerList = ({ navigation }) => {
     };
 
     dispatch(setFilters(filterParams));
-    const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
-    dispatch(fetchCustomersList({
-      ...filterParams,
-      isStaging: isStaging,
-      ...(isStaging && { statusIds: [5] })
-    }));
+    if (activeTab === 'all') {
+      dispatch(fetchCustomersList({
+        ...filterParams,
+        isStaging: false
+      }));
+    } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+      const tabStatusIds = getStatusIdsForTab(activeTab);
+      dispatch(fetchCustomersList({
+        ...filterParams,
+        isStaging: true,
+        statusIds: tabStatusIds
+      }));
+    } else {
+      const tabStatusIds = getStatusIdsForTab(activeTab);
+      dispatch(fetchCustomersList({
+        ...filterParams,
+        isStaging: false,
+        statusIds: tabStatusIds
+      }));
+    }
     setFilterModalVisible(false);
   };
 
@@ -969,42 +1210,35 @@ const CustomerList = ({ navigation }) => {
           },
         ]}
       >
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
-        >
-          <View style={styles.customerHeader}>
-            {/* <AppText style={styles.customerName}>{item.customerName}<AppText style={styles.customerNameIcon}><ChevronRight height={11} color={colors.primary} /></AppText></AppText> */}
+        <View style={styles.customerHeader}>
+          {/* Customer Name - Clickable to navigate to CustomerDetail */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
+            style={styles.customerNameRow}
+          >
+            <AppText
+              style={styles.customerName}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.customerName}
+            </AppText>
 
-            <View style={styles.customerNameRow}>
-
-              <AppText
-                style={styles.customerName}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.customerName}
-              </AppText>
-
-              <ChevronRight
-                height={12}
-                color={colors.primary}
-                style={{ marginLeft: 6 }}
-              />
-              {/* <AppText style={[styles.customerName, { flex: 1, maxWidth: "80%" }]} numberOfLines={1}
-                ellipsizeMode="tail">{item.customerName} <ChevronRight height={12} color={colors.primary}  />  </AppText> */}
-
-
-
-
-            </View>
+            <ChevronRight
+              height={12}
+              color={colors.primary}
+              style={{ marginLeft: 6 }}
+            />
+          </TouchableOpacity>
             <View style={styles.actionsContainer}>
               {item.statusName === 'NOT-ONBOARDED' && (
                 <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => {
                     const customerId = item.customerId || item.stgCustomerId;
-                    const isStaging = activeTab === 'notOnboarded' || activeTab === 'waitingForApproval';
+                    // Determine isStaging based on tab - only waitingForApproval and rejected use staging
+                    const isStaging = activeTab === 'waitingForApproval' || activeTab === 'rejected';
                     handleOnboardCustomer(
                       navigation,
                       customerId,
@@ -1088,11 +1322,25 @@ const CustomerList = ({ navigation }) => {
           </View>
 
           <View style={styles.statusRow}>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
-              <AppText style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
-                {item.statusName}
-              </AppText>
-            </View>
+            <TouchableOpacity
+              onPress={() => {
+                const customerId = item.customerId || item.stgCustomerId;
+                if (customerId) {
+                  handleViewWorkflowTimeline(
+                    customerId,
+                    item.customerName,
+                    item.customerType
+                  );
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
+                <AppText style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
+                  {item.statusName}
+                </AppText>
+              </View>
+            </TouchableOpacity>
             {item.statusName === 'LOCKED' ? (
               <TouchableOpacity
                 style={styles.unlockButton}
@@ -1151,7 +1399,6 @@ const CustomerList = ({ navigation }) => {
               </TouchableOpacity>
             ) : null}
           </View>
-        </TouchableOpacity>
       </Animated.View>
     );
   };
@@ -1500,7 +1747,7 @@ const CustomerList = ({ navigation }) => {
           ]}
         >
 
-          {listLoading && customers.length === 0 ? (
+          {(listLoading || isHardRefreshing) && customers.length === 0 ? (
             <SkeletonList items={5} />
           ) : listError && customers.length === 0 ? (
             <View style={styles.errorContainer}>
@@ -1602,6 +1849,18 @@ const CustomerList = ({ navigation }) => {
           }}
           onConfirm={handleRejectConfirm}
           customerName={selectedCustomerForAction?.customerName}
+        />
+
+        <WorkflowTimelineModal
+          visible={workflowTimelineVisible}
+          onClose={() => {
+            setWorkflowTimelineVisible(false);
+            setWorkflowData(null);
+          }}
+          workflowData={workflowData}
+          loading={workflowLoading}
+          customerName={workflowData?.customerName}
+          customerType={workflowData?.customerType}
         />
 
         {/* Toast Notification */}

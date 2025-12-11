@@ -26,11 +26,11 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import {AppText,AppInput} from "../../../components"
-import { fetchCustomersList, resetCustomersList, selectCustomers, selectLoadingStates } from '../../../redux/slices/customerSlice';
+import { resetCustomersList, setShouldResetToAllTab } from '../../../redux/slices/customerSlice';
+import { customerAPI } from '../../../api/customer';
 import { SkeletonList } from '../../../components/SkeletonLoader';
 import FilterModal from '../../../components/FilterModal';
 import CustomerSearchResultsIcon from '../../../components/icons/CustomerSearchResultsIcon';
-import { customerAPI } from '../../../api/customer';
 import Toast from 'react-native-toast-message';
 import { handleOnboardCustomer } from '../../../utils/customerNavigationHelper';
 import Phone from '../../../components/icons/Phone';
@@ -49,11 +49,13 @@ import RejectCustomerModal from '../../../components/modals/RejectCustomerModal'
 
 const CustomerSearch = ({ navigation }) => {
   const dispatch = useDispatch();
-  const customers = useSelector(selectCustomers);
-  const { listLoading } = useSelector(selectLoadingStates);
   
   // Get logged-in user data
   const loggedInUser = useSelector(state => state.auth.user);
+  
+  // Local state for search results (not Redux)
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   
   const [searchText, setSearchText] = useState('');
   const [recentSearches] = useState([]);
@@ -82,6 +84,9 @@ const CustomerSearch = ({ navigation }) => {
   const searchBarScale = useRef(new Animated.Value(0.95)).current;
 
   useEffect(() => {
+    // Clear Redux customers list immediately when search screen mounts
+    dispatch(resetCustomersList());
+
     // Entrance animations
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -107,41 +112,86 @@ const CustomerSearch = ({ navigation }) => {
     setTimeout(() => {
       searchInputRef.current?.focus();
     }, 300);
+
+    // Set flag in Redux and clear Redux when component unmounts (user navigates away)
+    return () => {
+      // Clear search timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      // Clear Redux and set flag
+      dispatch(resetCustomersList());
+      dispatch(setShouldResetToAllTab(true));
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const searchInputRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
+
+  const performSearch = async (text) => {
+    if (!text.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    // Animate search action
+    const pulseAnim = new Animated.Value(1);
+    Animated.sequence([
+      Animated.timing(pulseAnim, {
+        toValue: 1.05,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Call API directly and store in local state
+    setSearchLoading(true);
+    try {
+      const response = await customerAPI.getCustomersList({
+        page: 1,
+        limit: 20,
+        searchText: text,
+        isStaging: false,
+      });
+      
+      // API returns { data: { customers: [...], total: ... } }
+      if (response?.data?.customers) {
+        setSearchResults(response.data.customers);
+      } else {
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Error searching customers:', error);
+      setSearchResults([]);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to search customers',
+        position: 'top',
+      });
+    } finally {
+      setSearchLoading(false);
+    }
+  };
 
   const handleSearch = (text) => {
     setSearchText(text);
     
-    if (text.trim()) {
-      // Animate search action
-      const pulseAnim = new Animated.Value(1);
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      // Call API with search text
-      dispatch(resetCustomersList());
-      dispatch(fetchCustomersList({
-        page: 1,
-        limit: 20,
-        searchText: text,
-        isLoadMore: false,
-      }));
-    } else {
-      dispatch(resetCustomersList());
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
+    
+    // Debounce search API call
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(text);
+    }, 500); // 500ms debounce
   };
 
 
@@ -170,7 +220,11 @@ const CustomerSearch = ({ navigation }) => {
       }),
     ]).start(() => {
       setSearchText(search);
-      handleSearch(search);
+      // Clear any existing timeout and perform search immediately
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      performSearch(search);
     });
   };
 
@@ -333,14 +387,10 @@ const CustomerSearch = ({ navigation }) => {
       });
       setSelectedCustomerForAction(null);
 
-      // Refresh the customer list after approval
-      dispatch(resetCustomersList());
-      dispatch(fetchCustomersList({
-        page: 1,
-        limit: 20,
-        searchText: searchText,
-        isLoadMore: false,
-      }));
+      // Refresh the search results after approval
+      if (searchText.trim()) {
+        performSearch(searchText);
+      }
     } catch (error) {
       console.error('Error approving customer:', error);
       setApproveModalVisible(false);
@@ -395,14 +445,10 @@ const CustomerSearch = ({ navigation }) => {
       });
       setSelectedCustomerForAction(null);
 
-      // Refresh the customer list after rejection
-      dispatch(resetCustomersList());
-      dispatch(fetchCustomersList({
-        page: 1,
-        limit: 20,
-        searchText: searchText,
-        isLoadMore: false,
-      }));
+      // Refresh the search results after rejection
+      if (searchText.trim()) {
+        performSearch(searchText);
+      }
     } catch (error) {
       console.error('Error rejecting customer:', error);
       setRejectModalVisible(false);
@@ -436,14 +482,10 @@ const CustomerSearch = ({ navigation }) => {
         position: 'top',
       });
 
-      // Refresh the customer list
-      dispatch(resetCustomersList());
-      dispatch(fetchCustomersList({
-        page: 1,
-        limit: 20,
-        searchText: searchText,
-        isLoadMore: false,
-      }));
+      // Refresh the search results
+      if (searchText.trim()) {
+        performSearch(searchText);
+      }
     } catch (error) {
       console.error('Error blocking customer:', error);
       Toast.show({
@@ -477,14 +519,10 @@ const CustomerSearch = ({ navigation }) => {
         position: 'top',
       });
 
-      // Refresh the customer list
-      dispatch(resetCustomersList());
-      dispatch(fetchCustomersList({
-        page: 1,
-        limit: 20,
-        searchText: searchText,
-        isLoadMore: false,
-      }));
+      // Refresh the search results
+      if (searchText.trim()) {
+        performSearch(searchText);
+      }
     } catch (error) {
       console.error('Error unblocking customer:', error);
       Toast.show({
@@ -790,18 +828,18 @@ const CustomerSearch = ({ navigation }) => {
       )}
 
       {/* Search Results */}
-      {searchText.length > 0 && listLoading ? (
+      {searchText.length > 0 && searchLoading ? (
         <SkeletonList items={5} />
-      ) : searchText.length > 0 && customers.length > 0 ? (
+      ) : searchText.length > 0 && searchResults.length > 0 ? (
         <FlatList
-          data={customers}
+          data={searchResults}
           renderItem={renderSearchResult}
           keyExtractor={(item) => item.customerId || item.stgCustomerId || item.id}
           contentContainerStyle={styles.resultsList}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         />
-      ) : searchText.length > 0 && customers.length === 0 && !listLoading ? (
+      ) : searchText.length > 0 && searchResults.length === 0 && !searchLoading ? (
         <View style={styles.noResults}>
           <Icon name="search-outline" size={60} color="#DDD" />
           <AppText style={styles.noResultsText}>No results found for "{searchText}"</AppText>
