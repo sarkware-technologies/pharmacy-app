@@ -473,7 +473,7 @@ export const customerAPI = {
         }
     },
 
-     getCustomersListMappingHospitals: async (payload) => {
+     getCustomersListMapping: async (payload) => {
         try {
             const response = await apiClient.post('/user-management/customer/mapping-customer-list', payload);
             return response.data;

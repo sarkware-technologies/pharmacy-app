@@ -2707,6 +2707,8 @@ useEffect(() => {
                               selectedDoctors: selectedDoctors,
                             }));
                           },
+                          mappingFor:"PCM",
+                          customerGroupId:formData.customerGroupId
                         });
                       }}
                     >
