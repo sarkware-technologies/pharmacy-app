@@ -13,8 +13,8 @@ export const getPriceSummary = async (filters = {}) => {
       toDate,
       rcStartDate,
       rcEndDate,
-      sortBy = "createdDate",
-      sortDirection = "DESC",
+      // sortBy = "createdDate",
+      sortDirection = "ASC",
       productIds,
       customerIds,
       isExpired,
@@ -34,7 +34,7 @@ export const getPriceSummary = async (filters = {}) => {
       pageSize: limit,
       rcStartDate,
       rcEndDate,
-      sortBy,
+      // sortBy,
       sortDirection,
       productIds,
       customerIds,
@@ -70,7 +70,7 @@ export const getPriceSummary = async (filters = {}) => {
 
 export const getRCStatus = async () => {
   try {
-    const response = await apiClient.get(
+    const response = await apiClient.post(
       "/rate-contract/rc/status/count",
     );
     return response.data;

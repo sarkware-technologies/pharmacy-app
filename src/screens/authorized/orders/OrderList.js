@@ -72,7 +72,6 @@ const OrderList = () => {
   useEffect(() => {
     const unsubscribe = navigation.getParent()?.addListener("tabPress", e => {
       const parent = navigation.getParent();
-      const activeTab = parent?.getState().routes[parent.getState().index].name;
       setPage(1);
       setHasMore(true);
       loadOrders(false, 1);

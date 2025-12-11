@@ -160,7 +160,6 @@ const SidebarDrawer = ({ navigation }) => {
     if (item.isLogout) {
       // Handle logout
       dispatch(logout());
-      navigation.navigate('Auth');
     } else if (item.secondary && item.secondary.length > 0 && !isSubmenu) {
       // Parent item with submenu - only expand/collapse
       setExpandedMenus(prev => {

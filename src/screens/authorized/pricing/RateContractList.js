@@ -10,7 +10,8 @@ import {
   StatusBar,
   Modal,
   Alert,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -40,6 +41,8 @@ import {
   CloseIcon
 } from "../../../components/icons/pricingIcon"
 import { Fonts } from '../../../utils/fontHelper';
+import { SkeletonList } from '../../../components/SkeletonLoader';
+import SelectProduct from "./model/selectProduct"
 
 const RateContractList = () => {
   const navigation = useNavigation();
@@ -52,6 +55,8 @@ const RateContractList = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [showSelectProduct, setShowSelectProduct] = useState(false);
 
 
   const [selectedFilters, setSelectedFilters] = useState({
@@ -63,12 +68,23 @@ const RateContractList = () => {
   });
 
 
-
   useEffect(() => {
-    setPage(1);
-    getRcStatus();
-    loadSummery(1, true);
-  }, [navigation])
+    const unsubscribe = navigation.getParent()?.addListener("tabPress", e => {
+      setPage(1);
+      getRcStatus();
+      loadSummery(1, true);
+      // getCartdetails();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+
+  // useEffect(() => {
+  //   setPage(1);
+  //   getRcStatus();
+  //   loadSummery(1, true);
+  // }, [navigation])
 
   const getRcStatus = async () => {
     const response = await getRCStatus();
@@ -107,21 +123,29 @@ const RateContractList = () => {
 
   }
   const loadSummery = async (pageNumber = 1, isRefresh = false) => {
-    const response = await getPriceSummary({ page: pageNumber });
+    try {
+      if (pageNumber == 1) {
+        setLoading(true)
+      }
+      const response = await getPriceSummary({ page: pageNumber });
 
-    const data = response?.rcSummary ?? [];
+      const data = response?.rcSummary ?? [];
 
-    if (isRefresh) {
-      setRateContracts(data);          // replace
-    } else {
-      setRateContracts(prev => [...prev, ...data]); // append
+      if (isRefresh) {
+        setRateContracts(data);
+      } else {
+        setRateContracts(prev => [...prev, ...data]);
+      }
+      if (data.length === 0 || data.length < 10) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
     }
-
-    // if less data returned → no more pages
-    if (data.length === 0 || data.length < 10) {
-      setHasMore(false);
-    } else {
-      setHasMore(true);
+    catch (e) {
+    }
+    finally {
+      setLoading(false);
     }
   };
 
@@ -165,33 +189,33 @@ const RateContractList = () => {
   const tabScrollRef = useRef(null);
   const tabRefs = useRef({});
 
-    // Handle tab press with centering
-    const handleTabPress = async (tabName) => {
-      // First reset the list and set active tab
-      setActiveTab(tabName);
-  
-      // Scroll the tab into visible area after a small delay to ensure layout is ready
-      setTimeout(() => {
-        if (tabRefs.current[tabName] && tabScrollRef.current) {
-          tabRefs.current[tabName].measureLayout(
-            tabScrollRef.current.getNode ? tabScrollRef.current.getNode() : tabScrollRef.current,
-            (x, y, w, h) => {
-              const screenWidth = Dimensions.get('window').width;
-              // Center the tab in the screen
-              const scrollX = x - (screenWidth / 2) + (w / 2);
-  
-              tabScrollRef.current?.scrollTo({
-                x: Math.max(0, scrollX),
-                animated: true
-              });
-            },
-            () => {
-              console.log('measureLayout failed');
-            }
-          );
-        }
-      }, 100);
-    };
+  // Handle tab press with centering
+  const handleTabPress = async (tabName) => {
+    // First reset the list and set active tab
+    setActiveTab(tabName);
+
+    // Scroll the tab into visible area after a small delay to ensure layout is ready
+    setTimeout(() => {
+      if (tabRefs.current[tabName] && tabScrollRef.current) {
+        tabRefs.current[tabName].measureLayout(
+          tabScrollRef.current.getNode ? tabScrollRef.current.getNode() : tabScrollRef.current,
+          (x, y, w, h) => {
+            const screenWidth = Dimensions.get('window').width;
+            // Center the tab in the screen
+            const scrollX = x - (screenWidth / 2) + (w / 2);
+
+            tabScrollRef.current?.scrollTo({
+              x: Math.max(0, scrollX),
+              animated: true
+            });
+          },
+          () => {
+            console.log('measureLayout failed');
+          }
+        );
+      }
+    }, 100);
+  };
 
   const renderStatusBadge = (status) => {
     const statusBackgroundColors = {
@@ -234,6 +258,13 @@ const RateContractList = () => {
   };
 
 
+  const groupAction = (type) => {
+    setShowGroupupdate(false);
+    if (type == "addNew") {
+      setShowSelectProduct(true)
+    }
+  }
+
 
   // ✅ Modal for order creation
   const renderCreateOrderModal = () => (
@@ -257,7 +288,7 @@ const RateContractList = () => {
           </View>
           <TouchableOpacity
             style={styles.orderTypeOption}
-          // onPress={() => handleCreateOrder('manual')}
+            onPress={() => groupAction('addNew')}
           >
             <AddProduct />
             <AppText style={styles.orderTypeText}>Add New Product</AppText>
@@ -265,7 +296,7 @@ const RateContractList = () => {
 
           <TouchableOpacity
             style={styles.orderTypeOption}
-          // onPress={() => handleCreateOrder('upload')}
+            onPress={() => groupAction('productSwapping')}
           >
             <ProductSwapping />
 
@@ -273,7 +304,7 @@ const RateContractList = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.orderTypeOption}
-          // onPress={() => handleCreateOrder('upload')}
+            onPress={() => groupAction('updateDiscount')}
           >
             <UpdateDiscount />
 
@@ -281,7 +312,7 @@ const RateContractList = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.orderTypeOption}
-          // onPress={() => handleCreateOrder('upload')}
+            onPress={() => groupAction('updateSupply')}
           >
             <UpdateSupplyMode />
 
@@ -289,7 +320,7 @@ const RateContractList = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.orderTypeOption}
-          // onPress={() => handleCreateOrder('upload')}
+            onPress={() => groupAction('quotation')}
           >
             <QuotationGeneration />
 
@@ -492,151 +523,155 @@ const RateContractList = () => {
           </TouchableOpacity>
         </View>
       </View>
+      {loading ? <SkeletonList /> : (
+        <FlatList
+          data={rateContracts}
+          renderItem={renderRateContract}
+          keyExtractor={(item, index) => item.id?.toString() + index.toString()}
+          contentContainerStyle={{ backgroundColor: "#F6F6F6", padding: 15 }}
 
-      <FlatList
-        data={rateContracts}
-        renderItem={renderRateContract}
-        keyExtractor={(item, index) => item.id?.toString() + index.toString()}
-        contentContainerStyle={{backgroundColor: "#F6F6F6", padding: 15 }}
+          // 🔥 Pull to refresh works now
+          refreshing={refreshing}
+          onRefresh={onRefresh}
 
-        // 🔥 Pull to refresh works now
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-
-        // 🔥 Pagination
-        onEndReachedThreshold={0.5}
-        onEndReached={loadMoreData}
-        stickyHeaderIndices={[0]}
-        // 🔥 Everything above list moved here
-        ListHeaderComponent={
-          <>
-            <View style={styles.content}>
-              <View style={styles.statsContainer}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} >
-                  <View style={styles.statCard}>
-                    <AppText style={styles.statLabel}>Active</AppText>
-                    <AppText style={[styles.statValue, { color: "#169560" }]}>
-                      {statusCounts?.Active}
-                    </AppText>
-                  </View>
-                  <View style={styles.statCard}>
-                    <AppText style={styles.statLabel}>Draft</AppText>
-                    <AppText style={[styles.statValue, { color: "#AE7017" }]}>
-                      {statusCounts?.Draft}
-                    </AppText>
-                  </View>
-                  <View style={styles.statCard}>
-                    <AppText style={styles.statLabel}>Expired RC</AppText>
-                    <AppText style={[styles.statValue, { color: "#909090" }]}>
-                      {statusCounts?.Draft}
-                    </AppText>
-                  </View>
-                  <View style={styles.statCard}>
-                    <AppText style={styles.statLabel}>Inactive RC</AppText>
-                    <AppText style={[styles.statValue, { color: colors.gray }]}>
-                      {statusCounts?.Inactive}
-                    </AppText>
-                  </View>
-                  <View style={styles.statCard}>
-                    <AppText style={styles.statLabel}>Pending Approval</AppText>
-                    <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
-                      {statusCounts?.Pending_Approval}
-                    </AppText>
-                  </View>
-                  <View style={styles.statCard}>
-                    <AppText style={styles.statLabel}>Approved</AppText>
-                    <AppText style={[styles.statValue, { color: colors.success }]}>
-                      {statusCounts?.Approved}
-                    </AppText>
-                  </View>
-                  <View style={styles.statCard}>
-                    <AppText style={styles.statLabel}>Rejected</AppText>
-                    <AppText style={[styles.statValue, { color: colors.error }]}>
-                      {statusCounts?.Rejected}
-                    </AppText>
-                  </View>
-                  <View style={styles.statCard}>
-                    <AppText style={styles.statLabel}>Cancelled</AppText>
-                    <AppText style={[styles.statValue, { color: colors.textSecondary }]}>
-                      {statusCounts?.Cancelled}
-                    </AppText>
-                  </View>
-                  <View style={styles.statCard}>
-                    <AppText style={styles.statLabel}>Reassigned</AppText>
-                    <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
-                      {statusCounts?.Reassigned}
-                    </AppText>
-                  </View>
-                  <View style={styles.statCard}>
-                    <AppText style={styles.statLabel}>Expiring Soon</AppText>
-                    <AppText style={[styles.statValue, { color: colors.primary }]}>
-                      {statusCounts?.Expiring_Soon}
-                    </AppText>
-                  </View>
-                </ScrollView>
-              </View>
-
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer}  ref={tabScrollRef} scrollEventThrottle={16}>
-                {tabs.map((tab, i) => (
-                  <TouchableOpacity
-                    key={i + tab}
-                    ref={(ref) => tabRefs.current[tab] = ref}
-                    style={[styles.tab, activeTab === tab && styles.activeTab]}
-                    onPress={() => handleTabPress(tab)}
-                  >
-                    <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                      {tab}
-                    </AppText>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <View style={styles.filterContainer}>
-                <TouchableOpacity style={styles.filterButton}>
-                  <AppText style={styles.filterButtonText}>New Pricing(30)</AppText>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.filterButton, styles.activeFilterButton]}>
-                  <AppText style={styles.activeFilterButtonText}>Multiple RC Found(50)</AppText>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.searchContainer}>
-                <View style={styles.searchBar}>
-                  <Search color="#999" />
-                  <AppInput
-                    style={styles.searchInput}
-                    placeholder="Search RC, customer name/code..."
-                    value={searchText}
-                    onChangeText={setSearchText}
-                    placeholderTextColor="#777777"
-                  />
+          // 🔥 Pagination
+          onEndReachedThreshold={0.5}
+          onEndReached={loadMoreData}
+          stickyHeaderIndices={[0]}
+          // 🔥 Everything above list moved here
+          ListHeaderComponent={
+            <>
+              <View style={styles.content}>
+                <View style={styles.statsContainer}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} >
+                    <View style={styles.statCard}>
+                      <AppText style={styles.statLabel}>Active</AppText>
+                      <AppText style={[styles.statValue, { color: "#169560" }]}>
+                        {statusCounts?.Active}
+                      </AppText>
+                    </View>
+                    <View style={styles.statCard}>
+                      <AppText style={styles.statLabel}>Draft</AppText>
+                      <AppText style={[styles.statValue, { color: "#AE7017" }]}>
+                        {statusCounts?.Draft}
+                      </AppText>
+                    </View>
+                    <View style={styles.statCard}>
+                      <AppText style={styles.statLabel}>Expired RC</AppText>
+                      <AppText style={[styles.statValue, { color: "#909090" }]}>
+                        {statusCounts?.Draft}
+                      </AppText>
+                    </View>
+                    <View style={styles.statCard}>
+                      <AppText style={styles.statLabel}>Inactive RC</AppText>
+                      <AppText style={[styles.statValue, { color: colors.gray }]}>
+                        {statusCounts?.Inactive}
+                      </AppText>
+                    </View>
+                    <View style={styles.statCard}>
+                      <AppText style={styles.statLabel}>Pending Approval</AppText>
+                      <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
+                        {statusCounts?.Pending_Approval}
+                      </AppText>
+                    </View>
+                    <View style={styles.statCard}>
+                      <AppText style={styles.statLabel}>Approved</AppText>
+                      <AppText style={[styles.statValue, { color: colors.success }]}>
+                        {statusCounts?.Approved}
+                      </AppText>
+                    </View>
+                    <View style={styles.statCard}>
+                      <AppText style={styles.statLabel}>Rejected</AppText>
+                      <AppText style={[styles.statValue, { color: colors.error }]}>
+                        {statusCounts?.Rejected}
+                      </AppText>
+                    </View>
+                    <View style={styles.statCard}>
+                      <AppText style={styles.statLabel}>Cancelled</AppText>
+                      <AppText style={[styles.statValue, { color: colors.textSecondary }]}>
+                        {statusCounts?.Cancelled}
+                      </AppText>
+                    </View>
+                    <View style={styles.statCard}>
+                      <AppText style={styles.statLabel}>Reassigned</AppText>
+                      <AppText style={[styles.statValue, { color: colors.primaryLight }]}>
+                        {statusCounts?.Reassigned}
+                      </AppText>
+                    </View>
+                    <View style={styles.statCard}>
+                      <AppText style={styles.statLabel}>Expiring Soon</AppText>
+                      <AppText style={[styles.statValue, { color: colors.primary }]}>
+                        {statusCounts?.Expiring_Soon}
+                      </AppText>
+                    </View>
+                  </ScrollView>
                 </View>
-                <TouchableOpacity
-                  style={styles.searchFilterButton}
-                  onPress={() => setFilterVisible(true)}
-                >
-                  <Filter color="#666" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.searchFilterButton}>
-                  <Calendar />
-                </TouchableOpacity>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer} ref={tabScrollRef} scrollEventThrottle={16}>
+                  {tabs.map((tab, i) => (
+                    <TouchableOpacity
+                      key={i + tab}
+                      ref={(ref) => tabRefs.current[tab] = ref}
+                      style={[styles.tab, activeTab === tab && styles.activeTab]}
+                      onPress={() => handleTabPress(tab)}
+                    >
+                      <AppText style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+                        {tab}
+                      </AppText>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <View style={styles.filterContainer}>
+                  <TouchableOpacity style={styles.filterButton}>
+                    <AppText style={styles.filterButtonText}>New Pricing(30)</AppText>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.filterButton, styles.activeFilterButton]}>
+                    <AppText style={styles.activeFilterButtonText}>Multiple RC Found(50)</AppText>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.searchContainer}>
+                  <View style={styles.searchBar}>
+                    <Search color="#999" />
+                    <AppInput
+                      style={styles.searchInput}
+                      placeholder="Search RC, customer name/code..."
+                      value={searchText}
+                      onChangeText={setSearchText}
+                      placeholderTextColor="#777777"
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={styles.searchFilterButton}
+                    onPress={() => setFilterVisible(true)}
+                  >
+                    <Filter color="#666" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.searchFilterButton}>
+                    <Calendar />
+                  </TouchableOpacity>
+                </View>
+
               </View>
+            </>
+          }
 
-            </View>
-          </>
-        }
-
-        ListFooterComponent={
-          isLoadingMore ? (
-            <AppText style={{ textAlign: "center", padding: 10 }}>
-              Loading more...
-            </AppText>
-          ) : null
-        }
-      />
+          ListFooterComponent={
+            isLoadingMore ? (
+              <ActivityIndicator
+                size="small"
+                color={colors.primary}
+                style={{ marginTop: 10, marginBottom: 20 }}
+              />
+            ) : null
+          }
+        />
+      )}
 
       {renderFilterModal()}
       {renderCreateOrderModal()}
+      <SelectProduct visible={showSelectProduct} onClose={setShowSelectProduct} />
 
     </SafeAreaView>
   );
@@ -646,7 +681,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F6F6F6",
-    paddingBottom:20
+    // paddingBottom: 20
   },
   header: {
     flexDirection: 'row',
@@ -689,7 +724,7 @@ const styles = StyleSheet.create({
     zIndex: 100
   },
   statsContainer: {
-    margin: -15,
+    margin: -8,
     marginBottom: 0,
     paddingVertical: 12,
     paddingHorizontal: 8,

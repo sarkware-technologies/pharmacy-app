@@ -194,10 +194,11 @@ class ApiClient {
         return this.request(qs ? `${endpoint}?${qs}` : endpoint, { method: "GET" });
     }
 
-    post(endpoint, data) {
+    post(endpoint, data, isFormData = false) {
         return this.request(endpoint, {
-            method: "POST",
-            body: JSON.stringify(data),
+            method: 'POST',
+            body: isFormData ? data : JSON.stringify(data),
+
         });
     }
 

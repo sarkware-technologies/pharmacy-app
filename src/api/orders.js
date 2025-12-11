@@ -99,9 +99,9 @@ export const AddtoCart = async (cartItem) => {
   }
 }
 
-export const DeleteCart = async (cartId) => {
+export const DeleteCart = async (cartId,isAll) => {
   try {
-    const response = await apiClient.delete(`/orders/cart/product`, { cartIds: cartId, isAll: true });
+    const response = await apiClient.delete(`/orders/cart/product`, { cartIds: cartId, isAll: isAll });
     return response.data;
   } catch (error) {
     console.error('Error fetching products:', error);
