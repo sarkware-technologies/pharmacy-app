@@ -886,12 +886,16 @@ const mapLicenseData = () => {
           </ScrollView>
         )}
 
+        {console.log(customerData)
+        }
+
         {activeTab === 'linkaged' && <LinkagedTab
           customerType={customerData.customerType}
           customerId={customerData.customerId}
           mappingData={selectedCustomer?.mapping}
           hasApprovePermission={customer?.action === 'APPROVE'}
           isCustomerActive={customer?.statusName === 'ACTIVE' || selectedCustomer?.statusName === 'ACTIVE'}
+          customerRequestedDivisions={selectedCustomer?.divisions || []}
         />}
 
         {/* Action Buttons - Show only on Details tab and if customer action is APPROVE */}

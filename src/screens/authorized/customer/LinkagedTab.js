@@ -112,6 +112,7 @@ export const LinkagedTab = ({
   mappingData = null,
   hasApprovePermission = false,
   isCustomerActive = false,
+  customerRequestedDivisions =[]
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('divisions');
   const [activeDistributorTab, setActiveDistributorTab] = useState('preferred');
@@ -848,8 +849,8 @@ export const LinkagedTab = ({
             // optional: include chosen rate type so backend can know the preference
             rateType:
               allDistributorSupplyType[distributor.id] ||
-              distributor.inviteStatusId == 2 ? 'Chargeback (CM)' :
-              'NetRate (DM)'
+                distributor.inviteStatusId == 2 ? 'Chargeback (CM)' :
+                'NetRate (DM)'
           },
         ],
       };
@@ -1135,7 +1136,7 @@ export const LinkagedTab = ({
             style={[
               styles.distributorTabText,
               activeDistributorTab === 'preferred' &&
-                styles.activeDistributorTabText,
+              styles.activeDistributorTabText,
             ]}
           >
             Preferred Distributors
@@ -1181,7 +1182,7 @@ export const LinkagedTab = ({
               >
                 <AppText style={styles.preferredFilterText}>
                   {distributorFilters.state.length > 0 &&
-                  !distributorFilters.state.includes('All')
+                    !distributorFilters.state.includes('All')
                     ? `State (${distributorFilters.state.length})`
                     : 'State'}
                 </AppText>
@@ -1197,7 +1198,7 @@ export const LinkagedTab = ({
               >
                 <AppText style={styles.preferredFilterText}>
                   {distributorFilters.city.length > 0 &&
-                  !distributorFilters.city.includes('All')
+                    !distributorFilters.city.includes('All')
                     ? `City (${distributorFilters.city.length})`
                     : 'City'}
                 </AppText>
@@ -1285,8 +1286,8 @@ export const LinkagedTab = ({
                                 {selectedDistributors.includes(
                                   distributor.id,
                                 ) && (
-                                  <Icon name="check" size={16} color="#fff" />
-                                )}
+                                    <Icon name="check" size={16} color="#fff" />
+                                  )}
                               </View>
                             </View>
                             <View style={{ flex: 1 }}>
@@ -1331,7 +1332,7 @@ export const LinkagedTab = ({
                 style={[
                   styles.preferredContinueButton,
                   selectedDistributors.length === 0 &&
-                    styles.preferredContinueButtonDisabled,
+                  styles.preferredContinueButtonDisabled,
                 ]}
                 onPress={handleContinueToEdit}
                 disabled={selectedDistributors.length === 0}
@@ -1526,13 +1527,13 @@ export const LinkagedTab = ({
                           style={[
                             styles.radioOuter,
                             distributorRateType[distributor.id] ===
-                              'NetRate (DM)' && styles.radioSelected,
+                            'NetRate (DM)' && styles.radioSelected,
                           ]}
                         >
                           {distributorRateType[distributor.id] ===
                             'NetRate (DM)' && (
-                            <View style={styles.radioInner} />
-                          )}
+                              <View style={styles.radioInner} />
+                            )}
                         </View>
                         <AppText style={styles.radioText}>NetRate (DM)</AppText>
                       </TouchableOpacity>
@@ -1645,7 +1646,7 @@ export const LinkagedTab = ({
                 style={[
                   styles.linkDistributorsButton,
                   isLinkButtonDisabled() &&
-                    styles.linkDistributorsButtonDisabled,
+                  styles.linkDistributorsButtonDisabled,
                 ]}
                 onPress={handleLinkDistributors}
                 disabled={isLinkButtonDisabled()}
@@ -1683,7 +1684,7 @@ export const LinkagedTab = ({
                 >
                   <AppText style={styles.filterText}>
                     {distributorFilters.state.length > 0 &&
-                    !distributorFilters.state.includes('All')
+                      !distributorFilters.state.includes('All')
                       ? `State (${distributorFilters.state.length})`
                       : 'State'}
                   </AppText>
@@ -1699,7 +1700,7 @@ export const LinkagedTab = ({
                 >
                   <AppText style={styles.filterText}>
                     {distributorFilters.city.length > 0 &&
-                    !distributorFilters.city.includes('All')
+                      !distributorFilters.city.includes('All')
                       ? `City (${distributorFilters.city.length})`
                       : 'City'}
                   </AppText>
@@ -1791,50 +1792,50 @@ export const LinkagedTab = ({
                           </AppText>
                         </View>
 
-<View style={[styles.supplyTypeColumn, styles.supplyTypeWrapper, { flex: 1 }]}>
-  <TouchableOpacity
-    style={styles.supplyTypeDropdown}
-    onPress={() => toggleAllSupplyDropdown(distributor.id)}
-    activeOpacity={0.85}
-    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-  >
-    <AppText style={styles.supplyTypeText}>
-      {allDistributorSupplyType[distributor.id] ||
-        (distributor.inviteStatusId === 2 ? 'Chargeback (CM)' : 'NetRate (DM)')}
-    </AppText>
-    <IconMaterial name="keyboard-arrow-down" size={20} color="#999" />
-  </TouchableOpacity>
+                        <View style={[styles.supplyTypeColumn, styles.supplyTypeWrapper, { flex: 1 }]}>
+                          <TouchableOpacity
+                            style={styles.supplyTypeDropdown}
+                            onPress={() => toggleAllSupplyDropdown(distributor.id)}
+                            activeOpacity={0.85}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <AppText style={styles.supplyTypeText}>
+                              {allDistributorSupplyType[distributor.id] ||
+                                (distributor.inviteStatusId === 2 ? 'Chargeback (CM)' : 'NetRate (DM)')}
+                            </AppText>
+                            <IconMaterial name="keyboard-arrow-down" size={20} color="#999" />
+                          </TouchableOpacity>
 
-  {showAllSupplyDropdown[distributor.id] && (
-    <View
-      style={[
-        styles.dropdownMenu,
-        styles.supplyDropdownMenu, // extra positioning/width
-      ]}
-      pointerEvents="box-none"
-    >
-      <TouchableOpacity
-        style={styles.dropdownMenuItem}
-        onPress={() =>
-          handleAllDistributorSupplySelect(distributor.id, 'NetRate (DM)')
-        }
-        hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
-      >
-        <AppText style={styles.dropdownMenuText}>NetRate (DM)</AppText>
-      </TouchableOpacity>
+                          {showAllSupplyDropdown[distributor.id] && (
+                            <View
+                              style={[
+                                styles.dropdownMenu,
+                                styles.supplyDropdownMenu, // extra positioning/width
+                              ]}
+                              pointerEvents="box-none"
+                            >
+                              <TouchableOpacity
+                                style={styles.dropdownMenuItem}
+                                onPress={() =>
+                                  handleAllDistributorSupplySelect(distributor.id, 'NetRate (DM)')
+                                }
+                                hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                              >
+                                <AppText style={styles.dropdownMenuText}>NetRate (DM)</AppText>
+                              </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.dropdownMenuItem}
-        onPress={() =>
-          handleAllDistributorSupplySelect(distributor.id, 'Chargeback (CM)')
-        }
-        hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
-      >
-        <AppText style={styles.dropdownMenuText}>Chargeback (CM)</AppText>
-      </TouchableOpacity>
-    </View>
-  )}
-</View>
+                              <TouchableOpacity
+                                style={styles.dropdownMenuItem}
+                                onPress={() =>
+                                  handleAllDistributorSupplySelect(distributor.id, 'Chargeback (CM)')
+                                }
+                                hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                              >
+                                <AppText style={styles.dropdownMenuText}>Chargeback (CM)</AppText>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
 
 
                         <View style={[styles.actionColumn, { flex: 0.6 }]}>
@@ -1874,11 +1875,11 @@ export const LinkagedTab = ({
         </View>
       ) : (
         <>
-          <ScrollView
+          {/* <ScrollView
             style={styles.scrollContent}
             contentContainerStyle={[
               (hasApprovePermission || isCustomerActive) &&
-                styles.scrollContentWithButton,
+              styles.scrollContentWithButton,
             ]}
           >
             <View style={styles.divisionsContainer}>
@@ -1886,7 +1887,7 @@ export const LinkagedTab = ({
                 style={[
                   styles.divisionColumn,
                   !(hasApprovePermission || isCustomerActive) &&
-                    styles.divisionColumnFullWidth,
+                  styles.divisionColumnFullWidth,
                 ]}
               >
                 <AppText style={styles.columnTitle}>Opened Division</AppText>
@@ -1918,9 +1919,7 @@ export const LinkagedTab = ({
                 <View style={styles.divisionColumn}>
                   <View style={styles.columnHeader}>
                     <AppText style={styles.columnTitle}>Other Division</AppText>
-                    {/* <TouchableOpacity>
-                      <AppText style={styles.assignText}>Assign to Instra</AppText>
-                    </TouchableOpacity> */}
+            
                   </View>
                   <AppText style={styles.columnSubtitle}>Name & Code</AppText>
 
@@ -1963,7 +1962,150 @@ export const LinkagedTab = ({
                 </View>
               )}
             </View>
-          </ScrollView>
+          </ScrollView> */}
+          
+<ScrollView
+ showsVerticalScrollIndicator={false}
+  style={styles.scrollContent}
+  contentContainerStyle={[
+    (hasApprovePermission || isCustomerActive) && styles.scrollContentWithButton
+  ]}
+>
+
+  {/* ---------- HEADER (Requested / Other / Opened) ---------- */}
+  <View style={styles.headerWrapper}>
+    <View style={styles.colRequested}>
+      <AppText style={styles.headerTitle}>Requested</AppText>
+    </View>
+
+    <View style={styles.divider} />
+
+    <View style={styles.colOther}>
+      <AppText style={styles.headerTitle}>Other</AppText>
+    </View>
+
+    <View style={styles.divider} />
+
+    <View style={styles.colOpened}>
+      <AppText style={styles.headerTitle}>Opened</AppText>
+    </View>
+  </View>
+
+  {/* ---------- SUBHEADER LABELS (Name & Code) ---------- */}
+  <View style={styles.subHeaderWrapper}>
+    <View style={styles.colRequested}>
+      <AppText style={styles.subHeaderText}>Name & Code</AppText>
+    </View>
+
+    <View style={styles.divider} />
+
+    <View style={styles.colOther}>
+      <AppText style={styles.subHeaderText}>Name & Code</AppText>
+    </View>
+
+    <View style={styles.divider} />
+
+    <View style={styles.colOpened}>
+      <AppText style={styles.subHeaderText}>Name & Code</AppText>
+    </View>
+  </View>
+
+  {/* ---------- BODY (3 Columns) ---------- */}
+  <View style={styles.columnsRow}>
+
+   
+
+    {/* ========== REQUESTED COLUMN ========== */}
+    <View style={styles.colRequested}>
+      {otherDivisionsData?.length > 0 ? (
+        otherDivisionsData.map(div => (
+          <View key={div.divisionId} style={styles.reqRow}>
+            <AppText style={styles.divisionName}>{div.divisionName}</AppText>
+            <AppText style={styles.divisionCode}>{div.divisionCode}</AppText>
+          </View>
+        ))
+      ) : (
+        <AppText style={styles.emptyText}>No requested divisions</AppText>
+      )}
+    </View>
+
+    <View style={styles.dividerinside} />
+
+    {/* ========== OTHER COLUMN ========== */}
+    <View style={styles.colOther}>
+      {otherDivisionsData?.length > 0 ? (
+        otherDivisionsData.map(div => {
+          const isSelected = selectedDivisions.some(
+            d => d.divisionId === div.divisionId
+          );
+
+          return (
+            <TouchableOpacity
+              key={div.divisionId}
+              style={styles.otherRow}
+              onPress={() => toggleOtherDivisionSelection(div)}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  isSelected && styles.checkboxSelected
+                ]}
+              >
+                {isSelected && <Icon name="check" size={14} color="#fff" />}
+              </View>
+
+              <View style={{ flexShrink: 1 }}>
+                <AppText style={styles.divisionName}>{div.divisionName}</AppText>
+                <AppText style={styles.divisionCode}>{div.divisionCode}</AppText>
+              </View>
+            </TouchableOpacity>
+          );
+        })
+      ) : (
+        <AppText style={styles.emptyText}>No other divisions</AppText>
+      )}
+    </View>
+
+    <View style={styles.dividerinside} />
+
+    {/* ========== OPENED COLUMN ========== */}
+    <View style={styles.colOpened}>
+      {otherDivisionsData?.length > 0 ? (
+        otherDivisionsData.map(div => (
+          <View key={div.divisionId} style={styles.openedRow}>
+            <View style={{ flexShrink: 1 }}>
+              <AppText style={styles.divisionName}>{div.divisionName}</AppText>
+              <AppText style={styles.divisionCode}>{div.divisionCode}</AppText>
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.blockButton,
+                div.isBlocked && styles.unblockButton
+              ]}
+            >
+              <Icon
+                name={div.isBlocked ? "lock-open-outline" : "lock-outline"}
+                size={15}
+                color={div.isBlocked ? "#FF6B00" : "#2B2B2B"}
+              />
+              <AppText
+                style={[
+                  styles.blockText,
+                  div.isBlocked && styles.unblockText
+                ]}
+              >
+                {div.isBlocked ? "Unblock" : "Block"}
+              </AppText>
+            </TouchableOpacity>
+          </View>
+        ))
+      ) : (
+        <AppText style={styles.emptyText}>No opened divisions</AppText>
+      )}
+    </View>
+  </View>
+</ScrollView>
 
           {/* Sticky Continue Button at Bottom - Only show if user has approve permission or customer is active */}
           {(hasApprovePermission || isCustomerActive) && (
@@ -1972,7 +2114,7 @@ export const LinkagedTab = ({
                 style={[
                   styles.continueButton,
                   (linkingDivisions || selectedDivisions.length === 0) &&
-                    styles.continueButtonDisabled,
+                  styles.continueButtonDisabled,
                 ]}
                 onPress={handleLinkDivisionsAPI}
                 disabled={linkingDivisions || selectedDivisions.length === 0}
@@ -2157,8 +2299,8 @@ export const LinkagedTab = ({
                         {linkedPharmacies.length > 0 && linkedDoctors.length > 0
                           ? 'Linked Pharmacies & Doctors'
                           : linkedPharmacies.length > 0
-                          ? 'Linked Pharmacies'
-                          : 'Linked Doctors'}
+                            ? 'Linked Pharmacies'
+                            : 'Linked Doctors'}
                       </AppText>
                     </View>
                     <Icon
@@ -2262,7 +2404,7 @@ export const LinkagedTab = ({
                             style={[
                               styles.accordionTab,
                               activeGroupHospitalTab[hospital.customerId] ===
-                                'doctors' && styles.activeAccordionTab,
+                              'doctors' && styles.activeAccordionTab,
                             ]}
                             onPress={() =>
                               setActiveGroupHospitalTab(prev => ({
@@ -2275,7 +2417,7 @@ export const LinkagedTab = ({
                               style={[
                                 styles.accordionTabText,
                                 activeGroupHospitalTab[hospital.customerId] ===
-                                  'doctors' && styles.activeAccordionTabText,
+                                'doctors' && styles.activeAccordionTabText,
                               ]}
                             >
                               Doctors
@@ -2286,8 +2428,8 @@ export const LinkagedTab = ({
                               styles.accordionTab,
                               (!activeGroupHospitalTab[hospital.customerId] ||
                                 activeGroupHospitalTab[hospital.customerId] ===
-                                  'pharmacies') &&
-                                styles.activeAccordionTab,
+                                'pharmacies') &&
+                              styles.activeAccordionTab,
                             ]}
                             onPress={() =>
                               setActiveGroupHospitalTab(prev => ({
@@ -2301,9 +2443,9 @@ export const LinkagedTab = ({
                                 styles.accordionTabText,
                                 (!activeGroupHospitalTab[hospital.customerId] ||
                                   activeGroupHospitalTab[
-                                    hospital.customerId
+                                  hospital.customerId
                                   ] === 'pharmacies') &&
-                                  styles.activeAccordionTabText,
+                                styles.activeAccordionTabText,
                               ]}
                             >
                               Pharmacies
@@ -2320,92 +2462,92 @@ export const LinkagedTab = ({
                       {/* Pharmacies Tab */}
                       {(!activeGroupHospitalTab[hospital.customerId] ||
                         activeGroupHospitalTab[hospital.customerId] ===
-                          'pharmacies') && (
-                        <View style={styles.accordionItemsContainer}>
-                          {linkedPharmacies.length > 0 ? (
-                            <>
-                              <View style={styles.accordionItemsHeader}>
-                                <AppText
-                                  style={styles.accordionItemsHeaderText}
-                                >
-                                  Pharmacy Details
-                                </AppText>
-                                <AppText
-                                  style={styles.accordionItemsHeaderText}
-                                >
-                                  Action
+                        'pharmacies') && (
+                          <View style={styles.accordionItemsContainer}>
+                            {linkedPharmacies.length > 0 ? (
+                              <>
+                                <View style={styles.accordionItemsHeader}>
+                                  <AppText
+                                    style={styles.accordionItemsHeaderText}
+                                  >
+                                    Pharmacy Details
+                                  </AppText>
+                                  <AppText
+                                    style={styles.accordionItemsHeaderText}
+                                  >
+                                    Action
+                                  </AppText>
+                                </View>
+                                {linkedPharmacies.map((pharmacy, index) => (
+                                  <View
+                                    key={`${hospital.customerId}-pharmacy-${pharmacy.customerId}-${index}`}
+                                    style={styles.accordionItemRow}
+                                  >
+                                    <View style={styles.accordionItemInfo}>
+                                      <AppText style={styles.accordionItemName}>
+                                        {pharmacy.customerName}
+                                      </AppText>
+                                      <AppText style={styles.accordionItemCode}>
+                                        {pharmacy.customerCode} |{' '}
+                                        {pharmacy.cityName}
+                                      </AppText>
+                                    </View>
+                                  </View>
+                                ))}
+                              </>
+                            ) : (
+                              <View style={styles.emptyAccordionContent}>
+                                <AppText style={styles.emptyAccordionText}>
+                                  No pharmacies linked
                                 </AppText>
                               </View>
-                              {linkedPharmacies.map((pharmacy, index) => (
-                                <View
-                                  key={`${hospital.customerId}-pharmacy-${pharmacy.customerId}-${index}`}
-                                  style={styles.accordionItemRow}
-                                >
-                                  <View style={styles.accordionItemInfo}>
-                                    <AppText style={styles.accordionItemName}>
-                                      {pharmacy.customerName}
-                                    </AppText>
-                                    <AppText style={styles.accordionItemCode}>
-                                      {pharmacy.customerCode} |{' '}
-                                      {pharmacy.cityName}
-                                    </AppText>
-                                  </View>
-                                </View>
-                              ))}
-                            </>
-                          ) : (
-                            <View style={styles.emptyAccordionContent}>
-                              <AppText style={styles.emptyAccordionText}>
-                                No pharmacies linked
-                              </AppText>
-                            </View>
-                          )}
-                        </View>
-                      )}
+                            )}
+                          </View>
+                        )}
 
                       {/* Doctors Tab */}
                       {activeGroupHospitalTab[hospital.customerId] ===
                         'doctors' && (
-                        <View style={styles.accordionItemsContainer}>
-                          {linkedDoctors.length > 0 ? (
-                            <>
-                              <View style={styles.accordionItemsHeader}>
-                                <AppText
-                                  style={styles.accordionItemsHeaderText}
-                                >
-                                  Doctor Details
-                                </AppText>
-                                <AppText
-                                  style={styles.accordionItemsHeaderText}
-                                >
-                                  Action
+                          <View style={styles.accordionItemsContainer}>
+                            {linkedDoctors.length > 0 ? (
+                              <>
+                                <View style={styles.accordionItemsHeader}>
+                                  <AppText
+                                    style={styles.accordionItemsHeaderText}
+                                  >
+                                    Doctor Details
+                                  </AppText>
+                                  <AppText
+                                    style={styles.accordionItemsHeaderText}
+                                  >
+                                    Action
+                                  </AppText>
+                                </View>
+                                {linkedDoctors.map((doctor, index) => (
+                                  <View
+                                    key={`${hospital.customerId}-doctor-${doctor.customerId}-${index}`}
+                                    style={styles.accordionItemRow}
+                                  >
+                                    <View style={styles.accordionItemInfo}>
+                                      <AppText style={styles.accordionItemName}>
+                                        {doctor.customerName}
+                                      </AppText>
+                                      <AppText style={styles.accordionItemCode}>
+                                        {doctor.customerCode} | {doctor.cityName}
+                                      </AppText>
+                                    </View>
+                                  </View>
+                                ))}
+                              </>
+                            ) : (
+                              <View style={styles.emptyAccordionContent}>
+                                <AppText style={styles.emptyAccordionText}>
+                                  No doctors linked
                                 </AppText>
                               </View>
-                              {linkedDoctors.map((doctor, index) => (
-                                <View
-                                  key={`${hospital.customerId}-doctor-${doctor.customerId}-${index}`}
-                                  style={styles.accordionItemRow}
-                                >
-                                  <View style={styles.accordionItemInfo}>
-                                    <AppText style={styles.accordionItemName}>
-                                      {doctor.customerName}
-                                    </AppText>
-                                    <AppText style={styles.accordionItemCode}>
-                                      {doctor.customerCode} | {doctor.cityName}
-                                    </AppText>
-                                  </View>
-                                </View>
-                              ))}
-                            </>
-                          ) : (
-                            <View style={styles.emptyAccordionContent}>
-                              <AppText style={styles.emptyAccordionText}>
-                                No doctors linked
-                              </AppText>
-                            </View>
-                          )}
-                        </View>
-                      )}
+                            )}
+                          </View>
+                        )}
                     </View>
                   )}
                 </View>
@@ -2564,7 +2706,7 @@ export const LinkagedTab = ({
                   style={[
                     styles.checkbox,
                     allDivisionsSelected.find(d => d.id === division.id) &&
-                      styles.checkboxSelected,
+                    styles.checkboxSelected,
                   ]}
                 >
                   {allDivisionsSelected.find(d => d.id === division.id) && (
@@ -2713,61 +2855,14 @@ export const LinkagedTab = ({
           </TouchableOpacity>
         </ScrollView>
         {/* Divisions Tab - Always visible */}
-        {/* <TouchableOpacity
-          style={[styles.subTab, activeSubTab === 'divisions' && styles.activeSubTab]}
-          onPress={() => setActiveSubTab('divisions')}
-        >
-          <Icon name="view-grid" size={18} color={activeSubTab === 'divisions' ? '#000' : '#999'} />
-          <AppText style={[styles.subTabText, activeSubTab === 'divisions' && styles.activeSubTabText]}>
-            Divisions
-          </AppText>
-        </TouchableOpacity> */}
 
-        {/* Distributors Tab - Disabled if no opened divisions */}
-        {/* <TouchableOpacity
-          style={[styles.subTab, activeSubTab === 'distributors' && styles.activeSubTab, openedDivisionsData.length === 0 && styles.disabledTab]}
-          onPress={() => openedDivisionsData.length > 0 && setActiveSubTab('distributors')}
-          disabled={openedDivisionsData.length === 0}
-        >
-          <Icon name="store" size={18} color={openedDivisionsData.length > 0 ? (activeSubTab === 'distributors' ? '#000' : '#999') : '#CCC'} />
-          <AppText style={[styles.subTabText, activeSubTab === 'distributors' && styles.activeSubTabText, openedDivisionsData.length === 0 && styles.disabledTabText]}>
-            Distributors
-          </AppText>
-        </TouchableOpacity> */}
 
-        {/* Field Tab - Disabled if no opened divisions */}
-        {/* <TouchableOpacity
-          style={[styles.subTab, activeSubTab === 'field' && styles.activeSubTab, openedDivisionsData.length === 0 && styles.disabledTab]}
-          onPress={() => openedDivisionsData.length > 0 && setActiveSubTab('field')}
-          disabled={openedDivisionsData.length === 0}
-        >
-          <IconFeather name="users" size={18} color={openedDivisionsData.length > 0 ? (activeSubTab === 'field' ? '#000' : '#999') : '#CCC'} />
-          <AppText style={[styles.subTabText, activeSubTab === 'field' && styles.activeSubTabText, openedDivisionsData.length === 0 && styles.disabledTabText]}>
-            Field
-          </AppText>
-        </TouchableOpacity> */}
-
-        {/* Customer Hierarchy Tab - Always visible */}
-        {/* <TouchableOpacity
-          style={[styles.subTab, activeSubTab === 'hierarchy' && styles.activeSubTab]}
-          onPress={() => setActiveSubTab('hierarchy')}
-        >
-          <Icon name="sitemap" size={18} color={activeSubTab === 'hierarchy' ? '#000' : '#999'} />
-          <AppText style={[styles.subTabText, activeSubTab === 'hierarchy' && styles.activeSubTabText]}>
-            Customer Hierarchy
-          </AppText>
-        </TouchableOpacity> */}
-
-        {/* Content based on active sub-tab */}
-
-         <ScrollView
-      style={{ flex: 1 }}
-    >
-        {activeSubTab === 'distributors' && renderDistributorsTab()}
-        {activeSubTab === 'divisions' && renderDivisionsTab()}
-        {activeSubTab === 'field' && renderFieldTab()}
-        {activeSubTab === 'hierarchy' && renderCustomerHierarchyTab()}
-  </ScrollView>
+        <View style={styles.tabContentWrapper}>
+          {activeSubTab === 'distributors' && renderDistributorsTab()}
+          {activeSubTab === 'divisions' && renderDivisionsTab()}
+          {activeSubTab === 'field' && renderFieldTab()}
+          {activeSubTab === 'hierarchy' && renderCustomerHierarchyTab()}
+        </View>
         {/* Modals */}
         <DivisionSelectionModal />
 
@@ -2816,7 +2911,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-     overflow: 'visible', 
+    overflow: 'visible',
   },
   subTabsContainer: {
     flexDirection: 'row',
@@ -2864,7 +2959,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
-     overflow: 'visible',   
+    overflow: 'visible',
   },
   scrollContentWithButton: {
     paddingBottom: 100, // Add padding to ensure last item is visible above sticky button
@@ -3691,14 +3786,14 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 1000,
     backgroundColor: '#fff',
-  borderRadius: 6,
-  paddingVertical: 4,
-  marginTop: 6,
-  elevation: 4,
-  shadowColor: '#000',
-  shadowOpacity: 0.1,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 4 },
+    borderRadius: 6,
+    paddingVertical: 4,
+    marginTop: 6,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
 
 
   },
@@ -4223,96 +4318,262 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffece0',
     borderRadius: 4,
   },
-supplyTypeWrapper: {
-  position: 'relative',
-  overflow: 'visible',
-  zIndex: 50,
+  supplyTypeWrapper: {
+    position: 'relative',
+    overflow: 'visible',
+    zIndex: 50,
+  },
+
+  supplyTypeDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#D9D9D9',
+    borderRadius: 8,
+    minWidth: 120,
+    zIndex: 51,
+  },
+
+  /* BASE DROPDOWN MENU (GLOBAL) */
+  dropdownMenu: {
+    position: 'absolute',
+    top: 40, // ensures it drops below the button
+    right: 0, // align to right always
+    minWidth: 180,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    overflow: 'visible',
+
+    // FIX CLIPPING
+    zIndex: 9999,
+    elevation: 15,
+
+    // Stronger shadow for visibility
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+  },
+
+  /* DROPDOWN FOR SUPPLY TYPE (OVERRIDE SIZE/POSITION) */
+  supplyDropdownMenu: {
+    position: 'absolute',
+    top: 42,
+    right: -10,  // move slightly outward so it doesn't overlap text
+    width: 200,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingVertical: 6,
+
+    // FIX CLIPPING
+    overflow: 'visible',
+    zIndex: 9999,
+    elevation: 20,
+
+    // Improve shadow
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
+
+  dropdownMenuItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    backgroundColor: '#fff',
+
+    // Increase tap area
+    minHeight: 44,
+    justifyContent: 'center',
+
+    // Makes touch detection easy
+    zIndex: 9999,
+  },
+
+  dropdownMenuText: {
+    fontSize: 14,
+    color: '#333',
+    zIndex: 9999,
+  },
+
+  supplyTypeText: {
+    fontSize: 14,
+    color: '#333',
+    marginRight: 6,
+  },
+tabContentWrapper: {
+  flex: 1,
+  // paddingTop: 60, // Same height as tab bar
+  overflow: 'hidden',
 },
 
-supplyTypeDropdown: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  paddingVertical: 8,
-  paddingHorizontal: 12,
-  backgroundColor: '#fff',
-  borderWidth: 1,
-  borderColor: '#D9D9D9',
-  borderRadius: 8,
-  minWidth: 120,
-  zIndex: 51,
-},
 
-/* BASE DROPDOWN MENU (GLOBAL) */
-dropdownMenu: {
-  position: 'absolute',
-  top: 40, // ensures it drops below the button
-  right: 0, // align to right always
-  minWidth: 180,
-  backgroundColor: '#fff',
-  borderRadius: 8,
-  overflow: 'visible',
-
-  // FIX CLIPPING
-  zIndex: 9999,
-  elevation: 15,
-
-  // Stronger shadow for visibility
-  shadowColor: '#000',
-  shadowOpacity: 0.2,
-  shadowRadius: 10,
-  shadowOffset: { width: 0, height: 4 },
-},
-
-/* DROPDOWN FOR SUPPLY TYPE (OVERRIDE SIZE/POSITION) */
-supplyDropdownMenu: {
-  position: 'absolute',
-  top: 42,
-  right: -10,  // move slightly outward so it doesn't overlap text
-  width: 200,
-  backgroundColor: '#fff',
-  borderRadius: 8,
-  paddingVertical: 6,
-
-  // FIX CLIPPING
-  overflow: 'visible',
-  zIndex: 9999,
-  elevation: 20,
-
-  // Improve shadow
-  shadowColor: '#000',
-  shadowOpacity: 0.25,
-  shadowRadius: 12,
-  shadowOffset: { width: 0, height: 6 },
-},
-
-dropdownMenuItem: {
-  paddingVertical: 14,
+headerWrapper: {
+  flexDirection: "row",
+  alignItems: "center",
   paddingHorizontal: 16,
-  borderBottomWidth: 1,
-  borderBottomColor: '#F0F0F0',
-  backgroundColor: '#fff',
-
-  // Increase tap area
-  minHeight: 44,
-  justifyContent: 'center',
-
-  // Makes touch detection easy
-  zIndex: 9999,
+  paddingTop: 10,
+  // marginBottom: 10,
 },
 
-dropdownMenuText: {
+headerTitle: {
+  fontSize: 15,
+  fontWeight: "600",
+  color: "#2B2B2B",
+  paddingBottom:20
+},
+
+subHeaderWrapper: {
+  flexDirection: "row",
+  backgroundColor: "#FBFBFB",
+  // paddingVertical: 8,
+  paddingHorizontal: 16,
+  // marginBottom:10
+
+
+},
+
+subHeaderText: {
+  fontSize: 13,
+  fontWeight: "500",
+  color: "#777",
+  paddingVertical:10
+},
+
+columnsRow: {
+  flexDirection: "row",
+  paddingHorizontal: 16,
+  // paddingTop: 14,
+  marginTop:20
+},
+
+divider: {
+  width: 1,
+  backgroundColor: "#90909080",
+  marginHorizontal: 12,
+ 
+
+},
+
+dividerinside:{
+   width: 1,
+  backgroundColor: "#90909080",
+  marginHorizontal: 12,
+  marginTop:-20
+},
+
+/* Column widths based on screenshot */
+colRequested: {
+  flex: 1,        // Medium width
+  paddingRight: 6,
+  // paddingTop:20
+},
+
+colOther: {
+  flex: 1.3,      // WIDEST column (as per screenshot)
+  paddingLeft: 6,
+  paddingRight: 6,
+    // paddingTop:20
+},
+
+colOpened: {
+  flex: 1,        // Smallest column
+  paddingLeft: 6,
+    // paddingTop:20
+},
+
+/* Requested Rows */
+reqRow: {
+  marginBottom: 20,
+},
+
+/* Other Rows */
+otherRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 20,
+},
+
+/* Opened Rows */
+openedRow: {
+  // flexDirection: "row",
+  // justifyContent: "space-between",
+  // alignItems: "center",
+  // marginBottom: 28,
+  borderBottomColor:"#D9DFE2",
+  borderBottomWidth:1,
+  paddingBottom:10,
+    marginBottom: 10,
+
+
+},
+
+emptyText: {
+  // marginTop: 10,
+  fontSize: 13,
+  color: "#999",
+  lineHeight: 18,
+},
+
+divisionName: {
   fontSize: 14,
-  color: '#333',
-  zIndex: 9999,
+  fontWeight: "500",
+  color: "#333",
 },
 
-supplyTypeText: {
+divisionCode: {
   fontSize: 14,
-  color: '#333',
-  marginRight: 6,
+  color: "#777",
+  marginTop: 2,
 },
 
+checkbox: {
+  width: 20,
+  height: 20,
+  borderRadius: 4,
+  borderWidth: 1,
+  borderColor: "#909090",
+  marginRight: 12,
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+checkboxSelected: {
+  backgroundColor: "#FF8A00",
+  borderColor: "#FF8A00",
+},
+
+blockButton: {
+  flexDirection: "row",
+  alignItems: "center",
+  paddingVertical: 6,
+  paddingHorizontal: 12,
+  borderWidth: 1,
+  borderColor: "#2B2B2B",
+  borderRadius: 8,
+  marginVertical:5
+},
+
+unblockButton: {
+  borderColor: "#FF6B00",
+  backgroundColor: "#FFF5EF",
+},
+
+blockText: {
+  marginLeft: 6,
+  fontSize: 12,
+  color: "#2B2B2B",
+},
+
+unblockText: {
+  color: "#FF6B00",
+},
 
 });
 
