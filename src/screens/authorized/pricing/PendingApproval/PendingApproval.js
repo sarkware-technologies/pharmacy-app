@@ -12,7 +12,7 @@ import ProductSwapping from './ProductSwapping/ProductSwapping';
 import DiscountUpdate from './DiscountUpdate/DiscountUpdate';
 
 const PendingApproval = () => {
-  const [activeSubTab, setActiveSubTab] = useState('Add Product');
+  const [activeSubTab, setActiveSubTab] = useState('Product Swapping');
   
   const subTabs = [
     'New RC',

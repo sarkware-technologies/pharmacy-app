@@ -3,7 +3,7 @@ import { TouchableOpacity, View, ActivityIndicator, StyleSheet } from 'react-nat
 import { AppText } from '.';
 
 const Button = ({
-  title,
+  children,
   onPress,
   loading = false,
   disabled = false,
@@ -25,7 +25,11 @@ const Button = ({
         <ActivityIndicator size="small" color="#fff" />
       ) : (
         <View>
-          <AppText style={[styles.text, textStyle]}>{title}</AppText>
+          {typeof children === "string" || typeof children === "number" ? (
+            <AppText style={[styles.text, textStyle]}>{children}</AppText>
+          ) : (
+            children
+          )}
         </View>
       )}
     </TouchableOpacity>

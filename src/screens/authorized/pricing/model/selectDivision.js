@@ -198,12 +198,11 @@ const SelectDivision = ({
                     {(multiSelect && selectedDivisions.length > 0 || showDone) && (
                         <View style={{ marginHorizontal: 10 }}>
                             <Button
-                                title="Done"
                                 onPress={() => {
                                     onSelectDivision?.(selectedDivisions);
                                     onClose?.(false);
                                 }}
-                            />
+                            >Done</Button>
                         </View>
                     )}
 

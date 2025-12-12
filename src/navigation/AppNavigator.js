@@ -33,6 +33,7 @@ import CustomerList from '../screens/authorized/customer/CustomerList';
 import RateContractList from '../screens/authorized/pricing/RateContractList';
 import CreateRateContract from '../screens/authorized/pricing/CreateRateContract';
 import RateContractDetail from '../screens/authorized/pricing/RateContractDetail';
+import GroupUpdateScreen from '../screens/authorized/pricing/groupUpdateScreen';
 
 // Distributor Screens
 import DistributorList from '../screens/authorized/distributor/DistributorList';
@@ -77,6 +78,7 @@ import SearchAddProducts from '../screens/authorized/orders/SearchAddProducts';
 import Cart from '../screens/authorized/orders/Cart';
 import UploadOrder from '../screens/authorized/orders/UploadOrder';
 import ProductMapping from '../screens/authorized/orders/ProductMapping';
+
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -345,10 +347,7 @@ const MainStack = () => (
     <Stack.Screen name="DoctorSelector" component={DoctorSelector} />
     <Stack.Screen name="PharmacySelector" component={PharmacySelector} />
     <Stack.Screen name="OnboardCustomer" component={OnboardCustomer} />
-    {/* These are for the tab stacks - handled in BottomTabNavigator */}
-    <Stack.Screen name="RateContractList" component={RateContractList} />
-    <Stack.Screen name="CreateRateContract" component={CreateRateContract} />
-    <Stack.Screen name="RateContractDetail" component={RateContractDetail} />
+
     {/* Product Stack - opens without bottom tabs */}
     <Stack.Screen name="ProductStack" component={ProductStack} />
     {/* Distributor Stack - opens without bottom tabs */}
@@ -369,6 +368,16 @@ const MainStack = () => (
     <Stack.Screen name="Cart" component={Cart} />
     <Stack.Screen name="UploadOrder" component={UploadOrder} />
     <Stack.Screen name="ProductMapping" component={ProductMapping} />
+
+
+
+    {/* Pricing Screens */}
+
+    <Stack.Screen name="GroupUpdateScreen" component={GroupUpdateScreen} />
+    <Stack.Screen name="CreateRateContract" component={CreateRateContract} />
+    <Stack.Screen name="RateContractDetail" component={RateContractDetail} />
+
+
   </Stack.Navigator>
 );
 

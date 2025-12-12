@@ -73,74 +73,81 @@ const SelectDistributor = ({ visible, onClose, onSelect, customerId, selectedCus
       animationType="slide"
       onRequestClose={handleClose}
     >
-      <TouchableWithoutFeedback onPress={() => { }}>
-        <View
-          style={styles.modalOverlay}
-          activeOpacity={1}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <AppText style={styles.modalTitle}>Select Distributor</AppText>
-              <TouchableOpacity onPress={handleClose}>
-                <Svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <Circle cx="11" cy="11" r="10.5" fill="white" stroke="#909090" />
-                  <Path d="M7.79468 7.79688L14.2049 14.2071M7.79468 14.2071L14.2049 7.79688" stroke="#909090" strokeLinecap="round" strokeLinejoin="round" />
-                </Svg>
+      <SafeAreaView style={styles.container}>
 
-              </TouchableOpacity>
-            </View>
+        <TouchableWithoutFeedback onPress={() => { }}>
+          <View
+            style={styles.modalOverlay}
+            activeOpacity={1}
+          >
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <AppText style={styles.modalTitle}>Select Distributor</AppText>
+                <TouchableOpacity onPress={handleClose}>
+                  <Svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <Circle cx="11" cy="11" r="10.5" fill="white" stroke="#909090" />
+                    <Path d="M7.79468 7.79688L14.2049 14.2071M7.79468 14.2071L14.2049 7.79688" stroke="#909090" strokeLinecap="round" strokeLinejoin="round" />
+                  </Svg>
 
-            <View style={styles.selectedContainer}>
-              <View style={styles.selectedCustomer}>
-                <View style={{ gap: 5, width: "80%" }}>
-                  <AppText style={styles.selectedCustomer_title}>
-                    Selected Hospital
-                  </AppText>
-                  <AppText style={styles.selectedCustomer_name}>
-                    {selectedCustomer?.customerName}
-                  </AppText>
-                  <AppText style={styles.selectedCustomer_info}>
-                    {selectedCustomer?.customerCode} | {selectedCustomer?.cityName}
-                  </AppText>
-                </View>
-                <View style={{ width: "20%", alignItems: "flex-end" }}>
-                  <TouchableOpacity style={{ flexDirection: "row", gap: 5, display: "flex", alignItems: "center" }} onPress={() => changeCustomer?.()}>
-                    <AppText style={{ color: "#F7941E", fontWeight: 900, fontFamily: Fonts.Black }}>
-                      Change
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.selectedContainer}>
+                <View style={styles.selectedCustomer}>
+                  <View style={{ gap: 5, width: "80%" }}>
+                    <AppText style={styles.selectedCustomer_title}>
+                      Selected Hospital
                     </AppText>
-                    <Svg style={{ marginTop: 3 }} width="5" height="10" viewBox="0 0 4 7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <Path d="M0.5 0.5L3.5 3.5L0.5 6.5" stroke="#F7941E" strokeLinecap="round" strokeLinejoin="round" />
-                    </Svg>
-                  </TouchableOpacity>
+                    <AppText style={styles.selectedCustomer_name}>
+                      {selectedCustomer?.customerName}
+                    </AppText>
+                    <AppText style={styles.selectedCustomer_info}>
+                      {selectedCustomer?.customerCode} | {selectedCustomer?.cityName}
+                    </AppText>
+                  </View>
+                  <View style={{ width: "20%", alignItems: "flex-end" }}>
+                    <TouchableOpacity style={{ flexDirection: "row", gap: 5, display: "flex", alignItems: "center" }} onPress={() => changeCustomer?.()}>
+                      <AppText style={{ color: "#F7941E", fontWeight: 900, fontFamily: Fonts.Black }}>
+                        Change
+                      </AppText>
+                      <Svg style={{ marginTop: 3 }} width="5" height="10" viewBox="0 0 4 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <Path d="M0.5 0.5L3.5 3.5L0.5 6.5" stroke="#F7941E" strokeLinecap="round" strokeLinejoin="round" />
+                      </Svg>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
-            <View style={{ marginTop: 5, marginLeft: 24, marginBottom: 5 }}>
-              <AppText style={{ colors: colors.primaryText, fontSize: 16, fontWeight: 600 }}>
-                Select Distributor
-              </AppText>
-            </View>
-
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
+              <View style={{ marginTop: 5, marginLeft: 24, marginBottom: 5 }}>
+                <AppText style={{ colors: colors.primaryText, fontSize: 16, fontWeight: 600 }}>
+                  Select Distributor
+                </AppText>
               </View>
-            ) : (
-              <FlatList
-                data={distributors}
-                renderItem={renderDistributor}
-                keyExtractor={item => item.id.toString()}
-                contentContainerStyle={styles.listContent}
-              />
-            )}
+
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+              ) : (
+                <FlatList
+                  data={distributors}
+                  renderItem={renderDistributor}
+                  keyExtractor={item => item.id.toString()}
+                  contentContainerStyle={styles.listContent}
+                />
+              )}
+            </View>
           </View>
-        </View>
-      </TouchableWithoutFeedback>
+        </TouchableWithoutFeedback>
+      </SafeAreaView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

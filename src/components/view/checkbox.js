@@ -45,14 +45,14 @@ export default function CustomCheckbox({
             borderColor: disabled
               ? disabledColor
               : checked
-                ? activeColor
-                : inactiveColor,
+              ? activeColor
+              : inactiveColor,
             backgroundColor:
               disabled ? disabledColor : checked ? activeColor : "transparent",
             width: size,
             height: size,
             borderRadius: size / 4,
-            borderWidth: borderWidth,
+            borderWidth,
           },
           checkboxStyle,
         ]}
@@ -64,7 +64,12 @@ export default function CustomCheckbox({
         )}
       </View>
 
-      {title ? <AppText style={[styles.label, textStyle]}>{title}</AppText> : null}
+      {/* ⭐ FIXED TITLE RENDERING */}
+      {typeof title === "string" || typeof title === "number" ? (
+        <AppText style={[styles.label, textStyle]}>{title}</AppText>
+      ) : (
+        title
+      )}
     </TouchableOpacity>
   );
 }

@@ -43,6 +43,7 @@ import {
 import { Fonts } from '../../../utils/fontHelper';
 import { SkeletonList } from '../../../components/SkeletonLoader';
 import SelectProduct from "./model/selectProduct"
+import SelectRC from "./model/selectRC"
 
 const RateContractList = () => {
   const navigation = useNavigation();
@@ -57,6 +58,17 @@ const RateContractList = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showSelectProduct, setShowSelectProduct] = useState(false);
+
+  const [groupType, setGroupType] = useState("");
+  const [rcAction, setRcAction] = useState("");
+
+  const [selectProduct, setSelectedProduct] = useState(null);
+  const [selectProductOld, setSelectedProductOld] = useState(null);
+  const [selectProductNew, setSelectedProductNew] = useState(null);
+
+  const [showRCselection, setShowRCselection] = useState(false);
+  const [selectedCustomers, setSelectedCustomers] = useState([]);
+
 
 
   const [selectedFilters, setSelectedFilters] = useState({
@@ -176,7 +188,55 @@ const RateContractList = () => {
     loadSummery(1, true);    // initial load
   }, [navigation]);
 
+  const handleSelectProduct = (product) => {
+    if (groupType == "productSwapping") {
+      selectProductOld
+      if (!selectProductOld) {
+        setSelectedProductOld(product)
+      }
+      else {
+        setSelectedProductNew(product)
+        setShowSelectProduct(false)
+      }
+    }
+    else if (groupType == "addNew") {
+      setSelectedProduct(product)
+    }
 
+  }
+
+  const clearState = () => {
+    setSelectedProduct(null)
+    setSelectedProductOld(null)
+    setSelectedProductNew(null)
+    setSelectedCustomers([]);
+    setRcAction("")
+  }
+
+
+  const groupAction = (type) => {
+    clearState();
+    setGroupType(type);
+    setShowGroupupdate(false);
+    if (type == "addNew") {
+      setShowSelectProduct(true)
+    }
+    else if (type == "productSwapping") {
+      setShowSelectProduct(true)
+    }
+  }
+
+  const onRcClick = (action) => {
+    setShowSelectProduct(false)
+    setRcAction(action);
+    setShowRCselection(true);
+  }
+
+  const handleSelectCustomer = (e) => {
+    setSelectedCustomers(e);
+    navigation.navigate('GroupUpdateScreen', { selectProduct, selectProductOld, selectProductNew, selectedCustomers: e, groupType, rcAction })
+
+  }
 
   // Mock data for rate contracts
   const [rateContracts, setRateContracts] = useState([]);
@@ -258,12 +318,6 @@ const RateContractList = () => {
   };
 
 
-  const groupAction = (type) => {
-    setShowGroupupdate(false);
-    if (type == "addNew") {
-      setShowSelectProduct(true)
-    }
-  }
 
 
   // ✅ Modal for order creation
@@ -671,7 +725,16 @@ const RateContractList = () => {
 
       {renderFilterModal()}
       {renderCreateOrderModal()}
-      <SelectProduct visible={showSelectProduct} onClose={setShowSelectProduct} />
+      <SelectProduct
+        selectProductOld={selectProductOld}
+        visible={showSelectProduct}
+        onClose={() => setShowSelectProduct(false)}
+        selectDIV={groupType != "productSwapping"}
+        onSelectProduct={handleSelectProduct}
+        selectedProduct={selectProduct}
+        onRcClick={onRcClick}
+      />
+      <SelectRC onSelectCustomer={(e) => handleSelectCustomer(e)} visible={showRCselection} onClose={() => { setShowRCselection(false) }} />
 
     </SafeAreaView>
   );

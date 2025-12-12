@@ -74,7 +74,7 @@ export const authAPI = {
                         roleId: response.data?.roleId,
                         subroleId: response.data?.subroleId,
                         isFirstLogin: response.data?.isFirstLogin,
-                        userDetails: response.data?.userDetails,
+                        userDetails: response.data?.userDetails?.[0],
                         userPermissions: response.data?.userPermissions
                     }
                 }
@@ -109,7 +109,7 @@ export const authAPI = {
                         roleId: response.data?.roleId,
                         subroleId: response.data?.subroleId,
                         isFirstLogin: response.data?.isFirstLogin,
-                        userDetails: response.data?.userDetails,
+                        userDetails: response.data?.userDetails?.[0],
                         userPermissions: response.data?.userPermissions
                     }
                 }

@@ -21,8 +21,8 @@ import CustomerSearch from '../screens/authorized/customer/CustomerSearch';
 
 // Import Pricing screens
 import RateContractList from '../screens/authorized/pricing/RateContractList';
-import CreateRateContract from '../screens/authorized/pricing/CreateRateContract';
-import RateContractDetail from '../screens/authorized/pricing/RateContractDetail';
+
+
 
 // Import Product screens - only ProductList for the tab
 import ProductList from '../screens/authorized/product/ProductList';
@@ -121,8 +121,6 @@ const PricingStack = () => (
     }}
   >
     <Stack.Screen name="RateContractList" component={RateContractList} />
-    <Stack.Screen name="CreateRateContract" component={CreateRateContract} />
-    <Stack.Screen name="RateContractDetail" component={RateContractDetail} />
   </Stack.Navigator>
 );
 

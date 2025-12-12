@@ -1,15 +1,19 @@
 import apiClient from './apiClient';
 
 // Product APIs
-export const getProducts = async (page = 1, limit = 20, search = '') => {
+export const getProducts = async (page = 1, limit = 20, search = '', divisions, isExcludeCFA = false) => {
     try {
         const data = {
             page,
-            limit
+            limit,
+            isExcludeCFA
         };
 
         if (search) {
             data.search = search;
+        }
+        if (divisions) {
+            data.divisionIds = divisions;
         }
 
         const response = await apiClient.post('/catalog/products/search', data);
