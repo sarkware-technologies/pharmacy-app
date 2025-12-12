@@ -131,6 +131,7 @@ const GroupHospitalRegistrationForm = () => {
      selectedCategory: {
       pharmacy: false,
     },
+    customerGroupId:3
   });
 
   // State for managing stockists
@@ -482,7 +483,7 @@ const GroupHospitalRegistrationForm = () => {
         } : null,
 
         // Customer group
-        customerGroupId: groupDetails.customerGroupId || 1,
+        customerGroupId: groupDetails.customerGroupId || 3,
         markAsBuyingEntity: data.isBuyer || false,
       }));
 
@@ -1206,7 +1207,7 @@ const GroupHospitalRegistrationForm = () => {
         },
         customerDocs: prepareCustomerDocs(),
         isBuyer: formData.markAsBuyingEntity ,
-        customerGroupId: formData.customerGroupId || 1,
+        customerGroupId: formData.customerGroupId || 3,
         generalDetails: {
           name: formData.hospitalName,
           shortName: formData.shortName || '',
@@ -2156,6 +2157,8 @@ const GroupHospitalRegistrationForm = () => {
                               ),
                             }));
                           },
+                          customerGroupId:formData.customerGroupId,
+                          mappingFor:"PGH"
                         });
                       }}
                     >
@@ -2224,7 +2227,9 @@ const GroupHospitalRegistrationForm = () => {
                               ...prev,
                               linkedPharmacies: pharmacies
                             }));
-                          }
+                          },
+                           customerGroupId:formData.customerGroupId,
+                          mappingFor:"PGH"
                         });
                       }}
                       activeOpacity={0.7}

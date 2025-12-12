@@ -173,7 +173,7 @@ const HospitalSelector = () => {
       );
 
       // Call API directly with correct payload
-      const response = await customerAPI.getCustomersListMappingHospitals(payload);
+      const response = await customerAPI.getCustomersListMapping(payload);
       console.log('HospitalSelector: Hospitals API response:', response);
 
       if (response?.customers && Array.isArray(response.customers)) {

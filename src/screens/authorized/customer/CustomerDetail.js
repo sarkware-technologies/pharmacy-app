@@ -635,7 +635,7 @@ const mapLicenseData = () => {
           >
             <Linkage color={activeTab === 'linkaged' ? colors.primary : '#999'} />
             <AppText style={[styles.tabText, activeTab === 'linkaged' && styles.activeTabText]}>
-              Linkaged
+              Linkages
             </AppText>
           </TouchableOpacity>
         </View>

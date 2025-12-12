@@ -2349,7 +2349,9 @@ const PharmacyWholesalerForm = () => {
                               ...prev,
                               selectedDoctors: selectedDoctors
                             }));
-                          }
+                          },
+                          mappingFor:"PCM",
+                          customerGroupId:formData.customerGroupId
                         });
                       }}
                     >

@@ -2506,6 +2506,8 @@ const DoctorRegistrationForm = () => {
                             selectedPharmacies: pharmacies,
                           }));
                         },
+                        customerGroupId:formData.customerGroupId,
+                        mappingFor:"DOCT"
                       });
                     }}
                     activeOpacity={0.7}

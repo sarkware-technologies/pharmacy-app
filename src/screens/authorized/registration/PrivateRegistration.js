@@ -154,7 +154,7 @@ const PrivateRegistrationForm = () => {
     selectedPharmacies: [],
 
     // Customer Group
-    customerGroupId: 9,
+    customerGroupId: 1,
   });
 
   // State for managing stockists
@@ -1522,7 +1522,7 @@ const PrivateRegistrationForm = () => {
         },
         customerDocs: prepareCustomerDocs(),
         isBuyer: formData.markAsBuyingEntity,
-        customerGroupId: getCustomerGroupId(formData.customerGroup),
+        customerGroupId: getCustomerGroupId(formData.customerGroupId),
         generalDetails: {
           name: formData.clinicName,
           shortName: formData.shortName || formData.clinicName.substring(0, 10),
@@ -2550,17 +2550,7 @@ const PrivateRegistrationForm = () => {
                 }}
               />
 
-              {/* 
-              <TouchableOpacity
-                style={[styles.input]}
-                onPress={() => Alert.alert('GST Number', 'Select from GST numbers fetched from PAN')}
-                activeOpacity={0.7}
-              >
-                <AppText style={formData.gstNumber ? styles.inputText : styles.placeholderText}>
-                  {formData.gstNumber || 'GST Number'}
-                </AppText>
-                <ArrowDown color='#999' />
-              </TouchableOpacity> */}
+    
 
               <CustomInput
                 placeholder="GST number"
@@ -2747,8 +2737,12 @@ const PrivateRegistrationForm = () => {
                             selectedPharmacies: pharmacies,
                           }));
                         },
+                        customerGroupId:formData.customerGroupId,
+                        mappingFor:"HOSP"
                       });
-                    }}
+                    }
+                    
+                  }
                     activeOpacity={0.7}
                   >
                     <AppText style={styles.selectorPlaceholder}>
@@ -2805,6 +2799,8 @@ const PrivateRegistrationForm = () => {
                               </AppText>
                             )}
 
+                            {console.log(formData)}
+
               {/* <View style={styles.divider} /> */}
               <View style={styles.customerGroupContainer}>
                 <AppText style={styles.sectionLabel}>Customer group</AppText>
@@ -2812,7 +2808,7 @@ const PrivateRegistrationForm = () => {
                 <View style={styles.customerGroupGridContainer}>
                   {['9 Doctor Supply', '10 VQ', '11 RFQ', '12 GOVT'].map(
                     (group, index) => {
-                      const groupId = index + 9; // 9, 10, 11, 12
+                      const groupId = index + 1; // 9, 10, 11, 12
                       const isDisabled = group !== '9 Doctor Supply';
                       const isSelected = formData.customerGroupId === groupId;
 

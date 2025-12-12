@@ -2870,6 +2870,8 @@ const handleLicenseOcrData = async (ocrData) => {
                               selectedDoctors: selectedDoctors,
                             }));
                           },
+                           mappingFor:"PCM",
+                          customerGroupId:formData.customerGroupId
                         });
                       }}
                     >

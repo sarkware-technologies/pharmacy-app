@@ -24,7 +24,11 @@ import AddNewDoctorModal from './AddNewDoctorModal';
 const DoctorSelector = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { onSelect, selectedDoctors = [] } = route.params || {};
+  const { onSelect, selectedDoctors = [], 
+    mappingFor,
+    categoryCode = false,
+    subCategoryCode = false,
+    customerGroupId } = route.params || {};
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState(selectedDoctors || []);
@@ -107,16 +111,33 @@ const DoctorSelector = () => {
       // Build state and city IDs arrays for filtering
       const stateIds = selectedStates.length > 0 ? selectedStates.map(s => Number(s.id)) : [];
       const cityIds = selectedCities.length > 0 ? selectedCities.map(c => Number(c.id)) : [];
-      
-      console.log('DoctorSelector: Filter params - stateIds:', stateIds, 'cityIds:', cityIds, 'searchText:', searchQuery);
-      
+const payload = {
+  page: 1,
+  limit: 20,
+  mappingFor: mappingFor || "DOCT",
+  // searchQuery,
+
+  ...(stateIds.length > 0 ? { stateIds } : {}),
+  ...(cityIds.length > 0 ? { cityIds } : {}),
+  ...(searchQuery?.trim() ? { searchText:searchQuery } : {}),
+
+
+  ...(categoryCode ? { categoryCode: categoryCode } : {}),
+  ...(subCategoryCode ? { subCategoryCode: subCategoryCode} : {}),
+  ...(customerGroupId ? { customerGroupId } : {}),
+
+  typeCode: ['DOCT'],
+  statusIds: [7, 2],
+};
+
+console.log(payload)
       // Call API with doctor type code and filters
-      const response = await customerAPI.getDoctorsList(['DOCT'], 1, 1, 20, stateIds, cityIds, searchQuery);
+      const response = await customerAPI.getCustomersListMapping(payload);
       console.log('DoctorSelector: Doctors API response:', response);
       
-      if (response?.data?.customers && Array.isArray(response.data.customers)) {
+      if (response?.customers && Array.isArray(response.customers)) {
         // Transform API response to match expected format
-        const transformedDoctors = response.data.customers.map(customer => ({
+        const transformedDoctors = response.customers.map(customer => ({
           id: customer.customerId,
           name: customer.customerName,
           code: customer.customerCode || customer.sapCode || customer.customerId,
@@ -273,7 +294,7 @@ const DoctorSelector = () => {
           <AppText style={styles.doctorContact}>{item.mobile}</AppText>
         </View>
         
-        <AppText style={styles.doctorCity}>{item.state}</AppText>
+        <AppText style={styles.doctorCity}>{item.city}</AppText>
       </TouchableOpacity>
     );
   };

@@ -473,7 +473,7 @@ export const customerAPI = {
         }
     },
 
-     getCustomersListMappingHospitals: async (payload) => {
+     getCustomersListMapping: async (payload) => {
         try {
             const response = await apiClient.post('/user-management/customer/mapping-customer-list', payload);
             return response.data;
@@ -548,6 +548,21 @@ export const customerAPI = {
             return response;
         } catch (error) {
             console.error('Error onboarding customer:', error);
+            throw error;
+        }
+    },
+
+    // Get workflow progression for customers
+    getWorkflowProgression: async (moduleRecordIds, moduleName = ['NEW_CUSTOMER_ONBOARDING', 'EXISTING_CUSTOMER_ONBOARDING']) => {
+        try {
+            const payload = {
+                moduleRecordIds: Array.isArray(moduleRecordIds) ? moduleRecordIds : [moduleRecordIds],
+                moduleName: Array.isArray(moduleName) ? moduleName : [moduleName]
+            };
+            const response = await apiClient.post('/approval/workflow-instances/batch/approver-progression', payload);
+            return response;
+        } catch (error) {
+            console.error('Error fetching workflow progression:', error);
             throw error;
         }
     }

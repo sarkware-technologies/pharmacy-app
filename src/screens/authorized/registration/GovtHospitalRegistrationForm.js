@@ -2244,7 +2244,9 @@ const GovtHospitalRegistrationForm = () => {
                                 : h
                             )
                           }));
-                        }
+                        },
+                        categoryCode: ["GOV"],
+                        mappingFor: "GOV"
                       });
                     }}
                   >
@@ -2314,7 +2316,9 @@ const GovtHospitalRegistrationForm = () => {
                       ...prev,
                       linkedPharmacies: pharmacies
                     }));
-                  }
+                  },
+                  categoryCode: ["GOV"],
+                  mappingFor: "GOV"
                 });
               }}
               activeOpacity={0.7}

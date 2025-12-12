@@ -186,9 +186,9 @@ const RegistrationSuccess = () => {
               ? 'Customer details have been updated successfully.'
               : `We have received your information,${'\n'}It will take upto 24 hours to approved, if we found${'\n'}any issue our team will get back to you`}
           </AppText>
-          {!isEditMode && (
+          {/* {!isEditMode && (
             <AppText style={styles.customerCode}>{codeLabel} Code: {code}</AppText>
-          )}
+          )} */}
         </Animated.View>
         
         {/* Spacer */}
