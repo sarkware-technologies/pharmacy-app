@@ -28,8 +28,14 @@ import AddNewPharmacyModal from './AddNewPharmacyModal';
 const PharmacySelector = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { onSelect, selectedPharmacies = [] , parentHospitalName, mappingName, mappingLabel} = route.params || {};
+  const { onSelect, selectedPharmacies = [] , parentHospitalName, mappingName, mappingLabel,  mappingFor,
+    categoryCode = false,
+    subCategoryCode = false,
+    customerGroupId} = route.params || {};
 
+    console.log(customerGroupId);
+    
+console.log(mappingFor);
 
   
 
@@ -118,16 +124,34 @@ const PharmacySelector = () => {
       // Build state and city IDs arrays
       const stateIds = selectedStates.map(s => Number(s.id));
       const cityIds = selectedCities.map(c => Number(c.id));
+      const payload = {
+  page: 1,
+  limit: 20,
+  mappingFor: mappingFor || "HOSP",
+  // searchQuery,
+
+  ...(stateIds.length > 0 ? { stateIds } : {}),
+  ...(cityIds.length > 0 ? { cityIds } : {}),
+  ...(searchQuery?.trim() ? { searchText:searchQuery } : {}),
+
+
+  ...(categoryCode ? { categoryCode: categoryCode } : {}),
+  ...(subCategoryCode ? { subCategoryCode: subCategoryCode } : {}),
+  ...(customerGroupId ? { customerGroupId } : {}),
+
+  typeCode: ['PCM'],
+  statusIds: [7, 2],
+};
       
       console.log('PharmacySelector: Filter params - stateIds:', stateIds, 'cityIds:', cityIds, 'searchText:', searchQuery);
       
       // Call API with filters and search
-      const response = await customerAPI.getPharmaciesList(['PCM'], 1, 1, 20, stateIds, cityIds, searchQuery);
+      const response = await customerAPI.getCustomersListMapping(payload);
       console.log('PharmacySelector: Pharmacies API response:', response);
       
-      if (response?.data?.customers && Array.isArray(response.data.customers)) {
+      if (response?.customers && Array.isArray(response.customers)) {
         // Transform API response to match expected format
-        const transformedPharmacies = response.data.customers.map(customer => ({
+        const transformedPharmacies = response.customers.map(customer => ({
           id: customer.customerId,
           name: customer.customerName,
           code: customer.customerCode || customer.customerId,

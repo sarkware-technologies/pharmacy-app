@@ -122,8 +122,8 @@ const payload = {
   ...(searchQuery?.trim() ? { searchText:searchQuery } : {}),
 
 
-  ...(categoryCode ? { categoryCode: [categoryCode] } : {}),
-  ...(subCategoryCode ? { subCategoryCode: [subCategoryCode] } : {}),
+  ...(categoryCode ? { categoryCode: categoryCode } : {}),
+  ...(subCategoryCode ? { subCategoryCode: subCategoryCode} : {}),
   ...(customerGroupId ? { customerGroupId } : {}),
 
   typeCode: ['DOCT'],
