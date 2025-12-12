@@ -26,6 +26,8 @@ import Calendar from '../../../components/icons/Calendar';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
 import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler, filterForField } from '../../../utils/formValidation';
+import { useSelector } from 'react-redux';
+
 
 const DOC_TYPES = {
   LICENSE_20B: 3,
@@ -45,6 +47,10 @@ const MOCK_AREAS = [
 ];
 
 const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, mappingLabel }) => {
+
+
+  const loggedInUser = useSelector(state => state.auth.user);
+
   const [doctorForm, setDoctorForm] = useState({
     // License Details
     clinicRegistrationCertificateFile: null,
@@ -55,6 +61,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
     practiceLicenseExpiryDate: '',
     addressProofFile: null,
     clinicImageFile: null,
+    stationCode: "",
 
     // General Details
     doctorName: '',
@@ -373,6 +380,8 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
   const [showAreaModal, setShowAreaModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showStateModal, setShowStateModal] = useState(false);
+  const [showStationModal, setShowStationModal] = useState(false);
+
 
   useEffect(() => {
     if (visible) {
@@ -775,7 +784,8 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
 
 
 
-
+    if (!doctorForm.stationCode)
+      newErrors.stationCode = 'Station Code is required';
     // Doctor Name validation using reusable validation utility
     const doctorNameError = validateField('nameOfDoctor', doctorForm.doctorName, true, 'Doctor name is required');
     if (doctorNameError) newErrors.doctorName = doctorNameError;
@@ -888,6 +898,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
         customerDocs: uploadedDocs,
         isBuyer: true,
         customerGroupId: 1,
+        stationCode: doctorForm.stationCode,
         generalDetails: {
           name: doctorForm.doctorName,
           shortName: '',
@@ -1172,6 +1183,33 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
               setDoctorForm(prev => ({ ...prev, clinicName: text }));
             }, 40)}
           />
+
+          {/* Station code */}
+          <View style={styles.dropdownContainer}>
+            {(doctorForm.stationCode || cities.length > 0) && (
+              <AppText
+                style={[styles.floatingLabel, { color: colors.primary }]}
+              >
+                Station<AppText style={styles.asteriskPrimary}>*</AppText>
+              </AppText>
+            )}
+            <TouchableOpacity
+              style={[styles.dropdown, doctorErrors.stationCode && styles.inputError]}
+              onPress={() => setShowStationModal(true)}
+            >
+              <View style={styles.inputTextContainer}>
+                <AppText style={doctorForm.stationCode ? styles.inputText : styles.placeholderText}>
+                  {doctorForm.stationCode || ('Station')}
+                </AppText>
+                <AppText style={styles.inlineAsterisk}>*</AppText>
+              </View>
+              <Icon name="arrow-drop-down" size={24} color="#666" />
+            </TouchableOpacity>
+
+            {doctorErrors.stationCode && (
+              <AppText style={styles.errorText}>{doctorErrors.stationCode}</AppText>
+            )}
+          </View>
 
           <AddressInputWithLocation
             label="Address 1"
@@ -1793,6 +1831,76 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
             </View>
           </View>
         </Modal>
+
+
+        <Modal
+          visible={showStationModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowStationModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.dropdownModal}>
+
+              {/* Header */}
+              <View style={styles.dropdownModalHeader}>
+                <AppText style={styles.dropdownModalTitle}>Select Station</AppText>
+                <TouchableOpacity onPress={() => setShowStationModal(false)}>
+                  <Icon name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Loader */}
+
+              <FlatList
+                data={loggedInUser?.userDetails?.stationCodes?.map((item) => ({
+                  id: item.stationCode,
+                  name: item.stationCode,
+                }))}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.dropdownModalItem,
+                      doctorForm.stationCode === item.name &&
+                      styles.modalItemSelected,
+                    ]}
+                    onPress={() => {
+                      setDoctorForm(prev => ({
+                        ...prev,
+                        stationCode: item.name,
+                      }));
+                      setShowStationModal(false);
+                      setDoctorErrors(prev => ({ ...prev, stationCode: null }));
+
+                    }}
+                  >
+                    <AppText
+                      style={[
+                        styles.dropdownModalItemText,
+                        doctorForm.stationCode === item.name &&
+                        styles.modalItemTextSelected,
+                      ]}
+                    >
+                      {item.name}
+                    </AppText>
+
+                    {doctorForm.stationCode === item.name && (
+                      <Icon name="check" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={
+                  <AppText style={styles.emptyText}>No Stations Available</AppText>
+                }
+              />
+
+            </View>
+          </View>
+        </Modal>
+
+
+
       </SafeAreaView>
     </Modal>
   );

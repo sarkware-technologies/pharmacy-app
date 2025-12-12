@@ -23,6 +23,7 @@ import { AppText, AppInput } from "../../../components"
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
 import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler, filterForField } from '../../../utils/formValidation';
+import { useSelector } from 'react-redux';
 
 const DOC_TYPES = {
   REGISTRATION_CERTIFICATE: 8,
@@ -33,6 +34,10 @@ const DOC_TYPES = {
 
 
 const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, categoryId, subCategoryId, mappingName, mappingLabel }) => {
+
+
+    const loggedInUser = useSelector(state => state.auth.user);
+  
   const [hospitalForm, setHospitalForm] = useState({
     category: 'Private',
     subCategory: 'Individual Hospital',
@@ -63,6 +68,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     stockistName: '',
     stockistCode: '',
     stockistCity: '',
+    stationCode: "",
   });
 
   const [verificationStatus, setVerificationStatus] = useState({
@@ -95,6 +101,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
   const [showAreaModal, setShowAreaModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showStateModal, setShowStateModal] = useState(false);
+  const [showStationModal, setShowStationModal] = useState(false);
 
   // OTP states
   const [showOTP, setShowOTP] = useState({ mobile: false, email: false });
@@ -529,6 +536,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       newErrors.image = 'Hospital image is required';
     }
 
+    if (!hospitalForm.stationCode)
+      newErrors.stationCode = 'Station Code is required';
+
     // Hospital Name validation using reusable validation utility
     const hospitalNameError = validateField('hospitalName', hospitalForm.hospitalName, true, 'Hospital name is required');
     if (hospitalNameError) newErrors.hospitalName = hospitalNameError;
@@ -632,6 +642,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         customerDocs: uploadedDocs,
         isBuyer: true,
         customerGroupId: 1,
+         stationCode: hospitalForm.stationCode,
         generalDetails: {
           name: hospitalForm.hospitalName,
           shortName: hospitalForm.shortName || '',
@@ -1021,6 +1032,33 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             value={hospitalForm.shortName}
             onChangeText={createFilteredInputHandler('shortName', (text) => setHospitalForm(prev => ({ ...prev, shortName: text })), 25)}
           />
+
+          {/* Station code */}
+                    <View style={styles.dropdownContainer}>
+                      {(hospitalForm.stationCode || cities.length > 0) && (
+                        <AppText
+                          style={[styles.floatingLabel, { color: colors.primary }]}
+                        >
+                          Station<AppText style={styles.asteriskPrimary}>*</AppText>
+                        </AppText>
+                      )}
+                      <TouchableOpacity
+                        style={[styles.dropdown, hospitalErrors.stationCode && styles.inputError]}
+                        onPress={() => setShowStationModal(true)}
+                      >
+                        <View style={styles.inputTextContainer}>
+                          <AppText style={hospitalForm.stationCode ? styles.inputText : styles.placeholderText}>
+                            {hospitalForm.stationCode || ('Station')}
+                          </AppText>
+                          <AppText style={styles.inlineAsterisk}>*</AppText>
+                        </View>
+                        <Icon name="arrow-drop-down" size={24} color="#666" />
+                      </TouchableOpacity>
+          
+                      {hospitalErrors.stationCode && (
+                        <AppText style={styles.errorText}>{hospitalErrors.stationCode}</AppText>
+                      )}
+                    </View>
 
           <AddressInputWithLocation
             label="Address 1"
@@ -1641,6 +1679,73 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             </View>
           </View>
         </Modal>
+
+
+         <Modal
+                  visible={showStationModal}
+                  transparent={true}
+                  animationType="slide"
+                  onRequestClose={() => setShowStationModal(false)}
+                >
+                  <View style={styles.modalOverlay}>
+                    <View style={styles.dropdownModal}>
+        
+                      {/* Header */}
+                      <View style={styles.dropdownModalHeader}>
+                        <AppText style={styles.dropdownModalTitle}>Select Station</AppText>
+                        <TouchableOpacity onPress={() => setShowStationModal(false)}>
+                          <Icon name="close" size={24} color="#666" />
+                        </TouchableOpacity>
+                      </View>
+        
+                      {/* Loader */}
+        
+                      <FlatList
+                        data={loggedInUser?.userDetails?.stationCodes?.map((item) => ({
+                          id: item.stationCode,
+                          name: item.stationCode,
+                        }))}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => (
+                          <TouchableOpacity
+                            style={[
+                              styles.dropdownModalItem,
+                              hospitalForm.stationCode === item.name &&
+                              styles.modalItemSelected,
+                            ]}
+                            onPress={() => {
+                              setHospitalForm(prev => ({
+                                ...prev,
+                                stationCode: item.name,
+                              }));
+                              setShowStationModal(false);
+                              setHospitalErrors(prev => ({ ...prev, stationCode: null }));
+        
+                            }}
+                          >
+                            <AppText
+                              style={[
+                                styles.dropdownModalItemText,
+                                hospitalForm.stationCode === item.name &&
+                                styles.modalItemTextSelected,
+                              ]}
+                            >
+                              {item.name}
+                            </AppText>
+        
+                            {hospitalForm.stationCode === item.name && (
+                              <Icon name="check" size={20} color={colors.primary} />
+                            )}
+                          </TouchableOpacity>
+                        )}
+                        ListEmptyComponent={
+                          <AppText style={styles.emptyText}>No Stations Available</AppText>
+                        }
+                      />
+        
+                    </View>
+                  </View>
+                </Modal>
       </SafeAreaView>
     </Modal>
   );

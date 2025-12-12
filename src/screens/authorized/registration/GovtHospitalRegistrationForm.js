@@ -120,7 +120,7 @@ const GovtHospitalRegistrationForm = () => {
     cityId: null,   // <- change from '' to null
     state: '',
     stateId: null,  // <- change from '' to null
-
+    stationCode: "",
 
     // Security Details
     mobileNumber: '',
@@ -184,6 +184,7 @@ const GovtHospitalRegistrationForm = () => {
   const [showStateModal, setShowStateModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showAreaModal, setShowAreaModal] = useState(false);
+  const [showStationModal, setShowStationModal] = useState(false);
 
 
   const [showGstModal, setShowGstModal] = useState(false);
@@ -585,6 +586,7 @@ const GovtHospitalRegistrationForm = () => {
         } : null,
 
         // General Details
+        stationCode: data.stationCode || '',
         hospitalName: generalDetails.customerName || '',
         shortName: generalDetails.shortName || '',
         address1: generalDetails.address1 || '',
@@ -1154,6 +1156,9 @@ const GovtHospitalRegistrationForm = () => {
       }
     }
 
+    if (!formData.stationCode)
+      newErrors.stationCode = 'Station Code is required';
+
     // General Details validation using reusable validation utility
     const hospitalNameError = validateField('hospitalName', formData.hospitalName, true, 'Hospital name is required');
     if (hospitalNameError) newErrors.hospitalName = hospitalNameError;
@@ -1243,6 +1248,8 @@ const GovtHospitalRegistrationForm = () => {
     else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
     else if (!formData.panFile) isValid = false;
     else if (!formData.linkedHospitals || formData.linkedHospitals.length === 0) isValid = false;
+    else if (!formData.stationCode) isValid = false;
+
 
     setIsFormValid(isValid);
   }, [formData, verificationStatus]);
@@ -1311,6 +1318,8 @@ const GovtHospitalRegistrationForm = () => {
         customerDocs: prepareCustomerDocs(),
         isBuyer: formData.markAsBuyingEntity,
         customerGroupId: formData.customerGroupId || 1,
+        stationCode: formData.stationCode,
+
         generalDetails: {
           name: formData.hospitalName,
           shortName: formData.shortName || '',
@@ -1640,6 +1649,33 @@ const GovtHospitalRegistrationForm = () => {
           value={formData.shortName}
           onChangeText={createFilteredInputHandler('shortName', (text) => setFormData(prev => ({ ...prev, shortName: text })), 25)}
         />
+
+        {/* Station code */}
+        <View style={styles.dropdownContainer}>
+          {(formData.stationCode || cities.length > 0) && (
+            <AppText
+              style={[styles.floatingLabel, { color: colors.primary }]}
+            >
+              Station<AppText style={styles.asteriskPrimary}>*</AppText>
+            </AppText>
+          )}
+          <TouchableOpacity
+            style={[styles.dropdown, errors.stationCode && styles.inputError]}
+            onPress={() => setShowStationModal(true)}
+          >
+            <View style={styles.inputTextContainer}>
+              <AppText style={formData.stationCode ? styles.inputText : styles.placeholderText}>
+                {formData.stationCode || ('Station')}
+              </AppText>
+              <AppText style={styles.inlineAsterisk}>*</AppText>
+            </View>
+            <Icon name="arrow-drop-down" size={24} color="#666" />
+          </TouchableOpacity>
+
+          {errors.stationCode && (
+            <AppText style={styles.errorTextDropdown}>{errors.stationCode}</AppText>
+          )}
+        </View>
 
         <AddressInputWithLocation
           placeholder="Address 1"
@@ -2114,8 +2150,8 @@ const GovtHospitalRegistrationForm = () => {
                 }));
                 setErrors(prev => ({ ...prev, linkedHospitals: null }));
               },
-              mappingFor:"GOV",
-              categoryCode:["GOV"]
+              mappingFor: "GOV",
+              categoryCode: ["GOV"]
 
             });
           }}
@@ -2144,8 +2180,8 @@ const GovtHospitalRegistrationForm = () => {
                 }));
                 setErrors(prev => ({ ...prev, linkedHospitals: null }));
               },
-               mappingFor:"GOV",
-              categoryCode:["GOV"]
+              mappingFor: "GOV",
+              categoryCode: ["GOV"]
             });
           }}
           activeOpacity={0.7}
@@ -2656,6 +2692,31 @@ const GovtHospitalRegistrationForm = () => {
 
       {/* Cancel Confirmation Modal */}
       {/* Dropdown Modals */}
+
+      <DropdownModal
+        visible={showStationModal}
+        onClose={() => setShowStationModal(false)}
+        title="Select Station"
+        data={
+          loggedInUser?.userDetails?.stationCodes?.map((item) => ({
+            id: item.stationCode,
+            name: item.stationCode,
+          }))
+        }
+        selectedId={formData.stationCode} // <-- match value
+        onSelect={item => {
+          setFormData({
+            ...formData,
+            stationCode: item.name,  // <-- store directly
+          });
+          setErrors(prev => ({
+            ...prev,
+            stationCode: null,
+          }));
+        }}
+      />
+
+
       <DropdownModal
         visible={showAreaModal}
         onClose={() => setShowAreaModal(false)}

@@ -16,6 +16,8 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
+import { useSelector } from 'react-redux';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
@@ -77,6 +79,10 @@ const DOC_TYPES = {
 };
 
 const DoctorRegistrationForm = () => {
+
+
+    const loggedInUser = useSelector(state => state.auth.user);
+
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const scrollViewRef = useRef(null);
@@ -153,6 +159,7 @@ const DoctorRegistrationForm = () => {
     cityId: null, // << ADDED
     state: '',
     stateId: null, // << ADDED
+    stationCode: "",
 
     // Security Details
     mobileNumber: '',
@@ -242,6 +249,7 @@ const DoctorRegistrationForm = () => {
   const [showStateModal, setShowStateModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showAreaModal, setShowAreaModal] = useState(false);
+  const [showStationModal, setShowStationModal] = useState(false);
 
   const [showHospitalModal, setShowHospitalModal] = useState(false);
   const [showPharmacyModal, setShowPharmacyModal] = useState(false);
@@ -493,6 +501,7 @@ const DoctorRegistrationForm = () => {
         } : null,
 
         // General Details
+        stationCode: data.stationCode || '',
         doctorName: generalDetails.ownerName || '',
         speciality: generalDetails.specialist || '',
         clinicName: generalDetails.customerName || '',
@@ -1224,6 +1233,9 @@ const DoctorRegistrationForm = () => {
       newErrors.addressProofFile = 'Address proof is required';
     }
 
+    if (!formData.stationCode)
+      newErrors.stationCode = 'Station Code is required';
+
     // General Details validation using reusable validation utility
     const doctorNameError = validateField('nameOfDoctor', formData.doctorName, true, 'Doctor name is required');
     if (doctorNameError) newErrors.doctorName = doctorNameError;
@@ -1303,6 +1315,7 @@ const DoctorRegistrationForm = () => {
     else if (!formData.addressProofFile) isValid = false;
     else if (!formData.clinicImageFile) isValid = false;
     else if (!formData.doctorName) isValid = false;
+    else if (!formData.stationCode) isValid = false;
     else if (!formData.speciality || formData.speciality.trim().length === 0) isValid = false;
     else if (!formData.clinicName) isValid = false;
     else if (!formData.address1) isValid = false;
@@ -1391,6 +1404,7 @@ const DoctorRegistrationForm = () => {
         customerDocs: prepareCustomerDocs(),
         isBuyer: formData.markAsBuyingEntity,
         customerGroupId: formData.customerGroupId,
+        stationCode: formData.stationCode,
         generalDetails: {
           name: formData.doctorName,
           address1: formData.address1,
@@ -1871,6 +1885,34 @@ const DoctorRegistrationForm = () => {
                   setErrors(prev => ({ ...prev, clinicName: null }));
                 }, 40)}
               />
+
+              {/* Station code */}
+                            <View style={styles.dropdownContainer}>
+                              {(formData.stationCode || cities.length > 0) && (
+                                <AppText
+                                  style={[styles.floatingLabel, { color: colors.primary }]}
+                                >
+                                  Station<AppText style={styles.asteriskPrimary}>*</AppText>
+                                </AppText>
+                              )}
+                              <TouchableOpacity
+                                style={[styles.dropdown, errors.stationCode && styles.inputError]}
+                                onPress={() => setShowStationModal(true)}
+                              >
+                                <View style={styles.inputTextContainer}>
+                                  <AppText style={formData.stationCode ? styles.inputText : styles.placeholderText}>
+                                    {formData.stationCode || ('Station')}
+                                  </AppText>
+                                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                                </View>
+                                <Icon name="arrow-drop-down" size={24} color="#666" />
+                              </TouchableOpacity>
+              
+                              {errors.stationCode && (
+                                <AppText style={styles.errorTextDropdown}>{errors.stationCode}</AppText>
+                              )}
+                            </View>
+              
 
               <AddressInputWithLocation
                 placeholder="Address 1"
@@ -2734,6 +2776,33 @@ const DoctorRegistrationForm = () => {
             </View>
           </Animated.View>
         </ScrollView>
+
+
+              <DropdownModal
+        visible={showStationModal}
+        onClose={() => setShowStationModal(false)}
+        title="Select Station"
+        data={
+          loggedInUser?.userDetails?.stationCodes?.map((item) => ({
+            id: item.stationCode,
+            name: item.stationCode,
+          }))
+        }
+        selectedId={formData.stationCode} // <-- match value
+        onSelect={item => {
+
+          console.log(item);
+
+          setFormData({
+            ...formData,
+            stationCode: item.name,  // <-- store directly
+          });
+          setErrors(prev => ({
+            ...prev,
+            stationCode: null,
+          }));
+        }}
+      />
 
         <DropdownModal
           visible={showAreaModal}

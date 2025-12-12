@@ -23,7 +23,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import DoctorDeleteIcon from '../../../components/icons/DoctorDeleteIcon';
 import { colors } from '../../../styles/colors';
 import CustomInput from '../../../components/CustomInput';
@@ -114,6 +114,7 @@ const GroupHospitalRegistrationForm = () => {
     cityId: null,
     state: '',
     stateId: null,
+    stationCode: "",
 
     // Security Details
     mobileNumber: '',
@@ -126,12 +127,12 @@ const GroupHospitalRegistrationForm = () => {
     // Mapping
     markAsBuyingEntity: true,
     linkedHospitals: [],
-     linkedPharmacies: [],
+    linkedPharmacies: [],
     customerGroup: '10-VQ',
-     selectedCategory: {
+    selectedCategory: {
       pharmacy: false,
     },
-    customerGroupId:3
+    customerGroupId: 3
   });
 
   // State for managing stockists
@@ -176,6 +177,7 @@ const GroupHospitalRegistrationForm = () => {
   const [showAreaModal, setShowAreaModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showStateModal, setShowStateModal] = useState(false);
+  const [showStationModal, setShowStationModal] = useState(false);
   const [showGstModal, setShowGstModal] = useState(false);
   const [showAddPharmacyModal, setShowAddPharmacyModal] = useState(false);
 
@@ -341,7 +343,7 @@ const GroupHospitalRegistrationForm = () => {
   // Fetch customer details for edit mode and onboard mode (same API)
   const fetchCustomerDetailsForEdit = async () => {
     if (!customerId) return;
-    
+
     setLoadingCustomerData(true);
     try {
       // For onboard mode, always use isStaging = false. For edit mode, use the passed value
@@ -400,23 +402,23 @@ const GroupHospitalRegistrationForm = () => {
 
       // Helper function to find documents by type (handles both string and number doctypeId)
       const findDocByType = (docTypeId, docTypeName) => {
-        return docType.find(d => 
-          String(d.doctypeId) === String(docTypeId) || 
+        return docType.find(d =>
+          String(d.doctypeId) === String(docTypeId) ||
           d.doctypeName === docTypeName ||
           d.doctypeName?.toUpperCase() === docTypeName?.toUpperCase()
         );
       };
 
       // Find license documents (Registration Certificate for Group Hospital) - also match by docTypeId
-      const registrationLicense = licenceDetails.licence?.find(l => 
-        l.licenceTypeCode === 'REG' || 
+      const registrationLicense = licenceDetails.licence?.find(l =>
+        l.licenceTypeCode === 'REG' ||
         l.licenceTypeName === 'Registration' ||
         l.hospitalCode ||
         String(l.docTypeId) === '8'
       );
 
       // Find document files - use helper function for robust matching
-      const registrationDoc = findDocByType('8', 'REGISTRATION') || 
+      const registrationDoc = findDocByType('8', 'REGISTRATION') ||
         (registrationLicense?.docTypeId ? findDocByType(String(registrationLicense.docTypeId), 'REGISTRATION') : null);
       const hospitalImageDoc = findDocByType('1', 'CLINIC IMAGE');
       const panDoc = findDocByType('7', 'PAN CARD');
@@ -444,7 +446,7 @@ const GroupHospitalRegistrationForm = () => {
           uri: hospitalImageDoc.s3Path || '',
           docTypeId: parseInt(hospitalImageDoc.doctypeId) || 1,
         } : null,
-        
+
         // General Details
         hospitalName: generalDetails.customerName || '',
         shortName: generalDetails.shortName || '',
@@ -459,6 +461,7 @@ const GroupHospitalRegistrationForm = () => {
         cityId: generalDetails.cityId ? String(generalDetails.cityId) : null,
         state: generalDetails.stateName || '',
         stateId: generalDetails.stateId ? String(generalDetails.stateId) : null,
+        stationCode: data.stationCode || '',
 
         // Security Details
         mobileNumber: securityDetails.mobile || '',
@@ -573,7 +576,7 @@ const GroupHospitalRegistrationForm = () => {
 
   const handleVerify = async field => {
     // Validate field before verification
-   if (
+    if (
       field === 'mobile' &&
       (!formData.mobileNumber ||
         !/^[6-9]\d{9}$/.test(formData.mobileNumber))
@@ -713,10 +716,10 @@ const GroupHospitalRegistrationForm = () => {
   // Helper function to split address into address1, address2, address3
   const splitAddress = (address) => {
     if (!address) return { address1: '', address2: '', address3: '' };
-    
+
     // Split by commas first
     const parts = address.split(',').map(part => part.trim()).filter(part => part.length > 0);
-    
+
     if (parts.length >= 3) {
       return {
         address1: parts[0],
@@ -752,7 +755,7 @@ const GroupHospitalRegistrationForm = () => {
         };
       }
     }
-    
+
     return { address1: '', address2: '', address3: '' };
   };
 
@@ -767,12 +770,12 @@ const GroupHospitalRegistrationForm = () => {
 
 
     if (ocrData.hospitalName && !formData.hospitalName) {
-          updates.hospitalName = filterForField('hospitalName', ocrData.hospitalName, 40);
-        }
-    
-        if (ocrData.pharmacyName && !formData.hospitalName) {
-          updates.hospitalName = filterForField('hospitalName', ocrData.pharmacyName, 40);
-        }
+      updates.hospitalName = filterForField('hospitalName', ocrData.hospitalName, 40);
+    }
+
+    if (ocrData.pharmacyName && !formData.hospitalName) {
+      updates.hospitalName = filterForField('hospitalName', ocrData.pharmacyName, 40);
+    }
 
     // Split and populate address fields if available
     if (ocrData.address) {
@@ -813,7 +816,7 @@ const GroupHospitalRegistrationForm = () => {
         // Note: You may need to add a separate expiryDate field if required
       }
     }
-    
+
     // Populate pincode
     if (ocrData.pincode && !formData.pincode) {
       updates.pincode = filterForField('pincode', ocrData.pincode, 6);
@@ -1003,13 +1006,13 @@ const GroupHospitalRegistrationForm = () => {
         // ISO format or Date object
         d = new Date(date);
       }
-      
+
       // Check if date is valid
       if (isNaN(d.getTime())) {
         console.warn('Invalid date for API:', date);
         return null;
       }
-      
+
       // Add time component to avoid timezone issues
       d.setHours(23, 59, 59, 999);
       return d.toISOString();
@@ -1040,9 +1043,7 @@ const GroupHospitalRegistrationForm = () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      console.log(selected);
-      console.log(today);
-      console.log(formData);
+
 
 
 
@@ -1050,6 +1051,9 @@ const GroupHospitalRegistrationForm = () => {
         newErrors.registrationDate = 'Future date is not allowed';
       }
     }
+
+    if (!formData.stationCode)
+      newErrors.stationCode = 'Station Code is required';
 
     // General Details validation using reusable validation utility
     const hospitalNameError = validateField('hospitalName', formData.hospitalName, true, 'Hospital name is required');
@@ -1109,8 +1113,8 @@ const GroupHospitalRegistrationForm = () => {
       newErrors.panFile = 'PAN document is required';
     }
 
-    
-       if (!formData.markAsBuyingEntity && formData.linkedPharmacies.length === 0) {
+
+    if (!formData.markAsBuyingEntity && formData.linkedPharmacies.length === 0) {
       newErrors.pharmaciesMapping = "Pharmacy mapping is mandatory for non buying entities";
     }
 
@@ -1140,7 +1144,9 @@ const GroupHospitalRegistrationForm = () => {
     else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
     else if (!formData.panFile) isValid = false;
     else if (!formData.linkedHospitals || formData.linkedHospitals.length === 0) isValid = false;
-    
+    else if (!formData.stationCode) isValid = false;
+
+
     setIsFormValid(isValid);
   }, [formData, verificationStatus]);
 
@@ -1206,8 +1212,9 @@ const GroupHospitalRegistrationForm = () => {
           ],
         },
         customerDocs: prepareCustomerDocs(),
-        isBuyer: formData.markAsBuyingEntity ,
+        isBuyer: formData.markAsBuyingEntity,
         customerGroupId: formData.customerGroupId || 3,
+        stationCode: formData.stationCode,
         generalDetails: {
           name: formData.hospitalName,
           shortName: formData.shortName || '',
@@ -1239,7 +1246,7 @@ const GroupHospitalRegistrationForm = () => {
           })),
         }),
 
-          mapping:
+        mapping:
           formData.linkedHospitals?.length > 0 ||
             formData.linkedHospitals?.length > 0
             ? {
@@ -1474,7 +1481,7 @@ const GroupHospitalRegistrationForm = () => {
         />
         <AppText style={styles.sectionSubTitle}>
           Image<AppText style={{ color: 'red' }}>*</AppText>{' '}
-          <Icon name="information-circle-outline" size={16} color="#999" />
+          <Icon name="info-outline" size={16} color="#999" />
         </AppText>
         <FileUploadComponent
           placeholder="Upload"
@@ -1487,7 +1494,7 @@ const GroupHospitalRegistrationForm = () => {
           errorMessage={errors.hospitalImageFile}
         />
 
-       
+
       </View>
     </Animated.View>
   );
@@ -1526,13 +1533,40 @@ const GroupHospitalRegistrationForm = () => {
           )}
         />
 
+        {/* Station code */}
+        <View style={styles.dropdownContainer}>
+          {(formData.stationCode || cities.length > 0) && (
+            <AppText
+              style={[styles.floatingLabel, { color: colors.primary }]}
+            >
+              Station<AppText style={styles.asteriskPrimary}>*</AppText>
+            </AppText>
+          )}
+          <TouchableOpacity
+            style={[styles.dropdown, errors.stationCode && styles.inputError]}
+            onPress={() => setShowStationModal(true)}
+          >
+            <View style={styles.inputTextContainer}>
+              <AppText style={formData.stationCode ? styles.inputText : styles.placeholderText}>
+                {formData.stationCode || ('Station')}
+              </AppText>
+              <AppText style={styles.inlineAsterisk}>*</AppText>
+            </View>
+            <Icon name="arrow-drop-down" size={24} color="#666" />
+          </TouchableOpacity>
+
+          {errors.stationCode && (
+            <AppText style={styles.errorTextDropdown}>{errors.stationCode}</AppText>
+          )}
+        </View>
+
         <AddressInputWithLocation
           placeholder="Address 1"
           value={formData.address1}
-        onChangeText={createFilteredInputHandler('address1', (text) => {
-                       setFormData(prev => ({ ...prev, address1: text }));
-                        setErrors(prev => ({ ...prev, address1: null }));
-                      }, 40)}
+          onChangeText={createFilteredInputHandler('address1', (text) => {
+            setFormData(prev => ({ ...prev, address1: text }));
+            setErrors(prev => ({ ...prev, address1: null }));
+          }, 40)}
           error={errors.address1}
           mandatory={true}
           onLocationSelect={async locationData => {
@@ -1575,10 +1609,10 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Address 2"
           value={formData.address2}
-            onChangeText={createFilteredInputHandler('address2', (text) => {
-                           setFormData(prev => ({ ...prev, address2: text }));
-                           setErrors(prev => ({ ...prev, address2: null }));
-                         }, 40)}
+          onChangeText={createFilteredInputHandler('address2', (text) => {
+            setFormData(prev => ({ ...prev, address2: text }));
+            setErrors(prev => ({ ...prev, address2: null }));
+          }, 40)}
           mandatory
           error={errors.address2}
         />
@@ -1586,10 +1620,10 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Address 3"
           value={formData.address3}
-        onChangeText={createFilteredInputHandler('address3', (text) => {
-                          setFormData(prev => ({ ...prev, address3: text }));
-                          setErrors(prev => ({ ...prev, address3: null }));
-                        }, 60)}
+          onChangeText={createFilteredInputHandler('address3', (text) => {
+            setFormData(prev => ({ ...prev, address3: text }));
+            setErrors(prev => ({ ...prev, address3: null }));
+          }, 60)}
           mandatory
           error={errors.address3}
         />
@@ -1597,9 +1631,9 @@ const GroupHospitalRegistrationForm = () => {
         <CustomInput
           placeholder="Address 4"
           value={formData.address4}
-      onChangeText={createFilteredInputHandler('address4', (text) =>
-                        setFormData(prev => ({ ...prev, address4: text })), 60
-                      )}
+          onChangeText={createFilteredInputHandler('address4', (text) =>
+            setFormData(prev => ({ ...prev, address4: text })), 60
+          )}
         />
 
         <CustomInput
@@ -1640,7 +1674,7 @@ const GroupHospitalRegistrationForm = () => {
               </AppText>
               <AppText style={styles.inlineAsterisk}>*</AppText>
             </View>
-            <ArrowDown color="#999" />
+            <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
           {errors.area && (
             <AppText style={styles.errorTextDropdown}>{errors.area}</AppText>
@@ -1670,7 +1704,7 @@ const GroupHospitalRegistrationForm = () => {
               </AppText>
               <AppText style={styles.inlineAsterisk}>*</AppText>
             </View>
-            <ArrowDown color="#999" />
+            <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
           {errors.city && (
             <AppText style={styles.errorTextDropdown}>{errors.city}</AppText>
@@ -1700,7 +1734,7 @@ const GroupHospitalRegistrationForm = () => {
               </AppText>
               <AppText style={styles.inlineAsterisk}>*</AppText>
             </View>
-            <ArrowDown color="#999" />
+            <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
           {errors.state && (
             <AppText style={styles.errorTextDropdown}>{errors.state}</AppText>
@@ -1988,7 +2022,7 @@ const GroupHospitalRegistrationForm = () => {
         {/* Link Child Hospital */}
         <AppText style={styles.subsectionLabel}>
           Link child hospital<AppText style={{ color: 'red' }}>*</AppText>
-          <Icon name="information-circle-outline" size={16} color="#999" />
+          <Icon name="info-outline" size={16} color="#999" />
         </AppText>
 
         {/* Hospital Selector - Collapsible Summary */}
@@ -2010,10 +2044,10 @@ const GroupHospitalRegistrationForm = () => {
                       pharmacies: h.pharmacies || [],
                     })),
                   }
-                 ));
+                  ));
                   setErrors(prev => ({ ...prev, linkedHospitals: null }));
                 },
-                formType:"PGH"
+                formType: "PGH"
               });
             }}
             activeOpacity={0.7}
@@ -2143,10 +2177,10 @@ const GroupHospitalRegistrationForm = () => {
                       style={styles.addPharmacyLink}
                       onPress={() => {
                         navigation.navigate('PharmacySelector', {
-                           parentHospitalName:hospital.name,
-                        mappingLabel:"Private - Group Hospital / GBU",
-                        mappingName:formData.hospitalName,
-                        selectedPharmacies: hospital.pharmacies || [],
+                          parentHospitalName: hospital.name,
+                          mappingLabel: "Private - Group Hospital / GBU",
+                          mappingName: formData.hospitalName,
+                          selectedPharmacies: hospital.pharmacies || [],
                           selectedPharmacies: hospital.pharmacies || [],
                           onSelect: pharmacies => {
                             setFormData(prev => ({
@@ -2157,8 +2191,8 @@ const GroupHospitalRegistrationForm = () => {
                               ),
                             }));
                           },
-                          customerGroupId:formData.customerGroupId,
-                          mappingFor:"PGH"
+                          customerGroupId: formData.customerGroupId,
+                          mappingFor: "PGH"
                         });
                       }}
                     >
@@ -2182,115 +2216,115 @@ const GroupHospitalRegistrationForm = () => {
         </TouchableOpacity>
 
 
-        
-              <View style={styles.categoryOptions}>
-        
-                <TouchableOpacity
-                  style={[
-                    styles.checkboxButton,
-                    formData.selectedCategory.pharmacy && styles.checkboxButtonActive,
-                  ]}
-                  onPress={() => setFormData(prev => ({
-                    ...prev,
-                    selectedCategory: {
-                      ...prev.selectedCategory,
-                      pharmacy: !prev.selectedCategory.pharmacy
-                    }
-                  }))}
-                  activeOpacity={0.7}
-                >
-                  <View style={[
-                    styles.checkbox,
-                    formData.selectedCategory.pharmacy && styles.checkboxSelected
-                  ]}>
-                    {formData.selectedCategory.pharmacy && (
-                      <AppText style={styles.checkboxTick}>✓</AppText>
-                    )}
-                  </View>
-                  <AppText style={styles.checkboxLabel}>Pharmacy</AppText>
-                </TouchableOpacity>
-        
-        
-              </View>
-        
+
+        <View style={styles.categoryOptions}>
+
+          <TouchableOpacity
+            style={[
+              styles.checkboxButton,
+              formData.selectedCategory.pharmacy && styles.checkboxButtonActive,
+            ]}
+            onPress={() => setFormData(prev => ({
+              ...prev,
+              selectedCategory: {
+                ...prev.selectedCategory,
+                pharmacy: !prev.selectedCategory.pharmacy
+              }
+            }))}
+            activeOpacity={0.7}
+          >
+            <View style={[
+              styles.checkbox,
+              formData.selectedCategory.pharmacy && styles.checkboxSelected
+            ]}>
               {formData.selectedCategory.pharmacy && (
-                <>
-                  <View style={styles.pharmacySelectionContainer}>
-        
+                <AppText style={styles.checkboxTick}>✓</AppText>
+              )}
+            </View>
+            <AppText style={styles.checkboxLabel}>Pharmacy</AppText>
+          </TouchableOpacity>
+
+
+        </View>
+
+        {formData.selectedCategory.pharmacy && (
+          <>
+            <View style={styles.pharmacySelectionContainer}>
+
+              <TouchableOpacity
+                style={[styles.selectorInput, errors.linkedHospitals && styles.inputError]}
+                onPress={() => {
+                  navigation.navigate('PharmacySelector', {
+                    selectedPharmacies: formData.linkedPharmacies || [],
+                    onSelect: (pharmacies) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        linkedPharmacies: pharmacies
+                      }));
+                    },
+                    customerGroupId: formData.customerGroupId,
+                    mappingFor: "PGH"
+                  });
+                }}
+                activeOpacity={0.7}
+              >
+
+                <AppText style={[
+                  styles.selectorPlaceholder,
+                  formData.linkedPharmacies.length !== 0 && { color: '#333' }
+                ]}>
+                  {formData.linkedPharmacies && formData.linkedPharmacies.length > 0
+                    ? `${formData.linkedPharmacies.length} Pharmacies Selected`
+                    : 'Select pharmacy name/code'}
+                </AppText>
+                <ArrowDown color='#333' />
+
+              </TouchableOpacity>
+            </View>
+
+            {/* Selected Pharmacies Display */}
+
+            {formData.linkedPharmacies.length > 0 && (
+              <View style={styles.selectedItemsContainer}>
+
+                {/* Selected Pharmacies List */}
+                {formData.linkedPharmacies.map((pharmacy, index) => (
+
+
+                  <View key={pharmacy.id || index} style={styles.selectedItemChip}>
+                    <AppText style={{ color: '#333' }}>{pharmacy.name}  </AppText>
                     <TouchableOpacity
-                      style={[styles.selectorInput, errors.linkedHospitals && styles.inputError]}
                       onPress={() => {
-                        navigation.navigate('PharmacySelector', {
-                          selectedPharmacies: formData.linkedPharmacies || [],
-                          onSelect: (pharmacies) => {
-                            setFormData(prev => ({
-                              ...prev,
-                              linkedPharmacies: pharmacies
-                            }));
-                          },
-                           customerGroupId:formData.customerGroupId,
-                          mappingFor:"PGH"
-                        });
+                        setFormData(prev => ({
+                          ...prev,
+                          linkedPharmacies: prev.linkedPharmacies.filter((_, i) => i !== index)
+                        }));
                       }}
-                      activeOpacity={0.7}
                     >
-        
-                      <AppText style={[
-                        styles.selectorPlaceholder,
-                        formData.linkedPharmacies.length !== 0 && { color: '#333' }
-                      ]}>
-                        {formData.linkedPharmacies && formData.linkedPharmacies.length > 0
-                          ? `${formData.linkedPharmacies.length} Pharmacies Selected`
-                          : 'Select pharmacy name/code'}
-                      </AppText>
-                      <ArrowDown color='#333' />
-        
+                      <DoctorDeleteIcon />
                     </TouchableOpacity>
                   </View>
-        
-                  {/* Selected Pharmacies Display */}
-        
-                  {formData.linkedPharmacies.length > 0 && (
-                    <View style={styles.selectedItemsContainer}>
-        
-                      {/* Selected Pharmacies List */}
-                      {formData.linkedPharmacies.map((pharmacy, index) => (
-        
-        
-                        <View key={pharmacy.id || index} style={styles.selectedItemChip}>
-                          <AppText style={{ color: '#333'} }>{pharmacy.name}  </AppText>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setFormData(prev => ({
-                                ...prev,
-                                linkedPharmacies: prev.linkedPharmacies.filter((_, i) => i !== index)
-                              }));
-                            }}
-                          >
-                            <DoctorDeleteIcon />
-                          </TouchableOpacity>
-                        </View>
-        
-                      ))}
-                    </View>)}
-        
-                  <TouchableOpacity
-                    style={styles.addNewLink}
-                    onPress={() => setShowAddPharmacyModal(true)}
-                  >
-                    <AppText style={styles.addNewLinkText}>+ Add New Pharmacy</AppText>
-                  </TouchableOpacity>
-                </>
-              )}
 
-              
-        
-          {errors.pharmaciesMapping && (
-                        <AppText style={styles.errorText}>
-                          {errors.pharmaciesMapping}
-                        </AppText>
-                      )}
-        
+                ))}
+              </View>)}
+
+            <TouchableOpacity
+              style={styles.addNewLink}
+              onPress={() => setShowAddPharmacyModal(true)}
+            >
+              <AppText style={styles.addNewLinkText}>+ Add New Pharmacy</AppText>
+            </TouchableOpacity>
+          </>
+        )}
+
+
+
+        {errors.pharmaciesMapping && (
+          <AppText style={styles.errorText}>
+            {errors.pharmaciesMapping}
+          </AppText>
+        )}
+
 
         {/* <View style={styles.divider} /> */}
         <View style={styles.customerGroupContainer}>
@@ -2608,6 +2642,33 @@ const GroupHospitalRegistrationForm = () => {
       </View>
 
       {/* Dropdown Modals */}
+
+
+      <DropdownModal
+        visible={showStationModal}
+        onClose={() => setShowStationModal(false)}
+        title="Select Station"
+        data={
+          loggedInUser?.userDetails?.stationCodes?.map((item) => ({
+            id: item.stationCode,
+            name: item.stationCode,
+          }))
+        }
+        selectedId={formData.stationCode} // <-- match value
+        onSelect={item => {
+
+          console.log(item);
+
+          setFormData({
+            ...formData,
+            stationCode: item.name,  // <-- store directly
+          });
+          setErrors(prev => ({
+            ...prev,
+            stationCode: null,
+          }));
+        }}
+      />
       <DropdownModal
         visible={showAreaModal}
         onClose={() => setShowAreaModal(false)}
@@ -2716,45 +2777,45 @@ const GroupHospitalRegistrationForm = () => {
       />
 
       <AddNewPharmacyModal
-              visible={showAddPharmacyModal}
-              onClose={() => setShowAddPharmacyModal(false)}
-              mappingName={formData.hospitalName}
-              mappingLabel="Private - Group Hospital / GBU"
-              onSubmit={(pharmacy) => {
-                console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
-                console.log('Full Response:', pharmacy);
-                console.log('Pharmacy ID:', pharmacy.id || pharmacy.customerId);
-                console.log('=== End Pharmacy Response ===');
-      
-                // Create pharmacy object for display
-                const newPharmacyItem = {
+        visible={showAddPharmacyModal}
+        onClose={() => setShowAddPharmacyModal(false)}
+        mappingName={formData.hospitalName}
+        mappingLabel="Private - Group Hospital / GBU"
+        onSubmit={(pharmacy) => {
+          console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
+          console.log('Full Response:', pharmacy);
+          console.log('Pharmacy ID:', pharmacy.id || pharmacy.customerId);
+          console.log('=== End Pharmacy Response ===');
+
+          // Create pharmacy object for display
+          const newPharmacyItem = {
+            id: pharmacy.id || pharmacy.customerId,
+            name: pharmacy.pharmacyName || pharmacy.name,
+            code: pharmacy.code || ''
+          };
+
+          // Add pharmacy to form data with mapping structure
+          setFormData(prev => ({
+            ...prev,
+            linkedPharmacies: [
+              ...(prev.linkedPharmacies || []),
+              newPharmacyItem
+            ],
+            mapping: {
+              ...prev.mapping,
+              pharmacy: [
+                ...(prev.mapping?.pharmacy || []),
+                {
                   id: pharmacy.id || pharmacy.customerId,
-                  name: pharmacy.pharmacyName || pharmacy.name,
-                  code: pharmacy.code || ''
-                };
-      
-                // Add pharmacy to form data with mapping structure
-                setFormData(prev => ({
-                  ...prev,
-                  linkedPharmacies: [
-                    ...(prev.linkedPharmacies || []),
-                    newPharmacyItem
-                  ],
-                  mapping: {
-                    ...prev.mapping,
-                    pharmacy: [
-                      ...(prev.mapping?.pharmacy || []),
-                      {
-                        id: pharmacy.id || pharmacy.customerId,
-                        isNew: true
-                      }
-                    ]
-                  }
-                }));
-      
-                setShowAddPharmacyModal(false);
-              }}
-            />
+                  isNew: true
+                }
+              ]
+            }
+          }));
+
+          setShowAddPharmacyModal(false);
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -2934,7 +2995,7 @@ const styles = StyleSheet.create({
   },
   asteriskPrimary: {
     color: "red",
-    fontSize:16
+    fontSize: 16
   },
   mandatoryIndicator: {
     fontSize: 16,
@@ -2953,7 +3014,7 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontSize: 12,
     // marginBottom: 12,
-    marginTop:2,
+    marginTop: 2,
     marginLeft: 4,
   },
   uploadButton: {
@@ -3753,7 +3814,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
 
-    categoryOptions: {
+  categoryOptions: {
     marginBottom: 20,
   },
   checkboxButton: {
@@ -3794,7 +3855,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  
+
   selectedItemsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',

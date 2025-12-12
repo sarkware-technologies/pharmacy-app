@@ -118,7 +118,7 @@ const PharmacyWholesalerForm = () => {
     panNumber: '',
     gstFile: null,
     gstNumber: '',
-
+    stationCode: "",
     // Mapping
     hospitalCode: '',
     hospitalName: '',
@@ -148,6 +148,7 @@ const PharmacyWholesalerForm = () => {
   const [showAreaModal, setShowAreaModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showStateModal, setShowStateModal] = useState(false);
+  const [showStationModal, setShowStationModal] = useState(false);
 
 
   // Date picker states
@@ -314,7 +315,7 @@ const PharmacyWholesalerForm = () => {
   // Fetch customer details for edit mode and onboard mode (same API)
   const fetchCustomerDetailsForEdit = async () => {
     if (!customerId) return;
-    
+
     setLoadingCustomerData(true);
     try {
       // For onboard mode, always use isStaging = false. For edit mode, use the passed value
@@ -345,6 +346,9 @@ const PharmacyWholesalerForm = () => {
 
   // Populate form from customer data (API response)
   const populateFormFromCustomerData = (data) => {
+
+
+
     try {
       const generalDetails = data.generalDetails || {};
       const securityDetails = data.securityDetails || {};
@@ -374,29 +378,29 @@ const PharmacyWholesalerForm = () => {
 
       // Helper function to find documents by type (handles both string and number doctypeId)
       const findDocByType = (docTypeId, docTypeName) => {
-        return docType.find(d => 
-          String(d.doctypeId) === String(docTypeId) || 
+        return docType.find(d =>
+          String(d.doctypeId) === String(docTypeId) ||
           d.doctypeName === docTypeName ||
           d.doctypeName?.toUpperCase() === docTypeName?.toUpperCase()
         );
       };
 
       // Find license documents (20B and 21B for Wholesaler) - also match by docTypeId
-      const license20b = licenceDetails.licence?.find(l => 
-        l.licenceTypeCode === 'LIC20B' || 
+      const license20b = licenceDetails.licence?.find(l =>
+        l.licenceTypeCode === 'LIC20B' ||
         l.licenceTypeName === '20B' ||
         String(l.docTypeId) === '4'
       );
-      const license21b = licenceDetails.licence?.find(l => 
-        l.licenceTypeCode === 'LIC21B' || 
+      const license21b = licenceDetails.licence?.find(l =>
+        l.licenceTypeCode === 'LIC21B' ||
         l.licenceTypeName === '21B' ||
         String(l.docTypeId) === '6'
       );
 
       // Find document files - use helper function for robust matching
-      const license20bDoc = findDocByType('4', 'LICENCE 20B') || 
+      const license20bDoc = findDocByType('4', 'LICENCE 20B') ||
         (license20b?.docTypeId ? findDocByType(String(license20b.docTypeId), 'LICENCE 20B') : null);
-      const license21bDoc = findDocByType('6', 'LICENCE 21B') || 
+      const license21bDoc = findDocByType('6', 'LICENCE 21B') ||
         (license21b?.docTypeId ? findDocByType(String(license21b.docTypeId), 'LICENCE 21B') : null);
       const pharmacyImageDoc = findDocByType('1', 'CLINIC IMAGE');
       const panDoc = findDocByType('7', 'PAN CARD');
@@ -434,8 +438,9 @@ const PharmacyWholesalerForm = () => {
           uri: pharmacyImageDoc.s3Path || '',
           docTypeId: parseInt(pharmacyImageDoc.doctypeId) || 1,
         } : null,
-        
+
         // General Details
+        stationCode: data.stationCode || '',
         pharmacyName: generalDetails.customerName || '',
         shortName: generalDetails.shortName || '',
         address1: generalDetails.address1 || '',
@@ -791,13 +796,13 @@ const PharmacyWholesalerForm = () => {
         // ISO format or Date object
         d = new Date(date);
       }
-      
+
       // Check if date is valid
       if (isNaN(d.getTime())) {
         console.warn('Invalid date for API:', date);
         return null;
       }
-      
+
       // Add time component to avoid timezone issues
       d.setHours(23, 59, 59, 999);
       return d.toISOString();
@@ -1039,7 +1044,7 @@ const PharmacyWholesalerForm = () => {
       const addressParts = splitAddress(ocrData.address);
       if (!formData.address1 && addressParts.address1) {
         updates.address1 = filterForField('address1', addressParts.address1, 40);
-         
+
       }
       if (!formData.address2 && addressParts.address2) {
         updates.address2 = filterForField('address2', addressParts.address2, 40);
@@ -1055,10 +1060,10 @@ const PharmacyWholesalerForm = () => {
       // This is a simplified approach - you may need to pass additional context
       if (!formData.license20b) {
         updates.license20b = filterForField('license20b', ocrData.licenseNumber, 50);
-        
+
       } else if (!formData.license21b) {
         updates.license21b = filterForField('license21b', ocrData.licenseNumber, 50);
-        
+
       }
     }
 
@@ -1113,6 +1118,7 @@ const PharmacyWholesalerForm = () => {
     else if (!formData.license21bExpiryDate) isValid = false;
     else if (!formData.pharmacyImageFile) isValid = false;
     else if (!formData.pharmacyName) isValid = false;
+    else if (!formData.stationCode) isValid = false;
     else if (!formData.address1) isValid = false;
     else if (!formData.address2) isValid = false;
     else if (!formData.address3) isValid = false;
@@ -1127,7 +1133,8 @@ const PharmacyWholesalerForm = () => {
     else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
     else if (!formData.panFile) isValid = false;
     else if (formData.gstNumber && !isValidGST(formData.gstNumber)) isValid = false;
-    
+    else if (formData.selectedDoctors.length ===0  && formData.selectedHospitals.length ===0 ) isValid = false;
+
     setIsFormValid(isValid);
   }, [formData, verificationStatus]);
 
@@ -1149,6 +1156,9 @@ const PharmacyWholesalerForm = () => {
       newErrors.license21bExpiryDate = 'License 21B expiry date is required';
     if (!formData.pharmacyImageFile)
       newErrors.pharmacyImageFile = 'Pharmacy image is required';
+
+    if (!formData.stationCode)
+      newErrors.stationCode = 'Station Code is required';
 
     // General Details validation using reusable validation utility
     const nameOfPharmacyError = validateField('nameOfPharmacy', formData.pharmacyName, true, 'Pharmacy name is required');
@@ -1196,9 +1206,9 @@ const PharmacyWholesalerForm = () => {
     }
 
     if (
-    formData.selectedDoctors.length > 0 && formData.selectedHospitals.length > 0
+      formData.selectedDoctors.length === 0 && formData.selectedHospitals.length === 0
     ) {
-      newErrors.mapping = "You can select only one: doctor OR hospital (not both)";
+      newErrors.mapping = "Mapping is required";
     }
 
 
@@ -1273,7 +1283,7 @@ const PharmacyWholesalerForm = () => {
     }
   };
 
-  
+
   const handleRegister = async () => {
     console.log('handleRegister is called');
     if (!validateForm()) {
@@ -1333,6 +1343,7 @@ const PharmacyWholesalerForm = () => {
         customerDocs: prepareCustomerDocs(),
         isBuyer: true,
         customerGroupId: formData.customerGroupId,
+        stationCode: formData.stationCode,
         generalDetails: {
           name: formData.pharmacyName,
           shortName: formData.shortName || '',
@@ -1354,22 +1365,22 @@ const PharmacyWholesalerForm = () => {
           panNumber: formData.panNumber,
           ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
-       mapping:
-        formData.selectedHospitals?.length > 0
-          ? {
+        mapping:
+          formData.selectedHospitals?.length > 0
+            ? {
               hospitals: formData.selectedHospitals.map(h => ({
                 id: Number(h.id),
                 isNew: false,
               })),
             }
-          : formData.selectedDoctors?.length > 0
-          ? {
-              doctors: formData.selectedDoctors.map(d => ({
-                id: Number(d.id),
-                isNew: false,
-              })),
-            }
-          : undefined,
+            : formData.selectedDoctors?.length > 0
+              ? {
+                doctors: formData.selectedDoctors.map(d => ({
+                  id: Number(d.id),
+                  isNew: false,
+                })),
+              }
+              : undefined,
         ...(formData.stockists &&
           formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({
@@ -1485,7 +1496,7 @@ const PharmacyWholesalerForm = () => {
     }));
   };
 
-  
+
 
   // Dropdown Modal Component
   const DropdownModal = ({
@@ -1504,6 +1515,8 @@ const PharmacyWholesalerForm = () => {
         animationType="slide"
         onRequestClose={onClose}
       >
+
+
         <View style={styles.modalOverlay}>
           <TouchableOpacity
             style={styles.flexContainer}
@@ -1577,7 +1590,7 @@ const PharmacyWholesalerForm = () => {
     );
   }
   console.log(formData);
-  
+
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -1620,7 +1633,7 @@ const PharmacyWholesalerForm = () => {
               },
             ]}
           >
-          
+
 
             {/* License Details Section */}
             <View style={[styles.section, styles.sectionTopSpacing]}>
@@ -1771,13 +1784,40 @@ const PharmacyWholesalerForm = () => {
                 )}
               />
 
+              {/* Station code */}
+              <View style={styles.dropdownContainer}>
+                {(formData.stationCode || cities.length > 0) && (
+                  <AppText
+                    style={[styles.floatingLabel, { color: colors.primary }]}
+                  >
+                    Station<AppText style={styles.asteriskPrimary}>*</AppText>
+                  </AppText>
+                )}
+                <TouchableOpacity
+                  style={[styles.dropdown, errors.stationCode && styles.inputError]}
+                  onPress={() => setShowStationModal(true)}
+                >
+                  <View style={styles.inputTextContainer}>
+                    <AppText style={formData.stationCode ? styles.inputText : styles.placeholderText}>
+                      {formData.stationCode || ('Station')}
+                    </AppText>
+                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                  </View>
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
+                </TouchableOpacity>
+
+                {errors.stationCode && (
+                  <AppText style={styles.errorTextDropdown}>{errors.stationCode}</AppText>
+                )}
+              </View>
+
               <AddressInputWithLocation
                 placeholder="Address 1"
                 value={formData.address1}
-            
 
-                    onChangeText={createFilteredInputHandler('address1', (text) => {
-                 setFormData(prev => ({ ...prev, address1: text }));
+
+                onChangeText={createFilteredInputHandler('address1', (text) => {
+                  setFormData(prev => ({ ...prev, address1: text }));
                   setErrors(prev => ({ ...prev, address1: null }));
                 }, 40)}
 
@@ -2085,151 +2125,151 @@ const PharmacyWholesalerForm = () => {
               )}
               {renderOTPInput('email')}
 
-               {/* PAN and GST fields - Hidden in onboard mode */}
-                <>
-                  {/* PAN Upload */}
-                  <FileUploadComponent
-                    placeholder="Upload PAN"
-                    accept={['pdf', 'jpg', 'png', 'jpeg']}
-                    maxSize={15 * 1024 * 1024}
-                    docType={DOC_TYPES.PAN}
-                    initialFile={formData.panFile}
-                    onFileUpload={file => handleFileUpload('panFile', file)}
-                    onFileDelete={() => handleFileDelete('panFile')}
-                    mandatory={true}
-                    errorMessage={errors.panFile}
-                    onOcrDataExtracted={ocrData => {
-                      console.log('PAN OCR Data:', ocrData);
-                      if (ocrData.panNumber) {
-                        setFormData(prev => ({
-                          ...prev,
-                          panNumber: ocrData.panNumber,
-                        }));
-                        // Auto-verify when PAN is populated from OCR
-                        setVerificationStatus(prev => ({ ...prev, pan: true }));
-                      }
-                    }}
-                  />
-
-                  {/* PAN Number */}
-                  <CustomInput
-                    placeholder="PAN Number"
-                    value={formData.panNumber}
-                    onChangeText={createFilteredInputHandler('panNumber', (text) => {
-                      const upperText = text.toUpperCase();
-                      setFormData(prev => ({ ...prev, panNumber: upperText }));
-                      setErrors(prev => ({ ...prev, panNumber: null }));
-                    }, 10)}
-                    autoCapitalize="characters"
-                    maxLength={10}
-                    mandatory
-                    editable={!verificationStatus.pan}
-                    error={errors.panNumber}
-                    rightComponent={
-                      <TouchableOpacity
-                        style={[
-                          styles.inlineVerifyButton,
-                          verificationStatus.pan && styles.verifiedButton,
-                        ]}
-                        onPress={() => {
-                          if (!verificationStatus.pan) {
-                            // Verify PAN format
-                            if (
-                              /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)
-                            ) {
-                              setVerificationStatus(prev => ({
-                                ...prev,
-                                pan: true,
-                              }));
-                            } else {
-                              Alert.alert(
-                                'Invalid PAN',
-                                'Please enter a valid PAN number',
-                              );
-                            }
-                          }
-                        }}
-                        disabled={verificationStatus.pan}
-                      >
-                        <AppText
-                          style={[
-                            styles.inlineVerifyText,
-                            verificationStatus.pan && styles.verifiedText,
-                          ]}
-                        >
-                          {verificationStatus.pan ? (
-                            'Verified'
-                          ) : (
-                            <>
-                              Verify
-                              <AppText style={styles.inlineAsterisk}>*</AppText>
-                            </>
-                          )}
-                        </AppText>
-                      </TouchableOpacity>
+              {/* PAN and GST fields - Hidden in onboard mode */}
+              <>
+                {/* PAN Upload */}
+                <FileUploadComponent
+                  placeholder="Upload PAN"
+                  accept={['pdf', 'jpg', 'png', 'jpeg']}
+                  maxSize={15 * 1024 * 1024}
+                  docType={DOC_TYPES.PAN}
+                  initialFile={formData.panFile}
+                  onFileUpload={file => handleFileUpload('panFile', file)}
+                  onFileDelete={() => handleFileDelete('panFile')}
+                  mandatory={true}
+                  errorMessage={errors.panFile}
+                  onOcrDataExtracted={ocrData => {
+                    console.log('PAN OCR Data:', ocrData);
+                    if (ocrData.panNumber) {
+                      setFormData(prev => ({
+                        ...prev,
+                        panNumber: ocrData.panNumber,
+                      }));
+                      // Auto-verify when PAN is populated from OCR
+                      setVerificationStatus(prev => ({ ...prev, pan: true }));
                     }
-                  />
+                  }}
+                />
 
-                  {
-                    verificationStatus.pan &&
+                {/* PAN Number */}
+                <CustomInput
+                  placeholder="PAN Number"
+                  value={formData.panNumber}
+                  onChangeText={createFilteredInputHandler('panNumber', (text) => {
+                    const upperText = text.toUpperCase();
+                    setFormData(prev => ({ ...prev, panNumber: upperText }));
+                    setErrors(prev => ({ ...prev, panNumber: null }));
+                  }, 10)}
+                  autoCapitalize="characters"
+                  maxLength={10}
+                  mandatory
+                  editable={!verificationStatus.pan}
+                  error={errors.panNumber}
+                  rightComponent={
                     <TouchableOpacity
-                      style={styles.linkButton}
+                      style={[
+                        styles.inlineVerifyButton,
+                        verificationStatus.pan && styles.verifiedButton,
+                      ]}
                       onPress={() => {
-                        Toast.show({
-                          type: 'info',
-                          text1: 'Fetch GST',
-                          text2: 'Fetching GST details from PAN...',
-                        });
-                        // Here you would call API to fetch GST from PAN
-                        // and populate the GST dropdown options
+                        if (!verificationStatus.pan) {
+                          // Verify PAN format
+                          if (
+                            /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)
+                          ) {
+                            setVerificationStatus(prev => ({
+                              ...prev,
+                              pan: true,
+                            }));
+                          } else {
+                            Alert.alert(
+                              'Invalid PAN',
+                              'Please enter a valid PAN number',
+                            );
+                          }
+                        }
                       }}
+                      disabled={verificationStatus.pan}
                     >
-                      <FetchGst />
-                      <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
+                      <AppText
+                        style={[
+                          styles.inlineVerifyText,
+                          verificationStatus.pan && styles.verifiedText,
+                        ]}
+                      >
+                        {verificationStatus.pan ? (
+                          'Verified'
+                        ) : (
+                          <>
+                            Verify
+                            <AppText style={styles.inlineAsterisk}>*</AppText>
+                          </>
+                        )}
+                      </AppText>
                     </TouchableOpacity>
                   }
+                />
 
-
-                  {/* GST Upload */}
-                  <FileUploadComponent
-                    placeholder="Upload GST"
-                    accept={['pdf', 'jpg', 'png', 'jpeg']}
-                    maxSize={15 * 1024 * 1024}
-                    docType={DOC_TYPES.GST}
-                    initialFile={formData.gstFile}
-                    onFileUpload={file => handleFileUpload('gstFile', file)}
-                    onFileDelete={() => handleFileDelete('gstFile')}
-                    onOcrDataExtracted={ocrData => {
-                      console.log('GST OCR Data:', ocrData);
-                      if (ocrData.gstNumber) {
-                        setFormData(prev => ({
-                          ...prev,
-                          gstNumber: ocrData.gstNumber,
-                        }));
-                        if (ocrData.isGstValid) {
-                          setVerificationStatus(prev => ({ ...prev, gst: true }));
-                        }
-                      }
+                {
+                  verificationStatus.pan &&
+                  <TouchableOpacity
+                    style={styles.linkButton}
+                    onPress={() => {
+                      Toast.show({
+                        type: 'info',
+                        text1: 'Fetch GST',
+                        text2: 'Fetching GST details from PAN...',
+                      });
+                      // Here you would call API to fetch GST from PAN
+                      // and populate the GST dropdown options
                     }}
-                  />
+                  >
+                    <FetchGst />
+                    <AppText style={styles.linkText}>Fetch GST from PAN</AppText>
+                  </TouchableOpacity>
+                }
 
-                  {/* GST Number */}
-                  <CustomInput
-                    placeholder="GST number"
-                    value={formData.gstNumber}
-                    onChangeText={createFilteredInputHandler('gstNumber', (text) => {
-                      const upperText = text.toUpperCase();
-                      setFormData(prev => ({ ...prev, gstNumber: upperText }));
-                      setErrors(prev => ({ ...prev, gstNumber: null }));
-                    }, 15)}
-                    autoCapitalize="characters"
-                    keyboardType="default"
-                    maxLength={15}
-                    error={errors.gstNumber}
-                  />
-                </>
 
-             
+                {/* GST Upload */}
+                <FileUploadComponent
+                  placeholder="Upload GST"
+                  accept={['pdf', 'jpg', 'png', 'jpeg']}
+                  maxSize={15 * 1024 * 1024}
+                  docType={DOC_TYPES.GST}
+                  initialFile={formData.gstFile}
+                  onFileUpload={file => handleFileUpload('gstFile', file)}
+                  onFileDelete={() => handleFileDelete('gstFile')}
+                  onOcrDataExtracted={ocrData => {
+                    console.log('GST OCR Data:', ocrData);
+                    if (ocrData.gstNumber) {
+                      setFormData(prev => ({
+                        ...prev,
+                        gstNumber: ocrData.gstNumber,
+                      }));
+                      if (ocrData.isGstValid) {
+                        setVerificationStatus(prev => ({ ...prev, gst: true }));
+                      }
+                    }
+                  }}
+                />
+
+                {/* GST Number */}
+                <CustomInput
+                  placeholder="GST number"
+                  value={formData.gstNumber}
+                  onChangeText={createFilteredInputHandler('gstNumber', (text) => {
+                    const upperText = text.toUpperCase();
+                    setFormData(prev => ({ ...prev, gstNumber: upperText }));
+                    setErrors(prev => ({ ...prev, gstNumber: null }));
+                  }, 15)}
+                  autoCapitalize="characters"
+                  keyboardType="default"
+                  maxLength={15}
+                  error={errors.gstNumber}
+                />
+              </>
+
+
             </View>
 
             {/* Mapping Section */}
@@ -2306,9 +2346,9 @@ const PharmacyWholesalerForm = () => {
                               selectedHospitals: hospitals,
                             }));
                           },
-                          mappingFor:"PCM",
-                          customerGroupId:formData.customerGroupId
-                        
+                          mappingFor: "PCM",
+                          customerGroupId: formData.customerGroupId
+
                         });
                       }}
                       activeOpacity={0.7}
@@ -2350,8 +2390,8 @@ const PharmacyWholesalerForm = () => {
                               selectedDoctors: selectedDoctors
                             }));
                           },
-                          mappingFor:"PCM",
-                          customerGroupId:formData.customerGroupId
+                          mappingFor: "PCM",
+                          customerGroupId: formData.customerGroupId
                         });
                       }}
                     >
@@ -2402,14 +2442,14 @@ const PharmacyWholesalerForm = () => {
                   </>
                 )}
 
-                  {errors.mapping && (
-                <AppText style={styles.errorText}>
-                  {errors.mapping}
-                </AppText>
-              )}
+                {errors.mapping && (
+                  <AppText style={styles.errorText}>
+                    {errors.mapping}
+                  </AppText>
+                )}
               </View>
 
-             
+
 
               <View style={styles.customerGroupContainer}>
                 <AppText style={styles.sectionLabel}>Customer Group</AppText>
@@ -2509,26 +2549,26 @@ const PharmacyWholesalerForm = () => {
                     placeholder={`Name of the Stockist ${index + 1}`}
                     value={stockist.name}
                     onChangeText={createFilteredInputHandler('nameOfStockist', (text) =>
-                    handleStockistChange(index, 'name', text), 40
+                      handleStockistChange(index, 'name', text), 40
                     )}
 
-                    
+
                   />
                   <CustomInput
                     placeholder={`Distributor Code`}
                     value={stockist.code}
-                
 
-                     onChangeText={createFilteredInputHandler('distributorCode', (text) =>
-                    handleStockistChange(index, 'code', text), 20
+
+                    onChangeText={createFilteredInputHandler('distributorCode', (text) =>
+                      handleStockistChange(index, 'code', text), 20
                     )}
                   />
                   <CustomInput
                     placeholder={`City`}
                     value={stockist.city}
-                  
-                       onChangeText={createFilteredInputHandler('distributorCity', (text) =>
-                    handleStockistChange(index, 'city', text), 40
+
+                    onChangeText={createFilteredInputHandler('distributorCity', (text) =>
+                      handleStockistChange(index, 'city', text), 40
                     )}
                   />
                 </View>
@@ -2677,6 +2717,32 @@ const PharmacyWholesalerForm = () => {
           setErrors(prev => ({ ...prev, state: null }));
         }}
         loading={false}
+      />
+
+      <DropdownModal
+        visible={showStationModal}
+        onClose={() => setShowStationModal(false)}
+        title="Select Station"
+        data={
+          loggedInUser?.userDetails?.stationCodes?.map((item) => ({
+            id: item.stationCode,
+            name: item.stationCode,
+          }))
+        }
+        selectedId={formData.stationCode} // <-- match value
+        onSelect={item => {
+
+          console.log(item);
+
+          setFormData({
+            ...formData,
+            stationCode: item.name,  // <-- store directly
+          });
+          setErrors(prev => ({
+            ...prev,
+            stationCode: null,
+          }));
+        }}
       />
 
 
@@ -3531,7 +3597,7 @@ const styles = StyleSheet.create({
   },
   asteriskPrimary: {
     color: "red",
-    fontSize:16
+    fontSize: 16
   },
   radioButtonContainer: {
     flexDirection: 'row',

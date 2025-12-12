@@ -75,8 +75,8 @@ const PharmacyRegistrationForm = () => {
   const isEditMode = mode === 'edit' || !!customerId;
   const isOnboardMode = mode === 'onboard';
   const [loadingCustomerData, setLoadingCustomerData] = useState(false);
-    const loggedInUser = useSelector(state => state.auth.user);
-  
+  const loggedInUser = useSelector(state => state.auth.user);
+
 
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
@@ -109,7 +109,7 @@ const PharmacyRegistrationForm = () => {
     cityId: '',
     state: '',
     stateId: '',
-
+    stationCode: "",
     // Security Details
     mobileNumber: '',
     emailAddress: '',
@@ -193,7 +193,7 @@ const PharmacyRegistrationForm = () => {
 
   // States and cities data
   const [areas, setAreas] = useState([]);
-  
+
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
 
@@ -209,146 +209,147 @@ const PharmacyRegistrationForm = () => {
     clearData,
   } = usePincodeLookup();
 
- // Handle pincode change and trigger lookup
-const handlePincodeChange = async text => {
-  // Filter pincode input to only allow digits
-  const filtered = createFilteredInputHandler('pincode', null, 6)(text);
-  // If filtered text is different, it means invalid characters were typed, so don't proceed
-  if (filtered !== text && text.length > filtered.length) return;
+  // Handle pincode change and trigger lookup
+  const handlePincodeChange = async text => {
+    // Filter pincode input to only allow digits
+    const filtered = createFilteredInputHandler('pincode', null, 6)(text);
+    // If filtered text is different, it means invalid characters were typed, so don't proceed
+    if (filtered !== text && text.length > filtered.length) return;
 
-  setFormData(prev => ({ ...prev, pincode: filtered }));
-  setErrors(prev => ({ ...prev, pincode: null }));
+    setFormData(prev => ({ ...prev, pincode: filtered }));
+    setErrors(prev => ({ ...prev, pincode: null }));
 
-  // If user is editing pincode manually, clear any OCR/upload-derived area list
-  if (uploadedAreas && uploadedAreas.length > 0) {
-    setUploadedAreas([]); // prefer manual lookup results from pincode
-  }
+    // If user is editing pincode manually, clear any OCR/upload-derived area list
+    if (uploadedAreas && uploadedAreas.length > 0) {
+      setUploadedAreas([]); // prefer manual lookup results from pincode
+    }
 
-  // Clear previous selections when pincode becomes incomplete
-  if (filtered.length < 6) {
-    setFormData(prev => ({
-      ...prev,
-      area: '',
-      areaId: null,
-      city: '',
-      cityId: '',
-      state: '',
-      stateId: '',
-    }));
-    // clear hook data
-    clearData();
-    setAreas([]); // clear local areas too
-    setCities([]);
-    setStates([]);
-    return;
-  }
+    // Clear previous selections when pincode becomes incomplete
+    if (filtered.length < 6) {
+      setFormData(prev => ({
+        ...prev,
+        area: '',
+        areaId: null,
+        city: '',
+        cityId: '',
+        state: '',
+        stateId: '',
+      }));
+      // clear hook data
+      clearData();
+      setAreas([]); // clear local areas too
+      setCities([]);
+      setStates([]);
+      return;
+    }
 
-  // Trigger lookup when pincode is complete (6 digits)
-  if (filtered.length === 6) {
-    // call lookup and receive returned arrays (hook now returns them)
-    const { areas: lkAreas = [], cities: lkCities = [], states: lkStates = [] } =
-      (await lookupByPincode(filtered)) || {};
+    // Trigger lookup when pincode is complete (6 digits)
+    if (filtered.length === 6) {
+      // call lookup and receive returned arrays (hook now returns them)
+      const { areas: lkAreas = [], cities: lkCities = [], states: lkStates = [] } =
+        (await lookupByPincode(filtered)) || {};
 
-    // Apply to local component state so dropdowns read correct lists
-    if (Array.isArray(lkAreas)) setAreas(lkAreas);
-    if (Array.isArray(lkCities)) setCities(lkCities);
-    if (Array.isArray(lkStates)) setStates(lkStates);
+      // Apply to local component state so dropdowns read correct lists
+      if (Array.isArray(lkAreas)) setAreas(lkAreas);
+      if (Array.isArray(lkCities)) setCities(lkCities);
+      if (Array.isArray(lkStates)) setStates(lkStates);
 
-    // Auto-select first available values if form doesn't already have them
-    setFormData(prev => {
-      const next = { ...prev };
+      // Auto-select first available values if form doesn't already have them
+      setFormData(prev => {
+        const next = { ...prev };
 
-      if ((!next.cityId || !next.city) && Array.isArray(lkCities) && lkCities.length > 0) {
-        next.city = lkCities[0].name || '';
-        next.cityId = lkCities[0].id || '';
-      }
+        if ((!next.cityId || !next.city) && Array.isArray(lkCities) && lkCities.length > 0) {
+          next.city = lkCities[0].name || '';
+          next.cityId = lkCities[0].id || '';
+        }
 
-      if ((!next.stateId || !next.state) && Array.isArray(lkStates) && lkStates.length > 0) {
-        next.state = lkStates[0].name || '';
-        next.stateId = lkStates[0].id || '';
-      }
+        if ((!next.stateId || !next.state) && Array.isArray(lkStates) && lkStates.length > 0) {
+          next.state = lkStates[0].name || '';
+          next.stateId = lkStates[0].id || '';
+        }
 
-      if ((!next.areaId || !next.area) && Array.isArray(lkAreas) && lkAreas.length > 0) {
-        next.area = lkAreas[0].name || '';
-        next.areaId = lkAreas[0].id || '';
-      }
+        if ((!next.areaId || !next.area) && Array.isArray(lkAreas) && lkAreas.length > 0) {
+          next.area = lkAreas[0].name || '';
+          next.areaId = lkAreas[0].id || '';
+        }
 
-      return next;
-    });
+        return next;
+      });
 
-    // clear any related errors
-    setErrors(prev => ({
-      ...prev,
-      pincode: null,
-      cityId: null,
-      stateId: null,
-      area: null,
-    }));
-  }
-};
+      // clear any related errors
+      setErrors(prev => ({
+        ...prev,
+        pincode: null,
+        cityId: null,
+        stateId: null,
+        area: null,
+      }));
+    }
+  };
 
 
-// Sync pincode lookup results → local lists (states, cities, areas) and auto-select first matches.
-useEffect(() => {
-  // Map pincodeCities → cities
-  if (Array.isArray(pincodeCities) && pincodeCities.length > 0) {
-    const mappedCities = pincodeCities.map(c => ({
-      id: c.id ?? c.value,
-      name: c.name || c.cityName || c.city || c.label || '',
-    }));
-    setCities(mappedCities);
+  // Sync pincode lookup results → local lists (states, cities, areas) and auto-select first matches.
+  useEffect(() => {
+    // Map pincodeCities → cities
+    if (Array.isArray(pincodeCities) && pincodeCities.length > 0) {
+      const mappedCities = pincodeCities.map(c => ({
+        id: c.id ?? c.value,
+        name: c.name || c.cityName || c.city || c.label || '',
+      }));
+      setCities(mappedCities);
 
-    // Auto-select the first city if none selected or cityId is falsy
-    const firstCity = mappedCities[0];
-    setFormData(prev => ({
-      ...prev,
-      city: prev.city || firstCity?.name || '',
-      cityId: prev.cityId || firstCity?.id || '',
-    }));
-  }
+      // Auto-select the first city if none selected or cityId is falsy
+      const firstCity = mappedCities[0];
+      setFormData(prev => ({
+        ...prev,
+        city: prev.city || firstCity?.name || '',
+        cityId: prev.cityId || firstCity?.id || '',
+      }));
+    }
 
-  // Map pincodeStates → states
-  if (Array.isArray(pincodeStates) && pincodeStates.length > 0) {
-    const mappedStates = pincodeStates.map(s => ({
-      id: s.id ?? s.value,
-      name: s.name || s.stateName || s.state || s.label || '',
-    }));
-    setStates(mappedStates);
+    // Map pincodeStates → states
+    if (Array.isArray(pincodeStates) && pincodeStates.length > 0) {
+      const mappedStates = pincodeStates.map(s => ({
+        id: s.id ?? s.value,
+        name: s.name || s.stateName || s.state || s.label || '',
+      }));
+      setStates(mappedStates);
 
-    // Auto-select the first state if none selected or stateId is falsy
-    const firstState = mappedStates[0];
-    setFormData(prev => ({
-      ...prev,
-      state: prev.state || firstState?.name || '',
-      stateId: prev.stateId || firstState?.id || '',
-    }));
-  }
+      // Auto-select the first state if none selected or stateId is falsy
+      const firstState = mappedStates[0];
+      setFormData(prev => ({
+        ...prev,
+        state: prev.state || firstState?.name || '',
+        stateId: prev.stateId || firstState?.id || '',
+      }));
+    }
 
-  // Map pincodeAreas → areas (this 'areas' variable is the component's local state)
-  if (Array.isArray(pincodeAreas) && pincodeAreas.length > 0) {
-    const mappedAreas = pincodeAreas.map(a => ({
-      id: a.id ?? a.value,
-      name: a.name || a.label || '',
-      cityId: a.cityId || a.raw?.cityId || '',
-    }));
-    setAreas(mappedAreas);
+    // Map pincodeAreas → areas (this 'areas' variable is the component's local state)
+    if (Array.isArray(pincodeAreas) && pincodeAreas.length > 0) {
+      const mappedAreas = pincodeAreas.map(a => ({
+        id: a.id ?? a.value,
+        name: a.name || a.label || '',
+        cityId: a.cityId || a.raw?.cityId || '',
+      }));
+      setAreas(mappedAreas);
 
-    // Auto-select first area if none selected
-    const firstArea = mappedAreas[0];
-    setFormData(prev => ({
-      ...prev,
-      area: prev.area || firstArea?.name || '',
-      areaId: prev.areaId || firstArea?.id || '',
-    }));
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [pincodeCities, pincodeStates, pincodeAreas]);
+      // Auto-select first area if none selected
+      const firstArea = mappedAreas[0];
+      setFormData(prev => ({
+        ...prev,
+        area: prev.area || firstArea?.name || '',
+        areaId: prev.areaId || firstArea?.id || '',
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pincodeCities, pincodeStates, pincodeAreas]);
 
 
   // Dropdown modal states
   const [showStateModal, setShowStateModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showAreaModal, setShowAreaModal] = useState(false);
+  const [showStationModal, setShowStationModal] = useState(false);
 
   // Hospital and Doctor modal states
   const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
@@ -410,7 +411,7 @@ useEffect(() => {
   // Fetch customer details for edit mode and onboard mode (same API)
   const fetchCustomerDetailsForEdit = async () => {
     if (!customerId) return;
-    
+
     setLoadingCustomerData(true);
     try {
       // For onboard mode, always use isStaging = false. For edit mode, use the passed value
@@ -470,29 +471,29 @@ useEffect(() => {
 
       // Helper function to find documents by type (handles both string and number doctypeId)
       const findDocByType = (docTypeId, docTypeName) => {
-        return docType.find(d => 
-          String(d.doctypeId) === String(docTypeId) || 
+        return docType.find(d =>
+          String(d.doctypeId) === String(docTypeId) ||
           d.doctypeName === docTypeName ||
           d.doctypeName?.toUpperCase() === docTypeName?.toUpperCase()
         );
       };
 
       // Find license documents - also match by docTypeId from license
-      const license20 = licenceDetails.licence?.find(l => 
-        l.licenceTypeCode === 'LIC20' || 
+      const license20 = licenceDetails.licence?.find(l =>
+        l.licenceTypeCode === 'LIC20' ||
         l.licenceTypeName === '20' ||
         String(l.docTypeId) === '3'
       );
-      const license21 = licenceDetails.licence?.find(l => 
-        l.licenceTypeCode === 'LIC21' || 
+      const license21 = licenceDetails.licence?.find(l =>
+        l.licenceTypeCode === 'LIC21' ||
         l.licenceTypeName === '21' ||
         String(l.docTypeId) === '5'
       );
 
       // Find document files - use helper function for robust matching
-      const license20Doc = findDocByType('3', 'LICENCE 20') || 
+      const license20Doc = findDocByType('3', 'LICENCE 20') ||
         (license20?.docTypeId ? findDocByType(String(license20.docTypeId), 'LICENCE 20') : null);
-      const license21Doc = findDocByType('5', 'LICENCE 21') || 
+      const license21Doc = findDocByType('5', 'LICENCE 21') ||
         (license21?.docTypeId ? findDocByType(String(license21.docTypeId), 'LICENCE 21') : null);
       const pharmacyImageDoc = findDocByType('1', 'CLINIC IMAGE');
       const panDoc = findDocByType('7', 'PAN CARD');
@@ -530,8 +531,10 @@ useEffect(() => {
           uri: pharmacyImageDoc.s3Path || '',
           docTypeId: parseInt(pharmacyImageDoc.doctypeId) || 1,
         } : null,
-        
+
         // General Details
+        stationCode: data.stationCode || '',
+
         pharmacyName: generalDetails.customerName || '',
         shortName: generalDetails.shortName || '',
         address1: generalDetails.address1 || '',
@@ -736,7 +739,7 @@ useEffect(() => {
 
   const handleVerify = async field => {
     // Validate the field before showing OTP
-     if (
+    if (
       field === 'mobile' &&
       (!formData.mobileNumber ||
         !/^[6-9]\d{9}$/.test(formData.mobileNumber))
@@ -1018,37 +1021,8 @@ useEffect(() => {
     );
   };
 
-  // Validation function that checks form without setting errors (for button state)
-  const checkFormValidity = () => {
-    // Validate required fields
-    if (!formData.license20) return false;
-    if (!documentIds.license20) return false;
-    if (!formData.license20ExpiryDate) return false;
-    if (!formData.license21) return false;
-    if (!documentIds.license21) return false;
-    if (!formData.license21ExpiryDate) return false;
-    if (!documentIds.pharmacyImage) return false;
-    if (!formData.pharmacyName || validateField('nameOfPharmacy', formData.pharmacyName, true)) return false;
-    if (!formData.address1 || validateField('address1', formData.address1, true)) return false;
-    if (!formData.address2 || validateField('address2', formData.address2, true)) return false;
-    if (!formData.address3 || validateField('address3', formData.address3, true)) return false;
-    if (!isValidPincode(formData.pincode)) return false;
-    if (!formData.area || validateField('area', formData.area, true)) return false;
-    if (!formData.cityId) return false;
-    if (!formData.stateId) return false;
-    if (!isValidMobile(formData.mobileNumber)) return false;
-    if (!verificationStatus.mobile) return false;
-    if (!isValidEmail(formData.emailAddress)) return false;
-    if (!verificationStatus.email) return false;
-    if (!isValidPAN(formData.panNumber)) return false;
-    if (!formData.panFile && !documentIds.pan) return false;
-    if (formData.gstNumber && !isValidGST(formData.gstNumber)) return false;
-    return true;
-  };
-
   const validateForm = () => {
     const newErrors = {};
-
     // License Details validation
     if (!formData.license20)
       newErrors.license20 = 'License 20 number is required';
@@ -1064,7 +1038,8 @@ useEffect(() => {
       newErrors.license21ExpiryDate = 'License 21 expiry date is required';
     if (!documentIds.pharmacyImage)
       newErrors.pharmacyImageFile = 'Pharmacy image is required';
-
+    if (!formData.stationCode)
+      newErrors.stationCode = 'Station Code is required';
     // General Details validation using reusable validation utility
     const nameOfPharmacyError = validateField('nameOfPharmacy', formData.pharmacyName, true, 'Pharmacy name is required');
     if (nameOfPharmacyError) newErrors.pharmacyName = nameOfPharmacyError;
@@ -1111,9 +1086,9 @@ useEffect(() => {
     }
 
     if (
-    formData.selectedDoctors.length > 0 && formData.selectedHospitals.length > 0
+      formData.selectedDoctors.length === 0 && formData.selectedHospitals.length === 0
     ) {
-      newErrors.mapping = "You can select only one: doctor OR hospital (not both)";
+      newErrors.mapping = "Mapping is required";
     }
 
     setErrors(newErrors);
@@ -1201,6 +1176,8 @@ useEffect(() => {
     else if (!formData.license21ExpiryDate) isValid = false;
     else if (!documentIds.pharmacyImage) isValid = false;
     else if (!formData.pharmacyName) isValid = false;
+    else if (!formData.stationCode) isValid = false;
+
     else if (!formData.address1) isValid = false;
     else if (
       !formData.pincode ||
@@ -1222,7 +1199,9 @@ useEffect(() => {
     ) isValid = false;
     else if (!formData.panFile && !documentIds.pan) isValid = false;
     else if (formData.gstNumber && !isValidGST(formData.gstNumber)) isValid = false;
-    
+        else if (formData.selectedDoctors.length ===0  && formData.selectedHospitals.length ===0 ) isValid = false;
+
+
     setIsFormValid(isValid);
   }, [formData, documentIds, verificationStatus]);
   // Helper function to format dates for API submission
@@ -1239,13 +1218,13 @@ useEffect(() => {
         // ISO format or Date object
         d = new Date(date);
       }
-      
+
       // Check if date is valid
       if (isNaN(d.getTime())) {
         console.warn('Invalid date for API:', date);
         return null;
       }
-      
+
       // Add time component to avoid timezone issues
       d.setHours(23, 59, 59, 999);
       return d.toISOString();
@@ -1296,6 +1275,7 @@ useEffect(() => {
         isMobileVerified: verificationStatus.mobile,
         isEmailVerified: verificationStatus.email,
         isExisting: false,
+        stationCode: formData.stationCode,
         licenceDetails: {
           registrationDate: new Date().toISOString(),
           licence: [
@@ -1338,22 +1318,22 @@ useEffect(() => {
           ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
 
-         mapping:
-        formData.selectedHospitals?.length > 0
-          ? {
+        mapping:
+          formData.selectedHospitals?.length > 0
+            ? {
               hospitals: formData.selectedHospitals.map(h => ({
                 id: Number(h.id),
                 isNew: false,
               })),
             }
-          : formData.selectedDoctors?.length > 0
-          ? {
-              doctors: formData.selectedDoctors.map(d => ({
-                id: Number(d.id),
-                isNew: false,
-              })),
-            }
-          : undefined,
+            : formData.selectedDoctors?.length > 0
+              ? {
+                doctors: formData.selectedDoctors.map(d => ({
+                  id: Number(d.id),
+                  isNew: false,
+                })),
+              }
+              : undefined,
         ...(formData.stockists &&
           formData.stockists.length > 0 && {
           suggestedDistributors: formData.stockists.map(stockist => ({
@@ -1569,25 +1549,25 @@ useEffect(() => {
         // Build cities array
         const ldCities = Array.isArray(locationDetails.cities)
           ? locationDetails.cities.map(c => ({
-              id: c.value ?? c.id ?? c.value,
-              name:
-                c.label ||
-                c.name ||
-                c.city ||
-                (c.label && String(c.label)) ||
-                '',
-              raw: c,
-            }))
+            id: c.value ?? c.id ?? c.value,
+            name:
+              c.label ||
+              c.name ||
+              c.city ||
+              (c.label && String(c.label)) ||
+              '',
+            raw: c,
+          }))
           : [];
 
         // Build states array
         const ldStates = Array.isArray(locationDetails.states)
           ? locationDetails.states.map(s => ({
-              id: s.value ?? s.id ?? s.value,
-              name: s.label || s.name || s.state || '',
-              gstCode: s.gstCode,
-              raw: s,
-            }))
+            id: s.value ?? s.id ?? s.value,
+            name: s.label || s.name || s.state || '',
+            gstCode: s.gstCode,
+            raw: s,
+          }))
           : [];
 
         // Build areas: if cities array present, take first city -> its area list
@@ -1620,11 +1600,11 @@ useEffect(() => {
         if (ldCities.length > 0) {
           const matchCity = uploadedCityName
             ? ldCities.find(
-                c =>
-                  c.name &&
-                  c.name.toLowerCase() ===
-                    String(uploadedCityName).toLowerCase(),
-              )
+              c =>
+                c.name &&
+                c.name.toLowerCase() ===
+                String(uploadedCityName).toLowerCase(),
+            )
             : null;
           const chosenCity = matchCity || ldCities[0];
           if (chosenCity) {
@@ -1637,11 +1617,11 @@ useEffect(() => {
         if (ldStates.length > 0) {
           const matchState = uploadedStateName
             ? ldStates.find(
-                s =>
-                  s.name &&
-                  s.name.toLowerCase() ===
-                    String(uploadedStateName).toLowerCase(),
-              )
+              s =>
+                s.name &&
+                s.name.toLowerCase() ===
+                String(uploadedStateName).toLowerCase(),
+            )
             : null;
           const chosenState = matchState || ldStates[0];
           if (chosenState) {
@@ -1654,11 +1634,11 @@ useEffect(() => {
         if (ldAreas.length > 0) {
           const matchArea = uploadedAreaName
             ? ldAreas.find(
-                a =>
-                  a.name &&
-                  a.name.toLowerCase() ===
-                    String(uploadedAreaName).toLowerCase(),
-              )
+              a =>
+                a.name &&
+                a.name.toLowerCase() ===
+                String(uploadedAreaName).toLowerCase(),
+            )
             : null;
           const chosenArea = matchArea || ldAreas[0];
           if (chosenArea) {
@@ -1812,112 +1792,112 @@ useEffect(() => {
     return { address1: '', address2: '', address3: '' };
   };
 
- const handleLicenseOcrData = async (ocrData) => {
-  console.log("OCR Data Received:", ocrData);
+  const handleLicenseOcrData = async (ocrData) => {
+    console.log("OCR Data Received:", ocrData);
 
-  const updates = {};
+    const updates = {};
 
-  // Pharmacy name
-  if (ocrData.pharmacyName && !formData.pharmacyName) {
-    updates.pharmacyName = filterForField('pharmacyName', ocrData.pharmacyName, 40);
-  }
-
-  // Address parsing
-  if (ocrData.address) {
-    const addressParts = splitAddress(ocrData.address);
-    if (!formData.address1 && addressParts.address1) updates.address1 = filterForField('address1', addressParts.address1, 40);
-    if (!formData.address2 && addressParts.address2) updates.address2 = filterForField('address2', addressParts.address2, 40);
-    if (!formData.address3 && addressParts.address3) updates.address3 = filterForField('address3', addressParts.address3, 60);
-  }
-
-  // License number
-  if (ocrData.licenseNumber) {
-    if (!formData.license20) updates.license20 = filterForField('license20', ocrData.licenseNumber, 50);
-    else if (!formData.license21) updates.license21 = filterForField('license21', ocrData.licenseNumber, 50);
-  }
-
-  // Expiry date
-  if (ocrData.expiryDate) {
-    const parts = ocrData.expiryDate.split("-");
-    if (parts.length === 3) {
-      const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
-      if (!formData.license20ExpiryDate) updates.license20ExpiryDate = formatted;
-      else if (!formData.license21ExpiryDate) updates.license21ExpiryDate = formatted;
+    // Pharmacy name
+    if (ocrData.pharmacyName && !formData.pharmacyName) {
+      updates.pharmacyName = filterForField('pharmacyName', ocrData.pharmacyName, 40);
     }
-  }
 
-  // -----------------------------
-  //  🔥 DIRECTLY USE OCR LOCATION
-  // -----------------------------
-  const location = ocrData.locationDetails;
+    // Address parsing
+    if (ocrData.address) {
+      const addressParts = splitAddress(ocrData.address);
+      if (!formData.address1 && addressParts.address1) updates.address1 = filterForField('address1', addressParts.address1, 40);
+      if (!formData.address2 && addressParts.address2) updates.address2 = filterForField('address2', addressParts.address2, 40);
+      if (!formData.address3 && addressParts.address3) updates.address3 = filterForField('address3', addressParts.address3, 60);
+    }
 
-  if (location) {
-    // Build CITIES (flat)
-    const extractedCities = Array.isArray(location.cities)
-      ? location.cities.map(c => ({
+    // License number
+    if (ocrData.licenseNumber) {
+      if (!formData.license20) updates.license20 = filterForField('license20', ocrData.licenseNumber, 50);
+      else if (!formData.license21) updates.license21 = filterForField('license21', ocrData.licenseNumber, 50);
+    }
+
+    // Expiry date
+    if (ocrData.expiryDate) {
+      const parts = ocrData.expiryDate.split("-");
+      if (parts.length === 3) {
+        const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        if (!formData.license20ExpiryDate) updates.license20ExpiryDate = formatted;
+        else if (!formData.license21ExpiryDate) updates.license21ExpiryDate = formatted;
+      }
+    }
+
+    // -----------------------------
+    //  🔥 DIRECTLY USE OCR LOCATION
+    // -----------------------------
+    const location = ocrData.locationDetails;
+
+    if (location) {
+      // Build CITIES (flat)
+      const extractedCities = Array.isArray(location.cities)
+        ? location.cities.map(c => ({
           id: c.value,
           name: c.label,
         }))
-      : [];
+        : [];
 
-    // Build STATES (flat)
-    const extractedStates = Array.isArray(location.states)
-      ? location.states.map(s => ({
+      // Build STATES (flat)
+      const extractedStates = Array.isArray(location.states)
+        ? location.states.map(s => ({
           id: s.value,
           name: s.label,
           gstCode: s.gstCode,
         }))
-      : [];
+        : [];
 
-    // Build AREAS (take from first city)
-    let extractedAreas = [];
-    if (
-      Array.isArray(location.cities) &&
-      location.cities.length > 0 &&
-      Array.isArray(location.cities[0].area)
-    ) {
-      extractedAreas = location.cities[0].area.map(a => ({
-        id: a.value,
-        name: a.label,
-        cityId: location.cities[0].value,
-      }));
+      // Build AREAS (take from first city)
+      let extractedAreas = [];
+      if (
+        Array.isArray(location.cities) &&
+        location.cities.length > 0 &&
+        Array.isArray(location.cities[0].area)
+      ) {
+        extractedAreas = location.cities[0].area.map(a => ({
+          id: a.value,
+          name: a.label,
+          cityId: location.cities[0].value,
+        }));
+      }
+
+      // UPDATE STATE VALUES DIRECTLY (NO API CALL)
+      setCities(extractedCities);
+      setStates(extractedStates);
+      setAreas(extractedAreas);
+
+      // Set selected values if not already filled
+      if (extractedCities.length > 0) {
+        updates.city = extractedCities[0].name;
+        updates.cityId = extractedCities[0].id;
+      }
+
+      if (extractedStates.length > 0) {
+        updates.state = extractedStates[0].name;
+        updates.stateId = extractedStates[0].id;
+      }
+
+      if (extractedAreas.length > 0) {
+        updates.area = extractedAreas[0].name;
+        updates.areaId = extractedAreas[0].id;
+      }
     }
 
-    // UPDATE STATE VALUES DIRECTLY (NO API CALL)
-    setCities(extractedCities);
-    setStates(extractedStates);
-    setAreas(extractedAreas);
-
-    // Set selected values if not already filled
-    if (extractedCities.length > 0) {
-      updates.city = extractedCities[0].name;
-      updates.cityId = extractedCities[0].id;
+    // Pincode — use directly, no lookup
+    if (ocrData.Pincode || ocrData.pincode) {
+      updates.pincode = filterForField('pincode', String(ocrData.Pincode || ocrData.pincode), 6);;
     }
 
-    if (extractedStates.length > 0) {
-      updates.state = extractedStates[0].name;
-      updates.stateId = extractedStates[0].id;
+    // Apply updates
+    if (Object.keys(updates).length > 0) {
+      setFormData(prev => ({ ...prev, ...updates }));
+      const clearErrs = {};
+      Object.keys(updates).forEach(k => (clearErrs[k] = null));
+      setErrors(prev => ({ ...prev, ...clearErrs }));
     }
-
-    if (extractedAreas.length > 0) {
-      updates.area = extractedAreas[0].name;
-      updates.areaId = extractedAreas[0].id;
-    }
-  }
-
-  // Pincode — use directly, no lookup
-  if (ocrData.Pincode || ocrData.pincode) {
-    updates.pincode = filterForField('pincode', String(ocrData.Pincode || ocrData.pincode), 6);;
-  }
-
-  // Apply updates
-  if (Object.keys(updates).length > 0) {
-    setFormData(prev => ({ ...prev, ...updates }));
-    const clearErrs = {};
-    Object.keys(updates).forEach(k => (clearErrs[k] = null));
-    setErrors(prev => ({ ...prev, ...clearErrs }));
-  }
-};
+  };
 
 
   // Show loading indicator while fetching customer data
@@ -2063,9 +2043,9 @@ useEffect(() => {
                 error={errors.license21}
               />
 
-            
 
-               <FloatingDateInput
+
+              <FloatingDateInput
                 label="Expiry Date"
                 mandatory={true}
                 value={formData.license21ExpiryDate}
@@ -2121,13 +2101,40 @@ useEffect(() => {
                 )}
               />
 
+              {/* Station code */}
+              <View style={styles.dropdownContainer}>
+                {(formData.stationCode || cities.length > 0) && (
+                  <AppText
+                    style={[styles.floatingLabel, { color: colors.primary }]}
+                  >
+                    Station<AppText style={styles.asteriskPrimary}>*</AppText>
+                  </AppText>
+                )}
+                <TouchableOpacity
+                  style={[styles.dropdown, errors.stationCode && styles.inputError]}
+                  onPress={() => setShowStationModal(true)}
+                >
+                  <View style={styles.inputTextContainer}>
+                    <AppText style={formData.stationCode ? styles.inputText : styles.placeholderText}>
+                      {formData.stationCode || ('Station')}
+                    </AppText>
+                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                  </View>
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
+                </TouchableOpacity>
+
+                {errors.stationCode && (
+                  <AppText style={styles.errorTextDropdown}>{errors.stationCode}</AppText>
+                )}
+              </View>
+
               <AddressInputWithLocation
                 placeholder="Address 1"
                 value={formData.address1}
-                   onChangeText={createFilteredInputHandler('address1', (text) => {
-                               setFormData(prev => ({ ...prev, address1: text }));
-                                setErrors(prev => ({ ...prev, address1: null }));
-                              }, 40)}
+                onChangeText={createFilteredInputHandler('address1', (text) => {
+                  setFormData(prev => ({ ...prev, address1: text }));
+                  setErrors(prev => ({ ...prev, address1: null }));
+                }, 40)}
                 mandatory={true}
                 error={errors.address1}
                 onLocationSelect={async locationData => {
@@ -2659,8 +2666,8 @@ useEffect(() => {
                               selectedHospitals: hospitals,
                             }));
                           },
-                          mappingFor:"PCM",
-                          customerGroupId:formData.customerGroupId
+                          mappingFor: "PCM",
+                          customerGroupId: formData.customerGroupId
                         });
                       }}
                       activeOpacity={0.7}
@@ -2707,8 +2714,8 @@ useEffect(() => {
                               selectedDoctors: selectedDoctors,
                             }));
                           },
-                          mappingFor:"PCM",
-                          customerGroupId:formData.customerGroupId
+                          mappingFor: "PCM",
+                          customerGroupId: formData.customerGroupId
                         });
                       }}
                     >
@@ -2764,11 +2771,11 @@ useEffect(() => {
                     </TouchableOpacity>
                   </>
                 )}
-                   {errors.mapping && (
-                                <AppText style={styles.errorText}>
-                                  {errors.mapping}
-                                </AppText>
-                              )}
+                {errors.mapping && (
+                  <AppText style={styles.errorText}>
+                    {errors.mapping}
+                  </AppText>
+                )}
               </View>
 
               {/* <View style={styles.divider} /> */}
@@ -2876,23 +2883,23 @@ useEffect(() => {
                     placeholder={`Name of the Stockist ${index + 1}`}
                     value={stockist.name}
                     onChangeText={createFilteredInputHandler('nameOfStockist', (text) =>
-                                       handleStockistChange(index, 'name', text), 40
-                                       )}
+                      handleStockistChange(index, 'name', text), 40
+                    )}
                   />
                   <CustomInput
                     placeholder={`Distributor Code`}
                     value={stockist.code}
                     onChangeText={createFilteredInputHandler('distributorCode', (text) =>
-                                     handleStockistChange(index, 'code', text), 20
-                                     )}
+                      handleStockistChange(index, 'code', text), 20
+                    )}
                   />
                   <CustomInput
                     placeholder={`City`}
                     value={stockist.city}
-                 
-                                        onChangeText={createFilteredInputHandler('distributorCity', (text) =>
-                                     handleStockistChange(index, 'city', text), 40
-                                     )}
+
+                    onChangeText={createFilteredInputHandler('distributorCity', (text) =>
+                      handleStockistChange(index, 'city', text), 40
+                    )}
                   />
                 </View>
               ))}
@@ -2980,7 +2987,35 @@ useEffect(() => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-     
+
+
+      <DropdownModal
+        visible={showStationModal}
+        onClose={() => setShowStationModal(false)}
+        title="Select Station"
+        data={
+          loggedInUser?.userDetails?.stationCodes?.map((item) => ({
+            id: item.stationCode,
+            name: item.stationCode,
+          }))
+        }
+        selectedId={formData.stationCode} // <-- match value
+        onSelect={item => {
+
+          console.log(item);
+
+          setFormData({
+            ...formData,
+            stationCode: item.name,  // <-- store directly
+          });
+          setErrors(prev => ({
+            ...prev,
+            stationCode: null,
+          }));
+        }}
+      />
+
+
       <DropdownModal
         visible={showAreaModal}
         onClose={() => setShowAreaModal(false)}
@@ -2989,8 +3024,8 @@ useEffect(() => {
           uploadedAreas && uploadedAreas.length > 0
             ? uploadedAreas
             : Array.isArray(areas)
-            ? areas.map(area => ({ id: area.id, name: area.name }))
-            : []
+              ? areas.map(area => ({ id: area.id, name: area.name }))
+              : []
         }
         selectedId={formData.areaId}
         onSelect={item => {
@@ -3166,9 +3201,9 @@ to Cancel the Onboarding?`}
         </View>
       </Modal>
 
- 
 
-    
+
+
     </SafeAreaView>
   );
 };
@@ -3360,7 +3395,7 @@ const styles = StyleSheet.create({
   errorTextDropdown: {
     color: colors.error,
     fontSize: 12,
-    marginTop:2,
+    marginTop: 2,
     // marginBottom: 12,
     marginLeft: 4,
   },
@@ -3996,7 +4031,7 @@ const styles = StyleSheet.create({
   },
   asteriskPrimary: {
     color: "red",
-    fontSize:16
+    fontSize: 16
   },
 });
 

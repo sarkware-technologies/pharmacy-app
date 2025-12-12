@@ -21,7 +21,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Toast from 'react-native-toast-message';
 import { colors } from '../../../styles/colors';
@@ -88,7 +89,7 @@ const PrivateRegistrationForm = () => {
     isStaging,
   } = route.params || {};
 
-  
+
 
   // Get logged-in user for assign functionality
   const loggedInUser = useSelector(state => state.auth.user);
@@ -128,6 +129,7 @@ const PrivateRegistrationForm = () => {
     cityId: null,
     state: '',
     stateId: null,
+    stationCode: "",
 
     // Security Details
     mobileNumber: '',
@@ -263,6 +265,7 @@ const PrivateRegistrationForm = () => {
   const [showAreaModal, setShowAreaModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showStateModal, setShowStateModal] = useState(false);
+  const [showStationModal, setShowStationModal] = useState(false);
 
   // OTP states
   const [showOTP, setShowOTP] = useState({
@@ -412,22 +415,22 @@ const PrivateRegistrationForm = () => {
 
       // Helper function to find documents by type (handles both string and number doctypeId)
       const findDocByType = (docTypeId, docTypeName) => {
-        return docType.find(d => 
-          String(d.doctypeId) === String(docTypeId) || 
+        return docType.find(d =>
+          String(d.doctypeId) === String(docTypeId) ||
           d.doctypeName === docTypeName ||
           d.doctypeName?.toUpperCase() === docTypeName?.toUpperCase()
         );
       };
 
       // Find license documents (Registration for Private Hospital) - also match by docTypeId
-      const registrationLicense = licenceDetails.licence?.find(l => 
-        l.licenceTypeCode === 'REG' || 
+      const registrationLicense = licenceDetails.licence?.find(l =>
+        l.licenceTypeCode === 'REG' ||
         l.licenceTypeName === 'Registration' ||
         String(l.docTypeId) === '8'
       );
 
       // Find document files - use helper function for robust matching
-      const registrationDoc = findDocByType('8', 'REGISTRATION') || 
+      const registrationDoc = findDocByType('8', 'REGISTRATION') ||
         (registrationLicense?.docTypeId ? findDocByType(String(registrationLicense.docTypeId), 'REGISTRATION') : null);
       const clinicImageDoc = findDocByType('1', 'CLINIC IMAGE');
       const panDoc = findDocByType('7', 'PAN CARD');
@@ -455,8 +458,9 @@ const PrivateRegistrationForm = () => {
           uri: clinicImageDoc.s3Path || '',
           docTypeId: parseInt(clinicImageDoc.doctypeId) || 1,
         } : null,
-        
+
         // General Details
+        stationCode: data.stationCode || '',
         clinicName: generalDetails.customerName || '',
         shortName: generalDetails.shortName || '',
         address1: generalDetails.address1 || '',
@@ -604,6 +608,8 @@ const PrivateRegistrationForm = () => {
         stateId: data.stateId || null,
         ownerName: data.ownerName || '',
         specialist: data.specialist || '',
+        stationCode: data.stationCode || '',
+
 
         // Security details
         mobileNumber: data.mobile || '',
@@ -672,7 +678,7 @@ const PrivateRegistrationForm = () => {
   // Fetch customer details for edit mode and onboard mode (same API)
   const fetchCustomerDetailsForEdit = async () => {
     if (!customerId) return;
-    
+
     setLoadingCustomerData(true);
     try {
       // For onboard mode, always use isStaging = false. For edit mode, use the passed value
@@ -976,7 +982,7 @@ const PrivateRegistrationForm = () => {
 
       if (field === 'mobile') {
         if (!formData.mobileNumber ||
-        !/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
+          !/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
           Toast.show({
             type: 'error',
             text1: 'Invalid Mobile Number',
@@ -985,11 +991,11 @@ const PrivateRegistrationForm = () => {
           });
           return;
         }
-       
+
         requestData.mobile = formData.mobileNumber;
       } else if (field === 'email') {
         if (!formData.emailAddress ||
-      !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress)) {
+          !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress)) {
           Toast.show({
             type: 'error',
             text1: 'Invalid Email',
@@ -1196,6 +1202,9 @@ const PrivateRegistrationForm = () => {
       newErrors.licenseFile = 'Registration Certificate is required';
     }
 
+    if (!formData.stationCode)
+      newErrors.stationCode = 'Station Code is required';
+
     // General Details validation using reusable validation utility
     const clinicNameError = validateField('clinicName', formData.clinicName, true, 'Clinic name is required');
     if (clinicNameError) newErrors.clinicName = clinicNameError;
@@ -1251,7 +1260,7 @@ const PrivateRegistrationForm = () => {
       }
     }
 
-     if (!formData.markAsBuyingEntity && formData.selectedPharmacies.length === 0) {
+    if (!formData.markAsBuyingEntity && formData.selectedPharmacies.length === 0) {
       newErrors.pharmaciesMapping = "Pharmacy mapping is mandatory for non buying entities";
     }
 
@@ -1281,7 +1290,9 @@ const PrivateRegistrationForm = () => {
     else if (formData.gstNumber && formData.gstNumber.trim() != '' && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.gstNumber)) isValid = false;
     else if (!inEditMode && !verificationStatus.mobile) isValid = false;
     else if (!inEditMode && !verificationStatus.email) isValid = false;
-    
+    else if (!formData.stationCode) isValid = false;
+
+
     setIsFormValid(isValid);
   }, [formData, verificationStatus, inEditMode]);
 
@@ -1366,13 +1377,13 @@ const PrivateRegistrationForm = () => {
         // ISO format or Date object
         d = new Date(date);
       }
-      
+
       // Check if date is valid
       if (isNaN(d.getTime())) {
         console.warn('Invalid date for API:', date);
         return null;
       }
-      
+
       // Add time component to avoid timezone issues
       d.setHours(23, 59, 59, 999);
       return d.toISOString();
@@ -1523,6 +1534,7 @@ const PrivateRegistrationForm = () => {
         customerDocs: prepareCustomerDocs(),
         isBuyer: formData.markAsBuyingEntity,
         customerGroupId: getCustomerGroupId(formData.customerGroupId),
+        stationCode: formData.stationCode,
         generalDetails: {
           name: formData.clinicName,
           shortName: formData.shortName || formData.clinicName.substring(0, 10),
@@ -1575,7 +1587,7 @@ const PrivateRegistrationForm = () => {
         isChildCustomer: false,
       };
 
-    
+
 
       // If editing, add the customerId to the payload
       if (isEditMode) {
@@ -1848,7 +1860,7 @@ const PrivateRegistrationForm = () => {
                 }}
                 onOcrDataExtracted={async (ocrData) => {
                   console.log('OCR Data Received:', ocrData);
-                  
+
                   // Helper function to split address
                   const splitAddress = (address) => {
                     if (!address) return { address1: '', address2: '', address3: '' };
@@ -1881,7 +1893,7 @@ const PrivateRegistrationForm = () => {
                     }
                     return { address1: '', address2: '', address3: '' };
                   };
-                  
+
                   const updates = {};
 
                   if (ocrData.hospitalName && !formData.clinicName) {
@@ -1891,7 +1903,7 @@ const PrivateRegistrationForm = () => {
                   if (ocrData.pharmacyName && !formData.clinicName) {
                     updates.clinicName = filterForField('clinicName', ocrData.pharmacyName, 40);
                   }
-                  
+
                   // Split and populate address fields
                   if (ocrData.address) {
                     const addressParts = splitAddress(ocrData.address);
@@ -1905,7 +1917,7 @@ const PrivateRegistrationForm = () => {
                       updates.address3 = filterForField('address3', addressParts.address3, 60);
                     }
                   }
-                  
+
                   if (
                     ocrData.registrationNumber &&
                     !formData.registrationNumber
@@ -1927,7 +1939,7 @@ const PrivateRegistrationForm = () => {
                       // Store expiry date if needed
                     }
                   }
-                  
+
                   // -----------------------------
                   //  🔥 DIRECTLY USE OCR LOCATION
                   // -----------------------------
@@ -1937,18 +1949,18 @@ const PrivateRegistrationForm = () => {
                     // Build CITIES (flat)
                     const extractedCities = Array.isArray(location.cities)
                       ? location.cities.map(c => ({
-                          id: c.value,
-                          name: c.label,
-                        }))
+                        id: c.value,
+                        name: c.label,
+                      }))
                       : [];
 
                     // Build STATES (flat)
                     const extractedStates = Array.isArray(location.states)
                       ? location.states.map(s => ({
-                          id: s.value,
-                          name: s.label,
-                          gstCode: s.gstCode,
-                        }))
+                        id: s.value,
+                        name: s.label,
+                        gstCode: s.gstCode,
+                      }))
                       : [];
 
                     // Build AREAS (take from first city)
@@ -2000,7 +2012,7 @@ const PrivateRegistrationForm = () => {
                     });
                     setErrors(prev => ({ ...prev, ...errorUpdates }));
                   }
-                  
+
                   // Trigger pincode lookup if pincode is available and valid (6 digits) and locationDetails not available
                   if (!location && (ocrData.pincode || ocrData.Pincode) && /^\d{6}$/.test(String(ocrData.pincode || ocrData.Pincode))) {
                     await lookupByPincode(String(ocrData.pincode || ocrData.Pincode));
@@ -2037,7 +2049,7 @@ const PrivateRegistrationForm = () => {
               <AppText style={styles.sectionSubTitle}>
                 Image<AppText style={styles.asteriskRed}>*</AppText>{' '}
                 <Icon
-                  name="information-circle-outline"
+                  name="info-outline"
                   size={16}
                   color="#999"
                 />
@@ -2059,7 +2071,7 @@ const PrivateRegistrationForm = () => {
                 errorMessage={errors.licenseImage}
               />
 
-           
+
             </View>
 
             {/* General Details Section */}
@@ -2087,13 +2099,40 @@ const PrivateRegistrationForm = () => {
                 )}
               />
 
+              {/* Station code */}
+              <View style={styles.dropdownContainer}>
+                {(formData.stationCode || cities.length > 0) && (
+                  <AppText
+                    style={[styles.floatingLabel, { color: colors.primary }]}
+                  >
+                    Station<AppText style={styles.asteriskPrimary}>*</AppText>
+                  </AppText>
+                )}
+                <TouchableOpacity
+                  style={[styles.dropdown, errors.stationCode && styles.inputError]}
+                  onPress={() => setShowStationModal(true)}
+                >
+                  <View style={styles.inputTextContainer}>
+                    <AppText style={formData.stationCode ? styles.inputText : styles.placeholderText}>
+                      {formData.stationCode || ('Station')}
+                    </AppText>
+                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                  </View>
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
+                </TouchableOpacity>
+
+                {errors.stationCode && (
+                  <AppText style={styles.errorTextDropdown}>{errors.stationCode}</AppText>
+                )}
+              </View>
+
               <AddressInputWithLocation
                 placeholder="Address 1"
                 value={formData.address1}
-              onChangeText={createFilteredInputHandler('address1', (text) => {
-                             setFormData(prev => ({ ...prev, address1: text }));
-                              setErrors(prev => ({ ...prev, address1: null }));
-                            }, 40)}
+                onChangeText={createFilteredInputHandler('address1', (text) => {
+                  setFormData(prev => ({ ...prev, address1: text }));
+                  setErrors(prev => ({ ...prev, address1: null }));
+                }, 40)}
                 mandatory={true}
                 error={errors.address1}
                 onLocationSelect={async locationData => {
@@ -2215,7 +2254,7 @@ const PrivateRegistrationForm = () => {
                     </AppText>
                     <AppText style={styles.inlineAsterisk}>*</AppText>
                   </View>
-                  <ArrowDown color="#999" />
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.area && (
                   <AppText style={styles.errorTextDropdown}>{errors.area}</AppText>
@@ -2249,7 +2288,7 @@ const PrivateRegistrationForm = () => {
                     </AppText>
                     <AppText style={styles.inlineAsterisk}>*</AppText>
                   </View>
-                  <ArrowDown color="#999" />
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.cityId && (
                   <AppText style={styles.errorTextDropdown}>{errors.cityId}</AppText>
@@ -2283,7 +2322,7 @@ const PrivateRegistrationForm = () => {
                     </AppText>
                     <AppText style={styles.inlineAsterisk}>*</AppText>
                   </View>
-                  <ArrowDown color="#999" />
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
                 {errors.stateId && (
                   <AppText style={styles.errorTextDropdown}>{errors.stateId}</AppText>
@@ -2550,7 +2589,7 @@ const PrivateRegistrationForm = () => {
                 }}
               />
 
-    
+
 
               <CustomInput
                 placeholder="GST number"
@@ -2634,7 +2673,7 @@ const PrivateRegistrationForm = () => {
                   <AppText style={styles.checkboxLabel}>
                     Group Corporate Hospital
                     <Icon
-                      name="information-circle-outline"
+                      name="info-outline"
                       size={16}
                       color="#999"
                     />
@@ -2656,8 +2695,8 @@ const PrivateRegistrationForm = () => {
                               selectedHospitals: hospitals,
                             }));
                           },
-                          mappingFor:"HOSP",
-                          subCategoryCode:["PGH"]
+                          mappingFor: "HOSP",
+                          subCategoryCode: ["PGH"]
                         });
                       }}
                       activeOpacity={0.7}
@@ -2715,7 +2754,7 @@ const PrivateRegistrationForm = () => {
                   <AppText style={styles.checkboxLabel}>
                     Pharmacy
                     <Icon
-                      name="information-circle-outline"
+                      name="info-outline"
                       size={16}
                       color="#999"
                     />
@@ -2737,12 +2776,12 @@ const PrivateRegistrationForm = () => {
                             selectedPharmacies: pharmacies,
                           }));
                         },
-                        customerGroupId:formData.customerGroupId,
-                        mappingFor:"HOSP"
+                        customerGroupId: formData.customerGroupId,
+                        mappingFor: "HOSP"
                       });
                     }
-                    
-                  }
+
+                    }
                     activeOpacity={0.7}
                   >
                     <AppText style={styles.selectorPlaceholder}>
@@ -2764,7 +2803,7 @@ const PrivateRegistrationForm = () => {
                           key={pharmacy.id || index}
                           style={styles.selectedItemChip}
                         >
-                          <AppText style={{ color: '#333'} }>{pharmacy.name} </AppText>
+                          <AppText style={{ color: '#333' }}>{pharmacy.name} </AppText>
                           <TouchableOpacity
                             onPress={() => {
                               setFormData(prev => ({
@@ -2793,13 +2832,13 @@ const PrivateRegistrationForm = () => {
                   </TouchableOpacity>
                 </>
               )}
-               {errors.pharmaciesMapping && (
-                              <AppText style={styles.errorText}>
-                                {errors.pharmaciesMapping}
-                              </AppText>
-                            )}
+              {errors.pharmaciesMapping && (
+                <AppText style={styles.errorText}>
+                  {errors.pharmaciesMapping}
+                </AppText>
+              )}
 
-                            {console.log(formData)}
+              {console.log(formData)}
 
               {/* <View style={styles.divider} /> */}
               <View style={styles.customerGroupContainer}>
@@ -3013,7 +3052,7 @@ const PrivateRegistrationForm = () => {
         visible={showHospitalModal}
         mappingName={formData.clinicName}
         mappingLabel="Private Hospital"
-        
+
         onClose={() => setShowHospitalModal(false)}
         onSubmit={hospital => {
           setFormData(prev => ({
@@ -3028,7 +3067,7 @@ const PrivateRegistrationForm = () => {
       <AddNewPharmacyModal
         visible={showPharmacyModal}
         onClose={() => setShowPharmacyModal(false)}
-         mappingName={formData.clinicName}
+        mappingName={formData.clinicName}
         mappingLabel="Private Hospital"
         onSubmit={pharmacy => {
           console.log('=== Pharmacy Response from AddNewPharmacyModal ===');
@@ -3080,6 +3119,32 @@ const PrivateRegistrationForm = () => {
       /> */}
 
       {/* Dropdown Modals */}
+
+      <DropdownModal
+        visible={showStationModal}
+        onClose={() => setShowStationModal(false)}
+        title="Select Station"
+        data={
+          loggedInUser?.userDetails?.stationCodes?.map((item) => ({
+            id: item.stationCode,
+            name: item.stationCode,
+          }))
+        }
+        selectedId={formData.stationCode} // <-- match value
+        onSelect={item => {
+
+          console.log(item);
+
+          setFormData({
+            ...formData,
+            stationCode: item.name,  // <-- store directly
+          });
+          setErrors(prev => ({
+            ...prev,
+            stationCode: null,
+          }));
+        }}
+      />
       <DropdownModal
         visible={showAreaModal}
         onClose={() => setShowAreaModal(false)}
@@ -3088,8 +3153,8 @@ const PrivateRegistrationForm = () => {
           uploadedAreas && uploadedAreas.length > 0
             ? uploadedAreas
             : Array.isArray(areas)
-            ? areas.map(area => ({ id: area.id, name: area.name }))
-            : []
+              ? areas.map(area => ({ id: area.id, name: area.name }))
+              : []
         }
         selectedId={formData.areaId}
         onSelect={item => {
@@ -3102,7 +3167,7 @@ const PrivateRegistrationForm = () => {
         }}
         loading={pincodeLoading}
       />
-     
+
 
       {/* City Dropdown Modal */}
       <DropdownModal
@@ -3122,7 +3187,7 @@ const PrivateRegistrationForm = () => {
         loading={false}
       />
 
-       {/* Dropdown Modals */}
+      {/* Dropdown Modals */}
       <DropdownModal
         visible={showStateModal}
         onClose={() => setShowStateModal(false)}
@@ -4227,7 +4292,7 @@ const styles = StyleSheet.create({
   },
   asteriskPrimary: {
     color: "red",
-    fontSize:16
+    fontSize: 16
   },
   radioButtonContainer: {
     flexDirection: 'row',
