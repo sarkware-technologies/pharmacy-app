@@ -4909,7 +4909,7 @@ const styles = StyleSheet.create({
 },
 
 hierarchyHeaderLeft: {
-  flex: 7,              // ✅ 70%
+  flex: 6.5,              // ✅ 70%
   fontSize: 12,
   fontWeight: '500',
   color: '#666',
