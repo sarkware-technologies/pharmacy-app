@@ -39,7 +39,8 @@ export const customerAPI = {
         stateIds=[],
         isStaging = false, // NEW: Flag to determine which endpoint to use
         sortBy = '',
-        sortDirection = 'ASC'
+        sortDirection = 'ASC',
+        filter = ''
     } = {}) => {
         try {
             // Build request body with all required fields (matching curl format)
@@ -59,11 +60,22 @@ export const customerAPI = {
             if (statusCode) requestBody.statusCode = statusCode;
             if (cityIds && cityIds.length > 0) requestBody.cityIds = cityIds;
             if (stateIds && stateIds.length > 0) requestBody.stateIds = stateIds;
+            // Always include filter if provided (for waitingForApproval tab filtering)
+            if (filter !== undefined && filter !== null) {
+                requestBody.filter = filter;
+            }
 
             // Use staging endpoint for staging requests, main endpoint otherwise
             const endpoint = isStaging 
                 ? '/user-management/customer/customers-list/staging'
                 : '/user-management/customer/customers-list';
+
+            console.log('📤 API Request:', {
+                endpoint,
+                filter: requestBody.filter,
+                isStaging,
+                statusIds: requestBody.statusIds
+            });
 
             const response = await apiClient.post(endpoint, requestBody);
             return response;

@@ -124,6 +124,7 @@ const CustomerList = ({ navigation }) => {
   }, [tabCounts]);
 
   const [activeTab, setActiveTab] = useState('all');
+  const [activeFilterButton, setActiveFilterButton] = useState('newCustomer');
   const [searchText, setSearchText] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [downloadModalVisible, setDownloadModalVisible] = useState(false);
@@ -145,8 +146,7 @@ const CustomerList = ({ navigation }) => {
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState(null);
   const [workflowTimelineVisible, setWorkflowTimelineVisible] = useState(false);
-  const [workflowData, setWorkflowData] = useState(null);
-  const [workflowLoading, setWorkflowLoading] = useState(false);
+  const [selectedCustomerForWorkflow, setSelectedCustomerForWorkflow] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
@@ -174,6 +174,10 @@ const CustomerList = ({ navigation }) => {
   const tabRefs = useRef({});
   const isHardRefreshRef = useRef(false); // Track if we're doing a hard refresh
   const currentTabForDataRef = useRef(activeTab); // Track which tab's data is currently displayed
+  
+  // Filter buttons scroll ref for "waiting for approval" tab
+  const filterButtonsScrollRef = useRef(null);
+  const filterButtonRefs = useRef({});
 
   // No client-side filtering - API handles filtering based on statusIds
   // Don't show customers if:
@@ -191,6 +195,17 @@ const CustomerList = ({ navigation }) => {
       'rejected': [6]
     };
     return statusMap[tab] || [0];
+  };
+
+  // Map filter button to filter value for API
+  const getFilterValue = (filterButton) => {
+    const filterMap = {
+      'newCustomer': 'NEW',
+      'customerGroupChange': 'GROUP_CHANGED',
+      'editCustomer': 'EDITED',
+      'existingCustomer': 'EXISTING'
+    };
+    return filterMap[filterButton] || 'NEW';
   };
 
   // Fetch tab counts on component mount
@@ -238,6 +253,11 @@ const CustomerList = ({ navigation }) => {
           sortBy: '',
           sortDirection: 'ASC'
         };
+        // Add filter for waitingForApproval tab
+        if (activeTab === 'waitingForApproval') {
+          payload.filter = getFilterValue(activeFilterButton);
+          console.log(`🔍 Filter value for ${activeTab}:`, payload.filter, 'from button:', activeFilterButton);
+        }
         console.log(`🔍 ${activeTab} tab API payload (staging):`, JSON.stringify(payload, null, 2));
         dispatch(fetchCustomersList(payload));
       } else {
@@ -273,7 +293,7 @@ const CustomerList = ({ navigation }) => {
       // Reset the ref after skipping
       isHardRefreshRef.current = false;
     }
-  }, [activeTab, dispatch]); // Only trigger on tab change
+  }, [activeTab, activeFilterButton, dispatch]); // Trigger on tab change or filter button change
 
   // Update the ref when new data arrives for the current tab
   useEffect(() => {
@@ -429,7 +449,7 @@ const CustomerList = ({ navigation }) => {
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
         // Waiting for Approval and Rejected - staging endpoint
         const statusIds = getStatusIdsForTab(activeTab);
-        dispatch(fetchCustomersList({
+        const payload = {
           page: 1,
           limit: 10,
           searchText: searchText,
@@ -441,7 +461,12 @@ const CustomerList = ({ navigation }) => {
           isLoadMore: false,
           isStaging: true,
           statusIds: statusIds
-        }));
+        };
+        // Add filter for waitingForApproval tab
+        if (activeTab === 'waitingForApproval') {
+          payload.filter = getFilterValue(activeFilterButton);
+        }
+        dispatch(fetchCustomersList(payload));
       } else {
         const statusIds = getStatusIdsForTab(activeTab);
         dispatch(fetchCustomersList({
@@ -481,14 +506,19 @@ const CustomerList = ({ navigation }) => {
     } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
       // Waiting for Approval and Rejected - staging endpoint
       const statusIds = getStatusIdsForTab(activeTab);
-      await dispatch(fetchCustomersList({
+      const payload = {
         page: 1,
         limit: 10,
         ...filters,
         isLoadMore: false,
         isStaging: true,
         statusIds: statusIds
-      }));
+      };
+      // Add filter for waitingForApproval tab
+      if (activeTab === 'waitingForApproval') {
+        payload.filter = getFilterValue(activeFilterButton);
+      }
+      await dispatch(fetchCustomersList(payload));
     } else {
       // Not Onboarded and Unverified - regular endpoint with statusIds
       const statusIds = getStatusIdsForTab(activeTab);
@@ -531,6 +561,10 @@ const CustomerList = ({ navigation }) => {
         isStaging: true,
         statusIds: statusIds
       };
+      // Add filter for waitingForApproval tab
+      if (activeTab === 'waitingForApproval') {
+        requestParams.filter = getFilterValue(activeFilterButton);
+      }
     } else {
       const statusIds = getStatusIdsForTab(activeTab);
       requestParams = {
@@ -553,54 +587,18 @@ const CustomerList = ({ navigation }) => {
     }
   };
 
-  // Handle workflow timeline fetch
-  const handleViewWorkflowTimeline = async (customerId, customerName, customerType) => {
-    try {
-      setWorkflowLoading(true);
-      setWorkflowTimelineVisible(true);
-      
-      const response = await customerAPI.getWorkflowProgression([customerId]);
-      console.log('📊 Workflow API Response:', JSON.stringify(response, null, 2));
-      
-      // Handle response structure
-      // API returns: { status: "success", message: "...", data: [{ workflow }] }
-      // apiClient.post returns the parsed JSON directly, so response = { status, message, data: [...] }
-      // response.data is the array of workflows: [{ instanceId, workflowStatus, progressions, ... }]
-      if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
-        const workflow = response.data[0];
-        console.log('✅ Extracted workflow:', {
-          instanceId: workflow.instanceId,
-          workflowStatus: workflow.workflowStatus,
-          progressionsCount: workflow.progressions?.length || 0,
-          approversCount: workflow.progressions?.[0]?.approvers?.length || 0
-        });
-        
-        // Spread the workflow object and add customer info
-        setWorkflowData({
-          ...workflow, // Spread workflow object: { instanceId, workflowStatus, progressions, ... }
-          customerName,
-          customerType
-        });
-      } else {
-        console.log('❌ No workflow data found in response');
-        setWorkflowData(null);
-        Toast.show({
-          type: 'info',
-          text1: 'No workflow data',
-          text2: 'Workflow progression data is not available for this customer.',
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching workflow progression:', error);
-      setWorkflowData(null);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: error.message || 'Failed to fetch workflow progression',
-      });
-    } finally {
-      setWorkflowLoading(false);
-    }
+  // Handle workflow timeline - just open modal with customer info
+  // The modal will fetch the data internally
+  const handleViewWorkflowTimeline = (stageId, customerName, customerType) => {
+    console.log('🔍 handleViewWorkflowTimeline called with:', { stageId, customerName, customerType });
+    console.log('🔍 stageId type:', Array.isArray(stageId) ? 'array' : typeof stageId, 'value:', stageId);
+    setSelectedCustomerForWorkflow({
+      stageId,
+      customerName,
+      customerType
+    });
+    setWorkflowTimelineVisible(true);
+    console.log('✅ Modal visibility set to true, stageId[0] will be:', stageId?.[0]);
   };
 
   // Footer component for loading indicator
@@ -666,6 +664,35 @@ const CustomerList = ({ navigation }) => {
           },
           () => {
             console.log('measureLayout failed');
+          }
+        );
+      }
+    }, 100);
+  };
+
+  // Handle filter button press with centering
+  const handleFilterButtonPress = (buttonName) => {
+    // Reset the list when filter button changes
+    dispatch(resetCustomersList());
+    setActiveFilterButton(buttonName);
+
+    // Scroll the button into visible area after a small delay
+    setTimeout(() => {
+      if (filterButtonRefs.current[buttonName] && filterButtonsScrollRef.current) {
+        filterButtonRefs.current[buttonName].measureLayout(
+          filterButtonsScrollRef.current.getNode ? filterButtonsScrollRef.current.getNode() : filterButtonsScrollRef.current,
+          (x, y, w, h) => {
+            const screenWidth = Dimensions.get('window').width;
+            // Center the button in the screen
+            const scrollX = x - (screenWidth / 2) + (w / 2);
+
+            filterButtonsScrollRef.current?.scrollTo({
+              x: Math.max(0, scrollX),
+              animated: true
+            });
+          },
+          () => {
+            console.log('measureLayout failed for filter button');
           }
         );
       }
@@ -809,13 +836,18 @@ const CustomerList = ({ navigation }) => {
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
         const statusIds = getStatusIdsForTab(activeTab);
-        dispatch(fetchCustomersList({
+        const payload = {
           page: 1,
           limit: pagination.limit,
           searchText: filters.searchText,
           isStaging: true,
           statusIds: statusIds
-        }));
+        };
+        // Add filter for waitingForApproval tab
+        if (activeTab === 'waitingForApproval') {
+          payload.filter = getFilterValue(activeFilterButton);
+        }
+        dispatch(fetchCustomersList(payload));
       } else {
         const statusIds = getStatusIdsForTab(activeTab);
         dispatch(fetchCustomersList({
@@ -884,13 +916,18 @@ const CustomerList = ({ navigation }) => {
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
         const statusIds = getStatusIdsForTab(activeTab);
-        dispatch(fetchCustomersList({
+        const payload = {
           page: 1,
           limit: pagination.limit,
           searchText: filters.searchText,
           isStaging: true,
           statusIds: statusIds
-        }));
+        };
+        // Add filter for waitingForApproval tab
+        if (activeTab === 'waitingForApproval') {
+          payload.filter = getFilterValue(activeFilterButton);
+        }
+        dispatch(fetchCustomersList(payload));
       } else {
         const statusIds = getStatusIdsForTab(activeTab);
         dispatch(fetchCustomersList({
@@ -934,13 +971,18 @@ const CustomerList = ({ navigation }) => {
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
         const statusIds = getStatusIdsForTab(activeTab);
-        dispatch(fetchCustomersList({
+        const payload = {
           page: 1,
           limit: pagination.limit,
           searchText: filters.searchText,
           isStaging: true,
           statusIds: statusIds
-        }));
+        };
+        // Add filter for waitingForApproval tab
+        if (activeTab === 'waitingForApproval') {
+          payload.filter = getFilterValue(activeFilterButton);
+        }
+        dispatch(fetchCustomersList(payload));
       } else {
         const statusIds = getStatusIdsForTab(activeTab);
         dispatch(fetchCustomersList({
@@ -985,13 +1027,18 @@ const CustomerList = ({ navigation }) => {
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
         const statusIds = getStatusIdsForTab(activeTab);
-        dispatch(fetchCustomersList({
+        const payload = {
           page: 1,
           limit: pagination.limit,
           searchText: filters.searchText,
           isStaging: true,
           statusIds: statusIds
-        }));
+        };
+        // Add filter for waitingForApproval tab
+        if (activeTab === 'waitingForApproval') {
+          payload.filter = getFilterValue(activeFilterButton);
+        }
+        dispatch(fetchCustomersList(payload));
       } else {
         const statusIds = getStatusIdsForTab(activeTab);
         dispatch(fetchCustomersList({
@@ -1176,11 +1223,16 @@ const CustomerList = ({ navigation }) => {
       }));
     } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
       const tabStatusIds = getStatusIdsForTab(activeTab);
-      dispatch(fetchCustomersList({
+      const payload = {
         ...filterParams,
         isStaging: true,
         statusIds: tabStatusIds
-      }));
+      };
+      // Add filter for waitingForApproval tab
+      if (activeTab === 'waitingForApproval') {
+        payload.filter = getFilterValue(activeFilterButton);
+      }
+      dispatch(fetchCustomersList(payload));
     } else {
       const tabStatusIds = getStatusIdsForTab(activeTab);
       dispatch(fetchCustomersList({
@@ -1324,13 +1376,22 @@ const CustomerList = ({ navigation }) => {
           <View style={styles.statusRow}>
             <TouchableOpacity
               onPress={() => {
-                const customerId = item.customerId || item.stgCustomerId;
-                if (customerId) {
+                // stageId is always an array, get the first element
+                const stageId = item.stageId && Array.isArray(item.stageId) ? item.stageId : null;
+                console.log('🔍 Clicked status badge - stageId:', stageId, 'item:', item);
+                if (stageId && stageId.length > 0) {
                   handleViewWorkflowTimeline(
-                    customerId,
+                    stageId,
                     item.customerName,
                     item.customerType
                   );
+                } else {
+                  console.warn('⚠️ No stageId found for item:', item);
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: 'Customer ID not available',
+                  });
                 }
               }}
               activeOpacity={0.7}
@@ -1718,6 +1779,87 @@ const CustomerList = ({ navigation }) => {
           </TouchableOpacity>
         </ScrollView>
 
+        {/* Filter Buttons for Waiting for Approval Tab */}
+        {activeTab === 'waitingForApproval' && (
+          <ScrollView
+            ref={filterButtonsScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterButtonsContainer}
+            contentContainerStyle={styles.filterButtonsContent}
+            scrollEventThrottle={16}
+          >
+            <TouchableOpacity
+              ref={(ref) => filterButtonRefs.current['newCustomer'] = ref}
+              style={[
+                styles.filterButtonItem,
+                activeFilterButton === 'newCustomer' && styles.activeFilterButton
+              ]}
+              onPress={() => handleFilterButtonPress('newCustomer')}
+            >
+              <AppText
+                style={[
+                  styles.filterButtonText,
+                  activeFilterButton === 'newCustomer' && styles.activeFilterButtonText
+                ]}
+              >
+                New customer
+              </AppText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              ref={(ref) => filterButtonRefs.current['customerGroupChange'] = ref}
+              style={[
+                styles.filterButtonItem,
+                activeFilterButton === 'customerGroupChange' && styles.activeFilterButton
+              ]}
+              onPress={() => handleFilterButtonPress('customerGroupChange')}
+            >
+              <AppText
+                style={[
+                  styles.filterButtonText,
+                  activeFilterButton === 'customerGroupChange' && styles.activeFilterButtonText
+                ]}
+              >
+                Customer group change
+              </AppText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              ref={(ref) => filterButtonRefs.current['editCustomer'] = ref}
+              style={[
+                styles.filterButtonItem,
+                activeFilterButton === 'editCustomer' && styles.activeFilterButton
+              ]}
+              onPress={() => handleFilterButtonPress('editCustomer')}
+            >
+              <AppText
+                style={[
+                  styles.filterButtonText,
+                  activeFilterButton === 'editCustomer' && styles.activeFilterButtonText
+                ]}
+              >
+                Edit customer
+              </AppText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              ref={(ref) => filterButtonRefs.current['existingCustomer'] = ref}
+              style={[
+                styles.filterButtonItem,
+                activeFilterButton === 'existingCustomer' && styles.activeFilterButton
+              ]}
+              onPress={() => handleFilterButtonPress('existingCustomer')}
+            >
+              <AppText
+                style={[
+                  styles.filterButtonText,
+                  activeFilterButton === 'existingCustomer' && styles.activeFilterButtonText
+                ]}
+              >
+                Existing customer
+              </AppText>
+            </TouchableOpacity>
+          </ScrollView>
+        )}
+
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <TouchableOpacity
@@ -1855,12 +1997,11 @@ const CustomerList = ({ navigation }) => {
           visible={workflowTimelineVisible}
           onClose={() => {
             setWorkflowTimelineVisible(false);
-            setWorkflowData(null);
+            setSelectedCustomerForWorkflow(null);
           }}
-          workflowData={workflowData}
-          loading={workflowLoading}
-          customerName={workflowData?.customerName}
-          customerType={workflowData?.customerType}
+          stageId={selectedCustomerForWorkflow?.stageId?.[0] || null}
+          customerName={selectedCustomerForWorkflow?.customerName}
+          customerType={selectedCustomerForWorkflow?.customerType}
         />
 
         {/* Toast Notification */}
@@ -1947,6 +2088,47 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: colors.primary,
+    fontWeight: '600',
+  },
+  filterButtonsContainer: {
+    backgroundColor: '#F8F9FA',
+    paddingVertical: 30,
+    height: 48,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+  filterButtonsContent: {
+    paddingRight: 16,
+    alignItems: 'center',
+  },
+  filterButtonItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 0,
+    borderRadius: 8,
+    height: 40,
+    marginRight: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    minWidth: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeFilterButton: {
+    backgroundColor: '#FFF2E6',
+    borderColor: '#FB923C',
+    borderWidth: 1,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  activeFilterButtonText: {
+    color: '#333',
     fontWeight: '600',
   },
   searchContainer: {

@@ -46,6 +46,7 @@ import EyeOpen from '../../../components/icons/EyeOpen';
 import ChevronRight from '../../../components/icons/ChevronRight';
 import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModal';
 import RejectCustomerModal from '../../../components/modals/RejectCustomerModal';
+import WorkflowTimelineModal from '../../../components/modals/WorkflowTimelineModal';
 
 const CustomerSearch = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -77,6 +78,10 @@ const CustomerSearch = ({ navigation }) => {
   
   // Block/Unblock state
   const [blockUnblockLoading, setBlockUnblockLoading] = useState(false);
+
+  // Workflow timeline modal state
+  const [workflowTimelineVisible, setWorkflowTimelineVisible] = useState(false);
+  const [selectedCustomerForWorkflow, setSelectedCustomerForWorkflow] = useState(null);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -500,6 +505,20 @@ const CustomerSearch = ({ navigation }) => {
   };
 
   // Handle unblock customer
+  // Handle workflow timeline - just open modal with customer info
+  // The modal will fetch the data internally
+  const handleViewWorkflowTimeline = (stageId, customerName, customerType) => {
+    console.log('🔍 handleViewWorkflowTimeline called with:', { stageId, customerName, customerType });
+    console.log('🔍 stageId type:', Array.isArray(stageId) ? 'array' : typeof stageId, 'value:', stageId);
+    setSelectedCustomerForWorkflow({
+      stageId,
+      customerName,
+      customerType
+    });
+    setWorkflowTimelineVisible(true);
+    console.log('✅ Modal visibility set to true, stageId[0] will be:', stageId?.[0]);
+  };
+
   const handleUnblockCustomer = async (customer) => {
     try {
       setBlockUnblockLoading(true);
@@ -555,12 +574,12 @@ const CustomerSearch = ({ navigation }) => {
           },
         ]}
       >
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
-        >
           <View style={styles.customerHeader}>
-            <View style={styles.customerNameRow}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
+              style={styles.customerNameRow}
+            >
               <AppText
                 style={styles.customerName}
                 numberOfLines={1}
@@ -573,7 +592,7 @@ const CustomerSearch = ({ navigation }) => {
                 color={colors.primary}
                 style={{ marginLeft: 6 }}
               />
-            </View>
+            </TouchableOpacity>
             <View style={styles.actionsContainer}>
               {item.statusName === 'NOT-ONBOARDED' && (
                 <TouchableOpacity
@@ -661,11 +680,33 @@ const CustomerSearch = ({ navigation }) => {
           </View>
 
           <View style={styles.statusRow}>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
-              <AppText style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
-                {item.statusName}
-              </AppText>
-            </View>
+            <TouchableOpacity
+              onPress={() => {
+                // stageId is always an array, get the first element
+                const stageId = item.stageId && Array.isArray(item.stageId) ? item.stageId : null;
+                if (stageId && stageId.length > 0) {
+                  handleViewWorkflowTimeline(
+                    stageId,
+                    item.customerName,
+                    item.customerType
+                  );
+                } else {
+                  console.warn('⚠️ No stageId found for item:', item);
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: 'Customer ID not available',
+                  });
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
+                <AppText style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
+                  {item.statusName}
+                </AppText>
+              </View>
+            </TouchableOpacity>
             {item.statusName === 'LOCKED' ? (
               <TouchableOpacity
                 style={styles.unlockButton}
@@ -721,7 +762,6 @@ const CustomerSearch = ({ navigation }) => {
               </TouchableOpacity>
             ) : null}
           </View>
-        </TouchableOpacity>
       </Animated.View>
     );
   };
@@ -1065,6 +1105,17 @@ const CustomerSearch = ({ navigation }) => {
         }}
         onConfirm={handleRejectConfirm}
         customerName={selectedCustomerForAction?.customerName}
+      />
+
+      <WorkflowTimelineModal
+        visible={workflowTimelineVisible}
+        onClose={() => {
+          setWorkflowTimelineVisible(false);
+          setSelectedCustomerForWorkflow(null);
+        }}
+        stageId={selectedCustomerForWorkflow?.stageId?.[0] || null}
+        customerName={selectedCustomerForWorkflow?.customerName}
+        customerType={selectedCustomerForWorkflow?.customerType}
       />
     </SafeAreaView>
   );
