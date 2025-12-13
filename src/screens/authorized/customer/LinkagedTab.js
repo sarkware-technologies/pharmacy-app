@@ -112,7 +112,7 @@ export const LinkagedTab = ({
   mappingData = null,
   hasApprovePermission = false,
   isCustomerActive = false,
-  customerRequestedDivisions =[]
+  customerRequestedDivisions = []
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('divisions');
   const [activeDistributorTab, setActiveDistributorTab] = useState('preferred');
@@ -237,6 +237,9 @@ export const LinkagedTab = ({
   const tabScrollRef = useRef(null);
   const tabRefs = useRef({});
 
+  const distributorTabScrollRef = useRef(null);
+  const distributorTabRefs = useRef({});
+
   // Show toast notification
   const showToast = (message, type = 'success') => {
     setToastMessage(message);
@@ -276,6 +279,36 @@ export const LinkagedTab = ({
       }
     }, 100);
   };
+
+  const handleDistributorTabPress = tabName => {
+    setActiveDistributorTab(tabName);
+
+    setTimeout(() => {
+      if (
+        distributorTabRefs.current[tabName] &&
+        distributorTabScrollRef.current
+      ) {
+        distributorTabRefs.current[tabName].measureLayout(
+          distributorTabScrollRef.current.getNode
+            ? distributorTabScrollRef.current.getNode()
+            : distributorTabScrollRef.current,
+          (x, y, w, h) => {
+            const screenWidth = Dimensions.get('window').width;
+            const scrollX = x - screenWidth / 2 + w / 2;
+
+            distributorTabScrollRef.current.scrollTo({
+              x: Math.max(0, scrollX),
+              animated: true,
+            });
+          },
+          () => {
+            console.log('Distributor tab measure failed');
+          },
+        );
+      }
+    }, 100);
+  };
+
 
   // derived local filter for Preferred Distributors (client-side search)
   const filteredPreferredDistributors = useMemo(() => {
@@ -1124,541 +1157,81 @@ export const LinkagedTab = ({
   const renderDistributorsTab = () => (
     <View style={styles.tabContent}>
       {/* Sub tabs for Preferred and All Distributors */}
-      <View style={styles.distributorTabs}>
-        <TouchableOpacity
-          style={[
-            styles.distributorTab,
-            activeDistributorTab === 'preferred' && styles.activeDistributorTab,
-          ]}
-          onPress={() => setActiveDistributorTab('preferred')}
+      {/* <View style={styles.distributorTabs}> */}
+
+      <View style={styles.subTabsWrapper}>
+
+        <ScrollView
+          horizontal
+          ref={distributorTabScrollRef}
+          showsHorizontalScrollIndicator={false}
+          style={styles.subTabsContainer}
+          scrollEventThrottle={16}
         >
-          <AppText
+
+          <TouchableOpacity
+            ref={ref => (distributorTabRefs.current['preferred'] = ref)}
             style={[
-              styles.distributorTabText,
-              activeDistributorTab === 'preferred' &&
-              styles.activeDistributorTabText,
+              styles.distributorTab,
+              activeDistributorTab === 'preferred' && styles.activeDistributorTab,
             ]}
+            onPress={() => handleDistributorTabPress('preferred')}
           >
-            Preferred Distributors
-          </AppText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.distributorTab,
-            activeDistributorTab === 'all' && styles.activeDistributorTab,
-          ]}
-          onPress={() => setActiveDistributorTab('all')}
-        >
-          <AppText
+            <AppText
+              style={[
+                styles.distributorTabText,
+                activeDistributorTab === 'preferred' &&
+                styles.activeDistributorTabText,
+              ]}
+            >
+              Preferred Distributors
+            </AppText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            ref={ref => (distributorTabRefs.current['all'] = ref)}
             style={[
-              styles.distributorTabText,
-              activeDistributorTab === 'all' && styles.activeDistributorTabText,
+              styles.distributorTab,
+              activeDistributorTab === 'all' && styles.activeDistributorTab,
             ]}
+            onPress={() => handleDistributorTabPress('all')}
           >
-            All Distributors
-          </AppText>
-        </TouchableOpacity>
+            <AppText
+              style={[
+                styles.distributorTabText,
+                activeDistributorTab === 'all' &&
+                styles.activeDistributorTabText,
+              ]}
+            >
+              All Distributors
+            </AppText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            ref={ref => (distributorTabRefs.current['linked'] = ref)}
+            style={[
+              styles.distributorTab,
+              activeDistributorTab === 'linked' && styles.activeDistributorTab,
+            ]}
+            onPress={() => handleDistributorTabPress('linked')}
+          >
+            <AppText
+              style={[
+                styles.distributorTabText,
+                activeDistributorTab === 'linked' &&
+                styles.activeDistributorTabText,
+              ]}
+            >
+              Linked Distributors
+            </AppText>
+          </TouchableOpacity>
+        </ScrollView>
+
       </View>
 
-      {activeDistributorTab === 'preferred' ? (
-        preferredViewMode === 'selection' ? (
-          // Selection Mode
-          <View style={styles.preferredSelectionContainer}>
-            {/* Suggested Stockist Header */}
-            <View style={styles.suggestedSection}>
-              <AppText style={styles.suggestedTitle}>
-                Suggested Stockist by MR
-              </AppText>
-              <TouchableOpacity style={styles.infoIcon}>
-                <Icon name="information-outline" size={20} color="#333" />
-              </TouchableOpacity>
-            </View>
 
-            {/* Filters */}
-            <View style={styles.preferredFiltersRow}>
-              <TouchableOpacity
-                style={styles.preferredFilterDropdown}
-                onPress={() => setShowFilterModal(true)}
-              >
-                <AppText style={styles.preferredFilterText}>
-                  {distributorFilters.state.length > 0 &&
-                    !distributorFilters.state.includes('All')
-                    ? `State (${distributorFilters.state.length})`
-                    : 'State'}
-                </AppText>
-                <IconMaterial
-                  name="keyboard-arrow-down"
-                  size={20}
-                  color="#999"
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.preferredFilterDropdown}
-                onPress={() => setShowFilterModal(true)}
-              >
-                <AppText style={styles.preferredFilterText}>
-                  {distributorFilters.city.length > 0 &&
-                    !distributorFilters.city.includes('All')
-                    ? `City (${distributorFilters.city.length})`
-                    : 'City'}
-                </AppText>
-                <IconMaterial
-                  name="keyboard-arrow-down"
-                  size={20}
-                  color="#999"
-                />
-              </TouchableOpacity>
-            </View>
 
-            {/* Search */}
-            <View style={styles.preferredSearchContainer}>
-              <IconFeather name="search" size={20} color="#999" />
-              <AppInput
-                style={styles.searchInput}
-                placeholder="Search hospital/code here"
-                placeholderTextColor="#999"
-                value={preferredSearchText}
-                onChangeText={setPreferredSearchText}
-              />
-            </View>
-
-            {/* Table Header */}
-            <View style={styles.preferredTableHeader}>
-              <View style={styles.preferredCheckboxHeader}>
-                <View style={styles.preferredCheckboxPlaceholder} />
-              </View>
-              <AppText style={[styles.preferredHeaderText, { flex: 1 }]}>
-                Distributor Details
-              </AppText>
-              <AppText
-                style={[
-                  styles.preferredHeaderText,
-                  { flex: 1, textAlign: 'right' },
-                ]}
-              >
-                Stockist Type
-              </AppText>
-            </View>
-
-            {/* Distributor List */}
-            <ScrollView style={styles.preferredListContainer}>
-              {(preferredDistributorsData?.length || 0) === 0 ? (
-                <View style={styles.emptyContainer}>
-                  <Icon name="package-variant-closed" size={40} color="#999" />
-                  <AppText style={styles.emptyText}>
-                    No preferred distributors added yet
-                  </AppText>
-                  <AppText style={styles.emptySubText}>
-                    Add distributors from "All Distributors" tab
-                  </AppText>
-                </View>
-              ) : (
-                <>
-                  {filteredPreferredDistributors.length === 0 ? (
-                    <View style={styles.emptyContainer}>
-                      <Icon name="search" size={40} color="#999" />
-                      <AppText style={styles.emptyText}>No matches</AppText>
-                      <AppText style={styles.emptySubText}>
-                        Try a different name or code
-                      </AppText>
-                    </View>
-                  ) : (
-                    filteredPreferredDistributors.map(
-                      distributor => (
-                        console.log('Rendering distributor:', distributor),
-                        (
-                          <TouchableOpacity
-                            key={distributor.id}
-                            style={styles.preferredDistributorRow}
-                            onPress={() =>
-                              toggleDistributorSelection(distributor.id)
-                            }
-                          >
-                            <View style={styles.preferredCheckboxContainer}>
-                              <View
-                                style={[
-                                  styles.preferredCheckbox,
-                                  selectedDistributors.includes(
-                                    distributor.id,
-                                  ) && styles.preferredCheckboxSelected,
-                                ]}
-                              >
-                                {selectedDistributors.includes(
-                                  distributor.id,
-                                ) && (
-                                    <Icon name="check" size={16} color="#fff" />
-                                  )}
-                              </View>
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <AppText style={styles.preferredDistributorName}>
-                                {distributor.name}
-                              </AppText>
-                              <AppText style={styles.preferredDistributorCode}>
-                                {distributor.code} |{' '}
-                                {distributor.cityName ||
-                                  distributor.city ||
-                                  'N/A'}
-                              </AppText>
-                            </View>
-                            <View
-                              style={{
-                                flex: 1,
-                                alignItems: 'flex-end',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <AppText
-                                style={[
-                                  styles.preferredDistributorType,
-                                  { textAlign: 'right' },
-                                ]}
-                              >
-                                {distributor.stockistType || ''}
-                              </AppText>
-                            </View>
-                          </TouchableOpacity>
-                        )
-                      ),
-                    )
-                  )}
-                </>
-              )}
-            </ScrollView>
-
-            {/* Continue Button */}
-            <View style={styles.preferredFooter}>
-              <TouchableOpacity
-                style={[
-                  styles.preferredContinueButton,
-                  selectedDistributors.length === 0 &&
-                  styles.preferredContinueButtonDisabled,
-                ]}
-                onPress={handleContinueToEdit}
-                disabled={selectedDistributors.length === 0}
-              >
-                <AppText style={styles.preferredContinueButtonText}>
-                  Continue
-                </AppText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          // Edit Mode - Existing detailed view
-          <View style={styles.editModeContainer}>
-            <ScrollView style={styles.scrollContent}>
-              {/* Back button */}
-              <TouchableOpacity
-                style={styles.backToSelectionButton}
-                onPress={() => setPreferredViewMode('selection')}
-              >
-                <Icon name="arrow-left" size={20} color="#FF6B00" />
-                <AppText style={styles.backToSelectionText}>
-                  Back to Selection
-                </AppText>
-              </TouchableOpacity>
-
-              {/* Suggested Stockist */}
-              <View style={styles.suggestedSection}>
-                <AppText style={styles.suggestedTitle}>
-                  Suggested Stockist by MR
-                </AppText>
-                <TouchableOpacity style={styles.infoIcon}>
-                  <Icon name="information-outline" size={20} color="#666" />
-                </TouchableOpacity>
-              </View>
-
-              {preferredDistributorsData
-                .filter(d => selectedDistributors.includes(d.id))
-                .map(distributor => (
-                  <View key={distributor.id} style={styles.distributorCard}>
-                    <View style={styles.distributorHeader}>
-                      <AppText style={styles.distributorName}>
-                        {distributor.name}
-                      </AppText>
-                      <View style={styles.marginContainer}>
-                        <AppText style={styles.marginLabel}>Margin</AppText>
-                        <View style={styles.marginInputContainer}>
-                          <AppInput
-                            style={styles.marginInput}
-                            placeholder="0"
-                            keyboardType="numeric"
-                            value={
-                              distributorMargins[distributor.id]?.toString() ||
-                              ''
-                            }
-                            onChangeText={value => {
-                              setDistributorMargins(prev => ({
-                                ...prev,
-                                [distributor.id]: value,
-                              }));
-                            }}
-                          />
-                          <AppText style={styles.marginPercent}>%</AppText>
-                        </View>
-                      </View>
-                    </View>
-
-                    <AppText style={styles.distributorInfo}>
-                      {distributor.code} | {distributor.cityName || 'N/A'} |{' '}
-                      {distributor.stateName || 'N/A'}
-                    </AppText>
-
-                    <View style={styles.distributorActions}>
-                      <View style={styles.dropdownsRow}>
-                        {/* Organization Dropdown */}
-                        <View style={styles.dropdownWrapper}>
-                          <TouchableOpacity
-                            style={styles.dropdown}
-                            onPress={() =>
-                              toggleDivisionDropdown(distributor.id)
-                            }
-                          >
-                            <AppText style={styles.dropdownText}>
-                              {distributorDivision[distributor.id] || 'SPILL'}
-                            </AppText>
-                            <IconMaterial
-                              name="keyboard-arrow-down"
-                              size={20}
-                              color="#666"
-                            />
-                          </TouchableOpacity>
-                          {showDivisionDropdown[distributor.id] && (
-                            <View style={styles.dropdownMenu}>
-                              <TouchableOpacity
-                                style={styles.dropdownMenuItem}
-                                onPress={() =>
-                                  handleDivisionSelect(distributor.id, 'SPILL')
-                                }
-                              >
-                                <AppText style={styles.dropdownMenuText}>
-                                  SPILL
-                                </AppText>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={styles.dropdownMenuItem}
-                                onPress={() =>
-                                  handleDivisionSelect(distributor.id, 'BOTH')
-                                }
-                              >
-                                <AppText style={styles.dropdownMenuText}>
-                                  BOTH
-                                </AppText>
-                              </TouchableOpacity>
-                            </View>
-                          )}
-                        </View>
-
-                        {/* All Divisions Dropdown */}
-                        <View style={styles.dropdownWrapper}>
-                          <TouchableOpacity
-                            style={styles.dropdown}
-                            onPress={() =>
-                              toggleRateTypeDropdown(distributor.id)
-                            }
-                          >
-                            <AppText style={styles.dropdownText}>
-                              {distributorRateType[distributor.id] ||
-                                'All Divisions'}
-                            </AppText>
-                            <IconMaterial
-                              name="keyboard-arrow-down"
-                              size={20}
-                              color="#666"
-                            />
-                          </TouchableOpacity>
-                          {showRateTypeDropdown[distributor.id] && (
-                            <View style={styles.dropdownMenu}>
-                              <TouchableOpacity
-                                style={styles.dropdownMenuItem}
-                                onPress={() =>
-                                  handleRateTypeSelect(
-                                    distributor.id,
-                                    'All Divisions',
-                                  )
-                                }
-                              >
-                                <AppText style={styles.dropdownMenuText}>
-                                  All Divisions
-                                </AppText>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={styles.dropdownMenuItem}
-                                onPress={() =>
-                                  handleRateTypeSelect(distributor.id, 't4')
-                                }
-                              >
-                                <AppText style={styles.dropdownMenuText}>
-                                  t4
-                                </AppText>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={styles.dropdownMenuItem}
-                                onPress={() =>
-                                  handleRateTypeSelect(distributor.id, 'test35')
-                                }
-                              >
-                                <AppText style={styles.dropdownMenuText}>
-                                  test35
-                                </AppText>
-                              </TouchableOpacity>
-                            </View>
-                          )}
-                        </View>
-                      </View>
-
-                      <TouchableOpacity
-                        style={styles.removeButton}
-                        onPress={() => handleRemoveDistributor(distributor.id)}
-                      >
-                        <AppText style={styles.removeText}>Remove</AppText>
-                        <IconFeather name="trash-2" size={16} color="#FF6B00" />
-                      </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.rateTypeRow}>
-                      <TouchableOpacity
-                        style={styles.radioButton}
-                        onPress={() =>
-                          handleRateTypeSelect(distributor.id, 'NetRate (DM)')
-                        }
-                      >
-                        <View
-                          style={[
-                            styles.radioOuter,
-                            distributorRateType[distributor.id] ===
-                            'NetRate (DM)' && styles.radioSelected,
-                          ]}
-                        >
-                          {distributorRateType[distributor.id] ===
-                            'NetRate (DM)' && (
-                              <View style={styles.radioInner} />
-                            )}
-                        </View>
-                        <AppText style={styles.radioText}>NetRate (DM)</AppText>
-                      </TouchableOpacity>
-
-                      {/* <TouchableOpacity
-                        style={styles.radioButton}
-                        onPress={() =>
-                          handleRateTypeSelect(
-                            distributor.id,
-                            'Chargeback (CM)',
-                          )
-                        }
-                      >
-                        <View
-                          style={[
-                            styles.radioOuter,
-                            distributorRateType[distributor.id] ===
-                              'Chargeback (CM)' && styles.radioSelected,
-                          ]}
-                        >
-                          {distributorRateType[distributor.id] ===
-                            'Chargeback (CM)' && (
-                            <View style={styles.radioInner} />
-                          )}
-                        </View>
-                        <AppText style={styles.radioText}>
-                          Chargeback (CMW)
-                        </AppText>
-                      </TouchableOpacity> */}
-                    </View>
-                  </View>
-                ))}
-
-              {/* Add More Stockist Preference */}
-              <View style={styles.addMoreSection}>
-                <AppText style={styles.addMoreTitle}>
-                  + Add More Stockist Preference
-                </AppText>
-
-                {/* Search Bar */}
-                <View style={styles.addMoreSearchContainer}>
-                  <IconFeather name="search" size={20} color="#999" />
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      flex: 1,
-                    }}
-                  >
-                    <AppInput
-                      style={styles.searchInput}
-                      placeholder="Search distributor name or code"
-                      placeholderTextColor="#999"
-                      value={preferredSearchText}
-                      onChangeText={setPreferredSearchText}
-                    />
-                    {preferredSearchText ? (
-                      <TouchableOpacity
-                        onPress={() => setPreferredSearchText('')}
-                        style={{ padding: 8 }}
-                      >
-                        <IconMaterial name="close" size={18} color="#999" />
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-                </View>
-
-                {/* Available Distributors List */}
-                {allDistributorsData
-                  .filter(d => !selectedDistributors.includes(d.id))
-                  .filter(
-                    d =>
-                      addMoreSearchText === '' ||
-                      d.name
-                        ?.toLowerCase()
-                        .includes(addMoreSearchText.toLowerCase()) ||
-                      d.code
-                        ?.toLowerCase()
-                        .includes(addMoreSearchText.toLowerCase()),
-                  )
-                  .slice(0, 10)
-                  .map(distributor => (
-                    <TouchableOpacity
-                      key={distributor.id}
-                      style={styles.addMoreDistributorItem}
-                      onPress={() => {
-                        setSelectedDistributors(prev => [
-                          ...prev,
-                          distributor.id,
-                        ]);
-                        setAddMoreSearchText('');
-                      }}
-                    >
-                      <View style={styles.addMoreDistributorInfo}>
-                        <AppText style={styles.addMoreDistributorName}>
-                          Stockist name {distributor.name}
-                        </AppText>
-                        <AppText style={styles.addMoreDistributorCity}>
-                          {distributor.cityName || 'Pune'}
-                        </AppText>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-              </View>
-            </ScrollView>
-
-            {/* Sticky Link Distributors Button */}
-            <View style={styles.stickyButtonContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.linkDistributorsButton,
-                  isLinkButtonDisabled() &&
-                  styles.linkDistributorsButtonDisabled,
-                ]}
-                onPress={handleLinkDistributors}
-                disabled={isLinkButtonDisabled()}
-              >
-                <AppText style={styles.linkDistributorsButtonText}>
-                  {linkingDistributors ? 'Linking...' : 'Link Distributors'}
-                </AppText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )
-      ) : (
+      {activeDistributorTab === 'preferred' && (
         <ScrollView style={styles.scrollContent}>
           {distributorsError ? (
             <View style={styles.errorContainer}>
@@ -1671,7 +1244,17 @@ export const LinkagedTab = ({
           ) : (
             <>
               {/* Filters */}
+
+              <View style={styles.suggestedSection}>
+                <AppText style={styles.suggestedTitle}>
+                  Suggested Stockist by MR
+                </AppText>
+                <TouchableOpacity style={styles.infoIcon}>
+                  <Icon name="information-outline" size={20} color="#333" />
+                </TouchableOpacity>
+              </View>
               <View style={styles.filterRow}>
+
                 <TouchableOpacity
                   style={styles.filterIcon}
                   onPress={() => setShowFilterModal(true)}
@@ -1856,9 +1439,341 @@ export const LinkagedTab = ({
             </>
           )}
         </ScrollView>
+
       )}
+
+
+      {activeDistributorTab === 'all' && (
+        <ScrollView style={styles.scrollContent}>
+          {distributorsError ? (
+            <View style={styles.errorContainer}>
+              <Icon name="alert-circle" size={40} color="#EF4444" />
+              <AppText style={styles.errorText}>
+                Error loading distributors
+              </AppText>
+              <AppText style={styles.errorSubText}>{distributorsError}</AppText>
+            </View>
+          ) : (
+            <>
+              {/* Filters */}
+
+              {/* <View style={styles.suggestedSection}>
+              <AppText style={styles.suggestedTitle}>
+                Suggested Stockist by MR
+              </AppText>
+              <TouchableOpacity style={styles.infoIcon}>
+                <Icon name="information-outline" size={20} color="#333" />
+              </TouchableOpacity>
+            </View> */}
+              <View style={styles.filterRow}>
+
+                <TouchableOpacity
+                  style={styles.filterIcon}
+                  onPress={() => setShowFilterModal(true)}
+                >
+                  <Icon name="tune" size={20} color="#666" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.filterDropdown}
+                  onPress={() => setShowFilterModal(true)}
+                >
+                  <AppText style={styles.filterText}>
+                    {distributorFilters.state.length > 0 &&
+                      !distributorFilters.state.includes('All')
+                      ? `State (${distributorFilters.state.length})`
+                      : 'State'}
+                  </AppText>
+                  <IconMaterial
+                    name="keyboard-arrow-down"
+                    size={20}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.filterDropdown}
+                  onPress={() => setShowFilterModal(true)}
+                >
+                  <AppText style={styles.filterText}>
+                    {distributorFilters.city.length > 0 &&
+                      !distributorFilters.city.includes('All')
+                      ? `City (${distributorFilters.city.length})`
+                      : 'City'}
+                  </AppText>
+                  <IconMaterial
+                    name="keyboard-arrow-down"
+                    size={20}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Search */}
+              <View style={styles.searchContainer}>
+                <IconFeather name="search" size={20} color="#999" />
+                <AppInput
+                  style={styles.searchInput}
+                  placeholder="Search by distributor name & code"
+                  placeholderTextColor="#999"
+                  value={searchText}
+                  onChangeText={setSearchText}
+                />
+              </View>
+
+              {/* Table Header */}
+              <View style={styles.tableHeader}>
+                <AppText style={[styles.tableHeaderText, { flex: 1.5 }]}>
+                  Name, Code & City
+                </AppText>
+                <AppText
+                  style={[
+                    styles.tableHeaderText,
+                    { flex: 1, textAlign: 'center' },
+                  ]}
+                >
+                  Supply type
+                </AppText>
+                <AppText
+                  style={[
+                    styles.tableHeaderText,
+                    { flex: 0.6, textAlign: 'right' },
+                  ]}
+                >
+                  Action
+                </AppText>
+              </View>
+
+              {/* Distributor List Area: show skeleton while loading, error or actual rows otherwise */}
+              {distributorsLoading ? (
+                <DistributorListSkeleton rows={6} />
+              ) : distributorsError ? (
+                <View style={styles.errorContainer}>
+                  <Icon name="alert-circle" size={40} color="#EF4444" />
+                  <AppText style={styles.errorText}>
+                    Error loading distributors
+                  </AppText>
+                  <AppText style={styles.errorSubText}>
+                    {distributorsError}
+                  </AppText>
+                </View>
+              ) : (
+                <>
+                  {filteredDistributorsData.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                      <Icon
+                        name="package-variant-closed"
+                        size={40}
+                        color="#999"
+                      />
+                      <AppText style={styles.emptyText}>
+                        {allDistributorsData.length === 0
+                          ? 'No distributors available'
+                          : 'No distributors match the selected filters'}
+                      </AppText>
+                    </View>
+                  ) : (
+                    filteredDistributorsData.map(distributor => (
+                      <View
+                        key={`${distributor.id}-${distributor.name}`}
+                        style={styles.distributorRow}
+                      >
+                        <View
+                          style={[styles.distributorInfoColumn, { flex: 1.5 }]}
+                        >
+                          <AppText style={styles.distributorRowName}>
+                            {distributor.name}
+                          </AppText>
+                          <AppText style={styles.distributorRowCode}>
+                            {distributor.code} | {distributor.cityName || 'N/A'}
+                          </AppText>
+                        </View>
+
+                        <View style={[styles.supplyTypeColumn, styles.supplyTypeWrapper, { flex: 1 }]}>
+                          <TouchableOpacity
+                            style={styles.supplyTypeDropdown}
+                            onPress={() => toggleAllSupplyDropdown(distributor.id)}
+                            activeOpacity={0.85}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <AppText style={styles.supplyTypeText}>
+                              {allDistributorSupplyType[distributor.id] ||
+                                (distributor.inviteStatusId === 2 ? 'Chargeback (CM)' : 'NetRate (DM)')}
+                            </AppText>
+                            <IconMaterial name="keyboard-arrow-down" size={20} color="#999" />
+                          </TouchableOpacity>
+
+                          {showAllSupplyDropdown[distributor.id] && (
+                            <View
+                              style={[
+                                styles.dropdownMenu,
+                                styles.supplyDropdownMenu, // extra positioning/width
+                              ]}
+                              pointerEvents="box-none"
+                            >
+                              <TouchableOpacity
+                                style={styles.dropdownMenuItem}
+                                onPress={() =>
+                                  handleAllDistributorSupplySelect(distributor.id, 'NetRate (DM)')
+                                }
+                                hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                              >
+                                <AppText style={styles.dropdownMenuText}>NetRate (DM)</AppText>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity
+                                style={styles.dropdownMenuItem}
+                                onPress={() =>
+                                  handleAllDistributorSupplySelect(distributor.id, 'Chargeback (CM)')
+                                }
+                                hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                              >
+                                <AppText style={styles.dropdownMenuText}>Chargeback (CM)</AppText>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+
+
+                        <View style={[styles.actionColumn, { flex: 0.6 }]}>
+                          <TouchableOpacity
+                            style={styles.addButton}
+                            onPress={() => handleAddDistributor(distributor)}
+                          >
+                            <AppText style={styles.addButtonText}>
+                              + Add
+                            </AppText>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </ScrollView>
+
+      )}
+
+      {activeDistributorTab === 'linked' && (
+        <View style={{ flex: 1 }}>
+          <ScrollView
+            style={styles.scrollContent}
+            contentContainerStyle={{ paddingBottom: 120 }}
+          >
+            {/* Header */}
+            <View style={styles.suggestedSection}>
+              <AppText style={styles.suggestedTitle}>
+                Suggested Stockist by MR
+              </AppText>
+              <Icon name="information-outline" size={16} color="#6B7280" />
+            </View>
+
+            {allDistributorsData.map(item => (
+              <View key={item.id} style={styles.linkedCard}>
+
+                {/* NAME + MARGIN LABEL */}
+                <View style={styles.topRow}>
+                  <View style={{ flex: 1 }}>
+                    <AppText style={styles.name}>{item.name}</AppText>
+
+                  </View>
+                  {/* <AppText style={styles.marginLabel}>Margin</AppText> */}
+                </View>
+
+                {/* DROPDOWNS + MARGIN */}
+                <View style={styles.middleRow}>
+
+                  <View>
+
+                    <AppText style={styles.subTextLiked}>
+                      {item.code} | One city | {item.cityName || 'Pune'}
+                    </AppText>
+
+                    <View style={styles.middleRowDropdown}>
+
+                      <TouchableOpacity style={styles.dropdown}>
+                        <AppText style={styles.dropdownText}>SPLL</AppText>
+                        <IconMaterial
+                          name="keyboard-arrow-down"
+                          size={18}
+                          color="#6B7280"
+                        />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity style={styles.dropdown}>
+                        <AppText style={styles.dropdownText}>All Divisions</AppText>
+                        <IconMaterial
+                          name="keyboard-arrow-down"
+                          size={18}
+                          color="#6B7280"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <View>
+                    <AppText style={styles.subTextLiked}>Margin</AppText>
+
+                    <View style={styles.marginBox}>
+                      <AppInput
+                        value="15"
+                        keyboardType="numeric"
+                        style={styles.marginInput}
+                      />
+                      <AppText style={styles.percent}>%</AppText>
+                    </View>
+                  </View>
+                </View>
+
+                {/* RADIO + REMOVE */}
+                <View style={styles.bottomRow}>
+                  <View style={styles.radioRow}>
+                    <View style={styles.radioItem}>
+                      <View style={styles.radioSelectedOuter}>
+                        <View style={styles.radioInner} />
+                      </View>
+                      <AppText style={styles.radioText}>Net Rate</AppText>
+                    </View>
+
+                    <View style={styles.radioItem}>
+                      <View style={styles.radioOuter} />
+                      <AppText style={styles.radioDisabled}>Chargeback</AppText>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity style={styles.removeBtn}>
+                    <AppText style={styles.removeText}>Remove</AppText>
+                    <IconFeather
+                      name="trash-2"
+                      size={15}
+                      color="#F97316"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+
+          {/* FINISH BUTTON */}
+          <View style={styles.finishContainer}>
+            <TouchableOpacity style={styles.finishBtn}>
+              <AppText style={styles.finishText}>Finish</AppText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+
+
+
+
+
+
     </View>
   );
+
+
+
+
 
   const renderDivisionsTab = () => (
     <View style={styles.tabContent}>
@@ -1963,149 +1878,149 @@ export const LinkagedTab = ({
               )}
             </View>
           </ScrollView> */}
-          
-<ScrollView
- showsVerticalScrollIndicator={false}
-  style={styles.scrollContent}
-  contentContainerStyle={[
-    (hasApprovePermission || isCustomerActive) && styles.scrollContentWithButton
-  ]}
->
 
-  {/* ---------- HEADER (Requested / Other / Opened) ---------- */}
-  <View style={styles.headerWrapper}>
-    <View style={styles.colRequested}>
-      <AppText style={styles.headerTitle}>Requested</AppText>
-    </View>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={styles.scrollContent}
+            contentContainerStyle={[
+              (hasApprovePermission || isCustomerActive) && styles.scrollContentWithButton
+            ]}
+          >
 
-    <View style={styles.divider} />
-
-    <View style={styles.colOther}>
-      <AppText style={styles.headerTitle}>Other</AppText>
-    </View>
-
-    <View style={styles.divider} />
-
-    <View style={styles.colOpened}>
-      <AppText style={styles.headerTitle}>Opened</AppText>
-    </View>
-  </View>
-
-  {/* ---------- SUBHEADER LABELS (Name & Code) ---------- */}
-  <View style={styles.subHeaderWrapper}>
-    <View style={styles.colRequested}>
-      <AppText style={styles.subHeaderText}>Name & Code</AppText>
-    </View>
-
-    <View style={styles.divider} />
-
-    <View style={styles.colOther}>
-      <AppText style={styles.subHeaderText}>Name & Code</AppText>
-    </View>
-
-    <View style={styles.divider} />
-
-    <View style={styles.colOpened}>
-      <AppText style={styles.subHeaderText}>Name & Code</AppText>
-    </View>
-  </View>
-
-  {/* ---------- BODY (3 Columns) ---------- */}
-  <View style={styles.columnsRow}>
-
-   
-
-    {/* ========== REQUESTED COLUMN ========== */}
-    <View style={styles.colRequested}>
-      {otherDivisionsData?.length > 0 ? (
-        otherDivisionsData.map(div => (
-          <View key={div.divisionId} style={styles.reqRow}>
-            <AppText style={styles.divisionName}>{div.divisionName}</AppText>
-            <AppText style={styles.divisionCode}>{div.divisionCode}</AppText>
-          </View>
-        ))
-      ) : (
-        <AppText style={styles.emptyText}>No requested divisions</AppText>
-      )}
-    </View>
-
-    <View style={styles.dividerinside} />
-
-    {/* ========== OTHER COLUMN ========== */}
-    <View style={styles.colOther}>
-      {otherDivisionsData?.length > 0 ? (
-        otherDivisionsData.map(div => {
-          const isSelected = selectedDivisions.some(
-            d => d.divisionId === div.divisionId
-          );
-
-          return (
-            <TouchableOpacity
-              key={div.divisionId}
-              style={styles.otherRow}
-              onPress={() => toggleOtherDivisionSelection(div)}
-            >
-              <View
-                style={[
-                  styles.checkbox,
-                  isSelected && styles.checkboxSelected
-                ]}
-              >
-                {isSelected && <Icon name="check" size={14} color="#fff" />}
+            {/* ---------- HEADER (Requested / Other / Opened) ---------- */}
+            <View style={styles.headerWrapper}>
+              <View style={styles.colRequested}>
+                <AppText style={styles.headerTitle}>Requested</AppText>
               </View>
 
-              <View style={{ flexShrink: 1 }}>
-                <AppText style={styles.divisionName}>{div.divisionName}</AppText>
-                <AppText style={styles.divisionCode}>{div.divisionCode}</AppText>
+              <View style={styles.divider} />
+
+              <View style={styles.colOther}>
+                <AppText style={styles.headerTitle}>Other</AppText>
               </View>
-            </TouchableOpacity>
-          );
-        })
-      ) : (
-        <AppText style={styles.emptyText}>No other divisions</AppText>
-      )}
-    </View>
 
-    <View style={styles.dividerinside} />
+              <View style={styles.divider} />
 
-    {/* ========== OPENED COLUMN ========== */}
-    <View style={styles.colOpened}>
-      {otherDivisionsData?.length > 0 ? (
-        otherDivisionsData.map(div => (
-          <View key={div.divisionId} style={styles.openedRow}>
-            <View style={{ flexShrink: 1 }}>
-              <AppText style={styles.divisionName}>{div.divisionName}</AppText>
-              <AppText style={styles.divisionCode}>{div.divisionCode}</AppText>
+              <View style={styles.colOpened}>
+                <AppText style={styles.headerTitle}>Opened</AppText>
+              </View>
             </View>
 
-            <TouchableOpacity
-              style={[
-                styles.blockButton,
-                div.isBlocked && styles.unblockButton
-              ]}
-            >
-              <Icon
-                name={div.isBlocked ? "lock-open-outline" : "lock-outline"}
-                size={15}
-                color={div.isBlocked ? "#FF6B00" : "#2B2B2B"}
-              />
-              <AppText
-                style={[
-                  styles.blockText,
-                  div.isBlocked && styles.unblockText
-                ]}
-              >
-                {div.isBlocked ? "Unblock" : "Block"}
-              </AppText>
-            </TouchableOpacity>
-          </View>
-        ))
-      ) : (
-        <AppText style={styles.emptyText}>No opened divisions</AppText>
-      )}
-    </View>
-  </View>
-</ScrollView>
+            {/* ---------- SUBHEADER LABELS (Name & Code) ---------- */}
+            <View style={styles.subHeaderWrapper}>
+              <View style={styles.colRequested}>
+                <AppText style={styles.subHeaderText}>Name & Code</AppText>
+              </View>
+
+              <View style={styles.divider} />
+              <View style={styles.colOther}>
+                <AppText style={styles.subHeaderText}>Name & Code</AppText>
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.colOpened}>
+                <AppText style={styles.subHeaderText}>Name & Code</AppText>
+              </View>
+            </View>
+
+            {/* ---------- BODY (3 Columns) ---------- */}
+            <View style={styles.columnsRow}>
+
+              {console.log(customerRequestedDivisions)
+              }
+
+              {/* ========== REQUESTED COLUMN ========== */}
+              <View style={styles.colRequested}>
+                {customerRequestedDivisions?.length > 0 ? (
+                  customerRequestedDivisions.map(div => (
+                    <View key={div.divisionId} style={styles.reqRow}>
+                      <AppText style={styles.divisionName}>{div.divisionName}</AppText>
+                      <AppText style={styles.divisionCode}>{div.divisionCode}</AppText>
+                    </View>
+                  ))
+                ) : (
+                  <AppText style={styles.emptyText}>No requested divisions</AppText>
+                )}
+              </View>
+
+              <View style={styles.dividerinside} />
+
+              {/* ========== OTHER COLUMN ========== */}
+              <View style={styles.colOther}>
+                {otherDivisionsData?.length > 0 ? (
+                  otherDivisionsData.map(div => {
+                    const isSelected = selectedDivisions.some(
+                      d => d.divisionId === div.divisionId
+                    );
+
+                    return (
+                      <TouchableOpacity
+                        key={div.divisionId}
+                        style={styles.otherRow}
+                        onPress={() => toggleOtherDivisionSelection(div)}
+                      >
+                        <View
+                          style={[
+                            styles.checkbox,
+                            isSelected && styles.checkboxSelected
+                          ]}
+                        >
+                          {isSelected && <Icon name="check" size={14} color="#fff" />}
+                        </View>
+
+                        <View style={{ flexShrink: 1 }}>
+                          <AppText style={styles.divisionName}>{div.divisionName}</AppText>
+                          <AppText style={styles.divisionCode}>{div.divisionCode}</AppText>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })
+                ) : (
+                  <AppText style={styles.emptyText}>No other divisions</AppText>
+                )}
+              </View>
+
+              <View style={styles.dividerinside} />
+
+              {/* ========== OPENED COLUMN ========== */}
+              <View style={styles.colOpened}>
+                {openedDivisionsData?.length > 0 ? (
+                  openedDivisionsData.map(div => (
+                    <View key={div.divisionId} style={styles.openedRow}>
+                      <View style={{ flexShrink: 1 }}>
+                        <AppText style={styles.divisionName}>{div.divisionName}</AppText>
+                        <AppText style={styles.divisionCode}>{div.divisionCode}</AppText>
+                      </View>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.blockButton,
+                          div.isBlocked && styles.unblockButton
+                        ]}
+                      >
+                        <Icon
+                          name={div.isBlocked ? "lock-open-outline" : "lock-outline"}
+                          size={15}
+                          color={div.isBlocked ? "#FF6B00" : "#2B2B2B"}
+                        />
+                        <AppText
+                          style={[
+                            styles.blockText,
+                            div.isBlocked && styles.unblockText
+                          ]}
+                        >
+                          {div.isBlocked ? "Unblock" : "Block"}
+                        </AppText>
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                ) : (
+                  <AppText style={styles.emptyText}>No opened divisions</AppText>
+                )}
+              </View>
+            </View>
+          </ScrollView>
 
           {/* Sticky Continue Button at Bottom - Only show if user has approve permission or customer is active */}
           {(hasApprovePermission || isCustomerActive) && (
@@ -2122,7 +2037,7 @@ export const LinkagedTab = ({
                 {linkingDivisions ? (
                   <AppText style={styles.linkButtonText}>Linking...</AppText>
                 ) : (
-                  <AppText style={styles.linkButtonText}>Continue</AppText>
+                  <AppText style={styles.linkButtonText}>Link Division</AppText>
                 )}
               </TouchableOpacity>
             </View>
@@ -4407,174 +4322,376 @@ const styles = StyleSheet.create({
     color: '#333',
     marginRight: 6,
   },
-tabContentWrapper: {
-  flex: 1,
-  // paddingTop: 60, // Same height as tab bar
-  overflow: 'hidden',
-},
+  tabContentWrapper: {
+    flex: 1,
+    // paddingTop: 60, // Same height as tab bar
+    overflow: 'hidden',
+  },
 
 
-headerWrapper: {
-  flexDirection: "row",
-  alignItems: "center",
-  paddingHorizontal: 16,
-  paddingTop: 10,
-  // marginBottom: 10,
-},
+  headerWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    marginTop: 10,
+  },
 
-headerTitle: {
-  fontSize: 15,
-  fontWeight: "600",
-  color: "#2B2B2B",
-  paddingBottom:20
-},
+  headerTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#2B2B2B",
+    paddingBottom: 15
+  },
 
-subHeaderWrapper: {
-  flexDirection: "row",
-  backgroundColor: "#FBFBFB",
-  // paddingVertical: 8,
-  paddingHorizontal: 16,
-  // marginBottom:10
+  subHeaderWrapper: {
+    flexDirection: "row",
+    backgroundColor: "#FBFBFB",
+    // paddingVertical: 8,
+    paddingHorizontal: 16,
+    // marginBottom:10
 
 
-},
+  },
 
-subHeaderText: {
-  fontSize: 13,
-  fontWeight: "500",
-  color: "#777",
-  paddingVertical:10
-},
+  subHeaderText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#777",
+    paddingVertical: 10
+  },
 
-columnsRow: {
-  flexDirection: "row",
-  paddingHorizontal: 16,
-  // paddingTop: 14,
-  marginTop:20
-},
+  columnsRow: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    // paddingTop: 14,
+    marginTop: 20
+  },
 
-divider: {
-  width: 1,
-  backgroundColor: "#90909080",
-  marginHorizontal: 12,
- 
+  divider: {
+    width: 1,
+    backgroundColor: "#9090903e",
+    marginHorizontal: 12,
 
-},
 
-dividerinside:{
-   width: 1,
-  backgroundColor: "#90909080",
-  marginHorizontal: 12,
-  marginTop:-20
-},
+  },
 
-/* Column widths based on screenshot */
-colRequested: {
-  flex: 1,        // Medium width
-  paddingRight: 6,
-  // paddingTop:20
-},
+  dividerinside: {
+    width: 1,
+    backgroundColor: "#9090903e",
+    marginHorizontal: 12,
+    marginTop: -20
+  },
 
-colOther: {
-  flex: 1.3,      // WIDEST column (as per screenshot)
-  paddingLeft: 6,
-  paddingRight: 6,
+  /* Column widths based on screenshot */
+  colRequested: {
+    flex: 1,        // Medium width
+    paddingRight: 6,
     // paddingTop:20
-},
+  },
 
-colOpened: {
-  flex: 1,        // Smallest column
-  paddingLeft: 6,
+  colOther: {
+    flex: 1.3,      // WIDEST column (as per screenshot)
+    paddingLeft: 6,
+    paddingRight: 6,
     // paddingTop:20
-},
+  },
 
-/* Requested Rows */
-reqRow: {
-  marginBottom: 20,
-},
+  colOpened: {
+    flex: 1,        // Smallest column
+    paddingLeft: 6,
+    // paddingTop:20
+  },
 
-/* Other Rows */
-otherRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  marginBottom: 20,
-},
+  /* Requested Rows */
+  reqRow: {
+    marginBottom: 20,
+  },
 
-/* Opened Rows */
-openedRow: {
-  // flexDirection: "row",
-  // justifyContent: "space-between",
-  // alignItems: "center",
-  // marginBottom: 28,
-  borderBottomColor:"#D9DFE2",
-  borderBottomWidth:1,
-  paddingBottom:10,
+  /* Other Rows */
+  otherRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  /* Opened Rows */
+  openedRow: {
+    // flexDirection: "row",
+    // justifyContent: "space-between",
+    // alignItems: "center",
+    // marginBottom: 28,
+    borderBottomColor: "#D9DFE2",
+    borderBottomWidth: 1,
+    paddingBottom: 10,
     marginBottom: 10,
 
 
-},
+  },
 
-emptyText: {
-  // marginTop: 10,
-  fontSize: 13,
-  color: "#999",
-  lineHeight: 18,
-},
+  emptyText: {
+    // marginTop: 10,
+    fontSize: 13,
+    color: "#999",
+    lineHeight: 18,
+  },
 
-divisionName: {
-  fontSize: 14,
-  fontWeight: "500",
-  color: "#333",
-},
+  divisionName: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#333",
+  },
 
-divisionCode: {
-  fontSize: 14,
-  color: "#777",
-  marginTop: 2,
-},
+  divisionCode: {
+    fontSize: 14,
+    color: "#777",
+    marginTop: 2,
+  },
 
-checkbox: {
-  width: 20,
-  height: 20,
-  borderRadius: 4,
-  borderWidth: 1,
-  borderColor: "#909090",
-  marginRight: 12,
-  justifyContent: "center",
-  alignItems: "center",
-},
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#909090",
+    marginRight: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
-checkboxSelected: {
-  backgroundColor: "#FF8A00",
-  borderColor: "#FF8A00",
-},
+  checkboxSelected: {
+    backgroundColor: "#FF8A00",
+    borderColor: "#FF8A00",
+  },
 
-blockButton: {
-  flexDirection: "row",
-  alignItems: "center",
-  paddingVertical: 6,
-  paddingHorizontal: 12,
-  borderWidth: 1,
-  borderColor: "#2B2B2B",
-  borderRadius: 8,
-  marginVertical:5
-},
+  blockButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#2B2B2B",
+    borderRadius: 8,
+    marginVertical: 5
+  },
 
-unblockButton: {
-  borderColor: "#FF6B00",
-  backgroundColor: "#FFF5EF",
-},
+  unblockButton: {
+    borderColor: "#FF6B00",
+    backgroundColor: "#FFF5EF",
+  },
 
-blockText: {
-  marginLeft: 6,
-  fontSize: 12,
-  color: "#2B2B2B",
-},
+  blockText: {
+    marginLeft: 6,
+    fontSize: 12,
+    color: "#2B2B2B",
+  },
 
-unblockText: {
-  color: "#FF6B00",
-},
+  unblockText: {
+    color: "#FF6B00",
+  },
 
+  subTabsWrapper: {
+    height: 60,
+    backgroundColor: '#fff',
+
+    zIndex: 10,
+  },
+
+  /* CARD */
+  linkedCard: {
+    backgroundColor: '#FAFAFA',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+    marginHorizontal: 16
+  },
+
+  /* TOP ROW */
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+
+  name: {
+    fontSize: 15,
+    fontFamily: 'Lato-Bold',
+    color: '#111827',
+  },
+
+  subText: {
+    fontSize: 12.5,
+    color: '#6B7280',
+    marginTop: 3,
+  },
+
+  subTextLiked: {
+    fontSize: 12.5,
+    color: '#6B7280',
+    marginTop: 3,
+    marginBottom: 10
+  },
+
+  marginLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+
+  /* MIDDLE ROW */
+  middleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 12,
+    marginBottom: 10,
+    justifyContent: "space-between"
+  },
+
+  middleRowDropdown: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+
+  dropdown: {
+    height: 36,
+    minWidth: 110,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+  },
+
+  dropdownText: {
+    fontSize: 14,
+    color: '#111827',
+  },
+
+  marginBox: {
+    height: 36,
+    width: 72,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+
+  marginInput: {
+    width: 26,
+    padding: 0,
+    margin: 0,
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#111827',
+  },
+
+  percent: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginLeft: 4,
+  },
+
+  /* BOTTOM ROW */
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  radioRow: {
+    flexDirection: 'row',
+  },
+
+  radioItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 18,
+  },
+
+  radioOuter: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#9CA3AF',
+    marginRight: 6,
+  },
+
+  radioSelectedOuter: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#F97316',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 6,
+  },
+
+  radioInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#F97316',
+  },
+
+  radioText: {
+    fontSize: 13,
+    color: '#111827',
+  },
+
+  radioDisabled: {
+    fontSize: 13,
+    color: '#9CA3AF',
+  },
+
+  removeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  removeText: {
+    fontSize: 13,
+    color: '#F97316',
+    marginRight: 6,
+  },
+
+  /* FINISH */
+  finishContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+  },
+
+  finishBtn: {
+    height: 48,
+    backgroundColor: '#F97316',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  finishText: {
+    fontSize: 16,
+    fontFamily: 'Lato-Bold',
+    color: '#FFFFFF',
+  },
+
+  marginText: {
+    fontSize: 12,
+    color: "#777777"
+  }
 });
 
 export default LinkagedTab;
+
+
