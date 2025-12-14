@@ -1514,7 +1514,9 @@ const CustomerList = ({ navigation }) => {
             <TouchableOpacity
               onPress={() => {
                 // stageId is always an array, get the first element
-                const stageId = item.stageId && Array.isArray(item.stageId) ? item.stageId : null;
+                const stageId = item.stageId && Array.isArray(item.stageId) ? item.stageId : [item.stgCustomerId];
+
+                
                 console.log('🔍 Clicked status badge - stageId:', stageId, 'item:', item);
                 if (stageId && stageId.length > 0) {
                   handleViewWorkflowTimeline(

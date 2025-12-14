@@ -24,25 +24,48 @@ const VerticalTimeline = ({ steps }) => {
         const isLast = index === steps.length - 1;
         const isCompleted = step.status === 'APPROVED' || step.status === 'SUBMITTED' || step.status === 'submitted' || step.status === 'COMPLETED';
         const isRejected = step.status === 'REJECTED' || step.status === 'rejected';
-        const isPending = step.status === 'PENDING' || step.status === 'NOT_ASSIGNED' || !step.status || step.status === 'SKIPPED';
+        const isPending = step.status === 'PENDING' || step.status === 'pending';
+        const isInProgress = step.status === 'IN_PROGRESS';
+        const isOthers = step.status === 'NOT_ASSIGNED' || !step.status || step.status === 'SKIPPED';
 
         // Status indicator colors
-        const indicatorColor = isCompleted 
-          ? '#10B981' // green
-          : isRejected 
-          ? '#EF4444' // red
-          : '#D1D5DB'; // grey
+        const indicatorColor =
+          isCompleted
+            ? '#10B981' // green
+            : isRejected
+              ? '#EF4444' // red
+              : isPending || isInProgress
+                ? '#F4AD48' // orange (pending)
+                : '#D1D5DB'; // grey
 
         // Badge colors
-        const badgeColor = step.status === 'SUBMITTED' || step.status === 'submitted'
-          ? '#3B82F6' // blue
-          : step.status === 'APPROVED' || step.status === 'approved'
-          ? '#10B981' // green
-          : step.status === 'REJECTED' || step.status === 'rejected'
-          ? '#EF4444' // red
-          : step.status === 'COMPLETED'
-          ? '#10B981' // green
-          : '#9CA3AF'; // grey
+        const badgeColor =
+          step.status === 'SUBMITTED' || step.status === 'submitted'
+            ? '#5995C71A' // blue
+            : step.status === 'APPROVED' || step.status === 'approved'
+              ? '#1695601A' // green
+              : step.status === 'REJECTED' || step.status === 'rejected'
+                ? '#F568681A' // red
+                : step.status === 'COMPLETED'
+                  ? '#10B981' // green
+                  : step.status === 'PENDING' || step.status === 'pending'
+                    ? '#F4AD481A' // orange (pending)
+                    : '#9CA3AF'; // grey
+
+
+        // Badge TExt colors
+        const badgeTextColor =
+          step.status === 'SUBMITTED' || step.status === 'submitted'
+            ? '#5995C7' // blue
+            : step.status === 'APPROVED' || step.status === 'approved'
+              ? '#169560' // green
+              : step.status === 'REJECTED' || step.status === 'rejected'
+                ? '#F56868' // red
+                : step.status === 'COMPLETED'
+                  ? '#10B981' // green
+                  : step.status === 'PENDING' || step.status === 'pending'
+                    ? '#F4AD48' // orange (pending)
+                    : '#e5e7eb'; // grey
 
         return (
           <View key={index} style={styles.timelineStep}>
@@ -50,13 +73,15 @@ const VerticalTimeline = ({ steps }) => {
             <View style={styles.stepLabelContainer}>
               <AppText style={styles.stepLabel}>
                 {step.label}
-                {step.subHeaderName ? ` ${step.subHeaderName}` : ''}
+              </AppText>
+              <AppText style={styles.stepLabel}>
+                {step.subHeaderName ? step.subHeaderName : ''}
               </AppText>
             </View>
 
             {/* Center: Status Indicator and Vertical Line */}
             <View style={styles.indicatorContainer}>
-              <View style={[styles.statusIndicator, { 
+              <View style={[styles.statusIndicator, {
                 backgroundColor: indicatorColor,
                 borderColor: '#fff'
               }]}>
@@ -66,38 +91,48 @@ const VerticalTimeline = ({ steps }) => {
                 {isRejected && (
                   <Icon name="close" size={12} color="#fff" />
                 )}
+
+                {(isPending || isInProgress) && (
+                  <Icon name="time-outline" size={12} color="#fff" />
+                )}
               </View>
               {!isLast && (
-                <View 
+                <View
                   style={[
                     styles.verticalLine,
-                    { 
-                      backgroundColor: isCompleted || isRejected 
-                        ? (isCompleted ? '#10B981' : '#EF4444') 
-                        : '#E5E7EB'
+                    // {
+                    //   backgroundColor: isCompleted || isRejected
+                    //     ? (isCompleted ? '#10B981' : '#EF4444')
+                    //     : '#E3E3E3'
+                    // }
+
+                      {
+                      backgroundColor: isCompleted 
+                        ? '#000000'
+                        : '#E3E3E3'
                     }
-                  ]} 
+                  ]}
                 />
               )}
             </View>
 
             {/* Right: Status Details */}
             <View style={styles.stepDetailsContainer}>
-              {step.status && !isPending ? (
+              {step.status && !isOthers ? (
                 <>
                   {/* Status Badge */}
                   <View style={[styles.statusBadge, { backgroundColor: badgeColor }]}>
-                    <AppText style={styles.statusBadgeText}>
-                      {step.status === 'submitted' ? 'SUBMITTED' : 
-                       step.status === 'approved' ? 'APPROVED' :
-                       step.status === 'rejected' ? 'REJECTED' :
-                       step.status.toUpperCase()}
+                    <AppText style={[styles.statusBadgeText, { color: badgeTextColor }]}>
+                      {step.status === 'submitted' ? 'SUBMITTED' :
+                        step.status === 'approved' ? 'APPROVED' :
+                          step.status === 'rejected' ? 'REJECTED' :
+                            step.status.toUpperCase()}
                     </AppText>
                   </View>
-                  
+
                   {/* User Name */}
                   <AppText style={styles.userName}>{step.userName}</AppText>
-                  
+
                   {/* Date/Time with Calendar Icon */}
                   {step.dateTime && (
                     <View style={styles.dateTimeContainer}>
@@ -122,19 +157,19 @@ const VerticalTimeline = ({ steps }) => {
 const AccordionItem = ({ title, isExpanded, onToggle, children }) => {
   return (
     <View style={styles.accordionItem}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.accordionHeader}
         onPress={onToggle}
         activeOpacity={0.7}
       >
         <AppText style={styles.accordionTitle}>{title}</AppText>
-        <Icon 
-          name={isExpanded ? "chevron-up" : "chevron-down"} 
-          size={20} 
-          color="#6B7280" 
+        <Icon
+          name={isExpanded ? "chevron-up" : "chevron-down"}
+          size={20}
+          color="#6B7280"
         />
       </TouchableOpacity>
-      
+
       {isExpanded && (
         <View style={styles.accordionContent}>
           {children}
@@ -156,7 +191,7 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
       // Handle both formats: "2025-12-08 02:08:19" and ISO format
       const date = new Date(dateString.replace(' ', 'T'));
       if (isNaN(date.getTime())) return dateString; // Return original if invalid
-      
+
       const day = String(date.getDate()).padStart(2, '0');
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const year = date.getFullYear();
@@ -183,7 +218,7 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
       const restartCycle = progression.restartCycle || index;
       const approvers = progression.approvers || [];
       const stepHeaders = progression.stepHeaders || workflow.stepHeaders || [];
-      
+
       // Create a map of approvers by stepOrder for quick lookup
       const approverMap = {};
       approvers.forEach((approver) => {
@@ -192,25 +227,28 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
 
       // Build timeline steps by combining stepHeaders with approvers
       const steps = [];
-      
+
       // Create a map of stepHeaders by stepOrder
       const stepHeaderMap = {};
+
       stepHeaders.forEach((stepHeader) => {
         stepHeaderMap[stepHeader.stepOrder] = stepHeader;
       });
 
       // Get all unique stepOrders from both approvers and stepHeaders
       const allStepOrders = new Set();
-      approvers.forEach(approver => allStepOrders.add(approver.stepOrder));
       stepHeaders.forEach(stepHeader => allStepOrders.add(stepHeader.stepOrder));
-      
+      approvers.forEach(approver => allStepOrders.add(approver.stepOrder));
+
       // Sort stepOrders to maintain proper order
       const sortedStepOrders = Array.from(allStepOrders).sort((a, b) => a - b);
 
+
       // Build steps in order
       sortedStepOrders.forEach((stepOrder) => {
-        const approver = approverMap[stepOrder];
         const stepHeader = stepHeaderMap[stepOrder];
+        const approver = approverMap[stepOrder];
+
 
         // Handle INITIATOR (stepOrder 0) - "Submitted" or show subroleName like "MR"
         if (stepOrder === 0 || (stepHeader && stepHeader.approverType === 'INITIATOR')) {
@@ -230,9 +268,9 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
 
         // Handle FINAL_STATUS
         if (stepHeader && stepHeader.approverType === 'FINAL_STATUS') {
-          if (approver) {
+          if (stepHeader) {
             steps.push({
-              label: approver.headerName || stepHeader.headerName || 'Final Status',
+              label: approver.stepName || 'Final Status',
               status: approver.status || 'COMPLETED',
               userName: approver.assignedUserName || null,
               dateTime: approver.actedAt ? formatDateTime(approver.actedAt) : null,
@@ -317,17 +355,17 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
       console.log('🔍 Fetching workflow data for stageId:', stageId);
       const response = await customerAPI.getWorkflowProgression([stageId]);
       console.log('🔍 API Response:', JSON.stringify(response, null, 2));
-      
+
       if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
         const workflow = response.data[0];
         console.log('🔍 Workflow object:', workflow);
         console.log('🔍 Progressions:', workflow.progressions?.length);
-        
+
         const transformed = transformWorkflowData(response);
         console.log('🔍 Transformed accordion data:', transformed);
         console.log('🔍 Number of accordions:', transformed.length);
         setAccordionData(transformed);
-        
+
         // Auto-expand first accordion if available
         if (transformed.length > 0) {
           setExpandedAccordion(transformed[0].id);
@@ -398,8 +436,8 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
               <AppText style={styles.emptyText}>No workflow data available</AppText>
             </View>
           ) : (
-            <ScrollView 
-              style={styles.scrollView} 
+            <ScrollView
+              style={styles.scrollView}
               showsVerticalScrollIndicator={true}
               contentContainerStyle={styles.scrollContent}
             >
@@ -529,8 +567,8 @@ const styles = StyleSheet.create({
     minHeight: 60,
   },
   stepLabelContainer: {
-    width: 140,
-    paddingRight: 16,
+    width: 120,
+    paddingRight: 5,
     justifyContent: 'flex-start',
     paddingTop: 2,
   },
@@ -542,13 +580,13 @@ const styles = StyleSheet.create({
   indicatorContainer: {
     width: 32,
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 10,
     position: 'relative',
   },
   statusIndicator: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 24,
+    height: 24,
+    borderRadius: "100%",
     backgroundColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
@@ -571,22 +609,22 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 6,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   statusBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+
+    fontSize: 10,
+    fontWeight: '700',
     textTransform: 'uppercase',
   },
   userName: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#111827',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   dateTimeContainer: {
     flexDirection: 'row',
