@@ -15,6 +15,8 @@ import { colors } from '../../styles/colors';
 import CloseCircle from '../icons/CloseCircle';
 import { customerAPI } from '../../api/customer';
 import Toast from 'react-native-toast-message';
+import Reassigned from '../icons/Reassigned';
+
 
 // Reusable Vertical Timeline Component
 const VerticalTimeline = ({ steps }) => {
@@ -22,50 +24,52 @@ const VerticalTimeline = ({ steps }) => {
     <View style={styles.timelineContainer}>
       {steps.map((step, index) => {
         const isLast = index === steps.length - 1;
-        const isCompleted = step.status === 'APPROVED' || step.status === 'SUBMITTED' || step.status === 'submitted' || step.status === 'COMPLETED';
+        const isCompleted = step.status === 'APPROVED' || step.status === 'APPROVE' || step.status === 'SUBMITTED' || step.status === 'submitted' || step.status === 'COMPLETED';
         const isRejected = step.status === 'REJECTED' || step.status === 'rejected';
         const isPending = step.status === 'PENDING' || step.status === 'pending';
         const isInProgress = step.status === 'IN_PROGRESS';
         const isOthers = step.status === 'NOT_ASSIGNED' || !step.status || step.status === 'SKIPPED';
+        const isReassigned = step.status === 'REASSIGN' || !step.status || step.status === 'reassign';
 
         // Status indicator colors
-        const indicatorColor =
-          isCompleted
-            ? '#10B981' // green
-            : isRejected
-              ? '#EF4444' // red
-              : isPending || isInProgress
-                ? '#F4AD48' // orange (pending)
-                : '#D1D5DB'; // grey
+        let indicatorColor = '#D1D5DB';
 
-        // Badge colors
-        const badgeColor =
-          step.status === 'SUBMITTED' || step.status === 'submitted'
-            ? '#5995C71A' // blue
-            : step.status === 'APPROVED' || step.status === 'approved'
-              ? '#1695601A' // green
-              : step.status === 'REJECTED' || step.status === 'rejected'
-                ? '#F568681A' // red
-                : step.status === 'COMPLETED'
-                  ? '#10B981' // green
-                  : step.status === 'PENDING' || step.status === 'pending'
-                    ? '#F4AD481A' // orange (pending)
-                    : '#9CA3AF'; // grey
+        if (isCompleted) indicatorColor = '#10B981';
+        else if (isRejected) indicatorColor = '#EF4444';
+        else if (isReassigned) indicatorColor = '#AB65AD';
+        else if (isPending || isInProgress) indicatorColor = '#F4AD48';
+
+
 
 
         // Badge TExt colors
+        const status = (step.status || '').toUpperCase();
+
+        const badgeColor =
+          status === 'SUBMITTED'
+            ? '#5995C71A'
+            : status === 'APPROVED' || status === 'COMPLETED'
+              ? '#1695601A'
+              : status === 'REJECTED'
+                ? '#F568681A'
+                  : status === 'REASSIGN' || status === 'REASSIGNED'
+                    ? '#AB65AD1A'
+                    : status === 'PENDING'
+                      ? '#F4AD481A'
+                      : '#9CA3AF';
+
         const badgeTextColor =
-          step.status === 'SUBMITTED' || step.status === 'submitted'
-            ? '#5995C7' // blue
-            : step.status === 'APPROVED' || step.status === 'approved'
-              ? '#169560' // green
-              : step.status === 'REJECTED' || step.status === 'rejected'
-                ? '#F56868' // red
-                : step.status === 'COMPLETED'
-                  ? '#10B981' // green
-                  : step.status === 'PENDING' || step.status === 'pending'
-                    ? '#F4AD48' // orange (pending)
-                    : '#e5e7eb'; // grey
+          status === 'SUBMITTED'
+            ? '#5995C7'
+            : status === 'APPROVED' || status === 'COMPLETED'
+              ? '#169560'
+              : status === 'REJECTED'
+                ? '#F56868'
+                : status === 'REASSIGN' || status === 'REASSIGNED'
+                  ? '#AB65AD'
+                  : status === 'PENDING'
+                    ? '#F4AD48'
+                    : '#e5e7eb';
 
         return (
           <View key={index} style={styles.timelineStep}>
@@ -95,6 +99,11 @@ const VerticalTimeline = ({ steps }) => {
                 {(isPending || isInProgress) && (
                   <Icon name="time-outline" size={12} color="#fff" />
                 )}
+
+                {(isReassigned) && (
+                  // <Icon name="arrow-undo-outline" size={12} color="#fff" />
+                  <Reassigned/>
+                )}
               </View>
               {!isLast && (
                 <View
@@ -106,8 +115,8 @@ const VerticalTimeline = ({ steps }) => {
                     //     : '#E3E3E3'
                     // }
 
-                      {
-                      backgroundColor: isCompleted 
+                    {
+                      backgroundColor: isCompleted
                         ? '#000000'
                         : '#E3E3E3'
                     }
@@ -131,7 +140,9 @@ const VerticalTimeline = ({ steps }) => {
                   </View>
 
                   {/* User Name */}
-                  <AppText style={styles.userName}>{step.userName}</AppText>
+
+                  {step.userName != null &&  <AppText style={styles.userName}>{step.userName}</AppText>}
+                 
 
                   {/* Date/Time with Calendar Icon */}
                   {step.dateTime && (
@@ -180,6 +191,9 @@ const AccordionItem = ({ title, isExpanded, onToggle, children }) => {
 };
 
 const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, customerType }) => {
+
+
+  
   const [expandedAccordion, setExpandedAccordion] = useState(null);
   const [loading, setLoading] = useState(false);
   const [accordionData, setAccordionData] = useState([]);
@@ -244,6 +258,10 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
       const sortedStepOrders = Array.from(allStepOrders).sort((a, b) => a - b);
 
 
+
+      console.log(stepHeaderMap);
+      console.log(approverMap);
+
       // Build steps in order
       sortedStepOrders.forEach((stepOrder) => {
         const stepHeader = stepHeaderMap[stepOrder];
@@ -281,16 +299,47 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
         }
 
         // Handle regular approval steps
+        // if (approver) {
+        //   // Use approver data (it has the actual status and user info)
+        //   steps.push({
+        //     label: approver.headerName || (stepHeader ? stepHeader.headerName : 'Unknown'),
+        //     status: approver.status || 'PENDING',
+        //     userName: approver.assignedUserName || null,
+        //     dateTime: approver.actedAt ? formatDateTime(approver.actedAt) : null,
+        //     subHeaderName: approver.subHeaderName || (stepHeader ? stepHeader.subHeaderName : '')
+        //   });
+        // } 
         if (approver) {
-          // Use approver data (it has the actual status and user info)
+          const isSkipped = approver.status === 'SKIPPED';
+
+          const activity = isSkipped && approver.activities?.length
+            ? approver.activities[0]
+            : null;
+
           steps.push({
-            label: approver.headerName || (stepHeader ? stepHeader.headerName : 'Unknown'),
-            status: approver.status || 'PENDING',
-            userName: approver.assignedUserName || null,
-            dateTime: approver.actedAt ? formatDateTime(approver.actedAt) : null,
-            subHeaderName: approver.subHeaderName || (stepHeader ? stepHeader.subHeaderName : '')
+            label: approver.headerName || stepHeader?.headerName || 'Unknown',
+
+            // ✅ status from activity if skipped
+            status: isSkipped && activity?.action
+              ? activity.action
+              : approver.status || 'PENDING',
+
+            // ✅ actor name from activity if skipped
+            userName: isSkipped && activity?.actorName
+              ? activity.actorName
+              : approver.assignedUserName || null,
+
+            // ✅ timestamp from activity if skipped
+            dateTime: isSkipped && activity?.timestamp
+              ? formatDateTime(activity.timestamp)
+              : approver.actedAt
+                ? formatDateTime(approver.actedAt)
+                : null,
+
+            subHeaderName: approver.subHeaderName || stepHeader?.subHeaderName || ''
           });
-        } else if (stepHeader) {
+        }
+        else if (stepHeader) {
           // Step exists in stepHeaders but no approver yet (pending)
           steps.push({
             label: stepHeader.headerName || stepHeader.stepName || 'Unknown',
@@ -419,7 +468,7 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
           {/* Header */}
           <View style={styles.header}>
             <AppText style={styles.title}>
-              {customerName || 'Workflow Timeline'}
+              {customerName + " | " + customerType || 'Workflow Timeline' }
             </AppText>
             <TouchableOpacity onPress={onClose}>
               <CloseCircle color="#666" />
@@ -491,6 +540,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   header: {
+    width:"100%",
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -504,6 +554,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
+    maxWidth:"90%"
   },
   loadingContainer: {
     flex: 1,
