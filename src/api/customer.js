@@ -121,6 +121,19 @@ export const customerAPI = {
         }
     },
 
+    // Update customer group
+    updateCustomerGroup: async (payload) => {
+        try {
+            console.log('🔍 Updating customer group with payload:', JSON.stringify(payload, null, 2));
+            const response = await apiClient.put('/user-management/customer/customer-group', payload);
+            console.log('✅ Customer group updated successfully:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ Error updating customer group:', error);
+            throw error;
+        }
+    },
+
     // Delete customer
     deleteCustomer: async (customerId) => {
         try {
