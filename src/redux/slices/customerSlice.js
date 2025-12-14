@@ -45,58 +45,39 @@ export const fetchCustomersList = createAsyncThunk(
   }
 );
 
-// NEW: Fetch tab counts from API - Direct API calls in thunk
+// Fetch tab counts from API - Single API call
 export const fetchTabCounts = createAsyncThunk(
   'customer/fetchTabCounts',
   async (_, { rejectWithValue }) => {
     try {
-      const apiClient = require('../../api/apiClient').default;
+      const { customerAPI } = require('../../api/customer');
       
-      const [allResponse, waitingForApprovalResponse, notOnboardedResponse, unverifiedResponse, rejectedResponse] = await Promise.all([
-        apiClient.post('/user-management/customer/customers-list', { 
-          typeCode: [], categoryCode: [], subCategoryCode: [], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 
-        }),
-        apiClient.post('/user-management/customer/customers-list/staging', { 
-          typeCode: [], categoryCode: [], subCategoryCode: [], statusIds: [5], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 
-        }),
-        apiClient.post('/user-management/customer/customers-list', { 
-          typeCode: [], categoryCode: [], subCategoryCode: [], statusIds: [18], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 
-        }),
-        apiClient.post('/user-management/customer/customers-list', { 
-          typeCode: [], categoryCode: [], subCategoryCode: [], statusIds: [19], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 
-        }),
-        apiClient.post('/user-management/customer/customers-list/staging', { 
-          typeCode: [], categoryCode: [], subCategoryCode: [], statusIds: [6], page: 1, limit: 1, sortBy: '', sortDirection: 'ASC' 
-        })
-      ]);
+      const response = await customerAPI.getTabCounts();
+      
+      // API response structure: { success, statusCode, message, data: { allCount, ... } }
+      // apiClient.get() returns axios response, so response.data is the API response body
+      // response.data = { success, statusCode, message, data: { allCount, ... } }
+      // response.data.data = { allCount, waitingForApprovalCount, ... }
+      const countsData = response?.data || {};
 
-      // Extract totals from responses
-      const allCount = allResponse?.data?.total || 0;
-      const waitingForApprovalCount = waitingForApprovalResponse?.data?.total || 0;
-      const notOnboardedCount = notOnboardedResponse?.data?.total || 0;
-      const unverifiedCount = unverifiedResponse?.data?.total || 0;
-      const rejectedCount = rejectedResponse?.data?.total || 0;
-
-      console.log('✅ TAB COUNTS FETCHED:', { 
-        all: allCount, 
-        waitingForApproval: waitingForApprovalCount,
-        notOnboarded: notOnboardedCount,
-        unverified: unverifiedCount,
-        rejected: rejectedCount
-      });
-
-      // Return counts mapped to tab names
+      console.log('🔍 Tab counts data:', countsData);
+      
+      // Map API response fields to our tab count structure
       const counts = {
-        all: allCount,
-        waitingForApproval: waitingForApprovalCount,
-        notOnboarded: notOnboardedCount,
-        unverified: unverifiedCount,
-        rejected: rejectedCount
+        all: countsData.allCount || 0,
+        waitingForApproval: countsData.waitingForApprovalCount || 0,
+        notOnboarded: countsData.notOnBoardCount || 0, // Note: API uses notOnBoardCount
+        unverified: countsData.unverifiedCount || 0,
+        rejected: countsData.rejectedCount || 0,
+        doctorSupply: countsData.doctorSupplyCount || 0,
+        draft: countsData.draftCount || 0
       };
+
+      console.log('✅ TAB COUNTS FETCHED from API:', counts);
       
       return counts;
     } catch (error) {
-      console.error('Error fetching tab counts:', error);
+      console.error('❌ Error fetching tab counts:', error);
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -203,7 +184,9 @@ const initialState = {
     waitingForApproval: 0,
     notOnboarded: 0,
     unverified: 0,
-    rejected: 0
+    rejected: 0,
+    doctorSupply: 0,
+    draft: 0
   },
   
   // Filters

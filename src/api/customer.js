@@ -280,16 +280,18 @@ export const customerAPI = {
     },
 
     // Block/Unblock customer
-    blockUnblockCustomer: async (customerIds, distributorId, isActive) => {
+    blockUnblockCustomer: async (customerIds, isActive) => {
         try {
-            const response = await apiClient.patch('/user-management/customer/block-unblock', {
-                customerIds,
-                distributorId,
-                isActive
-            });
+            const payload = {
+                customerId: customerIds, // API expects customerId (array)
+                isActive: isActive
+            };
+            console.log('🔍 Block/Unblock API payload:', JSON.stringify(payload, null, 2));
+            const response = await apiClient.patch('/user-management/customer/block-unblock', payload);
+            console.log('✅ Block/Unblock API response:', response);
             return response;
         } catch (error) {
-            console.error('Error blocking/unblocking customer:', error);
+            console.error('❌ Error blocking/unblocking customer:', error);
             throw error;
         }
     },
@@ -523,32 +525,16 @@ export const customerAPI = {
         }
     },
 
-    // NEW: Get tab counts for all tabs
+    // Get tab counts for all tabs - single API call
     getTabCounts: async () => {
         try {
-            // Fetch counts for each tab in parallel
-            const [allResponse, stagingResponse] = await Promise.all([
-                apiClient.post('/user-management/customer/customers-list', { page: 1, limit: 1 }),
-                apiClient.post('/user-management/customer/customers-list/staging', { page: 1, limit: 1, statusIds: [5] })
-            ]);
-
-            // Extract totals from responses
-            const allCount = allResponse.data?.data?.total || 0;
-            const stagingCount = stagingResponse.data?.data?.total || 0;
-
-            // Return counts mapped to tab names
-            return {
-                all: allCount,
-                waitingForApproval: stagingCount,
-                notOnboarded: stagingCount, // Same as waiting for approval (both use staging endpoint)
-                unverified: 0, // Can be fetched separately if needed
-                rejected: 0 // Can be fetched separately if needed
-            };
-            } catch (error) {
-                console.error('Error fetching tab counts:', error);
-                throw error;
-            }
-        },
+            const response = await apiClient.get('/user-management/customer/customers-list-count');
+            return response;
+        } catch (error) {
+            console.error('Error fetching tab counts:', error);
+            throw error;
+        }
+    },
 
     // Onboard customer (assign customer to distributor)
     onboardCustomer: async (payload, isStaging = false) => {

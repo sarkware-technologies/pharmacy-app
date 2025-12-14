@@ -472,11 +472,9 @@ const CustomerSearch = ({ navigation }) => {
     try {
       setBlockUnblockLoading(true);
       const customerId = customer?.stgCustomerId || customer?.customerId;
-      const distributorId = loggedInUser?.distributorId || 1;
 
       await customerAPI.blockUnblockCustomer(
         [customerId],
-        distributorId,
         false // isActive = false for blocking
       );
 
@@ -523,11 +521,9 @@ const CustomerSearch = ({ navigation }) => {
     try {
       setBlockUnblockLoading(true);
       const customerId = customer?.stgCustomerId || customer?.customerId;
-      const distributorId = loggedInUser?.distributorId || 1;
 
       await customerAPI.blockUnblockCustomer(
         [customerId],
-        distributorId,
         true // isActive = true for unblocking
       );
 

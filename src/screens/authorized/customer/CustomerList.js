@@ -111,17 +111,6 @@ const CustomerList = ({ navigation }) => {
   const tabCounts = useSelector(selectTabCounts); // Re-added tabCounts selector
   const shouldResetToAllTab = useSelector(state => state.customer.shouldResetToAllTab); // Get reset flag
 
-  // Console log tab counts for debugging
-  useEffect(() => {
-    console.log('=== TAB COUNTS IN CUSTOMERLIST ===');
-    console.log('Tab Counts:', tabCounts);
-    console.log('All:', tabCounts.all);
-    console.log('Waiting for Approval:', tabCounts.waitingForApproval);
-    console.log('Not Onboarded:', tabCounts.notOnboarded);
-    console.log('Unverified:', tabCounts.unverified);
-    console.log('Rejected:', tabCounts.rejected);
-    console.log('====================================');
-  }, [tabCounts]);
 
   const [activeTab, setActiveTab] = useState('all');
   const [activeFilterButton, setActiveFilterButton] = useState('newCustomer');
@@ -192,7 +181,9 @@ const CustomerList = ({ navigation }) => {
       'waitingForApproval': [5],
       'notOnboarded': [18],
       'unverified': [19],
-      'rejected': [6]
+      'rejected': [6],
+      'doctorSupply': [7],
+      'draft': [4]
     };
     return statusMap[tab] || [0];
   };
@@ -212,6 +203,14 @@ const CustomerList = ({ navigation }) => {
   useEffect(() => {
     dispatch(fetchTabCounts());
   }, [dispatch]);
+
+  // Fetch tab counts whenever the customer tab becomes active (screen is focused)
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔄 Customer tab is active - fetching tab counts');
+      dispatch(fetchTabCounts());
+    }, [dispatch])
+  );
 
   // Fetch customers on mount and when tab changes
   useEffect(() => {
@@ -238,8 +237,8 @@ const CustomerList = ({ navigation }) => {
         };
         console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
         dispatch(fetchCustomersList(payload));
-      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
-        // Waiting for Approval and Rejected - staging endpoint
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
+        // Waiting for Approval, Rejected, and Draft - staging endpoint
         const statusIds = getStatusIdsForTab(activeTab);
         const payload = {
           page: 1,
@@ -258,7 +257,29 @@ const CustomerList = ({ navigation }) => {
           payload.filter = getFilterValue(activeFilterButton);
           console.log(`🔍 Filter value for ${activeTab}:`, payload.filter, 'from button:', activeFilterButton);
         }
+        // Add filter for draft tab
+        if (activeTab === 'draft') {
+          payload.filter = 'NEW';
+        }
         console.log(`🔍 ${activeTab} tab API payload (staging):`, JSON.stringify(payload, null, 2));
+        dispatch(fetchCustomersList(payload));
+      } else if (activeTab === 'doctorSupply') {
+        // Doctor Supply - regular endpoint with statusIds and customerGroupId
+        const statusIds = getStatusIdsForTab(activeTab);
+        const payload = {
+          page: 1,
+          limit: 10,
+          isLoadMore: false,
+          isStaging: false,
+          typeCode: [],
+          categoryCode: [],
+          subCategoryCode: [],
+          statusIds: statusIds,
+          sortBy: '',
+          sortDirection: 'ASC',
+          customerGroupId: 1
+        };
+        console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
         dispatch(fetchCustomersList(payload));
       } else {
         // Not Onboarded and Unverified - regular endpoint with statusIds
@@ -446,8 +467,8 @@ const CustomerList = ({ navigation }) => {
           isLoadMore: false,
           isStaging: false
         }));
-      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
-        // Waiting for Approval and Rejected - staging endpoint
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
+        // Waiting for Approval, Rejected, and Draft - staging endpoint
         const statusIds = getStatusIdsForTab(activeTab);
         const payload = {
           page: 1,
@@ -466,7 +487,28 @@ const CustomerList = ({ navigation }) => {
         if (activeTab === 'waitingForApproval') {
           payload.filter = getFilterValue(activeFilterButton);
         }
+        // Add filter for draft tab
+        if (activeTab === 'draft') {
+          payload.filter = 'NEW';
+        }
         dispatch(fetchCustomersList(payload));
+      } else if (activeTab === 'doctorSupply') {
+        // Doctor Supply - regular endpoint with statusIds and customerGroupId
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: 10,
+          searchText: searchText,
+          typeCode: selectedFilters.typeCode,
+          categoryCode: selectedFilters.categoryCode,
+          subCategoryCode: selectedFilters.subCategoryCode,
+          statusId: selectedFilters.statusId,
+          cityIds: selectedFilters.cityIds,
+          isLoadMore: false,
+          isStaging: false,
+          statusIds: statusIds,
+          customerGroupId: 1
+        }));
       } else {
         const statusIds = getStatusIdsForTab(activeTab);
         dispatch(fetchCustomersList({
@@ -503,8 +545,8 @@ const CustomerList = ({ navigation }) => {
         isLoadMore: false,
         isStaging: false
       }));
-    } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
-      // Waiting for Approval and Rejected - staging endpoint
+    } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
+      // Waiting for Approval, Rejected, and Draft - staging endpoint
       const statusIds = getStatusIdsForTab(activeTab);
       const payload = {
         page: 1,
@@ -518,7 +560,23 @@ const CustomerList = ({ navigation }) => {
       if (activeTab === 'waitingForApproval') {
         payload.filter = getFilterValue(activeFilterButton);
       }
+      // Add filter for draft tab
+      if (activeTab === 'draft') {
+        payload.filter = 'NEW';
+      }
       await dispatch(fetchCustomersList(payload));
+    } else if (activeTab === 'doctorSupply') {
+      // Doctor Supply - regular endpoint with statusIds and customerGroupId
+      const statusIds = getStatusIdsForTab(activeTab);
+      await dispatch(fetchCustomersList({
+        page: 1,
+        limit: 10,
+        ...filters,
+        isLoadMore: false,
+        isStaging: false,
+        statusIds: statusIds,
+        customerGroupId: 1
+      }));
     } else {
       // Not Onboarded and Unverified - regular endpoint with statusIds
       const statusIds = getStatusIdsForTab(activeTab);
@@ -551,7 +609,7 @@ const CustomerList = ({ navigation }) => {
         isLoadMore: true,
         isStaging: false
       };
-    } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+    } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
       const statusIds = getStatusIdsForTab(activeTab);
       requestParams = {
         page: nextPage,
@@ -565,6 +623,21 @@ const CustomerList = ({ navigation }) => {
       if (activeTab === 'waitingForApproval') {
         requestParams.filter = getFilterValue(activeFilterButton);
       }
+      // Add filter for draft tab
+      if (activeTab === 'draft') {
+        requestParams.filter = 'NEW';
+      }
+    } else if (activeTab === 'doctorSupply') {
+      const statusIds = getStatusIdsForTab(activeTab);
+      requestParams = {
+        page: nextPage,
+        limit: limit || 10,
+        ...filters,
+        isLoadMore: true,
+        isStaging: false,
+        statusIds: statusIds,
+        customerGroupId: 1
+      };
     } else {
       const statusIds = getStatusIdsForTab(activeTab);
       requestParams = {
@@ -834,7 +907,7 @@ const CustomerList = ({ navigation }) => {
           searchText: filters.searchText,
           isStaging: false
         }));
-      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
         const payload = {
           page: 1,
@@ -847,7 +920,21 @@ const CustomerList = ({ navigation }) => {
         if (activeTab === 'waitingForApproval') {
           payload.filter = getFilterValue(activeFilterButton);
         }
+        // Add filter for draft tab
+        if (activeTab === 'draft') {
+          payload.filter = 'NEW';
+        }
         dispatch(fetchCustomersList(payload));
+      } else if (activeTab === 'doctorSupply') {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false,
+          statusIds: statusIds,
+          customerGroupId: 1
+        }));
       } else {
         const statusIds = getStatusIdsForTab(activeTab);
         dispatch(fetchCustomersList({
@@ -914,7 +1001,7 @@ const CustomerList = ({ navigation }) => {
           searchText: filters.searchText,
           isStaging: false
         }));
-      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
         const payload = {
           page: 1,
@@ -927,7 +1014,21 @@ const CustomerList = ({ navigation }) => {
         if (activeTab === 'waitingForApproval') {
           payload.filter = getFilterValue(activeFilterButton);
         }
+        // Add filter for draft tab
+        if (activeTab === 'draft') {
+          payload.filter = 'NEW';
+        }
         dispatch(fetchCustomersList(payload));
+      } else if (activeTab === 'doctorSupply') {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false,
+          statusIds: statusIds,
+          customerGroupId: 1
+        }));
       } else {
         const statusIds = getStatusIdsForTab(activeTab);
         dispatch(fetchCustomersList({
@@ -951,11 +1052,9 @@ const CustomerList = ({ navigation }) => {
     try {
       setBlockUnblockLoading(true);
       const customerId = customer?.stgCustomerId || customer?.customerId;
-      const distributorId = loggedInUser?.distributorId || 1;
 
       const response = await customerAPI.blockUnblockCustomer(
         [customerId],
-        distributorId,
         false // isActive = false for blocking
       );
 
@@ -969,7 +1068,7 @@ const CustomerList = ({ navigation }) => {
           searchText: filters.searchText,
           isStaging: false
         }));
-      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
         const payload = {
           page: 1,
@@ -982,7 +1081,21 @@ const CustomerList = ({ navigation }) => {
         if (activeTab === 'waitingForApproval') {
           payload.filter = getFilterValue(activeFilterButton);
         }
+        // Add filter for draft tab
+        if (activeTab === 'draft') {
+          payload.filter = 'NEW';
+        }
         dispatch(fetchCustomersList(payload));
+      } else if (activeTab === 'doctorSupply') {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false,
+          statusIds: statusIds,
+          customerGroupId: 1
+        }));
       } else {
         const statusIds = getStatusIdsForTab(activeTab);
         dispatch(fetchCustomersList({
@@ -1007,11 +1120,9 @@ const CustomerList = ({ navigation }) => {
     try {
       setBlockUnblockLoading(true);
       const customerId = customer?.stgCustomerId || customer?.customerId;
-      const distributorId = loggedInUser?.distributorId || 1;
 
       const response = await customerAPI.blockUnblockCustomer(
         [customerId],
-        distributorId,
         true // isActive = true for unblocking
       );
 
@@ -1025,7 +1136,7 @@ const CustomerList = ({ navigation }) => {
           searchText: filters.searchText,
           isStaging: false
         }));
-      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
         const payload = {
           page: 1,
@@ -1038,7 +1149,21 @@ const CustomerList = ({ navigation }) => {
         if (activeTab === 'waitingForApproval') {
           payload.filter = getFilterValue(activeFilterButton);
         }
+        // Add filter for draft tab
+        if (activeTab === 'draft') {
+          payload.filter = 'NEW';
+        }
         dispatch(fetchCustomersList(payload));
+      } else if (activeTab === 'doctorSupply') {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false,
+          statusIds: statusIds,
+          customerGroupId: 1
+        }));
       } else {
         const statusIds = getStatusIdsForTab(activeTab);
         dispatch(fetchCustomersList({
@@ -1221,7 +1346,7 @@ const CustomerList = ({ navigation }) => {
         ...filterParams,
         isStaging: false
       }));
-    } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
+    } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
       const tabStatusIds = getStatusIdsForTab(activeTab);
       const payload = {
         ...filterParams,
@@ -1232,7 +1357,19 @@ const CustomerList = ({ navigation }) => {
       if (activeTab === 'waitingForApproval') {
         payload.filter = getFilterValue(activeFilterButton);
       }
+      // Add filter for draft tab
+      if (activeTab === 'draft') {
+        payload.filter = 'NEW';
+      }
       dispatch(fetchCustomersList(payload));
+    } else if (activeTab === 'doctorSupply') {
+      const tabStatusIds = getStatusIdsForTab(activeTab);
+      dispatch(fetchCustomersList({
+        ...filterParams,
+        isStaging: false,
+        statusIds: tabStatusIds,
+        customerGroupId: 1
+      }));
     } else {
       const tabStatusIds = getStatusIdsForTab(activeTab);
       dispatch(fetchCustomersList({
@@ -1290,7 +1427,7 @@ const CustomerList = ({ navigation }) => {
                   onPress={() => {
                     const customerId = item.customerId || item.stgCustomerId;
                     // Determine isStaging based on tab - only waitingForApproval and rejected use staging
-                    const isStaging = activeTab === 'waitingForApproval' || activeTab === 'rejected';
+                    const isStaging = activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft';
                     handleOnboardCustomer(
                       navigation,
                       customerId,
@@ -1414,7 +1551,7 @@ const CustomerList = ({ navigation }) => {
             ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
               <TouchableOpacity
                 style={styles.blockButton}
-                onPress={() => handleUnblockCustomer(item)}
+                onPress={() => handleBlockCustomer(item)}
                 disabled={blockUnblockLoading}
               >
                 <Locked fill="#666" />
@@ -1775,6 +1912,24 @@ const CustomerList = ({ navigation }) => {
           >
             <AppText style={[styles.tabText, activeTab === 'rejected' && styles.activeTabText]}>
               Rejected ({tabCounts.rejected})
+            </AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            ref={(ref) => tabRefs.current['doctorSupply'] = ref}
+            style={[styles.tab, activeTab === 'doctorSupply' && styles.activeTab]}
+            onPress={() => handleTabPress('doctorSupply')}
+          >
+            <AppText style={[styles.tabText, activeTab === 'doctorSupply' && styles.activeTabText]}>
+              Doctor Supply ({tabCounts.doctorSupply || 0})
+            </AppText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            ref={(ref) => tabRefs.current['draft'] = ref}
+            style={[styles.tab, activeTab === 'draft' && styles.activeTab]}
+            onPress={() => handleTabPress('draft')}
+          >
+            <AppText style={[styles.tabText, activeTab === 'draft' && styles.activeTabText]}>
+              Draft ({tabCounts.draft || 0})
             </AppText>
           </TouchableOpacity>
         </ScrollView>
