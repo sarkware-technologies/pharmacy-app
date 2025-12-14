@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -41,6 +41,40 @@ import CloseCircle from '../../../components/icons/CloseCircle';
 
 const { width } = Dimensions.get('window');
 
+// Move AnimatedSection outside component to prevent recreation on every render
+const AnimatedSection = React.memo(({ children }) => {
+  const sectionAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(sectionAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: sectionAnim,
+        transform: [
+          {
+            translateY: sectionAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [20, 0],
+            }),
+          },
+        ],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+});
+
+AnimatedSection.displayName = 'AnimatedSection';
+
 const CustomerDetail = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { customer } = route.params;
@@ -52,6 +86,9 @@ const CustomerDetail = ({ navigation, route }) => {
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [customerGroups, setCustomerGroups] = useState([]);
+  const [isEditingCustomerGroup, setIsEditingCustomerGroup] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [updatingCustomerGroup, setUpdatingCustomerGroup] = useState(false);
 
   // Get customer data from Redux
   const { selectedCustomer, detailsLoading, detailsError } = useSelector(
@@ -69,14 +106,10 @@ const CustomerDetail = ({ navigation, route }) => {
 
   // Fetch customer details on mount - FIXED to prevent double API calls
   useEffect(() => {
-    // For staging customers (PENDING, NOT-ONBOARDED), use stgCustomerId, otherwise use customerId
     const customerId = customer?.stgCustomerId || customer?.customerId;
-    // Set isStaging=false only for NOT-ONBOARDED status, true for PENDING
     const isStaging = customer?.statusName === 'NOT-ONBOARDED' ? false : (customer?.statusName === 'PENDING' ? true : false);
 
     if (customerId) {
-      console.log('Fetching customer details for:', { customerId, isStaging });
-      // Save customerId to Redux for use in LinkagedTab
       dispatch(setCurrentCustomerId(customerId));
       dispatch(fetchCustomerDetails({
         customerId,
@@ -97,7 +130,7 @@ const CustomerDetail = ({ navigation, route }) => {
 
 
 
-  const loadCustomerGroups = async () => {
+  const loadCustomerGroups = useCallback(async () => {
     try {
       const groupsResponse = await customerAPI.getCustomerGroups();
       if (groupsResponse.success && groupsResponse.data) {
@@ -107,7 +140,156 @@ const CustomerDetail = ({ navigation, route }) => {
     } catch (error) {
       console.error('Error loading customer groups:', error);
     }
-  };
+  }, []);
+
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleChangeCustomerGroup = useCallback(async () => {
+    // Load customer groups if not already loaded
+    if (customerGroups.length === 0) {
+      await loadCustomerGroups();
+    }
+    if (customerData?.customerGroupId) {
+      setSelectedGroupId(customerData.customerGroupId);
+    }
+    setIsEditingCustomerGroup(true);
+  }, [customerGroups.length, loadCustomerGroups, customerData?.customerGroupId]);
+
+  const handleCancelCustomerGroup = useCallback(() => {
+    setIsEditingCustomerGroup(false);
+    if (customerData?.customerGroupId) {
+      setSelectedGroupId(customerData.customerGroupId);
+    }
+  }, [customerData?.customerGroupId]);
+
+  const handleDoneCustomerGroup = useCallback(async () => {
+    if (!selectedGroupId || !selectedCustomer) {
+      setIsEditingCustomerGroup(false);
+      return;
+    }
+
+    // Only update if group actually changed
+    if (selectedGroupId === selectedCustomer?.customerGroupId) {
+      setIsEditingCustomerGroup(false);
+      return;
+    }
+
+    try {
+      setUpdatingCustomerGroup(true);
+
+      // Build payload from selectedCustomer data
+      const stgCustomerId = selectedCustomer.stgCustomerId || customer?.stgCustomerId || customerId;
+      
+      const payload = {
+        typeId: selectedCustomer.typeId || selectedCustomer.type?.typeId || 1,
+        categoryId: selectedCustomer.categoryId || selectedCustomer.category?.categoryId || 0,
+        subCategoryId: selectedCustomer.subCategoryId || selectedCustomer.subCategory?.subCategoryId || 0,
+        licenceDetails: selectedCustomer.licenceDetails ? {
+          licence: selectedCustomer.licenceDetails.licence || [],
+          registrationDate: selectedCustomer.licenceDetails.registrationDate || null
+        } : {
+          licence: [],
+          registrationDate: null
+        },
+        customerId: customerId,
+        stgCustomerId: stgCustomerId,
+        customerDocs: selectedCustomer.docType?.map(doc => ({
+          s3Path: doc.s3Path,
+          docTypeId: doc.doctypeId || doc.docTypeId,
+          fileName: doc.fileName,
+          customerId: customerId,
+          id: doc.id
+        })) || [],
+        isBuyer: selectedCustomer.isBuyer !== undefined ? selectedCustomer.isBuyer : false,
+        customerGroupId: selectedGroupId, // Updated customer group ID
+        generalDetails: selectedCustomer.generalDetails ? {
+          name: selectedCustomer.generalDetails.name || selectedCustomer.generalDetails.customerName || '',
+          shortName: selectedCustomer.generalDetails.shortName || null,
+          address1: selectedCustomer.generalDetails.address1 || '',
+          address2: selectedCustomer.generalDetails.address2 || '',
+          address3: selectedCustomer.generalDetails.address3 || '',
+          address4: selectedCustomer.generalDetails.address4 || '',
+          pincode: selectedCustomer.generalDetails.pincode || null,
+          area: selectedCustomer.generalDetails.area || null,
+          cityId: selectedCustomer.generalDetails.cityId || null,
+          stateId: selectedCustomer.generalDetails.stateId || null,
+          ownerName: selectedCustomer.generalDetails.ownerName || null,
+          clinicName: selectedCustomer.generalDetails.clinicName || null,
+          specialist: selectedCustomer.generalDetails.specialist || null,
+          areaId: selectedCustomer.generalDetails.areaId || null
+        } : {
+          name: '',
+          shortName: null,
+          address1: '',
+          address2: '',
+          address3: '',
+          address4: '',
+          pincode: null,
+          area: null,
+          cityId: null,
+          stateId: null,
+          ownerName: null,
+          clinicName: null,
+          specialist: null,
+          areaId: null
+        },
+        securityDetails: selectedCustomer.securityDetails ? {
+          mobile: selectedCustomer.securityDetails.mobile || '',
+          email: selectedCustomer.securityDetails.email || '',
+          panNumber: selectedCustomer.securityDetails.panNumber || null,
+          gstNumber: selectedCustomer.securityDetails.gstNumber || null
+        } : {
+          mobile: '',
+          email: '',
+          panNumber: null,
+          gstNumber: null
+        },
+        mapping: selectedCustomer.mapping ? {
+          hospitals: selectedCustomer.mapping.hospitals || [],
+          doctors: selectedCustomer.mapping.doctors || [],
+          pharmacy: selectedCustomer.mapping.pharmacy || [],
+          groupHospitals: selectedCustomer.mapping.groupHospitals || []
+        } : {
+          hospitals: [],
+          doctors: [],
+          pharmacy: [],
+          groupHospitals: []
+        },
+        suggestedDistributors: selectedCustomer.suggestedDistributors || [],
+        isEmailVerified: selectedCustomer.isEmailVerified !== undefined ? selectedCustomer.isEmailVerified : false,
+        isMobileVerified: selectedCustomer.isMobileVerified !== undefined ? selectedCustomer.isMobileVerified : false,
+        isExisting: selectedCustomer.isExisting !== undefined ? selectedCustomer.isExisting : false,
+        divisions: selectedCustomer.divisions || [],
+        isChildCustomer: selectedCustomer.isChildCustomer !== undefined ? selectedCustomer.isChildCustomer : false,
+        stationCode: selectedCustomer.stationCode || loggedInUser?.stationCode || '',
+        isAssignedToCustomer: selectedCustomer.isAssignedToCustomer !== undefined ? selectedCustomer.isAssignedToCustomer : false
+      };
+
+      console.log('🔍 Updating customer group - payload:', JSON.stringify(payload, null, 2));
+
+      await customerAPI.updateCustomerGroup(payload);
+
+      // Show success message
+      Alert.alert('Success', 'Customer group updated successfully!');
+
+      // Refresh customer details to get updated data
+      const customerId = customer?.stgCustomerId || customer?.customerId;
+      const isStaging = customer?.statusName === 'NOT-ONBOARDED' ? false : (customer?.statusName === 'PENDING' ? true : false);
+      
+      if (customerId) {
+        dispatch(fetchCustomerDetails({
+          customerId,
+          isStaging
+        }));
+      }
+
+      setIsEditingCustomerGroup(false);
+    } catch (error) {
+      console.error('❌ Error updating customer group:', error);
+      Alert.alert('Error', error.response?.data?.message || error.message || 'Failed to update customer group');
+    } finally {
+      setUpdatingCustomerGroup(false);
+    }
+  }, [selectedGroupId, selectedCustomer, customer, loggedInUser, dispatch]);
 
 
 
@@ -232,44 +414,66 @@ const CustomerDetail = ({ navigation, route }) => {
   //   });
   // };
 
-const mapLicenseData = () => {
-  const licenseList = selectedCustomer?.licenceDetails?.licence || [];
-  const docList = selectedCustomer?.docType || [];
+  // Memoize license data to prevent unnecessary recalculations
+  const licenseData = useMemo(() => {
+    const licenseList = selectedCustomer?.licenceDetails?.licence || [];
+    const docList = selectedCustomer?.docType || [];
 
-  return licenseList.map(lic => {
-    const licName = String(lic.licenceTypeName || "").toUpperCase().trim();
+    return licenseList.map(lic => {
+      const licName = String(lic.licenceTypeName || "").toUpperCase().trim();
 
-    // Extract trailing token from licenceTypeName
-    const licToken = licName.match(/([A-Z0-9]+)$/)?.[1] || "";
+      // Extract trailing token from licenceTypeName
+      const licToken = licName.match(/([A-Z0-9]+)$/)?.[1] || "";
 
-    let document = null;
+      let document = null;
 
-    // 1️⃣ Find match by trailing token (smart matching)
-    document = docList.find(doc => {
-      const docName = String(doc.doctypeName || "").toUpperCase().trim();
-      const docToken = docName.match(/([A-Z0-9]+)$/)?.[1] || "";
-      return docToken === licToken;
-    }) || null;
+      // 1️⃣ Find match by trailing token (smart matching)
+      document = docList.find(doc => {
+        const docName = String(doc.doctypeName || "").toUpperCase().trim();
+        const docToken = docName.match(/([A-Z0-9]+)$/)?.[1] || "";
+        return docToken === licToken;
+      }) || null;
 
-    return {
-      label: lic.licenceTypeName || "",
-      licenseNumber: lic.licenceNo || "",
-      expiry: lic.licenceValidUpto
-        ? new Date(lic.licenceValidUpto).toLocaleDateString("en-GB").replace(/\//g, "-")
-        : "",
-      document
-    };
-  });
-};
-
-
-  const licenseData = mapLicenseData();
+      return {
+        label: lic.licenceTypeName || "",
+        licenseNumber: lic.licenceNo || "",
+        expiry: lic.licenceValidUpto
+          ? new Date(lic.licenceValidUpto).toLocaleDateString("en-GB").replace(/\//g, "-")
+          : "",
+        document
+      };
+    });
+  }, [selectedCustomer?.licenceDetails?.licence, selectedCustomer?.docType]);
 
   console.log(selectedCustomer);
 
+  // Memoize customer data to prevent unnecessary re-renders
+  // Only recalculate when selectedCustomer or customerGroups change
+  const customerData = useMemo(() => {
+    if (!selectedCustomer) {
+      return {
+        code: '',
+        mobileNumber: '',
+        email: '',
+        address: '',
+        pincode: '',
+        city: '',
+        state: '',
+        pan: '',
+        gst: '',
+        customerGroupId: '',
+        customerGroupName: 'N/A',
+        documents: {
+          addressProof: null,
+          panDoc: null,
+          gstDoc: null,
+          image: null,
+        },
+        licenseData: [],
+      };
+    }
 
-  // Format customer data from API response to match the UI structure
-  const customerData = selectedCustomer ? {
+    return {
     code: selectedCustomer.customerCode || selectedCustomer.id || '',
     mobileNumber: selectedCustomer.securityDetails?.mobile || '',
     email: selectedCustomer.securityDetails?.email || '',
@@ -301,26 +505,9 @@ const mapLicenseData = () => {
         d.doctypeName?.toLowerCase().includes('image')
       ) || null,
     },
-    licenseData: licenseData,
-  } : {
-    // Empty data if no API response
-    code: '',
-    mobileNumber: '',
-    email: '',
-    address: '',
-    pincode: '',
-    city: '',
-    state: '',
-    pan: '',
-    gst: '',
-    documents: {
-      addressProof: null,
-      panDoc: null,
-      gstDoc: null,
-      image: null,
-    },
-    licenseData: [],
-  };
+      licenseData: licenseData,
+    };
+  }, [selectedCustomer, customerGroups, licenseData]);
 
   // Get customer name for header
   const getCustomerName = () => {
@@ -357,42 +544,15 @@ const mapLicenseData = () => {
     ]).start();
 
 
-    loadCustomerGroups()
-
+    loadCustomerGroups();
+    // Set initial selected group when customer data loads
+    if (selectedCustomer?.customerGroupId) {
+      setSelectedGroupId(selectedCustomer.customerGroupId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   console.log(customerGroups);
-
-
-  const AnimatedSection = ({ children }) => {
-    const sectionAnim = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-      Animated.timing(sectionAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
-    }, []);
-
-    return (
-      <Animated.View
-        style={{
-          opacity: sectionAnim,
-          transform: [
-            {
-              translateY: sectionAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [20, 0],
-              }),
-            },
-          ],
-        }}
-      >
-        {children}
-      </Animated.View>
-    );
-  };
 
   const DocumentModal = () => {
     const [loadingDoc, setLoadingDoc] = useState(false);
@@ -870,12 +1030,93 @@ const mapLicenseData = () => {
                   <AnimatedSection  >
                     <AppText style={styles.sectionTitle}>Customer Group</AppText>
 
-                
                     <View style={[styles.card, { marginBottom: 20 }]}>
-                           <View style={styles.infoContent}>
-                      <AppText style={styles.infoValue}>{customerData.customerGroupName}</AppText>
-                      </View>
+                      {!isEditingCustomerGroup ? (
+                        // Display mode - show customer group name and Change button
+                        <View style={styles.customerGroupRow}>
+                          <AppText style={styles.infoValue}>{customerData.customerGroupName}</AppText>
+                          <TouchableOpacity 
+                            style={styles.changeButton}
+                            onPress={handleChangeCustomerGroup}
+                            activeOpacity={0.7}
+                          >
+                            <Icon name="refresh-circle" size={12} color="#fff" />
+                            <AppText style={styles.changeButtonText}>Change</AppText>
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        // Edit mode - show radio buttons inline
+                        <View style={styles.customerGroupEditContainer}>
+                          <View style={styles.radioGroupContainer}>
+                            {customerGroups.length > 0 ? (
+                              <>
+                                <View style={styles.radioRow}>
+                                  {customerGroups.slice(0, 2).map((group) => (
+                                    <TouchableOpacity
+                                      key={group.customerGroupId}
+                                      style={[styles.radioOption, styles.radioOptionFlex]}
+                                      onPress={() => {
+                                        setSelectedGroupId(group.customerGroupId);
+                                      }}
+                                    >
+                                      <View style={styles.radioCircle}>
+                                        {selectedGroupId === group.customerGroupId && (
+                                          <View style={styles.radioSelected} />
+                                        )}
+                                      </View>
+                                      <AppText style={styles.radioText}>
+                                        {group.customerGroupId}-{group.customerGroupName}
+                                      </AppText>
+                                    </TouchableOpacity>
+                                  ))}
+                                </View>
+                                {customerGroups.length > 2 && (
+                                  <View style={styles.radioRow}>
+                                    {customerGroups.slice(2, 4).map((group) => (
+                                      <TouchableOpacity
+                                        key={group.customerGroupId}
+                                        style={[styles.radioOption, styles.radioOptionFlex]}
+                                        onPress={() => setSelectedGroupId(group.customerGroupId)}
+                                      >
+                                        <View style={styles.radioCircle}>
+                                          {selectedGroupId === group.customerGroupId && (
+                                            <View style={styles.radioSelected} />
+                                          )}
+                                        </View>
+                                        <AppText style={styles.radioText}>
+                                          {group.customerGroupId}-{group.customerGroupName}
+                                        </AppText>
+                                      </TouchableOpacity>
+                                    ))}
+                                  </View>
+                                )}
+                              </>
+                            ) : (
+                              <ActivityIndicator size="small" color={colors.primary} />
+                            )}
+                          </View>
 
+                          <View style={styles.inlineModalButtons}>
+                            <TouchableOpacity
+                              style={styles.inlineCancelButton}
+                              onPress={handleCancelCustomerGroup}
+                            >
+                              <AppText style={styles.inlineCancelButtonText}>Cancel</AppText>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.inlineDoneButton}
+                              onPress={handleDoneCustomerGroup}
+                              disabled={updatingCustomerGroup}
+                            >
+                              {updatingCustomerGroup ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                              ) : (
+                                <AppText style={styles.inlineDoneButtonText}>Done</AppText>
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
                     </View>
                   </AnimatedSection>
                 )}
@@ -946,6 +1187,7 @@ const mapLicenseData = () => {
           onConfirm={handleRejectConfirm}
           loading={actionLoading}
         />
+
       </View>
     </SafeAreaView>
   );
@@ -1066,6 +1308,102 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#909090',
     marginBottom: 4,
+  },
+  customerGroupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  changeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    borderWidth: 1,
+    borderColor: '#E67E22', // Darker orange border
+    borderRadius: 16,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    gap: 4,
+  },
+  changeButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  // Customer Group Inline Edit Styles
+  customerGroupEditContainer: {
+    paddingVertical: 8,
+  },
+  radioGroupContainer: {
+    marginBottom: 16,
+  },
+  radioRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    gap: 12,
+  },
+  radioOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    flex: 1,
+  },
+  radioOptionFlex: {
+    flex: 1,
+  },
+  radioCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioSelected: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  },
+  radioText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  inlineModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  inlineDoneButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineDoneButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  inlineCancelButton: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineCancelButtonText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: '600',
   },
   infoValue: {
     fontSize: 14,
