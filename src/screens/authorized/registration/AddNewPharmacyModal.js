@@ -999,6 +999,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           address4: pharmacyForm.address4 || '',
           pincode: parseInt(pharmacyForm.pincode),
           area: pharmacyForm.area,
+           areaId: parseInt(pharmacyForm.areaId),
+
           cityId: parseInt(pharmacyForm.cityId),
           stateId: parseInt(pharmacyForm.stateId),
           ownerName: pharmacyForm.ownerName || '',

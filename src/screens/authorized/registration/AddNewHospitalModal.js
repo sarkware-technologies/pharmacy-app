@@ -36,11 +36,13 @@ const DOC_TYPES = {
 const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, categoryId, subCategoryId, mappingName, mappingLabel }) => {
 
 
+  
+
     const loggedInUser = useSelector(state => state.auth.user);
   
   const [hospitalForm, setHospitalForm] = useState({
     category: 'Private',
-    subCategory: 'Individual Hospital',
+    subCategory: '',
     registrationCertificate: '',
     registrationNumber: '',
     registrationDate: '',
@@ -619,13 +621,13 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
     try {
       // Determine subCategoryId based on sub category
-      const subCatId = hospitalForm.subCategory === 'Clinic' ? 3 : 1;
+      const subCatId = hospitalForm.subCategory === 'Clinic' ? 1 : 2;
 
       // Prepare registration payload matching the API structure
       const registrationData = {
         typeId: typeId || 2,
         categoryId: categoryId || 4,
-        subCategoryId: subCategoryId || subCatId,
+        subCategoryId: Number(subCategoryId) || subCatId,
         isMobileVerified: verificationStatus.mobile,
         isEmailVerified: verificationStatus.email,
         isExisting: false,
@@ -652,6 +654,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           address4: hospitalForm.address4 || '',
           pincode: parseInt(hospitalForm.pincode, 10),
           area: hospitalForm.area || 'Default',
+          areaId: parseInt(hospitalForm.areaId),
           cityId: parseInt(hospitalForm.cityId, 10),
           stateId: parseInt(hospitalForm.stateId, 10),
           ownerName: '',
@@ -742,30 +745,12 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         </View>
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
           {/* Category Section */}
+          {!subCategoryId &&
+          
+          
+          <>
           <AppText style={styles.categoryLabel}>Category <AppText style={styles.categoryPlaceholder}>(Select Any One)</AppText></AppText>
-          <View style={styles.radioGroupHorizontal}>
-            <TouchableOpacity
-              style={styles.radioOptionHorizontal}
-              onPress={() => setHospitalForm(prev => ({ ...prev, category: 'Private' }))}
-            >
-              <View style={[styles.radioCircle, hospitalForm.category === 'Private' && styles.radioCircleSelected]}>
-                {hospitalForm.category === 'Private' && <View style={styles.radioInner} />}
-              </View>
-              <AppText style={styles.radioLabel}>Private</AppText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.radioOptionHorizontal}
-              onPress={() => setHospitalForm(prev => ({ ...prev, category: 'Govt' }))}
-            >
-              <View style={[styles.radioCircle, hospitalForm.category === 'Govt' && styles.radioCircleSelected]}>
-                {hospitalForm.category === 'Govt' && <View style={styles.radioInner} />}
-              </View>
-              <AppText style={styles.radioLabel}>Govt</AppText>
-            </TouchableOpacity>
-          </View>
-
-          {/* Sub Category Section */}
-          <AppText style={styles.categoryLabel}>Sub Category <AppText style={styles.categoryPlaceholder}>(Select Any One)</AppText></AppText>
+     
           <View style={styles.radioGroupHorizontal}>
             <TouchableOpacity
               style={styles.radioOptionHorizontal}
@@ -774,7 +759,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
               <View style={[styles.radioCircle, hospitalForm.subCategory === 'Clinic' && styles.radioCircleSelected]}>
                 {hospitalForm.subCategory === 'Clinic' && <View style={styles.radioInner} />}
               </View>
-              <AppText style={styles.radioLabel}>Clinics</AppText>
+              <AppText style={styles.radioLabel}>Private-Clinic</AppText>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.radioOptionHorizontal}
@@ -783,9 +768,10 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
               <View style={[styles.radioCircle, hospitalForm.subCategory === 'Individual Hospital' && styles.radioCircleSelected]}>
                 {hospitalForm.subCategory === 'Individual Hospital' && <View style={styles.radioInner} />}
               </View>
-              <AppText style={styles.radioLabel}>Individual Hospital</AppText>
+              <AppText style={styles.radioLabel}>Private-Individual Hospital</AppText>
             </TouchableOpacity>
-          </View>
+          </View></>}
+          
 
           <AppText style={[styles.modalSectionLabel, styles.modalSectionTopspacing]}>License Details<AppText style={styles.mandatory}>*</AppText></AppText>
 

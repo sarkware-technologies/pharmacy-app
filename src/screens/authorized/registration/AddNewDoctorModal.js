@@ -908,6 +908,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           address4: doctorForm.address4 || '',
           pincode: parseInt(doctorForm.pincode),
           area: doctorForm.area,
+          areaId: parseInt(doctorForm.areaId),
           cityId: parseInt(doctorForm.cityId),
           stateId: parseInt(doctorForm.stateId),
           ownerName: '',

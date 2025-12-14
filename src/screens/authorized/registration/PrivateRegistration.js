@@ -3061,6 +3061,7 @@ const PrivateRegistrationForm = () => {
           }));
           setShowHospitalModal(false);
         }}
+        subCategoryId="3"
       />
 
       {/* Add New Pharmacy Modal */}
