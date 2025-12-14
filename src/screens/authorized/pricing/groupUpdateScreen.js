@@ -56,6 +56,7 @@ const GroupUpdateScreen = () => {
     return (
         <>
             <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+                <StatusBar backgroundColor="#fff" barStyle="dark-content" />
                 <View style={styles.header}>
                     <View style={CommonStyle.SpaceBetween}>
                         <View style={[CommonStyle.SpaceBetween]}>
@@ -97,17 +98,19 @@ const GroupUpdateScreen = () => {
 
 
                 <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                    <AppText style={[CommonStyle.primaryText, { fontSize: 16, fontWeight: 700, marginBottom: 7 }]}>RC's</AppText>
-                    <SearchBar />
-                    <View style={[{ paddingBottom: 10, }, CommonStyle.SpaceBetween]}>
-                        <CustomCheckbox activeColor="#F7941E" size={14} title={<AppText style={CommonStyle.primaryText}>All RC’s</AppText>} />
-                        <AppText style={{ color: "#F7941E", fontSize: 14 }}>Fetched Fixed Price</AppText>
+                    <View style={{ paddingBottom: 10 }}>
+                        <AppText style={[CommonStyle.primaryText, { fontSize: 16, fontWeight: 700, marginBottom: 7 }]}>RC's</AppText>
+                        <SearchBar />
+                        <View style={[{ paddingBottom: 10, }, CommonStyle.SpaceBetween]}>
+                            <CustomCheckbox activeColor="#F7941E" size={14} title={<AppText style={CommonStyle.primaryText}>All RC’s</AppText>} />
+                            <AppText style={{ color: "#F7941E", fontSize: 14 }}>Fetched Fixed Price</AppText>
+                        </View>
+                        <RcItem type={groupType == 'updateSupply' ? 2 : 1} />
+                        <RcItem />
+                        <RcItem />
+                        <RcItem />
+                        <RcItem />
                     </View>
-                    <RcItem type={groupType == 'updateSupply' ? 2 : 1} />
-                    <RcItem />
-                    <RcItem />
-                    <RcItem />
-                    <RcItem />
 
                 </ScrollView>
 
@@ -138,8 +141,8 @@ const GroupUpdateScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 15,
-        paddingTop: 0,
+        paddingHorizontal: 15,
+        paddingTop: 15,
         backgroundColor: '#EDEDED',
     },
     header: {
@@ -152,14 +155,14 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         backgroundColor: "#EDEDED",
-        paddingTop: 15
+        paddingTop: 15,
     },
     footer: {
         backgroundColor: colors.white,
         paddingHorizontal: 16,
         paddingVertical: 12,
         margin: -15,
-        marginBottom: -40,
+        marginBottom: -25,
         marginTop: 5
     },
     lastSavedRow: {
