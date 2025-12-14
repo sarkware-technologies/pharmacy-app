@@ -197,6 +197,7 @@ const RateContractList = () => {
       else {
         setSelectedProductNew(product)
         setShowSelectProduct(false)
+        navigation.navigate('GroupUpdateScreen', { selectProduct, selectProductOld, selectProductNew: product, selectedCustomers, groupType, rcAction })
       }
     }
     else if (groupType == "addNew") {
@@ -323,6 +324,7 @@ const RateContractList = () => {
   // ✅ Modal for order creation
   const renderCreateOrderModal = () => (
     <Modal
+      statusBarTranslucent
       visible={showGroupupdate}
       transparent
       animationType="slide"

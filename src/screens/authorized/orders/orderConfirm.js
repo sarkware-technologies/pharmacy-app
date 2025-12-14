@@ -85,6 +85,7 @@ export const OrderPlaceSuccessModal = ({ visible, onClose, onGoToOrders,orderCou
             transparent={true}
             animationType="slide"
             onRequestClose={onClose}
+            statusBarTranslucent
         >
             <TouchableWithoutFeedback onPress={onClose}>
                 <View style={styles.bottomModalOverlay}>
