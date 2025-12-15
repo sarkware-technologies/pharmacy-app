@@ -25,7 +25,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -87,6 +87,7 @@ import FilterCheck from '../../../components/icons/FilterCheck';
 import CheckCircle from '../../../components/icons/CheckCircle';
 
 const CustomerList = ({ navigation }) => {
+  const route = useRoute();
 
   const dispatch = useDispatch();
 
@@ -203,6 +204,19 @@ const CustomerList = ({ navigation }) => {
   useEffect(() => {
     dispatch(fetchTabCounts());
   }, [dispatch]);
+
+  // Show toast when returning from send back action
+  useEffect(() => {
+    if (route?.params?.sendBackToast) {
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Customer sent back successfully',
+        position: 'top',
+      });
+      navigation.setParams({ sendBackToast: undefined });
+    }
+  }, [route?.params?.sendBackToast, navigation]);
 
   // Fetch tab counts whenever the customer tab becomes active (screen is focused)
   useFocusEffect(

@@ -270,6 +270,17 @@ export const customerAPI = {
         }
     },
 
+    // Workflow reassign / send back
+    workflowReassign: async (workflowId, payload) => {
+        try {
+            const response = await apiClient.post(`/approval/workflow-actions/${Number(workflowId)}/reassign`, payload);
+            return response;
+        } catch (error) {
+            console.error('Error reassigning workflow:', error);
+            throw error;
+        }
+    },
+
     // Get hospitals list
     getHospitals: async () => {
         try {

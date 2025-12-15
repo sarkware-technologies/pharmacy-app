@@ -86,6 +86,7 @@ const CustomerDetail = ({ navigation, route }) => {
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [sendBackModalVisible, setSendBackModalVisible] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [customerGroups, setCustomerGroups] = useState([]);
   const [isEditingCustomerGroup, setIsEditingCustomerGroup] = useState(false);
@@ -271,8 +272,6 @@ const CustomerDetail = ({ navigation, route }) => {
       await customerAPI.updateCustomerGroup(payload);
 
       // Show success message
-      Alert.alert('Success', 'Customer group updated successfully!');
-
       // Refresh customer details to get updated data
       const customerId = customer?.stgCustomerId || customer?.customerId;
       const isStaging = customer?.statusName === 'NOT-ONBOARDED' ? false : (customer?.statusName === 'PENDING' ? true : false);
@@ -681,6 +680,39 @@ const CustomerDetail = ({ navigation, route }) => {
   const showToast = (message, type = 'success') => {
     Alert.alert(type === 'success' ? 'Success' : 'Error', message);
   };
+
+  const handleSendBackConfirm = useCallback(async (comment) => {
+    if (!selectedCustomer) {
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const instanceId = selectedCustomer?.instaceId || selectedCustomer?.stgCustomerId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      const parallelGroupId = selectedCustomer?.instance?.stepInstances?.[0]?.parallelGroup;
+      const stepOrderId = selectedCustomer?.instance?.stepInstances?.[0]?.stepOrder;
+
+      const payload = {
+        stepOrder: stepOrderId,
+        parallelGroup: parallelGroupId,
+        actorId,
+        reason: comment || 'Sending back',
+        dataChanges: {}
+      };
+
+      await customerAPI.workflowReassign(instanceId, payload);
+      showToast('Customer sent back successfully!', 'success');
+      setSendBackModalVisible(false);
+
+      navigation.navigate('CustomerList', { sendBackToast: true });
+    } catch (error) {
+      console.error('Error sending back customer:', error);
+      showToast(error.response?.data?.message || error.message || 'Failed to send back customer', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  }, [selectedCustomer, loggedInUser, navigation, showToast]);
 
   // Handle approve customer
   const handleApproveConfirm = async (comment) => {
@@ -1214,6 +1246,7 @@ const CustomerDetail = ({ navigation, route }) => {
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
               style={styles.sendBackButton}
+              onPress={() => setSendBackModalVisible(true)}
               disabled={actionLoading}
             >
               {actionLoading ? (
@@ -1272,6 +1305,16 @@ const CustomerDetail = ({ navigation, route }) => {
           onClose={() => setRejectModalVisible(false)}
           onConfirm={handleRejectConfirm}
           loading={actionLoading}
+        />
+
+        {/* Send Back Modal */}
+        <RejectCustomerModal
+          visible={sendBackModalVisible}
+          onClose={() => setSendBackModalVisible(false)}
+          onConfirm={handleSendBackConfirm}
+          titleText={'Are you sure you want to\nSend back customer?'}
+          confirmLabel="Send Back"
+          requireComment={true}
         />
 
       </View>

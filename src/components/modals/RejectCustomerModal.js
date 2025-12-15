@@ -14,13 +14,21 @@ import {AppText,AppInput} from ".."
 
 const { width, height } = Dimensions.get('window');
 
-const RejectCustomerModal = ({ visible, onClose, onConfirm, customerName }) => {
+const RejectCustomerModal = ({
+  visible,
+  onClose,
+  onConfirm,
+  customerName,
+  titleText = 'Are you sure you want to\nReject customer?',
+  confirmLabel = 'Yes',
+  requireComment = true,
+}) => {
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
 
   const handleConfirm = async () => {
-    if (!comment || comment.trim() === '') {
-      setError('Please enter a comment before rejecting');
+    if (requireComment && (!comment || comment.trim() === '')) {
+      setError('Please enter a comment before proceeding');
       return;
     }
    await onConfirm(comment);
@@ -59,7 +67,7 @@ const RejectCustomerModal = ({ visible, onClose, onConfirm, customerName }) => {
 
           {/* Title */}
           <AppText style={styles.title}>
-            Are you sure you want to{'\n'}Reject customer?
+            {titleText}
           </AppText>
 
           {/* Comment Input */}
@@ -84,7 +92,7 @@ const RejectCustomerModal = ({ visible, onClose, onConfirm, customerName }) => {
               onPress={handleConfirm}
               activeOpacity={0.7}
             >
-              <AppText style={styles.yesButtonText}>Yes</AppText>
+              <AppText style={styles.yesButtonText}>{confirmLabel}</AppText>
             </TouchableOpacity>
 
             <TouchableOpacity
