@@ -2627,39 +2627,39 @@ export const LinkagedTab = ({
               </AppText>
 
               <View style={styles.hierarchyHeader}>
-  <AppText style={styles.hierarchyHeaderLeft}>
-    Pharmacy Details
-  </AppText>
-  <AppText style={styles.hierarchyHeaderRight}>
-    Action
-  </AppText>
-</View>
-              
+                <AppText style={styles.hierarchyHeaderLeft}>
+                  Pharmacy Details
+                </AppText>
+                <AppText style={styles.hierarchyHeaderRight}>
+                  Action
+                </AppText>
+              </View>
+
 
               {pharmacy.map(item => (
-             <View key={item.customerId} style={styles.hierarchyRow}>
-  <View style={styles.hierarchyInfo}>
-    <AppText style={styles.hierarchyName}>
-      {item.customerName}
-    </AppText>
-    <AppText style={styles.hierarchyCode}>
-      {item.customerCode} | {item.cityName}
-    </AppText>
-  </View>
+                <View key={item.customerId} style={styles.hierarchyRow}>
+                  <View style={styles.hierarchyInfo}>
+                    <AppText style={styles.hierarchyName}>
+                      {item.customerName}
+                    </AppText>
+                    <AppText style={styles.hierarchyCode}>
+                      {item.customerCode} | {item.cityName}
+                    </AppText>
+                  </View>
 
-  <View style={styles.hierarchyActions}>
-    <View style={styles.actionButtons}>
-      <TouchableOpacity style={styles.approveButton}>
-        <Icon name="check" size={14} color="#fff" />
-        <AppText style={styles.approveButtonText}>Approve</AppText>
-      </TouchableOpacity>
+                  <View style={styles.hierarchyActions}>
+                    <View style={styles.actionButtons}>
+                      <TouchableOpacity style={styles.approveButton}>
+                        <Icon name="check" size={14} color="#fff" />
+                        <AppText style={styles.approveButtonText}>Approve</AppText>
+                      </TouchableOpacity>
 
-      <TouchableOpacity style={styles.rejectButton}>
-        <Icon name="close" size={14} color="#2B2B2B" />
-      </TouchableOpacity>
-    </View>
-  </View>
-</View>
+                      <TouchableOpacity style={styles.rejectButton}>
+                        <Icon name="close" size={14} color="#2B2B2B" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
               ))}
             </View>
           </ScrollView>
@@ -2805,41 +2805,41 @@ export const LinkagedTab = ({
                     {title}
                   </AppText>
 
-                
 
-                                <View style={styles.hierarchyHeader}>
-  <AppText style={styles.hierarchyHeaderLeft}>
-    {header}
-  </AppText>
-  <AppText style={styles.hierarchyHeaderRight}>
-    Action
-  </AppText>
-</View>
+
+                  <View style={styles.hierarchyHeader}>
+                    <AppText style={styles.hierarchyHeaderLeft}>
+                      {header}
+                    </AppText>
+                    <AppText style={styles.hierarchyHeaderRight}>
+                      Action
+                    </AppText>
+                  </View>
 
                   {list.map(item => (
                     <View key={item.customerId} style={styles.hierarchyRow}>
-  <View style={styles.hierarchyInfo}>
-    <AppText style={styles.hierarchyName}>
-      {item.customerName}
-    </AppText>
-    <AppText style={styles.hierarchyCode}>
-      {item.customerCode} | {item.cityName}
-    </AppText>
-  </View>
+                      <View style={styles.hierarchyInfo}>
+                        <AppText style={styles.hierarchyName}>
+                          {item.customerName}
+                        </AppText>
+                        <AppText style={styles.hierarchyCode}>
+                          {item.customerCode} | {item.cityName}
+                        </AppText>
+                      </View>
 
-  <View style={styles.hierarchyActions}>
-    <View style={styles.actionButtons}>
-      <TouchableOpacity style={styles.approveButton}>
-        <Icon name="check" size={14} color="#fff" />
-        <AppText style={styles.approveButtonText}>Approve</AppText>
-      </TouchableOpacity>
+                      <View style={styles.hierarchyActions}>
+                        <View style={styles.actionButtons}>
+                          <TouchableOpacity style={styles.approveButton}>
+                            <Icon name="check" size={14} color="#fff" />
+                            <AppText style={styles.approveButtonText}>Approve</AppText>
+                          </TouchableOpacity>
 
-      <TouchableOpacity style={styles.rejectButton}>
-        <Icon name="close" size={14} color="#2B2B2B" />
-      </TouchableOpacity>
-    </View>
-  </View>
-</View>
+                          <TouchableOpacity style={styles.rejectButton}>
+                            <Icon name="close" size={14} color="#2B2B2B" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
                   ))}
                 </View>
               )
@@ -4899,53 +4899,53 @@ const styles = StyleSheet.create({
   },
 
   hierarchyHeader: {
-  flexDirection: 'row',
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-  backgroundColor: '#F9F9F9',
-  borderRadius: 6,
-  marginBottom: 8,
-  
-},
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 6,
+    marginBottom: 8,
 
-hierarchyHeaderLeft: {
-  flex: 6.5,              // ✅ 70%
-  fontSize: 12,
-  fontWeight: '500',
-  color: '#666',
-},
+  },
 
-hierarchyHeaderRight: {
-  flex: 3,              // ✅ 30%
-  fontSize: 12,
-  fontWeight: '500',
-  color: '#666',
-  
-},
+  hierarchyHeaderLeft: {
+    flex: 6.5,              // ✅ 70%
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666',
+  },
 
-hierarchyRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  paddingHorizontal: 12,
-  paddingVertical: 12,
-  borderBottomWidth: 1,
-  borderBottomColor: '#F0F0F0',
-},
+  hierarchyHeaderRight: {
+    flex: 3,              // ✅ 30%
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666',
 
-hierarchyInfo: {
-  flex: 7,              // ✅ MUST MATCH HEADER LEFT
-},
+  },
 
-hierarchyActions: {
-  flex: 3,              // ✅ MUST MATCH HEADER RIGHT
-  alignItems: 'flex-end',
-},
+  hierarchyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
 
-actionButtons: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 8,               // ✅ spacing without breaking layout
-},
+  hierarchyInfo: {
+    flex: 7,              // ✅ MUST MATCH HEADER LEFT
+  },
+
+  hierarchyActions: {
+    flex: 3,              // ✅ MUST MATCH HEADER RIGHT
+    alignItems: 'flex-end',
+  },
+
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,               // ✅ spacing without breaking layout
+  },
 
 });
 

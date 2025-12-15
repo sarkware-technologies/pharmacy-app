@@ -36,6 +36,8 @@ import RejectCustomerModal from '../../../components/modals/RejectCustomerModal'
 import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModal';
 
 import CloseCircle from '../../../components/icons/CloseCircle';
+import Reassigned from '../../../components/icons/Reassigned';
+
 
 
 
@@ -96,8 +98,8 @@ const CustomerDetail = ({ navigation, route }) => {
   );
 
   // Get logged in user
-   const loggedInUser = useSelector(state => state.auth.user);
- 
+  const loggedInUser = useSelector(state => state.auth.user);
+
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -178,7 +180,7 @@ const CustomerDetail = ({ navigation, route }) => {
 
       // Build payload from selectedCustomer data
       const stgCustomerId = selectedCustomer.stgCustomerId || customer?.stgCustomerId || customerId;
-      
+
       const payload = {
         typeId: selectedCustomer.typeId || selectedCustomer.type?.typeId || 1,
         categoryId: selectedCustomer.categoryId || selectedCustomer.category?.categoryId || 0,
@@ -274,7 +276,7 @@ const CustomerDetail = ({ navigation, route }) => {
       // Refresh customer details to get updated data
       const customerId = customer?.stgCustomerId || customer?.customerId;
       const isStaging = customer?.statusName === 'NOT-ONBOARDED' ? false : (customer?.statusName === 'PENDING' ? true : false);
-      
+
       if (customerId) {
         dispatch(fetchCustomerDetails({
           customerId,
@@ -396,9 +398,9 @@ const CustomerDetail = ({ navigation, route }) => {
   //           );
   //         }
 
-    
-          
-          
+
+
+
   //         return false;
   //       }
   //     );
@@ -474,37 +476,37 @@ const CustomerDetail = ({ navigation, route }) => {
     }
 
     return {
-    code: selectedCustomer.customerCode || selectedCustomer.id || '',
-    mobileNumber: selectedCustomer.securityDetails?.mobile || '',
-    email: selectedCustomer.securityDetails?.email || '',
-    customerGroupId: selectedCustomer?.customerGroupId || '',
-    customerGroupName:
-      customerGroups?.find(
-        g => g.customerGroupId === selectedCustomer?.customerGroupId
-      )?.customerGroupName || 'N/A',
-    address: [
-      selectedCustomer.generalDetails?.address1,
-      selectedCustomer.generalDetails?.address2,
-      selectedCustomer.generalDetails?.address3,
-      selectedCustomer.generalDetails?.address4
-    ].filter(Boolean).join(', ') || '',
-    pincode: selectedCustomer.generalDetails?.pincode || '',
-    city: selectedCustomer.generalDetails?.cityName || '',
-    state: selectedCustomer.generalDetails?.stateName || '',
-    pan: selectedCustomer.securityDetails?.panNumber || '',
-    gst: selectedCustomer.securityDetails?.gstNumber || '',
-    // Store actual document objects with s3Path
-    documents: {
-      addressProof: selectedCustomer.docType?.find(d => d.doctypeName === 'ADDRESS PROOF') || null,
-      panDoc: selectedCustomer.docType?.find(d => d.doctypeName === 'PAN CARD') || null,
-      gstDoc: selectedCustomer.docType?.find(d => d.doctypeName === 'GSTIN') || null,
-      image: selectedCustomer.docType?.find(d =>
-        d.doctypeName === 'PHARMACY IMAGE' ||
-        d.doctypeName === 'HOSPITAL IMAGE' ||
-        d.doctypeName === 'CLINIC IMAGE' ||
-        d.doctypeName?.toLowerCase().includes('image')
-      ) || null,
-    },
+      code: selectedCustomer.customerCode || selectedCustomer.id || '',
+      mobileNumber: selectedCustomer.securityDetails?.mobile || '',
+      email: selectedCustomer.securityDetails?.email || '',
+      customerGroupId: selectedCustomer?.customerGroupId || '',
+      customerGroupName:
+        customerGroups?.find(
+          g => g.customerGroupId === selectedCustomer?.customerGroupId
+        )?.customerGroupName || 'N/A',
+      address: [
+        selectedCustomer.generalDetails?.address1,
+        selectedCustomer.generalDetails?.address2,
+        selectedCustomer.generalDetails?.address3,
+        selectedCustomer.generalDetails?.address4
+      ].filter(Boolean).join(', ') || '',
+      pincode: selectedCustomer.generalDetails?.pincode || '',
+      city: selectedCustomer.generalDetails?.cityName || '',
+      state: selectedCustomer.generalDetails?.stateName || '',
+      pan: selectedCustomer.securityDetails?.panNumber || '',
+      gst: selectedCustomer.securityDetails?.gstNumber || '',
+      // Store actual document objects with s3Path
+      documents: {
+        addressProof: selectedCustomer.docType?.find(d => d.doctypeName === 'ADDRESS PROOF') || null,
+        panDoc: selectedCustomer.docType?.find(d => d.doctypeName === 'PAN CARD') || null,
+        gstDoc: selectedCustomer.docType?.find(d => d.doctypeName === 'GSTIN') || null,
+        image: selectedCustomer.docType?.find(d =>
+          d.doctypeName === 'PHARMACY IMAGE' ||
+          d.doctypeName === 'HOSPITAL IMAGE' ||
+          d.doctypeName === 'CLINIC IMAGE' ||
+          d.doctypeName?.toLowerCase().includes('image')
+        ) || null,
+      },
       licenseData: licenseData,
     };
   }, [selectedCustomer, customerGroups, licenseData]);
@@ -771,12 +773,80 @@ const CustomerDetail = ({ navigation, route }) => {
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
       <View style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
+        {/* <View style={styles.header}>
+
+          <View>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <ChevronLeft color="#333" />
           </TouchableOpacity>
           <AppText style={styles.headerTitle}>{getCustomerName()}</AppText>
+
+          </View>
+
+          <View>
+          <TouchableOpacity
+              style={styles.rejectButton}
+              onPress={() => setRejectModalVisible(true)}
+              disabled={actionLoading}
+            >
+              <Icon name="close-circle-outline" size={20} color={colors.primary} />
+              <AppText style={styles.rejectButtonText}>Reject</AppText>
+            </TouchableOpacity>
+          </View>
+
+
+
+        </View> */}
+
+        <View style={styles.header}>
+          {/* LEFT SECTION – 60% */}
+          <View style={styles.leftSection}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backBtn}
+            >
+              <ChevronLeft color="#333" />
+            </TouchableOpacity>
+
+            <AppText
+              style={styles.headerTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {getCustomerName()}
+            </AppText>
+          </View>
+
+          {/* RIGHT SECTION – 40% */}
+          <View style={styles.rightSection}>
+
+            {activeTab === 'details' ? <TouchableOpacity
+              style={styles.logsButton}
+            >
+              <MaterialIcons
+                name="history"
+                size={20}
+                color="#2B2B2B"
+              />
+              <AppText style={styles.logsButtonText}>Logs</AppText>
+            </TouchableOpacity> : <View style={styles.topActionButtons}>
+              <TouchableOpacity style={styles.topApproveButton}>
+                <MaterialIcons name="check" size={14} color="#fff" />
+                <AppText style={styles.topApproveButtonText}>Approve</AppText>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.topRejectButton}>
+                <Icon name="close" size={14} color="#2B2B2B" />
+              </TouchableOpacity>
+            </View>}
+
+
+
+
+
+          </View>
         </View>
+
 
         {/* Tabs */}
         <View style={styles.tabContainer}>
@@ -1035,7 +1105,7 @@ const CustomerDetail = ({ navigation, route }) => {
                         // Display mode - show customer group name and Change button
                         <View style={styles.customerGroupRow}>
                           <AppText style={styles.infoValue}>{customerData.customerGroupName}</AppText>
-                          <TouchableOpacity 
+                          <TouchableOpacity
                             style={styles.changeButton}
                             onPress={handleChangeCustomerGroup}
                             activeOpacity={0.7}
@@ -1143,12 +1213,19 @@ const CustomerDetail = ({ navigation, route }) => {
         {activeTab === 'details' && customer?.action === 'APPROVE' && (
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
-              style={styles.rejectButton}
-              onPress={() => setRejectModalVisible(true)}
+              style={styles.sendBackButton}
               disabled={actionLoading}
             >
-              <Icon name="close-circle-outline" size={20} color={colors.primary} />
-              <AppText style={styles.rejectButtonText}>Reject</AppText>
+              {actionLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+
+                  <Reassigned color={colors.primary}  width = {18} height = {18}/>
+
+                  <AppText style={styles.sendBackButtonText}>Send Back</AppText>
+                </>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.approveButton}
@@ -1160,11 +1237,20 @@ const CustomerDetail = ({ navigation, route }) => {
               ) : (
                 <>
                   <Icon name="checkmark-outline" size={20} color="#fff" />
-                  
+
                   <AppText style={styles.approveButtonText}>Approve</AppText>
                 </>
               )}
             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.rejectButton}
+              onPress={() => setRejectModalVisible(true)}
+              disabled={actionLoading}
+            >
+              <Icon name="close-circle-outline" size={20} color="#2B2B2B" />
+              <AppText style={styles.rejectButtonText}>Reject</AppText>
+            </TouchableOpacity>
+
           </View>
         )}
 
@@ -1202,15 +1288,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FA',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    zIndex: 999
-  },
+  // header: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   justifyContent: 'space-between',
+  //   paddingHorizontal: 20,
+  //   paddingVertical: 12,
+  //   backgroundColor: '#fff',
+  //   zIndex: 999
+  // },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -1218,6 +1304,7 @@ const styles = StyleSheet.create({
     marginRight: 'auto',
     marginLeft: 15,
     flex: 1,
+    flexShrink: 1,
   },
   headerActions: {
     flexDirection: 'row',
@@ -1560,31 +1647,32 @@ const styles = StyleSheet.create({
   actionButtonsContainer: {
     flexDirection: 'row',
     gap: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingVertical: 16,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
   },
   rejectButton: {
-    flex: 1,
+    flex:1,
+
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.primary,
+    borderWidth: 1,
+    borderColor: "#2B2B2B",
     backgroundColor: '#fff',
     gap: 8,
   },
   rejectButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.primary,
+    color: "#2B2B2B",
   },
   approveButton: {
-    flex: 1,
+flex:1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1599,7 +1687,94 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
+  sendBackButton: {
+flex:1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: "#fff",
+    gap: 8,
+  },
+  sendBackButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+  },
 
+  leftSection: {
+    flex: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
+  },
+
+  rightSection: {
+    flex: 4,
+    alignItems: 'flex-end',
+  },
+
+  backBtn: {
+    marginRight: 8,
+  },
+
+  logsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: "#2B2B2B",
+    backgroundColor: '#fff',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 6
+  },
+  logsButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: "#2B2B2B",
+  },
+  topActionButtons: {
+
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10
+  },
+  topApproveButton: {
+
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    gap: 10,
+  },
+  topApproveButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  topRejectButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: '#2B2B2B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });
 
 export default CustomerDetail;
