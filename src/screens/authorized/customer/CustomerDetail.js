@@ -40,6 +40,7 @@ import CloseCircle from '../../../components/icons/CloseCircle';
 import Reassigned from '../../../components/icons/Reassigned';
 import PermissionWrapper from '../../../utils/RBAC/permissionWrapper';
 import PERMISSIONS from '../../../utils/RBAC/permissionENUM';
+import Sync from '../../../components/icons/Sync';
 
 
 
@@ -1168,7 +1169,8 @@ const CustomerDetail = ({ navigation, route }) => {
                               onPress={handleChangeCustomerGroup}
                               activeOpacity={0.7}
                             >
-                              <Icon name="refresh-circle" size={12} color="#fff" />
+
+                              <Sync/>
                               <AppText style={styles.changeButtonText}>Change</AppText>
                             </TouchableOpacity>
                           </PermissionWrapper>
@@ -1477,16 +1479,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
     borderWidth: 1,
     borderColor: '#E67E22', // Darker orange border
-    borderRadius: 16,
+    borderRadius: 10,
     paddingVertical: 4,
     paddingHorizontal: 10,
     gap: 4,
   },
   changeButtonText: {
-    color: '#fff',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '600',
   },

@@ -207,7 +207,7 @@ const CustomerList = ({ navigation }) => {
       'editCustomer': 'EDITED',
       'existingCustomer': 'EXISTING'
     };
-    return filterMap[filterButton] || 'NEW';
+    return filterMap[filterButton] || null;
   };
 
   // Check tab permissions on mount
@@ -825,6 +825,7 @@ const CustomerList = ({ navigation }) => {
   const handleTabPress = async (tabName) => {
     // First reset the list and set active tab
     setActiveTab(tabName);
+    tabName === "waitingForApproval" && setActiveFilterButton("newCustomer")
 
     // Scroll the tab into visible area after a small delay to ensure layout is ready
     setTimeout(() => {
@@ -849,34 +850,47 @@ const CustomerList = ({ navigation }) => {
     }, 100);
   };
 
-  // Handle filter button press with centering
+
   const handleFilterButtonPress = (buttonName) => {
-    // Reset the list when filter button changes
-    dispatch(resetCustomersList());
-    setActiveFilterButton(buttonName);
+  // If same button is clicked again → deselect
+  const isSameButton = activeFilterButton === buttonName;
 
-    // Scroll the button into visible area after a small delay
-    setTimeout(() => {
-      if (filterButtonRefs.current[buttonName] && filterButtonsScrollRef.current) {
-        filterButtonRefs.current[buttonName].measureLayout(
-          filterButtonsScrollRef.current.getNode ? filterButtonsScrollRef.current.getNode() : filterButtonsScrollRef.current,
-          (x, y, w, h) => {
-            const screenWidth = Dimensions.get('window').width;
-            // Center the button in the screen
-            const scrollX = x - (screenWidth / 2) + (w / 2);
+  // Reset list always
+  dispatch(resetCustomersList());
 
-            filterButtonsScrollRef.current?.scrollTo({
-              x: Math.max(0, scrollX),
-              animated: true
-            });
-          },
-          () => {
-            console.log('measureLayout failed for filter button');
-          }
-        );
-      }
-    }, 100);
-  };
+  // Toggle logic
+  const newActiveButton = isSameButton ? null : buttonName;
+
+  console.log(newActiveButton);
+  
+  setActiveFilterButton(newActiveButton);
+
+  // If deselected, no need to scroll
+  // if (isSameButton) return;
+
+  // Scroll selected button into view
+  setTimeout(() => {
+    if (
+      filterButtonRefs.current[buttonName] &&
+      filterButtonsScrollRef.current
+    ) {
+      filterButtonRefs.current[buttonName].measureLayout(
+        filterButtonsScrollRef.current.getNode
+          ? filterButtonsScrollRef.current.getNode()
+          : filterButtonsScrollRef.current,
+        (x, y, w) => {
+          const screenWidth = Dimensions.get('window').width;
+          const scrollX = x - screenWidth / 2 + w / 2;
+
+          filterButtonsScrollRef.current.scrollTo({
+            x: Math.max(0, scrollX),
+            animated: true,
+          });
+        }
+      );
+    }
+  }, 100);
+};
 
   // Fetch customer documents
   const fetchCustomerDocuments = async (customer) => {
