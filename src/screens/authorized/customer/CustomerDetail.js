@@ -888,19 +888,21 @@ const CustomerDetail = ({ navigation, route }) => {
             
             : 
             
-              <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
-                <View style={styles.topActionButtons}>
-                  <TouchableOpacity style={styles.topApproveButton}>
-                    <MaterialIcons name="check" size={14} color="#fff" />
-                    <AppText style={styles.topApproveButtonText}>Approve</AppText>
-                  </TouchableOpacity>
+              (customer?.statusName === 'PENDING' && customer?.action === 'APPROVE') && (
+                <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+                  <View style={styles.topActionButtons}>
+                    <TouchableOpacity style={styles.topApproveButton}>
+                      <MaterialIcons name="check" size={14} color="#fff" />
+                      <AppText style={styles.topApproveButtonText}>Approve</AppText>
+                    </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.topRejectButton}>
-                    <Icon name="close" size={14} color="#2B2B2B" />
-                  </TouchableOpacity>
-                </View>
-              </PermissionWrapper>
-              }
+                    <TouchableOpacity style={styles.topRejectButton}>
+                      <Icon name="close" size={14} color="#2B2B2B" />
+                    </TouchableOpacity>
+                  </View>
+                </PermissionWrapper>
+              )
+            }
 
           </View>
         </View>
@@ -1270,8 +1272,8 @@ const CustomerDetail = ({ navigation, route }) => {
           customerRequestedDivisions={selectedCustomer?.divisions || []}
         />}
 
-        {/* Action Buttons - Show only on Details tab and if customer action is APPROVE */}
-        {activeTab === 'details' && customer?.action === 'APPROVE' && (
+        {/* Action Buttons - Show only on Details tab and if customer action is APPROVE and status is PENDING */}
+        {activeTab === 'details' && customer?.statusName === 'PENDING' && customer?.action === 'APPROVE' && (
           <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
             <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
