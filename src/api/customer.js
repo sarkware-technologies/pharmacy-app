@@ -40,7 +40,9 @@ export const customerAPI = {
         isStaging = false, // NEW: Flag to determine which endpoint to use
         sortBy = '',
         sortDirection = 'ASC',
-        filter = ''
+        filter = '',
+        isAll,
+    
     } = {}) => {
         try {
             // Build request body with all required fields (matching curl format)
@@ -54,6 +56,10 @@ export const customerAPI = {
                 sortBy: sortBy || '',
                 sortDirection: sortDirection || 'ASC'
             };
+
+            if (isAll === true) {
+                requestBody.isAll = true;
+                }
 
             // Add optional filters only if they have values
             if (searchText) requestBody.searchText = searchText;

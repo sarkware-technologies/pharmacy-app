@@ -339,7 +339,8 @@ const CustomerList = ({ navigation }) => {
           categoryCode: [],
           subCategoryCode: [],
           sortBy: '',
-          sortDirection: 'ASC'
+          sortDirection: 'ASC',
+          isAll:true
         };
         console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
         dispatch(fetchCustomersList(payload));
@@ -463,7 +464,8 @@ const CustomerList = ({ navigation }) => {
           categoryCode: [],
           subCategoryCode: [],
           sortBy: '',
-          sortDirection: 'ASC'
+          sortDirection: 'ASC',
+          isAll:true
         };
         
         console.log('🔄 Fetching "all" tab data with payload:', payload);
@@ -481,75 +483,6 @@ const CustomerList = ({ navigation }) => {
   }, [isHardRefreshing, listLoading]);
 
 
-  // useFocusEffect(
-  //   React.useCallback(() => {
-  //     console.log("focus working");
-  //     const initializeData = async () => {
-  //       // Reset customers list and pagination when tab changes
-  //       dispatch(resetCustomersList());
-
-  //       // Fetch customers based on active tab with page: 1
-  //       if (activeTab === 'all') {
-  //         // All tab - regular endpoint, no statusIds
-  //         const payload = {
-  //           page: 1,
-  //           limit: 10,
-  //           isLoadMore: false,
-  //           isStaging: true,
-  //           typeCode: [],
-  //           categoryCode: [],
-  //           subCategoryCode: [],
-  //           sortBy: '',
-  //           sortDirection: 'ASC'
-  //         };
-  //         console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
-  //         dispatch(fetchCustomersList(payload));
-  //       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected') {
-  //         // Waiting for Approval and Rejected - staging endpoint
-  //         const statusIds = getStatusIdsForTab(activeTab);
-  //         const payload = {
-  //           page: 1,
-  //           limit: 10,
-  //           isLoadMore: false,
-  //           isStaging: true,
-  //           typeCode: [],
-  //           categoryCode: [],
-  //           subCategoryCode: [],
-  //           statusIds: statusIds,
-  //           sortBy: '',
-  //           sortDirection: 'ASC'
-  //         };
-  //         console.log(`🔍 ${activeTab} tab API payload (staging):`, JSON.stringify(payload, null, 2));
-  //         dispatch(fetchCustomersList(payload));
-  //       } else {
-  //         // Not Onboarded and Unverified - regular endpoint with statusIds
-  //         const statusIds = getStatusIdsForTab(activeTab);
-  //         const payload = {
-  //           page: 1,
-  //           limit: 10,
-  //           isLoadMore: false,
-  //           isStaging: false,
-  //           typeCode: [],
-  //           categoryCode: [],
-  //           subCategoryCode: [],
-  //           statusIds: statusIds,
-  //           sortBy: '',
-  //           sortDirection: 'ASC'
-  //         };
-  //         console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
-  //         dispatch(fetchCustomersList(payload));
-  //       }
-
-  //       // Only fetch these on initial mount
-  //       if (activeTab === 'all') {
-  //         dispatch(fetchCustomerStatuses());
-  //         dispatch(fetchCustomerTypes());
-  //       }
-  //     };
-
-  //     initializeData();
-  //   }, [activeTab, dispatch])
-  // );
 
 
 
@@ -571,7 +504,8 @@ const CustomerList = ({ navigation }) => {
           statusId: selectedFilters.statusId,
           cityIds: selectedFilters.cityIds,
           isLoadMore: false,
-          isStaging: false
+          isStaging: false,
+          isAll:true
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         // Waiting for Approval, Rejected, and Draft - staging endpoint
@@ -649,7 +583,8 @@ const CustomerList = ({ navigation }) => {
         limit: 10,
         ...filters,
         isLoadMore: false,
-        isStaging: false
+        isStaging: false,
+        isAll:true
       }));
     } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
       // Waiting for Approval, Rejected, and Draft - staging endpoint
@@ -1025,7 +960,8 @@ const CustomerList = ({ navigation }) => {
           page: 1,
           limit: pagination.limit,
           searchText: filters.searchText,
-          isStaging: false
+          isStaging: false,
+          isAll:true
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
@@ -1119,7 +1055,8 @@ const CustomerList = ({ navigation }) => {
           page: 1,
           limit: pagination.limit,
           searchText: filters.searchText,
-          isStaging: false
+          isStaging: false,
+          isAll:true
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
@@ -1186,7 +1123,8 @@ const CustomerList = ({ navigation }) => {
           page: 1,
           limit: pagination.limit,
           searchText: filters.searchText,
-          isStaging: false
+          isStaging: false,
+          isAll:true
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
@@ -1254,7 +1192,8 @@ const CustomerList = ({ navigation }) => {
           page: 1,
           limit: pagination.limit,
           searchText: filters.searchText,
-          isStaging: false
+          isStaging: false,
+          isAll:true
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
@@ -1464,7 +1403,8 @@ const CustomerList = ({ navigation }) => {
     if (activeTab === 'all') {
       dispatch(fetchCustomersList({
         ...filterParams,
-        isStaging: false
+        isStaging: false,
+        isAll:true
       }));
     } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
       const tabStatusIds = getStatusIdsForTab(activeTab);

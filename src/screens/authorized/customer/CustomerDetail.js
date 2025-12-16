@@ -1230,12 +1230,7 @@ const CustomerDetail = ({ navigation, route }) => {
                           </View>
 
                           <View style={styles.inlineModalButtons}>
-                            <TouchableOpacity
-                              style={styles.inlineCancelButton}
-                              onPress={handleCancelCustomerGroup}
-                            >
-                              <AppText style={styles.inlineCancelButtonText}>Cancel</AppText>
-                            </TouchableOpacity>
+
                             <TouchableOpacity
                               style={styles.inlineDoneButton}
                               onPress={handleDoneCustomerGroup}
@@ -1247,6 +1242,15 @@ const CustomerDetail = ({ navigation, route }) => {
                                 <AppText style={styles.inlineDoneButtonText}>Done</AppText>
                               )}
                             </TouchableOpacity>
+
+
+                            <TouchableOpacity
+                              style={styles.inlineCancelButton}
+                              onPress={handleCancelCustomerGroup}
+                            >
+                              <AppText style={styles.inlineCancelButtonText}>Cancel</AppText>
+                            </TouchableOpacity>
+                            
                           </View>
                         </View>
                       )}
@@ -1495,15 +1499,19 @@ const styles = StyleSheet.create({
   },
   // Customer Group Inline Edit Styles
   customerGroupEditContainer: {
-    paddingVertical: 8,
+   
+    backgroundColor:"#fbfbfb",
+    padding:20,
+  
+    borderRadius:10
   },
   radioGroupContainer: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   radioRow: {
     flexDirection: 'row',
     marginBottom: 12,
-    gap: 12,
+    gap: 30,
   },
   radioOption: {
     flexDirection: 'row',
@@ -1531,13 +1539,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   radioText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#333',
   },
   inlineModalButtons: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 8,
+    marginTop: 0,
+    maxWidth:"70%"
   },
   inlineDoneButton: {
     flex: 1,

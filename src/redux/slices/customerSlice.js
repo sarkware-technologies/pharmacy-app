@@ -27,7 +27,7 @@ export const fetchCustomerStatuses = createAsyncThunk(
 );
 
 export const fetchCustomersList = createAsyncThunk(
-  'customer/fetchList',
+  'customer/fetchLists',
   async (params = {}, { rejectWithValue }) => {
     try {
       // Pass isStaging flag to the API
