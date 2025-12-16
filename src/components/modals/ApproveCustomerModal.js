@@ -10,20 +10,31 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { colors } from '../../styles/colors';
-import {AppText,AppInput} from ".."
+import { AppText, AppInput } from ".."
+import CustomCheckbox from '../view/checkbox';
+import Svg, { Path } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
 
-const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName }) => {
+const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName, checkboxLabel }) => {
   const [comment, setComment] = useState('');
+  const [checkConfirm, setCheckConfirm] = useState(true);
   const [error, setError] = useState('');
 
-  const handleConfirm = async() => {
+  const handleConfirm = async () => {
     if (!comment || comment.trim() === '') {
+
       setError('Please enter a comment before approving');
+
       return;
     }
-   await onConfirm(comment);
+
+    if (!checkConfirm) {
+      setError('Please check a verify checkbox');
+
+      return;
+    }
+    await onConfirm(comment);
     setComment('');
     setError('');
   };
@@ -50,51 +61,85 @@ const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName }) => 
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
             <View style={styles.modalContainer}>
-          {/* Warning Icon */}
-          <View style={styles.iconContainer}>
-            <View style={styles.iconCircle}>
-              <AppText style={styles.iconText}>!</AppText>
-            </View>
-          </View>
+              {/* Warning Icon */}
+              <View style={styles.iconContainer}>
+                <View style={styles.iconCircle}>
+                  <AppText style={styles.iconText}>!</AppText>
+                </View>
+              </View>
 
-          {/* Title */}
-          <AppText style={styles.title}>
-            Are you sure you want to{'\n'}Approve customer?
-          </AppText>
+              {/* Title */}
+              <AppText style={styles.title}>
+                Are you sure you want to{'\n'}Approve customer?
+              </AppText>
 
-          {/* Comment Input */}
-          <View style={styles.inputContainer}>
-            <AppInput
-              style={[styles.input, error && styles.inputError]}
-              placeholder="Write your comment*"
-              placeholderTextColor="#999"
-              multiline={true}
-              numberOfLines={4}
-              value={comment}
-              onChangeText={handleCommentChange}
-              textAlignVertical="top"
-            />
-            {error && <AppText style={styles.errorText}>{error}</AppText>}
-          </View>
+              {/* Comment Input */}
+              <View style={styles.inputContainer}>
+                <AppInput
+                  style={[styles.input, error && styles.inputError, { marginBottom: 20}]}
+                  placeholder="Write your comment*"
+                  placeholderTextColor="#999"
+                  multiline={true}
+                  numberOfLines={4}
+                  value={comment}
+                  onChangeText={handleCommentChange}
+                  textAlignVertical="top"
+                />
 
-          {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.noButton}
-              onPress={handleClose}
-              activeOpacity={0.7}
-            >
-              <AppText style={styles.noButtonText}>No</AppText>
-            </TouchableOpacity>
+                <CustomCheckbox
 
-            <TouchableOpacity
-              style={styles.yesButton}
-              onPress={handleConfirm}
-              activeOpacity={0.7}
-            >
-              <AppText style={styles.yesButtonText}>Yes</AppText>
-            </TouchableOpacity>
-          </View>
+                  checked={checkConfirm}
+                  checkboxStyle={{ marginRight: 5 }}
+                  size={16}
+                  borderWidth={1}
+                  activeColor="#F7941E"
+                  checkIcon={
+                    <Svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <Path d="M8.25 0.75L3.09375 5.90625L0.75 3.5625" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </Svg>
+
+                  }
+                  title={
+                    <AppText>
+
+                      {checkboxLabel || " I have verified all details and documents"}
+                     
+                    </AppText>
+                  }
+                  onChange={() => {
+                    setCheckConfirm(!checkConfirm)
+                  }}
+                />
+
+
+                {error && <AppText style={styles.errorText}>{error}</AppText>}
+
+
+
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.noButton}
+                  onPress={handleClose}
+                  activeOpacity={0.7}
+                >
+                  <AppText style={styles.noButtonText}>No</AppText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.yesButton,
+                    { backgroundColor: (checkConfirm && comment) ? colors.primary : '#D3D4D6' }
+                  ]}
+                  onPress={handleConfirm}
+                  activeOpacity={0.7}
+                  disabled={!checkConfirm || !comment}
+                >
+                  <AppText style={styles.yesButtonText}>Yes</AppText>
+                </TouchableOpacity>
+              </View>
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -193,11 +238,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  
   yesButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
   },
+
+
 });
 
 export default ApproveCustomerModal;

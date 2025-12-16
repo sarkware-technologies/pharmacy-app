@@ -221,7 +221,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                   <AppText
                     style={[
                       styles.tabLabel,
-                      { color: isFocused ? colors.primary : '#999' },
+                      { color: isFocused ? colors.black : '#999' },
                       isFocused && styles.activeTabLabel,
                     ]}
                   >
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   tabLabel: {
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 4,
   },
   activeTabLabel: {

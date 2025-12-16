@@ -187,17 +187,24 @@ const CustomerDetail = ({ navigation, route }) => {
         categoryId: selectedCustomer.categoryId || selectedCustomer.category?.categoryId || 0,
         subCategoryId: selectedCustomer.subCategoryId || selectedCustomer.subCategory?.subCategoryId || 0,
         licenceDetails: selectedCustomer.licenceDetails ? {
-          licence: selectedCustomer.licenceDetails.licence || [],
+          licence: selectedCustomer.licenceDetails.licence?.map(l => ({
+            licenceTypeId: l.licenceTypeId,
+            licenceNo: l.licenceNo,
+            licenceValidUpto: l.licenceValidUpto,
+            licenceTypeName: l.licenceTypeName,
+            licenceTypeCode: l.licenceTypeCode,
+            hospitalCode: l.hospitalCode ?? null
+          })) || [],
           registrationDate: selectedCustomer.licenceDetails.registrationDate || null
         } : {
           licence: [],
           registrationDate: null
         },
         customerId: customerId,
-        stgCustomerId: stgCustomerId,
+        stgCustomerId: Number(stgCustomerId),
         customerDocs: selectedCustomer.docType?.map(doc => ({
           s3Path: doc.s3Path,
-          docTypeId: doc.doctypeId || doc.docTypeId,
+          docTypeId: Number(doc.doctypeId),
           fileName: doc.fileName,
           customerId: customerId,
           id: doc.id
@@ -247,10 +254,19 @@ const CustomerDetail = ({ navigation, route }) => {
           gstNumber: null
         },
         mapping: selectedCustomer.mapping ? {
-          hospitals: selectedCustomer.mapping.hospitals || [],
-          doctors: selectedCustomer.mapping.doctors || [],
-          pharmacy: selectedCustomer.mapping.pharmacy || [],
-          groupHospitals: selectedCustomer.mapping.groupHospitals || []
+          hospitals: selectedCustomer.mapping.hospitals?.map(h => ({
+            id: Number(h.id),          // MUST be number
+            isNew: h.isNew ?? false
+          })) || [],
+          doctors: selectedCustomer.mapping.doctors?.map(d => ({
+            id: Number(d.id),
+            isNew: d.isNew ?? false
+          })) || [],
+          pharmacy: selectedCustomer.mapping.pharmacy?.map(p => ({
+            id: Number(p.id),
+            isNew: p.isNew ?? false
+          })) || [],
+          groupHospitals: []
         } : {
           hospitals: [],
           doctors: [],
@@ -1254,7 +1270,7 @@ const CustomerDetail = ({ navigation, route }) => {
               ) : (
                 <>
 
-                  <Reassigned color={colors.primary}  width = {18} height = {18}/>
+                  <Reassigned color={colors.primary} width={18} height={18} />
 
                   <AppText style={styles.sendBackButtonText}>Send Back</AppText>
                 </>
@@ -1697,7 +1713,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#E0E0E0',
   },
   rejectButton: {
-    flex:1,
+    flex: 1,
 
     flexDirection: 'row',
     alignItems: 'center',
@@ -1715,7 +1731,7 @@ const styles = StyleSheet.create({
     color: "#2B2B2B",
   },
   approveButton: {
-flex:1,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1731,7 +1747,7 @@ flex:1,
   },
 
   sendBackButton: {
-flex:1,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

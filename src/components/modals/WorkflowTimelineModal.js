@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
   },
   // Accordion Styles
   accordionItem: {
-    marginBottom: 16,
+    marginBottom: 0,
     backgroundColor: '#fff',
     borderRadius: 8,
     borderWidth: 1,
