@@ -33,6 +33,10 @@ import Distributors from '../../../components/icons/Distributors';
 import Divisions from '../../../components/icons/Divisions';
 import Field from '../../../components/icons/Field';
 import CustomerHierarchy from '../../../components/icons/CustomerHierarchy';
+import PermissionWrapper from '../../../utils/RBAC/permissionWrapper';
+import PERMISSIONS from '../../../utils/RBAC/permissionENUM';
+import checkPermission from '../../../utils/RBAC/permissionHelper';
+import CloseCircle from '../../../components/icons/CloseCircle';
 
 const { width } = Dimensions.get('window');
 
@@ -172,6 +176,44 @@ export const LinkagedTab = ({
   const reduxCustomerId = useSelector(selectCurrentCustomerId);
   const effectiveCustomerId = reduxCustomerId || customerId;
 
+  // Permission state for Other Division Section
+  const [hasOtherDivisionPermission, setHasOtherDivisionPermission] = useState(true);
+  const [hasPreferredDistributorPermission, setHasPreferredDistributorPermission] = useState(true);
+  const [hasAllDistributorPermission, setHasAllDistributorPermission] = useState(true);
+
+  // Check permission on mount
+  useEffect(() => {
+    const checkPermissions = async () => {
+      const [
+        hasOtherDivision,
+        hasPreferredDistributor,
+        hasAllDistributor,
+      ] = await Promise.all([
+        checkPermission(PERMISSIONS.ONBOARDING_LINKAGE_PAGE_DIVISION_OTHER_DIVISION_SECTION),
+        checkPermission(PERMISSIONS.ONBOARDING_LINKAGE_PAGE_DISTRIBUTOR_PREFERRED_DISTRIBUTOR_PAGE_VIEW),
+        checkPermission(PERMISSIONS.ONBOARDING_LINKAGE_PAGE_DISTRIBUTOR_ALL_DISTRIBUTOR_PAGE_VIEW),
+      ]);
+
+      setHasOtherDivisionPermission(hasOtherDivision);
+      setHasPreferredDistributorPermission(hasPreferredDistributor);
+      setHasAllDistributorPermission(hasAllDistributor);
+
+      // Ensure activeDistributorTab always points to a visible tab
+      setActiveDistributorTab(prev => {
+        if (prev === 'preferred' && !hasPreferredDistributor) {
+          if (hasAllDistributor) return 'all';
+          return 'linked';
+        }
+        if (prev === 'all' && !hasAllDistributor) {
+          if (hasPreferredDistributor) return 'preferred';
+          return 'linked';
+        }
+        return prev;
+      });
+    };
+    checkPermissions();
+  }, []);
+
   // Modal states
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showLinkDivisionsModal, setShowLinkDivisionsModal] = useState(false);
@@ -202,6 +244,7 @@ export const LinkagedTab = ({
   const [preferredDistributorsData, setPreferredDistributorsData] = useState(
     [],
   );
+  const [linkedDistributorsData, setLinkedDistributorsData] = useState([]);
   const [distributorsLoading, setDistributorsLoading] = useState(false);
   const [distributorsError, setDistributorsError] = useState(null);
 
@@ -512,6 +555,53 @@ export const LinkagedTab = ({
     };
 
     fetchPreferredDistributorsData();
+  }, [activeDistributorTab, effectiveCustomerId]);
+
+  // Fetch linked distributors when Linked tab is active
+  useEffect(() => {
+    const fetchLinkedDistributorsData = async () => {
+      if (activeDistributorTab !== 'linked' || !effectiveCustomerId) {
+        return;
+      }
+
+      console.log(
+        'LinkagedTab: Fetching linked distributors for customerId:',
+        effectiveCustomerId,
+      );
+
+      try {
+        setDistributorsLoading(true);
+        setDistributorsError(null);
+
+        const response = await customerAPI.getLinkedDistributorDivisions(
+          effectiveCustomerId,
+        );
+        console.log(
+          'LinkagedTab: Linked distributor divisions (linked tab) API response:',
+          response,
+        );
+
+        if (
+          response?.data?.customer?.distributorDetails &&
+          Array.isArray(response.data.customer.distributorDetails)
+        ) {
+          setLinkedDistributorsData(response.data.customer.distributorDetails);
+        } else {
+          setLinkedDistributorsData([]);
+        }
+      } catch (error) {
+        console.error(
+          'LinkagedTab: Error fetching linked distributors:',
+          error,
+        );
+        setDistributorsError(error.message);
+        setLinkedDistributorsData([]);
+      } finally {
+        setDistributorsLoading(false);
+      }
+    };
+
+    fetchLinkedDistributorsData();
   }, [activeDistributorTab, effectiveCustomerId]);
 
   useEffect(() => {
@@ -1169,43 +1259,47 @@ export const LinkagedTab = ({
           scrollEventThrottle={16}
         >
 
-          <TouchableOpacity
-            ref={ref => (distributorTabRefs.current['preferred'] = ref)}
-            style={[
-              styles.distributorTab,
-              activeDistributorTab === 'preferred' && styles.activeDistributorTab,
-            ]}
-            onPress={() => handleDistributorTabPress('preferred')}
-          >
-            <AppText
+          {hasPreferredDistributorPermission && (
+            <TouchableOpacity
+              ref={ref => (distributorTabRefs.current['preferred'] = ref)}
               style={[
-                styles.distributorTabText,
-                activeDistributorTab === 'preferred' &&
-                styles.activeDistributorTabText,
+                styles.distributorTab,
+                activeDistributorTab === 'preferred' && styles.activeDistributorTab,
               ]}
+              onPress={() => handleDistributorTabPress('preferred')}
             >
-              Preferred Distributors
-            </AppText>
-          </TouchableOpacity>
+              <AppText
+                style={[
+                  styles.distributorTabText,
+                  activeDistributorTab === 'preferred' &&
+                  styles.activeDistributorTabText,
+                ]}
+              >
+                Preferred Distributors
+              </AppText>
+            </TouchableOpacity>
+          )}
 
-          <TouchableOpacity
-            ref={ref => (distributorTabRefs.current['all'] = ref)}
-            style={[
-              styles.distributorTab,
-              activeDistributorTab === 'all' && styles.activeDistributorTab,
-            ]}
-            onPress={() => handleDistributorTabPress('all')}
-          >
-            <AppText
+          {hasAllDistributorPermission && (
+            <TouchableOpacity
+              ref={ref => (distributorTabRefs.current['all'] = ref)}
               style={[
-                styles.distributorTabText,
-                activeDistributorTab === 'all' &&
-                styles.activeDistributorTabText,
+                styles.distributorTab,
+                activeDistributorTab === 'all' && styles.activeDistributorTab,
               ]}
+              onPress={() => handleDistributorTabPress('all')}
             >
-              All Distributors
-            </AppText>
-          </TouchableOpacity>
+              <AppText
+                style={[
+                  styles.distributorTabText,
+                  activeDistributorTab === 'all' &&
+                  styles.activeDistributorTabText,
+                ]}
+              >
+                All Distributors
+              </AppText>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             ref={ref => (distributorTabRefs.current['linked'] = ref)}
@@ -1231,7 +1325,7 @@ export const LinkagedTab = ({
 
 
 
-      {activeDistributorTab === 'preferred' && (
+      {activeDistributorTab === 'preferred' && hasPreferredDistributorPermission && (
         <ScrollView style={styles.scrollContent}>
           {distributorsError ? (
             <View style={styles.errorContainer}>
@@ -1443,7 +1537,7 @@ export const LinkagedTab = ({
       )}
 
 
-      {activeDistributorTab === 'all' && (
+      {activeDistributorTab === 'all' && hasAllDistributorPermission && (
         <ScrollView style={styles.scrollContent}>
           {distributorsError ? (
             <View style={styles.errorContainer}>
@@ -1668,13 +1762,30 @@ export const LinkagedTab = ({
               <Icon name="information-outline" size={16} color="#6B7280" />
             </View>
 
-            {allDistributorsData.map(item => (
-              <View key={item.id} style={styles.linkedCard}>
+            {distributorsLoading ? (
+              <View style={styles.loadingContainer}>
+                <Icon name="loading" size={40} color="#FF6B00" />
+                <AppText style={styles.loadingText}>Loading linked distributors...</AppText>
+              </View>
+            ) : distributorsError ? (
+              <View style={styles.errorContainer}>
+                <Icon name="alert-circle" size={40} color="#EF4444" />
+                <AppText style={styles.errorText}>Error loading linked distributors</AppText>
+                <AppText style={styles.errorSubText}>{distributorsError}</AppText>
+              </View>
+            ) : linkedDistributorsData.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Icon name="account-multiple-outline" size={40} color="#999" />
+                <AppText style={styles.emptyText}>No linked distributors found</AppText>
+              </View>
+            ) : (
+              linkedDistributorsData.map(item => (
+              <View key={item.id || item.distributorId} style={styles.linkedCard}>
 
                 {/* NAME + MARGIN LABEL */}
                 <View style={styles.topRow}>
                   <View style={{ flex: 1 }}>
-                    <AppText style={styles.name}>{item.name}</AppText>
+                    <AppText style={styles.name}>{item.name || item.distributorName}</AppText>
 
                   </View>
                   {/* <AppText style={styles.marginLabel}>Margin</AppText> */}
@@ -1686,7 +1797,7 @@ export const LinkagedTab = ({
                   <View>
 
                     <AppText style={styles.subTextLiked}>
-                      {item.code} | One city | {item.cityName || 'Pune'}
+                      {(item.code || item.distributorCode) || 'N/A'} | One city | {item.cityName || 'Pune'}
                     </AppText>
 
                     <View style={styles.middleRowDropdown}>
@@ -1750,7 +1861,7 @@ export const LinkagedTab = ({
                   </TouchableOpacity>
                 </View>
               </View>
-            ))}
+            )))}
           </ScrollView>
 
           {/* FINISH BUTTON */}
@@ -1948,36 +2059,44 @@ export const LinkagedTab = ({
 
               {/* ========== OTHER COLUMN ========== */}
               <View style={styles.colOther}>
-                {otherDivisionsData?.length > 0 ? (
-                  otherDivisionsData.map(div => {
-                    const isSelected = selectedDivisions.some(
-                      d => d.divisionId === div.divisionId
-                    );
+                {hasOtherDivisionPermission ? (
+                  otherDivisionsData?.length > 0 ? (
+                    otherDivisionsData.map(div => {
+                      const isSelected = selectedDivisions.some(
+                        d => d.divisionId === div.divisionId
+                      );
 
-                    return (
-                      <TouchableOpacity
-                        key={div.divisionId}
-                        style={styles.otherRow}
-                        onPress={() => toggleOtherDivisionSelection(div)}
-                      >
-                        <View
-                          style={[
-                            styles.checkbox,
-                            isSelected && styles.checkboxSelected
-                          ]}
+                      return (
+                        <TouchableOpacity
+                          key={div.divisionId}
+                          style={styles.otherRow}
+                          onPress={() => toggleOtherDivisionSelection(div)}
                         >
-                          {isSelected && <Icon name="check" size={14} color="#fff" />}
-                        </View>
+                          <View
+                            style={[
+                              styles.checkbox,
+                              isSelected && styles.checkboxSelected
+                            ]}
+                          >
+                            {isSelected && <Icon name="check" size={14} color="#fff" />}
+                          </View>
 
-                        <View style={{ flexShrink: 1 }}>
-                          <AppText style={styles.divisionName}>{div.divisionName}</AppText>
-                          <AppText style={styles.divisionCode}>{div.divisionCode}</AppText>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })
+                          <View style={{ flexShrink: 1 }}>
+                            <AppText style={styles.divisionName}>{div.divisionName}</AppText>
+                            <AppText style={styles.divisionCode}>{div.divisionCode}</AppText>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })
+                  ) : (
+                    <AppText style={styles.emptyText}>No other divisions</AppText>
+                  )
                 ) : (
-                  <AppText style={styles.emptyText}>No other divisions</AppText>
+                  <View style={styles.unauthorizedContainer}>
+                    <CloseCircle width={40} height={40} color="#EF4444" />
+                    <AppText style={styles.unauthorizedTitle}>Unauthorized Access</AppText>
+                    <AppText style={styles.unauthorizedMessage}>You don't have permission to access.</AppText>
+                  </View>
                 )}
               </View>
 
@@ -4602,6 +4721,25 @@ const styles = StyleSheet.create({
     paddingLeft: 6,
     paddingRight: 6,
     // paddingTop:20
+  },
+  unauthorizedContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 10,
+  },
+  unauthorizedTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#EF4444',
+    marginTop: 12,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  unauthorizedMessage: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
   },
 
   colOpened: {

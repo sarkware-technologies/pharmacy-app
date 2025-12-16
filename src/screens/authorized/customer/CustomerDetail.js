@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unstable-nested-components */
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
@@ -37,6 +38,8 @@ import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModa
 
 import CloseCircle from '../../../components/icons/CloseCircle';
 import Reassigned from '../../../components/icons/Reassigned';
+import PermissionWrapper from '../../../utils/RBAC/permissionWrapper';
+import PERMISSIONS from '../../../utils/RBAC/permissionENUM';
 
 
 
@@ -579,6 +582,7 @@ const CustomerDetail = ({ navigation, route }) => {
       if (showDocumentModal && selectedDocument?.s3Path) {
         fetchSignedUrl();
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showDocumentModal, selectedDocument]);
 
     const fetchSignedUrl = async () => {
@@ -693,6 +697,7 @@ const CustomerDetail = ({ navigation, route }) => {
   };
 
   // Show toast notification
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const showToast = (message, type = 'success') => {
     Alert.alert(type === 'success' ? 'Success' : 'Error', message);
   };
@@ -1153,14 +1158,16 @@ const CustomerDetail = ({ navigation, route }) => {
                         // Display mode - show customer group name and Change button
                         <View style={styles.customerGroupRow}>
                           <AppText style={styles.infoValue}>{customerData.customerGroupName}</AppText>
-                          <TouchableOpacity
-                            style={styles.changeButton}
-                            onPress={handleChangeCustomerGroup}
-                            activeOpacity={0.7}
-                          >
-                            <Icon name="refresh-circle" size={12} color="#fff" />
-                            <AppText style={styles.changeButtonText}>Change</AppText>
-                          </TouchableOpacity>
+                          <PermissionWrapper permission={PERMISSIONS.ONBOARDING_DETAILS_PAGE_CHANGE_CUSTOMER_GROUP}>
+                            <TouchableOpacity
+                              style={styles.changeButton}
+                              onPress={handleChangeCustomerGroup}
+                              activeOpacity={0.7}
+                            >
+                              <Icon name="refresh-circle" size={12} color="#fff" />
+                              <AppText style={styles.changeButtonText}>Change</AppText>
+                            </TouchableOpacity>
+                          </PermissionWrapper>
                         </View>
                       ) : (
                         // Edit mode - show radio buttons inline

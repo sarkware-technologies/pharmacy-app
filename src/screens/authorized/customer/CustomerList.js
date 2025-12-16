@@ -59,6 +59,7 @@ import Toast from 'react-native-toast-message';
 import { handleOnboardCustomer } from '../../../utils/customerNavigationHelper';
 import PermissionWrapper from "../../../utils/RBAC/permissionWrapper"
 import PERMISSIONS from "../../../utils/RBAC/permissionENUM"
+import checkPermission from "../../../utils/RBAC/permissionHelper"
 
 
 const { width, height } = Dimensions.get('window');
@@ -154,6 +155,15 @@ const CustomerList = ({ navigation }) => {
   // Block/Unblock state
   const [blockUnblockLoading, setBlockUnblockLoading] = useState(false);
 
+  // Tab permission states
+  const [hasAllTabPermission, setHasAllTabPermission] = useState(true);
+  const [hasUnverifiedTabPermission, setHasUnverifiedTabPermission] = useState(true);
+  const [hasNotOnboardedTabPermission, setHasNotOnboardedTabPermission] = useState(true);
+  const [hasWaitingForApprovalTabPermission, setHasWaitingForApprovalTabPermission] = useState(true);
+  const [hasRejectedTabPermission, setHasRejectedTabPermission] = useState(true);
+  const [hasDoctorSupplyTabPermission, setHasDoctorSupplyTabPermission] = useState(true);
+  const [hasDraftTabPermission, setHasDraftTabPermission] = useState(true);
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -199,6 +209,88 @@ const CustomerList = ({ navigation }) => {
     };
     return filterMap[filterButton] || 'NEW';
   };
+
+  // Check tab permissions on mount
+  useEffect(() => {
+    const checkTabPermissions = async () => {
+      const [
+        allPermission,
+        unverifiedPermission,
+        notOnboardedPermission,
+        waitingForApprovalPermission,
+        rejectedPermission,
+        doctorSupplyPermission,
+        draftPermission,
+      ] = await Promise.all([
+        checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_PAGE_VIEW),
+        checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_UNVERIFIED_PAGE_VIEW),
+        checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_NOT_ONBOARDED_PAGE_VIEW),
+        checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_PAGE_VIEW),
+        checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_REJECTED_PAGE_VIEW),
+        checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_DOCTOR_SUPPLY_PAGE_VIEW),
+        checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_DRAFT_PAGE_VIEW),
+      ]);
+
+      setHasAllTabPermission(allPermission);
+      setHasUnverifiedTabPermission(unverifiedPermission);
+      setHasNotOnboardedTabPermission(notOnboardedPermission);
+      setHasWaitingForApprovalTabPermission(waitingForApprovalPermission);
+      setHasRejectedTabPermission(rejectedPermission);
+      setHasDoctorSupplyTabPermission(doctorSupplyPermission);
+      setHasDraftTabPermission(draftPermission);
+    };
+
+    checkTabPermissions();
+  }, []);
+
+  // Switch to first available tab if current tab doesn't have permission
+  useEffect(() => {
+    const getFirstAvailableTab = () => {
+      if (hasAllTabPermission) return 'all';
+      if (hasWaitingForApprovalTabPermission) return 'waitingForApproval';
+      if (hasNotOnboardedTabPermission) return 'notOnboarded';
+      if (hasUnverifiedTabPermission) return 'unverified';
+      if (hasRejectedTabPermission) return 'rejected';
+      if (hasDoctorSupplyTabPermission) return 'doctorSupply';
+      if (hasDraftTabPermission) return 'draft';
+      return 'all'; // fallback
+    };
+
+    const checkCurrentTabPermission = () => {
+      switch (activeTab) {
+        case 'all':
+          return hasAllTabPermission;
+        case 'waitingForApproval':
+          return hasWaitingForApprovalTabPermission;
+        case 'notOnboarded':
+          return hasNotOnboardedTabPermission;
+        case 'unverified':
+          return hasUnverifiedTabPermission;
+        case 'rejected':
+          return hasRejectedTabPermission;
+        case 'doctorSupply':
+          return hasDoctorSupplyTabPermission;
+        case 'draft':
+          return hasDraftTabPermission;
+        default:
+          return true;
+      }
+    };
+
+    if (!checkCurrentTabPermission()) {
+      const firstAvailableTab = getFirstAvailableTab();
+      setActiveTab(firstAvailableTab);
+    }
+  }, [
+    activeTab,
+    hasAllTabPermission,
+    hasUnverifiedTabPermission,
+    hasNotOnboardedTabPermission,
+    hasWaitingForApprovalTabPermission,
+    hasRejectedTabPermission,
+    hasDoctorSupplyTabPermission,
+    hasDraftTabPermission,
+  ]);
 
   // Fetch tab counts on component mount
   useEffect(() => {
@@ -1556,61 +1648,69 @@ const CustomerList = ({ navigation }) => {
               </View>
             </TouchableOpacity>
             {item.statusName === 'LOCKED' ? (
-              <TouchableOpacity
-                style={styles.unlockButton}
-                onPress={() => handleUnblockCustomer(item)}
-                disabled={blockUnblockLoading}
-              >
-                <UnLocked fill="#EF4444" />
-                <AppText style={styles.unlockButtonText}>Unblock</AppText>
-              </TouchableOpacity>
+              <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
+                <TouchableOpacity
+                  style={styles.unlockButton}
+                  onPress={() => handleUnblockCustomer(item)}
+                  disabled={blockUnblockLoading}
+                >
+                  <UnLocked fill="#EF4444" />
+                  <AppText style={styles.unlockButtonText}>Unblock</AppText>
+                </TouchableOpacity>
+              </PermissionWrapper>
             ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
-              <TouchableOpacity
-                style={styles.blockButton}
-                onPress={() => handleBlockCustomer(item)}
-                disabled={blockUnblockLoading}
-              >
-                <Locked fill="#666" />
-                <AppText style={styles.blockButtonText}>Block</AppText>
-              </TouchableOpacity>
+              <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
+                <TouchableOpacity
+                  style={styles.blockButton}
+                  onPress={() => handleBlockCustomer(item)}
+                  disabled={blockUnblockLoading}
+                >
+                  <Locked fill="#666" />
+                  <AppText style={styles.blockButtonText}>Block</AppText>
+                </TouchableOpacity>
+              </PermissionWrapper>
             ) : item.statusName === 'PENDING' && item.action == 'APPROVE' ? (
-              <View style={styles.pendingActions}>
-                <TouchableOpacity
-                  style={styles.approveButton}
-                  onPress={() => handleApprovePress(item)}
-                >
+              <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+                <View style={styles.pendingActions}>
+                  <TouchableOpacity
+                    style={styles.approveButton}
+                    onPress={() => handleApprovePress(item)}
+                  >
 
 
-                  <View style={styles.approveButtonContent}>
-                    <Icon name="checkmark-outline" size={18} color="white" />
-                    <AppText style={styles.approveButtonText}>Approve</AppText>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.rejectButton}
-                  onPress={() => handleRejectPress(item)}
-                >
-                  <CloseCircle color='#000' />
-                </TouchableOpacity>
-              </View>
+                    <View style={styles.approveButtonContent}>
+                      <Icon name="checkmark-outline" size={18} color="white" />
+                      <AppText style={styles.approveButtonText}>Approve</AppText>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.rejectButton}
+                    onPress={() => handleRejectPress(item)}
+                  >
+                    <CloseCircle color='#000' />
+                  </TouchableOpacity>
+                </View>
+              </PermissionWrapper>
             ) : item.statusName === 'NOT-ONBOARDED' ? (
-              <TouchableOpacity
-                style={styles.onboardButton}
-                onPress={() => {
-                  const customerId = item.customerId || item.stgCustomerId;
-                  // For onboard mode, always use isStaging = false
-                  const isStaging = false;
-                  handleOnboardCustomer(
-                    navigation,
-                    customerId,
-                    isStaging,
-                    customerAPI,
-                    (toastConfig) => Toast.show(toastConfig),
-                    item.statusName // Pass status name
-                  );
-                }}>
-                <AppText style={styles.onboardButtonText}>Onboard</AppText>
-              </TouchableOpacity>
+              <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_ONBOARD}>
+                <TouchableOpacity
+                  style={styles.onboardButton}
+                  onPress={() => {
+                    const customerId = item.customerId || item.stgCustomerId;
+                    // For onboard mode, always use isStaging = false
+                    const isStaging = false;
+                    handleOnboardCustomer(
+                      navigation,
+                      customerId,
+                      isStaging,
+                      customerAPI,
+                      (toastConfig) => Toast.show(toastConfig),
+                      item.statusName // Pass status name
+                    );
+                  }}>
+                  <AppText style={styles.onboardButtonText}>Onboard</AppText>
+                </TouchableOpacity>
+              </PermissionWrapper>
             ) : null}
           </View>
       </Animated.View>
@@ -1885,69 +1985,83 @@ const CustomerList = ({ navigation }) => {
           style={styles.tabContainer}
           scrollEventThrottle={16}
         >
-          <TouchableOpacity
-            ref={(ref) => tabRefs.current['all'] = ref}
-            style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-            onPress={() => handleTabPress('all')}
-          >
-            <AppText style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
-              All ({tabCounts.all})
-            </AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            ref={(ref) => tabRefs.current['waitingForApproval'] = ref}
-            style={[styles.tab, activeTab === 'waitingForApproval' && styles.activeTab]}
-            onPress={() => handleTabPress('waitingForApproval')}
-          >
-            <AppText style={[styles.tabText, activeTab === 'waitingForApproval' && styles.activeTabText]}>
-              Waiting for Approval ({tabCounts.waitingForApproval})
-            </AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            ref={(ref) => tabRefs.current['notOnboarded'] = ref}
-            style={[styles.tab, activeTab === 'notOnboarded' && styles.activeTab]}
-            onPress={() => handleTabPress('notOnboarded')}
-          >
-            <AppText style={[styles.tabText, activeTab === 'notOnboarded' && styles.activeTabText]}>
-              Not Onboarded ({tabCounts.notOnboarded})
-            </AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            ref={(ref) => tabRefs.current['unverified'] = ref}
-            style={[styles.tab, activeTab === 'unverified' && styles.activeTab]}
-            onPress={() => handleTabPress('unverified')}
-          >
-            <AppText style={[styles.tabText, activeTab === 'unverified' && styles.activeTabText]}>
-              Unverified ({tabCounts.unverified})
-            </AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            ref={(ref) => tabRefs.current['rejected'] = ref}
-            style={[styles.tab, activeTab === 'rejected' && styles.activeTab]}
-            onPress={() => handleTabPress('rejected')}
-          >
-            <AppText style={[styles.tabText, activeTab === 'rejected' && styles.activeTabText]}>
-              Rejected ({tabCounts.rejected})
-            </AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            ref={(ref) => tabRefs.current['doctorSupply'] = ref}
-            style={[styles.tab, activeTab === 'doctorSupply' && styles.activeTab]}
-            onPress={() => handleTabPress('doctorSupply')}
-          >
-            <AppText style={[styles.tabText, activeTab === 'doctorSupply' && styles.activeTabText]}>
-              Doctor Supply ({tabCounts.doctorSupply || 0})
-            </AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            ref={(ref) => tabRefs.current['draft'] = ref}
-            style={[styles.tab, activeTab === 'draft' && styles.activeTab]}
-            onPress={() => handleTabPress('draft')}
-          >
-            <AppText style={[styles.tabText, activeTab === 'draft' && styles.activeTabText]}>
-              Draft ({tabCounts.draft || 0})
-            </AppText>
-          </TouchableOpacity>
+          {hasAllTabPermission && (
+            <TouchableOpacity
+              ref={(ref) => tabRefs.current['all'] = ref}
+              style={[styles.tab, activeTab === 'all' && styles.activeTab]}
+              onPress={() => handleTabPress('all')}
+            >
+              <AppText style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
+                All ({tabCounts.all})
+              </AppText>
+            </TouchableOpacity>
+          )}
+          {hasWaitingForApprovalTabPermission && (
+            <TouchableOpacity
+              ref={(ref) => tabRefs.current['waitingForApproval'] = ref}
+              style={[styles.tab, activeTab === 'waitingForApproval' && styles.activeTab]}
+              onPress={() => handleTabPress('waitingForApproval')}
+            >
+              <AppText style={[styles.tabText, activeTab === 'waitingForApproval' && styles.activeTabText]}>
+                Waiting for Approval ({tabCounts.waitingForApproval})
+              </AppText>
+            </TouchableOpacity>
+          )}
+          {hasNotOnboardedTabPermission && (
+            <TouchableOpacity
+              ref={(ref) => tabRefs.current['notOnboarded'] = ref}
+              style={[styles.tab, activeTab === 'notOnboarded' && styles.activeTab]}
+              onPress={() => handleTabPress('notOnboarded')}
+            >
+              <AppText style={[styles.tabText, activeTab === 'notOnboarded' && styles.activeTabText]}>
+                Not Onboarded ({tabCounts.notOnboarded})
+              </AppText>
+            </TouchableOpacity>
+          )}
+          {hasUnverifiedTabPermission && (
+            <TouchableOpacity
+              ref={(ref) => tabRefs.current['unverified'] = ref}
+              style={[styles.tab, activeTab === 'unverified' && styles.activeTab]}
+              onPress={() => handleTabPress('unverified')}
+            >
+              <AppText style={[styles.tabText, activeTab === 'unverified' && styles.activeTabText]}>
+                Unverified ({tabCounts.unverified})
+              </AppText>
+            </TouchableOpacity>
+          )}
+          {hasRejectedTabPermission && (
+            <TouchableOpacity
+              ref={(ref) => tabRefs.current['rejected'] = ref}
+              style={[styles.tab, activeTab === 'rejected' && styles.activeTab]}
+              onPress={() => handleTabPress('rejected')}
+            >
+              <AppText style={[styles.tabText, activeTab === 'rejected' && styles.activeTabText]}>
+                Rejected ({tabCounts.rejected})
+              </AppText>
+            </TouchableOpacity>
+          )}
+          {hasDoctorSupplyTabPermission && (
+            <TouchableOpacity
+              ref={(ref) => tabRefs.current['doctorSupply'] = ref}
+              style={[styles.tab, activeTab === 'doctorSupply' && styles.activeTab]}
+              onPress={() => handleTabPress('doctorSupply')}
+            >
+              <AppText style={[styles.tabText, activeTab === 'doctorSupply' && styles.activeTabText]}>
+                Doctor Supply ({tabCounts.doctorSupply || 0})
+              </AppText>
+            </TouchableOpacity>
+          )}
+          {hasDraftTabPermission && (
+            <TouchableOpacity
+              ref={(ref) => tabRefs.current['draft'] = ref}
+              style={[styles.tab, activeTab === 'draft' && styles.activeTab]}
+              onPress={() => handleTabPress('draft')}
+            >
+              <AppText style={[styles.tabText, activeTab === 'draft' && styles.activeTabText]}>
+                Draft ({tabCounts.draft || 0})
+              </AppText>
+            </TouchableOpacity>
+          )}
         </ScrollView>
 
         {/* Filter Buttons for Waiting for Approval Tab */}

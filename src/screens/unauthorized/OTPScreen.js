@@ -34,6 +34,7 @@ const OTPScreen = () => {
   const [canResend, setCanResend] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [verificationError, setVerificationError] = useState('');
+  const lastSubmittedOtp = useRef(null);
   
   const dispatch = useDispatch();
   const navigation = useNavigation();
@@ -73,6 +74,14 @@ const OTPScreen = () => {
       }, 1000);
     }
   }, [developmentOtp, dispatch]);
+
+  // Auto-submit when OTP is fully entered/auto-filled
+  useEffect(() => {
+    if (otp.length === 4 && !otpVerificationLoading && lastSubmittedOtp.current !== otp) {
+      lastSubmittedOtp.current = otp;
+      handleVerify();
+    }
+  }, [otp, otpVerificationLoading]);
 
   // Format phone number for display
   const formatPhoneOrEmail = (value) => {
@@ -236,6 +245,7 @@ const OTPScreen = () => {
     setTimer(60);
     setCanResend(false);
     setOtp('');
+    lastSubmittedOtp.current = null;
     setVerificationError('');
     dispatch(clearError());
   };
