@@ -1645,7 +1645,54 @@ const CustomerList = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
               </PermissionWrapper>
-            ) : item.statusName === 'NOT-ONBOARDED' ? (
+            ) : item.statusName === 'PENDING' && item.action == 'LINK_DT' ? (
+                <View style={styles.pendingActions}>
+                  <TouchableOpacity
+                    style={styles.linkDtButton}
+            onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
+                  >
+
+
+                    <View style={styles.linkDtButtonContent}>
+                      <AppText style={styles.linkDtButtonText}>LINK DT</AppText>
+                    </View>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.rejectButton}
+                    onPress={() => handleRejectPress(item)}
+                  >
+                    <CloseCircle color='#000' />
+                  </TouchableOpacity>
+                 
+                </View>
+            )
+            
+            : item.statusName === 'PENDING' && item.action == 'VERIFY' ? (
+                <View style={styles.pendingActions}>
+                  <TouchableOpacity
+                    style={styles.approveButton}
+                    // onPress={() => handleApprovePress(item)}
+                  >
+
+
+                     <View style={styles.approveButtonContent}>
+                      <Icon name="checkmark-outline" size={18} color="white" />
+                      <AppText style={styles.approveButtonText}>Verify</AppText>
+                    </View>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.rejectButton}
+                    onPress={() => handleRejectPress(item)}
+                  >
+                    <CloseCircle color='#000' />
+                  </TouchableOpacity>
+                 
+                </View>
+            ):
+            
+            item.statusName === 'NOT-ONBOARDED' ? (
               <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_ONBOARD}>
                 <TouchableOpacity
                   style={styles.onboardButton}
@@ -2573,6 +2620,25 @@ const styles = StyleSheet.create({
     marginLeft: 4,          // ⬅️ spacing between icon & text
   },
 
+
+    linkDtButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 4,
+    borderColor:colors.primary,
+    borderWidth:1
+  },
+
+
+  linkDtButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color:colors.primary,
+    marginLeft: 4,          // ⬅️ spacing between icon & text
+  },
 
   rejectButton: {
     padding: 4,

@@ -1500,7 +1500,7 @@ const styles = StyleSheet.create({
   // Customer Group Inline Edit Styles
   customerGroupEditContainer: {
    
-    backgroundColor:"#fbfbfb",
+    backgroundColor:"#fbfbfbr",
     padding:20,
   
     borderRadius:10
