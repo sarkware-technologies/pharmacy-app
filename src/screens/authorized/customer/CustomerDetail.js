@@ -873,7 +873,8 @@ const CustomerDetail = ({ navigation, route }) => {
           {/* RIGHT SECTION – 40% */}
           <View style={styles.rightSection}>
 
-            {activeTab === 'details' ? <TouchableOpacity
+            {activeTab === 'details' ? 
+            <TouchableOpacity
               style={styles.logsButton}
             >
               <MaterialIcons
@@ -882,20 +883,23 @@ const CustomerDetail = ({ navigation, route }) => {
                 color="#2B2B2B"
               />
               <AppText style={styles.logsButtonText}>Logs</AppText>
-            </TouchableOpacity> : <View style={styles.topActionButtons}>
-              <TouchableOpacity style={styles.topApproveButton}>
-                <MaterialIcons name="check" size={14} color="#fff" />
-                <AppText style={styles.topApproveButtonText}>Approve</AppText>
-              </TouchableOpacity>
+            </TouchableOpacity> 
+            
+            : 
+            
+              <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+                <View style={styles.topActionButtons}>
+                  <TouchableOpacity style={styles.topApproveButton}>
+                    <MaterialIcons name="check" size={14} color="#fff" />
+                    <AppText style={styles.topApproveButtonText}>Approve</AppText>
+                  </TouchableOpacity>
 
-              <TouchableOpacity style={styles.topRejectButton}>
-                <Icon name="close" size={14} color="#2B2B2B" />
-              </TouchableOpacity>
-            </View>}
-
-
-
-
+                  <TouchableOpacity style={styles.topRejectButton}>
+                    <Icon name="close" size={14} color="#2B2B2B" />
+                  </TouchableOpacity>
+                </View>
+              </PermissionWrapper>
+              }
 
           </View>
         </View>
@@ -1266,7 +1270,8 @@ const CustomerDetail = ({ navigation, route }) => {
 
         {/* Action Buttons - Show only on Details tab and if customer action is APPROVE */}
         {activeTab === 'details' && customer?.action === 'APPROVE' && (
-          <View style={styles.actionButtonsContainer}>
+          <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+            <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
               style={styles.sendBackButton}
               onPress={() => setSendBackModalVisible(true)}
@@ -1308,6 +1313,7 @@ const CustomerDetail = ({ navigation, route }) => {
             </TouchableOpacity>
 
           </View>
+          </PermissionWrapper>
         )}
 
         <DocumentModal />

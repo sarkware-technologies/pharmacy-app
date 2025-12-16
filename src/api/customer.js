@@ -587,6 +587,22 @@ export const customerAPI = {
             console.error('Error fetching workflow progression:', error);
             throw error;
         }
+    },
+
+    // Block/Unblock division for a customer
+    blockUnblockDivision: async (customerId, divisionId, isActive) => {
+        try {
+            const payload = {
+                customerId: customerId,
+                divisionId: divisionId,
+                isActive: isActive
+            };
+            const response = await apiClient.patch('/user-management/customer/division/block-unblock', payload);
+            return response;
+        } catch (error) {
+            console.error('Error blocking/unblocking division:', error);
+            throw error;
+        }
     }
 
 };

@@ -275,6 +275,7 @@ export const LinkagedTab = ({
   const [divisionsLoading, setDivisionsLoading] = useState(false);
   const [divisionsError, setDivisionsError] = useState(null);
   const [linkingDivisions, setLinkingDivisions] = useState(false);
+  const [blockingDivision, setBlockingDivision] = useState(null); // Track which division is being blocked/unblocked
 
   // Tab scroll ref for centering active tab
   const tabScrollRef = useRef(null);
@@ -295,6 +296,8 @@ export const LinkagedTab = ({
   };
 
   const handleTabPress = async tabName => {
+
+    console.log(tabName, "tabName tab press");
     // First reset the list and set active tab
     setActiveSubTab(tabName);
 
@@ -1220,6 +1223,49 @@ export const LinkagedTab = ({
     }
   };
 
+  // Handle block/unblock division
+  const handleBlockUnblockDivision = async (division) => {
+    if (!effectiveCustomerId || !division?.divisionId) {
+      showToast('Customer ID or Division ID is missing', 'error');
+      return;
+    }
+
+    const isBlocking = !division.isBlocked; // If currently not blocked, we're blocking it
+    const isActive = !isBlocking; // isActive: false for block, true for unblock
+
+    try {
+      setBlockingDivision(division.divisionId);
+      
+      await customerAPI.blockUnblockDivision(
+        effectiveCustomerId,
+        division.divisionId,
+        isActive
+      );
+
+      // Update the local state
+      setOpenedDivisionsData(prev =>
+        prev.map(div =>
+          div.divisionId === division.divisionId
+            ? { ...div, isBlocked: isBlocking }
+            : div
+        )
+      );
+
+      showToast(
+        `Division ${isBlocking ? 'blocked' : 'unblocked'} successfully`,
+        'success'
+      );
+    } catch (error) {
+      console.error('Error blocking/unblocking division:', error);
+      showToast(
+        `Failed to ${isBlocking ? 'block' : 'unblock'} division: ${error.message || 'Unknown error'}`,
+        'error'
+      );
+    } finally {
+      setBlockingDivision(null);
+    }
+  };
+
   // Simple skeleton placeholders for distributor rows
   const DistributorListSkeleton = ({ rows = 5 }) => {
     return (
@@ -2004,11 +2050,13 @@ export const LinkagedTab = ({
                 <AppText style={styles.headerTitle}>Requested</AppText>
               </View>
 
-              <View style={styles.divider} />
+              {hasOtherDivisionPermission && <View style={styles.divider} />}
 
-              <View style={styles.colOther}>
-                <AppText style={styles.headerTitle}>Other</AppText>
-              </View>
+              {hasOtherDivisionPermission && (
+                <View style={styles.colOther}>
+                  <AppText style={styles.headerTitle}>Other</AppText>
+                </View>
+              )}
 
               <View style={styles.divider} />
 
@@ -2023,10 +2071,13 @@ export const LinkagedTab = ({
                 <AppText style={styles.subHeaderText}>Name & Code</AppText>
               </View>
 
-              <View style={styles.divider} />
-              <View style={styles.colOther}>
-                <AppText style={styles.subHeaderText}>Name & Code</AppText>
-              </View>
+              {hasOtherDivisionPermission && <View style={styles.divider} />}
+              
+              {hasOtherDivisionPermission && (
+                <View style={styles.colOther}>
+                  <AppText style={styles.subHeaderText}>Name & Code</AppText>
+                </View>
+              )}
 
               <View style={styles.divider} />
 
@@ -2055,12 +2106,12 @@ export const LinkagedTab = ({
                 )}
               </View>
 
-              <View style={styles.dividerinside} />
+              {hasOtherDivisionPermission && <View style={styles.dividerinside} />}
 
               {/* ========== OTHER COLUMN ========== */}
-              <View style={styles.colOther}>
-                {hasOtherDivisionPermission ? (
-                  otherDivisionsData?.length > 0 ? (
+              {hasOtherDivisionPermission && (
+                <View style={styles.colOther}>
+                  {otherDivisionsData?.length > 0 ? (
                     otherDivisionsData.map(div => {
                       const isSelected = selectedDivisions.some(
                         d => d.divisionId === div.divisionId
@@ -2090,15 +2141,9 @@ export const LinkagedTab = ({
                     })
                   ) : (
                     <AppText style={styles.emptyText}>No other divisions</AppText>
-                  )
-                ) : (
-                  <View style={styles.unauthorizedContainer}>
-                    <CloseCircle width={40} height={40} color="#EF4444" />
-                    <AppText style={styles.unauthorizedTitle}>Unauthorized Access</AppText>
-                    <AppText style={styles.unauthorizedMessage}>You don't have permission to access.</AppText>
-                  </View>
-                )}
-              </View>
+                  )}
+                </View>
+              )}
 
               <View style={styles.dividerinside} />
 
@@ -2115,13 +2160,16 @@ export const LinkagedTab = ({
                       <TouchableOpacity
                         style={[
                           styles.blockButton,
-                          div.isBlocked && styles.unblockButton
+                          div.isBlocked && styles.unblockButton,
+                          blockingDivision === div.divisionId && styles.blockButtonDisabled
                         ]}
+                        onPress={() => handleBlockUnblockDivision(div)}
+                        disabled={blockingDivision === div.divisionId}
                       >
                         <Icon
                           name={div.isBlocked ? "lock-open-outline" : "lock-outline"}
                           size={15}
-                          color={div.isBlocked ? "#FF6B00" : "#2B2B2B"}
+                          color={div.isBlocked ? "#EF4444" : "#2B2B2B"}
                         />
                         <AppText
                           style={[
@@ -2129,7 +2177,11 @@ export const LinkagedTab = ({
                             div.isBlocked && styles.unblockText
                           ]}
                         >
-                          {div.isBlocked ? "Unblock" : "Block"}
+                          {blockingDivision === div.divisionId 
+                            ? "Processing..." 
+                            : div.isBlocked 
+                            ? "Unblock" 
+                            : "Block"}
                         </AppText>
                       </TouchableOpacity>
                     </View>
@@ -2221,496 +2273,39 @@ export const LinkagedTab = ({
     </View>
   );
 
-  // const renderCustomerHierarchyTab = () => {
-  //   // Check if we have mapping data
-  //   if (!hierarchyMappingData) {
-  //     return (
-  //       <View style={styles.tabContent}>
-  //         <ScrollView style={styles.scrollContent}>
-  //           <View style={styles.emptyContainer}>
-  //             <Icon name="inbox" size={50} color="#999" />
-  //             <AppText style={styles.emptyText}>No data found</AppText>
-  //             <AppText style={styles.emptySubText}>
-  //               Linked data will appear here
-  //             </AppText>
-  //           </View>
-  //         </ScrollView>
-  //       </View>
-  //     );
-  //   }
-
-  //   // For Doctors - show linked pharmacies
-  //   if (customerType === 'Doctors') {
-  //     const linkedPharmacies = hierarchyMappingData?.pharmacy || [];
-
-  //     if (linkedPharmacies.length === 0) {
-  //       return (
-  //         <View style={styles.tabContent}>
-  //           <ScrollView style={styles.scrollContent}>
-  //             <View style={styles.emptyContainer}>
-  //               <Icon name="inbox" size={50} color="#999" />
-  //               <AppText style={styles.emptyText}>No data found</AppText>
-  //               <AppText style={styles.emptySubText}>
-  //                 Linked pharmacies will appear here
-  //               </AppText>
-  //             </View>
-  //           </ScrollView>
-  //         </View>
-  //       );
-  //     }
-
-  //     return (
-  //       <View style={styles.tabContent}>
-  //         <ScrollView style={styles.scrollContent}>
-  //           <View style={styles.hierarchySection}>
-  //             <AppText style={styles.hierarchySectionTitle}>
-  //               Linked Pharmacies
-  //             </AppText>
-
-  //             <View style={styles.hierarchyHeader}>
-  //               <AppText style={styles.hierarchyHeaderText}>
-  //                 Pharmacy Details
-  //               </AppText>
-  //               <AppText style={styles.hierarchyHeaderText}>Action</AppText>
-  //             </View>
-
-  //             {linkedPharmacies.map(pharmacy => (
-  //               <View key={pharmacy.customerId} style={styles.hierarchyRow}>
-  //                 <View style={styles.hierarchyInfo}>
-  //                   <AppText style={styles.hierarchyName}>
-  //                     {pharmacy.customerName}
-  //                   </AppText>
-  //                   <AppText style={styles.hierarchyCode}>
-  //                     {pharmacy.customerCode} | {pharmacy.cityName}
-  //                   </AppText>
-  //                 </View>
-  //               </View>
-  //             ))}
-  //           </View>
-  //         </ScrollView>
-  //       </View>
-  //     );
-  //   }
-
-  //   // For Hospitals - show linked pharmacies and doctors
-  //   else if (customerType === 'Hospital') {
-  //     const linkedPharmacies = hierarchyMappingData?.pharmacy || [];
-  //     const linkedDoctors = hierarchyMappingData?.doctors || [];
-  //     const childHospitals = hierarchyMappingData?.hospitals || [];
-  //     const groupHospitals = hierarchyMappingData?.groupHospitals || [];
-
-  //     // If we have child hospitals, show the expandable design
-  //     if (childHospitals.length > 0) {
-  //       return (
-  //         <View style={styles.tabContent}>
-  //           <ScrollView style={styles.scrollContent}>
-  //             {childHospitals.map(hospital => (
-  //               <View key={hospital.customerId} style={styles.hospitalCard}>
-  //                 {/* Hospital Header */}
-  //                 <View style={styles.hospitalCardHeader}>
-  //                   <View style={styles.hospitalCardInfo}>
-  //                     <AppText style={styles.hospitalCardName}>
-  //                       {hospital.customerName}
-  //                     </AppText>
-  //                     <AppText style={styles.hospitalCardCode}>
-  //                       {hospital.customerCode} | {hospital.cityName}
-  //                     </AppText>
-  //                   </View>
-  //                 </View>
-
-  //                 {/* Expandable Section */}
-  //                 <TouchableOpacity
-  //                   style={styles.expandableHeader}
-  //                   onPress={() =>
-  //                     setExpandedHospitals(prev => ({
-  //                       ...prev,
-  //                       [hospital.customerId]: !prev[hospital.customerId],
-  //                     }))
-  //                   }
-  //                 >
-  //                   <View style={styles.expandableContent}>
-  //                     <AppText style={styles.expandableText}>
-  //                       {linkedPharmacies.length > 0 && linkedDoctors.length > 0
-  //                         ? 'Linked Pharmacies & Doctors'
-  //                         : linkedPharmacies.length > 0
-  //                           ? 'Linked Pharmacies'
-  //                           : 'Linked Doctors'}
-  //                     </AppText>
-  //                   </View>
-  //                   <Icon
-  //                     name={
-  //                       expandedHospitals[hospital.customerId]
-  //                         ? 'chevron-up'
-  //                         : 'chevron-down'
-  //                     }
-  //                     size={20}
-  //                     color="#666"
-  //                   />
-  //                 </TouchableOpacity>
-
-  //                 {/* Expanded Content */}
-  //                 {expandedHospitals[hospital.customerId] && (
-  //                   <View style={styles.expandedContent}>
-  //                     {/* Linked Pharmacies */}
-  //                     {linkedPharmacies.length > 0 && (
-  //                       <View style={styles.linkedItemsSection}>
-  //                         <AppText style={styles.linkedItemsTitle}>
-  //                           Linked Pharmacies
-  //                         </AppText>
-  //                         {linkedPharmacies.map(pharmacy => (
-  //                           <View
-  //                             key={pharmacy.customerId}
-  //                             style={styles.linkedItemRow}
-  //                           >
-  //                             <View style={styles.linkedItemInfo}>
-  //                               <AppText style={styles.linkedItemName}>
-  //                                 {pharmacy.customerName}
-  //                               </AppText>
-  //                               <AppText style={styles.linkedItemCode}>
-  //                                 {pharmacy.customerCode} | {pharmacy.cityName}
-  //                               </AppText>
-  //                             </View>
-  //                           </View>
-  //                         ))}
-  //                       </View>
-  //                     )}
-
-  //                     {/* Linked Doctors */}
-  //                     {linkedDoctors.length > 0 && (
-  //                       <View style={styles.linkedItemsSection}>
-  //                         <AppText style={styles.linkedItemsTitle}>
-  //                           Linked Doctors
-  //                         </AppText>
-  //                         {linkedDoctors.map(doctor => (
-  //                           <View
-  //                             key={doctor.customerId}
-  //                             style={styles.linkedItemRow}
-  //                           >
-  //                             <View style={styles.linkedItemInfo}>
-  //                               <AppText style={styles.linkedItemName}>
-  //                                 {doctor.customerName}
-  //                               </AppText>
-  //                               <AppText style={styles.linkedItemCode}>
-  //                                 {doctor.customerCode} | {doctor.cityName}
-  //                               </AppText>
-  //                             </View>
-  //                           </View>
-  //                         ))}
-  //                       </View>
-  //                     )}
-  //                   </View>
-  //                 )}
-  //               </View>
-  //             ))}
-  //           </ScrollView>
-  //         </View>
-  //       );
-  //     }
-
-  //     // If we have group hospitals, show accordion design
-  //     if (groupHospitals.length > 0) {
-  //       return (
-  //         <View style={styles.tabContent}>
-  //           <ScrollView style={styles.scrollContent}>
-  //             {groupHospitals.map(hospital => (
-  //               <View key={hospital.customerId} style={styles.accordionCard}>
-  //                 {/* Hospital Header */}
-  //                 <TouchableOpacity
-  //                   style={styles.accordionHeader}
-  //                   onPress={() =>
-  //                     setExpandedGroupHospitals(prev => ({
-  //                       ...prev,
-  //                       [hospital.customerId]: !prev[hospital.customerId],
-  //                     }))
-  //                   }
-  //                 >
-  //                   <View style={styles.accordionHeaderInfo}>
-  //                     <AppText style={styles.accordionHospitalName}>
-  //                       {hospital.customerName}
-  //                     </AppText>
-  //                     <AppText style={styles.accordionHospitalCode}>
-  //                       {hospital.customerCode} | {hospital.cityName}
-  //                     </AppText>
-
-  //                     {expandedGroupHospitals[hospital.customerId] && (
-  //                       <View style={styles.accordionTabsContainer}>
-  //                         <TouchableOpacity
-  //                           style={[
-  //                             styles.accordionTab,
-  //                             activeGroupHospitalTab[hospital.customerId] ===
-  //                             'doctors' && styles.activeAccordionTab,
-  //                           ]}
-  //                           onPress={() =>
-  //                             setActiveGroupHospitalTab(prev => ({
-  //                               ...prev,
-  //                               [hospital.customerId]: 'doctors',
-  //                             }))
-  //                           }
-  //                         >
-  //                           <AppText
-  //                             style={[
-  //                               styles.accordionTabText,
-  //                               activeGroupHospitalTab[hospital.customerId] ===
-  //                               'doctors' && styles.activeAccordionTabText,
-  //                             ]}
-  //                           >
-  //                             Doctors
-  //                           </AppText>
-  //                         </TouchableOpacity>
-  //                         <TouchableOpacity
-  //                           style={[
-  //                             styles.accordionTab,
-  //                             (!activeGroupHospitalTab[hospital.customerId] ||
-  //                               activeGroupHospitalTab[hospital.customerId] ===
-  //                               'pharmacies') &&
-  //                             styles.activeAccordionTab,
-  //                           ]}
-  //                           onPress={() =>
-  //                             setActiveGroupHospitalTab(prev => ({
-  //                               ...prev,
-  //                               [hospital.customerId]: 'pharmacies',
-  //                             }))
-  //                           }
-  //                         >
-  //                           <AppText
-  //                             style={[
-  //                               styles.accordionTabText,
-  //                               (!activeGroupHospitalTab[hospital.customerId] ||
-  //                                 activeGroupHospitalTab[
-  //                                 hospital.customerId
-  //                                 ] === 'pharmacies') &&
-  //                               styles.activeAccordionTabText,
-  //                             ]}
-  //                           >
-  //                             Pharmacies
-  //                           </AppText>
-  //                         </TouchableOpacity>
-  //                       </View>
-  //                     )}
-  //                   </View>
-  //                 </TouchableOpacity>
-
-  //                 {/* Expandable Content */}
-  //                 {expandedGroupHospitals[hospital.customerId] && (
-  //                   <View style={styles.accordionContent}>
-  //                     {/* Pharmacies Tab */}
-  //                     {(!activeGroupHospitalTab[hospital.customerId] ||
-  //                       activeGroupHospitalTab[hospital.customerId] ===
-  //                       'pharmacies') && (
-  //                         <View style={styles.accordionItemsContainer}>
-  //                           {linkedPharmacies.length > 0 ? (
-  //                             <>
-  //                               <View style={styles.accordionItemsHeader}>
-  //                                 <AppText
-  //                                   style={styles.accordionItemsHeaderText}
-  //                                 >
-  //                                   Pharmacy Details
-  //                                 </AppText>
-  //                                 <AppText
-  //                                   style={styles.accordionItemsHeaderText}
-  //                                 >
-  //                                   Action
-  //                                 </AppText>
-  //                               </View>
-  //                               {linkedPharmacies.map((pharmacy, index) => (
-  //                                 <View
-  //                                   key={`${hospital.customerId}-pharmacy-${pharmacy.customerId}-${index}`}
-  //                                   style={styles.accordionItemRow}
-  //                                 >
-  //                                   <View style={styles.accordionItemInfo}>
-  //                                     <AppText style={styles.accordionItemName}>
-  //                                       {pharmacy.customerName}
-  //                                     </AppText>
-  //                                     <AppText style={styles.accordionItemCode}>
-  //                                       {pharmacy.customerCode} |{' '}
-  //                                       {pharmacy.cityName}
-  //                                     </AppText>
-  //                                   </View>
-  //                                 </View>
-  //                               ))}
-  //                             </>
-  //                           ) : (
-  //                             <View style={styles.emptyAccordionContent}>
-  //                               <AppText style={styles.emptyAccordionText}>
-  //                                 No pharmacies linked
-  //                               </AppText>
-  //                             </View>
-  //                           )}
-  //                         </View>
-  //                       )}
-
-  //                     {/* Doctors Tab */}
-  //                     {activeGroupHospitalTab[hospital.customerId] ===
-  //                       'doctors' && (
-  //                         <View style={styles.accordionItemsContainer}>
-  //                           {linkedDoctors.length > 0 ? (
-  //                             <>
-  //                               <View style={styles.accordionItemsHeader}>
-  //                                 <AppText
-  //                                   style={styles.accordionItemsHeaderText}
-  //                                 >
-  //                                   Doctor Details
-  //                                 </AppText>
-  //                                 <AppText
-  //                                   style={styles.accordionItemsHeaderText}
-  //                                 >
-  //                                   Action
-  //                                 </AppText>
-  //                               </View>
-  //                               {linkedDoctors.map((doctor, index) => (
-  //                                 <View
-  //                                   key={`${hospital.customerId}-doctor-${doctor.customerId}-${index}`}
-  //                                   style={styles.accordionItemRow}
-  //                                 >
-  //                                   <View style={styles.accordionItemInfo}>
-  //                                     <AppText style={styles.accordionItemName}>
-  //                                       {doctor.customerName}
-  //                                     </AppText>
-  //                                     <AppText style={styles.accordionItemCode}>
-  //                                       {doctor.customerCode} | {doctor.cityName}
-  //                                     </AppText>
-  //                                   </View>
-  //                                 </View>
-  //                               ))}
-  //                             </>
-  //                           ) : (
-  //                             <View style={styles.emptyAccordionContent}>
-  //                               <AppText style={styles.emptyAccordionText}>
-  //                                 No doctors linked
-  //                               </AppText>
-  //                             </View>
-  //                           )}
-  //                         </View>
-  //                       )}
-  //                   </View>
-  //                 )}
-  //               </View>
-  //             ))}
-  //           </ScrollView>
-  //         </View>
-  //       );
-  //     }
-
-  //     // Check if we have any other data
-  //     const hasOtherData =
-  //       linkedPharmacies.length > 0 || linkedDoctors.length > 0;
-
-  //     if (!hasOtherData) {
-  //       return (
-  //         <View style={styles.tabContent}>
-  //           <ScrollView style={styles.scrollContent}>
-  //             <View style={styles.emptyContainer}>
-  //               <Icon name="inbox" size={50} color="#999" />
-  //               <AppText style={styles.emptyText}>No data found</AppText>
-  //               <AppText style={styles.emptySubText}>
-  //                 Linked pharmacies, doctors and hospitals will appear here
-  //               </AppText>
-  //             </View>
-  //           </ScrollView>
-  //         </View>
-  //       );
-  //     }
-
-  //     return (
-  //       <View style={styles.tabContent}>
-  //         <ScrollView style={styles.scrollContent}>
-  //           {/* Linked Pharmacies Section */}
-  //           {linkedPharmacies.length > 0 && (
-  //             <View style={styles.hierarchySection}>
-  //               <AppText style={styles.hierarchySectionTitle}>
-  //                 Linked Pharmacies
-  //               </AppText>
-
-  //               <View style={styles.hierarchyHeader}>
-  //                 <AppText style={styles.hierarchyHeaderText}>
-  //                   Pharmacy Details
-  //                 </AppText>
-  //                 <AppText style={styles.hierarchyHeaderText}>Action</AppText>
-  //               </View>
-
-  //               {linkedPharmacies.map(pharmacy => (
-  //                 <View key={pharmacy.customerId} style={styles.hierarchyRow}>
-  //                   <View style={styles.hierarchyInfo}>
-  //                     <AppText style={styles.hierarchyName}>
-  //                       {pharmacy.customerName}
-  //                     </AppText>
-  //                     <AppText style={styles.hierarchyCode}>
-  //                       {pharmacy.customerCode} | {pharmacy.cityName}
-  //                     </AppText>
-  //                   </View>
-  //                 </View>
-  //               ))}
-  //             </View>
-  //           )}
-
-  //           {/* Linked Doctors Section */}
-  //           {linkedDoctors.length > 0 && (
-  //             <View style={styles.hierarchySection}>
-  //               <AppText style={styles.hierarchySectionTitle}>
-  //                 Linked Doctors
-  //               </AppText>
-
-  //               <View style={styles.hierarchyHeader}>
-  //                 <AppText style={styles.hierarchyHeaderText}>
-  //                   Doctor Details
-  //                 </AppText>
-  //                 <AppText style={styles.hierarchyHeaderText}>Action</AppText>
-  //               </View>
-
-  //               {linkedDoctors.map(doctor => (
-  //                 <View key={doctor.customerId} style={styles.hierarchyRow}>
-  //                   <View style={styles.hierarchyInfo}>
-  //                     <AppText style={styles.hierarchyName}>
-  //                       {doctor.customerName}
-  //                     </AppText>
-  //                     <AppText style={styles.hierarchyCode}>
-  //                       {doctor.customerCode} | {doctor.cityName}
-  //                     </AppText>
-  //                   </View>
-  //                 </View>
-  //               ))}
-  //             </View>
-  //           )}
-
-  //           {/* Group Hospitals Section */}
-  //           {groupHospitals.length > 0 && (
-  //             <View style={styles.hierarchySection}>
-  //               <AppText style={styles.hierarchySectionTitle}>
-  //                 Group Hospitals
-  //               </AppText>
-
-  //               <View style={styles.hierarchyHeader}>
-  //                 <AppText style={styles.hierarchyHeaderText}>
-  //                   Hospital Details
-  //                 </AppText>
-  //                 <AppText style={styles.hierarchyHeaderText}>Action</AppText>
-  //               </View>
-
-  //               {groupHospitals.map(hospital => (
-  //                 <View key={hospital.customerId} style={styles.hierarchyRow}>
-  //                   <View style={styles.hierarchyInfo}>
-  //                     <AppText style={styles.hierarchyName}>
-  //                       {hospital.customerName}
-  //                     </AppText>
-  //                     <AppText style={styles.hierarchyCode}>
-  //                       {hospital.customerCode} | {hospital.cityName}
-  //                     </AppText>
-  //                   </View>
-  //                 </View>
-  //               ))}
-  //             </View>
-  //           )}
-  //         </ScrollView>
-  //       </View>
-  //     );
-  //   }
-
-  //   return null;
-  // };
-
-
   const renderCustomerHierarchyTab = () => {
-    if (!hierarchyMappingData) {
+    // Check if hierarchyMappingData is null or undefined
+    if (hierarchyMappingData?.doctors?.length === 0 && hierarchyMappingData?.pharmacy?.length === 0 && hierarchyMappingData?.hospitals?.length === 0 && hierarchyMappingData?.groupHospitals?.length === 0) {
+      return (
+        <View style={styles.tabContent}>
+          <View style={styles.scrollContent}>
+            <View style={styles.emptyContainer}>
+              <Icon name="inbox" size={50} color="#999" />
+              <AppText style={styles.emptyText}>No data found</AppText>
+              <AppText style={styles.emptySubText}>
+                Linked data will appear here
+              </AppText>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    const {
+      pharmacy = [],
+      doctors = [],
+      hospitals = [],
+      groupHospitals = [],
+    } = hierarchyMappingData;
+
+    // Check if all arrays are empty
+    const allArraysEmpty = 
+      pharmacy.length === 0 &&
+      doctors.length === 0 &&
+      hospitals.length === 0 &&
+      groupHospitals.length === 0;
+
+    if (allArraysEmpty) {
       return (
         <View style={styles.tabContent}>
           <ScrollView style={styles.scrollContent}>
@@ -2725,13 +2320,6 @@ export const LinkagedTab = ({
         </View>
       );
     }
-
-    const {
-      pharmacy = [],
-      doctors = [],
-      hospitals = [],
-      groupHospitals = [],
-    } = hierarchyMappingData;
 
     /* =====================================================
        DOCTOR → ONLY PHARMACIES (SIMPLE LIST)
@@ -4817,12 +4405,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#2B2B2B",
     borderRadius: 8,
-    marginVertical: 5
+    marginVertical: 5,
+    alignSelf: "flex-start",
+  },
+
+  blockButtonDisabled: {
+    opacity: 0.5,
   },
 
   unblockButton: {
-    borderColor: "#FF6B00",
-    backgroundColor: "#FFF5EF",
+    borderColor: "#EF4444",
+    backgroundColor: "#FEE2E2",
   },
 
   blockText: {
@@ -4832,7 +4425,7 @@ const styles = StyleSheet.create({
   },
 
   unblockText: {
-    color: "#FF6B00",
+    color: "#EF4444",
   },
 
   subTabsWrapper: {

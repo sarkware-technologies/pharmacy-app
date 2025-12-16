@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import checkPermission from "./permissionHelper";
 
 const PermissionWrapper = ({ permission, Component, children }) => {
-    const [allowed, setAllowed] = useState(true);
+    const [allowed, setAllowed] = useState(permission ? false : true);
 
     useEffect(() => {
         console.log(permission, 239273)
