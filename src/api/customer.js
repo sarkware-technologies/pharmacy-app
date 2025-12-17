@@ -609,6 +609,21 @@ export const customerAPI = {
             console.error('Error blocking/unblocking division:', error);
             throw error;
         }
-    }
+    },
+
+
+    getUserWiseAudit: async (moduleRecordIds, moduleName = ['NEW_CUSTOMER_ONBOARDING', 'EXISTING_CUSTOMER_ONBOARDING']) => {
+        try {
+            const payload = {
+                moduleRecordIds: Array.isArray(moduleRecordIds) ? moduleRecordIds : [moduleRecordIds],
+                moduleName: Array.isArray(moduleName) ? moduleName : [moduleName]
+            };
+            const response = await apiClient.post('approval/workflow-actions/bulk/customer/user-wise-audit', payload);
+            return response;
+        } catch (error) {
+            console.error('Error fetching workflow progression:', error);
+            throw error;
+        }
+    },
 
 };

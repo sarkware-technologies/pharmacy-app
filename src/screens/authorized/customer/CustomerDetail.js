@@ -42,6 +42,7 @@ import Reassigned from '../../../components/icons/Reassigned';
 import PermissionWrapper from '../../../utils/RBAC/permissionWrapper';
 import PERMISSIONS from '../../../utils/RBAC/permissionENUM';
 import Sync from '../../../components/icons/Sync';
+import Comment from '../../../components/icons/Comment';
 
 
 
@@ -581,7 +582,7 @@ const CustomerDetail = ({ navigation, route }) => {
     const scale = useRef(new Animated.Value(1)).current;
     const translateX = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(0)).current;
-    
+
     const savedScale = useRef(1);
     const currentTranslateX = useRef(0);
     const currentTranslateY = useRef(0);
@@ -606,7 +607,7 @@ const CustomerDetail = ({ navigation, route }) => {
     const handleTouchStart = (evt) => {
       const touches = evt.nativeEvent.touches;
       activeTouches.current = Array.from(touches);
-      
+
       if (touches.length === 2) {
         // Pinch gesture
         initialDistance.current = getDistance(touches);
@@ -616,7 +617,7 @@ const CustomerDetail = ({ navigation, route }) => {
         // Single touch - check for double tap
         const now = Date.now();
         const DOUBLE_TAP_DELAY = 300;
-        
+
         if (lastTap.current && (now - lastTap.current) < DOUBLE_TAP_DELAY) {
           // Double tap detected
           if (savedScale.current > MIN_SCALE) {
@@ -660,7 +661,7 @@ const CustomerDetail = ({ navigation, route }) => {
         } else {
           lastTap.current = now;
         }
-        
+
         // Save current translation for pan
         translateX.stopAnimation((x) => {
           currentTranslateX.current = x;
@@ -675,22 +676,22 @@ const CustomerDetail = ({ navigation, route }) => {
     const handleTouchMove = (evt) => {
       const touches = evt.nativeEvent.touches;
       activeTouches.current = Array.from(touches);
-      
+
       if (touches.length === 2) {
         const currentDistance = getDistance(touches);
-        
+
         // Initialize distance if not set
         if (!initialDistance.current && currentDistance) {
           initialDistance.current = currentDistance;
           initialScale.current = savedScale.current;
         }
-        
+
         // Perform pinch zoom
         if (currentDistance && initialDistance.current && initialDistance.current > 0) {
           const scaleRatio = currentDistance / initialDistance.current;
           const newScale = initialScale.current * scaleRatio;
           const clampedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-          
+
           scale.setValue(clampedScale);
           savedScale.current = clampedScale;
         }
@@ -701,7 +702,7 @@ const CustomerDetail = ({ navigation, route }) => {
     const handleTouchEnd = (evt) => {
       const touches = evt.nativeEvent.touches;
       activeTouches.current = Array.from(touches);
-      
+
       if (touches.length === 0) {
         initialDistance.current = null;
         translateX.stopAnimation((x) => {
@@ -733,10 +734,10 @@ const CustomerDetail = ({ navigation, route }) => {
       } else {
         const maxTranslateX = (containerWidth * (scaleValue - 1)) / 2;
         const maxTranslateY = (containerHeight * (scaleValue - 1)) / 2;
-        
+
         const clampedX = Math.max(-maxTranslateX, Math.min(maxTranslateX, currentX));
         const clampedY = Math.max(-maxTranslateY, Math.min(maxTranslateY, currentY));
-        
+
         Animated.parallel([
           Animated.spring(translateX, {
             toValue: clampedX,
@@ -751,7 +752,7 @@ const CustomerDetail = ({ navigation, route }) => {
             friction: 7,
           }),
         ]).start();
-        
+
         currentTranslateX.current = clampedX;
         currentTranslateY.current = clampedY;
       }
@@ -770,10 +771,10 @@ const CustomerDetail = ({ navigation, route }) => {
         },
         onPanResponderMove: (evt, gestureState) => {
           const touches = evt.nativeEvent.touches;
-          
+
           // Handle pinch in touch move handler
           handleTouchMove(evt);
-          
+
           // Handle single finger pan when zoomed
           if (touches.length === 1 && savedScale.current > MIN_SCALE) {
             const newX = currentTranslateX.current + gestureState.dx;
@@ -801,7 +802,7 @@ const CustomerDetail = ({ navigation, route }) => {
     };
 
     return (
-      <View 
+      <View
         style={styles.zoomableImageWrapper}
         {...panResponder.panHandlers}
       >
@@ -822,7 +823,7 @@ const CustomerDetail = ({ navigation, route }) => {
       if (showDocumentModal && selectedDocument?.s3Path) {
         fetchSignedUrl();
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showDocumentModal, selectedDocument]);
 
     const fetchSignedUrl = async () => {
@@ -1065,30 +1066,7 @@ const CustomerDetail = ({ navigation, route }) => {
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
       <View style={styles.container}>
         {/* Header */}
-        {/* <View style={styles.header}>
-
-          <View>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <ChevronLeft color="#333" />
-          </TouchableOpacity>
-          <AppText style={styles.headerTitle}>{getCustomerName()}</AppText>
-
-          </View>
-
-          <View>
-          <TouchableOpacity
-              style={styles.rejectButton}
-              onPress={() => setRejectModalVisible(true)}
-              disabled={actionLoading}
-            >
-              <Icon name="close-circle-outline" size={20} color={colors.primary} />
-              <AppText style={styles.rejectButtonText}>Reject</AppText>
-            </TouchableOpacity>
-          </View>
-
-
-
-        </View> */}
+  
 
         <View style={styles.header}>
           {/* LEFT SECTION – 60% */}
@@ -1112,20 +1090,20 @@ const CustomerDetail = ({ navigation, route }) => {
           {/* RIGHT SECTION – 40% */}
           <View style={styles.rightSection}>
 
-            {activeTab === 'details' ? 
-            <TouchableOpacity
-              style={styles.logsButton}
-            >
-              <MaterialIcons
-                name="history"
-                size={20}
-                color="#2B2B2B"
-              />
-              <AppText style={styles.logsButtonText}>Logs</AppText>
-            </TouchableOpacity> 
-            
-            : 
-            
+            {activeTab === 'details' ?
+              <TouchableOpacity
+                style={styles.logsButton}
+              >
+                <MaterialIcons
+                  name="history"
+                  size={20}
+                  color="#2B2B2B"
+                />
+                <AppText style={styles.logsButtonText}>Logs</AppText>
+              </TouchableOpacity>
+
+              :
+
               (customer?.statusName === 'PENDING' && customer?.action === 'APPROVE') && (
                 <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
                   <View style={styles.topActionButtons}>
@@ -1170,7 +1148,9 @@ const CustomerDetail = ({ navigation, route }) => {
 
         {/* Content */}
         {activeTab === 'details' && (
-          <ScrollView
+
+          <>
+        <ScrollView
             style={styles.content}
             showsVerticalScrollIndicator={false}
           >
@@ -1208,20 +1188,7 @@ const CustomerDetail = ({ navigation, route }) => {
                   <View style={styles.sectionHeader}>
                     <AppText style={styles.sectionTitle}>Address Details</AppText>
                     {customerData.documents.addressProof && (
-                      // <View style={{...styles.fileLinkGroup, marginTop: 4}}>
-                      //   <AppText style={styles.linkText}>{customerData.documents.addressProof?.fileName || customerData.documents.addressProof}</AppText>
-                      //   <View style={{...styles.iconGroup, width: 60, justifyContent: 'space-around'}}>
-                      //     <TouchableOpacity
-                      //       onPress={() => openDocument(customerData.documents.addressProof)}
-                      //       style={styles.linkButton}
-                      //     ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                      //     <AppText style={{ color: '#777' }}>|</AppText>
-                      //     <TouchableOpacity
-                      //       onPress={() => downloadDocument(customerData.documents.addressProof)}
-                      //       style={styles.linkButton}
-                      //     ><Download width={16} color={colors.primary} /></TouchableOpacity>
-                      //   </View>
-                      // </View>
+
 
                       <View style={{ ...styles.fileLinkGroup, marginTop: 4 }}>
                         <AppText
@@ -1410,7 +1377,7 @@ const CustomerDetail = ({ navigation, route }) => {
                               activeOpacity={0.7}
                             >
 
-                              <Sync/>
+                              <Sync />
                               <AppText style={styles.changeButtonText}>Change</AppText>
                             </TouchableOpacity>
                           </PermissionWrapper>
@@ -1488,22 +1455,31 @@ const CustomerDetail = ({ navigation, route }) => {
                             >
                               <AppText style={styles.inlineCancelButtonText}>Cancel</AppText>
                             </TouchableOpacity>
-                            
+
                           </View>
                         </View>
                       )}
+
+
                     </View>
+
+
+                    
                   </AnimatedSection>
                 )}
+
+
+
 
 
               </Animated.View>
             )}
           </ScrollView>
+
+          </>
         )}
 
-        {console.log(customerData)
-        }
+
 
         {activeTab === 'linkaged' && <LinkagedTab
           customerType={customerData.customerType}
@@ -1518,47 +1494,47 @@ const CustomerDetail = ({ navigation, route }) => {
         {activeTab === 'details' && customer?.statusName === 'PENDING' && customer?.action === 'APPROVE' && (
           <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
             <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity
-              style={styles.sendBackButton}
-              onPress={() => setSendBackModalVisible(true)}
-              disabled={actionLoading}
-            >
-              {actionLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
+              <TouchableOpacity
+                style={styles.sendBackButton}
+                onPress={() => setSendBackModalVisible(true)}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
 
-                  <Reassigned color={colors.primary} width={18} height={18} />
+                    <Reassigned color={colors.primary} width={18} height={18} />
 
-                  <AppText style={styles.sendBackButtonText}>Send Back</AppText>
-                </>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.approveButton}
-              onPress={() => setApproveModalVisible(true)}
-              disabled={actionLoading}
-            >
-              {actionLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <Icon name="checkmark-outline" size={20} color="#fff" />
+                    <AppText style={styles.sendBackButtonText}>Send Back</AppText>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.approveButton}
+                onPress={() => setApproveModalVisible(true)}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Icon name="checkmark-outline" size={20} color="#fff" />
 
-                  <AppText style={styles.approveButtonText}>Approve</AppText>
-                </>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.rejectButton}
-              onPress={() => setRejectModalVisible(true)}
-              disabled={actionLoading}
-            >
-              <Icon name="close-circle-outline" size={20} color="#2B2B2B" />
-              <AppText style={styles.rejectButtonText}>Reject</AppText>
-            </TouchableOpacity>
+                    <AppText style={styles.approveButtonText}>Approve</AppText>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.rejectButton}
+                onPress={() => setRejectModalVisible(true)}
+                disabled={actionLoading}
+              >
+                <Icon name="close-circle-outline" size={20} color="#2B2B2B" />
+                <AppText style={styles.rejectButtonText}>Reject</AppText>
+              </TouchableOpacity>
 
-          </View>
+            </View>
           </PermissionWrapper>
         )}
 
@@ -1594,6 +1570,7 @@ const CustomerDetail = ({ navigation, route }) => {
 
       </View>
     </SafeAreaView>
+    
   );
 };
 
@@ -1737,11 +1714,11 @@ const styles = StyleSheet.create({
   },
   // Customer Group Inline Edit Styles
   customerGroupEditContainer: {
-   
-    backgroundColor:"#fbfbfbr",
-    padding:20,
-  
-    borderRadius:10
+
+    backgroundColor: "#fbfbfbr",
+    padding: 20,
+
+    borderRadius: 10
   },
   radioGroupContainer: {
     marginBottom: 0,
@@ -1784,7 +1761,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginTop: 0,
-    maxWidth:"70%"
+    maxWidth: "70%"
   },
   inlineDoneButton: {
     flex: 1,
