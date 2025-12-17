@@ -81,7 +81,7 @@ const DOC_TYPES = {
 const DoctorRegistrationForm = () => {
 
 
-    const loggedInUser = useSelector(state => state.auth.user);
+  const loggedInUser = useSelector(state => state.auth.user);
 
   const navigation = useNavigation();
   const dispatch = useDispatch();
@@ -183,7 +183,7 @@ const DoctorRegistrationForm = () => {
   });
 
   console.log(formData);
-  
+
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -1127,11 +1127,11 @@ const DoctorRegistrationForm = () => {
     if (ocrData.clinicName && !formData.clinicName) {
       updates.clinicName = filterForField('clinicName', ocrData.clinicName, 40);
     }
-    
-     if (ocrData.pharmacyName && !formData.clinicName) {
-                        updates.clinicName = filterForField('clinicName', ocrData.pharmacyName, 40);
-                      }
-                      
+
+    if (ocrData.pharmacyName && !formData.clinicName) {
+      updates.clinicName = filterForField('clinicName', ocrData.pharmacyName, 40);
+    }
+
 
     // Split and populate address fields if available
     if (ocrData.address) {
@@ -1158,7 +1158,7 @@ const DoctorRegistrationForm = () => {
       }
     }
 
-    
+
 
     // Populate registration/issue date if available
     if (ocrData.issueDate && !formData.clinicRegistrationDate) {
@@ -1887,40 +1887,42 @@ const DoctorRegistrationForm = () => {
               />
 
               {/* Station code */}
-                            <View style={styles.dropdownContainer}>
-                              {(formData.stationCode || cities.length > 0) && (
-                                <AppText
-                                  style={[styles.floatingLabel, { color: colors.primary }]}
-                                >
-                                  Station<AppText style={styles.asteriskPrimary}>*</AppText>
-                                </AppText>
-                              )}
-                              <TouchableOpacity
-                                style={[styles.dropdown, errors.stationCode && styles.inputError]}
-                                onPress={() => setShowStationModal(true)}
-                              >
-                                <View style={styles.inputTextContainer}>
-                                  <AppText style={formData.stationCode ? styles.inputText : styles.placeholderText}>
-                                    {formData.stationCode || ('Station')}
-                                  </AppText>
-                                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                                </View>
-                                <Icon name="arrow-drop-down" size={24} color="#666" />
-                              </TouchableOpacity>
-              
-                              {errors.stationCode && (
-                                <AppText style={styles.errorTextDropdown}>{errors.stationCode}</AppText>
-                              )}
-                            </View>
-              
+              <View style={styles.dropdownContainer}>
+                {(formData.stationCode) && (
+                  <AppText
+                    style={[styles.floatingLabel, { color: colors.primary }]}
+                  >
+                    Station<AppText style={styles.asteriskPrimary}>*</AppText>
+                  </AppText>
+                )}
+                <TouchableOpacity
+                  style={[styles.dropdown, errors.stationCode && styles.inputError]}
+                  onPress={() => setShowStationModal(true)}
+                >
+                  <View style={styles.inputTextContainer}>
+                    <AppText style={formData.stationCode ? styles.inputText : styles.placeholderText}>
+                      {formData.stationCode || ('Station')}
+                    </AppText>
+                    {!formData.stationCode && (
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
+                    )}
+                  </View>
+                  <Icon name="arrow-drop-down" size={24} color="#666" />
+                </TouchableOpacity>
+
+                {errors.stationCode && (
+                  <AppText style={styles.errorTextDropdown}>{errors.stationCode}</AppText>
+                )}
+              </View>
+
 
               <AddressInputWithLocation
                 placeholder="Address 1"
                 value={formData.address1}
-               onChangeText={createFilteredInputHandler('address1', (text) => {
-                                setFormData(prev => ({ ...prev, address1: text }));
-                                 setErrors(prev => ({ ...prev, address1: null }));
-                               }, 40)}
+                onChangeText={createFilteredInputHandler('address1', (text) => {
+                  setFormData(prev => ({ ...prev, address1: text }));
+                  setErrors(prev => ({ ...prev, address1: null }));
+                }, 40)}
                 error={errors.address1}
                 mandatory={true}
                 onLocationSelect={async locationData => {
@@ -2051,7 +2053,9 @@ const DoctorRegistrationForm = () => {
                     >
                       {formData.area || 'Area'}
                     </AppText>
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                    {!formData.area && (
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
+                    )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -2085,7 +2089,9 @@ const DoctorRegistrationForm = () => {
                     >
                       {formData.city || 'City'}
                     </AppText>
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                    {!formData.city && (
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
+                    )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -2119,7 +2125,9 @@ const DoctorRegistrationForm = () => {
                     >
                       {formData.state || 'State'}
                     </AppText>
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                    {!formData.state && (
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
+                    )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -2505,7 +2513,7 @@ const DoctorRegistrationForm = () => {
                             selectedHospitals: hospitals,
                           }));
                         },
-                        mappingFor:"HOSP"
+                        mappingFor: "HOSP"
                       });
                     }}
                     activeOpacity={0.7}
@@ -2548,8 +2556,8 @@ const DoctorRegistrationForm = () => {
                             selectedPharmacies: pharmacies,
                           }));
                         },
-                        customerGroupId:formData.customerGroupId,
-                        mappingFor:"DOCT"
+                        customerGroupId: formData.customerGroupId,
+                        mappingFor: "DOCT"
                       });
                     }}
                     activeOpacity={0.7}
@@ -2711,23 +2719,23 @@ const DoctorRegistrationForm = () => {
                   <CustomInput
                     placeholder="Name of the Stockist"
                     value={stockist.name}
-                  onChangeText={createFilteredInputHandler('nameOfStockist', (text) =>
-                                      handleStockistChange(index, 'name', text), 40
-                                      )}
+                    onChangeText={createFilteredInputHandler('nameOfStockist', (text) =>
+                      handleStockistChange(index, 'name', text), 40
+                    )}
                   />
                   <CustomInput
                     placeholder="Distributor Code"
                     value={stockist.code}
-                      onChangeText={createFilteredInputHandler('distributorCode', (text) =>
-                                        handleStockistChange(index, 'code', text), 20
-                                        )}
+                    onChangeText={createFilteredInputHandler('distributorCode', (text) =>
+                      handleStockistChange(index, 'code', text), 20
+                    )}
                   />
                   <CustomInput
                     placeholder="City"
                     value={stockist.city}
-                      onChangeText={createFilteredInputHandler('distributorCity', (text) =>
-                                      handleStockistChange(index, 'city', text), 40
-                                      )}
+                    onChangeText={createFilteredInputHandler('distributorCity', (text) =>
+                      handleStockistChange(index, 'city', text), 40
+                    )}
                   />
                 </View>
               ))}
@@ -2778,31 +2786,31 @@ const DoctorRegistrationForm = () => {
         </ScrollView>
 
 
-              <DropdownModal
-        visible={showStationModal}
-        onClose={() => setShowStationModal(false)}
-        title="Select Station"
-        data={
-          loggedInUser?.userDetails?.stationCodes?.map((item) => ({
-            id: item.stationCode,
-            name: item.stationCode,
-          }))
-        }
-        selectedId={formData.stationCode} // <-- match value
-        onSelect={item => {
+        <DropdownModal
+          visible={showStationModal}
+          onClose={() => setShowStationModal(false)}
+          title="Select Station"
+          data={
+            loggedInUser?.userDetails?.stationCodes?.map((item) => ({
+              id: item.stationCode,
+              name: item.stationCode,
+            }))
+          }
+          selectedId={formData.stationCode} // <-- match value
+          onSelect={item => {
 
-          console.log(item);
+            console.log(item);
 
-          setFormData({
-            ...formData,
-            stationCode: item.name,  // <-- store directly
-          });
-          setErrors(prev => ({
-            ...prev,
-            stationCode: null,
-          }));
-        }}
-      />
+            setFormData({
+              ...formData,
+              stationCode: item.name,  // <-- store directly
+            });
+            setErrors(prev => ({
+              ...prev,
+              stationCode: null,
+            }));
+          }}
+        />
 
         <DropdownModal
           visible={showAreaModal}

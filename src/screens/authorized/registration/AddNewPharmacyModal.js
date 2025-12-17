@@ -45,8 +45,8 @@ const MOCK_AREAS = [
 
 const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingLabel, parentHospitalName = null }) => {
 
-    const loggedInUser = useSelector(state => state.auth.user);
-  
+  const loggedInUser = useSelector(state => state.auth.user);
+
   const [pharmacyForm, setPharmacyForm] = useState({
     licenseType: 'Only Retail', // 'Only Retail', 'Only Wholesaler', 'Retail Cum Wholesaler'
     licenseTypeId: 1,
@@ -135,8 +135,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
   const [showAreaModal, setShowAreaModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showStateModal, setShowStateModal] = useState(false);
-    const [showStationModal, setShowStationModal] = useState(false);
-  
+  const [showStationModal, setShowStationModal] = useState(false);
+
 
   const loadInitialData = async () => {
     // Note: States and cities are now loaded via pincode lookup only
@@ -855,7 +855,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
     }
 
 
-       if (!pharmacyForm.stationCode)
+    if (!pharmacyForm.stationCode)
       newErrors.stationCode = 'Station Code is required';
     // Pharmacy Name validation using reusable validation utility
     const pharmacyNameError = validateField('nameOfPharmacy', pharmacyForm.pharmacyName, true, 'Pharmacy name is required');
@@ -999,7 +999,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           address4: pharmacyForm.address4 || '',
           pincode: parseInt(pharmacyForm.pincode),
           area: pharmacyForm.area,
-           areaId: parseInt(pharmacyForm.areaId),
+          areaId: parseInt(pharmacyForm.areaId),
 
           cityId: parseInt(pharmacyForm.cityId),
           stateId: parseInt(pharmacyForm.stateId),
@@ -1373,32 +1373,34 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
             mandatory={false}
           />
 
-            {/* Station code */}
-                    <View style={styles.dropdownContainer}>
-                      {(pharmacyForm.stationCode || cities.length > 0) && (
-                        <AppText
-                          style={[styles.floatingLabel, { color: colors.primary }]}
-                        >
-                          Station<AppText style={styles.asteriskPrimary}>*</AppText>
-                        </AppText>
-                      )}
-                      <TouchableOpacity
-                        style={[styles.dropdown, pharmacyErrors.stationCode && styles.inputError]}
-                        onPress={() => setShowStationModal(true)}
-                      >
-                        <View style={styles.inputTextContainer}>
-                          <AppText style={pharmacyForm.stationCode ? styles.inputText : styles.placeholderText}>
-                            {pharmacyForm.stationCode || ('Station')}
-                          </AppText>
-                          <AppText style={styles.inlineAsterisk}>*</AppText>
-                        </View>
-                        <Icon name="arrow-drop-down" size={24} color="#666" />
-                      </TouchableOpacity>
-          
-                      {pharmacyErrors.stationCode && (
-                        <AppText style={styles.errorText}>{pharmacyErrors.stationCode}</AppText>
-                      )}
-                    </View>
+          {/* Station code */}
+          <View style={styles.dropdownContainer}>
+            {(pharmacyForm.stationCode) && (
+              <AppText
+                style={[styles.floatingLabel, { color: colors.primary }]}
+              >
+                Station<AppText style={styles.asteriskPrimary}>*</AppText>
+              </AppText>
+            )}
+            <TouchableOpacity
+              style={[styles.dropdown, pharmacyErrors.stationCode && styles.inputError]}
+              onPress={() => setShowStationModal(true)}
+            >
+              <View style={styles.inputTextContainer}>
+                <AppText style={pharmacyForm.stationCode ? styles.inputText : styles.placeholderText}>
+                  {pharmacyForm.stationCode || ('Station')}
+                </AppText>
+                {!pharmacyForm.stationCode && (
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                )}
+              </View>
+              <Icon name="arrow-drop-down" size={24} color="#666" />
+            </TouchableOpacity>
+
+            {pharmacyErrors.stationCode && (
+              <AppText style={styles.errorText}>{pharmacyErrors.stationCode}</AppText>
+            )}
+          </View>
 
           <AddressInputWithLocation
             label="Address 1"
@@ -1514,7 +1516,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                 <AppText style={pharmacyForm.area ? styles.inputText : styles.placeholderText}>
                   {pharmacyForm.area || 'Area'}
                 </AppText>
-                <AppText style={styles.inlineAsterisk}>*</AppText>
+                {!pharmacyForm.area && (
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
@@ -1548,7 +1552,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                 <AppText style={pharmacyForm.city ? styles.inputText : styles.placeholderText}>
                   {pharmacyForm.city || ('City')}
                 </AppText>
-                <AppText style={styles.inlineAsterisk}>*</AppText>
+                {!pharmacyForm.city && (
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
@@ -1582,7 +1588,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                 <AppText style={pharmacyForm.state ? styles.inputText : styles.placeholderText}>
                   {pharmacyForm.state || ('State')}
                 </AppText>
-                <AppText style={styles.inlineAsterisk}>*</AppText>
+                {!pharmacyForm.state && (
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
@@ -2048,71 +2056,71 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           </View>
         </Modal>
 
-         <Modal
-                  visible={showStationModal}
-                  transparent={true}
-                  animationType="slide"
-                  onRequestClose={() => setShowStationModal(false)}
-                >
-                  <View style={styles.modalOverlay}>
-                    <View style={styles.dropdownModal}>
-        
-                      {/* Header */}
-                      <View style={styles.dropdownModalHeader}>
-                        <AppText style={styles.dropdownModalTitle}>Select Station</AppText>
-                        <TouchableOpacity onPress={() => setShowStationModal(false)}>
-                          <Icon name="close" size={24} color="#666" />
-                        </TouchableOpacity>
-                      </View>
-        
-                      {/* Loader */}
-        
-                      <FlatList
-                        data={loggedInUser?.userDetails?.stationCodes?.map((item) => ({
-                          id: item.stationCode,
-                          name: item.stationCode,
-                        }))}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                          <TouchableOpacity
-                            style={[
-                              styles.dropdownModalItem,
-                              pharmacyForm.stationCode === item.name &&
-                              styles.modalItemSelected,
-                            ]}
-                            onPress={() => {
-                              setPharmacyForm(prev => ({
-                                ...prev,
-                                stationCode: item.name,
-                              }));
-                              setShowStationModal(false);
-                              setPharmacyErrors(prev => ({ ...prev, stationCode: null }));
-        
-                            }}
-                          >
-                            <AppText
-                              style={[
-                                styles.dropdownModalItemText,
-                                pharmacyForm.stationCode === item.name &&
-                                styles.modalItemTextSelected,
-                              ]}
-                            >
-                              {item.name}
-                            </AppText>
-        
-                            {pharmacyForm.stationCode === item.name && (
-                              <Icon name="check" size={20} color={colors.primary} />
-                            )}
-                          </TouchableOpacity>
-                        )}
-                        ListEmptyComponent={
-                          <AppText style={styles.emptyText}>No Stations Available</AppText>
-                        }
-                      />
-        
-                    </View>
-                  </View>
-                </Modal>
+        <Modal
+          visible={showStationModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowStationModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.dropdownModal}>
+
+              {/* Header */}
+              <View style={styles.dropdownModalHeader}>
+                <AppText style={styles.dropdownModalTitle}>Select Station</AppText>
+                <TouchableOpacity onPress={() => setShowStationModal(false)}>
+                  <Icon name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Loader */}
+
+              <FlatList
+                data={loggedInUser?.userDetails?.stationCodes?.map((item) => ({
+                  id: item.stationCode,
+                  name: item.stationCode,
+                }))}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.dropdownModalItem,
+                      pharmacyForm.stationCode === item.name &&
+                      styles.modalItemSelected,
+                    ]}
+                    onPress={() => {
+                      setPharmacyForm(prev => ({
+                        ...prev,
+                        stationCode: item.name,
+                      }));
+                      setShowStationModal(false);
+                      setPharmacyErrors(prev => ({ ...prev, stationCode: null }));
+
+                    }}
+                  >
+                    <AppText
+                      style={[
+                        styles.dropdownModalItemText,
+                        pharmacyForm.stationCode === item.name &&
+                        styles.modalItemTextSelected,
+                      ]}
+                    >
+                      {item.name}
+                    </AppText>
+
+                    {pharmacyForm.stationCode === item.name && (
+                      <Icon name="check" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={
+                  <AppText style={styles.emptyText}>No Stations Available</AppText>
+                }
+              />
+
+            </View>
+          </View>
+        </Modal>
 
       </SafeAreaView>
     </Modal>

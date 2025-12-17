@@ -1786,7 +1786,7 @@ const PharmacyWholesalerForm = () => {
 
               {/* Station code */}
               <View style={styles.dropdownContainer}>
-                {(formData.stationCode || cities.length > 0) && (
+                {(formData.stationCode ) && (
                   <AppText
                     style={[styles.floatingLabel, { color: colors.primary }]}
                   >
@@ -1801,7 +1801,9 @@ const PharmacyWholesalerForm = () => {
                     <AppText style={formData.stationCode ? styles.inputText : styles.placeholderText}>
                       {formData.stationCode || ('Station')}
                     </AppText>
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                    {!formData.stationCode && (
+                        <AppText style={styles.inlineAsterisk}>*</AppText>
+                      )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -1933,7 +1935,10 @@ const PharmacyWholesalerForm = () => {
                     >
                       {formData.area || (areas.length === 0 ? 'Area' : 'Area')}
                     </AppText>
+                    {!formData.area && (
                     <AppText style={styles.inlineAsterisk}>*</AppText>
+
+                    )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -1959,7 +1964,9 @@ const PharmacyWholesalerForm = () => {
                     <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
                       {formData.city || ('City')}
                     </AppText>
+                    {!formData.city && (
                     <AppText style={styles.inlineAsterisk}>*</AppText>
+                    )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -1975,7 +1982,11 @@ const PharmacyWholesalerForm = () => {
                   <AppText
                     style={[styles.floatingLabel, { color: colors.primary }]}
                   >
-                    State<AppText style={styles.asteriskPrimary}>*</AppText>
+                    State
+                    
+                    {!formData.city && (
+                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                    )}<AppText style={styles.asteriskPrimary}>*</AppText>
                   </AppText>
                 )}
                 <TouchableOpacity
@@ -1986,7 +1997,9 @@ const PharmacyWholesalerForm = () => {
                     <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
                       {formData.state || ('State')}
                     </AppText>
+                    {!formData.state && (
                     <AppText style={styles.inlineAsterisk}>*</AppText>
+                    )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -2732,7 +2745,6 @@ const PharmacyWholesalerForm = () => {
         selectedId={formData.stationCode} // <-- match value
         onSelect={item => {
 
-          console.log(item);
 
           setFormData({
             ...formData,

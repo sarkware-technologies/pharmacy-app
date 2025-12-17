@@ -1652,7 +1652,7 @@ const GovtHospitalRegistrationForm = () => {
 
         {/* Station code */}
         <View style={styles.dropdownContainer}>
-          {(formData.stationCode || cities.length > 0) && (
+          {(formData.stationCode) && (
             <AppText
               style={[styles.floatingLabel, { color: colors.primary }]}
             >
@@ -1667,7 +1667,9 @@ const GovtHospitalRegistrationForm = () => {
               <AppText style={formData.stationCode ? styles.inputText : styles.placeholderText}>
                 {formData.stationCode || ('Station')}
               </AppText>
-              <AppText style={styles.inlineAsterisk}>*</AppText>
+              {!formData.stationCode && (
+                <AppText style={styles.inlineAsterisk}>*</AppText>
+              )}
             </View>
             <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
@@ -1783,7 +1785,9 @@ const GovtHospitalRegistrationForm = () => {
               <AppText style={formData.area ? styles.inputText : styles.placeholderText}>
                 {formData.area || (areas.length === 0 ? 'Area' : 'Area')}
               </AppText>
-              <AppText style={styles.inlineAsterisk}>*</AppText>
+              {!formData.area && (
+                <AppText style={styles.inlineAsterisk}>*</AppText>
+              )}
             </View>
             <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
@@ -1807,7 +1811,9 @@ const GovtHospitalRegistrationForm = () => {
               <AppText style={formData.city ? styles.inputText : styles.placeholderText}>
                 {formData.city || ('City')}
               </AppText>
-              <AppText style={styles.inlineAsterisk}>*</AppText>
+              {!formData.city && (
+                <AppText style={styles.inlineAsterisk}>*</AppText>
+              )}
             </View>
             <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>
@@ -1831,7 +1837,9 @@ const GovtHospitalRegistrationForm = () => {
               <AppText style={formData.state ? styles.inputText : styles.placeholderText}>
                 {formData.state || ('State')}
               </AppText>
-              <AppText style={styles.inlineAsterisk}>*</AppText>
+              {!formData.state && (
+                <AppText style={styles.inlineAsterisk}>*</AppText>
+              )}
             </View>
             <Icon name="arrow-drop-down" size={24} color="#666" />
           </TouchableOpacity>

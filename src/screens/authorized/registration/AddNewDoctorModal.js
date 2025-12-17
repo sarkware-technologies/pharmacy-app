@@ -1187,7 +1187,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
 
           {/* Station code */}
           <View style={styles.dropdownContainer}>
-            {(doctorForm.stationCode || cities.length > 0) && (
+            {(doctorForm.stationCode) && (
               <AppText
                 style={[styles.floatingLabel, { color: colors.primary }]}
               >
@@ -1202,7 +1202,9 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
                 <AppText style={doctorForm.stationCode ? styles.inputText : styles.placeholderText}>
                   {doctorForm.stationCode || ('Station')}
                 </AppText>
-                <AppText style={styles.inlineAsterisk}>*</AppText>
+                {!doctorForm.stationCode && (
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
@@ -1327,7 +1329,9 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
                 <AppText style={doctorForm.area ? styles.inputText : styles.placeholderText}>
                   {doctorForm.area || 'Area'}
                 </AppText>
-                <AppText style={styles.inlineAsterisk}>*</AppText>
+                {!doctorForm.area && (
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
@@ -1361,7 +1365,9 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
                 <AppText style={doctorForm.city ? styles.inputText : styles.placeholderText}>
                   {doctorForm.city || ('City')}
                 </AppText>
-                <AppText style={styles.inlineAsterisk}>*</AppText>
+                {!doctorForm.city && (
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
@@ -1395,7 +1401,9 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
                 <AppText style={doctorForm.state ? styles.inputText : styles.placeholderText}>
                   {doctorForm.state || ('State')}
                 </AppText>
-                <AppText style={styles.inlineAsterisk}>*</AppText>
+                {!doctorForm.state && (
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>

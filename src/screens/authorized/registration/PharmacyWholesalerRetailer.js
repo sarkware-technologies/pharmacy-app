@@ -368,7 +368,7 @@ const PharmacyWholesalerRetailerForm = () => {
     // Fetch license types from API
     await fetchLicenseTypes();
     // Note: States and cities are now loaded via pincode lookup only
-    
+
     // Load customer groups
     try {
       const groupsResponse = await customerAPI.getCustomerGroups();
@@ -1253,7 +1253,7 @@ const PharmacyWholesalerRetailerForm = () => {
     else if (!formData.emailAddress || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress)) isValid = false;
     else if (!verificationStatus.email) isValid = false;
     else if (formData.gstNumber && !isValidGST(formData.gstNumber)) isValid = false;
-        else if (formData.selectedDoctors.length ===0  && formData.selectedHospitals.length ===0 ) isValid = false;
+    else if (formData.selectedDoctors.length === 0 && formData.selectedHospitals.length === 0) isValid = false;
 
 
     setIsFormValid(isValid);
@@ -2297,7 +2297,7 @@ const PharmacyWholesalerRetailerForm = () => {
               />
               {/* Station code */}
               <View style={styles.dropdownContainer}>
-                {(formData.stationCode || cities.length > 0) && (
+                {(formData.stationCode) && (
                   <AppText
                     style={[styles.floatingLabel, { color: colors.primary }]}
                   >
@@ -2312,7 +2312,9 @@ const PharmacyWholesalerRetailerForm = () => {
                     <AppText style={formData.stationCode ? styles.inputText : styles.placeholderText}>
                       {formData.stationCode || ('Station')}
                     </AppText>
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                    {!formData.stationCode && (
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
+                    )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -2444,7 +2446,9 @@ const PharmacyWholesalerRetailerForm = () => {
                     >
                       {formData.area || (areas.length === 0 ? 'Area' : 'Area')}
                     </AppText>
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                    {!formData.area && (
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
+                    )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -2479,7 +2483,9 @@ const PharmacyWholesalerRetailerForm = () => {
                     >
                       {formData.city || 'City'}
                     </AppText>
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                    {!formData.city && (
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
+                    )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -2514,7 +2520,9 @@ const PharmacyWholesalerRetailerForm = () => {
                     >
                       {formData.state || 'State'}
                     </AppText>
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                    {!formData.state && (
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
+                    )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>

@@ -1021,7 +1021,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
           {/* Station code */}
                     <View style={styles.dropdownContainer}>
-                      {(hospitalForm.stationCode || cities.length > 0) && (
+                      {(hospitalForm.stationCode) && (
                         <AppText
                           style={[styles.floatingLabel, { color: colors.primary }]}
                         >
@@ -1036,7 +1036,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                           <AppText style={hospitalForm.stationCode ? styles.inputText : styles.placeholderText}>
                             {hospitalForm.stationCode || ('Station')}
                           </AppText>
-                          <AppText style={styles.inlineAsterisk}>*</AppText>
+                          {!hospitalForm.stationCode && (
+                                                                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                                                                  )}
                         </View>
                         <Icon name="arrow-drop-down" size={24} color="#666" />
                       </TouchableOpacity>
@@ -1155,7 +1157,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 <AppText style={hospitalForm.area ? styles.inputText : styles.placeholderText}>
                   {hospitalForm.area || 'Area'}
                 </AppText>
-                <AppText style={styles.inlineAsterisk}>*</AppText>
+              {!hospitalForm.area && (
+                                                      <AppText style={styles.inlineAsterisk}>*</AppText>
+                                                      )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
@@ -1189,7 +1193,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 <AppText style={hospitalForm.city ? styles.inputText : styles.placeholderText}>
                   {hospitalForm.city || ('City')}
                 </AppText>
-                <AppText style={styles.inlineAsterisk}>*</AppText>
+                {!hospitalForm.city && (
+                                                        <AppText style={styles.inlineAsterisk}>*</AppText>
+                                                        )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
@@ -1223,7 +1229,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 <AppText style={hospitalForm.state ? styles.inputText : styles.placeholderText}>
                   {hospitalForm.state || ('State')}
                 </AppText>
-                <AppText style={styles.inlineAsterisk}>*</AppText>
+                {!hospitalForm.state && (
+                                                        <AppText style={styles.inlineAsterisk}>*</AppText>
+                                                        )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>

@@ -24,7 +24,7 @@ const VerticalTimeline = ({ steps }) => {
     <View style={styles.timelineContainer}>
       {steps.map((step, index) => {
         const isLast = index === steps.length - 1;
-        const isCompleted = step.status === 'APPROVED' || step.status === 'APPROVE' || step.status === 'SUBMITTED' || step.status === 'submitted' || step.status === 'COMPLETED';
+        const isCompleted = step.status === 'APPROVED' || step.status === 'APPROVE' || step.status === 'SUBMITTED' || step.status === 'submitted' || step.status === 'COMPLETED' || step.status === 'RE-SUBMITTED' || step.status === 're-submitted';
         const isRejected = step.status === 'REJECTED' || step.status === 'rejected';
         const isPending = step.status === 'PENDING' || step.status === 'pending';
         const isInProgress = step.status === 'IN_PROGRESS';
@@ -39,37 +39,30 @@ const VerticalTimeline = ({ steps }) => {
         else if (isReassigned) indicatorColor = '#AB65AD';
         else if (isPending || isInProgress) indicatorColor = '#F4AD48';
 
-
-
-
-        // Badge TExt colors
         const status = (step.status || '').toUpperCase();
+        const badgeColor = isCompleted
+          ? '#1695601A'
+          : isRejected
+            ? '#F568681A'
+            : isReassigned
+              ? '#AB65AD1A'
+              : isPending
+                ? '#F4AD481A'
+                : status === 'SUBMITTED'
+                  ? '#5995C71A'
+                  : '#9CA3AF';
 
-        const badgeColor =
-          status === 'SUBMITTED'
-            ? '#5995C71A'
-            : status === 'APPROVED' || status === 'COMPLETED'
-              ? '#1695601A'
-              : status === 'REJECTED'
-                ? '#F568681A'
-                  : status === 'REASSIGN' || status === 'REASSIGNED'
-                    ? '#AB65AD1A'
-                    : status === 'PENDING'
-                      ? '#F4AD481A'
-                      : '#9CA3AF';
-
-        const badgeTextColor =
-          status === 'SUBMITTED'
-            ? '#5995C7'
-            : status === 'APPROVED' || status === 'COMPLETED'
-              ? '#169560'
-              : status === 'REJECTED'
-                ? '#F56868'
-                : status === 'REASSIGN' || status === 'REASSIGNED'
-                  ? '#AB65AD'
-                  : status === 'PENDING'
-                    ? '#F4AD48'
-                    : '#e5e7eb';
+        const badgeTextColor = isCompleted
+          ? '#169560'
+          : isRejected
+            ? '#F56868'
+            : isReassigned
+              ? '#AB65AD'
+              : isPending
+                ? '#F4AD48'
+                : status === 'SUBMITTED'
+                  ? '#5995C7'
+                  : '#e5e7eb';
 
         return (
           <View key={index} style={styles.timelineStep}>
@@ -102,19 +95,14 @@ const VerticalTimeline = ({ steps }) => {
 
                 {(isReassigned) && (
                   // <Icon name="arrow-undo-outline" size={12} color="#fff" />
-                  <Reassigned/>
+                  <Reassigned />
                 )}
               </View>
               {!isLast && (
                 <View
                   style={[
                     styles.verticalLine,
-                    // {
-                    //   backgroundColor: isCompleted || isRejected
-                    //     ? (isCompleted ? '#10B981' : '#EF4444')
-                    //     : '#E3E3E3'
-                    // }
-
+               
                     {
                       backgroundColor: isCompleted
                         ? '#000000'
@@ -141,8 +129,8 @@ const VerticalTimeline = ({ steps }) => {
 
                   {/* User Name */}
 
-                  {step.userName != null &&  <AppText style={styles.userName}>{step.userName}</AppText>}
-                 
+                  {step.userName != null && <AppText style={styles.userName}>{step.userName}</AppText>}
+
 
                   {/* Date/Time with Calendar Icon */}
                   {step.dateTime && (
@@ -150,6 +138,11 @@ const VerticalTimeline = ({ steps }) => {
                       <Icon name="calendar-outline" size={14} color="#6B7280" />
                       <AppText style={styles.dateTime}>{step.dateTime}</AppText>
                     </View>
+                  )}
+
+
+                  {step.comments && (
+                    <AppText style={styles.comments}>{step.comments}</AppText>
                   )}
                 </>
               ) : (
@@ -192,8 +185,6 @@ const AccordionItem = ({ title, isExpanded, onToggle, children }) => {
 
 const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, customerType }) => {
 
-
-  
   const [expandedAccordion, setExpandedAccordion] = useState(null);
   const [loading, setLoading] = useState(false);
   const [accordionData, setAccordionData] = useState([]);
@@ -278,12 +269,15 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
               status: approver.status || 'submitted',
               userName: approver.assignedUserName || null,
               dateTime: approver.actedAt ? formatDateTime(approver.actedAt) : null,
-              subHeaderName: '' // Don't show subHeaderName for INITIATOR
+              subHeaderName: '', // Don't show subHeaderName for INITIATOR,
+              comments: approver.comments || null
+
             });
+
+
           }
           return;
         }
-
         // Handle FINAL_STATUS
         if (stepHeader && stepHeader.approverType === 'FINAL_STATUS') {
           if (stepHeader) {
@@ -292,30 +286,17 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
               status: approver.status || 'COMPLETED',
               userName: approver.assignedUserName || null,
               dateTime: approver.actedAt ? formatDateTime(approver.actedAt) : null,
-              subHeaderName: approver.subHeaderName || stepHeader.subHeaderName || ''
+              subHeaderName: approver.subHeaderName || stepHeader.subHeaderName || '',
+              comment: approver.comment || null
             });
           }
           return;
         }
-
-        // Handle regular approval steps
-        // if (approver) {
-        //   // Use approver data (it has the actual status and user info)
-        //   steps.push({
-        //     label: approver.headerName || (stepHeader ? stepHeader.headerName : 'Unknown'),
-        //     status: approver.status || 'PENDING',
-        //     userName: approver.assignedUserName || null,
-        //     dateTime: approver.actedAt ? formatDateTime(approver.actedAt) : null,
-        //     subHeaderName: approver.subHeaderName || (stepHeader ? stepHeader.subHeaderName : '')
-        //   });
-        // } 
         if (approver) {
           const isSkipped = approver.status === 'SKIPPED';
-
           const activity = isSkipped && approver.activities?.length
             ? approver.activities[0]
             : null;
-
           steps.push({
             label: approver.headerName || stepHeader?.headerName || 'Unknown',
 
@@ -336,7 +317,8 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
                 ? formatDateTime(approver.actedAt)
                 : null,
 
-            subHeaderName: approver.subHeaderName || stepHeader?.subHeaderName || ''
+            subHeaderName: approver.subHeaderName || stepHeader?.subHeaderName || '',
+            comments: approver.comments || null
           });
         }
         else if (stepHeader) {
@@ -468,7 +450,7 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
           {/* Header */}
           <View style={styles.header}>
             <AppText style={styles.title}>
-              {customerName + " | " + customerType || 'Workflow Timeline' }
+              {customerName + " | " + customerType || 'Workflow Timeline'}
             </AppText>
             <TouchableOpacity onPress={onClose}>
               <CloseCircle color="#666" />
@@ -540,7 +522,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   header: {
-    width:"100%",
+    width: "100%",
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -554,7 +536,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
-    maxWidth:"90%"
+    maxWidth: "90%"
   },
   loadingContainer: {
     flex: 1,
@@ -618,8 +600,8 @@ const styles = StyleSheet.create({
     minHeight: 60,
   },
   stepLabelContainer: {
-    width: 120,
-    paddingRight: 5,
+    width: 115,
+    paddingRight: 4,
     justifyContent: 'flex-start',
     paddingTop: 2,
   },
@@ -637,7 +619,7 @@ const styles = StyleSheet.create({
   statusIndicator: {
     width: 24,
     height: 24,
-    borderRadius: "100%",
+    borderRadius: 50,
     backgroundColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
@@ -686,6 +668,17 @@ const styles = StyleSheet.create({
   dateTime: {
     fontSize: 12,
     color: '#6B7280',
+  },
+
+  comments: {
+    backgroundColor: "#F5F5F6",
+    padding: 10,
+    marginTop: 6,
+    borderRadius: 10,
+    fontSize: 11,
+    color: "#2B2B2B"
+
+
   },
   pendingPlaceholder: {
     paddingTop: 4,
