@@ -14,6 +14,7 @@ import {
   Alert,
   Linking,
   ActivityIndicator,
+  PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -575,6 +576,244 @@ const CustomerDetail = ({ navigation, route }) => {
 
   console.log(customerGroups);
 
+  // Zoomable Image Component - Using React Native built-in APIs only
+  const ZoomableImage = ({ imageUri, containerWidth, containerHeight }) => {
+    const scale = useRef(new Animated.Value(1)).current;
+    const translateX = useRef(new Animated.Value(0)).current;
+    const translateY = useRef(new Animated.Value(0)).current;
+    
+    const savedScale = useRef(1);
+    const currentTranslateX = useRef(0);
+    const currentTranslateY = useRef(0);
+    const lastTap = useRef(null);
+    const initialDistance = useRef(null);
+    const initialScale = useRef(1);
+    const touchStartTime = useRef(null);
+    const activeTouches = useRef([]);
+
+    const MIN_SCALE = 1;
+    const MAX_SCALE = 5;
+
+    // Calculate distance between two touch points
+    const getDistance = (touches) => {
+      if (touches.length < 2) return null;
+      const dx = touches[0].pageX - touches[1].pageX;
+      const dy = touches[0].pageY - touches[1].pageY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    // Handle touch start - better multi-touch detection
+    const handleTouchStart = (evt) => {
+      const touches = evt.nativeEvent.touches;
+      activeTouches.current = Array.from(touches);
+      
+      if (touches.length === 2) {
+        // Pinch gesture
+        initialDistance.current = getDistance(touches);
+        initialScale.current = savedScale.current;
+        touchStartTime.current = Date.now();
+      } else if (touches.length === 1) {
+        // Single touch - check for double tap
+        const now = Date.now();
+        const DOUBLE_TAP_DELAY = 300;
+        
+        if (lastTap.current && (now - lastTap.current) < DOUBLE_TAP_DELAY) {
+          // Double tap detected
+          if (savedScale.current > MIN_SCALE) {
+            // Reset zoom
+            Animated.parallel([
+              Animated.spring(scale, {
+                toValue: MIN_SCALE,
+                useNativeDriver: true,
+                tension: 50,
+                friction: 7,
+              }),
+              Animated.spring(translateX, {
+                toValue: 0,
+                useNativeDriver: true,
+                tension: 50,
+                friction: 7,
+              }),
+              Animated.spring(translateY, {
+                toValue: 0,
+                useNativeDriver: true,
+                tension: 50,
+                friction: 7,
+              }),
+            ]).start(() => {
+              savedScale.current = MIN_SCALE;
+              currentTranslateX.current = 0;
+              currentTranslateY.current = 0;
+            });
+          } else {
+            // Zoom in
+            Animated.spring(scale, {
+              toValue: 2,
+              useNativeDriver: true,
+              tension: 50,
+              friction: 7,
+            }).start(() => {
+              savedScale.current = 2;
+            });
+          }
+          lastTap.current = null;
+        } else {
+          lastTap.current = now;
+        }
+        
+        // Save current translation for pan
+        translateX.stopAnimation((x) => {
+          currentTranslateX.current = x;
+        });
+        translateY.stopAnimation((y) => {
+          currentTranslateY.current = y;
+        });
+      }
+    };
+
+    // Handle touch move - better multi-touch detection
+    const handleTouchMove = (evt) => {
+      const touches = evt.nativeEvent.touches;
+      activeTouches.current = Array.from(touches);
+      
+      if (touches.length === 2) {
+        const currentDistance = getDistance(touches);
+        
+        // Initialize distance if not set
+        if (!initialDistance.current && currentDistance) {
+          initialDistance.current = currentDistance;
+          initialScale.current = savedScale.current;
+        }
+        
+        // Perform pinch zoom
+        if (currentDistance && initialDistance.current && initialDistance.current > 0) {
+          const scaleRatio = currentDistance / initialDistance.current;
+          const newScale = initialScale.current * scaleRatio;
+          const clampedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+          
+          scale.setValue(clampedScale);
+          savedScale.current = clampedScale;
+        }
+      }
+    };
+
+    // Handle touch end
+    const handleTouchEnd = (evt) => {
+      const touches = evt.nativeEvent.touches;
+      activeTouches.current = Array.from(touches);
+      
+      if (touches.length === 0) {
+        initialDistance.current = null;
+        translateX.stopAnimation((x) => {
+          translateY.stopAnimation((y) => {
+            constrainTranslation(savedScale.current, x, y);
+          });
+        });
+      }
+    };
+
+    const constrainTranslation = (scaleValue, currentX, currentY) => {
+      if (scaleValue <= MIN_SCALE) {
+        Animated.parallel([
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 7,
+          }),
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 7,
+          }),
+        ]).start();
+        currentTranslateX.current = 0;
+        currentTranslateY.current = 0;
+      } else {
+        const maxTranslateX = (containerWidth * (scaleValue - 1)) / 2;
+        const maxTranslateY = (containerHeight * (scaleValue - 1)) / 2;
+        
+        const clampedX = Math.max(-maxTranslateX, Math.min(maxTranslateX, currentX));
+        const clampedY = Math.max(-maxTranslateY, Math.min(maxTranslateY, currentY));
+        
+        Animated.parallel([
+          Animated.spring(translateX, {
+            toValue: clampedX,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 7,
+          }),
+          Animated.spring(translateY, {
+            toValue: clampedY,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 7,
+          }),
+        ]).start();
+        
+        currentTranslateX.current = clampedX;
+        currentTranslateY.current = clampedY;
+      }
+    };
+
+    const panResponder = useRef(
+      PanResponder.create({
+        onStartShouldSetPanResponder: (evt) => {
+          return true;
+        },
+        onMoveShouldSetPanResponder: (evt) => {
+          return true;
+        },
+        onPanResponderGrant: (evt) => {
+          handleTouchStart(evt);
+        },
+        onPanResponderMove: (evt, gestureState) => {
+          const touches = evt.nativeEvent.touches;
+          
+          // Handle pinch in touch move handler
+          handleTouchMove(evt);
+          
+          // Handle single finger pan when zoomed
+          if (touches.length === 1 && savedScale.current > MIN_SCALE) {
+            const newX = currentTranslateX.current + gestureState.dx;
+            const newY = currentTranslateY.current + gestureState.dy;
+            translateX.setValue(newX);
+            translateY.setValue(newY);
+          }
+        },
+        onPanResponderRelease: (evt) => {
+          handleTouchEnd(evt);
+        },
+        onPanResponderTerminate: () => {
+          initialDistance.current = null;
+          activeTouches.current = [];
+        },
+      })
+    ).current;
+
+    const animatedStyle = {
+      transform: [
+        { translateX },
+        { translateY },
+        { scale },
+      ],
+    };
+
+    return (
+      <View 
+        style={styles.zoomableImageWrapper}
+        {...panResponder.panHandlers}
+      >
+        <Animated.Image
+          source={{ uri: imageUri }}
+          style={[styles.previewImage, animatedStyle]}
+          resizeMode="contain"
+        />
+      </View>
+    );
+  };
+
   const DocumentModal = () => {
     const [loadingDoc, setLoadingDoc] = useState(false);
     const [signedUrl, setSignedUrl] = useState(null);
@@ -632,15 +871,15 @@ const CustomerDetail = ({ navigation, route }) => {
               ) : signedUrl && (selectedDocument?.fileName?.toLowerCase().endsWith('.jpg') ||
                 selectedDocument?.fileName?.toLowerCase().endsWith('.jpeg') ||
                 selectedDocument?.fileName?.toLowerCase().endsWith('.png')) ? (
-                <Image
-                  source={{ uri: signedUrl }}
-                  style={{ width: '100%', height: 300 }}
-                  resizeMode="contain"
+                <ZoomableImage
+                  imageUri={signedUrl}
+                  containerWidth={width * 0.95 - 32}
+                  containerHeight={300}
                 />
               ) : (
                 <View style={styles.dummyDocument}>
                   <Icon name="document-text" size={100} color="#999" />
-                  <AppText style={styles.documentName}>{selectedDocument?.fileName}</AppText>
+                  <AppText style={styles.documentName}>{selectedDocument?.fileName} </AppText>
                 </View>
               )}
             </View>
@@ -670,7 +909,6 @@ const CustomerDetail = ({ navigation, route }) => {
   );
 
   const openDocument = (docInfo) => {
-    console.log("openDocument is called"); console.log(docInfo);
     if (typeof docInfo !== 'string') {
       // For actual document object from API
       setSelectedDocument(docInfo);
@@ -1682,6 +1920,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   documentModalContent: {
+    overflow: 'visible', // Allow zoomed image to extend beyond modal
     width: width * 0.9,
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -1704,6 +1943,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
     borderRadius: 12,
     marginBottom: 20,
+    overflow: 'visible', // Allow image to go outside during zoom
+    height: 300,
+    justifyContent: 'center',
+    width: '100%',
+  },
+  zoomableImageWrapper: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
   },
   dummyDocument: {
     alignItems: 'center',

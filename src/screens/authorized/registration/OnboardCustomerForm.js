@@ -71,10 +71,28 @@ const OnboardCustomerForm = ({ route, navigation }) => {
     subCategory: '',
   });
 
+  // Customer groups
+  const [customerGroups, setCustomerGroups] = useState([]);
+
   useEffect(() => {
     if (customerData) {
       populateFormData(customerData);
     }
+    
+    // Load customer groups
+    const loadCustomerGroups = async () => {
+      try {
+        const groupsResponse = await customerAPI.getCustomerGroups();
+        if (groupsResponse.success && groupsResponse.data) {
+          console.log('Customer groups:', groupsResponse.data);
+          setCustomerGroups(groupsResponse.data || []);
+        }
+      } catch (error) {
+        console.error('Error loading customer groups:', error);
+      }
+    };
+    
+    loadCustomerGroups();
   }, [customerData]);
 
   // Auto-populate city, state, and area when pincode lookup completes
@@ -460,57 +478,60 @@ const OnboardCustomerForm = ({ route, navigation }) => {
             <View style={styles.customerGroupContainer}>
               <AppText style={styles.customerGroupLabel}>Customer Group</AppText>
               <View style={styles.radioGroupContainer}>
-                <View style={styles.radioRow}>
-                  <TouchableOpacity
-                    style={[styles.radioOption, styles.radioOptionFlex]}
-                    onPress={() => setFormData(prev => ({ ...prev, customerGroupId: 1, customerGroupName: 'DOCTOR SUPPLY' }))}
-                  >
-                    <View style={styles.radioCircle}>
-                      {formData.customerGroupId === 1 && (
-                        <View style={styles.radioSelected} />
-                      )}
+                {customerGroups.length > 0 ? (
+                  <>
+                    {/* First row - first 2 groups */}
+                    <View style={styles.radioRow}>
+                      {customerGroups.slice(0, 2).map((group) => (
+                        <TouchableOpacity
+                          key={group.customerGroupId}
+                          style={[styles.radioOption, styles.radioOptionFlex]}
+                          onPress={() => setFormData(prev => ({
+                            ...prev,
+                            customerGroupId: group.customerGroupId,
+                            customerGroupName: group.customerGroupName,
+                          }))}
+                        >
+                          <View style={styles.radioCircle}>
+                            {formData.customerGroupId === group.customerGroupId && (
+                              <View style={styles.radioSelected} />
+                            )}
+                          </View>
+                          <AppText style={styles.radioText}>
+                            {group.customerGroupName}
+                          </AppText>
+                        </TouchableOpacity>
+                      ))}
                     </View>
-                    <AppText style={styles.radioText}>DOCTOR SUPPLY</AppText>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.radioOption, styles.radioOptionFlex]}
-                    onPress={() => setFormData(prev => ({ ...prev, customerGroupId: 2, customerGroupName: 'RFQ' }))}
-                  >
-                    <View style={styles.radioCircle}>
-                      {formData.customerGroupId === 2 && (
-                        <View style={styles.radioSelected} />
-                      )}
-                    </View>
-                    <AppText style={styles.radioText}>RFQ</AppText>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.radioRow}>
-                  <TouchableOpacity
-                    style={[styles.radioOption, styles.radioOptionFlex]}
-                    onPress={() => setFormData(prev => ({ ...prev, customerGroupId: 3, customerGroupName: 'VQ' }))}
-                  >
-                    <View style={styles.radioCircle}>
-                      {formData.customerGroupId === 3 && (
-                        <View style={styles.radioSelected} />
-                      )}
-                    </View>
-                    <AppText style={styles.radioText}>VQ</AppText>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.radioOption, styles.radioOptionFlex]}
-                    onPress={() => setFormData(prev => ({ ...prev, customerGroupId: 4, customerGroupName: 'GOVT' }))}
-                  >
-                    <View style={styles.radioCircle}>
-                      {formData.customerGroupId === 4 && (
-                        <View style={styles.radioSelected} />
-                      )}
-                    </View>
-                    <AppText style={styles.radioText}>GOVT</AppText>
-                  </TouchableOpacity>
-                </View>
+                    {/* Second row - remaining groups */}
+                    {customerGroups.length > 2 && (
+                      <View style={styles.radioRow}>
+                        {customerGroups.slice(2, 4).map((group) => (
+                          <TouchableOpacity
+                            key={group.customerGroupId}
+                            style={[styles.radioOption, styles.radioOptionFlex]}
+                            onPress={() => setFormData(prev => ({
+                              ...prev,
+                              customerGroupId: group.customerGroupId,
+                              customerGroupName: group.customerGroupName,
+                            }))}
+                          >
+                            <View style={styles.radioCircle}>
+                              {formData.customerGroupId === group.customerGroupId && (
+                                <View style={styles.radioSelected} />
+                              )}
+                            </View>
+                            <AppText style={styles.radioText}>
+                              {group.customerGroupName}
+                            </AppText>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                )}
               </View>
             </View>
 

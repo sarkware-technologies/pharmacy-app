@@ -2845,15 +2845,15 @@ const PrivateRegistrationForm = () => {
                 <AppText style={styles.sectionLabel}>Customer group</AppText>
 
                 <View style={styles.customerGroupGridContainer}>
-                  {['9 Doctor Supply', '10 VQ', '11 RFQ', '12 GOVT'].map(
-                    (group, index) => {
-                      const groupId = index + 1; // 9, 10, 11, 12
-                      const isDisabled = group !== '9 Doctor Supply';
-                      const isSelected = formData.customerGroupId === groupId;
+                  {customerGroups.length > 0 ? (
+                    customerGroups.map((group) => {
+                      // Only DSUP (DOCTOR SUPPLY) is enabled, others are disabled
+                      const isDisabled = group.customerGroupCode !== 'DSUP';
+                      const isSelected = formData.customerGroupId === group.customerGroupId;
 
                       return (
                         <TouchableOpacity
-                          key={group}
+                          key={group.customerGroupId}
                           style={[
                             styles.radioButtonItem,
                             isDisabled && styles.radioButtonItemDisabled,
@@ -2862,7 +2862,7 @@ const PrivateRegistrationForm = () => {
                             if (!isDisabled) {
                               setFormData(prev => ({
                                 ...prev,
-                                customerGroupId: groupId,
+                                customerGroupId: group.customerGroupId,
                               }));
                             }
                           }}
@@ -2885,11 +2885,13 @@ const PrivateRegistrationForm = () => {
                               isDisabled && styles.radioButtonLabelDisabled,
                             ]}
                           >
-                            {group}
+                            {group.customerGroupId} {group.customerGroupName}
                           </AppText>
                         </TouchableOpacity>
                       );
-                    },
+                    })
+                  ) : (
+                    <ActivityIndicator size="small" color={colors.primary} />
                   )}
                 </View>
               </View>
