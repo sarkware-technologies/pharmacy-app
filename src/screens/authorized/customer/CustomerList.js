@@ -149,6 +149,7 @@ const CustomerList = ({ navigation }) => {
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [selectedDocumentForPreview, setSelectedDocumentForPreview] = useState(null);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [isFullScreenPreview, setIsFullScreenPreview] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewSignedUrl, setPreviewSignedUrl] = useState(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -2077,7 +2078,7 @@ const CustomerList = ({ navigation }) => {
 
     return (
       <View 
-        style={styles.zoomableImageWrapper}
+        style={[styles.zoomableImageWrapper, { width: containerWidth, height: containerHeight }]}
         {...panResponder.panHandlers}
       >
         <Animated.Image
@@ -2090,62 +2091,97 @@ const CustomerList = ({ navigation }) => {
   };
 
   // Document Preview Modal
-  const DocumentPreviewModal = () => (
-    <Modal
-      visible={previewModalVisible}
-      transparent
-      animationType="fade"
-      onRequestClose={() => {
-        setPreviewModalVisible(false);
-        setIsPreviewing(false)
+  const DocumentPreviewModal = () => {
+    const closeModal = () => {
+      setPreviewModalVisible(false);
+      setIsPreviewing(false);
+      setIsFullScreenPreview(false);
+    };
 
-      }}
-    >
-      <View style={styles.previewModalOverlay}>
-        <View style={styles.previewModalContent}>
-          <View style={styles.previewModalHeader}>
-            <AppText style={styles.previewModalTitle} numberOfLines={1}>
-              {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
-            </AppText>
-            <TouchableOpacity onPress={() => {
-              setPreviewModalVisible(false);
-              setIsPreviewing(false)
+    const isImageFile = selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpg') ||
+      selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpeg') ||
+      selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.png');
 
-            }}>
-              <CloseCircle />
+    // Full Screen Image Preview
+    if (isFullScreenPreview && previewSignedUrl && isImageFile) {
+      return (
+        <Modal
+          visible={previewModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={closeModal}
+          statusBarTranslucent
+        >
+          <View style={styles.fullScreenPreviewContainer}>
+            <View style={styles.fullScreenPreviewHeader}>
+              <TouchableOpacity onPress={() => setIsFullScreenPreview(false)} style={styles.fullScreenCloseButton}>
+                <Icon name="close" size={28} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <ZoomableImage
+              imageUri={previewSignedUrl}
+              containerWidth={width}
+              containerHeight={Dimensions.get('window').height}
+            />
+          </View>
+        </Modal>
+      );
+    }
+
+    // Regular Modal View
+    return (
+      <Modal
+        visible={previewModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.previewModalOverlay}>
+          <View style={styles.previewModalContent}>
+            <View style={styles.previewModalHeader}>
+              <AppText style={styles.previewModalTitle} numberOfLines={1}>
+                {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
+              </AppText>
+              <TouchableOpacity onPress={closeModal}>
+                <CloseCircle />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.previewContainer}>
+              {previewLoading ? (
+                <ActivityIndicator size="large" color={colors.primary} />
+              ) : previewSignedUrl && isImageFile ? (
+                <TouchableOpacity
+                  activeOpacity={1}
+                  onPress={() => setIsFullScreenPreview(true)}
+                  style={styles.imagePreviewTouchable}
+                >
+                  <ZoomableImage
+                    imageUri={previewSignedUrl}
+                    containerWidth={width * 0.95 - 32}
+                    containerHeight={300}
+                  />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.documentPreviewPlaceholder}>
+                  <Icon name="document-text-outline" size={64} color="#999" />
+                  <AppText style={styles.documentPreviewText}>{selectedDocumentForPreview?.fileName}</AppText>
+                </View>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={styles.downloadButtonInPreview}
+              onPress={() => downloadDocument(selectedDocumentForPreview)}
+            >
+              <Download width={20} color="#fff" />
+              <AppText style={styles.downloadButtonText}>Download</AppText>
             </TouchableOpacity>
           </View>
-
-          <View style={styles.previewContainer}>
-            {previewLoading ? (
-              <ActivityIndicator size="large" color={colors.primary} />
-            ) : previewSignedUrl && (selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpg') ||
-              selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpeg') ||
-              selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.png')) ? (
-              <ZoomableImage
-                imageUri={previewSignedUrl}
-                containerWidth={width * 0.95 - 32}
-                containerHeight={300}
-              />
-            ) : (
-              <View style={styles.documentPreviewPlaceholder}>
-                <Icon name="document-text-outline" size={64} color="#999" />
-                <AppText style={styles.documentPreviewText}>{selectedDocumentForPreview?.fileName}</AppText>
-              </View>
-            )}
-          </View>
-
-          <TouchableOpacity
-            style={styles.downloadButtonInPreview}
-            onPress={() => downloadDocument(selectedDocumentForPreview)}
-          >
-            <Download width={20} color="#fff" />
-            <AppText style={styles.downloadButtonText}>Download</AppText>
-          </TouchableOpacity>
         </View>
-      </View>
-    </Modal>
-  );
+      </Modal>
+    );
+  };
 
   const DownloadModal = () => (
     <Modal
@@ -3276,7 +3312,7 @@ const styles = StyleSheet.create({
     width: width * 0.95,
     backgroundColor: '#fff',
     borderRadius: 16,
-    overflow: 'visible', // Allow zoomed image to extend beyond modal
+    overflow: 'hidden',
   },
   previewModalHeader: {
     flexDirection: 'row',
@@ -3298,13 +3334,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
-    overflow: 'visible', // Allow image to go outside during zoom
+    overflow: 'hidden',
   },
   zoomableImageWrapper: {
-    width: '100%',
-    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+  },
+  fullScreenPreviewContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenPreviewHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  fullScreenCloseButton: {
+    alignSelf: 'flex-end',
+    padding: 8,
+  },
+  imagePreviewTouchable: {
+    width: '100%',
+    height: '100%',
   },
   previewImage: {
     width: '100%',

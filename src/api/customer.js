@@ -616,12 +616,16 @@ export const customerAPI = {
         try {
             const payload = {
                 moduleRecordIds: Array.isArray(moduleRecordIds) ? moduleRecordIds : [moduleRecordIds],
-                moduleName: Array.isArray(moduleName) ? moduleName : [moduleName]
+                // moduleName: Array.isArray(moduleName) ? moduleName : [moduleName]
+                moduleName:  [
+                    "NEW_CUSTOMER_ONBOARDING",
+                    "EXISTING_CUSTOMER_ONBOARDING"
+                ]
             };
-            const response = await apiClient.post('approval/workflow-actions/bulk/customer/user-wise-audit', payload);
+            const response = await apiClient.post('/approval/workflow-actions/bulk/customer/user-wise-audit', payload);
             return response;
         } catch (error) {
-            console.error('Error fetching workflow progression:', error);
+            console.error('Error fetching user-wise audit:', error);
             throw error;
         }
     },

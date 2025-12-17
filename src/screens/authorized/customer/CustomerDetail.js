@@ -43,6 +43,7 @@ import PermissionWrapper from '../../../utils/RBAC/permissionWrapper';
 import PERMISSIONS from '../../../utils/RBAC/permissionENUM';
 import Sync from '../../../components/icons/Sync';
 import Comment from '../../../components/icons/Comment';
+import CommentsModal from '../../../components/modals/CommentsModal';
 
 
 
@@ -98,6 +99,7 @@ const CustomerDetail = ({ navigation, route }) => {
   const [isEditingCustomerGroup, setIsEditingCustomerGroup] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [updatingCustomerGroup, setUpdatingCustomerGroup] = useState(false);
+  const [commentsVisible, setCommentsVisible] = useState(false);
 
   // Get customer data from Redux
   const { selectedCustomer, detailsLoading, detailsError } = useSelector(
@@ -803,7 +805,7 @@ const CustomerDetail = ({ navigation, route }) => {
 
     return (
       <View
-        style={styles.zoomableImageWrapper}
+        style={[styles.zoomableImageWrapper, { width: containerWidth, height: containerHeight }]}
         {...panResponder.panHandlers}
       >
         <Animated.Image
@@ -818,10 +820,15 @@ const CustomerDetail = ({ navigation, route }) => {
   const DocumentModal = () => {
     const [loadingDoc, setLoadingDoc] = useState(false);
     const [signedUrl, setSignedUrl] = useState(null);
+    const [isFullScreenPreview, setIsFullScreenPreview] = useState(false);
 
     useEffect(() => {
       if (showDocumentModal && selectedDocument?.s3Path) {
         fetchSignedUrl();
+      }
+      // Reset full screen when modal closes
+      if (!showDocumentModal) {
+        setIsFullScreenPreview(false);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showDocumentModal, selectedDocument]);
@@ -846,8 +853,40 @@ const CustomerDetail = ({ navigation, route }) => {
       setShowDocumentModal(false);
       setSignedUrl(null);
       setSelectedDocument(null);
+      setIsFullScreenPreview(false);
     };
 
+    const isImageFile = selectedDocument?.fileName?.toLowerCase().endsWith('.jpg') ||
+      selectedDocument?.fileName?.toLowerCase().endsWith('.jpeg') ||
+      selectedDocument?.fileName?.toLowerCase().endsWith('.png');
+
+    // Full Screen Image Preview
+    if (isFullScreenPreview && signedUrl && isImageFile) {
+      return (
+        <Modal
+          visible={showDocumentModal}
+          transparent
+          animationType="fade"
+          onRequestClose={closeModal}
+          statusBarTranslucent
+        >
+          <View style={styles.fullScreenPreviewContainer}>
+            <View style={styles.fullScreenPreviewHeader}>
+              <TouchableOpacity onPress={() => setIsFullScreenPreview(false)} style={styles.fullScreenCloseButton}>
+                <Icon name="close" size={28} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <ZoomableImage
+              imageUri={signedUrl}
+              containerWidth={width}
+              containerHeight={Dimensions.get('window').height}
+            />
+          </View>
+        </Modal>
+      );
+    }
+
+    // Regular Modal View
     return (
       <Modal
         visible={showDocumentModal}
@@ -869,14 +908,18 @@ const CustomerDetail = ({ navigation, route }) => {
             <View style={styles.documentImageContainer}>
               {loadingDoc ? (
                 <ActivityIndicator size="large" color={colors.primary} />
-              ) : signedUrl && (selectedDocument?.fileName?.toLowerCase().endsWith('.jpg') ||
-                selectedDocument?.fileName?.toLowerCase().endsWith('.jpeg') ||
-                selectedDocument?.fileName?.toLowerCase().endsWith('.png')) ? (
-                <ZoomableImage
-                  imageUri={signedUrl}
-                  containerWidth={width * 0.95 - 32}
-                  containerHeight={300}
-                />
+              ) : signedUrl && isImageFile ? (
+                <TouchableOpacity
+                  activeOpacity={1}
+                  onPress={() => setIsFullScreenPreview(true)}
+                  style={styles.imagePreviewTouchable}
+                >
+                  <ZoomableImage
+                    imageUri={signedUrl}
+                    containerWidth={width * 0.95 - 32}
+                    containerHeight={300}
+                  />
+                </TouchableOpacity>
               ) : (
                 <View style={styles.dummyDocument}>
                   <Icon name="document-text" size={100} color="#999" />
@@ -1363,7 +1406,16 @@ const CustomerDetail = ({ navigation, route }) => {
                 {/* Customer Group */}
                 {customerData.customerGroupId && (
                   <AnimatedSection  >
-                    <AppText style={styles.sectionTitle}>Customer Group</AppText>
+                    <View style={styles.sectionHeaderRow}>
+                      <AppText style={styles.sectionTitle}>Customer Group</AppText>
+                      <TouchableOpacity
+                        onPress={() => setCommentsVisible(true)}
+                        style={styles.commentIconButton}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Comment width={22} height={22} color={colors.primary} />
+                      </TouchableOpacity>
+                    </View>
 
                     <View style={[styles.card, { marginBottom: 20 }]}>
                       {!isEditingCustomerGroup ? (
@@ -1540,6 +1592,21 @@ const CustomerDetail = ({ navigation, route }) => {
 
         <DocumentModal />
 
+        <CommentsModal
+          visible={commentsVisible}
+          onClose={() => setCommentsVisible(false)}
+          moduleRecordId={(() => {
+            const statusName = customer?.statusName || selectedCustomer?.statusName;
+            // If status is ACTIVE, use stageId[0] (staging ID)
+            if (statusName === 'ACTIVE') {
+              return selectedCustomer?.stageId?.[0] || customer?.stageId?.[0] || selectedCustomer?.stgCustomerId || customer?.stgCustomerId;
+            }
+            // For PENDING and other customers, use regular customerId (actual flow)
+            return selectedCustomer?.stgCustomerId || customer?.customerId || selectedCustomer?.stgCustomerId || customer?.stgCustomerId;
+          })()}
+          moduleName={selectedCustomer?.moduleName || 'NEW_CUSTOMER_ONBOARDING'}
+        />
+
         {/* Approve Modal */}
         <ApproveCustomerModal
           visible={approveModalVisible}
@@ -1672,6 +1739,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 2,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  commentIconButton: {
+    padding: 6,
   },
   card: {
     backgroundColor: '#fff',
@@ -1897,7 +1974,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   documentModalContent: {
-    overflow: 'visible', // Allow zoomed image to extend beyond modal
+    overflow: 'hidden',
     width: width * 0.9,
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -1920,14 +1997,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
     borderRadius: 12,
     marginBottom: 20,
-    overflow: 'visible', // Allow image to go outside during zoom
+    overflow: 'hidden',
     height: 300,
     justifyContent: 'center',
     width: '100%',
   },
   zoomableImageWrapper: {
-    width: '100%',
-    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -2089,6 +2164,31 @@ const styles = StyleSheet.create({
     borderColor: '#2B2B2B',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  fullScreenPreviewContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenPreviewHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  fullScreenCloseButton: {
+    alignSelf: 'flex-end',
+    padding: 8,
+  },
+  imagePreviewTouchable: {
+    width: '100%',
+    height: '100%',
   },
 });
 
