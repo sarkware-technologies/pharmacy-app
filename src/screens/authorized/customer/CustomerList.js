@@ -136,6 +136,9 @@ const CustomerList = ({ navigation }) => {
 
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [verifyModalVisible, setVerifyModalVisible] = useState(false);
+  const [latestDraftData, setLatestDraftData] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState(null);
   const [workflowTimelineVisible, setWorkflowTimelineVisible] = useState(false);
   const [selectedCustomerForWorkflow, setSelectedCustomerForWorkflow] = useState(null);
@@ -262,8 +265,8 @@ const CustomerList = ({ navigation }) => {
       switch (activeTab) {
         case 'all':
           return hasAllTabPermission;
-        case 'waitingForApproval':
-          return hasWaitingForApprovalTabPermission;
+        // case 'waitingForApproval':
+        //   return hasWaitingForApprovalTabPermission;
         case 'notOnboarded':
           return hasNotOnboardedTabPermission;
         case 'unverified':
@@ -288,7 +291,7 @@ const CustomerList = ({ navigation }) => {
     hasAllTabPermission,
     hasUnverifiedTabPermission,
     hasNotOnboardedTabPermission,
-    hasWaitingForApprovalTabPermission,
+    // hasWaitingForApprovalTabPermission,
     hasRejectedTabPermission,
     hasDoctorSupplyTabPermission,
     hasDraftTabPermission,
@@ -834,8 +837,7 @@ const CustomerList = ({ navigation }) => {
     setLoadingDocuments(true);
     try {
       const customerId = customer?.stgCustomerId || customer?.customerId;
-      // Set isStaging=false only for NOT-ONBOARDED status, true for PENDING
-      const isStaging = customer?.statusName === 'NOT-ONBOARDED' ? false : (customer?.statusName === 'PENDING' ? true : false);
+      const isStaging = customer?.statusName === 'ACTIVE' ? false : true;
 
       const response = await customerAPI.getCustomerDetails(customerId, isStaging);
 
@@ -1103,6 +1105,149 @@ const CustomerList = ({ navigation }) => {
       setRejectModalVisible(false);
       showToast(`Failed to reject customer: ${error.message}`, 'error');
       setSelectedCustomerForAction(null);
+    }
+  };
+
+  // Handle verify button click - fetch latest draft first
+  const handleVerifyClick = async (customer) => {
+    try {
+      setActionLoading(true);
+      setSelectedCustomerForAction(customer);
+      const instanceId = customer?.instaceId || customer?.stgCustomerId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+
+      if (!instanceId || !actorId) {
+        showToast('Missing instance ID or actor ID', 'error');
+        return;
+      }
+
+      // Fetch latest draft data
+      const latestDraftResponse = await customerAPI.getLatestDraft(instanceId, actorId);
+      
+      if (latestDraftResponse?.data?.data) {
+        setLatestDraftData(latestDraftResponse.data.data);
+        setVerifyModalVisible(true);
+      } else {
+        showToast('Failed to fetch latest draft data', 'error');
+      }
+    } catch (error) {
+      console.error('Error fetching latest draft:', error);
+      showToast(`Failed to fetch latest draft: ${error.message}`, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handle Verify confirmation - call workflow action API with latest draft data
+  const handleVerifyConfirm = async (comment) => {
+    try {
+      setActionLoading(true);
+      const instanceId = selectedCustomerForAction?.instaceId || selectedCustomerForAction?.stgCustomerId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+
+      if (!instanceId || !actorId) {
+        showToast('Missing instance ID or actor ID', 'error');
+        return;
+      }
+
+      // Get data from latest draft
+      const draftData = latestDraftData;
+      if (!draftData) {
+        showToast('Latest draft data not available', 'error');
+        return;
+      }
+
+      // Extract data from latest draft response
+      const parallelGroup = draftData?.parallelGroup || selectedCustomerForAction?.instance?.stepInstances?.[0]?.parallelGroup || 1;
+      const stepOrder = draftData?.stepOrder || selectedCustomerForAction?.instance?.stepInstances?.[0]?.stepOrder || 1;
+      const draftEdits = draftData?.draftEdits || {};
+
+      // Build dataChanges from latest draft
+      const dataChanges = {
+        mapping: draftEdits.mapping || {},
+        customerGroupId: draftEdits.customerGroupId || selectedCustomerForAction?.customerGroupId,
+      };
+
+      // Add divisions if present
+      if (draftEdits.divisions && draftEdits.divisions.length > 0) {
+        dataChanges.divisions = draftEdits.divisions;
+      }
+
+      // Add distributors if present
+      if (draftEdits.distributors && draftEdits.distributors.length > 0) {
+        dataChanges.distributors = draftEdits.distributors;
+      }
+
+      const actionDataPayload = {
+        action: "APPROVE",
+        parallelGroup: parallelGroup,
+        stepOrder: stepOrder,
+        actorId: actorId,
+        comments: comment || "approved",
+        dataChanges: dataChanges,
+      };
+
+      const response = await customerAPI.workflowAction(instanceId, actionDataPayload);
+
+      setVerifyModalVisible(false);
+      setLatestDraftData(null);
+      showToast(`Customer ${selectedCustomerForAction?.customerName} verified successfully!`, 'success');
+      setSelectedCustomerForAction(null);
+
+      // Refresh the customer list after verification
+      if (activeTab === 'all') {
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false,
+          isAll:true
+        }));
+      } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
+        const statusIds = getStatusIdsForTab(activeTab);
+        const payload = {
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: true,
+          statusIds: statusIds
+        };
+        // Add filter for waitingForApproval tab
+        if (activeTab === 'waitingForApproval') {
+          payload.filter = getFilterValue(activeFilterButton);
+        }
+        // Add filter for draft tab
+        if (activeTab === 'draft') {
+          payload.filter = 'NEW';
+        }
+        dispatch(fetchCustomersList(payload));
+      } else if (activeTab === 'doctorSupply') {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false,
+          statusIds: statusIds,
+          customerGroupId: 1
+        }));
+      } else {
+        const statusIds = getStatusIdsForTab(activeTab);
+        dispatch(fetchCustomersList({
+          page: 1,
+          limit: pagination.limit,
+          searchText: filters.searchText,
+          isStaging: false,
+          statusIds: statusIds
+        }));
+      }
+    } catch (error) {
+      console.error('Error verifying customer:', error);
+      setVerifyModalVisible(false);
+      showToast(`Failed to verify customer: ${error.message}`, 'error');
+      setSelectedCustomerForAction(null);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -1674,10 +1819,9 @@ const CustomerList = ({ navigation }) => {
                 <View style={styles.pendingActions}>
                   <TouchableOpacity
                     style={styles.approveButton}
-                    // onPress={() => handleApprovePress(item)}
+                    onPress={() => handleVerifyClick(item)}
+                    disabled={actionLoading}
                   >
-
-
                      <View style={styles.approveButtonContent}>
                       <Icon name="checkmark-outline" size={18} color="white" />
                       <AppText style={styles.approveButtonText}>Verify</AppText>
@@ -1687,6 +1831,7 @@ const CustomerList = ({ navigation }) => {
                   <TouchableOpacity
                     style={styles.rejectButton}
                     onPress={() => handleRejectPress(item)}
+                    disabled={actionLoading}
                   >
                     <CloseCircle color='#000' />
                   </TouchableOpacity>
@@ -2269,7 +2414,7 @@ const CustomerList = ({ navigation }) => {
               </AppText>
             </TouchableOpacity>
           )}
-          {hasWaitingForApprovalTabPermission && (
+          {/* {hasWaitingForApprovalTabPermission && ( */}
             <TouchableOpacity
               ref={(ref) => tabRefs.current['waitingForApproval'] = ref}
               style={[styles.tab, activeTab === 'waitingForApproval' && styles.activeTab]}
@@ -2279,7 +2424,7 @@ const CustomerList = ({ navigation }) => {
                 Waiting for Approval ({tabCounts.waitingForApproval})
               </AppText>
             </TouchableOpacity>
-          )}
+          {/* )} */}
           {hasNotOnboardedTabPermission && (
             <TouchableOpacity
               ref={(ref) => tabRefs.current['notOnboarded'] = ref}
@@ -2549,6 +2694,19 @@ const CustomerList = ({ navigation }) => {
           }}
           onConfirm={handleRejectConfirm}
           customerName={selectedCustomerForAction?.customerName}
+        />
+
+        {/* Verify Modal */}
+        <ApproveCustomerModal
+          visible={verifyModalVisible}
+          onClose={() => {
+            setVerifyModalVisible(false);
+            setLatestDraftData(null);
+            setSelectedCustomerForAction(null);
+          }}
+          onConfirm={handleVerifyConfirm}
+          customerName={selectedCustomerForAction?.customerName}
+          loading={actionLoading}
         />
 
         <WorkflowTimelineModal

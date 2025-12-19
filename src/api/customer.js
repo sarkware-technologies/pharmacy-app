@@ -337,6 +337,23 @@ export const customerAPI = {
         }
     },
 
+    // Get field list (field team members with customerId and isStaging)
+    getFieldList: async (page = 1, limit = 20, customerId, isStaging = false) => {
+        try {
+            const payload = {
+                page,
+                limit,
+                customerId,
+                isStaging
+            };
+            const response = await apiClient.post('/user-management/company-user/field-list', payload);
+            return response;
+        } catch (error) {
+            console.error('Error fetching field list:', error);
+            throw error;
+        }
+    },
+
     // Get distributors list
     getDistributors: async (page = 1, limit = 20) => {
         try {
@@ -626,6 +643,28 @@ export const customerAPI = {
             return response;
         } catch (error) {
             console.error('Error fetching user-wise audit:', error);
+            throw error;
+        }
+    },
+
+    // Draft edit for workflow actions (used when mapping divisions from other divisions)
+    draftEdit: async (instanceId, payload) => {
+        try {
+            const response = await apiClient.post(`/approval/workflow-actions/${instanceId}/draft-edit`, payload);
+            return response;
+        } catch (error) {
+            console.error('Error in draft edit:', error);
+            throw error;
+        }
+    },
+
+    // Get latest draft for workflow actions
+    getLatestDraft: async (instanceId, actorId) => {
+        try {
+            const response = await apiClient.get(`/approval/workflow-actions/${instanceId}/latest-draft/${actorId}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching latest draft:', error);
             throw error;
         }
     },

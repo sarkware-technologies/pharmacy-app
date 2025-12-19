@@ -94,7 +94,9 @@ const CustomerDetail = ({ navigation, route }) => {
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [sendBackModalVisible, setSendBackModalVisible] = useState(false);
+  const [verifyModalVisible, setVerifyModalVisible] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [latestDraftData, setLatestDraftData] = useState(null);
   const [customerGroups, setCustomerGroups] = useState([]);
   const [isEditingCustomerGroup, setIsEditingCustomerGroup] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
@@ -118,7 +120,7 @@ const CustomerDetail = ({ navigation, route }) => {
   // Fetch customer details on mount - FIXED to prevent double API calls
   useEffect(() => {
     const customerId = customer?.stgCustomerId || customer?.customerId;
-    const isStaging = customer?.statusName === 'NOT-ONBOARDED' ? false : (customer?.statusName === 'PENDING' ? true : false);
+    const isStaging = customer?.statusName === 'ACTIVE' ? false : true;
 
     if (customerId) {
       dispatch(setCurrentCustomerId(customerId));
@@ -298,7 +300,7 @@ const CustomerDetail = ({ navigation, route }) => {
       // Show success message
       // Refresh customer details to get updated data
       const customerId = customer?.stgCustomerId || customer?.customerId;
-      const isStaging = customer?.statusName === 'NOT-ONBOARDED' ? false : (customer?.statusName === 'PENDING' ? true : false);
+      const isStaging = customer?.statusName === 'ACTIVE' ? false : true;
 
       if (customerId) {
         dispatch(fetchCustomerDetails({
@@ -1061,6 +1063,103 @@ const CustomerDetail = ({ navigation, route }) => {
     }
   };
 
+  // Handle verify customer (for LINK_DT action)
+  // Handle Verify button click - fetch latest draft first
+  const handleVerifyClick = async () => {
+    try {
+      setActionLoading(true);
+      const instanceId = selectedCustomer?.instaceId || selectedCustomer?.stgCustomerId || customer?.instaceId || customer?.stgCustomerId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+
+      if (!instanceId || !actorId) {
+        showToast('Missing instance ID or actor ID', 'error');
+        return;
+      }
+
+      // Fetch latest draft data
+      const latestDraftResponse = await customerAPI.getLatestDraft(instanceId, actorId);
+      
+      if (latestDraftResponse?.data?.data) {
+        setLatestDraftData(latestDraftResponse.data.data);
+        setVerifyModalVisible(true);
+      } else {
+        showToast('Failed to fetch latest draft data', 'error');
+      }
+    } catch (error) {
+      console.error('Error fetching latest draft:', error);
+      showToast(`Failed to fetch latest draft: ${error.message}`, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handle Verify confirmation - call workflow action API with latest draft data
+  const handleVerifyConfirm = async (comment) => {
+    try {
+      setActionLoading(true);
+      const instanceId = selectedCustomer?.instaceId || selectedCustomer?.stgCustomerId || customer?.instaceId || customer?.stgCustomerId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+
+      if (!instanceId || !actorId) {
+        showToast('Missing instance ID or actor ID', 'error');
+        return;
+      }
+
+      // Get data from latest draft
+      const draftData = latestDraftData;
+      if (!draftData) {
+        showToast('Latest draft data not available', 'error');
+        return;
+      }
+
+      // Extract data from latest draft response
+      const parallelGroup = draftData?.parallelGroup || selectedCustomer?.instance?.stepInstances?.[0]?.parallelGroup || 1;
+      const stepOrder = draftData?.stepOrder || selectedCustomer?.instance?.stepInstances?.[0]?.stepOrder || 1;
+      const draftEdits = draftData?.draftEdits || {};
+
+      // Build dataChanges from latest draft
+      const dataChanges = {
+        mapping: draftEdits.mapping || {},
+        customerGroupId: draftEdits.customerGroupId || selectedCustomer?.customerGroupId || customer?.customerGroupId,
+      };
+
+      // Add divisions if present
+      if (draftEdits.divisions && draftEdits.divisions.length > 0) {
+        dataChanges.divisions = draftEdits.divisions;
+      }
+
+      // Add distributors if present
+      if (draftEdits.distributors && draftEdits.distributors.length > 0) {
+        dataChanges.distributors = draftEdits.distributors;
+      }
+
+      const actionDataPayload = {
+        action: "APPROVE",
+        parallelGroup: parallelGroup,
+        stepOrder: stepOrder,
+        actorId: actorId,
+        comments: comment || "approved",
+        dataChanges: dataChanges,
+      };
+
+      const response = await customerAPI.workflowAction(instanceId, actionDataPayload);
+
+      setVerifyModalVisible(false);
+      setLatestDraftData(null);
+      showToast(`Customer verified successfully!`, 'success');
+
+      // Navigate back after verification
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
+    } catch (error) {
+      console.error('Error verifying customer:', error);
+      showToast(`Failed to verify customer: ${error.message}`, 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Handle reject customer
   const handleRejectConfirm = async (comment) => {
     try {
@@ -1133,7 +1232,7 @@ const CustomerDetail = ({ navigation, route }) => {
           {/* RIGHT SECTION – 40% */}
           <View style={styles.rightSection}>
 
-            {activeTab === 'details' ?
+            {activeTab === 'details' ? (
               <TouchableOpacity
                 style={styles.logsButton}
               >
@@ -1144,24 +1243,59 @@ const CustomerDetail = ({ navigation, route }) => {
                 />
                 <AppText style={styles.logsButtonText}>Logs</AppText>
               </TouchableOpacity>
+            ) : (
+              <>
+                {/* Approve/Reject buttons for APPROVE action */}
+                {customer?.statusName === 'PENDING' && customer?.action === 'APPROVE' && (
+                  <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+                    <View style={styles.topActionButtons}>
+                      <TouchableOpacity 
+                        style={styles.topApproveButton}
+                        onPress={() => setApproveModalVisible(true)}
+                        disabled={actionLoading}
+                      >
+                        <MaterialIcons name="check" size={14} color="#fff" />
+                        <AppText style={styles.topApproveButtonText}>Approve</AppText>
+                      </TouchableOpacity>
 
-              :
+                      <TouchableOpacity 
+                        style={styles.topRejectButton}
+                        onPress={() => setRejectModalVisible(true)}
+                        disabled={actionLoading}
+                      >
+                        <Icon name="close" size={14} color="#2B2B2B" />
+                      </TouchableOpacity>
+                    </View>
+                  </PermissionWrapper>
+                )}
 
-              (customer?.statusName === 'PENDING' && customer?.action === 'APPROVE') && (
-                <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
-                  <View style={styles.topActionButtons}>
-                    <TouchableOpacity style={styles.topApproveButton}>
-                      <MaterialIcons name="check" size={14} color="#fff" />
-                      <AppText style={styles.topApproveButtonText}>Approve</AppText>
-                    </TouchableOpacity>
+                {/* Verify/Reject buttons for LINK_DT action */}
+                {(customer?.action === 'LINK_DT' || selectedCustomer?.action === 'LINK_DT') && 
+                 (customer?.statusName === 'IN_PROGRESS' || customer?.statusName === 'PENDING' || 
+                  selectedCustomer?.statusName === 'IN_PROGRESS' || selectedCustomer?.statusName === 'PENDING') && (
+                  <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+                    <View style={styles.topActionButtons}>
+                      <TouchableOpacity 
+                        style={styles.topVerifyButton}
+                        onPress={handleVerifyClick}
+                        disabled={actionLoading}
+                      >
+                        <MaterialIcons name="check" size={14} color="#fff" />
+                        <AppText style={styles.topVerifyButtonText}>Verify</AppText>
+                      </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.topRejectButton}>
-                      <Icon name="close" size={14} color="#2B2B2B" />
-                    </TouchableOpacity>
-                  </View>
-                </PermissionWrapper>
-              )
-            }
+                      <TouchableOpacity 
+                        style={styles.topRejectButton}
+                        onPress={() => setRejectModalVisible(true)}
+                        disabled={actionLoading}
+                      >
+                        <CloseCircle color="#2B2B2B" />
+                      </TouchableOpacity>
+                    </View>
+                  </PermissionWrapper>
+                )}
+              </>
+            )            }
 
           </View>
         </View>
@@ -1540,6 +1674,17 @@ const CustomerDetail = ({ navigation, route }) => {
           hasApprovePermission={customer?.action === 'APPROVE'}
           isCustomerActive={customer?.statusName === 'ACTIVE' || selectedCustomer?.statusName === 'ACTIVE'}
           customerRequestedDivisions={selectedCustomer?.divisions || []}
+          instanceId={(() => {
+            const statusName = customer?.statusName || selectedCustomer?.statusName;
+            // If status is ACTIVE, use stageId[0]
+            if (statusName === 'ACTIVE') {
+              return selectedCustomer?.stageId?.[0] || customer?.stageId?.[0];
+            }
+            // For PENDING and other customers, use stageId[0] or stgCustomerId
+            return selectedCustomer?.stageId?.[0] || customer?.stageId?.[0] || selectedCustomer?.stgCustomerId || customer?.stgCustomerId;
+          })()}
+          customerGroupId={selectedCustomer?.customerGroupId || customer?.customerGroupId}
+          action={customer?.action || selectedCustomer?.action}
         />}
 
         {/* Action Buttons - Show only on Details tab and if customer action is APPROVE and status is PENDING */}
@@ -1590,6 +1735,50 @@ const CustomerDetail = ({ navigation, route }) => {
           </PermissionWrapper>
         )}
 
+        {/* Action Buttons for LINK_DT - Show only on Details tab and if customer action is LINK_DT */}
+        {activeTab === 'details' && (customer?.action === 'LINK_DT' || selectedCustomer?.action === 'LINK_DT') && (
+          <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+                style={styles.sendBackButton}
+                onPress={() => setSendBackModalVisible(true)}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <Reassigned color={colors.primary} width={18} height={18} />
+                    <AppText style={styles.sendBackButtonText}>Send Back</AppText>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.verifyButton}
+                onPress={handleVerifyClick}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <MaterialIcons name="check" size={20} color="#fff" />
+                    <AppText style={styles.verifyButtonText}>Verify</AppText>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.rejectButton}
+                onPress={() => setRejectModalVisible(true)}
+                disabled={actionLoading}
+              >
+                <CloseCircle color="#2B2B2B" />
+                <AppText style={styles.rejectButtonText}>Reject</AppText>
+              </TouchableOpacity>
+            </View>
+          </PermissionWrapper>
+        )}
+
         <DocumentModal />
 
         <CommentsModal
@@ -1597,7 +1786,6 @@ const CustomerDetail = ({ navigation, route }) => {
           onClose={() => setCommentsVisible(false)}
           moduleRecordId={(() => {
             const statusName = customer?.statusName || selectedCustomer?.statusName;
-            // If status is ACTIVE, use stageId[0] (staging ID)
             if (statusName === 'ACTIVE') {
               return selectedCustomer?.stageId?.[0] || customer?.stageId?.[0] || selectedCustomer?.stgCustomerId || customer?.stgCustomerId;
             }
@@ -1633,6 +1821,19 @@ const CustomerDetail = ({ navigation, route }) => {
           titleText={'Are you sure you want to\nSend back customer?'}
           confirmLabel="Send Back"
           requireComment={true}
+        />
+
+        {/* Verify Modal */}
+        <ApproveCustomerModal
+          visible={verifyModalVisible}
+          onClose={() => {
+            setVerifyModalVisible(false);
+            setLatestDraftData(null);
+          }}
+          onConfirm={handleVerifyConfirm}
+          title="Verify Customer"
+          actionType="verify"
+          loading={actionLoading}
         />
 
       </View>
@@ -2076,7 +2277,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-
+  verifyButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    gap: 8,
+  },
+  verifyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
   sendBackButton: {
     flex: 1,
     flexDirection: 'row',
@@ -2152,6 +2367,20 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   topApproveButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  topVerifyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    gap: 6,
+  },
+  topVerifyButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',

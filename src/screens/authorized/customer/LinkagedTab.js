@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unstable-nested-components */
 /* eslint-disable no-dupe-keys */
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,7 @@ import {
 } from '../../../components/OnboardConfirmModel';
 import FilterModal from '../../../components/FilterModal';
 import { customerAPI } from '../../../api/customer';
-import { getDistributors } from '../../../api/distributor';
+import { getDistributors, getPreferredDistributors as distributorAPI_getPreferredDistributors } from '../../../api/distributor';
 import { useSelector } from 'react-redux';
 import { selectCurrentCustomerId } from '../../../redux/slices/customerSlice';
 import { AppText, AppInput } from '../../../components';
@@ -116,7 +116,10 @@ export const LinkagedTab = ({
   mappingData = null,
   hasApprovePermission = false,
   isCustomerActive = false,
-  customerRequestedDivisions = []
+  customerRequestedDivisions = [],
+  instanceId = null,
+  customerGroupId = null,
+  action = null
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('divisions');
   const [activeDistributorTab, setActiveDistributorTab] = useState('preferred');
@@ -127,6 +130,8 @@ export const LinkagedTab = ({
   const [allDivisionsSelected, setAllDivisionsSelected] = useState(
     mockDivisions.allDivisions.filter(d => d.selected),
   );
+  // State to track organization code selection (SPIL/SPILL) for each division
+  const [divisionOrgCodes, setDivisionOrgCodes] = useState({}); // { divisionId: { SPIL: boolean, SPILL: boolean } }
   // Debounced search for All Distributors (prevents reloading whole page on each keystroke)
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -174,7 +179,15 @@ export const LinkagedTab = ({
 
   const loggedInUser = useSelector(state => state.auth.user);
   const reduxCustomerId = useSelector(selectCurrentCustomerId);
+  const selectedCustomer = useSelector(state => state.customer.selectedCustomer);
   const effectiveCustomerId = reduxCustomerId || customerId;
+  
+  // Get instanceId from customerDetails response (selectedCustomer from Redux)
+  // Priority: selectedCustomer.instaceId > selectedCustomer.instanceId > prop instanceId
+
+  console.log(selectedCustomer, "selectedCustomer");
+  console.log(instanceId, "instanceId from props");
+  const instanceIdFromDetails = selectedCustomer?.instaceId || selectedCustomer?.instanceId || instanceId;
 
   // Permission state for Other Division Section
   const [hasOtherDivisionPermission, setHasOtherDivisionPermission] = useState(true);
@@ -214,6 +227,101 @@ export const LinkagedTab = ({
     checkPermissions();
   }, []);
 
+  // Helper function to fetch latest draft and populate divisions and distributors
+  const fetchLatestDraftData = useCallback(async () => {
+    // Only fetch if instanceId is available
+    if (!instanceIdFromDetails) {
+      // If no instanceId, just use the prop divisions
+      setMergedRequestedDivisions(customerRequestedDivisions);
+      return;
+    }
+
+    const actorId = loggedInUser?.userId || loggedInUser?.id;
+    if (!actorId) {
+      // If no actorId, just use the prop divisions
+      setMergedRequestedDivisions(customerRequestedDivisions);
+      return;
+    }
+
+    try {
+      console.log('Fetching latest draft for instanceId:', instanceIdFromDetails, 'actorId:', actorId);
+      const response = await customerAPI.getLatestDraft(instanceIdFromDetails, actorId);
+      
+      if (response?.data?.success && response?.data?.hasDraft && response?.data?.draftEdits) {
+        const draftEdits = response.data.draftEdits;
+        console.log('Latest draft data found:', draftEdits);
+
+        // Handle divisions from draft
+        if (draftEdits.divisions && Array.isArray(draftEdits.divisions)) {
+          const draftDivisions = draftEdits.divisions;
+          console.log('Draft divisions found:', draftDivisions);
+
+          // Merge draft divisions with existing customerRequestedDivisions
+          // Create a map of existing divisions by divisionId to avoid duplicates
+          const existingDivisionsMap = new Map();
+          customerRequestedDivisions.forEach(div => {
+            const key = String(div.divisionId || div.id);
+            existingDivisionsMap.set(key, div);
+          });
+
+          // Add draft divisions that don't already exist
+          draftDivisions.forEach(draftDiv => {
+            const key = String(draftDiv.divisionId);
+            if (!existingDivisionsMap.has(key)) {
+              // Format draft division to match the structure of customerRequestedDivisions
+              existingDivisionsMap.set(key, {
+                divisionId: draftDiv.divisionId,
+                divisionCode: draftDiv.divisionCode,
+                divisionName: draftDiv.divisionName,
+                isOpen: draftDiv.isOpen || false,
+              });
+            }
+          });
+
+          // Convert map back to array
+          const merged = Array.from(existingDivisionsMap.values());
+          console.log('Merged requested divisions:', merged);
+          setMergedRequestedDivisions(merged);
+        } else {
+          // No divisions in draft, use prop divisions
+          setMergedRequestedDivisions(customerRequestedDivisions);
+        }
+
+        // Handle distributors from draft - set as linked distributors
+        // ONLY use distributors from latest-draft response for linked distributors
+        if (draftEdits.distributors && Array.isArray(draftEdits.distributors)) {
+          const draftDistributors = draftEdits.distributors;
+          console.log('Draft distributors found, setting as linked distributors:', draftDistributors.length);
+          setLinkedDistributorsData(draftDistributors);
+        } else {
+          // If no distributors in draft, clear linked distributors
+          console.log('No distributors in draft, clearing linked distributors');
+          setLinkedDistributorsData([]);
+        }
+      } else {
+        // No draft, use prop divisions
+        console.log('No draft found, using prop divisions');
+        setMergedRequestedDivisions(customerRequestedDivisions);
+      }
+    } catch (error) {
+      console.error('Error fetching latest draft:', error);
+      // On error, just use the prop divisions
+      setMergedRequestedDivisions(customerRequestedDivisions);
+    }
+  }, [instanceIdFromDetails, customerRequestedDivisions, loggedInUser]);
+
+  // Legacy function name for backward compatibility
+  const fetchAndMergeDraftDivisions = fetchLatestDraftData;
+
+  // Fetch latest draft and merge divisions with requested divisions on mount/update
+  useEffect(() => {
+    fetchLatestDraftData();
+  }, [fetchLatestDraftData]);
+
+  // Note: Linked distributors are fetched from latest-draft API only
+  // No need to fetch separately - latest-draft is the source of truth
+  // The linkedDistributorIds Set is updated when linkedDistributorsData changes
+
   // Modal states
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showLinkDivisionsModal, setShowLinkDivisionsModal] = useState(false);
@@ -234,9 +342,12 @@ export const LinkagedTab = ({
   const [toastType, setToastType] = useState('success');
 
   // Field team states
-  const [fieldTeamData, setFieldTeamData] = useState(mockFieldData);
+  const [fieldTeamData, setFieldTeamData] = useState([]);
   const [fieldTeamLoading, setFieldTeamLoading] = useState(false);
   const [fieldTeamError, setFieldTeamError] = useState(null);
+  const [fieldTeamPage, setFieldTeamPage] = useState(1);
+  const [fieldTeamHasMore, setFieldTeamHasMore] = useState(true);
+  const [fieldTeamLoadingMore, setFieldTeamLoadingMore] = useState(false);
 
   // Distributors states
   const [allDistributorsData, setAllDistributorsData] = useState([]);
@@ -247,6 +358,17 @@ export const LinkagedTab = ({
   const [linkedDistributorsData, setLinkedDistributorsData] = useState([]);
   const [distributorsLoading, setDistributorsLoading] = useState(false);
   const [distributorsError, setDistributorsError] = useState(null);
+  
+  // State for linked distributor organization codes (SPLL/SPIL)
+  const [linkedDistributorOrgCodes, setLinkedDistributorOrgCodes] = useState({}); // { distributorId: 'SPLL' | 'SPIL' }
+  // State for linked distributor margins
+  const [linkedDistributorMargins, setLinkedDistributorMargins] = useState({}); // { distributorId: marginValue }
+  // State for linked distributor supply modes (1 = chargeback, else net rate)
+  const [linkedDistributorSupplyModes, setLinkedDistributorSupplyModes] = useState({}); // { distributorId: '1' | '0' }
+  // State for organization code dropdown visibility
+  const [showLinkedOrgCodeDropdown, setShowLinkedOrgCodeDropdown] = useState({}); // { distributorId: boolean }
+  // State for "All Divisions" dropdown visibility
+  const [showAllDivisionsDropdown, setShowAllDivisionsDropdown] = useState({}); // { distributorId: boolean }
 
   // Filter states for distributors
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -276,6 +398,36 @@ export const LinkagedTab = ({
   const [divisionsError, setDivisionsError] = useState(null);
   const [linkingDivisions, setLinkingDivisions] = useState(false);
   const [blockingDivision, setBlockingDivision] = useState(null); // Track which division is being blocked/unblocked
+  // Merged requested divisions (combining prop divisions with draft divisions)
+  const [mergedRequestedDivisions, setMergedRequestedDivisions] = useState(customerRequestedDivisions);
+  
+  // Flags to track if data has been fetched for each tab
+  const [divisionsDataFetched, setDivisionsDataFetched] = useState(false);
+  const [distributorsDataFetched, setDistributorsDataFetched] = useState(false);
+  const [fieldDataFetched, setFieldDataFetched] = useState(false);
+  const [hierarchyDataFetched, setHierarchyDataFetched] = useState(false);
+  
+  // Ref to track if we need to fetch preferred distributors on distributors tab activation
+  const shouldFetchPreferredDistributorsRef = useRef(false);
+
+  // Filter otherDivisionsData to exclude divisions that are already in mergedRequestedDivisions
+  // This ensures divisions moved to "Requested" don't appear in "Other" column
+  const filteredOtherDivisionsData = useMemo(() => {
+    if (!mergedRequestedDivisions || mergedRequestedDivisions.length === 0) {
+      return otherDivisionsData;
+    }
+
+    // Create a Set of division IDs that are in mergedRequestedDivisions
+    const requestedDivisionIds = new Set(
+      mergedRequestedDivisions.map(div => String(div.divisionId || div.id))
+    );
+
+    // Filter out divisions that are already in requested divisions
+    return otherDivisionsData.filter(div => {
+      const divisionId = String(div.divisionId || div.id);
+      return !requestedDivisionIds.has(divisionId);
+    });
+  }, [otherDivisionsData, mergedRequestedDivisions]);
 
   // Tab scroll ref for centering active tab
   const tabScrollRef = useRef(null);
@@ -296,10 +448,33 @@ export const LinkagedTab = ({
   };
 
   const handleTabPress = async tabName => {
-
     console.log(tabName, "tabName tab press");
+    
     // First reset the list and set active tab
     setActiveSubTab(tabName);
+
+    // Fetch latest draft data when LinkagedTab is clicked/visible
+    // This populates requested divisions and linked distributors from draft
+    await fetchLatestDraftData();
+
+    // Fetch data based on the tab clicked
+    if (tabName === 'divisions' && !divisionsDataFetched) {
+      await fetchDivisionsData();
+    } else if (tabName === 'distributors' && !distributorsDataFetched) {
+      // Note: linked distributors are already set from latest-draft API above
+      // Latest-draft is the ONLY source for linked distributors data
+      // Mark as fetched and set flag to trigger fetch
+      setDistributorsDataFetched(true);
+      shouldFetchPreferredDistributorsRef.current = true;
+    } else if (tabName === 'field' && !fieldDataFetched) {
+      // Reset pagination when switching to field tab
+      setFieldTeamPage(1);
+      setFieldTeamHasMore(true);
+      await fetchFieldTeamData(1, false);
+    } else if (tabName === 'hierarchy' && !hierarchyDataFetched) {
+      // Hierarchy uses mappingData prop, just mark as fetched
+      setHierarchyDataFetched(true);
+    }
 
     // Scroll the tab into visible area after a small delay to ensure layout is ready
     setTimeout(() => {
@@ -328,6 +503,18 @@ export const LinkagedTab = ({
 
   const handleDistributorTabPress = tabName => {
     setActiveDistributorTab(tabName);
+    
+    // Fetch data when switching distributor sub-tabs (only if distributors main tab is active)
+    if (activeSubTab === 'distributors' && distributorsDataFetched) {
+      if (tabName === 'preferred') {
+        fetchPreferredDistributorsData();
+      } else if (tabName === 'linked') {
+        // Note: Linked distributors come from latest-draft API only, no separate fetch needed
+        // Data is already set by fetchLatestDraftData() when tab is clicked
+      } else if (tabName === 'all') {
+        fetchDistributorsData();
+      }
+    }
 
     setTimeout(() => {
       if (
@@ -356,120 +543,194 @@ export const LinkagedTab = ({
   };
 
 
-  // derived local filter for Preferred Distributors (client-side search)
-  const filteredPreferredDistributors = useMemo(() => {
-    const q = (preferredSearchText || '').trim().toLowerCase();
-    if (!q) return preferredDistributorsData || [];
+  // Get linked distributor IDs to filter them out from preferred and all distributors
+  // Create a Set of linked distributor IDs for efficient filtering
+  // This ensures linked distributors are excluded from Preferred and All lists
+  const linkedDistributorIds = useMemo(() => {
+    const ids = (linkedDistributorsData || []).map(linked => {
+      // Handle both 'id' and 'distributorId' fields, convert to string
+      const id = linked.id || linked.distributorId;
+      return id != null ? String(id) : null;
+    }).filter(id => id && id !== 'undefined' && id !== 'null' && id !== '');
+    
+    console.log('LinkagedTab: linkedDistributorIds Set updated:', {
+      count: ids.length,
+      ids: Array.from(ids),
+      linkedDistributorsDataCount: linkedDistributorsData?.length || 0,
+    });
+    
+    return new Set(ids);
+  }, [linkedDistributorsData]);
 
-    return (preferredDistributorsData || []).filter(d => {
+  // derived local filter for Preferred Distributors (client-side search)
+  // Also filters out linked distributors to ensure they don't appear in Preferred list
+  const filteredPreferredDistributors = useMemo(() => {
+    // First, filter out linked distributors
+    let filtered = (preferredDistributorsData || []).filter(d => {
+      const distributorId = d.id || d.distributorId;
+      const idString = distributorId != null ? String(distributorId) : '';
+      const isLinked = idString && linkedDistributorIds.has(idString);
+      return !isLinked;
+    });
+
+    // Then apply search filter
+    const q = (preferredSearchText || '').trim().toLowerCase();
+    if (!q) return filtered;
+
+    return filtered.filter(d => {
       const name = (d.name || '').toLowerCase();
       const code = (d.code || '').toLowerCase();
       const city = (d.cityName || d.city || '').toLowerCase();
       // match on name, code or city (you can add other fields if needed)
       return name.includes(q) || code.includes(q) || city.includes(q);
     });
-  }, [preferredSearchText, preferredDistributorsData]);
+  }, [preferredSearchText, preferredDistributorsData, linkedDistributorIds]);
 
-  // Fetch divisions data on component mount
-  useEffect(() => {
-    const fetchDivisionsData = async () => {
+  // Function to fetch divisions data
+  const fetchDivisionsData = useCallback(async () => {
+    if (divisionsDataFetched || !effectiveCustomerId) {
+      return;
+    }
+
+    console.log(
+      'LinkagedTab: Fetching divisions for customerId:',
+      effectiveCustomerId,
+    );
+
+    try {
+      setDivisionsLoading(true);
+      setDivisionsError(null);
+
+      // Fetch customer's linked divisions
+      console.log('LinkagedTab: Calling getCustomerDivisions API...');
+      const customerDivisionsResponse =
+        await customerAPI.getCustomerDivisions(effectiveCustomerId);
       console.log(
-        'LinkagedTab: Fetching divisions for customerId:',
-        effectiveCustomerId,
+        'LinkagedTab: Customer divisions API response:',
+        customerDivisionsResponse,
       );
-      if (!effectiveCustomerId) {
-        console.log(
-          'LinkagedTab: No customerId provided, skipping divisions fetch',
-        );
-        return;
+
+      // Fetch all available divisions
+      console.log('LinkagedTab: Calling getAllDivisions API...');
+      const allDivisionsResponse = await customerAPI.getAllDivisions();
+      console.log(
+        'LinkagedTab: All divisions API response:',
+        allDivisionsResponse,
+      );
+
+      let openedDivisions = [];
+      let otherDivisions = [];
+
+      // Process customer's linked divisions (opened)
+      if (
+        customerDivisionsResponse?.data &&
+        Array.isArray(customerDivisionsResponse.data)
+      ) {
+        openedDivisions = customerDivisionsResponse.data;
+        console.log('LinkagedTab: Opened divisions:', openedDivisions.length);
       }
 
-      try {
-        setDivisionsLoading(true);
-        setDivisionsError(null);
-
-        // Fetch customer's linked divisions
-        console.log('LinkagedTab: Calling getCustomerDivisions API...');
-        const customerDivisionsResponse =
-          await customerAPI.getCustomerDivisions(effectiveCustomerId);
-        console.log(
-          'LinkagedTab: Customer divisions API response:',
-          customerDivisionsResponse,
+      // Process all available divisions and filter out already linked ones
+      if (
+        allDivisionsResponse?.data?.divisions &&
+        Array.isArray(allDivisionsResponse.data.divisions)
+      ) {
+        const linkedDivisionIds = openedDivisions.map(d =>
+          Number(d.divisionId),
         );
-
-        // Fetch all available divisions
-        console.log('LinkagedTab: Calling getAllDivisions API...');
-        const allDivisionsResponse = await customerAPI.getAllDivisions();
-        console.log(
-          'LinkagedTab: All divisions API response:',
-          allDivisionsResponse,
+        otherDivisions = allDivisionsResponse.data.divisions.filter(
+          d => !linkedDivisionIds.includes(Number(d.divisionId)),
         );
-
-        let openedDivisions = [];
-        let otherDivisions = [];
-
-        // Process customer's linked divisions (opened)
-        if (
-          customerDivisionsResponse?.data &&
-          Array.isArray(customerDivisionsResponse.data)
-        ) {
-          openedDivisions = customerDivisionsResponse.data;
-          console.log('LinkagedTab: Opened divisions:', openedDivisions.length);
-        }
-
-        // Process all available divisions and filter out already linked ones
-        if (
-          allDivisionsResponse?.data?.divisions &&
-          Array.isArray(allDivisionsResponse.data.divisions)
-        ) {
-          const linkedDivisionIds = openedDivisions.map(d =>
-            Number(d.divisionId),
-          );
-          otherDivisions = allDivisionsResponse.data.divisions.filter(
-            d => !linkedDivisionIds.includes(Number(d.divisionId)),
-          );
-          console.log('LinkagedTab: Other divisions:', otherDivisions.length);
-        }
-
-        setOpenedDivisionsData(openedDivisions);
-        setOtherDivisionsData(otherDivisions);
-      } catch (error) {
-        console.error('LinkagedTab: Error fetching divisions data:', error);
-        setDivisionsError(error.message);
-        setOtherDivisionsData([]);
-        setOpenedDivisionsData([]);
-      } finally {
-        setDivisionsLoading(false);
+        console.log('LinkagedTab: Other divisions:', otherDivisions.length);
       }
-    };
 
-    fetchDivisionsData();
-  }, [effectiveCustomerId]);
+      setOpenedDivisionsData(openedDivisions);
+      setOtherDivisionsData(otherDivisions);
+      setDivisionsDataFetched(true);
+    } catch (error) {
+      console.error('LinkagedTab: Error fetching divisions data:', error);
+      setDivisionsError(error.message);
+      setOtherDivisionsData([]);
+      setOpenedDivisionsData([]);
+    } finally {
+      setDivisionsLoading(false);
+    }
+  }, [divisionsDataFetched, effectiveCustomerId]);
 
-  // Fetch field team data on component mount
+  // Fetch divisions data on component mount (since it's the default tab)
   useEffect(() => {
-    const fetchFieldTeamData = async () => {
-      try {
+    if (activeSubTab === 'divisions') {
+      fetchDivisionsData();
+    }
+  }, [activeSubTab, fetchDivisionsData]);
+
+  // Function to fetch field team data
+  const fetchFieldTeamData = useCallback(async (page = 1, loadMore = false) => {
+    if (!effectiveCustomerId) {
+      console.log('No customerId provided, skipping field list fetch');
+      return;
+    }
+
+    // Determine isStaging based on customer status
+    // If statusName is ACTIVE, isStaging=false, else isStaging=true
+    const isStaging = selectedCustomer?.statusName === 'ACTIVE' ? false : true;
+
+    try {
+      if (loadMore) {
+        setFieldTeamLoadingMore(true);
+      } else {
         setFieldTeamLoading(true);
         setFieldTeamError(null);
-        const response = await customerAPI.getCompanyUsers(1, 20);
+      }
 
-        if (response?.data?.companyUsers) {
-          setFieldTeamData(response.data.companyUsers);
+      const response = await customerAPI.getFieldList(page, 10, effectiveCustomerId, isStaging);
+      console.log('Field list API response:', response);
+
+      if (response?.data) {
+        // Extract data from response - could be in different formats
+        const newData = response.data.data || response.data.companyUsers || response.data.fieldList || response.data || [];
+        
+        if (loadMore) {
+          // Append new data to existing data
+          setFieldTeamData(prev => [...prev, ...newData]);
         } else {
-          setFieldTeamData([]);
+          // Replace data for first load
+          setFieldTeamData(newData);
+          setFieldDataFetched(true);
         }
-      } catch (error) {
-        console.error('Error fetching field team data:', error);
+
+        // Check if there's more data to load
+        // If we got a full page (10 items), there might be more
+        const hasMore = Array.isArray(newData) && newData.length === 10;
+        setFieldTeamHasMore(hasMore);
+        
+        if (hasMore) {
+          setFieldTeamPage(page + 1);
+        } else {
+          setFieldTeamHasMore(false);
+        }
+      } else {
+        if (!loadMore) {
+          setFieldTeamData([]);
+          setFieldDataFetched(true);
+        }
+        setFieldTeamHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error fetching field team data:', error);
+      if (!loadMore) {
         setFieldTeamError(error.message);
         setFieldTeamData([]);
-      } finally {
+      }
+      setFieldTeamHasMore(false);
+    } finally {
+      if (loadMore) {
+        setFieldTeamLoadingMore(false);
+      } else {
         setFieldTeamLoading(false);
       }
-    };
-
-    fetchFieldTeamData();
-  }, []);
+    }
+  }, [effectiveCustomerId, selectedCustomer?.statusName]);
 
   // Process and log mapping data from customer details API
   useEffect(() => {
@@ -502,163 +763,268 @@ export const LinkagedTab = ({
     }
   }, [mappingData]);
 
-  // Fetch preferred distributors when Preferred tab is active
-  useEffect(() => {
-    const fetchPreferredDistributorsData = async () => {
-      if (activeDistributorTab !== 'preferred' || !effectiveCustomerId) {
-        return;
-      }
+  // Function to fetch preferred distributors
+  const fetchPreferredDistributorsData = useCallback(async () => {
+    if (activeDistributorTab !== 'preferred' || !effectiveCustomerId) {
+      return;
+    }
+
+    console.log(
+      'LinkagedTab: Fetching preferred distributors for customerId:',
+      effectiveCustomerId,
+    );
+
+    try {
+      setDistributorsLoading(true);
+      setDistributorsError(null);
+
+      // Get stationCode from loggedInUser
+      const stationCode = loggedInUser?.stationCode || 
+                         loggedInUser?.userDetails?.stationCodes?.[0]?.stationCode || 
+                         loggedInUser?.userDetails?.stationCode || 
+                         '';
+
+      // Extract divisionIds from mergedRequestedDivisions
+      // Ensure we get all divisionIds from the requested divisions
+      const divisionIds = (mergedRequestedDivisions || [])
+        .map(div => {
+          // Try divisionId first, then id, handle both string and number
+          const id = div.divisionId || div.id;
+          return id != null ? String(id) : null;
+        })
+        .filter(id => id != null && id !== '' && id !== 'undefined');
 
       console.log(
-        'LinkagedTab: Fetching preferred distributors for customerId:',
-        effectiveCustomerId,
+        'LinkagedTab: Fetching preferred distributors',
+        {
+          stationCode,
+          divisionIds,
+          divisionIdsCount: divisionIds.length,
+          mergedRequestedDivisionsCount: mergedRequestedDivisions?.length || 0,
+          mergedRequestedDivisions: mergedRequestedDivisions,
+        }
       );
 
-      try {
-        setDistributorsLoading(true);
-        setDistributorsError(null);
+      // Call API to get preferred distributors
+        const response = await distributorAPI_getPreferredDistributors(
+        1, // page
+        20, // limit
+        stationCode,
+        divisionIds,
+      );
 
-        // Call API to get linked distributors and divisions
-        const response = await customerAPI.getLinkedDistributorDivisions(
-          effectiveCustomerId,
-        );
-        console.log(
-          'LinkagedTab: Linked distributor divisions API response:',
-          response,
-        );
-
-        if (
-          response?.data?.customer?.distributorDetails &&
-          Array.isArray(response.data.customer.distributorDetails)
-        ) {
-          console.log(
-            'LinkagedTab: Setting preferredDistributorsData with',
-            response.data.customer.distributorDetails.length,
-            'distributors',
-          );
-          setPreferredDistributorsData(
-            response.data.customer.distributorDetails,
-          );
-        } else {
-          console.log(
-            'LinkagedTab: Invalid preferred distributors response format',
-          );
-          setPreferredDistributorsData([]);
-        }
-      } catch (error) {
-        console.error(
-          'LinkagedTab: Error fetching preferred distributors:',
-          error,
-        );
-        setDistributorsError(error.message);
+      if (response?.distributors && Array.isArray(response.distributors)) {
+        // Filter out linked distributors before setting the data
+        // Use the linkedDistributorIds Set which is already computed and memoized
+        const filteredDistributors = response.distributors.filter(distributor => {
+          const distributorId = String(distributor.id || distributor.distributorId || '');
+          return !linkedDistributorIds.has(distributorId);
+        });
+        setPreferredDistributorsData(filteredDistributors);
+      } else {
         setPreferredDistributorsData([]);
-      } finally {
-        setDistributorsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error(
+        'LinkagedTab: Error fetching preferred distributors:',
+        error,
+      );
+      setDistributorsError(error.message);
+      setPreferredDistributorsData([]);
+    } finally {
+      setDistributorsLoading(false);
+    }
+  }, [activeDistributorTab, effectiveCustomerId, loggedInUser, mergedRequestedDivisions, linkedDistributorIds]);
 
-    fetchPreferredDistributorsData();
-  }, [activeDistributorTab, effectiveCustomerId]);
-
-  // Fetch linked distributors when Linked tab is active
+  // Fetch preferred distributors when Preferred tab is active (only if distributors tab is already active)
   useEffect(() => {
-    const fetchLinkedDistributorsData = async () => {
-      if (activeDistributorTab !== 'linked' || !effectiveCustomerId) {
-        return;
-      }
+    console.log('LinkagedTab: Preferred distributors useEffect triggered', {
+      activeSubTab,
+      distributorsDataFetched,
+      activeDistributorTab,
+      effectiveCustomerId,
+      shouldFetch: shouldFetchPreferredDistributorsRef.current,
+    });
+    
+    if (
+      activeSubTab === 'distributors' && 
+      distributorsDataFetched && 
+      activeDistributorTab === 'preferred' && 
+      effectiveCustomerId &&
+      shouldFetchPreferredDistributorsRef.current
+    ) {
+      console.log('LinkagedTab: Calling fetchPreferredDistributorsData from useEffect');
+      shouldFetchPreferredDistributorsRef.current = false; // Reset flag
+      fetchPreferredDistributorsData();
+    } else {
+      console.log('LinkagedTab: Conditions not met for preferred distributors fetch', {
+        activeSubTabMatches: activeSubTab === 'distributors',
+        distributorsDataFetched,
+        activeDistributorTabMatches: activeDistributorTab === 'preferred',
+        hasEffectiveCustomerId: !!effectiveCustomerId,
+        shouldFetch: shouldFetchPreferredDistributorsRef.current,
+      });
+    }
+  }, [activeDistributorTab, activeSubTab, distributorsDataFetched, effectiveCustomerId, fetchPreferredDistributorsData]);
 
-      console.log(
-        'LinkagedTab: Fetching linked distributors for customerId:',
-        effectiveCustomerId,
+  // Function to fetch linked distributors using distributor/list API with divisionIds
+  // This function can be called regardless of which distributor sub-tab is active
+  const fetchLinkedDistributorsData = useCallback(async (forceFetch = false) => {
+    // Only check tab if not forcing fetch (for initial load)
+    if (!forceFetch && activeDistributorTab !== 'linked') {
+      return;
+    }
+
+    // Get divisionIds from mergedRequestedDivisions
+    const divisionIds = (mergedRequestedDivisions || []).map(div => 
+      String(div.divisionId || div.id)
+    ).filter(id => id && id !== 'undefined' && id !== 'null');
+
+    if (divisionIds.length === 0) {
+      console.log('LinkagedTab: No divisions available, setting empty linked distributors');
+      setLinkedDistributorsData([]);
+      return;
+    }
+
+    console.log(
+      'LinkagedTab: Fetching linked distributors with divisionIds:',
+      divisionIds,
+    );
+
+    try {
+      // Don't set loading state if we're fetching in background (for filtering)
+      if (activeDistributorTab === 'linked') {
+        setDistributorsLoading(true);
+      }
+      setDistributorsError(null);
+
+      // Call the distributor/list API with divisionIds for linked distributors
+      // API: /user-management/distributor/list?page=1&limit=20&divisionIds=143
+      // Note: stationCode is NOT sent for linked distributors
+      const response = await distributorAPI_getPreferredDistributors(
+        1, // page
+        20, // limit - use 20 as per API example
+        null, // stationCode - not needed for linked distributors
+        divisionIds,
       );
 
-      try {
-        setDistributorsLoading(true);
-        setDistributorsError(null);
+      console.log(
+        'LinkagedTab: Linked distributors API response:',
+        {
+          distributorsCount: response?.distributors?.length || 0,
+          total: response?.total || 0,
+          page: response?.page || 1,
+          limit: response?.limit || 20,
+          divisionIds,
+        },
+      );
 
-        const response = await customerAPI.getLinkedDistributorDivisions(
-          effectiveCustomerId,
-        );
+      // Handle response - API returns { distributors: [], page: 1, limit: 20, total: 38 }
+      if (response?.distributors && Array.isArray(response.distributors)) {
         console.log(
-          'LinkagedTab: Linked distributor divisions (linked tab) API response:',
-          response,
+          'LinkagedTab: Linked distributors fetched successfully',
+          {
+            count: response.distributors.length,
+            total: response.total,
+            page: response.page,
+            limit: response.limit,
+          }
         );
-
-        if (
-          response?.data?.customer?.distributorDetails &&
-          Array.isArray(response.data.customer.distributorDetails)
-        ) {
-          setLinkedDistributorsData(response.data.customer.distributorDetails);
-        } else {
-          setLinkedDistributorsData([]);
-        }
-      } catch (error) {
-        console.error(
-          'LinkagedTab: Error fetching linked distributors:',
-          error,
-        );
-        setDistributorsError(error.message);
+        setLinkedDistributorsData(response.distributors);
+      } else {
+        console.log('LinkagedTab: No linked distributors found or invalid response format');
         setLinkedDistributorsData([]);
-      } finally {
+      }
+    } catch (error) {
+      console.error(
+        'LinkagedTab: Error fetching linked distributors:',
+        error,
+      );
+      setDistributorsError(error.message);
+      setLinkedDistributorsData([]);
+    } finally {
+      if (activeDistributorTab === 'linked') {
         setDistributorsLoading(false);
       }
-    };
+    }
+  }, [activeDistributorTab, mergedRequestedDivisions]);
 
-    fetchLinkedDistributorsData();
-  }, [activeDistributorTab, effectiveCustomerId]);
+  // Note: Linked distributors come from latest-draft API only
+  // No separate fetch needed - data is set by fetchLatestDraftData() when tab is clicked
 
-  useEffect(() => {
-    const fetchDistributorsData = async () => {
-      if (activeDistributorTab !== 'all') {
-        return;
-      }
+  // Function to fetch all distributors
+  const fetchDistributorsData = useCallback(async () => {
+    if (activeDistributorTab !== 'all') {
+      return;
+    }
 
-      console.log('LinkagedTab: Fetching all distributors...', {
-        query: debouncedSearch,
-      });
+    console.log('LinkagedTab: Fetching all distributors...', {
+      query: debouncedSearch,
+    });
 
-      try {
-        setDistributorsLoading(true);
-        setDistributorsError(null);
+    try {
+      setDistributorsLoading(true);
+      setDistributorsError(null);
 
-        // Call API to get all distributors with pagination (search uses debouncedSearch)
-        const response = await getDistributors(1, 100, debouncedSearch);
-        console.log('LinkagedTab: Distributors API response:', response);
+      // Call API to get all distributors with pagination (search uses debouncedSearch)
+      const response = await getDistributors(1, 100, debouncedSearch);
+      console.log('LinkagedTab: Distributors API response:', response);
 
-        if (response?.distributors && Array.isArray(response.distributors)) {
-          console.log(
-            'LinkagedTab: Setting allDistributorsData with',
-            response.distributors.length,
-            'distributors',
-          );
-          setAllDistributorsData(response.distributors);
-          setFilteredDistributorsData(response.distributors);
-        } else {
-          console.log('LinkagedTab: Invalid distributors response format');
-          setAllDistributorsData([]);
-          setFilteredDistributorsData([]);
-        }
-      } catch (error) {
-        console.error('LinkagedTab: Error fetching distributors:', error);
-        setDistributorsError(error.message);
+      if (response?.distributors && Array.isArray(response.distributors)) {
+        // Filter out linked distributors before setting the data
+        // Use the linkedDistributorIds Set which is already computed and memoized
+        const filteredDistributors = response.distributors.filter(distributor => {
+          const distributorId = String(distributor.id || distributor.distributorId || '');
+          return !linkedDistributorIds.has(distributorId);
+        });
+        
+        console.log(
+          'LinkagedTab: Setting allDistributorsData with',
+          filteredDistributors.length,
+          'distributors (filtered from',
+          response.distributors.length,
+          'total, linkedCount:',
+          linkedDistributorIds.size,
+          ')',
+        );
+        setAllDistributorsData(filteredDistributors);
+        setFilteredDistributorsData(filteredDistributors);
+      } else {
+        console.log('LinkagedTab: Invalid distributors response format');
         setAllDistributorsData([]);
         setFilteredDistributorsData([]);
-      } finally {
-        setDistributorsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('LinkagedTab: Error fetching distributors:', error);
+      setDistributorsError(error.message);
+      setAllDistributorsData([]);
+      setFilteredDistributorsData([]);
+    } finally {
+      setDistributorsLoading(false);
+    }
+  }, [activeDistributorTab, debouncedSearch, linkedDistributorIds]);
 
-    fetchDistributorsData();
-  }, [activeDistributorTab, debouncedSearch]);
+  // Fetch all distributors when All tab is active (only if distributors tab is already active)
+  useEffect(() => {
+    if (activeSubTab === 'distributors' && distributorsDataFetched && activeDistributorTab === 'all') {
+      fetchDistributorsData();
+    }
+  }, [activeDistributorTab, activeSubTab, distributorsDataFetched, fetchDistributorsData]);
 
-  // Apply filters to distributors
+  // Apply filters to distributors (also filters out linked distributors)
   useEffect(() => {
     if (allDistributorsData.length === 0) {
       setFilteredDistributorsData([]);
       return;
     }
 
-    let filtered = [...allDistributorsData];
+    // First, filter out linked distributors to ensure they don't appear in All list
+    let filtered = allDistributorsData.filter(distributor => {
+      const distributorId = distributor.id || distributor.distributorId;
+      const idString = distributorId != null ? String(distributorId) : '';
+      const isLinked = idString && linkedDistributorIds.has(idString);
+      return !isLinked;
+    });
 
     // Apply state filter
     if (
@@ -681,7 +1047,7 @@ export const LinkagedTab = ({
     }
 
     setFilteredDistributorsData(filtered);
-  }, [allDistributorsData, distributorFilters]);
+  }, [allDistributorsData, distributorFilters, linkedDistributorIds]);
 
   const handleFilterApply = filters => {
     setDistributorFilters({
@@ -739,8 +1105,8 @@ export const LinkagedTab = ({
   };
 
   const handleLinkDistributors = async () => {
-    if (!effectiveCustomerId) {
-      showToast('Customer ID not found', 'error');
+    if (selectedDistributors.length === 0) {
+      showToast('Please select at least one distributor', 'error');
       return;
     }
 
@@ -748,6 +1114,11 @@ export const LinkagedTab = ({
     const selectedDists = preferredDistributorsData.filter(d =>
       selectedDistributors.includes(d.id),
     );
+
+    if (selectedDists.length === 0) {
+      showToast('No valid distributors selected', 'error');
+      return;
+    }
 
     for (const distributor of selectedDists) {
       // Check if margin is filled
@@ -773,47 +1144,257 @@ export const LinkagedTab = ({
     try {
       setLinkingDistributors(true);
 
-      // Build the mappings array from selected distributors
-      const mappings = selectedDists.map(distributor => ({
-        distributorId: Number(distributor.id),
-        divisions: openedDivisionsData.map(div => ({
-          id: Number(div.divisionId),
-          isActive: true,
-        })),
-        supplyModeId: 3, // Default supply mode
-        margin: Number(distributorMargins[distributor.id] || 0),
+      // Get instanceId from customerDetails response (selectedCustomer from Redux)
+      const effectiveInstanceId = instanceIdFromDetails;
+      
+      if (!effectiveInstanceId) {
+        showToast('Instance ID not found. Please refresh and try again.', 'error');
+        setLinkingDistributors(false);
+        return;
+      }
+
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+
+      // Format all existing divisions from mergedRequestedDivisions
+      const formattedDivisions = (mergedRequestedDivisions || []).map(div => ({
+        divisionId: String(div.divisionId || div.id),
+        divisionCode: div.divisionCode || '',
+        divisionName: div.divisionName || '',
+        isOpen: div.isOpen !== undefined ? div.isOpen : false,
       }));
 
-      const payload = { mappings };
+      // Get existing linked distributors to merge with newly selected ones
+      // Also check latest draft for distributors that might be in draft but not yet linked
+      let existingDistributorsFromDraft = [];
+      try {
+        const draftResponse = await customerAPI.getLatestDraft(effectiveInstanceId, actorId);
+        if (draftResponse?.data?.success && draftResponse?.data?.hasDraft && draftResponse?.data?.draftEdits?.distributors) {
+          existingDistributorsFromDraft = draftResponse.data.draftEdits.distributors;
+          console.log('Found existing distributors in draft:', existingDistributorsFromDraft);
+        }
+      } catch (error) {
+        console.warn('Could not fetch distributors from draft:', error);
+      }
 
-      console.log('Linking distributors with payload:', payload);
+      // Create a map to avoid duplicates
+      const allDistributorsMap = new Map();
+      
+      // First, add all existing linked distributors from API
+      (linkedDistributorsData || []).forEach(linkedDist => {
+        const distId = String(linkedDist.id || linkedDist.distributorId || '');
+        if (distId && distId !== 'undefined') {
+          // Format existing linked distributor
+          const distributorDivisions = (linkedDist.divisions || []).map(div => ({
+            cfaId: div.cfaId || '',
+            cfaCode: div.cfaCode || '',
+            cfaName: div.cfaName || null,
+            divisionId: String(div.divisionId || ''),
+            divisionCode: div.divisionCode || '',
+            divisionName: div.divisionName || '',
+            distributorId: Number(linkedDist.id || linkedDist.distributorId),
+            organizationCode: div.organizationCode || 'SPLL',
+          }));
 
-      const response = await customerAPI.linkDistributorDivisions(
-        effectiveCustomerId,
-        payload,
-      );
+          allDistributorsMap.set(distId, {
+            id: String(linkedDist.id || linkedDist.distributorId),
+            code: linkedDist.code || '',
+            name: linkedDist.name || linkedDist.distributorName || '',
+            email: linkedDist.email || '',
+            cityId: linkedDist.cityId || null,
+            typeId: linkedDist.typeId || null,
+            mobile1: linkedDist.mobile1 || '',
+            mobile2: linkedDist.mobile2 || null,
+            stateId: linkedDist.stateId || null,
+            address1: linkedDist.address1 || null,
+            address2: linkedDist.address2 || null,
+            cityName: linkedDist.cityName || null,
+            isActive: linkedDist.isActive !== undefined ? linkedDist.isActive : true,
+            divisions: distributorDivisions,
+            gstNumber: linkedDist.gstNumber || null,
+            panNumber: linkedDist.panNumber || null,
+            stateName: linkedDist.stateName || null,
+            licence20BNo: linkedDist.licence20BNo || null,
+            licence21BNo: linkedDist.licence21BNo || null,
+            divisionCount: linkedDist.divisionCount || distributorDivisions.length,
+            expiryDate20B: linkedDist.expiryDate20B || null,
+            expiryDate21B: linkedDist.expiryDate21B || null,
+            inviteStatusId: linkedDist.inviteStatusId || 1,
+            distributorType: linkedDist.distributorType || null,
+            inviteStatusName: linkedDist.inviteStatusName || 'Not Invited',
+            organizationCode: linkedDist.organizationCode || 'SPLL',
+            doctorSupplyMargin: linkedDist.doctorSupplyMargin || null,
+            hospitalSupplyMargin: linkedDist.hospitalSupplyMargin || null,
+          });
+        }
+      });
 
-      console.log('Link distributors API response:', response);
+      // Then, add distributors from draft (if any)
+      existingDistributorsFromDraft.forEach(draftDist => {
+        const distId = String(draftDist.id || '');
+        if (distId && distId !== 'undefined' && !allDistributorsMap.has(distId)) {
+          // Format draft distributor
+          const distributorDivisions = (draftDist.divisions || []).map(div => ({
+            cfaId: div.cfaId || '',
+            cfaCode: div.cfaCode || '',
+            cfaName: div.cfaName || null,
+            divisionId: String(div.divisionId || ''),
+            divisionCode: div.divisionCode || '',
+            divisionName: div.divisionName || '',
+            distributorId: Number(draftDist.id),
+            organizationCode: div.organizationCode || 'SPLL',
+          }));
+
+          allDistributorsMap.set(distId, {
+            id: String(draftDist.id),
+            code: draftDist.code || '',
+            name: draftDist.name || '',
+            email: draftDist.email || '',
+            cityId: draftDist.cityId || null,
+            typeId: draftDist.typeId || null,
+            mobile1: draftDist.mobile1 || '',
+            mobile2: draftDist.mobile2 || null,
+            stateId: draftDist.stateId || null,
+            address1: draftDist.address1 || null,
+            address2: draftDist.address2 || null,
+            cityName: draftDist.cityName || null,
+            isActive: draftDist.isActive !== undefined ? draftDist.isActive : true,
+            divisions: distributorDivisions,
+            gstNumber: draftDist.gstNumber || null,
+            panNumber: draftDist.panNumber || null,
+            stateName: draftDist.stateName || null,
+            licence20BNo: draftDist.licence20BNo || null,
+            licence21BNo: draftDist.licence21BNo || null,
+            divisionCount: draftDist.divisionCount || distributorDivisions.length,
+            expiryDate20B: draftDist.expiryDate20B || null,
+            expiryDate21B: draftDist.expiryDate21B || null,
+            inviteStatusId: draftDist.inviteStatusId || 1,
+            distributorType: draftDist.distributorType || null,
+            inviteStatusName: draftDist.inviteStatusName || 'Not Invited',
+            organizationCode: draftDist.organizationCode || 'SPLL',
+            doctorSupplyMargin: draftDist.doctorSupplyMargin || null,
+            hospitalSupplyMargin: draftDist.hospitalSupplyMargin || null,
+          });
+        }
+      });
+
+      // Finally, add newly selected distributors (they will overwrite if duplicate, but that's fine)
+      selectedDists.forEach(distributor => {
+        const distId = String(distributor.id);
+        // Get supply type (Net Rate = DM, Chargeback = CM)
+        const supplyType = distributorRateType[distributor.id] === 'Chargeback' ? 'CM' : 'DM';
+        const typeId = supplyType === 'CM' ? 2 : 1; // Chargeback = 2, Net Rate = 1
+
+        // Format distributor divisions (from the distributor's divisions array)
+        const distributorDivisions = (distributor.divisions || []).map(div => ({
+          cfaId: div.cfaId || '',
+          cfaCode: div.cfaCode || '',
+          cfaName: div.cfaName || null,
+          divisionId: String(div.divisionId || ''),
+          divisionCode: div.divisionCode || '',
+          divisionName: div.divisionName || '',
+          distributorId: Number(distributor.id),
+          organizationCode: div.organizationCode || 'SPLL',
+        }));
+
+        allDistributorsMap.set(distId, {
+          id: String(distributor.id),
+          code: distributor.code || '',
+          name: distributor.name || '',
+          email: distributor.email || '',
+          cityId: distributor.cityId || null,
+          typeId: typeId,
+          mobile1: distributor.mobile1 || '',
+          mobile2: distributor.mobile2 || null,
+          stateId: distributor.stateId || null,
+          address1: distributor.address1 || null,
+          address2: distributor.address2 || null,
+          cityName: distributor.cityName || null,
+          isActive: distributor.isActive !== undefined ? distributor.isActive : true,
+          divisions: distributorDivisions,
+          gstNumber: distributor.gstNumber || null,
+          panNumber: distributor.panNumber || null,
+          stateName: distributor.stateName || null,
+          licence20BNo: distributor.licence20BNo || null,
+          licence21BNo: distributor.licence21BNo || null,
+          divisionCount: distributor.divisionCount || distributorDivisions.length,
+          expiryDate20B: distributor.expiryDate20B || null,
+          expiryDate21B: distributor.expiryDate21B || null,
+          inviteStatusId: distributor.inviteStatusId || 1,
+          distributorType: distributor.distributorType || null,
+          inviteStatusName: distributor.inviteStatusName || 'Not Invited',
+          organizationCode: distributor.organizationCode || 'SPLL',
+          doctorSupplyMargin: distributor.doctorSupplyMargin || distributorMargins[distributor.id] || null,
+          hospitalSupplyMargin: distributor.hospitalSupplyMargin || distributorMargins[distributor.id] || null,
+        });
+      });
+
+      // Convert map to array - this includes all existing + newly selected distributors
+      const formattedDistributors = Array.from(allDistributorsMap.values());
+
+      // Format mapping data (customer hierarchy)
+      const formattedMapping = {
+        groupHospitals: (mappingData?.groupHospitals || []).map(h => ({
+          id: Number(h.id),
+          isNew: h.isNew !== undefined ? h.isNew : false,
+          action: h.action || 'LINK_DT',
+          cityId: h.cityId || null,
+          typeId: h.typeId || null,
+          stateId: h.stateId || null,
+          cityName: h.cityName || null,
+          stateName: h.stateName || null,
+          categoryId: h.categoryId || null,
+          stationCode: h.stationCode || null,
+          customerCode: h.customerCode || null,
+          customerName: h.customerName || null,
+          subCategoryId: h.subCategoryId || null,
+        })),
+        hospitals: (mappingData?.hospitals || []).map(h => ({
+          id: Number(h.id),
+          isNew: h.isNew !== undefined ? h.isNew : false,
+        })),
+        doctors: (mappingData?.doctors || []).map(d => ({
+          id: Number(d.id),
+          isNew: d.isNew !== undefined ? d.isNew : false,
+        })),
+        pharmacy: (mappingData?.pharmacy || []).map(p => ({
+          id: Number(p.id),
+          isNew: p.isNew !== undefined ? p.isNew : false,
+        })),
+      };
+
+      const draftEditPayload = {
+        stepOrder: 3,
+        parallelGroup: 1,
+        comments: '',
+        actorId: actorId,
+        dataChanges: {
+          divisions: formattedDivisions,
+          distributors: formattedDistributors,
+          mapping: formattedMapping,
+          customerGroupId: customerGroupId || selectedCustomer?.customerGroupId || 1,
+        },
+      };
+
+      console.log('Calling draft-edit API for distributors with payload:', draftEditPayload);
+
+      // Call draft-edit API
+      const draftEditResponse = await customerAPI.draftEdit(effectiveInstanceId, draftEditPayload);
+      console.log('Draft-edit API response:', draftEditResponse);
 
       showToast('Distributors linked successfully!', 'success');
 
-      // Go back to selection mode
       setPreferredViewMode('selection');
       setSelectedDistributors([]);
+      setDistributorMargins({});
+      setDistributorRateType({});
+
+      // After successful mapping, fetch latest draft to update divisions and distributors
+      // This will update linked distributors from latest-draft response (ONLY source)
+      await fetchLatestDraftData();
 
       // Refresh preferred distributors list
-      if (effectiveCustomerId) {
-        const updatedResponse = await customerAPI.getLinkedDistributorDivisions(
-          effectiveCustomerId,
-        );
-        if (
-          updatedResponse?.data?.customer?.distributorDetails &&
-          Array.isArray(updatedResponse.data.customer.distributorDetails)
-        ) {
-          setPreferredDistributorsData(
-            updatedResponse.data.customer.distributorDetails,
-          );
-        }
+      if (activeDistributorTab === 'preferred' && effectiveCustomerId) {
+        await fetchPreferredDistributorsData();
       }
     } catch (error) {
       console.error('Error linking distributors:', error);
@@ -897,11 +1478,218 @@ export const LinkagedTab = ({
     }
   };
 
+  // Handle Finish button for linked distributors - calls draft-edit API
+  const handleFinishLinkedDistributors = async () => {
+    if (linkedDistributorsData.length === 0) {
+      showToast('No linked distributors to update', 'error');
+      return;
+    }
+
+    try {
+      setLinkingDistributors(true);
+
+      // Get instanceId from customerDetails response (selectedCustomer from Redux)
+      const effectiveInstanceId = instanceIdFromDetails;
+      
+      if (!effectiveInstanceId) {
+        showToast('Instance ID not found. Please refresh and try again.', 'error');
+        setLinkingDistributors(false);
+        return;
+      }
+
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+
+      // Format all existing divisions from mergedRequestedDivisions
+      const formattedDivisions = (mergedRequestedDivisions || []).map(div => ({
+        divisionId: String(div.divisionId || div.id),
+        divisionCode: div.divisionCode || '',
+        divisionName: div.divisionName || '',
+        isOpen: div.isOpen !== undefined ? div.isOpen : false,
+      }));
+
+      // Format linked distributors with updated values (org code, margin, supply mode)
+      const formattedDistributors = linkedDistributorsData.map(dist => {
+        const distId = String(dist.id || dist.distributorId);
+        const orgCode = linkedDistributorOrgCodes[distId] || dist.organizationCode || 'SPLL';
+        const margin = linkedDistributorMargins[distId] || dist.doctorSupplyMargin || dist.hospitalSupplyMargin || null;
+        const supplyMode = linkedDistributorSupplyModes[distId] || dist.supplyMode || '0';
+        const supplyType = supplyMode === '1' ? 'CM' : 'DM'; // 1 = chargeback (CM), else net rate (DM)
+        const typeId = supplyMode === '1' ? 2 : 1; // Chargeback = 2, Net Rate = 1
+
+        // Format distributor divisions
+        const distributorDivisions = (dist.divisions || []).map(div => ({
+          cfaId: div.cfaId || '',
+          cfaCode: div.cfaCode || '',
+          cfaName: div.cfaName || null,
+          divisionId: String(div.divisionId || ''),
+          divisionCode: div.divisionCode || '',
+          divisionName: div.divisionName || '',
+          distributorId: Number(dist.id || dist.distributorId),
+          organizationCode: orgCode,
+        }));
+
+        return {
+          id: String(dist.id || dist.distributorId),
+          code: dist.code || '',
+          name: dist.name || dist.distributorName || '',
+          email: dist.email || '',
+          cityId: dist.cityId || null,
+          typeId: typeId,
+          mobile1: dist.mobile1 || '',
+          mobile2: dist.mobile2 || null,
+          stateId: dist.stateId || null,
+          address1: dist.address1 || null,
+          address2: dist.address2 || null,
+          cityName: dist.cityName || null,
+          isActive: dist.isActive !== undefined ? dist.isActive : true,
+          divisions: distributorDivisions,
+          gstNumber: dist.gstNumber || null,
+          panNumber: dist.panNumber || null,
+          stateName: dist.stateName || null,
+          licence20BNo: dist.licence20BNo || null,
+          licence21BNo: dist.licence21BNo || null,
+          divisionCount: dist.divisionCount || distributorDivisions.length,
+          expiryDate20B: dist.expiryDate20B || null,
+          expiryDate21B: dist.expiryDate21B || null,
+          inviteStatusId: dist.inviteStatusId || 1,
+          distributorType: dist.distributorType || null,
+          inviteStatusName: dist.inviteStatusName || 'Not Invited',
+          organizationCode: orgCode,
+          doctorSupplyMargin: margin,
+          hospitalSupplyMargin: margin,
+          supplyMode: supplyMode,
+        };
+      });
+
+      // Get customer hierarchy mapping data
+      const hierarchyData = hierarchyMappingData || {};
+      const formattedMapping = {
+        groupHospitals: (hierarchyData?.groupHospitals || []).map(gh => ({
+          id: Number(gh.id),
+          isNew: gh.isNew !== undefined ? gh.isNew : false,
+        })),
+        hospitals: (hierarchyData?.hospitals || []).map(h => ({
+          id: Number(h.id),
+          isNew: h.isNew !== undefined ? h.isNew : false,
+        })),
+        doctors: (hierarchyData?.doctors || []).map(d => ({
+          id: Number(d.id),
+          isNew: d.isNew !== undefined ? d.isNew : false,
+        })),
+        pharmacy: (hierarchyData?.pharmacy || []).map(p => ({
+          id: Number(p.id),
+          isNew: p.isNew !== undefined ? p.isNew : false,
+        })),
+      };
+
+      const draftEditPayload = {
+        stepOrder: 3,
+        parallelGroup: 1,
+        comments: '',
+        actorId: actorId,
+        dataChanges: {
+          divisions: formattedDivisions,
+          distributors: formattedDistributors,
+          mapping: formattedMapping,
+          customerGroupId: customerGroupId || selectedCustomer?.customerGroupId || 1,
+        },
+      };
+
+      console.log('Calling draft-edit API for linked distributors with payload:', draftEditPayload);
+
+      // Call draft-edit API
+      const draftEditResponse = await customerAPI.draftEdit(effectiveInstanceId, draftEditPayload);
+      console.log('Draft-edit API response:', draftEditResponse);
+
+      showToast('Linked distributors updated successfully!', 'success');
+
+      // Refresh latest draft data to get updated values
+      await fetchLatestDraftData();
+    } catch (error) {
+      console.error('Error updating linked distributors:', error);
+      showToast(`Failed to update linked distributors: ${error.message}`, 'error');
+    } finally {
+      setLinkingDistributors(false);
+    }
+  };
+
   const handleLinkDivisionsConfirmModal = comment => {
     // TODO: API integration
     console.log('Link Divisions with comment:', comment);
     setShowLinkDivisionsModal(false);
     showToast('Divisions linked successfully!', 'success');
+  };
+
+  // Handle Verify action (for LINK_DT)
+  const handleVerifyAction = async () => {
+    try {
+      const instanceIdValue = instanceIdFromDetails || instanceId || selectedCustomer?.instaceId || selectedCustomer?.stgCustomerId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      const parallelGroupId = selectedCustomer?.instance?.stepInstances?.[0]?.parallelGroup;
+      const stepOrderId = selectedCustomer?.instance?.stepInstances?.[0]?.stepOrder;
+
+      if (!instanceIdValue) {
+        showToast('Instance ID not found. Please refresh and try again.', 'error');
+        return;
+      }
+
+      const actionDataPayload = {
+        stepOrder: stepOrderId,
+        parallelGroup: parallelGroupId,
+        actorId: actorId,
+        action: "VERIFY",
+        comments: "Verified",
+        instanceId: instanceIdValue,
+        actionData: {
+          field: "status",
+          newValue: "Verified"
+        },
+      };
+
+      await customerAPI.workflowAction(instanceIdValue, actionDataPayload);
+      showToast('Customer verified successfully!', 'success');
+    } catch (error) {
+      console.error('Error verifying customer:', error);
+      showToast(`Failed to verify customer: ${error.message}`, 'error');
+    }
+  };
+
+  // Handle Reject action (for LINK_DT)
+  const handleRejectAction = async () => {
+    try {
+      const instanceIdValue = instanceIdFromDetails || instanceId || selectedCustomer?.instaceId || selectedCustomer?.stgCustomerId;
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      const parallelGroupId = selectedCustomer?.instance?.stepInstances?.[0]?.parallelGroup;
+      const stepOrderId = selectedCustomer?.instance?.stepInstances?.[0]?.stepOrder;
+
+      if (!instanceIdValue) {
+        showToast('Instance ID not found. Please refresh and try again.', 'error');
+        return;
+      }
+
+      const actionDataPayload = {
+        stepOrder: stepOrderId,
+        parallelGroup: parallelGroupId,
+        actorId: actorId,
+        action: "REJECT",
+        comments: "Rejected",
+        instanceId: instanceIdValue,
+        actionData: {
+          field: "status",
+          newValue: "Rejected"
+        },
+        dataChanges: {
+          previousStatus: "Pending",
+          newStatus: "Rejected"
+        }
+      };
+
+      await customerAPI.workflowAction(instanceIdValue, actionDataPayload);
+      showToast('Customer rejected!', 'error');
+    } catch (error) {
+      console.error('Error rejecting customer:', error);
+      showToast(`Failed to reject customer: ${error.message}`, 'error');
+    }
   };
 
   const handleTagConfirm = () => {
@@ -946,12 +1734,24 @@ export const LinkagedTab = ({
 
   // Add distributor from "All" to "Preferred"
   const handleAddDistributor = async distributor => {
-    const alreadyExists = preferredDistributorsData.find(
+    const alreadyExists = linkedDistributorsData.find(
       d => d.id === distributor.id,
     );
     if (alreadyExists) {
       showToast(
-        `${distributor.name} is already in preferred distributors!`,
+        `${distributor.name} is already in linked distributors!`,
+        'error',
+      );
+      return;
+    }
+
+    // Check if already linked
+    const alreadyLinked = linkedDistributorsData.find(
+      d => String(d.id || d.distributorId) === String(distributor.id),
+    );
+    if (alreadyLinked) {
+      showToast(
+        `${distributor.name} is already linked!`,
         'error',
       );
       return;
@@ -960,36 +1760,239 @@ export const LinkagedTab = ({
     try {
       console.log('Adding distributor:', distributor.id);
 
-      // Build the mapping payload with opened divisions
-      // Build the mapping payload with opened divisions and the selected supply type
-      const mappingsPayload = {
-        mappings: [
-          {
-            distributorId: Number(distributor.id),
-            divisions: openedDivisionsData.map(d => ({
-              id: Number(d.divisionId),
-              isActive: true,
-            })),
-            supplyModeId: 3,
-            margin: 1,
-            // optional: include chosen rate type so backend can know the preference
-            rateType:
-              allDistributorSupplyType[distributor.id] ||
-                distributor.inviteStatusId == 2 ? 'Chargeback (CM)' :
-                'NetRate (DM)'
-          },
-        ],
+      // Get instanceId from customerDetails response (selectedCustomer from Redux)
+      const effectiveInstanceId = instanceIdFromDetails;
+      
+      if (!effectiveInstanceId) {
+        showToast('Instance ID not found. Please refresh and try again.', 'error');
+        return;
+      }
+
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+
+      // Format all existing divisions from mergedRequestedDivisions
+      const formattedDivisions = (mergedRequestedDivisions || []).map(div => ({
+        divisionId: String(div.divisionId || div.id),
+        divisionCode: div.divisionCode || '',
+        divisionName: div.divisionName || '',
+        isOpen: div.isOpen !== undefined ? div.isOpen : false,
+      }));
+
+      // Get existing linked distributors to merge with newly added one
+      // Also check latest draft for distributors that might be in draft but not yet linked
+      let existingDistributorsFromDraft = [];
+      try {
+        const draftResponse = await customerAPI.getLatestDraft(effectiveInstanceId, actorId);
+        if (draftResponse?.data?.success && draftResponse?.data?.hasDraft && draftResponse?.data?.draftEdits?.distributors) {
+          existingDistributorsFromDraft = draftResponse.data.draftEdits.distributors;
+          console.log('Found existing distributors in draft:', existingDistributorsFromDraft);
+        }
+      } catch (error) {
+        console.warn('Could not fetch distributors from draft:', error);
+      }
+
+      // Create a map to avoid duplicates
+      const allDistributorsMap = new Map();
+      
+      // First, add all existing linked distributors from API
+      (linkedDistributorsData || []).forEach(linkedDist => {
+        const distId = String(linkedDist.id || linkedDist.distributorId || '');
+        if (distId && distId !== 'undefined') {
+          // Format existing linked distributor
+          const distributorDivisions = (linkedDist.divisions || []).map(div => ({
+            cfaId: div.cfaId || '',
+            cfaCode: div.cfaCode || '',
+            cfaName: div.cfaName || null,
+            divisionId: String(div.divisionId || ''),
+            divisionCode: div.divisionCode || '',
+            divisionName: div.divisionName || '',
+            distributorId: Number(linkedDist.id || linkedDist.distributorId),
+            organizationCode: div.organizationCode || 'SPLL',
+          }));
+
+          allDistributorsMap.set(distId, {
+            id: String(linkedDist.id || linkedDist.distributorId),
+            code: linkedDist.code || '',
+            name: linkedDist.name || linkedDist.distributorName || '',
+            email: linkedDist.email || '',
+            cityId: linkedDist.cityId || null,
+            typeId: linkedDist.typeId || null,
+            mobile1: linkedDist.mobile1 || '',
+            mobile2: linkedDist.mobile2 || null,
+            stateId: linkedDist.stateId || null,
+            address1: linkedDist.address1 || null,
+            address2: linkedDist.address2 || null,
+            cityName: linkedDist.cityName || null,
+            isActive: linkedDist.isActive !== undefined ? linkedDist.isActive : true,
+            divisions: distributorDivisions,
+            gstNumber: linkedDist.gstNumber || null,
+            panNumber: linkedDist.panNumber || null,
+            stateName: linkedDist.stateName || null,
+            licence20BNo: linkedDist.licence20BNo || null,
+            licence21BNo: linkedDist.licence21BNo || null,
+            divisionCount: linkedDist.divisionCount || distributorDivisions.length,
+            expiryDate20B: linkedDist.expiryDate20B || null,
+            expiryDate21B: linkedDist.expiryDate21B || null,
+            inviteStatusId: linkedDist.inviteStatusId || 1,
+            distributorType: linkedDist.distributorType || null,
+            inviteStatusName: linkedDist.inviteStatusName || 'Not Invited',
+            organizationCode: linkedDist.organizationCode || 'SPLL',
+            doctorSupplyMargin: linkedDist.doctorSupplyMargin || null,
+            hospitalSupplyMargin: linkedDist.hospitalSupplyMargin || null,
+          });
+        }
+      });
+
+      // Then, add distributors from draft (if any)
+      existingDistributorsFromDraft.forEach(draftDist => {
+        const distId = String(draftDist.id || '');
+        if (distId && distId !== 'undefined' && !allDistributorsMap.has(distId)) {
+          // Format draft distributor
+          const distributorDivisions = (draftDist.divisions || []).map(div => ({
+            cfaId: div.cfaId || '',
+            cfaCode: div.cfaCode || '',
+            cfaName: div.cfaName || null,
+            divisionId: String(div.divisionId || ''),
+            divisionCode: div.divisionCode || '',
+            divisionName: div.divisionName || '',
+            distributorId: Number(draftDist.id),
+            organizationCode: div.organizationCode || 'SPLL',
+          }));
+
+          allDistributorsMap.set(distId, {
+            id: String(draftDist.id),
+            code: draftDist.code || '',
+            name: draftDist.name || '',
+            email: draftDist.email || '',
+            cityId: draftDist.cityId || null,
+            typeId: draftDist.typeId || null,
+            mobile1: draftDist.mobile1 || '',
+            mobile2: draftDist.mobile2 || null,
+            stateId: draftDist.stateId || null,
+            address1: draftDist.address1 || null,
+            address2: draftDist.address2 || null,
+            cityName: draftDist.cityName || null,
+            isActive: draftDist.isActive !== undefined ? draftDist.isActive : true,
+            divisions: distributorDivisions,
+            gstNumber: draftDist.gstNumber || null,
+            panNumber: draftDist.panNumber || null,
+            stateName: draftDist.stateName || null,
+            licence20BNo: draftDist.licence20BNo || null,
+            licence21BNo: draftDist.licence21BNo || null,
+            divisionCount: draftDist.divisionCount || distributorDivisions.length,
+            expiryDate20B: draftDist.expiryDate20B || null,
+            expiryDate21B: draftDist.expiryDate21B || null,
+            inviteStatusId: draftDist.inviteStatusId || 1,
+            distributorType: draftDist.distributorType || null,
+            inviteStatusName: draftDist.inviteStatusName || 'Not Invited',
+            organizationCode: draftDist.organizationCode || 'SPLL',
+            doctorSupplyMargin: draftDist.doctorSupplyMargin || null,
+            hospitalSupplyMargin: draftDist.hospitalSupplyMargin || null,
+          });
+        }
+      });
+
+      // Finally, add the newly selected distributor
+      const distId = String(distributor.id);
+      // Get supply type (default to Net Rate if not specified)
+      const supplyType = allDistributorSupplyType[distributor.id] || 
+        (distributor.inviteStatusId === 2 ? 'Chargeback (CM)' : 'NetRate (DM)');
+      const typeId = supplyType.includes('Chargeback') || supplyType.includes('CM') ? 2 : 1;
+
+      // Format distributor divisions (from the distributor's divisions array)
+      const distributorDivisions = (distributor.divisions || []).map(div => ({
+        cfaId: div.cfaId || '',
+        cfaCode: div.cfaCode || '',
+        cfaName: div.cfaName || null,
+        divisionId: String(div.divisionId || ''),
+        divisionCode: div.divisionCode || '',
+        divisionName: div.divisionName || '',
+        distributorId: Number(distributor.id),
+        organizationCode: div.organizationCode || 'SPLL',
+      }));
+
+      allDistributorsMap.set(distId, {
+        id: String(distributor.id),
+        code: distributor.code || '',
+        name: distributor.name || '',
+        email: distributor.email || '',
+        cityId: distributor.cityId || null,
+        typeId: typeId,
+        mobile1: distributor.mobile1 || '',
+        mobile2: distributor.mobile2 || null,
+        stateId: distributor.stateId || null,
+        address1: distributor.address1 || null,
+        address2: distributor.address2 || null,
+        cityName: distributor.cityName || null,
+        isActive: distributor.isActive !== undefined ? distributor.isActive : true,
+        divisions: distributorDivisions,
+        gstNumber: distributor.gstNumber || null,
+        panNumber: distributor.panNumber || null,
+        stateName: distributor.stateName || null,
+        licence20BNo: distributor.licence20BNo || null,
+        licence21BNo: distributor.licence21BNo || null,
+        divisionCount: distributor.divisionCount || distributorDivisions.length,
+        expiryDate20B: distributor.expiryDate20B || null,
+        expiryDate21B: distributor.expiryDate21B || null,
+        inviteStatusId: distributor.inviteStatusId || 1,
+        distributorType: distributor.distributorType || null,
+        inviteStatusName: distributor.inviteStatusName || 'Not Invited',
+        organizationCode: distributor.organizationCode || 'SPLL',
+        doctorSupplyMargin: distributor.doctorSupplyMargin || null,
+        hospitalSupplyMargin: distributor.hospitalSupplyMargin || null,
+      });
+
+      // Convert map to array - this includes all existing + newly added distributor
+      const formattedDistributors = Array.from(allDistributorsMap.values());
+
+      // Format mapping data (customer hierarchy)
+      const formattedMapping = {
+        groupHospitals: (mappingData?.groupHospitals || []).map(h => ({
+          id: Number(h.id),
+          isNew: h.isNew !== undefined ? h.isNew : false,
+          action: h.action || 'LINK_DT',
+          cityId: h.cityId || null,
+          typeId: h.typeId || null,
+          stateId: h.stateId || null,
+          cityName: h.cityName || null,
+          stateName: h.stateName || null,
+          categoryId: h.categoryId || null,
+          stationCode: h.stationCode || null,
+          customerCode: h.customerCode || null,
+          customerName: h.customerName || null,
+          subCategoryId: h.subCategoryId || null,
+        })),
+        hospitals: (mappingData?.hospitals || []).map(h => ({
+          id: Number(h.id),
+          isNew: h.isNew !== undefined ? h.isNew : false,
+        })),
+        doctors: (mappingData?.doctors || []).map(d => ({
+          id: Number(d.id),
+          isNew: d.isNew !== undefined ? d.isNew : false,
+        })),
+        pharmacy: (mappingData?.pharmacy || []).map(p => ({
+          id: Number(p.id),
+          isNew: p.isNew !== undefined ? p.isNew : false,
+        })),
       };
 
+      const draftEditPayload = {
+        stepOrder: 3,
+        parallelGroup: 1,
+        comments: '',
+        actorId: actorId,
+        dataChanges: {
+          divisions: formattedDivisions,
+          distributors: formattedDistributors,
+          mapping: formattedMapping,
+          customerGroupId: customerGroupId || selectedCustomer?.customerGroupId || 1,
+        },
+      };
 
-      console.log('Link distributor payload:', mappingsPayload);
+      console.log('Calling draft-edit API for adding distributor with payload:', draftEditPayload);
 
-      // Call API to link distributor
-      const response = await customerAPI.linkDistributorDivisions(
-        effectiveCustomerId,
-        mappingsPayload,
-      );
-      console.log('Link distributor API response:', response);
+      // Call draft-edit API
+      const draftEditResponse = await customerAPI.draftEdit(effectiveInstanceId, draftEditPayload);
 
       // Add to preferred distributors locally
       setPreferredDistributorsData(prev => [...prev, distributor]);
@@ -999,19 +2002,13 @@ export const LinkagedTab = ({
         'success',
       );
 
+      // After successful mapping, fetch latest draft to update divisions and distributors
+      // This will update linked distributors from latest-draft response (ONLY source)
+      await fetchLatestDraftData();
+
       // Refresh preferred distributors list
-      if (effectiveCustomerId) {
-        const updatedResponse = await customerAPI.getLinkedDistributorDivisions(
-          effectiveCustomerId,
-        );
-        if (
-          updatedResponse?.data?.customer?.distributorDetails &&
-          Array.isArray(updatedResponse.data.customer.distributorDetails)
-        ) {
-          setPreferredDistributorsData(
-            updatedResponse.data.customer.distributorDetails,
-          );
-        }
+      if (activeDistributorTab === 'preferred' && effectiveCustomerId) {
+        await fetchPreferredDistributorsData();
       }
     } catch (error) {
       console.error('Error adding distributor:', error);
@@ -1113,9 +2110,6 @@ export const LinkagedTab = ({
     // Close modal
     setShowDivisionModal(false);
 
-    // Switch to Distributors tab so user can continue
-    setActiveSubTab('distributors');
-
     showToast('Divisions linked successfully!', 'success');
   };
 
@@ -1138,22 +2132,66 @@ export const LinkagedTab = ({
         return;
       }
 
-      const divisionsPayload = {
-        divisions: validDivisions.map(division => ({
-          divisionId: Number(division.divisionId),
-          isActive: true,
-        })),
+      // Get instanceId from customerDetails response (selectedCustomer from Redux)
+      // Use instanceIdFromDetails which is already calculated from selectedCustomer
+      const effectiveInstanceId = instanceIdFromDetails;
+      
+      // instanceId is required for draft-edit API
+      if (!effectiveInstanceId) {
+        showToast('Instance ID not found. Please refresh and try again.', 'error');
+        setLinkingDivisions(false);
+        return;
+      }
+
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      
+      // Get all existing divisions from mergedRequestedDivisions (includes divisions already in draft)
+      // Create a map to avoid duplicates
+      const allDivisionsMap = new Map();
+      
+      // First, add all existing divisions from mergedRequestedDivisions
+      mergedRequestedDivisions.forEach(div => {
+        const key = String(div.divisionId || div.id);
+        allDivisionsMap.set(key, {
+          divisionId: String(div.divisionId || div.id),
+          divisionCode: div.divisionCode || '',
+          divisionName: div.divisionName || '',
+          isOpen: div.isOpen !== undefined ? div.isOpen : false,
+        });
+      });
+      
+      // Then, add newly selected divisions (they will overwrite if duplicate, but that's fine)
+      validDivisions.forEach(division => {
+        const key = String(division.divisionId);
+        allDivisionsMap.set(key, {
+          divisionId: String(division.divisionId),
+          divisionCode: division.divisionCode || '',
+          divisionName: division.divisionName || '',
+          isOpen: false, // Default to false for newly mapped divisions
+        });
+      });
+      
+      // Convert map to array - this includes all existing + newly selected divisions
+      const formattedDivisions = Array.from(allDivisionsMap.values());
+
+      const draftEditPayload = {
+        stepOrder: 3,
+        parallelGroup: 1,
+        comments: '',
+        actorId: actorId,
+        dataChanges: {
+          divisions: formattedDivisions,
+          customerGroupId: customerGroupId || selectedCustomer?.customerGroupId || 1, // Use from selectedCustomer if available
+        },
       };
 
-      console.log('Linking divisions with payload:', divisionsPayload);
+      console.log('Calling draft-edit API with payload:', draftEditPayload);
+      console.log('Instance ID from customerDetails:', effectiveInstanceId);
+      console.log('Selected Customer:', selectedCustomer);
 
-      // Call API to link divisions
-      const response = await customerAPI.linkDivisions(
-        effectiveCustomerId,
-        divisionsPayload,
-      );
-
-      console.log('Link divisions API response:', response);
+      // Call draft-edit API only
+      const draftEditResponse = await customerAPI.draftEdit(effectiveInstanceId, draftEditPayload);
+      console.log('Draft-edit API response:', draftEditResponse);
 
       // Move valid selected divisions to opened locally (so UI updates immediately)
       setOpenedDivisionsData(prev => [...prev, ...validDivisions]);
@@ -1167,12 +2205,10 @@ export const LinkagedTab = ({
       // Clear selection
       setSelectedDivisions([]);
 
-      // Switch to Distributors tab so user can proceed
-      setTimeout(() => {
-        setActiveSubTab('distributors');
-      }, 500);
-
       showToast('Divisions linked successfully!', 'success');
+
+      // Fetch latest draft to update requested divisions and linked distributors
+      await fetchLatestDraftData();
 
       // Refresh divisions data after linking (optional, you already have this)
       if (effectiveCustomerId) {
@@ -1442,8 +2478,8 @@ export const LinkagedTab = ({
                   style={styles.searchInput}
                   placeholder="Search by distributor name & code"
                   placeholderTextColor="#999"
-                  value={searchText}
-                  onChangeText={setSearchText}
+                  value={preferredSearchText}
+                  onChangeText={setPreferredSearchText}
                 />
               </View>
 
@@ -1485,7 +2521,7 @@ export const LinkagedTab = ({
                 </View>
               ) : (
                 <>
-                  {filteredDistributorsData.length === 0 ? (
+                  {filteredPreferredDistributors.length === 0 ? (
                     <View style={styles.emptyContainer}>
                       <Icon
                         name="package-variant-closed"
@@ -1493,16 +2529,19 @@ export const LinkagedTab = ({
                         color="#999"
                       />
                       <AppText style={styles.emptyText}>
-                        {allDistributorsData.length === 0
+                        {preferredDistributorsData.length === 0
                           ? 'No distributors available'
                           : 'No distributors match the selected filters'}
                       </AppText>
                     </View>
                   ) : (
-                    filteredDistributorsData.map(distributor => (
+                    filteredPreferredDistributors.map(distributor => (
                       <View
                         key={`${distributor.id}-${distributor.name}`}
-                        style={styles.distributorRow}
+                        style={[
+                          styles.distributorRow,
+                          showAllSupplyDropdown[distributor.id] && styles.distributorRowWithDropdown
+                        ]}
                       >
                         <View
                           style={[styles.distributorInfoColumn, { flex: 1.5 }]}
@@ -1535,7 +2574,7 @@ export const LinkagedTab = ({
                                 styles.dropdownMenu,
                                 styles.supplyDropdownMenu, // extra positioning/width
                               ]}
-                              pointerEvents="box-none"
+                              pointerEvents="auto"
                             >
                               <TouchableOpacity
                                 style={styles.dropdownMenuItem}
@@ -1548,7 +2587,7 @@ export const LinkagedTab = ({
                               </TouchableOpacity>
 
                               <TouchableOpacity
-                                style={styles.dropdownMenuItem}
+                                style={[styles.dropdownMenuItem, styles.dropdownMenuItemLast]}
                                 onPress={() =>
                                   handleAllDistributorSupplySelect(distributor.id, 'Chargeback (CM)')
                                 }
@@ -1714,7 +2753,10 @@ export const LinkagedTab = ({
                     filteredDistributorsData.map(distributor => (
                       <View
                         key={`${distributor.id}-${distributor.name}`}
-                        style={styles.distributorRow}
+                        style={[
+                          styles.distributorRow,
+                          showAllSupplyDropdown[distributor.id] && styles.distributorRowWithDropdown
+                        ]}
                       >
                         <View
                           style={[styles.distributorInfoColumn, { flex: 1.5 }]}
@@ -1747,7 +2789,7 @@ export const LinkagedTab = ({
                                 styles.dropdownMenu,
                                 styles.supplyDropdownMenu, // extra positioning/width
                               ]}
-                              pointerEvents="box-none"
+                              pointerEvents="auto"
                             >
                               <TouchableOpacity
                                 style={styles.dropdownMenuItem}
@@ -1760,7 +2802,7 @@ export const LinkagedTab = ({
                               </TouchableOpacity>
 
                               <TouchableOpacity
-                                style={styles.dropdownMenuItem}
+                                style={[styles.dropdownMenuItem, styles.dropdownMenuItemLast]}
                                 onPress={() =>
                                   handleAllDistributorSupplySelect(distributor.id, 'Chargeback (CM)')
                                 }
@@ -1795,9 +2837,9 @@ export const LinkagedTab = ({
       )}
 
       {activeDistributorTab === 'linked' && (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, overflow: 'visible' }}>
           <ScrollView
-            style={styles.scrollContent}
+            style={[styles.scrollContent, { overflow: 'visible' }]}
             contentContainerStyle={{ paddingBottom: 120 }}
           >
             {/* Header */}
@@ -1847,24 +2889,121 @@ export const LinkagedTab = ({
                     </AppText>
 
                     <View style={styles.middleRowDropdown}>
+                      {/* Organization Code Dropdown (SPLL/SPIL) */}
+                      <View style={styles.dropdownWrapper}>
+                        <TouchableOpacity 
+                          style={styles.dropdown}
+                          onPress={() => {
+                            const distId = String(item.id || item.distributorId);
+                            // Close other dropdowns when opening this one
+                            setShowAllDivisionsDropdown(prev => ({ ...prev, [distId]: false }));
+                            setShowLinkedOrgCodeDropdown(prev => ({
+                              ...prev,
+                              [distId]: !prev[distId],
+                            }));
+                          }}
+                        >
+                          <AppText style={styles.dropdownText}>
+                            {linkedDistributorOrgCodes[String(item.id || item.distributorId)] || item.organizationCode || 'SPLL'}
+                          </AppText>
+                          <IconMaterial
+                            name="keyboard-arrow-down"
+                            size={18}
+                            color="#6B7280"
+                          />
+                        </TouchableOpacity>
+                        
+                        {showLinkedOrgCodeDropdown[String(item.id || item.distributorId)] && (
+                          <View style={styles.orgCodeDropdownMenu}>
+                            <TouchableOpacity
+                              style={styles.dropdownMenuItem}
+                              onPress={() => {
+                                const distId = String(item.id || item.distributorId);
+                                setLinkedDistributorOrgCodes(prev => ({
+                                  ...prev,
+                                  [distId]: 'SPLL',
+                                }));
+                                setShowLinkedOrgCodeDropdown(prev => ({
+                                  ...prev,
+                                  [distId]: false,
+                                }));
+                              }}
+                            >
+                              <AppText style={styles.dropdownMenuText}>SPLL</AppText>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.dropdownMenuItem, styles.dropdownMenuItemLast]}
+                              onPress={() => {
+                                const distId = String(item.id || item.distributorId);
+                                setLinkedDistributorOrgCodes(prev => ({
+                                  ...prev,
+                                  [distId]: 'SPIL',
+                                }));
+                                setShowLinkedOrgCodeDropdown(prev => ({
+                                  ...prev,
+                                  [distId]: false,
+                                }));
+                              }}
+                            >
+                              <AppText style={styles.dropdownMenuText}>SPIL</AppText>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
 
-                      <TouchableOpacity style={styles.dropdown}>
-                        <AppText style={styles.dropdownText}>SPLL</AppText>
-                        <IconMaterial
-                          name="keyboard-arrow-down"
-                          size={18}
-                          color="#6B7280"
-                        />
-                      </TouchableOpacity>
-
-                      <TouchableOpacity style={styles.dropdown}>
-                        <AppText style={styles.dropdownText}>All Divisions</AppText>
-                        <IconMaterial
-                          name="keyboard-arrow-down"
-                          size={18}
-                          color="#6B7280"
-                        />
-                      </TouchableOpacity>
+                      {/* All Divisions Dropdown - Shows requested divisions */}
+                      <View style={styles.dropdownWrapper}>
+                        <TouchableOpacity 
+                          style={styles.dropdown}
+                          onPress={() => {
+                            const distId = String(item.id || item.distributorId);
+                            // Close other dropdowns when opening this one
+                            setShowLinkedOrgCodeDropdown(prev => ({ ...prev, [distId]: false }));
+                            setShowAllDivisionsDropdown(prev => ({
+                              ...prev,
+                              [distId]: !prev[distId],
+                            }));
+                          }}
+                        >
+                          <AppText style={styles.dropdownText}>All Divisions</AppText>
+                          <IconMaterial
+                            name="keyboard-arrow-down"
+                            size={18}
+                            color="#6B7280"
+                          />
+                        </TouchableOpacity>
+                        
+                        {showAllDivisionsDropdown[String(item.id || item.distributorId)] && (
+                          <View style={[styles.dropdownMenu, styles.allDivisionsDropdownMenu]}>
+                            {mergedRequestedDivisions && mergedRequestedDivisions.length > 0 ? (
+                              mergedRequestedDivisions.map((division, index) => (
+                                <TouchableOpacity
+                                  key={`${division.divisionId || division.id}-${index}`}
+                                  style={[
+                                    styles.dropdownMenuItem,
+                                    index === mergedRequestedDivisions.length - 1 && styles.dropdownMenuItemLast
+                                  ]}
+                                  onPress={() => {
+                                    const distId = String(item.id || item.distributorId);
+                                    setShowAllDivisionsDropdown(prev => ({
+                                      ...prev,
+                                      [distId]: false,
+                                    }));
+                                  }}
+                                >
+                                  <AppText style={styles.dropdownMenuText}>
+                                    {division.divisionName || division.name} ({division.divisionCode || division.code})
+                                  </AppText>
+                                </TouchableOpacity>
+                              ))
+                            ) : (
+                              <View style={styles.dropdownMenuItem}>
+                                <AppText style={styles.dropdownMenuText}>No divisions available</AppText>
+                              </View>
+                            )}
+                          </View>
+                        )}
+                      </View>
                     </View>
                   </View>
                   <View>
@@ -1872,7 +3011,17 @@ export const LinkagedTab = ({
 
                     <View style={styles.marginBox}>
                       <AppInput
-                        value="15"
+                        value={linkedDistributorMargins[String(item.id || item.distributorId)] || 
+                               item.doctorSupplyMargin || 
+                               item.hospitalSupplyMargin || 
+                               ''}
+                        onChangeText={(text) => {
+                          const distId = String(item.id || item.distributorId);
+                          setLinkedDistributorMargins(prev => ({
+                            ...prev,
+                            [distId]: text,
+                          }));
+                        }}
                         keyboardType="numeric"
                         style={styles.marginInput}
                       />
@@ -1884,17 +3033,55 @@ export const LinkagedTab = ({
                 {/* RADIO + REMOVE */}
                 <View style={styles.bottomRow}>
                   <View style={styles.radioRow}>
-                    <View style={styles.radioItem}>
-                      <View style={styles.radioSelectedOuter}>
-                        <View style={styles.radioInner} />
+                    <TouchableOpacity 
+                      style={styles.radioItem}
+                      onPress={() => {
+                        const distId = String(item.id || item.distributorId);
+                        setLinkedDistributorSupplyModes(prev => ({
+                          ...prev,
+                          [distId]: '0', // Net Rate
+                        }));
+                      }}
+                    >
+                      <View style={[
+                        styles.radioOuter,
+                        (linkedDistributorSupplyModes[String(item.id || item.distributorId)] !== '1' && 
+                         (!item.supplyMode || item.supplyMode !== '1')) && styles.radioSelected
+                      ]}>
+                        {(linkedDistributorSupplyModes[String(item.id || item.distributorId)] !== '1' && 
+                          (!item.supplyMode || item.supplyMode !== '1')) && (
+                          <View style={styles.radioInner} />
+                        )}
                       </View>
                       <AppText style={styles.radioText}>Net Rate</AppText>
-                    </View>
+                    </TouchableOpacity>
 
-                    <View style={styles.radioItem}>
-                      <View style={styles.radioOuter} />
-                      <AppText style={styles.radioDisabled}>Chargeback</AppText>
-                    </View>
+                    <TouchableOpacity 
+                      style={styles.radioItem}
+                      onPress={() => {
+                        const distId = String(item.id || item.distributorId);
+                        setLinkedDistributorSupplyModes(prev => ({
+                          ...prev,
+                          [distId]: '1', // Chargeback
+                        }));
+                      }}
+                    >
+                      <View style={[
+                        styles.radioOuter,
+                        (linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '1' || 
+                         item.supplyMode === '1') && styles.radioSelected
+                      ]}>
+                        {(linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '1' || 
+                          item.supplyMode === '1') && (
+                          <View style={styles.radioInner} />
+                        )}
+                      </View>
+                      <AppText style={[
+                        styles.radioText,
+                        (linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '1' || 
+                         item.supplyMode === '1') ? styles.radioText : styles.radioDisabled
+                      ]}>Chargeback</AppText>
+                    </TouchableOpacity>
                   </View>
 
                   <TouchableOpacity style={styles.removeBtn}>
@@ -1912,8 +3099,14 @@ export const LinkagedTab = ({
 
           {/* FINISH BUTTON */}
           <View style={styles.finishContainer}>
-            <TouchableOpacity style={styles.finishBtn}>
-              <AppText style={styles.finishText}>Finish</AppText>
+            <TouchableOpacity 
+              style={styles.finishBtn}
+              onPress={handleFinishLinkedDistributors}
+              disabled={linkingDistributors}
+            >
+              <AppText style={styles.finishText}>
+                {linkingDistributors ? 'Processing...' : 'Finish'}
+              </AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -1995,14 +3188,14 @@ export const LinkagedTab = ({
                   </View>
                   <AppText style={styles.columnSubtitle}>Name & Code</AppText>
 
-                  {otherDivisionsData.length === 0 ? (
+                  {filteredOtherDivisionsData.length === 0 ? (
                     <View style={styles.emptyDivisionContainer}>
                       <AppText style={styles.emptyDivisionText}>
                         No other divisions available
                       </AppText>
                     </View>
                   ) : (
-                    otherDivisionsData.map(division => (
+                    filteredOtherDivisionsData.map(division => (
                       <TouchableOpacity
                         key={`other-${division.divisionId}`}
                         style={styles.checkboxItem}
@@ -2089,14 +3282,14 @@ export const LinkagedTab = ({
             {/* ---------- BODY (3 Columns) ---------- */}
             <View style={styles.columnsRow}>
 
-              {console.log(customerRequestedDivisions)
+              {console.log(mergedRequestedDivisions, 'mergedRequestedDivisions')
               }
 
               {/* ========== REQUESTED COLUMN ========== */}
               <View style={styles.colRequested}>
-                {customerRequestedDivisions?.length > 0 ? (
-                  customerRequestedDivisions.map(div => (
-                    <View key={div.divisionId} style={styles.reqRow}>
+                {mergedRequestedDivisions?.length > 0 ? (
+                  mergedRequestedDivisions.map(div => (
+                    <View key={div.divisionId || div.id} style={styles.reqRow}>
                       <AppText style={styles.divisionName}>{div.divisionName}</AppText>
                       <AppText style={styles.divisionCode}>{div.divisionCode}</AppText>
                     </View>
@@ -2111,8 +3304,8 @@ export const LinkagedTab = ({
               {/* ========== OTHER COLUMN ========== */}
               {hasOtherDivisionPermission && (
                 <View style={styles.colOther}>
-                  {otherDivisionsData?.length > 0 ? (
-                    otherDivisionsData.map(div => {
+                  {filteredOtherDivisionsData?.length > 0 ? (
+                    filteredOtherDivisionsData.map(div => {
                       const isSelected = selectedDivisions.some(
                         d => d.divisionId === div.divisionId
                       );
@@ -2193,8 +3386,11 @@ export const LinkagedTab = ({
             </View>
           </ScrollView>
 
-          {/* Sticky Continue Button at Bottom - Only show if user has approve permission or customer is active */}
-          {(hasApprovePermission || isCustomerActive) && (
+          {/* Sticky Continue Button at Bottom - Only show if user has selected divisions from Other column */}
+
+          
+          {/* {(hasApprovePermission || isCustomerActive) && selectedDivisions.length > 0 && ( */}
+           
             <View style={styles.stickyButtonContainer}>
               <TouchableOpacity
                 style={[
@@ -2212,19 +3408,53 @@ export const LinkagedTab = ({
                 )}
               </TouchableOpacity>
             </View>
-          )}
+          {/* )} */}
         </>
       )}
     </View>
   );
 
+  // Field skeleton loader component
+  const FieldListSkeleton = ({ rows = 8 }) => {
+    return (
+      <View style={styles.fieldSkeletonContainer}>
+        {Array.from({ length: rows }).map((_, i) => (
+          <View key={`field-skeleton-${i}`} style={styles.fieldSkeletonRow}>
+            <View style={styles.fieldSkeletonNameColumn}>
+              <View style={styles.fieldSkeletonName} />
+              <View style={styles.fieldSkeletonCode} />
+            </View>
+            <View style={styles.fieldSkeletonDivisionColumn}>
+              <View style={styles.fieldSkeletonDivision} />
+              <View style={styles.fieldSkeletonDivisionCode} />
+            </View>
+            <View style={styles.fieldSkeletonDesignationColumn}>
+              <View style={styles.fieldSkeletonDesignation} />
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   const renderFieldTab = () => (
     <View style={styles.tabContent}>
-      {fieldTeamLoading ? (
-        <View style={styles.loadingContainer}>
-          <Icon name="loading" size={40} color="#FF6B00" />
-          <AppText style={styles.loadingText}>Loading field team...</AppText>
-        </View>
+      {/* Sticky Header */}
+      <View style={styles.fieldStickyHeader}>
+        <AppText style={[styles.fieldHeaderText, styles.fieldHeaderName]}>
+          Name
+        </AppText>
+        <AppText style={[styles.fieldHeaderText, styles.fieldHeaderDivision]}>
+          Division
+        </AppText>
+        <AppText style={[styles.fieldHeaderText, styles.fieldHeaderDesignation]}>
+          Designation
+        </AppText>
+      </View>
+
+      {/* Scrollable Content */}
+      {fieldTeamLoading && fieldTeamData.length === 0 ? (
+        <FieldListSkeleton rows={8} />
       ) : fieldTeamError ? (
         <View style={styles.errorContainer}>
           <Icon name="alert-circle" size={40} color="#EF4444" />
@@ -2239,35 +3469,52 @@ export const LinkagedTab = ({
           </AppText>
         </View>
       ) : (
-        <ScrollView style={styles.scrollContent}>
-          <View style={styles.fieldHeader}>
-            <AppText style={styles.fieldHeaderText}>
-              Employee Name & Code
-            </AppText>
-            <AppText
-              style={[styles.fieldHeaderText, styles.fieldHeaderDesignation]}
-            >
-              Designation
-            </AppText>
-          </View>
-
+        <ScrollView 
+          style={styles.fieldScrollContent}
+          contentContainerStyle={styles.fieldScrollContentContainer}
+          onScroll={({ nativeEvent }) => {
+            const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+            const paddingToBottom = 20;
+            const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+            
+            if (isCloseToBottom && fieldTeamHasMore && !fieldTeamLoadingMore && !fieldTeamLoading) {
+              fetchFieldTeamData(fieldTeamPage, true);
+            }
+          }}
+          scrollEventThrottle={400}
+        >
           {fieldTeamData.map((employee, index) => (
-            <View key={employee.id || index} style={styles.fieldRow}>
-              <View style={styles.employeeInfo}>
+            <View key={employee.id || employee.userId || index} style={styles.fieldRow}>
+              <View style={styles.fieldNameColumn}>
                 <AppText style={styles.employeeName}>
-                  {employee.userName}
+                  {employee.userName || employee.name || '—'}
                 </AppText>
                 <AppText style={styles.employeeCode}>
-                  {employee.userCode}
+                  {employee.userCode || employee.code || employee.userId || '—'}
                 </AppText>
               </View>
-              <View style={styles.employeeDesignationContainer}>
+              <View style={styles.fieldDivisionColumn}>
+                <AppText style={styles.employeeDivision}>
+                  {employee?.divisions?.[0]?.divisionName || '—'}
+                </AppText>
+                <AppText style={styles.employeeDivisionCode}>
+                  {employee?.divisions?.[0]?.divisionCode || '—'}
+                </AppText>
+              </View>
+              <View style={styles.fieldDesignationColumn}>
                 <AppText style={styles.employeeDesignation}>
-                  {employee.designation}
+                  {employee.designation || '—'}
                 </AppText>
               </View>
             </View>
           ))}
+
+          {fieldTeamLoadingMore && (
+            <View style={styles.loadingMoreContainer}>
+              <Icon name="loading" size={30} color="#FF6B00" />
+              <AppText style={styles.loadingMoreText}>Loading more...</AppText>
+            </View>
+          )}
         </ScrollView>
       )}
     </View>
@@ -2275,7 +3522,7 @@ export const LinkagedTab = ({
 
   const renderCustomerHierarchyTab = () => {
     // Check if hierarchyMappingData is null or undefined
-    if (hierarchyMappingData?.doctors?.length === 0 && hierarchyMappingData?.pharmacy?.length === 0 && hierarchyMappingData?.hospitals?.length === 0 && hierarchyMappingData?.groupHospitals?.length === 0) {
+    if (!hierarchyMappingData) {
       return (
         <View style={styles.tabContent}>
           <View style={styles.scrollContent}>
@@ -2291,24 +3538,19 @@ export const LinkagedTab = ({
       );
     }
 
-    const {
-      pharmacy = [],
-      doctors = [],
-      hospitals = [],
-      groupHospitals = [],
-    } = hierarchyMappingData;
+    // Check if all arrays are empty or don't exist
+    const doctors = hierarchyMappingData?.doctors || [];
+    const pharmacy = hierarchyMappingData?.pharmacy || [];
+    const hospitals = hierarchyMappingData?.hospitals || [];
+    const groupHospitals = hierarchyMappingData?.groupHospitals || [];
 
-    // Check if all arrays are empty
-    const allArraysEmpty = 
-      pharmacy.length === 0 &&
-      doctors.length === 0 &&
-      hospitals.length === 0 &&
-      groupHospitals.length === 0;
-
-    if (allArraysEmpty) {
+    if ((!doctors || doctors.length === 0) && 
+        (!pharmacy || pharmacy.length === 0) && 
+        (!hospitals || hospitals.length === 0) && 
+        (!groupHospitals || groupHospitals.length === 0)) {
       return (
         <View style={styles.tabContent}>
-          <ScrollView style={styles.scrollContent}>
+          <View style={styles.scrollContent}>
             <View style={styles.emptyContainer}>
               <Icon name="inbox" size={50} color="#999" />
               <AppText style={styles.emptyText}>No data found</AppText>
@@ -2316,7 +3558,7 @@ export const LinkagedTab = ({
                 Linked data will appear here
               </AppText>
             </View>
-          </ScrollView>
+          </View>
         </View>
       );
     }
@@ -2556,71 +3798,136 @@ export const LinkagedTab = ({
     );
   };
 
-  const DivisionSelectionModal = () => (
-    <Modal
-      visible={showDivisionModal}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowDivisionModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.divisionModalContent}>
-          <View style={styles.modalHeader}>
-            <AppText style={styles.modalTitle}>Divisions</AppText>
-            <TouchableOpacity onPress={() => setShowDivisionModal(false)}>
-              <Icon name="close" size={24} color="#666" />
-            </TouchableOpacity>
-          </View>
+  // Toggle organization code (SPIL/SPILL) for a division
+  const toggleDivisionOrgCode = (divisionId, orgCode) => {
+    setDivisionOrgCodes(prev => {
+      const current = prev[divisionId] || {};
+      return {
+        ...prev,
+        [divisionId]: {
+          ...current,
+          [orgCode]: !current[orgCode],
+        },
+      };
+    });
+  };
 
-          <View style={styles.divisionModalHeader}>
-            <AppText style={styles.divisionModalHeaderText}>Name</AppText>
-            <AppText style={styles.divisionModalHeaderText}>Code</AppText>
-          </View>
+  const DivisionSelectionModal = () => {
+    // Use mergedRequestedDivisions (requested divisions) for the modal
+    const divisionsToShow = mergedRequestedDivisions || [];
 
-          <ScrollView style={styles.divisionModalList}>
-            {mockDivisions.allDivisions.map(division => (
-              <TouchableOpacity
-                key={division.id}
-                style={styles.divisionModalItem}
-                onPress={() => toggleDivisionSelection(division, true)}
-              >
-                <View
-                  style={[
-                    styles.checkbox,
-                    allDivisionsSelected.find(d => d.id === division.id) &&
-                    styles.checkboxSelected,
-                  ]}
-                >
-                  {allDivisionsSelected.find(d => d.id === division.id) && (
-                    <Icon name="check" size={16} color="#fff" />
-                  )}
-                </View>
-                <AppText style={styles.divisionModalName}>
-                  {division.name}
-                </AppText>
-                <AppText style={styles.divisionModalCode}>
-                  {division.code}
-                </AppText>
+    return (
+      <Modal
+        visible={showDivisionModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDivisionModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.divisionModalContent}>
+            <View style={styles.modalHeader}>
+              <AppText style={styles.modalTitle}>All Divisions</AppText>
+              <TouchableOpacity onPress={() => setShowDivisionModal(false)}>
+                <Icon name="close" size={24} color="#666" />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+            </View>
+
+            <View style={styles.divisionModalHeader}>
+              <AppText style={styles.divisionModalHeaderText}>Name</AppText>
+              <AppText style={styles.divisionModalHeaderText}>Code</AppText>
+              <AppText style={styles.divisionModalHeaderText}>Organization</AppText>
+            </View>
+
+            <ScrollView style={styles.divisionModalList}>
+              {divisionsToShow.length === 0 ? (
+                <View style={styles.divisionModalItem}>
+                  <AppText style={styles.emptyText}>No divisions available</AppText>
+                </View>
+              ) : (
+                divisionsToShow.map(division => {
+                  const divisionId = String(division.divisionId || division.id);
+                  const orgCodes = divisionOrgCodes[divisionId] || {};
+                  
+                  return (
+                    <View key={divisionId} style={styles.divisionModalItemWithCheckboxes}>
+                      <View style={styles.divisionModalItemMain}>
+                        <View
+                          style={[
+                            styles.checkbox,
+                            (orgCodes.SPIL || orgCodes.SPILL) && styles.checkboxSelected,
+                          ]}
+                        >
+                          {(orgCodes.SPIL || orgCodes.SPILL) && (
+                            <Icon name="check" size={16} color="#fff" />
+                          )}
+                        </View>
+                        <AppText style={styles.divisionModalName}>
+                          {division.divisionName || division.name}
+                        </AppText>
+                        <AppText style={styles.divisionModalCode}>
+                          {division.divisionCode || division.code}
+                        </AppText>
+                      </View>
+                      
+                      {/* SPIL and SPILL checkboxes */}
+                      <View style={styles.orgCodeCheckboxes}>
+                        <TouchableOpacity
+                          style={styles.orgCodeCheckboxItem}
+                          onPress={() => toggleDivisionOrgCode(divisionId, 'SPIL')}
+                        >
+                          <View
+                            style={[
+                              styles.checkbox,
+                              orgCodes.SPIL && styles.checkboxSelected,
+                            ]}
+                          >
+                            {orgCodes.SPIL && (
+                              <Icon name="check" size={16} color="#fff" />
+                            )}
+                          </View>
+                          <AppText style={styles.orgCodeText}>SPIL</AppText>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                          style={styles.orgCodeCheckboxItem}
+                          onPress={() => toggleDivisionOrgCode(divisionId, 'SPILL')}
+                        >
+                          <View
+                            style={[
+                              styles.checkbox,
+                              orgCodes.SPILL && styles.checkboxSelected,
+                            ]}
+                          >
+                            {orgCodes.SPILL && (
+                              <Icon name="check" size={16} color="#fff" />
+                            )}
+                          </View>
+                          <AppText style={styles.orgCodeText}>SPILL</AppText>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </ScrollView>
+          </View>
         </View>
-      </View>
-    </Modal>
-  );
+      </Modal>
+    );
+  };
 
   return (
     <>
       <View style={styles.container}>
-        {/* Sub-tabs */}
-
-        <ScrollView
-          ref={tabScrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.subTabsContainer}
-          scrollEventThrottle={16}
-        >
+        {/* Sub-tabs - Sticky */}
+        <View style={styles.stickyTabsContainer}>
+          <ScrollView
+            ref={tabScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.subTabsContainer}
+            scrollEventThrottle={16}
+          >
           {/* Divisions Tab - Always visible */}
           <TouchableOpacity
             ref={ref => (tabRefs.current['divisions'] = ref)}
@@ -2735,7 +4042,8 @@ export const LinkagedTab = ({
               Customer Hierarchy
             </AppText>
           </TouchableOpacity>
-        </ScrollView>
+          </ScrollView>
+        </View>
         {/* Divisions Tab - Always visible */}
 
 
@@ -2794,6 +4102,58 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     overflow: 'visible',
+  },
+  stickyTabsContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    elevation: 10, // For Android
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingRight: 16,
+  },
+  topRightButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginLeft: 'auto',
+    paddingRight: 8,
+  },
+  verifyButtonTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    gap: 6,
+  },
+  verifyButtonTopText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  rejectButtonTop: {
+    width: 24,
+    height: 24,
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: '#2B2B2B',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   subTabsContainer: {
     flexDirection: 'row',
@@ -3238,6 +4598,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+    position: 'relative',
+    zIndex: 1,
+  },
+  distributorRowWithDropdown: {
+    zIndex: 10001,
+    elevation: 26,
   },
   distributorInfoColumn: {
     paddingRight: 12,
@@ -3388,24 +4754,42 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  fieldHeader: {
+  // Sticky header for field tab
+  fieldStickyHeader: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 14,
     backgroundColor: '#FAFAFA',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
+    zIndex: 10,
+    elevation: 2,
   },
   fieldHeaderText: {
-    flex: 1,
     fontSize: 14,
     color: '#999',
-    fontWeight: '400',
+    fontWeight: '500',
+  },
+  fieldHeaderName: {
+    flex: 2,
+  },
+  fieldHeaderDivision: {
+    flex: 1.5,
+    textAlign: 'center',
   },
   fieldHeaderDesignation: {
+    flex: 1.5,
     textAlign: 'right',
     paddingRight: 10,
   },
+  // Scrollable content area
+  fieldScrollContent: {
+    flex: 1,
+  },
+  fieldScrollContentContainer: {
+    paddingBottom: 20,
+  },
+  // Field row styles
   fieldRow: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -3414,8 +4798,17 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F0F0F0',
     alignItems: 'center',
   },
-  employeeInfo: {
-    flex: 1,
+  fieldNameColumn: {
+    flex: 2,
+  },
+  fieldDivisionColumn: {
+    flex: 1.5,
+    alignItems: 'center',
+  },
+  fieldDesignationColumn: {
+    flex: 1.5,
+    alignItems: 'flex-end',
+    paddingRight: 10,
   },
   employeeName: {
     fontSize: 15,
@@ -3427,15 +4820,79 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#999',
   },
-  employeeDesignationContainer: {
-    flex: 1,
-    alignItems: 'flex-end',
-    paddingRight: 10,
+  employeeDivision: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: '#333',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  employeeDivisionCode: {
+    fontSize: 13,
+    color: '#999',
+    textAlign: 'center',
   },
   employeeDesignation: {
     fontSize: 15,
     color: '#666',
     textAlign: 'right',
+  },
+  // Field skeleton styles
+  fieldSkeletonContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  fieldSkeletonRow: {
+    flexDirection: 'row',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    alignItems: 'center',
+  },
+  fieldSkeletonNameColumn: {
+    flex: 2,
+  },
+  fieldSkeletonDivisionColumn: {
+    flex: 1.5,
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  fieldSkeletonDesignationColumn: {
+    flex: 1.5,
+    alignItems: 'flex-end',
+    paddingRight: 10,
+  },
+  fieldSkeletonName: {
+    height: 16,
+    width: '70%',
+    backgroundColor: '#E5E5E5',
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  fieldSkeletonCode: {
+    height: 12,
+    width: '40%',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 4,
+  },
+  fieldSkeletonDivision: {
+    height: 16,
+    width: '60%',
+    backgroundColor: '#E5E5E5',
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  fieldSkeletonDivisionCode: {
+    height: 12,
+    width: '40%',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 4,
+  },
+  fieldSkeletonDesignation: {
+    height: 16,
+    width: '80%',
+    backgroundColor: '#E5E5E5',
+    borderRadius: 4,
   },
   hierarchyTitle: {
     fontSize: 16,
@@ -3606,6 +5063,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
+  divisionModalItemWithCheckboxes: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  divisionModalItemMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   divisionModalName: {
     flex: 1,
     fontSize: 14,
@@ -3615,11 +5083,27 @@ const styles = StyleSheet.create({
   divisionModalCode: {
     fontSize: 14,
     color: '#666',
+    width: 80,
+  },
+  orgCodeCheckboxes: {
+    flexDirection: 'row',
+    marginLeft: 28,
+  },
+  orgCodeCheckboxItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  orgCodeText: {
+    fontSize: 14,
+    color: '#333',
   },
   // Dropdown menu styles
   dropdownWrapper: {
     position: 'relative',
     flex: 1,
+    zIndex: 10000,
+    elevation: 20,
   },
   dropdownMenu: {
     position: 'absolute',
@@ -3628,6 +5112,8 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: '#fff',
     borderRadius: 8,
+    zIndex: 10001,
+    elevation: 30,
     marginTop: 4,
     shadowColor: '#000',
     shadowOffset: {
@@ -3702,6 +5188,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 40,
+  },
+  loadingMoreContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loadingMoreText: {
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#FF6B00',
   },
   loadingText: {
     marginTop: 12,
@@ -4150,7 +5647,8 @@ const styles = StyleSheet.create({
   supplyTypeWrapper: {
     position: 'relative',
     overflow: 'visible',
-    zIndex: 50,
+    zIndex: 10000,
+    elevation: 25,
   },
 
   supplyTypeDropdown: {
@@ -4177,15 +5675,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'visible',
 
-    // FIX CLIPPING
-    zIndex: 9999,
-    elevation: 15,
+    // FIX CLIPPING - High z-index to appear above other elements
+    zIndex: 99999,
+    elevation: 30,
 
     // Stronger shadow for visibility
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 8 },
   },
 
   /* DROPDOWN FOR SUPPLY TYPE (OVERRIDE SIZE/POSITION) */
@@ -4197,17 +5695,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 8,
     paddingVertical: 6,
+    borderWidth: 0, // Ensure no border on dropdown container
 
-    // FIX CLIPPING
+    // FIX CLIPPING - Maximum z-index to appear above all elements
     overflow: 'visible',
-    zIndex: 9999,
-    elevation: 20,
+    zIndex: 99999,
+    elevation: 30,
 
-    // Improve shadow
+    // Improve shadow for better visibility
     shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 8 },
   },
 
   dropdownMenuItem: {
@@ -4221,14 +5720,18 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
 
-    // Makes touch detection easy
-    zIndex: 9999,
+    // Maximum z-index for touch detection
+    zIndex: 99999,
+    elevation: 30,
+  },
+  dropdownMenuItemLast: {
+    borderBottomWidth: 0, // Remove border from last item
   },
 
   dropdownMenuText: {
     fontSize: 14,
     color: '#333',
-    zIndex: 9999,
+    zIndex: 99999,
   },
 
   supplyTypeText: {
@@ -4238,8 +5741,8 @@ const styles = StyleSheet.create({
   },
   tabContentWrapper: {
     flex: 1,
-    // paddingTop: 60, // Same height as tab bar
-    overflow: 'hidden',
+    paddingTop: 70, // Same height as sticky tab bar (60 + 10 margin)
+    overflow: 'visible', // Changed to visible to allow dropdown to overflow
   },
 
 
@@ -4441,7 +5944,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     marginBottom: 16,
-    marginHorizontal: 16
+    marginHorizontal: 16,
+    overflow: 'visible',
+    zIndex: 1,
   },
 
   /* TOP ROW */
@@ -4488,6 +5993,37 @@ const styles = StyleSheet.create({
   middleRowDropdown: {
     flexDirection: 'row',
     gap: 12,
+    zIndex: 1000,
+  },
+
+  orgCodeDropdownMenu: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginTop: 4,
+    zIndex: 999999,
+    elevation: 100,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 8 },
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    paddingVertical: 4,
+    minWidth: 120,
+  },
+
+  allDivisionsDropdownMenu: {
+    zIndex: 10002,
+    elevation: 31,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 8 },
+    maxHeight: 200,
   },
 
   dropdown: {
@@ -4553,29 +6089,35 @@ const styles = StyleSheet.create({
   },
 
   radioOuter: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
     borderColor: '#9CA3AF',
-    marginRight: 6,
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  radioSelected: {
+    borderColor: '#F97316',
   },
 
   radioSelectedOuter: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
     borderColor: '#F97316',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 6,
+    marginRight: 8,
   },
 
   radioInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#F97316',
   },
 

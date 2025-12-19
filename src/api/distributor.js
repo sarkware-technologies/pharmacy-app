@@ -74,3 +74,42 @@ export const updateCustomerStatus = async (customerId, distributorId, action) =>
         throw error;
     }
 };
+
+// Get preferred distributors list with division filters
+export const getPreferredDistributors = async (page = 1, limit = 20, stationCode, divisionIds = []) => {
+    try {
+        let endpoint = `/user-management/distributor/list?page=${page}&limit=${limit}`;
+        
+        if (stationCode) {
+            endpoint += `&stationCode=${stationCode}`;
+        }
+        
+        // Add divisionIds as multiple query parameters
+        // Each divisionId should be added as a separate query parameter: &divisionIds=143&divisionIds=183
+        if (Array.isArray(divisionIds) && divisionIds.length > 0) {
+            divisionIds.forEach(divisionId => {
+                // Ensure divisionId is a valid string/number and not empty
+                const id = String(divisionId).trim();
+                if (id && id !== 'undefined' && id !== 'null') {
+                    endpoint += `&divisionIds=${encodeURIComponent(id)}`;
+                }
+            });
+        }
+        
+        console.log('getPreferredDistributors API endpoint:', endpoint);
+        
+        const response = await apiClient.get(endpoint);
+        
+        // Return the data in a consistent format
+        // API response structure: { success: true, data: { distributors: [], page: 1, limit: 20, total: 38 } }
+        return {
+            distributors: response.data?.data?.distributors || response.data?.distributors || [],
+            page: response.data?.data?.page || response.data?.page || page,
+            limit: response.data?.data?.limit || response.data?.limit || limit,
+            total: response.data?.data?.total || response.data?.total || 0
+        };
+    } catch (error) {
+        console.error('Error fetching preferred distributors:', error);
+        throw error;
+    }
+};

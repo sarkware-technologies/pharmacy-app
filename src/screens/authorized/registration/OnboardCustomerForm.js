@@ -481,57 +481,57 @@ const OnboardCustomerForm = ({ route, navigation }) => {
                 {customerGroups.length > 0 ? (
                   <>
                     {/* First row - first 2 groups */}
-                    <View style={styles.radioRow}>
+                <View style={styles.radioRow}>
                       {customerGroups.slice(0, 2).map((group) => (
-                        <TouchableOpacity
+                  <TouchableOpacity
                           key={group.customerGroupId}
-                          style={[styles.radioOption, styles.radioOptionFlex]}
+                    style={[styles.radioOption, styles.radioOptionFlex]}
                           onPress={() => setFormData(prev => ({
                             ...prev,
                             customerGroupId: group.customerGroupId,
                             customerGroupName: group.customerGroupName,
                           }))}
-                        >
-                          <View style={styles.radioCircle}>
+                  >
+                    <View style={styles.radioCircle}>
                             {formData.customerGroupId === group.customerGroupId && (
-                              <View style={styles.radioSelected} />
-                            )}
-                          </View>
+                        <View style={styles.radioSelected} />
+                      )}
+                    </View>
                           <AppText style={styles.radioText}>
                             {group.customerGroupName}
                           </AppText>
-                        </TouchableOpacity>
+                  </TouchableOpacity>
                       ))}
                     </View>
                     {/* Second row - remaining groups */}
                     {customerGroups.length > 2 && (
-                      <View style={styles.radioRow}>
+                <View style={styles.radioRow}>
                         {customerGroups.slice(2, 4).map((group) => (
-                          <TouchableOpacity
+                  <TouchableOpacity
                             key={group.customerGroupId}
-                            style={[styles.radioOption, styles.radioOptionFlex]}
+                    style={[styles.radioOption, styles.radioOptionFlex]}
                             onPress={() => setFormData(prev => ({
                               ...prev,
                               customerGroupId: group.customerGroupId,
                               customerGroupName: group.customerGroupName,
                             }))}
-                          >
-                            <View style={styles.radioCircle}>
+                  >
+                    <View style={styles.radioCircle}>
                               {formData.customerGroupId === group.customerGroupId && (
-                                <View style={styles.radioSelected} />
-                              )}
-                            </View>
+                        <View style={styles.radioSelected} />
+                      )}
+                    </View>
                             <AppText style={styles.radioText}>
                               {group.customerGroupName}
                             </AppText>
-                          </TouchableOpacity>
+                  </TouchableOpacity>
                         ))}
                       </View>
                     )}
                   </>
                 ) : (
                   <ActivityIndicator size="small" color={colors.primary} />
-                )}
+                      )}
               </View>
             </View>
 
