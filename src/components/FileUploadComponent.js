@@ -25,13 +25,14 @@ import CloseCircle from './icons/CloseCircle';
 import EyeOpen from './icons/EyeOpen';
 import apiClient, { BASE_URL } from '../api/apiClient';
 import AppText from "./AppText"
+import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 
 const FileUploadComponent = ({
   placeholder = 'Upload file',
   accept = ['pdf', 'jpg', 'jpeg', 'png'], // Accepted file extensions
-  maxSize = 15 * 1024 * 1024, 
+  maxSize = 15 * 1024 * 1024,
   onFileUpload,
   onFileDelete,
   initialFile = null, // { fileName: '', s3Path: '' }
@@ -41,7 +42,7 @@ const FileUploadComponent = ({
   showPreview = true,
   style,
   errorMessage,
-  mandatory=false,
+  mandatory = false,
   onOcrDataExtracted, // Callback for OCR extracted data (PAN/GST numbers)
 }) => {
   const [file, setFile] = useState(initialFile);
@@ -79,7 +80,7 @@ const FileUploadComponent = ({
         }),
       ]).start();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file]);
 
   const handleSelectFile = async () => {
@@ -251,13 +252,19 @@ const FileUploadComponent = ({
         body: formData,
       });
 
-      console.log("response ", response);
 
       const responseData = await response.json();
+      console.log('API Response:', responseData);
 
       if (responseData.success && responseData.data && responseData.data.length > 0) {
         const uploadedFile = responseData.data[0];
-        
+
+        Toast.show({
+          type: 'success',
+          text1: "Upload document successful!",
+          text2: responseData.message,
+          position: 'top',
+        });
         const fileData = {
           fileName: uploadedFile.fileName,
           s3Path: uploadedFile.s3Path,
@@ -274,21 +281,21 @@ const FileUploadComponent = ({
         // If OCR data is present, send it to parent via callback
         if (isOcrRequired && onOcrDataExtracted) {
           const ocrData = {};
-          
+
           // Extract PAN number if present
           if (uploadedFile.PANNumber) {
             ocrData.panNumber = uploadedFile.PANNumber;
             ocrData.panVerificationData = uploadedFile.verificationData;
             ocrData.isPanValid = uploadedFile.isValid;
           }
-          
+
           // Extract GST number if present
           if (uploadedFile.GSTNumber) {
             ocrData.gstNumber = uploadedFile.GSTNumber;
             ocrData.gstVerificationData = uploadedFile.verificationData;
             ocrData.isGstValid = uploadedFile.isValid;
           }
-          
+
           // Extract License/Registration details if present
           if (uploadedFile.PharmacyName) {
             ocrData.pharmacyName = uploadedFile.PharmacyName;
@@ -335,12 +342,12 @@ const FileUploadComponent = ({
           if (uploadedFile.isValid !== undefined) {
             ocrData.isValid = uploadedFile.isValid;
           }
-          
+
           // Extract locationDetails if present (for structured location data with IDs)
           if (uploadedFile.locationDetails) {
             ocrData.locationDetails = uploadedFile.locationDetails;
           }
-          
+
           // Send extracted data to parent
           if (Object.keys(ocrData).length > 0) {
             onOcrDataExtracted(ocrData);
@@ -591,12 +598,12 @@ const styles = StyleSheet.create({
 
   },
 
-   asterisk: {
-        color: 'red',
-        fontSize: 16,
-        marginLeft: 2,
+  asterisk: {
+    color: 'red',
+    fontSize: 16,
+    marginLeft: 2,
 
-    },
+  },
   uploadContainer: {
     borderWidth: 1.5,
     borderColor: colors.primary,
@@ -612,7 +619,7 @@ const styles = StyleSheet.create({
   uploadContainerWithFile: {
     borderWidth: 0,
     backgroundColor: '#FFF5ED',
-            
+
   },
   uploadContainerError: {
     borderColor: colors.error,
@@ -633,7 +640,7 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
     flex: 1,
     textAlign: 'left',
-            
+
 
   },
   fileSelectedContainer: {
@@ -666,7 +673,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.error,
     marginTop: 4,
-    marginLeft: 4,  
+    marginLeft: 4,
     fontFamily: "Lato-Bold",
 
 

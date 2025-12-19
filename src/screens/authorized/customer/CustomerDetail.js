@@ -119,8 +119,11 @@ const CustomerDetail = ({ navigation, route }) => {
 
   // Fetch customer details on mount - FIXED to prevent double API calls
   useEffect(() => {
+
+    console.log(customer);
+    
     const customerId = customer?.stgCustomerId || customer?.customerId;
-    const isStaging = customer?.statusName === 'ACTIVE' ? false : true;
+    const isStaging = customer?.statusName === 'ACTIVE'  ? false : true;
 
     if (customerId) {
       dispatch(setCurrentCustomerId(customerId));
