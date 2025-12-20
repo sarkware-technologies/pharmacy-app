@@ -8,6 +8,7 @@ import {
   TextInput,
   Dimensions,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import { colors } from '../../styles/colors';
 import { AppText, AppInput } from ".."
@@ -16,7 +17,7 @@ import Svg, { Path } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
 
-const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName, checkboxLabel }) => {
+const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName, checkboxLabel, loading = false }) => {
   const [comment, setComment] = useState('');
   const [checkConfirm, setCheckConfirm] = useState(true);
   const [error, setError] = useState('');
@@ -84,6 +85,7 @@ const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName, check
                   value={comment}
                   onChangeText={handleCommentChange}
                   textAlignVertical="top"
+                  editable={!loading}
                 />
 
                 <CustomCheckbox
@@ -107,8 +109,11 @@ const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName, check
                     </AppText>
                   }
                   onChange={() => {
-                    setCheckConfirm(!checkConfirm)
+                    if (!loading) {
+                      setCheckConfirm(!checkConfirm)
+                    }
                   }}
+                  disabled={loading}
                 />
 
 
@@ -124,6 +129,7 @@ const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName, check
                   style={styles.noButton}
                   onPress={handleClose}
                   activeOpacity={0.7}
+                  disabled={loading}
                 >
                   <AppText style={styles.noButtonText}>No</AppText>
                 </TouchableOpacity>
@@ -131,13 +137,17 @@ const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName, check
                 <TouchableOpacity
                   style={[
                     styles.yesButton,
-                    { backgroundColor: (checkConfirm && comment) ? colors.primary : '#D3D4D6' }
+                    { backgroundColor: (checkConfirm && comment && !loading) ? colors.primary : '#D3D4D6' }
                   ]}
                   onPress={handleConfirm}
                   activeOpacity={0.7}
-                  disabled={!checkConfirm || !comment}
+                  disabled={!checkConfirm || !comment || loading}
                 >
-                  <AppText style={styles.yesButtonText}>Yes</AppText>
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <AppText style={styles.yesButtonText}>Yes</AppText>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>

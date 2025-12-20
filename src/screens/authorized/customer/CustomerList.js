@@ -2813,6 +2813,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           }}
           onConfirm={handleApproveConfirm}
           customerName={selectedCustomerForAction?.customerName}
+          loading={actionLoading}
         />
 
         <RejectCustomerModal
@@ -2823,6 +2824,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           }}
           onConfirm={handleRejectConfirm}
           customerName={selectedCustomerForAction?.customerName}
+          loading={actionLoading}
         />
 
         {/* Verify Modal */}

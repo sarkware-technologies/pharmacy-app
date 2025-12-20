@@ -23,6 +23,7 @@ import {
 } from '../../../redux/slices/customerSlice';
 import AppText from "../../../components/AppText"
 import RegistrationFormRouter from "../../../components/RegistrationFormRouter";
+import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 
@@ -42,6 +43,10 @@ const RegistrationType = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  
+  // Ref to access form's save draft function
+  const formSaveDraftRef = useRef(null);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -214,6 +219,37 @@ const RegistrationType = () => {
     return name.replace(/^Private\s*-\s*/i, '').trim();
   };
 
+  // Handle Save as Draft - calls the form's save draft function
+  const handleSaveAsDraft = async () => {
+    if (!formSubmitted || !selectedType) {
+      Toast.show({
+        type: 'info',
+        text1: 'No Form',
+        text2: 'Please select a type and category first',
+        position: 'top',
+      });
+      return;
+    }
+
+    if (formSaveDraftRef.current) {
+      try {
+        setSavingDraft(true);
+        await formSaveDraftRef.current();
+      } catch (error) {
+        console.error('Error saving draft:', error);
+      } finally {
+        setSavingDraft(false);
+      }
+    } else {
+      Toast.show({
+        type: 'info',
+        text1: 'No Data',
+        text2: 'Please fill at least one field before saving as draft',
+        position: 'top',
+      });
+    }
+  };
+
   const TypeButton = ({ type, isSelected }) => {
     const buttonScale = useRef(new Animated.Value(1)).current;
 
@@ -314,6 +350,19 @@ const RegistrationType = () => {
           <ChevronLeft />
         </TouchableOpacity>
         <AppText style={styles.headerTitle}>Registration</AppText>
+        {formSubmitted && selectedType && (
+          <TouchableOpacity
+            style={styles.saveDraftButton}
+            onPress={handleSaveAsDraft}
+            disabled={savingDraft}
+          >
+            {savingDraft ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <AppText style={styles.saveDraftButtonText}>Save as Draft</AppText>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Selection Section - Always visible at top */}
@@ -437,6 +486,10 @@ const RegistrationType = () => {
                 onChangeSelection={() => {
                   // Go back to selection screen
                   setFormSubmitted(false);
+                  formSaveDraftRef.current = null;
+                }}
+                onSaveDraftRef={(saveDraftFn) => {
+                  formSaveDraftRef.current = saveDraftFn;
                 }}
               />
             </View>
@@ -455,8 +508,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
@@ -468,6 +522,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#333',
+    flex: 1,
+  },
+  saveDraftButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  saveDraftButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   scrollContent: {
     paddingBottom: 0,

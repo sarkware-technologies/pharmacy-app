@@ -116,6 +116,17 @@ export const customerAPI = {
         }
     },
 
+    // Save customer as draft
+    saveCustomerDraft: async (draftData) => {
+        try {
+            const response = await apiClient.post('/user-management/customer/draft', draftData);
+            return response;
+        } catch (error) {
+            console.error('Error saving customer draft:', error);
+            throw error;
+        }
+    },
+
     // Update customer
     updateCustomer: async (customerId, customerData) => {
         try {

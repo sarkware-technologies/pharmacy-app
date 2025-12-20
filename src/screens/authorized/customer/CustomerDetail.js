@@ -1856,6 +1856,7 @@ const CustomerDetail = ({ navigation, route }) => {
           titleText={'Are you sure you want to\nSend back customer?'}
           confirmLabel="Send Back"
           requireComment={true}
+          loading={actionLoading}
         />
 
         {/* Verify Modal */}

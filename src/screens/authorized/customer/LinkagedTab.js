@@ -243,8 +243,11 @@ export const LinkagedTab = ({
       return;
     }
 
+    // For active customers, try to fetch latest-draft even if instance is empty
+    // as they might have instanceId from stageId[0]
+    const isActiveCustomer = selectedCustomer?.statusName === 'ACTIVE';
     
-    if( Object.keys(instance).length !== 0 ){
+    if( Object.keys(instance).length !== 0 || isActiveCustomer ){
       console.log('instanceId', instanceId);
       try {
         const response = await customerAPI.getLatestDraft(instanceIdFromDetails, actorId);
@@ -386,7 +389,7 @@ export const LinkagedTab = ({
 
 
     
-  }, [instanceIdFromDetails, loggedInUser?.userId, loggedInUser?.id, instanceId, customerRequestedDivisions, instance, mappingData]);
+  }, [instanceIdFromDetails, loggedInUser?.userId, loggedInUser?.id, instanceId, customerRequestedDivisions, instance, mappingData, selectedCustomer?.statusName]);
 
   // Legacy function name for backward compatibility
   const fetchAndMergeDraftDivisions = fetchLatestDraftData;
@@ -448,6 +451,8 @@ export const LinkagedTab = ({
   const [showLinkedOrgCodeDropdown, setShowLinkedOrgCodeDropdown] = useState({}); // { distributorId: boolean }
   // State for "All Divisions" dropdown visibility
   const [showAllDivisionsDropdown, setShowAllDivisionsDropdown] = useState({}); // { distributorId: boolean }
+  // State for selected divisions for each linked distributor
+  const [linkedDistributorSelectedDivisions, setLinkedDistributorSelectedDivisions] = useState({}); // { distributorId: [divisionId1, divisionId2, ...] }
 
   // Filter states for distributors
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -690,6 +695,36 @@ export const LinkagedTab = ({
           Array.isArray(customerDivisionsResponse.data)
         ) {
           openedDivisions = customerDivisionsResponse.data;
+          
+          // For active customers, also update mergedRequestedDivisions with divisions from API
+          // This ensures divisions show in "Requested" column for active customers
+          if (selectedCustomer?.statusName === 'ACTIVE') {
+            // Merge divisions from API with existing mergedRequestedDivisions
+            // Use a functional update to get the current state
+            setMergedRequestedDivisions(prevMerged => {
+              const existingDivisionsMap = new Map();
+              prevMerged.forEach(div => {
+                const key = String(div.divisionId || div.id);
+                existingDivisionsMap.set(key, div);
+              });
+              
+              // Add divisions from API that don't already exist
+              openedDivisions.forEach(div => {
+                const key = String(div.divisionId || div.id);
+                if (!existingDivisionsMap.has(key)) {
+                  existingDivisionsMap.set(key, {
+                    divisionId: div.divisionId || div.id,
+                    divisionCode: div.divisionCode || '',
+                    divisionName: div.divisionName || '',
+                    isOpen: div.isOpen !== undefined ? div.isOpen : false,
+                  });
+                }
+              });
+              
+              // Return merged data
+              return Array.from(existingDivisionsMap.values());
+            });
+          }
         }
 
         // Process all available divisions and filter out already linked ones
@@ -3317,10 +3352,18 @@ export const LinkagedTab = ({
                         )}
                       </View>
 
-                      {/* All Divisions Dropdown - Shows requested divisions */}
+                      {/* All Divisions Dropdown - Shows requested divisions with checkboxes */}
                       <View style={styles.dropdownWrapper}>
                         <TouchableOpacity 
-                          style={styles.dropdown}
+                          style={[
+                            styles.dropdown,
+                            (() => {
+                              const distId = String(item.id || item.distributorId);
+                              const selectedDivs = linkedDistributorSelectedDivisions[distId] || [];
+                              const hasSelection = selectedDivs.length > 0;
+                              return !hasSelection ? styles.dropdownError : null;
+                            })()
+                          ]}
                           onPress={() => {
                             const distId = String(item.id || item.distributorId);
                             // Close other dropdowns when opening this one
@@ -3331,7 +3374,21 @@ export const LinkagedTab = ({
                             }));
                           }}
                         >
-                          <AppText style={styles.dropdownText}>All Divisions</AppText>
+                          <AppText style={styles.dropdownText}>
+                            {(() => {
+                              const distId = String(item.id || item.distributorId);
+                              const selectedDivs = linkedDistributorSelectedDivisions[distId] || [];
+                              if (selectedDivs.length === 0) {
+                                return 'All Divisions';
+                              } else if (selectedDivs.length === 1) {
+                                const divId = selectedDivs[0];
+                                const div = mergedRequestedDivisions.find(d => String(d.divisionId || d.id) === divId);
+                                return div ? `${div.divisionName || div.name}` : 'All Divisions';
+                              } else {
+                                return `${selectedDivs.length} Divisions Selected`;
+                              }
+                            })()}
+                          </AppText>
                           <IconMaterial
                             name="keyboard-arrow-down"
                             size={18}
@@ -3342,26 +3399,59 @@ export const LinkagedTab = ({
                         {showAllDivisionsDropdown[String(item.id || item.distributorId)] && (
                           <View style={[styles.dropdownMenu, styles.allDivisionsDropdownMenu]}>
                             {mergedRequestedDivisions && mergedRequestedDivisions.length > 0 ? (
-                              mergedRequestedDivisions.map((division, index) => (
-                                <TouchableOpacity
-                                  key={`${division.divisionId || division.id}-${index}`}
-                                  style={[
-                                    styles.dropdownMenuItem,
-                                    index === mergedRequestedDivisions.length - 1 && styles.dropdownMenuItemLast
-                                  ]}
-                                  onPress={() => {
-                                    const distId = String(item.id || item.distributorId);
-                                    setShowAllDivisionsDropdown(prev => ({
-                                      ...prev,
-                                      [distId]: false,
-                                    }));
-                                  }}
-                                >
-                                  <AppText style={styles.dropdownMenuText}>
-                                    {division.divisionName || division.name} ({division.divisionCode || division.code})
-                                  </AppText>
-                                </TouchableOpacity>
-                              ))
+                              mergedRequestedDivisions.map((division, index) => {
+                                const distId = String(item.id || item.distributorId);
+                                const divisionId = String(division.divisionId || division.id);
+                                const selectedDivs = linkedDistributorSelectedDivisions[distId] || [];
+                                const isSelected = selectedDivs.includes(divisionId);
+                                
+                                return (
+                                  <TouchableOpacity
+                                    key={`${division.divisionId || division.id}-${index}`}
+                                    style={[
+                                      styles.dropdownMenuItem,
+                                      styles.dropdownMenuItemWithCheckbox,
+                                      index === mergedRequestedDivisions.length - 1 && styles.dropdownMenuItemLast
+                                    ]}
+                                    onPress={() => {
+                                      const currentSelected = linkedDistributorSelectedDivisions[distId] || [];
+                                      let newSelected;
+                                      
+                                      if (isSelected) {
+                                        // If trying to deselect, ensure at least one remains selected
+                                        if (currentSelected.length > 1) {
+                                          newSelected = currentSelected.filter(id => id !== divisionId);
+                                        } else {
+                                          // Cannot deselect the last one
+                                          return;
+                                        }
+                                      } else {
+                                        // Add to selection
+                                        newSelected = [...currentSelected, divisionId];
+                                      }
+                                      
+                                      setLinkedDistributorSelectedDivisions(prev => ({
+                                        ...prev,
+                                        [distId]: newSelected,
+                                      }));
+                                    }}
+                                  >
+                                    <View style={styles.checkboxContainer}>
+                                      <View style={[
+                                        styles.checkbox,
+                                        isSelected && styles.checkboxSelected
+                                      ]}>
+                                        {isSelected && (
+                                          <IconMaterial name="check" size={14} color="#fff" />
+                                        )}
+                                      </View>
+                                    </View>
+                                    <AppText style={styles.dropdownMenuText}>
+                                      {division.divisionName || division.name} ({division.divisionCode || division.code})
+                                    </AppText>
+                                  </TouchableOpacity>
+                                );
+                              })
                             ) : (
                               <View style={styles.dropdownMenuItem}>
                                 <AppText style={styles.dropdownMenuText}>No divisions available</AppText>
@@ -3411,11 +3501,9 @@ export const LinkagedTab = ({
                     >
                       <View style={[
                         styles.radioOuter,
-                        (linkedDistributorSupplyModes[String(item.id || item.distributorId)] !== '1' && 
-                         (!item.supplyMode || item.supplyMode !== '1')) && styles.radioSelected
+                        linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '0' && styles.radioSelected
                       ]}>
-                        {(linkedDistributorSupplyModes[String(item.id || item.distributorId)] !== '1' && 
-                          (!item.supplyMode || item.supplyMode !== '1')) && (
+                        {linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '0' && (
                           <View style={styles.radioInner} />
                         )}
                       </View>
@@ -3434,19 +3522,13 @@ export const LinkagedTab = ({
                     >
                       <View style={[
                         styles.radioOuter,
-                        (linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '1' || 
-                         item.supplyMode === '1') && styles.radioSelected
+                        linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '1' && styles.radioSelected
                       ]}>
-                        {(linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '1' || 
-                          item.supplyMode === '1') && (
+                        {linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '1' && (
                           <View style={styles.radioInner} />
                         )}
                       </View>
-                      <AppText style={[
-                        styles.radioText,
-                        (linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '1' || 
-                         item.supplyMode === '1') ? styles.radioText : styles.radioDisabled
-                      ]}>Chargeback</AppText>
+                      <AppText style={styles.radioText}>Chargeback</AppText>
                     </TouchableOpacity>
                   </View>
 
@@ -6375,10 +6457,64 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
   },
+  dropdownError: {
+    borderColor: '#EF4444',
+    borderWidth: 1.5,
+  },
+  dropdownMenuItemWithCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  checkboxContainer: {
+    marginRight: 10,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  checkboxSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  dropdownError: {
+    borderColor: '#EF4444',
+    borderWidth: 1.5,
+  },
 
   dropdownText: {
     fontSize: 14,
     color: '#111827',
+  },
+  dropdownMenuItemWithCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  checkboxContainer: {
+    marginRight: 10,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  checkboxSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 
   marginBox: {
@@ -6417,12 +6553,14 @@ const styles = StyleSheet.create({
 
   radioRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
   },
 
   radioItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 18,
+    flex: 0,
   },
 
   radioOuter: {

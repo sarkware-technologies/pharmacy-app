@@ -8,6 +8,7 @@ import {
   TextInput,
   Dimensions,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import { colors } from '../../styles/colors';
 import {AppText,AppInput} from ".."
@@ -22,6 +23,7 @@ const RejectCustomerModal = ({
   titleText = 'Are you sure you want to\nReject customer?',
   confirmLabel = 'Yes',
   requireComment = true,
+  loading = false,
 }) => {
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
@@ -81,6 +83,7 @@ const RejectCustomerModal = ({
               value={comment}
               onChangeText={handleCommentChange}
               textAlignVertical="top"
+              editable={!loading}
             />
             {error && <AppText style={styles.errorText}>{error}</AppText>}
           </View>
@@ -88,17 +91,26 @@ const RejectCustomerModal = ({
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={styles.yesButton}
+              style={[
+                styles.yesButton,
+                loading && styles.yesButtonDisabled
+              ]}
               onPress={handleConfirm}
               activeOpacity={0.7}
+              disabled={loading}
             >
-              <AppText style={styles.yesButtonText}>{confirmLabel}</AppText>
+              {loading ? (
+                <ActivityIndicator size="small" color="#6B7280" />
+              ) : (
+                <AppText style={styles.yesButtonText}>{confirmLabel}</AppText>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.noButton}
               onPress={handleClose}
               activeOpacity={0.7}
+              disabled={loading}
             >
               <AppText style={styles.noButtonText}>No</AppText>
             </TouchableOpacity>
@@ -187,6 +199,9 @@ const styles = StyleSheet.create({
     borderColor: '#6B7280',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  yesButtonDisabled: {
+    opacity: 0.6,
   },
   yesButtonText: {
     fontSize: 16,

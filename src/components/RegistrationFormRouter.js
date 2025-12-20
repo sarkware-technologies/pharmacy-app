@@ -12,6 +12,7 @@ const RegistrationFormRouter = ({
   selectedSubCategory,
   navigation,
   onChangeSelection,
+  onSaveDraftRef,
 }) => {
   // Force remount when selections change
   const [key, setKey] = useState(0);
@@ -110,6 +111,7 @@ const RegistrationFormRouter = ({
         selectedCategory={selectedCategory}
         selectedSubCategory={selectedSubCategory}
         onChangeSelection={onChangeSelection}
+        onSaveDraftRef={onSaveDraftRef}
       >
         <FormComponent
           key={key}
@@ -117,6 +119,7 @@ const RegistrationFormRouter = ({
           selectedCategory={selectedCategory}
           selectedSubCategory={selectedSubCategory}
           navigation={navigation}
+          onSaveDraftRef={onSaveDraftRef}
         />
       </RegistrationFormWrapper>
     );

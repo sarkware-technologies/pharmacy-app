@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unstable-nested-components */
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -47,7 +47,7 @@ const DOC_TYPES = {
   GST: 8,
 };
 
-const PharmacyWholesalerForm = () => {
+const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
   const navigation = useNavigation();
   const route = useRoute();
   const scrollViewRef = useRef(null);
@@ -209,7 +209,247 @@ const PharmacyWholesalerForm = () => {
     gst: null,
   });
 
-  // Set navigation header - hide default header in edit/onboard mode, show custom header
+  // Save as Draft handler - only sends filled fields
+  const handleSaveAsDraft = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // Build draft payload with only filled fields
+      const buildDraftPayload = () => {
+        const draftPayload = {
+          typeId: typeId || 1,
+          categoryId: categoryId || 2,
+          subCategoryId: subCategoryId || 0,
+          isMobileVerified: verificationStatus.mobile || false,
+          isEmailVerified: verificationStatus.email || false,
+          isExisting: false,
+          isBuyer: true,
+          customerGroupId: formData.customerGroupId || null,
+        };
+
+        // Build generalDetails with only filled fields
+        const generalDetails = {};
+        if (formData.pharmacyName && formData.pharmacyName.trim()) {
+          generalDetails.name = formData.pharmacyName.trim();
+        }
+        if (formData.shortName && formData.shortName.trim()) {
+          generalDetails.shortName = formData.shortName.trim();
+        }
+        if (formData.address1 && formData.address1.trim()) {
+          generalDetails.address1 = formData.address1.trim();
+        }
+        if (formData.address2 && formData.address2.trim()) {
+          generalDetails.address2 = formData.address2.trim();
+        }
+        if (formData.address3 && formData.address3.trim()) {
+          generalDetails.address3 = formData.address3.trim();
+        }
+        if (formData.address4 && formData.address4.trim()) {
+          generalDetails.address4 = formData.address4.trim();
+        }
+        if (formData.pincode && formData.pincode.trim()) {
+          const pincodeNum = parseInt(formData.pincode, 10);
+          if (!isNaN(pincodeNum)) {
+            generalDetails.pincode = pincodeNum;
+          }
+        }
+        if (formData.area && formData.area.trim()) {
+          generalDetails.area = formData.area.trim();
+        }
+        if (formData.areaId) {
+          const areaIdNum = parseInt(formData.areaId, 10);
+          if (!isNaN(areaIdNum)) {
+            generalDetails.areaId = areaIdNum;
+          }
+        }
+        if (formData.cityId) {
+          const cityIdNum = parseInt(formData.cityId, 10);
+          if (!isNaN(cityIdNum)) {
+            generalDetails.cityId = cityIdNum;
+          }
+        }
+        if (formData.stateId) {
+          const stateIdNum = parseInt(formData.stateId, 10);
+          if (!isNaN(stateIdNum)) {
+            generalDetails.stateId = stateIdNum;
+          }
+        }
+
+        // Always add generalDetails to ensure validation works
+        draftPayload.generalDetails = generalDetails;
+
+        // Build securityDetails with only filled fields
+        const securityDetails = {};
+        if (formData.mobileNumber && formData.mobileNumber.trim()) {
+          securityDetails.mobile = formData.mobileNumber.trim();
+        }
+        if (formData.emailAddress && formData.emailAddress.trim()) {
+          securityDetails.email = formData.emailAddress.trim();
+        }
+        if (formData.panNumber && formData.panNumber.trim()) {
+          securityDetails.panNumber = formData.panNumber.trim();
+        }
+        if (formData.gstNumber && formData.gstNumber.trim()) {
+          securityDetails.gstNumber = formData.gstNumber.trim();
+        }
+
+        // Only add securityDetails if it has at least one field
+        if (Object.keys(securityDetails).length > 0) {
+          draftPayload.securityDetails = securityDetails;
+        }
+
+        // Build licenceDetails with only filled fields
+        const licenceDetails = {
+          registrationDate: new Date().toISOString(),
+          licence: [],
+        };
+
+        if (formData.license20b && formData.license20b.trim()) {
+          licenceDetails.licence.push({
+            licenceTypeId: licenseTypes.LICENSE_20B?.id || 2,
+            licenceNo: formData.license20b.trim(),
+            licenceValidUpto: formatDateForAPI(formData.license20bExpiryDate),
+            hospitalCode: '',
+          });
+        }
+
+        if (formData.license21b && formData.license21b.trim()) {
+          licenceDetails.licence.push({
+            licenceTypeId: licenseTypes.LICENSE_21B?.id || 4,
+            licenceNo: formData.license21b.trim(),
+            licenceValidUpto: formatDateForAPI(formData.license21bExpiryDate),
+            hospitalCode: '',
+          });
+        }
+
+        // Only add licenceDetails if it has at least one licence
+        if (licenceDetails.licence.length > 0) {
+          draftPayload.licenceDetails = licenceDetails;
+        }
+
+        // Add customerDocs if there are any uploaded documents
+        if (uploadedDocs && uploadedDocs.length > 0) {
+          draftPayload.customerDocs = uploadedDocs.map(doc => ({
+            s3Path: doc.s3Path,
+            docTypeId: String(doc.docTypeId),
+            fileName: doc.fileName,
+            id: String(doc.id || ''),
+          }));
+        }
+
+        // Add mapping if there are selected hospitals or doctors
+        if (formData.selectedHospitals && formData.selectedHospitals.length > 0) {
+          draftPayload.mapping = {
+            hospitals: formData.selectedHospitals.map(h => ({
+              id: Number(h.id),
+              isNew: false,
+            })),
+          };
+        } else if (formData.selectedDoctors && formData.selectedDoctors.length > 0) {
+          draftPayload.mapping = {
+            doctors: formData.selectedDoctors.map(d => ({
+              id: Number(d.id),
+              isNew: false,
+            })),
+          };
+        }
+
+        // Add suggestedDistributors if there are any stockists
+        if (formData.stockists && formData.stockists.length > 0 && formData.stockists[0].name) {
+          draftPayload.suggestedDistributors = formData.stockists
+            .filter(s => s.name && s.name.trim())
+            .map(stockist => ({
+              distributorCode: stockist.code || '',
+              distributorName: stockist.name || '',
+              city: stockist.city || '',
+              customerId: stockist.name,
+            }));
+        }
+
+        return draftPayload;
+      };
+
+      const draftPayload = buildDraftPayload();
+
+      // Check if there's at least some data to save
+      // Check if there's at least some data to save
+      // First check the built payload
+      const hasPayloadData = 
+        (draftPayload.generalDetails && Object.keys(draftPayload.generalDetails).length > 0) ||
+        (draftPayload.securityDetails && Object.keys(draftPayload.securityDetails).length > 0) ||
+        (draftPayload.licenceDetails && draftPayload.licenceDetails.licence && draftPayload.licenceDetails.licence.length > 0) ||
+        (draftPayload.customerDocs && Array.isArray(draftPayload.customerDocs) && draftPayload.customerDocs.length > 0) ||
+        (draftPayload.mapping && (draftPayload.mapping.hospitals || draftPayload.mapping.doctors || draftPayload.mapping.pharmacy)) ||
+        (draftPayload.suggestedDistributors && Array.isArray(draftPayload.suggestedDistributors) && draftPayload.suggestedDistributors.length > 0);
+
+      // Fallback: Check formData directly for any filled fields
+      const hasFormData = 
+        (formData.pharmacyName && formData.pharmacyName.trim()) ||
+        (formData.shortName && formData.shortName.trim()) ||
+        (formData.address1 && formData.address1.trim()) ||
+        (formData.address2 && formData.address2.trim()) ||
+        (formData.address3 && formData.address3.trim()) ||
+        (formData.address4 && formData.address4.trim()) ||
+        (formData.pincode && formData.pincode.trim()) ||
+        (formData.area && formData.area.trim()) ||
+        formData.areaId ||
+        formData.cityId ||
+        formData.stateId ||
+        (formData.mobileNumber && formData.mobileNumber.trim()) ||
+        (formData.emailAddress && formData.emailAddress.trim()) ||
+        (formData.panNumber && formData.panNumber.trim()) ||
+        (formData.gstNumber && formData.gstNumber.trim()) ||
+        (formData.license20b && formData.license20b.trim()) ||
+        (formData.license21b && formData.license21b.trim()) ||
+        (uploadedDocs && uploadedDocs.length > 0) ||
+        (formData.selectedHospitals && formData.selectedHospitals.length > 0) ||
+        (formData.selectedDoctors && formData.selectedDoctors.length > 0) ||
+        (formData.stockists && formData.stockists.length > 0 && formData.stockists.some(s => s.name || s.code || s.city));
+
+      const hasData = hasPayloadData || hasFormData;
+
+      if (!hasData) {
+        Toast.show({
+          type: 'info',
+          text1: 'No Data',
+          text2: 'Please fill at least one field before saving as draft',
+          position: 'top',
+        });
+        setLoading(false);
+        return;
+      }
+
+      const response = await customerAPI.saveCustomerDraft(draftPayload);
+
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Draft Saved',
+          text2: 'Your registration has been saved as draft successfully',
+          position: 'top',
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Save Failed',
+          text2: response.message || 'Failed to save draft. Please try again.',
+          position: 'top',
+        });
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to save draft. Please check your connection and try again.',
+        position: 'top',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [typeId, categoryId, subCategoryId, verificationStatus, formData, licenseTypes, uploadedDocs, formatDateForAPI]);
+
+  // Set navigation header - always hide default header, we use custom header
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false, // Always hide default header, we use custom header
@@ -1596,7 +1836,7 @@ const PharmacyWholesalerForm = () => {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* Custom Header for Edit Mode and Onboard Mode */}
+      {/* Custom Header - Only for Edit/Onboard Mode */}
       {(isEditMode || isOnboardMode) && (
         <View style={styles.header}>
           <TouchableOpacity
@@ -2893,9 +3133,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+    justifyContent: 'space-between',
   },
   backButton: {
     padding: 4,
@@ -2906,6 +3147,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     flex: 1,
+  },
+  saveDraftButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  saveDraftButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   typeHeader: {
     flexDirection: 'row',

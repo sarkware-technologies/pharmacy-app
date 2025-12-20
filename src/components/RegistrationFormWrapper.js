@@ -13,6 +13,7 @@ const RegistrationFormWrapper = ({
   selectedSubCategory,
   children,
   onChangeSelection,
+  onSaveDraftRef,
 }) => {
   // Generate display text based on selections
   const getDisplayText = () => {
@@ -59,7 +60,7 @@ const RegistrationFormWrapper = ({
 
       {/* Form Content */}
       <View style={styles.formContainer}>
-        {children}
+        {React.cloneElement(children, { onSaveDraftRef })}
       </View>
     </View>
   );
