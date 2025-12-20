@@ -356,12 +356,6 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
     if (visible && stageId) {
       fetchWorkflowData();
     } else if (visible && !stageId) {
-      // Show error if no stageId
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Stage ID is required to fetch workflow timeline',
-      });
       setLoading(false);
     } else {
       // Reset when modal closes

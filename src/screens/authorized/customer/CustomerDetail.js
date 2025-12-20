@@ -44,7 +44,7 @@ import PERMISSIONS from '../../../utils/RBAC/permissionENUM';
 import Sync from '../../../components/icons/Sync';
 import Comment from '../../../components/icons/Comment';
 import CommentsModal from '../../../components/modals/CommentsModal';
-
+import Toast from 'react-native-toast-message';
 
 
 
@@ -108,6 +108,12 @@ const CustomerDetail = ({ navigation, route }) => {
     (state) => state.customer
   );
 
+  useEffect(() => {
+    if(selectedCustomer?.action == "LINK_DT"){
+      setActiveTab('linkaged');
+    }
+  }, [selectedCustomer]);
+
   // Get logged in user
   const loggedInUser = useSelector(state => state.auth.user);
 
@@ -120,10 +126,10 @@ const CustomerDetail = ({ navigation, route }) => {
   // Fetch customer details on mount - FIXED to prevent double API calls
   useEffect(() => {
 
-    console.log(customer);
+    console.log(customer, "custoemr");
     
     const customerId = customer?.stgCustomerId || customer?.customerId;
-    const isStaging = customer?.statusName === 'ACTIVE'  ? false : true;
+    const isStaging = customer?.customerId === null || customer?.customerId === undefined;
 
     if (customerId) {
       dispatch(setCurrentCustomerId(customerId));
@@ -987,7 +993,12 @@ const CustomerDetail = ({ navigation, route }) => {
   // Show toast notification
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const showToast = (message, type = 'success') => {
-    Alert.alert(type === 'success' ? 'Success' : 'Error', message);
+   Toast.show({
+    type: type,
+    text1: type === 'success' ? 'Success' : 'Error',
+    text2: message,
+    position: 'bottom',
+   });
   };
 
   const handleSendBackConfirm = useCallback(async (comment) => {
@@ -1052,9 +1063,16 @@ const CustomerDetail = ({ navigation, route }) => {
       const response = await customerAPI.workflowAction(instanceId, actionDataPayload);
 
       setApproveModalVisible(false);
-      showToast(`Customer approved successfully!`, 'success');
 
-      // Navigate back after approval
+      // Navigate back to customer list (refresh will happen via useFocusEffect)
+      // Store action in a way that persists across navigation
+      // We'll use a global ref or navigation state
+      const parentNav = navigation.getParent();
+      if (parentNav) {
+        // Set params on the parent tab navigator
+        parentNav.setParams({ pendingCustomerAction: 'approve' });
+      }
+
       setTimeout(() => {
         navigation.goBack();
       }, 500);
@@ -1151,7 +1169,14 @@ const CustomerDetail = ({ navigation, route }) => {
       setLatestDraftData(null);
       showToast(`Customer verified successfully!`, 'success');
 
-      // Navigate back after verification
+      // Navigate back to customer list (refresh will happen via useFocusEffect)
+      // Store action in a way that persists across navigation
+      const parentNav = navigation.getParent();
+      if (parentNav) {
+        // Set params on the parent tab navigator
+        parentNav.setParams({ pendingCustomerAction: 'verify' });
+      }
+
       setTimeout(() => {
         navigation.goBack();
       }, 500);
@@ -1192,9 +1217,15 @@ const CustomerDetail = ({ navigation, route }) => {
       const response = await customerAPI.workflowAction(instanceId, actionDataPayload);
 
       setRejectModalVisible(false);
-      showToast(`Customer rejected!`, 'error');
 
-      // Navigate back after rejection
+      // Navigate back to customer list (refresh will happen via useFocusEffect)
+      // Store action in a way that persists across navigation
+      const parentNav = navigation.getParent();
+      if (parentNav) {
+        // Set params on the parent tab navigator
+        parentNav.setParams({ pendingCustomerAction: 'reject' });
+      }
+
       setTimeout(() => {
         navigation.goBack();
       }, 500);
@@ -1686,6 +1717,7 @@ const CustomerDetail = ({ navigation, route }) => {
             // For PENDING and other customers, use stageId[0] or stgCustomerId
             return selectedCustomer?.stageId?.[0] || customer?.stageId?.[0] || selectedCustomer?.stgCustomerId || customer?.stgCustomerId;
           })()}
+          instance={customerData?.instance || selectedCustomer?.instance}
           customerGroupId={selectedCustomer?.customerGroupId || customer?.customerGroupId}
           action={customer?.action || selectedCustomer?.action}
         />}

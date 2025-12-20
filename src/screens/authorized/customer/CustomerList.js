@@ -23,10 +23,10 @@ import {
   PanResponder,
 } from 'react-native';
 
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../../styles/colors';
-import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -88,14 +88,18 @@ import ChevronRight from '../../../components/icons/ChevronRight';
 import FilterCheck from '../../../components/icons/FilterCheck';
 import CheckCircle from '../../../components/icons/CheckCircle';
 
-const CustomerList = ({ navigation }) => {
+const CustomerList = ({ navigation: navigationProp }) => {
+  const navigationHook = useNavigation();
+  const navigation = navigationProp || navigationHook;
   const route = useRoute();
+  const insets = useSafeAreaInsets();
 
   const dispatch = useDispatch();
 
   // Get customers from Redux instead of mock data
   const customers = useSelector(selectCustomers);
 
+  console.log(loggedInUser, "loggedInUser");
 
 
   const customerTypes = useSelector(selectCustomerTypes);
@@ -145,6 +149,7 @@ const CustomerList = ({ navigation }) => {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
+  const toastTimeoutRef = useRef(null);
 
   // Documents modal state
   const [showDocumentsModal, setShowDocumentsModal] = useState(false);
@@ -179,6 +184,7 @@ const CustomerList = ({ navigation }) => {
   const tabRefs = useRef({});
   const isHardRefreshRef = useRef(false); // Track if we're doing a hard refresh
   const currentTabForDataRef = useRef(activeTab); // Track which tab's data is currently displayed
+  const wasFocusedRef = useRef(false); // Track if screen was previously focused (to detect return from CustomerDetail)
   
   // Filter buttons scroll ref for "waiting for approval" tab
   const filterButtonsScrollRef = useRef(null);
@@ -315,12 +321,114 @@ const CustomerList = ({ navigation }) => {
     }
   }, [route?.params?.sendBackToast, navigation]);
 
-  // Fetch tab counts whenever the customer tab becomes active (screen is focused)
+  // Show toast when returning from CustomerDetail after approve/reject/verify
+  useFocusEffect(
+    React.useCallback(() => {
+      // Check parent navigation params for pendingCustomerAction
+      const parentNav = navigation.getParent();
+      if (parentNav) {
+        try {
+          const parentState = parentNav.getState();
+          const currentRoute = parentState?.routes?.[parentState?.index];
+          const pendingAction = currentRoute?.params?.pendingCustomerAction;
+          
+          if (pendingAction) {
+            let message = '';
+            let type = 'success';
+            
+            if (pendingAction === 'approve') {
+              message = 'Customer has been successfully approved!';
+              type = 'success';
+            } else if (pendingAction === 'reject') {
+              message = 'Customer has been rejected!';
+              type = 'error';
+            } else if (pendingAction === 'verify') {
+              message = 'Customer has been successfully verified!';
+              type = 'success';
+            }
+            
+            if (message) {
+              // Use setTimeout to ensure toast shows after navigation completes
+              setTimeout(() => {
+                showToast(message, type);
+                // Clear the action parameter from parent
+                parentNav.setParams({ pendingCustomerAction: undefined });
+              }, 600); // Slightly longer than navigation delay (500ms) to ensure screen is focused
+            }
+          }
+        } catch (error) {
+          console.error('Error checking parent navigation params:', error);
+        }
+      }
+    }, [navigation])
+  );
+
+  // Fetch tab counts and refresh list whenever the customer tab becomes active (screen is focused)
   useFocusEffect(
     React.useCallback(() => {
       console.log('🔄 Customer tab is active - fetching tab counts');
       dispatch(fetchTabCounts());
-    }, [dispatch])
+      
+      // Refresh the customer list when screen comes into focus (after navigating back from CustomerDetail)
+      // Only refresh if we were previously focused (to avoid refreshing on initial mount)
+      if (wasFocusedRef.current) {
+        // Refresh the customer list based on current active tab
+        if (activeTab === 'all') {
+          dispatch(fetchCustomersList({
+            page: 1,
+            limit: pagination.limit,
+            searchText: filters.searchText,
+            isStaging: false,
+            isAll: true
+          }));
+        } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
+          const statusIds = getStatusIdsForTab(activeTab);
+          const payload = {
+            page: 1,
+            limit: pagination.limit,
+            searchText: filters.searchText,
+            isStaging: true,
+            statusIds: statusIds
+          };
+          // Add filter for waitingForApproval tab
+          if (activeTab === 'waitingForApproval') {
+            payload.filter = getFilterValue(activeFilterButton);
+          }
+          // Add filter for draft tab
+          if (activeTab === 'draft') {
+            payload.filter = 'NEW';
+          }
+          dispatch(fetchCustomersList(payload));
+        } else if (activeTab === 'doctorSupply') {
+          const statusIds = getStatusIdsForTab(activeTab);
+          dispatch(fetchCustomersList({
+            page: 1,
+            limit: pagination.limit,
+            searchText: filters.searchText,
+            isStaging: false,
+            statusIds: statusIds,
+            customerGroupId: 1
+          }));
+        } else {
+          const statusIds = getStatusIdsForTab(activeTab);
+          dispatch(fetchCustomersList({
+            page: 1,
+            limit: pagination.limit,
+            searchText: filters.searchText,
+            isStaging: false,
+            statusIds: statusIds
+          }));
+        }
+      }
+      
+      // Mark that we've been focused
+      wasFocusedRef.current = true;
+      
+      // Cleanup: reset on blur
+      return () => {
+        // Keep wasFocusedRef.current as true so next focus will trigger refresh
+      };
+    }, [dispatch, activeTab, pagination.limit, filters.searchText, activeFilterButton])
   );
 
   // Fetch customers on mount and when tab changes
@@ -752,14 +860,33 @@ const CustomerList = ({ navigation }) => {
 
   // Show toast notification
   const showToast = (message, type = 'success') => {
+    // Clear any existing timeout
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    
     setToastMessage(message);
     setToastType(type);
-    setToastVisible(true);
-
-    setTimeout(() => {
-      setToastVisible(false);
-    }, 3000);
+    
+    // Show toast after 500ms delay
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastVisible(true);
+      
+      // Hide toast after 3 seconds
+      setTimeout(() => {
+        setToastVisible(false);
+      }, 3000);
+    }, 500);
   };
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle tab press with centering
   const handleTabPress = async (tabName) => {
@@ -837,7 +964,7 @@ const CustomerList = ({ navigation }) => {
     setLoadingDocuments(true);
     try {
       const customerId = customer?.stgCustomerId || customer?.customerId;
-      const isStaging = customer?.statusName === 'ACTIVE' ? false : true;
+      const isStaging = customer?.statusName === 'ACTIVE' || customer?.statusName === 'UNVERIFIED' ? false : true;
 
       const response = await customerAPI.getCustomerDetails(customerId, isStaging);
 
@@ -955,7 +1082,7 @@ const CustomerList = ({ navigation }) => {
       const response = await customerAPI.workflowAction(instanceId, actionDataPyaload);
 
       setApproveModalVisible(false);
-      showToast(`Customer ${selectedCustomerForAction?.customerName} approved successfully!`, 'success');
+      showToast('Customer has been successfully approved!', 'success');
       setSelectedCustomerForAction(null);
 
       // Refresh the customer list after approval
@@ -1050,7 +1177,7 @@ const CustomerList = ({ navigation }) => {
       const response = await customerAPI.workflowAction(instanceId, actionDataPyaload);
 
       setRejectModalVisible(false);
-      showToast(`Customer ${selectedCustomerForAction?.customerName} rejected!`, 'error');
+      showToast('Customer has been rejected!', 'error');
       setSelectedCustomerForAction(null);
 
       // Refresh the customer list after rejection
@@ -1124,8 +1251,8 @@ const CustomerList = ({ navigation }) => {
       // Fetch latest draft data
       const latestDraftResponse = await customerAPI.getLatestDraft(instanceId, actorId);
       
-      if (latestDraftResponse?.data?.data) {
-        setLatestDraftData(latestDraftResponse.data.data);
+      if (latestDraftResponse?.data?.draftEdits) {
+        setLatestDraftData(latestDraftResponse.data.draftEdits);
         setVerifyModalVisible(true);
       } else {
         showToast('Failed to fetch latest draft data', 'error');
@@ -1191,7 +1318,7 @@ const CustomerList = ({ navigation }) => {
 
       setVerifyModalVisible(false);
       setLatestDraftData(null);
-      showToast(`Customer ${selectedCustomerForAction?.customerName} verified successfully!`, 'success');
+      showToast('Customer has been successfully verified!', 'success');
       setSelectedCustomerForAction(null);
 
       // Refresh the customer list after verification
@@ -1262,7 +1389,7 @@ const CustomerList = ({ navigation }) => {
         false // isActive = false for blocking
       );
 
-      showToast(`Customer ${customer?.customerName} blocked successfully!`, 'success');
+      showToast('Customer has been blocked successfully!', 'success');
 
       // Refresh the customer list
       if (activeTab === 'all') {
@@ -1331,7 +1458,7 @@ const CustomerList = ({ navigation }) => {
         true // isActive = true for unblocking
       );
 
-      showToast(`Customer ${customer?.customerName} unblocked successfully!`, 'success');
+      showToast('Customer has been unblocked successfully!', 'success');
 
       // Refresh the customer list
       if (activeTab === 'all') {
@@ -1815,7 +1942,9 @@ const CustomerList = ({ navigation }) => {
                 </View>
             )
             
-            : item.statusName === 'PENDING' && item.action == 'VERIFY' ? (
+            : item.statusName === 'IN_PROGRESS' ||
+            (item.statusName === 'PENDING' && item.action === 'VERIFY')
+             ? (
                 <View style={styles.pendingActions}>
                   <TouchableOpacity
                     style={styles.approveButton}
@@ -2722,12 +2851,20 @@ const CustomerList = ({ navigation }) => {
 
         {/* Toast Notification */}
         {toastVisible && (
-          <View style={styles.toastContainer}>
+          <View style={[styles.toastContainer, { bottom: (insets.bottom || 8) }]}>
             <View style={[
               styles.toast,
               toastType === 'success' ? styles.toastSuccess : styles.toastError
             ]}>
-              <AppText style={styles.toastText}>{toastMessage}</AppText>
+              <View style={styles.toastHeader}>
+                <AppText style={styles.toastLabel}>
+                  {toastType === 'success' ? 'Approve' : 'Reject'}
+                </AppText>
+                <TouchableOpacity onPress={() => setToastVisible(false)}>
+                  <AppText style={styles.toastOkButton}>OK</AppText>
+                </TouchableOpacity>
+              </View>
+              <AppText style={styles.toastMessage}>{toastMessage}</AppText>
             </View>
           </View>
         )}
@@ -3283,18 +3420,18 @@ const styles = StyleSheet.create({
   // Toast styles
   toastContainer: {
     position: 'absolute',
-    top: 60,
+    bottom: 0,
     left: 20,
     right: 20,
     alignItems: 'center',
     zIndex: 9999,
+    elevation: 10,
   },
   toast: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    minWidth: 200,
-    maxWidth: '90%',
+    paddingVertical: 16,
+    borderRadius: 12,
+    width: '100%',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -3305,16 +3442,32 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   toastSuccess: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#66B28C',
   },
   toastError: {
-    backgroundColor: '#EF4444',
+    backgroundColor: '#EF6B6B',
   },
-  toastText: {
-    color: '#fff',
+  toastHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  toastLabel: {
+    color: '#E8F5E9',
     fontSize: 14,
     fontWeight: '500',
-    textAlign: 'center',
+  },
+  toastOkButton: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  toastMessage: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'left',
   },
   // Documents Modal Styles
   documentsModalContent: {

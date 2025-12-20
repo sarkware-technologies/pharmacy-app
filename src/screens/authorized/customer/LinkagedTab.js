@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /* eslint-disable react/no-unstable-nested-components */
 /* eslint-disable no-dupe-keys */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -19,7 +20,6 @@ import IconMaterial from 'react-native-vector-icons/MaterialIcons';
 import {
   ApproveConfirmModal,
   LinkDivisionsModal,
-  RejectCustomerModal,
   TagHospitalModal,
 } from '../../../components/OnboardConfirmModel';
 import FilterModal from '../../../components/FilterModal';
@@ -119,6 +119,7 @@ export const LinkagedTab = ({
   customerRequestedDivisions = [],
   instanceId = null,
   customerGroupId = null,
+  instance = null,
   action = null
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('divisions');
@@ -185,8 +186,6 @@ export const LinkagedTab = ({
   // Get instanceId from customerDetails response (selectedCustomer from Redux)
   // Priority: selectedCustomer.instaceId > selectedCustomer.instanceId > prop instanceId
 
-  console.log(selectedCustomer, "selectedCustomer");
-  console.log(instanceId, "instanceId from props");
   const instanceIdFromDetails = selectedCustomer?.instaceId || selectedCustomer?.instanceId || instanceId;
 
   // Permission state for Other Division Section
@@ -230,6 +229,7 @@ export const LinkagedTab = ({
   // Helper function to fetch latest draft and populate divisions and distributors
   const fetchLatestDraftData = useCallback(async () => {
     // Only fetch if instanceId is available
+
     if (!instanceIdFromDetails) {
       // If no instanceId, just use the prop divisions
       setMergedRequestedDivisions(customerRequestedDivisions);
@@ -243,72 +243,150 @@ export const LinkagedTab = ({
       return;
     }
 
-    try {
-      console.log('Fetching latest draft for instanceId:', instanceIdFromDetails, 'actorId:', actorId);
-      const response = await customerAPI.getLatestDraft(instanceIdFromDetails, actorId);
-      
-      if (response?.data?.success && response?.data?.hasDraft && response?.data?.draftEdits) {
-        const draftEdits = response.data.draftEdits;
-        console.log('Latest draft data found:', draftEdits);
+    
+    if( Object.keys(instance).length !== 0 ){
+      console.log('instanceId', instanceId);
+      try {
+        const response = await customerAPI.getLatestDraft(instanceIdFromDetails, actorId);
+        
+        if (response?.data?.success && response?.data?.hasDraft && response?.data?.draftEdits) {
+          const draftEdits = response.data.draftEdits;
 
-        // Handle divisions from draft
-        if (draftEdits.divisions && Array.isArray(draftEdits.divisions)) {
-          const draftDivisions = draftEdits.divisions;
-          console.log('Draft divisions found:', draftDivisions);
+          // Handle divisions from draft
+          if (draftEdits.divisions && Array.isArray(draftEdits.divisions)) {
+            const draftDivisions = draftEdits.divisions;
 
-          // Merge draft divisions with existing customerRequestedDivisions
-          // Create a map of existing divisions by divisionId to avoid duplicates
-          const existingDivisionsMap = new Map();
-          customerRequestedDivisions.forEach(div => {
-            const key = String(div.divisionId || div.id);
-            existingDivisionsMap.set(key, div);
-          });
+            // Merge draft divisions with existing customerRequestedDivisions
+            // Create a map of existing divisions by divisionId to avoid duplicates
+            const existingDivisionsMap = new Map();
+            customerRequestedDivisions.forEach(div => {
+              const key = String(div.divisionId || div.id);
+              existingDivisionsMap.set(key, div);
+            });
 
-          // Add draft divisions that don't already exist
-          draftDivisions.forEach(draftDiv => {
-            const key = String(draftDiv.divisionId);
-            if (!existingDivisionsMap.has(key)) {
-              // Format draft division to match the structure of customerRequestedDivisions
-              existingDivisionsMap.set(key, {
-                divisionId: draftDiv.divisionId,
-                divisionCode: draftDiv.divisionCode,
-                divisionName: draftDiv.divisionName,
-                isOpen: draftDiv.isOpen || false,
+            // Add draft divisions that don't already exist
+            draftDivisions.forEach(draftDiv => {
+              const key = String(draftDiv.divisionId);
+              if (!existingDivisionsMap.has(key)) {
+                // Format draft division to match the structure of customerRequestedDivisions
+                existingDivisionsMap.set(key, {
+                  divisionId: draftDiv.divisionId,
+                  divisionCode: draftDiv.divisionCode,
+                  divisionName: draftDiv.divisionName,
+                  isOpen: draftDiv.isOpen || false,
+                });
+              }
+            });
+
+            // Convert map back to array
+            const merged = Array.from(existingDivisionsMap.values());
+            setMergedRequestedDivisions(merged);
+          } else {
+            // No divisions in draft, use prop divisions
+            setMergedRequestedDivisions(customerRequestedDivisions);
+          }
+
+          // Handle distributors from draft - set as linked distributors
+          // ONLY use distributors from latest-draft response for linked distributors
+          if (draftEdits.distributors && Array.isArray(draftEdits.distributors)) {
+            const draftDistributors = draftEdits.distributors;
+            setLinkedDistributorsData(draftDistributors);
+          } else {
+            // If no distributors in draft, clear linked distributors
+            setLinkedDistributorsData([]);
+          }
+
+          // Handle mapping data from draft - merge with customerDetails mapping
+          if (draftEdits.mapping) {
+            const draftMapping = draftEdits.mapping;
+            const customerMapping = mappingData || {};
+            
+            // Helper function to merge mapping arrays
+            // Items in draft mapping take precedence, and we preserve isApproved status
+            // Only include isApproved if it exists in either customer mapping or draft mapping
+            const mergeMappingArray = (draftArray, customerArray) => {
+              const mergedMap = new Map();
+              
+              // First, add all items from customer mapping (base data)
+              (customerArray || []).forEach(item => {
+                const key = String(item.id || item.customerId);
+                mergedMap.set(key, { ...item });
               });
-            }
-          });
-
-          // Convert map back to array
-          const merged = Array.from(existingDivisionsMap.values());
-          console.log('Merged requested divisions:', merged);
-          setMergedRequestedDivisions(merged);
+              
+              // Then, update/add items from draft mapping (draft takes precedence)
+              (draftArray || []).forEach(item => {
+                const key = String(item.id || item.customerId);
+                const existing = mergedMap.get(key);
+                if (existing) {
+                  // Merge existing with draft data (draft properties take precedence)
+                  const merged = { 
+                    ...existing, 
+                    ...item
+                  };
+                  
+                  // Handle isApproved: only include if it exists in either source
+                  // Don't add isApproved: false if it doesn't exist in either
+                  const hasIsApprovedInDraft = item.hasOwnProperty('isApproved');
+                  const hasIsApprovedInCustomer = existing.hasOwnProperty('isApproved');
+                  
+                  if (hasIsApprovedInDraft) {
+                    // isApproved exists in draft mapping - use draft value
+                    merged.isApproved = item.isApproved;
+                  } else if (hasIsApprovedInCustomer) {
+                    // isApproved exists in customer mapping but not in draft - preserve customer value
+                    merged.isApproved = existing.isApproved;
+                  } else {
+                    // Neither has isApproved - explicitly remove it to avoid false values
+                    delete merged.isApproved;
+                  }
+                  
+                  mergedMap.set(key, merged);
+                } else {
+                  // Add new item from draft
+                  const newItem = { ...item };
+                  // Only keep isApproved if it exists in the draft item
+                  if (!item.hasOwnProperty('isApproved')) {
+                    delete newItem.isApproved;
+                  }
+                  mergedMap.set(key, newItem);
+                }
+              });
+              
+              return Array.from(mergedMap.values());
+            };
+            
+            // Merge all mapping arrays
+            const mergedMapping = {
+              hospitals: mergeMappingArray(draftMapping.hospitals, customerMapping.hospitals),
+              doctors: mergeMappingArray(draftMapping.doctors, customerMapping.doctors),
+              pharmacy: mergeMappingArray(draftMapping.pharmacy, customerMapping.pharmacy),
+              groupHospitals: mergeMappingArray(draftMapping.groupHospitals, customerMapping.groupHospitals),
+            };
+            
+            setHierarchyMappingData(mergedMapping);
+          } else if (mappingData) {
+            // If no draft mapping, use customer mapping
+            setHierarchyMappingData(mappingData);
+          }
         } else {
-          // No divisions in draft, use prop divisions
+          // No draft, use prop divisions
           setMergedRequestedDivisions(customerRequestedDivisions);
+          // Also set mapping data from props if available
+          if (mappingData) {
+            setHierarchyMappingData(mappingData);
+          }
         }
-
-        // Handle distributors from draft - set as linked distributors
-        // ONLY use distributors from latest-draft response for linked distributors
-        if (draftEdits.distributors && Array.isArray(draftEdits.distributors)) {
-          const draftDistributors = draftEdits.distributors;
-          console.log('Draft distributors found, setting as linked distributors:', draftDistributors.length);
-          setLinkedDistributorsData(draftDistributors);
-        } else {
-          // If no distributors in draft, clear linked distributors
-          console.log('No distributors in draft, clearing linked distributors');
-          setLinkedDistributorsData([]);
-        }
-      } else {
-        // No draft, use prop divisions
-        console.log('No draft found, using prop divisions');
+      } catch (error) {
+        // On error, just use the prop divisions
         setMergedRequestedDivisions(customerRequestedDivisions);
       }
-    } catch (error) {
-      console.error('Error fetching latest draft:', error);
-      // On error, just use the prop divisions
-      setMergedRequestedDivisions(customerRequestedDivisions);
     }
-  }, [instanceIdFromDetails, customerRequestedDivisions, loggedInUser]);
+
+
+
+
+    
+  }, [instanceIdFromDetails, loggedInUser?.userId, loggedInUser?.id, instanceId, customerRequestedDivisions, instance, mappingData]);
 
   // Legacy function name for backward compatibility
   const fetchAndMergeDraftDivisions = fetchLatestDraftData;
@@ -328,6 +406,7 @@ export const LinkagedTab = ({
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+
 
   // Customer Hierarchy states
   const [activeHierarchyTab, setActiveHierarchyTab] = useState('pharmacies');
@@ -448,7 +527,6 @@ export const LinkagedTab = ({
   };
 
   const handleTabPress = async tabName => {
-    console.log(tabName, "tabName tab press");
     
     // First reset the list and set active tab
     setActiveSubTab(tabName);
@@ -458,7 +536,8 @@ export const LinkagedTab = ({
     await fetchLatestDraftData();
 
     // Fetch data based on the tab clicked
-    if (tabName === 'divisions' && !divisionsDataFetched) {
+    if (tabName === 'divisions') {
+      console.log('instanceId', instanceId);
       await fetchDivisionsData();
     } else if (tabName === 'distributors' && !distributorsDataFetched) {
       // Note: linked distributors are already set from latest-draft API above
@@ -494,7 +573,6 @@ export const LinkagedTab = ({
             });
           },
           () => {
-            console.log('measureLayout failed');
           },
         );
       }
@@ -535,7 +613,6 @@ export const LinkagedTab = ({
             });
           },
           () => {
-            console.log('Distributor tab measure failed');
           },
         );
       }
@@ -552,12 +629,6 @@ export const LinkagedTab = ({
       const id = linked.id || linked.distributorId;
       return id != null ? String(id) : null;
     }).filter(id => id && id !== 'undefined' && id !== 'null' && id !== '');
-    
-    console.log('LinkagedTab: linkedDistributorIds Set updated:', {
-      count: ids.length,
-      ids: Array.from(ids),
-      linkedDistributorsDataCount: linkedDistributorsData?.length || 0,
-    });
     
     return new Set(ids);
   }, [linkedDistributorsData]);
@@ -588,86 +659,74 @@ export const LinkagedTab = ({
 
   // Function to fetch divisions data
   const fetchDivisionsData = useCallback(async () => {
-    if (divisionsDataFetched || !effectiveCustomerId) {
-      return;
-    }
+    // if (divisionsDataFetched || !effectiveCustomerId) {
+    //   return;
+    // }
 
-    console.log(
-      'LinkagedTab: Fetching divisions for customerId:',
-      effectiveCustomerId,
-    );
+      try {
+        setDivisionsLoading(true);
+        setDivisionsError(null);
 
-    try {
-      setDivisionsLoading(true);
-      setDivisionsError(null);
+        let customerDivisionsResponse;
+        let allDivisionsResponse;
 
-      // Fetch customer's linked divisions
-      console.log('LinkagedTab: Calling getCustomerDivisions API...');
-      const customerDivisionsResponse =
-        await customerAPI.getCustomerDivisions(effectiveCustomerId);
-      console.log(
-        'LinkagedTab: Customer divisions API response:',
-        customerDivisionsResponse,
-      );
 
-      // Fetch all available divisions
-      console.log('LinkagedTab: Calling getAllDivisions API...');
-      const allDivisionsResponse = await customerAPI.getAllDivisions();
-      console.log(
-        'LinkagedTab: All divisions API response:',
-        allDivisionsResponse,
-      );
+        // Fetch customer's linked divisions
+        if (activeSubTab === 'divisions' && (selectedCustomer?.statusName === 'UNVERIFIED' || selectedCustomer?.statusName === 'ACTIVE')) {
+         customerDivisionsResponse = await customerAPI.getCustomerDivisions(effectiveCustomerId);
+        }
 
-      let openedDivisions = [];
-      let otherDivisions = [];
 
-      // Process customer's linked divisions (opened)
-      if (
-        customerDivisionsResponse?.data &&
-        Array.isArray(customerDivisionsResponse.data)
-      ) {
-        openedDivisions = customerDivisionsResponse.data;
-        console.log('LinkagedTab: Opened divisions:', openedDivisions.length);
+        if(Object.keys(instance).length !== 0){
+          allDivisionsResponse = await customerAPI.getAllDivisions();
+        }
+
+        let openedDivisions = [];
+        let otherDivisions = [];
+
+        // Process customer's linked divisions (opened)
+        if (
+          customerDivisionsResponse?.data &&
+          Array.isArray(customerDivisionsResponse.data)
+        ) {
+          openedDivisions = customerDivisionsResponse.data;
+        }
+
+        // Process all available divisions and filter out already linked ones
+        if (
+          allDivisionsResponse?.data?.divisions &&
+          Array.isArray(allDivisionsResponse.data.divisions)
+        ) {
+          const linkedDivisionIds = openedDivisions.map(d =>
+            Number(d.divisionId),
+          );
+          otherDivisions = allDivisionsResponse.data.divisions.filter(
+            d => !linkedDivisionIds.includes(Number(d.divisionId)),
+          );
+        }
+
+        setOpenedDivisionsData(openedDivisions);
+        setOtherDivisionsData(otherDivisions);
+        setDivisionsDataFetched(true);
+      } catch (error) {
+        setDivisionsError(error.message);
+        setOtherDivisionsData([]);
+        setOpenedDivisionsData([]);
+      } finally {
+        setDivisionsLoading(false);
       }
 
-      // Process all available divisions and filter out already linked ones
-      if (
-        allDivisionsResponse?.data?.divisions &&
-        Array.isArray(allDivisionsResponse.data.divisions)
-      ) {
-        const linkedDivisionIds = openedDivisions.map(d =>
-          Number(d.divisionId),
-        );
-        otherDivisions = allDivisionsResponse.data.divisions.filter(
-          d => !linkedDivisionIds.includes(Number(d.divisionId)),
-        );
-        console.log('LinkagedTab: Other divisions:', otherDivisions.length);
-      }
 
-      setOpenedDivisionsData(openedDivisions);
-      setOtherDivisionsData(otherDivisions);
-      setDivisionsDataFetched(true);
-    } catch (error) {
-      console.error('LinkagedTab: Error fetching divisions data:', error);
-      setDivisionsError(error.message);
-      setOtherDivisionsData([]);
-      setOpenedDivisionsData([]);
-    } finally {
-      setDivisionsLoading(false);
-    }
-  }, [divisionsDataFetched, effectiveCustomerId]);
+   }, [activeSubTab, effectiveCustomerId, selectedCustomer?.statusName, instance, selectedCustomer]);
 
   // Fetch divisions data on component mount (since it's the default tab)
   useEffect(() => {
-    if (activeSubTab === 'divisions') {
       fetchDivisionsData();
-    }
-  }, [activeSubTab, fetchDivisionsData]);
+  }, [activeSubTab, fetchDivisionsData, selectedCustomer?.action, selectedCustomer?.statusName]);
 
   // Function to fetch field team data
   const fetchFieldTeamData = useCallback(async (page = 1, loadMore = false) => {
     if (!effectiveCustomerId) {
-      console.log('No customerId provided, skipping field list fetch');
       return;
     }
 
@@ -684,7 +743,6 @@ export const LinkagedTab = ({
       }
 
       const response = await customerAPI.getFieldList(page, 10, effectiveCustomerId, isStaging);
-      console.log('Field list API response:', response);
 
       if (response?.data) {
         // Extract data from response - could be in different formats
@@ -717,7 +775,6 @@ export const LinkagedTab = ({
         setFieldTeamHasMore(false);
       }
     } catch (error) {
-      console.error('Error fetching field team data:', error);
       if (!loadMore) {
         setFieldTeamError(error.message);
         setFieldTeamData([]);
@@ -733,46 +790,20 @@ export const LinkagedTab = ({
   }, [effectiveCustomerId, selectedCustomer?.statusName]);
 
   // Process and log mapping data from customer details API
+  // Note: This is now handled in fetchLatestDraftData to merge with draft mapping
+  // Only set if fetchLatestDraftData hasn't been called yet or if there's no draft
   useEffect(() => {
-    if (mappingData) {
-      console.log('=== MAPPING DATA RECEIVED IN LINKAGED TAB ===');
-      console.log('Full Mapping Data:', mappingData);
-
-      // Log individual sections
-      console.log('--- Hospitals ---');
-      console.log('Hospitals:', mappingData.hospitals || []);
-      console.log('Hospital Count:', mappingData.hospitals?.length || 0);
-
-      console.log('--- Doctors ---');
-      console.log('Doctors:', mappingData.doctors || []);
-      console.log('Doctor Count:', mappingData.doctors?.length || 0);
-
-      console.log('--- Pharmacies ---');
-      console.log('Pharmacies:', mappingData.pharmacy || []);
-      console.log('Pharmacy Count:', mappingData.pharmacy?.length || 0);
-
-      console.log('--- Group Hospitals ---');
-      console.log('Group Hospitals:', mappingData.groupHospitals || []);
-      console.log(
-        'Group Hospital Count:',
-        mappingData.groupHospitals?.length || 0,
-      );
-
-      // Store mapping data in state
+    // Only set if hierarchyMappingData is null (not yet set by fetchLatestDraftData)
+    if (mappingData && !hierarchyMappingData) {
       setHierarchyMappingData(mappingData);
     }
-  }, [mappingData]);
+  }, [mappingData, hierarchyMappingData]);
 
   // Function to fetch preferred distributors
   const fetchPreferredDistributorsData = useCallback(async () => {
     if (activeDistributorTab !== 'preferred' || !effectiveCustomerId) {
       return;
     }
-
-    console.log(
-      'LinkagedTab: Fetching preferred distributors for customerId:',
-      effectiveCustomerId,
-    );
 
     try {
       setDistributorsLoading(true);
@@ -794,17 +825,6 @@ export const LinkagedTab = ({
         })
         .filter(id => id != null && id !== '' && id !== 'undefined');
 
-      console.log(
-        'LinkagedTab: Fetching preferred distributors',
-        {
-          stationCode,
-          divisionIds,
-          divisionIdsCount: divisionIds.length,
-          mergedRequestedDivisionsCount: mergedRequestedDivisions?.length || 0,
-          mergedRequestedDivisions: mergedRequestedDivisions,
-        }
-      );
-
       // Call API to get preferred distributors
         const response = await distributorAPI_getPreferredDistributors(
         1, // page
@@ -825,10 +845,7 @@ export const LinkagedTab = ({
         setPreferredDistributorsData([]);
       }
     } catch (error) {
-      console.error(
-        'LinkagedTab: Error fetching preferred distributors:',
-        error,
-      );
+     
       setDistributorsError(error.message);
       setPreferredDistributorsData([]);
     } finally {
@@ -838,13 +855,6 @@ export const LinkagedTab = ({
 
   // Fetch preferred distributors when Preferred tab is active (only if distributors tab is already active)
   useEffect(() => {
-    console.log('LinkagedTab: Preferred distributors useEffect triggered', {
-      activeSubTab,
-      distributorsDataFetched,
-      activeDistributorTab,
-      effectiveCustomerId,
-      shouldFetch: shouldFetchPreferredDistributorsRef.current,
-    });
     
     if (
       activeSubTab === 'distributors' && 
@@ -853,17 +863,10 @@ export const LinkagedTab = ({
       effectiveCustomerId &&
       shouldFetchPreferredDistributorsRef.current
     ) {
-      console.log('LinkagedTab: Calling fetchPreferredDistributorsData from useEffect');
       shouldFetchPreferredDistributorsRef.current = false; // Reset flag
       fetchPreferredDistributorsData();
     } else {
-      console.log('LinkagedTab: Conditions not met for preferred distributors fetch', {
-        activeSubTabMatches: activeSubTab === 'distributors',
-        distributorsDataFetched,
-        activeDistributorTabMatches: activeDistributorTab === 'preferred',
-        hasEffectiveCustomerId: !!effectiveCustomerId,
-        shouldFetch: shouldFetchPreferredDistributorsRef.current,
-      });
+     
     }
   }, [activeDistributorTab, activeSubTab, distributorsDataFetched, effectiveCustomerId, fetchPreferredDistributorsData]);
 
@@ -881,15 +884,9 @@ export const LinkagedTab = ({
     ).filter(id => id && id !== 'undefined' && id !== 'null');
 
     if (divisionIds.length === 0) {
-      console.log('LinkagedTab: No divisions available, setting empty linked distributors');
       setLinkedDistributorsData([]);
       return;
     }
-
-    console.log(
-      'LinkagedTab: Fetching linked distributors with divisionIds:',
-      divisionIds,
-    );
 
     try {
       // Don't set loading state if we're fetching in background (for filtering)
@@ -908,38 +905,14 @@ export const LinkagedTab = ({
         divisionIds,
       );
 
-      console.log(
-        'LinkagedTab: Linked distributors API response:',
-        {
-          distributorsCount: response?.distributors?.length || 0,
-          total: response?.total || 0,
-          page: response?.page || 1,
-          limit: response?.limit || 20,
-          divisionIds,
-        },
-      );
-
       // Handle response - API returns { distributors: [], page: 1, limit: 20, total: 38 }
       if (response?.distributors && Array.isArray(response.distributors)) {
-        console.log(
-          'LinkagedTab: Linked distributors fetched successfully',
-          {
-            count: response.distributors.length,
-            total: response.total,
-            page: response.page,
-            limit: response.limit,
-          }
-        );
         setLinkedDistributorsData(response.distributors);
       } else {
-        console.log('LinkagedTab: No linked distributors found or invalid response format');
         setLinkedDistributorsData([]);
       }
     } catch (error) {
-      console.error(
-        'LinkagedTab: Error fetching linked distributors:',
-        error,
-      );
+     
       setDistributorsError(error.message);
       setLinkedDistributorsData([]);
     } finally {
@@ -958,9 +931,7 @@ export const LinkagedTab = ({
       return;
     }
 
-    console.log('LinkagedTab: Fetching all distributors...', {
-      query: debouncedSearch,
-    });
+
 
     try {
       setDistributorsLoading(true);
@@ -968,7 +939,6 @@ export const LinkagedTab = ({
 
       // Call API to get all distributors with pagination (search uses debouncedSearch)
       const response = await getDistributors(1, 100, debouncedSearch);
-      console.log('LinkagedTab: Distributors API response:', response);
 
       if (response?.distributors && Array.isArray(response.distributors)) {
         // Filter out linked distributors before setting the data
@@ -977,16 +947,7 @@ export const LinkagedTab = ({
           const distributorId = String(distributor.id || distributor.distributorId || '');
           return !linkedDistributorIds.has(distributorId);
         });
-        
-        console.log(
-          'LinkagedTab: Setting allDistributorsData with',
-          filteredDistributors.length,
-          'distributors (filtered from',
-          response.distributors.length,
-          'total, linkedCount:',
-          linkedDistributorIds.size,
-          ')',
-        );
+    
         setAllDistributorsData(filteredDistributors);
         setFilteredDistributorsData(filteredDistributors);
       } else {
@@ -995,7 +956,6 @@ export const LinkagedTab = ({
         setFilteredDistributorsData([]);
       }
     } catch (error) {
-      console.error('LinkagedTab: Error fetching distributors:', error);
       setDistributorsError(error.message);
       setAllDistributorsData([]);
       setFilteredDistributorsData([]);
@@ -1166,16 +1126,16 @@ export const LinkagedTab = ({
       // Get existing linked distributors to merge with newly selected ones
       // Also check latest draft for distributors that might be in draft but not yet linked
       let existingDistributorsFromDraft = [];
-      try {
-        const draftResponse = await customerAPI.getLatestDraft(effectiveInstanceId, actorId);
-        if (draftResponse?.data?.success && draftResponse?.data?.hasDraft && draftResponse?.data?.draftEdits?.distributors) {
-          existingDistributorsFromDraft = draftResponse.data.draftEdits.distributors;
-          console.log('Found existing distributors in draft:', existingDistributorsFromDraft);
+      if( Object.keys(instance).length !== 0 ){
+        try {
+          const draftResponse = await customerAPI.getLatestDraft(effectiveInstanceId, actorId);
+          if (draftResponse?.data?.success && draftResponse?.data?.hasDraft && draftResponse?.data?.draftEdits?.distributors) {
+            existingDistributorsFromDraft = draftResponse.data.draftEdits.distributors;
+          }
+        } catch (error) {
+          console.warn('Could not fetch distributors from draft:', error);
         }
-      } catch (error) {
-        console.warn('Could not fetch distributors from draft:', error);
       }
-
       // Create a map to avoid duplicates
       const allDistributorsMap = new Map();
       
@@ -1443,6 +1403,409 @@ export const LinkagedTab = ({
       setShowApproveModal(false);
       showToast(`Failed to approve: ${error.message}`, 'error');
       setSelectedItem(null);
+    }
+  };
+
+  // Handle approve for customer hierarchy items (hospitals, doctors, pharmacies, group hospitals)
+  const handleHierarchyApprove = async (item, itemType) => {
+    try {
+      
+      // Get instanceId from customerDetails response (selectedCustomer from Redux)
+      const effectiveInstanceId = instanceIdFromDetails;
+      
+      if (!effectiveInstanceId) {
+        showToast('Instance ID not available', 'error');
+        return;
+      }
+
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      if (!actorId) {
+        showToast('User ID not available', 'error');
+        return;
+      }
+
+      // Format existing divisions
+      const formattedDivisions = (mergedRequestedDivisions || []).map(div => ({
+        divisionId: String(div.divisionId || div.id),
+        divisionCode: div.divisionCode || '',
+        divisionName: div.divisionName || '',
+        isOpen: div.isOpen !== undefined ? div.isOpen : false,
+      }));
+
+      // Format existing distributors
+      const formattedDistributors = (linkedDistributorsData || []).map(dist => {
+        const distributorDivisions = (dist.divisions || []).map(div => ({
+          cfaId: div.cfaId || '',
+          cfaCode: div.cfaCode || '',
+          cfaName: div.cfaName || null,
+          divisionId: String(div.divisionId || ''),
+          divisionCode: div.divisionCode || '',
+          divisionName: div.divisionName || '',
+          distributorId: Number(dist.id || dist.distributorId),
+          organizationCode: div.organizationCode || 'SPLL',
+        }));
+
+        return {
+          id: String(dist.id || dist.distributorId),
+          code: dist.code || '',
+          name: dist.name || dist.distributorName || '',
+          email: dist.email || '',
+          cityId: dist.cityId || null,
+          typeId: dist.typeId || null,
+          mobile1: dist.mobile1 || '',
+          mobile2: dist.mobile2 || null,
+          stateId: dist.stateId || null,
+          address1: dist.address1 || null,
+          address2: dist.address2 || null,
+          cityName: dist.cityName || null,
+          isActive: dist.isActive !== undefined ? dist.isActive : true,
+          divisions: distributorDivisions,
+          gstNumber: dist.gstNumber || null,
+          panNumber: dist.panNumber || null,
+          stateName: dist.stateName || null,
+          licence20BNo: dist.licence20BNo || null,
+          licence21BNo: dist.licence21BNo || null,
+          divisionCount: dist.divisionCount || distributorDivisions.length,
+          expiryDate20B: dist.expiryDate20B || null,
+          expiryDate21B: dist.expiryDate21B || null,
+          inviteStatusId: dist.inviteStatusId || 1,
+          distributorType: dist.distributorType || null,
+          inviteStatusName: dist.inviteStatusName || 'Not Invited',
+          organizationCode: dist.organizationCode || 'SPLL',
+          doctorSupplyMargin: dist.doctorSupplyMargin || null,
+          hospitalSupplyMargin: dist.hospitalSupplyMargin || null,
+        };
+      });
+
+      // Get existing mapping data
+      const hierarchyData = hierarchyMappingData || {};
+      const itemId = Number(item.id || item.customerId);
+      
+      // Helper function to format mapping items - preserve existing isApproved: true values
+      const formatMappingItem = (mappingItem, isBeingApproved) => {
+        const formatted = {
+          id: Number(mappingItem.id || mappingItem.customerId),
+          isNew: mappingItem.isNew !== undefined ? mappingItem.isNew : false,
+          cityId: mappingItem.cityId ? String(mappingItem.cityId) : (mappingItem.cityId || ''),
+          typeId: mappingItem.typeId !== undefined ? Number(mappingItem.typeId) : (mappingItem.typeId || null),
+          stateId: mappingItem.stateId ? String(mappingItem.stateId) : (mappingItem.stateId || ''),
+          cityName: mappingItem.cityName || '',
+          stateName: mappingItem.stateName || '',
+          categoryId: mappingItem.categoryId !== undefined ? Number(mappingItem.categoryId) : (mappingItem.categoryId || null),
+          stationCode: mappingItem.stationCode || '',
+          customerCode: mappingItem.customerCode || '',
+          customerName: mappingItem.customerName || '',
+          subCategoryId: mappingItem.subCategoryId !== undefined ? Number(mappingItem.subCategoryId) : (mappingItem.subCategoryId || 0),
+          action: 'APPROVE',
+        };
+        
+        // Handle isApproved: preserve existing true values, set true for item being approved
+        if (isBeingApproved) {
+          // Item being approved gets isApproved: true
+          formatted.isApproved = true;
+        } else if (mappingItem.hasOwnProperty('isApproved') && mappingItem.isApproved === true) {
+          // Preserve existing isApproved: true for other items
+          formatted.isApproved = true;
+        }
+        // If item doesn't have isApproved or it's false, don't include the property
+        
+        return formatted;
+      };
+
+      // Format all hospitals - only the one being approved gets isApproved: true
+      const mappingHospitals = (hierarchyData?.hospitals || []).map(h => {
+        const isBeingApproved = itemType === 'hospital' && Number(h.id || h.customerId) === itemId;
+        return formatMappingItem(h, isBeingApproved);
+      });
+
+      // Format all doctors - only the one being approved gets isApproved: true
+      const mappingDoctors = (hierarchyData?.doctors || []).map(d => {
+        const isBeingApproved = itemType === 'doctor' && Number(d.id || d.customerId) === itemId;
+        return formatMappingItem(d, isBeingApproved);
+      });
+
+      // Format all pharmacies - only the one being approved gets isApproved: true
+      const mappingPharmacy = (hierarchyData?.pharmacy || []).map(p => {
+        const isBeingApproved = itemType === 'pharmacy' && Number(p.id || p.customerId) === itemId;
+        return formatMappingItem(p, isBeingApproved);
+      });
+
+      // Format all group hospitals - only the one being approved gets isApproved: true
+      const mappingGroupHospitals = (hierarchyData?.groupHospitals || []).map(gh => {
+        const isBeingApproved = itemType === 'groupHospital' && Number(gh.id || gh.customerId) === itemId;
+        return formatMappingItem(gh, isBeingApproved);
+      });
+
+      // If the item being approved doesn't exist in the mapping, add it
+      const approvedItem = formatMappingItem(item, true);
+      
+      if (itemType === 'hospital') {
+        const existingIndex = mappingHospitals.findIndex(h => h.id === itemId);
+        if (existingIndex >= 0) {
+          mappingHospitals[existingIndex] = approvedItem;
+        } else {
+          mappingHospitals.push(approvedItem);
+        }
+      } else if (itemType === 'doctor') {
+        const existingIndex = mappingDoctors.findIndex(d => d.id === itemId);
+        if (existingIndex >= 0) {
+          mappingDoctors[existingIndex] = approvedItem;
+        } else {
+          mappingDoctors.push(approvedItem);
+        }
+      } else if (itemType === 'pharmacy') {
+        const existingIndex = mappingPharmacy.findIndex(p => p.id === itemId);
+        if (existingIndex >= 0) {
+          mappingPharmacy[existingIndex] = approvedItem;
+        } else {
+          mappingPharmacy.push(approvedItem);
+        }
+      } else if (itemType === 'groupHospital') {
+        const existingIndex = mappingGroupHospitals.findIndex(gh => gh.id === itemId);
+        if (existingIndex >= 0) {
+          mappingGroupHospitals[existingIndex] = approvedItem;
+        } else {
+          mappingGroupHospitals.push(approvedItem);
+        }
+      }
+
+      // Format mapping object
+      const formattedMapping = {
+        hospitals: mappingHospitals,
+        doctors: mappingDoctors,
+        pharmacy: mappingPharmacy,
+        groupHospitals: mappingGroupHospitals,
+      };
+
+      // Prepare draft-edit payload
+      const draftEditPayload = {
+        stepOrder: 1,
+        parallelGroup: 1,
+        comments: '',
+        actorId: actorId,
+        dataChanges: {
+          divisions: formattedDivisions,
+          distributors: formattedDistributors,
+          mapping: formattedMapping,
+          customerGroupId: customerGroupId || selectedCustomer?.customerGroupId || 1,
+        },
+      };
+
+      // Call draft-edit API
+      await customerAPI.draftEdit(effectiveInstanceId, draftEditPayload);
+
+      showToast(`${item.customerName || item.name} approved successfully!`, 'success');
+      
+      // Refresh latest draft data to update the UI
+      await fetchLatestDraftData();
+    } catch (error) {
+      console.error('Error approving hierarchy item:', error);
+      showToast(`Failed to approve: ${error.message}`, 'error');
+    }
+  };
+
+  // Handle reject for customer hierarchy items
+  const handleHierarchyReject = async (item, itemType) => {
+    try {
+      // Get instanceId from customerDetails response (selectedCustomer from Redux)
+      const effectiveInstanceId = instanceIdFromDetails;
+      
+      if (!effectiveInstanceId) {
+        showToast('Instance ID not available', 'error');
+        return;
+      }
+
+      const actorId = loggedInUser?.userId || loggedInUser?.id;
+      if (!actorId) {
+        showToast('User ID not available', 'error');
+        return;
+      }
+
+      // Format existing divisions
+      const formattedDivisions = (mergedRequestedDivisions || []).map(div => ({
+        divisionId: String(div.divisionId || div.id),
+        divisionCode: div.divisionCode || '',
+        divisionName: div.divisionName || '',
+        isOpen: div.isOpen !== undefined ? div.isOpen : false,
+      }));
+
+      // Format existing distributors
+      const formattedDistributors = (linkedDistributorsData || []).map(dist => {
+        const distributorDivisions = (dist.divisions || []).map(div => ({
+          cfaId: div.cfaId || '',
+          cfaCode: div.cfaCode || '',
+          cfaName: div.cfaName || null,
+          divisionId: String(div.divisionId || ''),
+          divisionCode: div.divisionCode || '',
+          divisionName: div.divisionName || '',
+          distributorId: Number(dist.id || dist.distributorId),
+          organizationCode: div.organizationCode || 'SPLL',
+        }));
+
+        return {
+          id: String(dist.id || dist.distributorId),
+          code: dist.code || '',
+          name: dist.name || dist.distributorName || '',
+          email: dist.email || '',
+          cityId: dist.cityId || null,
+          typeId: dist.typeId || null,
+          mobile1: dist.mobile1 || '',
+          mobile2: dist.mobile2 || null,
+          stateId: dist.stateId || null,
+          address1: dist.address1 || null,
+          address2: dist.address2 || null,
+          cityName: dist.cityName || null,
+          isActive: dist.isActive !== undefined ? dist.isActive : true,
+          divisions: distributorDivisions,
+          gstNumber: dist.gstNumber || null,
+          panNumber: dist.panNumber || null,
+          stateName: dist.stateName || null,
+          licence20BNo: dist.licence20BNo || null,
+          licence21BNo: dist.licence21BNo || null,
+          divisionCount: dist.divisionCount || distributorDivisions.length,
+          expiryDate20B: dist.expiryDate20B || null,
+          expiryDate21B: dist.expiryDate21B || null,
+          inviteStatusId: dist.inviteStatusId || 1,
+          distributorType: dist.distributorType || null,
+          inviteStatusName: dist.inviteStatusName || 'Not Invited',
+          organizationCode: dist.organizationCode || 'SPLL',
+          doctorSupplyMargin: dist.doctorSupplyMargin || null,
+          hospitalSupplyMargin: dist.hospitalSupplyMargin || null,
+        };
+      });
+
+      // Get existing mapping data
+      const hierarchyData = hierarchyMappingData || {};
+      const itemId = Number(item.id || item.customerId);
+      
+      // Helper function to format mapping items for reject - preserve existing isApproved: true values
+      const formatMappingItem = (mappingItem, isBeingRejected) => {
+        const formatted = {
+          id: Number(mappingItem.id || mappingItem.customerId),
+          isNew: mappingItem.isNew !== undefined ? mappingItem.isNew : false,
+          cityId: mappingItem.cityId ? String(mappingItem.cityId) : (mappingItem.cityId || ''),
+          typeId: mappingItem.typeId !== undefined ? Number(mappingItem.typeId) : (mappingItem.typeId || null),
+          stateId: mappingItem.stateId ? String(mappingItem.stateId) : (mappingItem.stateId || ''),
+          cityName: mappingItem.cityName || '',
+          stateName: mappingItem.stateName || '',
+          categoryId: mappingItem.categoryId !== undefined ? Number(mappingItem.categoryId) : (mappingItem.categoryId || null),
+          stationCode: mappingItem.stationCode || '',
+          customerCode: mappingItem.customerCode || '',
+          customerName: mappingItem.customerName || '',
+          subCategoryId: mappingItem.subCategoryId !== undefined ? Number(mappingItem.subCategoryId) : (mappingItem.subCategoryId || 0),
+          action: isBeingRejected ? 'REJECT' : 'APPROVE',
+        };
+        
+        // Handle isActive: set false for rejected items, preserve existing for others
+        if (isBeingRejected) {
+          // Rejected item gets isActive: false
+          formatted.isActive = false;
+        } else if (mappingItem.hasOwnProperty('isActive')) {
+          // Preserve existing isActive value for other items
+          formatted.isActive = mappingItem.isActive;
+        }
+        
+        // Handle isApproved: preserve existing true values, don't set for rejected item
+        if (isBeingRejected) {
+          // Rejected item doesn't get isApproved (or gets false)
+          // Don't include isApproved property for rejected items
+        } else if (mappingItem.hasOwnProperty('isApproved') && mappingItem.isApproved === true) {
+          // Preserve existing isApproved: true for other items
+          formatted.isApproved = true;
+        }
+        
+        return formatted;
+      };
+
+      // Format all hospitals - preserve existing isApproved: true
+      const mappingHospitals = (hierarchyData?.hospitals || []).map(h => {
+        const isBeingRejected = itemType === 'hospital' && Number(h.id || h.customerId) === itemId;
+        return formatMappingItem(h, isBeingRejected);
+      });
+
+      // Format all doctors - preserve existing isApproved: true
+      const mappingDoctors = (hierarchyData?.doctors || []).map(d => {
+        const isBeingRejected = itemType === 'doctor' && Number(d.id || d.customerId) === itemId;
+        return formatMappingItem(d, isBeingRejected);
+      });
+
+      // Format all pharmacies - preserve existing isApproved: true
+      const mappingPharmacy = (hierarchyData?.pharmacy || []).map(p => {
+        const isBeingRejected = itemType === 'pharmacy' && Number(p.id || p.customerId) === itemId;
+        return formatMappingItem(p, isBeingRejected);
+      });
+
+      // Format all group hospitals - preserve existing isApproved: true
+      const mappingGroupHospitals = (hierarchyData?.groupHospitals || []).map(gh => {
+        const isBeingRejected = itemType === 'groupHospital' && Number(gh.id || gh.customerId) === itemId;
+        return formatMappingItem(gh, isBeingRejected);
+      });
+
+      // If the item being rejected doesn't exist in the mapping, add it (without isApproved)
+      const rejectedItem = formatMappingItem(item, true);
+      
+      if (itemType === 'hospital') {
+        const existingIndex = mappingHospitals.findIndex(h => h.id === itemId);
+        if (existingIndex >= 0) {
+          mappingHospitals[existingIndex] = rejectedItem;
+        } else {
+          mappingHospitals.push(rejectedItem);
+        }
+      } else if (itemType === 'doctor') {
+        const existingIndex = mappingDoctors.findIndex(d => d.id === itemId);
+        if (existingIndex >= 0) {
+          mappingDoctors[existingIndex] = rejectedItem;
+        } else {
+          mappingDoctors.push(rejectedItem);
+        }
+      } else if (itemType === 'pharmacy') {
+        const existingIndex = mappingPharmacy.findIndex(p => p.id === itemId);
+        if (existingIndex >= 0) {
+          mappingPharmacy[existingIndex] = rejectedItem;
+        } else {
+          mappingPharmacy.push(rejectedItem);
+        }
+      } else if (itemType === 'groupHospital') {
+        const existingIndex = mappingGroupHospitals.findIndex(gh => gh.id === itemId);
+        if (existingIndex >= 0) {
+          mappingGroupHospitals[existingIndex] = rejectedItem;
+        } else {
+          mappingGroupHospitals.push(rejectedItem);
+        }
+      }
+
+      // Format mapping object
+      const formattedMapping = {
+        hospitals: mappingHospitals,
+        doctors: mappingDoctors,
+        pharmacy: mappingPharmacy,
+        groupHospitals: mappingGroupHospitals,
+      };
+
+      // Prepare draft-edit payload
+      const draftEditPayload = {
+        stepOrder: 1,
+        parallelGroup: 1,
+        comments: '',
+        actorId: actorId,
+        dataChanges: {
+          divisions: formattedDivisions,
+          distributors: formattedDistributors,
+          mapping: formattedMapping,
+          customerGroupId: customerGroupId || selectedCustomer?.customerGroupId || 1,
+        },
+      };
+
+      // Call draft-edit API
+      await customerAPI.draftEdit(effectiveInstanceId, draftEditPayload);
+
+      showToast(`${item.customerName || item.name} rejected!`, 'error');
+      
+      // Refresh latest draft data to update the UI
+      await fetchLatestDraftData();
+    } catch (error) {
+      console.error('Error rejecting hierarchy item:', error);
+      showToast(`Failed to reject: ${error.message}`, 'error');
     }
   };
 
@@ -1781,14 +2144,17 @@ export const LinkagedTab = ({
       // Get existing linked distributors to merge with newly added one
       // Also check latest draft for distributors that might be in draft but not yet linked
       let existingDistributorsFromDraft = [];
-      try {
-        const draftResponse = await customerAPI.getLatestDraft(effectiveInstanceId, actorId);
-        if (draftResponse?.data?.success && draftResponse?.data?.hasDraft && draftResponse?.data?.draftEdits?.distributors) {
-          existingDistributorsFromDraft = draftResponse.data.draftEdits.distributors;
-          console.log('Found existing distributors in draft:', existingDistributorsFromDraft);
+      if( Object.keys(instance).length !== 0 ){
+        console.log('instanceId', instanceId);
+        try {
+          const draftResponse = await customerAPI.getLatestDraft(effectiveInstanceId, actorId);
+          if (draftResponse?.data?.success && draftResponse?.data?.hasDraft && draftResponse?.data?.draftEdits?.distributors) {
+            existingDistributorsFromDraft = draftResponse.data.draftEdits.distributors;
+            console.log('Found existing distributors in draft:', existingDistributorsFromDraft);
+          }
+        } catch (error) {
+          console.warn('Could not fetch distributors from draft:', error);
         }
-      } catch (error) {
-        console.warn('Could not fetch distributors from draft:', error);
       }
 
       // Create a map to avoid duplicates
@@ -3140,94 +3506,7 @@ export const LinkagedTab = ({
         </View>
       ) : (
         <>
-          {/* <ScrollView
-            style={styles.scrollContent}
-            contentContainerStyle={[
-              (hasApprovePermission || isCustomerActive) &&
-              styles.scrollContentWithButton,
-            ]}
-          >
-            <View style={styles.divisionsContainer}>
-              <View
-                style={[
-                  styles.divisionColumn,
-                  !(hasApprovePermission || isCustomerActive) &&
-                  styles.divisionColumnFullWidth,
-                ]}
-              >
-                <AppText style={styles.columnTitle}>Opened Division</AppText>
-                <AppText style={styles.columnSubtitle}>Name & Code</AppText>
-
-                {openedDivisionsData.length === 0 ? (
-                  <View style={styles.emptyDivisionContainer}>
-                    <AppText style={styles.emptyDivisionText}>
-                      No divisions opened yet
-                    </AppText>
-                  </View>
-                ) : (
-                  openedDivisionsData.map(division => (
-                    <View key={division.divisionId} style={styles.divisionItem}>
-                      <View>
-                        <AppText style={styles.divisionName}>
-                          {division.divisionName}
-                        </AppText>
-                        <AppText style={styles.divisionCode}>
-                          {division.divisionCode}
-                        </AppText>
-                      </View>
-                    </View>
-                  ))
-                )}
-              </View>
-
-              {(hasApprovePermission || isCustomerActive) && (
-                <View style={styles.divisionColumn}>
-                  <View style={styles.columnHeader}>
-                    <AppText style={styles.columnTitle}>Other Division</AppText>
-            
-                  </View>
-                  <AppText style={styles.columnSubtitle}>Name & Code</AppText>
-
-                  {filteredOtherDivisionsData.length === 0 ? (
-                    <View style={styles.emptyDivisionContainer}>
-                      <AppText style={styles.emptyDivisionText}>
-                        No other divisions available
-                      </AppText>
-                    </View>
-                  ) : (
-                    filteredOtherDivisionsData.map(division => (
-                      <TouchableOpacity
-                        key={`other-${division.divisionId}`}
-                        style={styles.checkboxItem}
-                        onPress={() => toggleOtherDivisionSelection(division)}
-                      >
-                        <View
-                          style={[
-                            styles.checkbox,
-                            selectedDivisions.find(
-                              d => d.divisionId === division.divisionId,
-                            ) && styles.checkboxSelected,
-                          ]}
-                        >
-                          {selectedDivisions.find(
-                            d => d.divisionId === division.divisionId,
-                          ) && <Icon name="check" size={16} color="#fff" />}
-                        </View>
-                        <View>
-                          <AppText style={styles.divisionName}>
-                            {division.divisionName}
-                          </AppText>
-                          <AppText style={styles.divisionCode}>
-                            {division.divisionCode}
-                          </AppText>
-                        </View>
-                      </TouchableOpacity>
-                    ))
-                  )}
-                </View>
-              )}
-            </View>
-          </ScrollView> */}
+        
 
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -3544,6 +3823,16 @@ export const LinkagedTab = ({
     const hospitals = hierarchyMappingData?.hospitals || [];
     const groupHospitals = hierarchyMappingData?.groupHospitals || [];
 
+    // Helper function to check if an item has been processed (approved/rejected)
+    // An item is considered "processed" if it has the isApproved property
+    // If isApproved is not present, show approve/reject buttons
+    const isItemProcessed = (item) => {
+      // Check if item has isApproved property (regardless of value)
+      // If isApproved exists (true or false), item is processed
+      // If isApproved doesn't exist, item is not processed - show buttons
+      return item.hasOwnProperty('isApproved') || item.isApproved !== undefined;
+    };
+
     if ((!doctors || doctors.length === 0) && 
         (!pharmacy || pharmacy.length === 0) && 
         (!hospitals || hospitals.length === 0) && 
@@ -3586,7 +3875,7 @@ export const LinkagedTab = ({
 
 
               {pharmacy.map(item => (
-                <View key={item.customerId} style={styles.hierarchyRow}>
+                <View key={item.customerId || item.id || `pharmacy-${item.customerCode || item.customerName}`} style={styles.hierarchyRow}>
                   <View style={styles.hierarchyInfo}>
                     <AppText style={styles.hierarchyName}>
                       {item.customerName}
@@ -3598,12 +3887,18 @@ export const LinkagedTab = ({
 
                   <View style={styles.hierarchyActions}>
                     <View style={styles.actionButtons}>
-                      <TouchableOpacity style={styles.approveButton}>
+                      <TouchableOpacity 
+                        style={styles.approveButton}
+                        onPress={() => handleHierarchyApprove(item, 'pharmacy')}
+                      >
                         <Icon name="check" size={14} color="#fff" />
                         <AppText style={styles.approveButtonText}>Approve</AppText>
                       </TouchableOpacity>
 
-                      <TouchableOpacity style={styles.rejectButton}>
+                      <TouchableOpacity 
+                        style={styles.rejectButton}
+                        onPress={() => handleHierarchyReject(item, 'pharmacy')}
+                      >
                         <Icon name="close" size={14} color="#2B2B2B" />
                       </TouchableOpacity>
                     </View>
@@ -3704,7 +3999,7 @@ export const LinkagedTab = ({
                           : doctors
                         ).map(item => (
                           <View
-                            key={item.customerId}
+                            key={item.customerId || item.id || `${activeTab}-${item.customerCode || item.customerName}`}
                             style={styles.accordionItemRow}
                           >
                             <View style={styles.accordionItemInfo}>
@@ -3717,12 +4012,28 @@ export const LinkagedTab = ({
                             </View>
 
                             <View style={styles.accordionItemActions}>
-                              <TouchableOpacity style={styles.approveButton}>
+                              {isItemProcessed(item) ? (
+                                <View style={styles.statusBadge}>
+                                  <AppText style={styles.statusText}>
+                                    {item.isApproved === true ? 'Approved' : 'Rejected'}
+                                  </AppText>
+                                </View>
+                              ) : (
+                                <>
+                              <TouchableOpacity 
+                                style={styles.approveButton}
+                                onPress={() => handleHierarchyApprove(item, activeTab === 'pharmacies' ? 'pharmacy' : 'doctor')}
+                              >
                                 <Icon name="check" size={14} color="#fff" />
                               </TouchableOpacity>
-                              <TouchableOpacity style={styles.rejectButton}>
+                              <TouchableOpacity 
+                                style={styles.rejectButton}
+                                onPress={() => handleHierarchyReject(item, activeTab === 'pharmacies' ? 'pharmacy' : 'doctor')}
+                              >
                                 <Icon name="close" size={14} color="#2B2B2B" />
                               </TouchableOpacity>
+                                </>
+                              )}
                             </View>
                           </View>
                         ))}
@@ -3747,8 +4058,9 @@ export const LinkagedTab = ({
           { list: doctors, title: 'Linked Doctors', header: 'Doctor Details' },
           { list: hospitals, title: 'Linked Hospitals', header: 'Hospital Details' },
           ].map(
-            ({ list, title, header }) =>
-              list.length > 0 && (
+            ({ list, title, header }) => {
+              if (list.length === 0) return null;
+              return (
                 <View key={title} style={styles.hierarchySection}>
                   <AppText style={styles.hierarchySectionTitle}>
                     {title}
@@ -3766,7 +4078,7 @@ export const LinkagedTab = ({
                   </View>
 
                   {list.map(item => (
-                    <View key={item.customerId} style={styles.hierarchyRow}>
+                    <View key={item.customerId || item.id || `${title}-${item.customerCode || item.customerName}`} style={styles.hierarchyRow}>
                       <View style={styles.hierarchyInfo}>
                         <AppText style={styles.hierarchyName}>
                           {item.customerName}
@@ -3777,21 +4089,48 @@ export const LinkagedTab = ({
                       </View>
 
                       <View style={styles.hierarchyActions}>
-                        <View style={styles.actionButtons}>
-                          <TouchableOpacity style={styles.approveButton}>
-                            <Icon name="check" size={14} color="#fff" />
-                            <AppText style={styles.approveButtonText}>Approve</AppText>
-                          </TouchableOpacity>
+                        {isItemProcessed(item) ? (
+                          <View style={styles.statusBadge}>
+                            <AppText style={styles.statusText}>
+                              {item.isApproved === true ? 'Approved' : 'Rejected'}
+                            </AppText>
+                          </View>
+                        ) : (
+                          <View style={styles.actionButtons}>
+                            <TouchableOpacity 
+                              style={styles.approveButton}
+                              onPress={() => {
+                                let itemType = 'hospital';
+                                if (title === 'Linked Pharmacies') itemType = 'pharmacy';
+                                else if (title === 'Linked Doctors') itemType = 'doctor';
+                                else if (title === 'Linked Hospitals') itemType = 'hospital';
+                                handleHierarchyApprove(item, itemType);
+                              }}
+                            >
+                              <Icon name="check" size={14} color="#fff" />
+                              <AppText style={styles.approveButtonText}>Approve</AppText>
+                            </TouchableOpacity>
 
-                          <TouchableOpacity style={styles.rejectButton}>
-                            <Icon name="close" size={14} color="#2B2B2B" />
-                          </TouchableOpacity>
-                        </View>
+                            <TouchableOpacity 
+                              style={styles.rejectButton}
+                              onPress={() => {
+                                let itemType = 'hospital';
+                                if (title === 'Linked Pharmacies') itemType = 'pharmacy';
+                                else if (title === 'Linked Doctors') itemType = 'doctor';
+                                else if (title === 'Linked Hospitals') itemType = 'hospital';
+                                handleHierarchyReject(item, itemType);
+                              }}
+                            >
+                              <Icon name="close" size={14} color="#2B2B2B" />
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     </View>
                   ))}
                 </View>
-              )
+              );
+            }
           )}
         </ScrollView>
       </View>
@@ -3953,21 +4292,15 @@ export const LinkagedTab = ({
             style={[
               styles.subTab,
               activeSubTab === 'distributors' && styles.activeSubTab,
-              openedDivisionsData.length === 0 && styles.disabledTab,
             ]}
             ref={ref => (tabRefs.current['distributors'] = ref)}
-            onPress={() =>
-              openedDivisionsData.length > 0 && handleTabPress('distributors')
-            }
-            disabled={openedDivisionsData.length === 0}
+            onPress={() => handleTabPress('distributors')}
           >
             <Distributors
               color={
-                openedDivisionsData.length > 0
-                  ? activeSubTab === 'distributors'
-                    ? '#000'
-                    : '#999'
-                  : '#CCC'
+                activeSubTab === 'distributors'
+                  ? '#000'
+                  : '#999'
               }
             />
 
@@ -3975,7 +4308,6 @@ export const LinkagedTab = ({
               style={[
                 styles.subTabText,
                 activeSubTab === 'distributors' && styles.activeSubTabText,
-                openedDivisionsData.length === 0 && styles.disabledTabText,
               ]}
             >
               Distributors
@@ -3987,28 +4319,21 @@ export const LinkagedTab = ({
             style={[
               styles.subTab,
               activeSubTab === 'field' && styles.activeSubTab,
-              openedDivisionsData.length === 0 && styles.disabledTab,
             ]}
             ref={ref => (tabRefs.current['field'] = ref)}
-            onPress={() =>
-              openedDivisionsData.length > 0 && handleTabPress('field')
-            }
-            disabled={openedDivisionsData.length === 0}
+            onPress={() => handleTabPress('field')}
           >
             <Field
               color={
-                openedDivisionsData.length > 0
-                  ? activeSubTab === 'field'
-                    ? '#000'
-                    : '#999'
-                  : '#CCC'
+                activeSubTab === 'field'
+                  ? '#000'
+                  : '#999'
               }
             />
             <AppText
               style={[
                 styles.subTabText,
                 activeSubTab === 'field' && styles.activeSubTabText,
-                openedDivisionsData.length === 0 && styles.disabledTabText,
               ]}
             >
               Field
@@ -4076,6 +4401,7 @@ export const LinkagedTab = ({
           onClose={() => setShowFilterModal(false)}
           onApply={handleFilterApply}
         />
+
 
         {/* Toast Notification */}
         {toastVisible && (
@@ -5369,6 +5695,17 @@ const styles = StyleSheet.create({
     borderColor: '#2B2B2B',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  statusBadge: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
   },
   // Hospital card styles (for expandable design)
   hospitalCard: {
