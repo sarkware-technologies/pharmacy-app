@@ -2025,6 +2025,7 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     flex: 1,
     flexShrink: 1,
+    
   },
   headerActions: {
     flexDirection: 'row',
@@ -2472,6 +2473,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     backgroundColor: '#fff',
+
+ 
+    zIndex: 999
   },
 
   leftSection: {

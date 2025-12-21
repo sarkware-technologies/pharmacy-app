@@ -182,7 +182,7 @@ export const LinkagedTab = ({
   const reduxCustomerId = useSelector(selectCurrentCustomerId);
   const selectedCustomer = useSelector(state => state.customer.selectedCustomer);
   const effectiveCustomerId = reduxCustomerId || customerId;
-  
+
   // Get instanceId from customerDetails response (selectedCustomer from Redux)
   // Priority: selectedCustomer.instaceId > selectedCustomer.instanceId > prop instanceId
 
@@ -247,12 +247,12 @@ export const LinkagedTab = ({
     // as they might have instanceId from stageId[0]
     // Check customerCode (not null) or statusName === 'ACTIVE'
     const isActiveCustomer = selectedCustomer?.customerCode != null || selectedCustomer?.statusName === 'ACTIVE';
-    
-    if( Object.keys(instance).length !== 0 || isActiveCustomer ){
+
+    if (Object.keys(instance).length !== 0 || isActiveCustomer) {
       console.log('instanceId', instanceId);
       try {
         const response = await customerAPI.getLatestDraft(instanceIdFromDetails, actorId);
-        
+
         if (response?.data?.success && response?.data?.hasDraft && response?.data?.draftEdits) {
           const draftEdits = response.data.draftEdits;
 
@@ -304,35 +304,35 @@ export const LinkagedTab = ({
           if (draftEdits.mapping) {
             const draftMapping = draftEdits.mapping;
             const customerMapping = mappingData || {};
-            
+
             // Helper function to merge mapping arrays
             // Items in draft mapping take precedence, and we preserve isApproved status
             // Only include isApproved if it exists in either customer mapping or draft mapping
             const mergeMappingArray = (draftArray, customerArray) => {
               const mergedMap = new Map();
-              
+
               // First, add all items from customer mapping (base data)
               (customerArray || []).forEach(item => {
                 const key = String(item.id || item.customerId);
                 mergedMap.set(key, { ...item });
               });
-              
+
               // Then, update/add items from draft mapping (draft takes precedence)
               (draftArray || []).forEach(item => {
                 const key = String(item.id || item.customerId);
                 const existing = mergedMap.get(key);
                 if (existing) {
                   // Merge existing with draft data (draft properties take precedence)
-                  const merged = { 
-                    ...existing, 
+                  const merged = {
+                    ...existing,
                     ...item
                   };
-                  
+
                   // Handle isApproved: only include if it exists in either source
                   // Don't add isApproved: false if it doesn't exist in either
                   const hasIsApprovedInDraft = item.hasOwnProperty('isApproved');
                   const hasIsApprovedInCustomer = existing.hasOwnProperty('isApproved');
-                  
+
                   if (hasIsApprovedInDraft) {
                     // isApproved exists in draft mapping - use draft value
                     merged.isApproved = item.isApproved;
@@ -343,7 +343,7 @@ export const LinkagedTab = ({
                     // Neither has isApproved - explicitly remove it to avoid false values
                     delete merged.isApproved;
                   }
-                  
+
                   mergedMap.set(key, merged);
                 } else {
                   // Add new item from draft
@@ -355,10 +355,10 @@ export const LinkagedTab = ({
                   mergedMap.set(key, newItem);
                 }
               });
-              
+
               return Array.from(mergedMap.values());
             };
-            
+
             // Merge all mapping arrays
             const mergedMapping = {
               hospitals: mergeMappingArray(draftMapping.hospitals, customerMapping.hospitals),
@@ -366,7 +366,7 @@ export const LinkagedTab = ({
               pharmacy: mergeMappingArray(draftMapping.pharmacy, customerMapping.pharmacy),
               groupHospitals: mergeMappingArray(draftMapping.groupHospitals, customerMapping.groupHospitals),
             };
-            
+
             setHierarchyMappingData(mergedMapping);
           } else if (mappingData) {
             // If no draft mapping, use customer mapping
@@ -389,7 +389,7 @@ export const LinkagedTab = ({
 
 
 
-    
+
   }, [instanceIdFromDetails, loggedInUser?.userId, loggedInUser?.id, instanceId, customerRequestedDivisions, instance, mappingData, selectedCustomer?.statusName, selectedCustomer?.customerCode]);
 
   // Legacy function name for backward compatibility
@@ -441,7 +441,7 @@ export const LinkagedTab = ({
   const [linkedDistributorsData, setLinkedDistributorsData] = useState([]);
   const [distributorsLoading, setDistributorsLoading] = useState(false);
   const [distributorsError, setDistributorsError] = useState(null);
-  
+
   // State for linked distributor organization codes (SPLL/SPIL)
   const [linkedDistributorOrgCodes, setLinkedDistributorOrgCodes] = useState({}); // { distributorId: 'SPLL' | 'SPIL' }
   // State for linked distributor margins
@@ -485,13 +485,13 @@ export const LinkagedTab = ({
   const [blockingDivision, setBlockingDivision] = useState(null); // Track which division is being blocked/unblocked
   // Merged requested divisions (combining prop divisions with draft divisions)
   const [mergedRequestedDivisions, setMergedRequestedDivisions] = useState(customerRequestedDivisions);
-  
+
   // Flags to track if data has been fetched for each tab
   const [divisionsDataFetched, setDivisionsDataFetched] = useState(false);
   const [distributorsDataFetched, setDistributorsDataFetched] = useState(false);
   const [fieldDataFetched, setFieldDataFetched] = useState(false);
   const [hierarchyDataFetched, setHierarchyDataFetched] = useState(false);
-  
+
   // Ref to track if we need to fetch preferred distributors on distributors tab activation
   const shouldFetchPreferredDistributorsRef = useRef(false);
 
@@ -533,7 +533,7 @@ export const LinkagedTab = ({
   };
 
   const handleTabPress = async tabName => {
-    
+
     // First reset the list and set active tab
     setActiveSubTab(tabName);
 
@@ -587,7 +587,7 @@ export const LinkagedTab = ({
 
   const handleDistributorTabPress = tabName => {
     setActiveDistributorTab(tabName);
-    
+
     // Fetch data when switching distributor sub-tabs (only if distributors main tab is active)
     if (activeSubTab === 'distributors' && distributorsDataFetched) {
       if (tabName === 'preferred') {
@@ -635,7 +635,7 @@ export const LinkagedTab = ({
       const id = linked.id || linked.distributorId;
       return id != null ? String(id) : null;
     }).filter(id => id && id !== 'undefined' && id !== 'null' && id !== '');
-    
+
     return new Set(ids);
   }, [linkedDistributorsData]);
 
@@ -669,124 +669,124 @@ export const LinkagedTab = ({
     //   return;
     // }
 
-      try {
-        setDivisionsLoading(true);
-        setDivisionsError(null);
+    try {
+      setDivisionsLoading(true);
+      setDivisionsError(null);
 
-        let customerDivisionsResponse;
-        let allDivisionsResponse;
+      let customerDivisionsResponse;
+      let allDivisionsResponse;
 
-        // Determine if customer is active: check customerCode (not null and not empty) or statusName === 'ACTIVE'
-        // Explicitly exclude PENDING customers
-        const isPendingCustomer = selectedCustomer?.statusName === 'PENDING';
-        const hasCustomerCode = selectedCustomer?.customerCode != null && selectedCustomer?.customerCode !== '';
-        const isActiveCustomer = !isPendingCustomer && (hasCustomerCode || selectedCustomer?.statusName === 'ACTIVE');
+      // Determine if customer is active: check customerCode (not null and not empty) or statusName === 'ACTIVE'
+      // Explicitly exclude PENDING customers
+      const isPendingCustomer = selectedCustomer?.statusName === 'PENDING';
+      const hasCustomerCode = selectedCustomer?.customerCode != null && selectedCustomer?.customerCode !== '';
+      const isActiveCustomer = !isPendingCustomer && (hasCustomerCode || selectedCustomer?.statusName === 'ACTIVE');
 
-        // Fetch customer's linked divisions ONLY for active customers (not pending)
-        // Always fetch if active customer, regardless of activeSubTab (since divisions tab is default)
-        if (isActiveCustomer && effectiveCustomerId) {
-          console.log('Fetching customer divisions for active customer');
-          try {
-            customerDivisionsResponse = await customerAPI.getCustomerDivisions(effectiveCustomerId);
-            console.log('customerDivisionsResponse', customerDivisionsResponse);
-          } catch (error) {
-            console.error('Error fetching customer divisions:', error);
-            // Don't throw, just log - we'll handle empty data
-          }
+      // Fetch customer's linked divisions ONLY for active customers (not pending)
+      // Always fetch if active customer, regardless of activeSubTab (since divisions tab is default)
+      if (isActiveCustomer && effectiveCustomerId) {
+        console.log('Fetching customer divisions for active customer');
+        try {
+          customerDivisionsResponse = await customerAPI.getCustomerDivisions(effectiveCustomerId);
+          console.log('customerDivisionsResponse', customerDivisionsResponse);
+        } catch (error) {
+          console.error('Error fetching customer divisions:', error);
+          // Don't throw, just log - we'll handle empty data
         }
-
-        // Fetch all divisions - for active customers, fetch even if instance is empty
-        if(Object.keys(instance).length !== 0 || isActiveCustomer){
-          allDivisionsResponse = await customerAPI.getAllDivisions();
-        }
-
-        let openedDivisions = [];
-        let otherDivisions = [];
-
-        // Process customer's linked divisions (opened) - ONLY for active customers (not pending)
-        console.log('Processing opened divisions - isActiveCustomer:', isActiveCustomer);
-        console.log('customerDivisionsResponse:', customerDivisionsResponse);
-        
-        if (
-          isActiveCustomer &&
-          customerDivisionsResponse?.data &&
-          Array.isArray(customerDivisionsResponse.data)
-        ) {
-          openedDivisions = customerDivisionsResponse.data;
-          console.log('openedDivisions from API:', openedDivisions);
-          
-          // For active customers, opened divisions should also show in "Requested" column
-          // Format opened divisions to match the structure needed for mergedRequestedDivisions
-          const formattedOpenedDivisions = openedDivisions.map(div => ({
-            divisionId: div.divisionId || div.id,
-            divisionCode: div.divisionCode || '',
-            divisionName: div.divisionName || '',
-            isOpen: div.isOpen !== undefined ? div.isOpen : false,
-          }));
-          
-          // Merge with existing mergedRequestedDivisions (from props or draft)
-          // Use functional update to get current state and avoid dependency issues
-          setMergedRequestedDivisions(prevMerged => {
-            // Create a map to avoid duplicates
-            const existingDivisionsMap = new Map();
-            
-            // First, add existing divisions from current mergedRequestedDivisions
-            prevMerged.forEach(div => {
-              const key = String(div.divisionId || div.id);
-              existingDivisionsMap.set(key, div);
-            });
-            
-            // Then, add/update with opened divisions (opened divisions take precedence)
-            formattedOpenedDivisions.forEach(div => {
-              const key = String(div.divisionId || div.id);
-              existingDivisionsMap.set(key, div);
-            });
-            
-            // Return merged data
-            return Array.from(existingDivisionsMap.values());
-          });
-        } else {
-          // For non-active customers (including pending), clear opened divisions
-          openedDivisions = [];
-        }
-
-        // Process all available divisions and filter out already linked ones
-        if (
-          allDivisionsResponse?.data?.divisions &&
-          Array.isArray(allDivisionsResponse.data.divisions)
-        ) {
-          const linkedDivisionIds = openedDivisions.map(d =>
-            Number(d.divisionId),
-          );
-          otherDivisions = allDivisionsResponse.data.divisions.filter(
-            d => !linkedDivisionIds.includes(Number(d.divisionId)),
-          );
-        }
-
-        // Only set opened divisions data for active customers
-        // For pending or other non-active customers, explicitly set to empty array
-        if (isActiveCustomer) {
-          setOpenedDivisionsData(openedDivisions);
-        } else {
-          setOpenedDivisionsData([]);
-        }
-        setOtherDivisionsData(otherDivisions);
-        setDivisionsDataFetched(true);
-      } catch (error) {
-        setDivisionsError(error.message);
-        setOtherDivisionsData([]);
-        setOpenedDivisionsData([]);
-      } finally {
-        setDivisionsLoading(false);
       }
 
+      // Fetch all divisions - for active customers, fetch even if instance is empty
+      if (Object.keys(instance).length !== 0 || isActiveCustomer) {
+        allDivisionsResponse = await customerAPI.getAllDivisions();
+      }
 
-   }, [activeSubTab, effectiveCustomerId, instance, selectedCustomer]);
+      let openedDivisions = [];
+      let otherDivisions = [];
+
+      // Process customer's linked divisions (opened) - ONLY for active customers (not pending)
+      console.log('Processing opened divisions - isActiveCustomer:', isActiveCustomer);
+      console.log('customerDivisionsResponse:', customerDivisionsResponse);
+
+      if (
+        isActiveCustomer &&
+        customerDivisionsResponse?.data &&
+        Array.isArray(customerDivisionsResponse.data)
+      ) {
+        openedDivisions = customerDivisionsResponse.data;
+        console.log('openedDivisions from API:', openedDivisions);
+
+        // For active customers, opened divisions should also show in "Requested" column
+        // Format opened divisions to match the structure needed for mergedRequestedDivisions
+        const formattedOpenedDivisions = openedDivisions.map(div => ({
+          divisionId: div.divisionId || div.id,
+          divisionCode: div.divisionCode || '',
+          divisionName: div.divisionName || '',
+          isOpen: div.isOpen !== undefined ? div.isOpen : false,
+        }));
+
+        // Merge with existing mergedRequestedDivisions (from props or draft)
+        // Use functional update to get current state and avoid dependency issues
+        setMergedRequestedDivisions(prevMerged => {
+          // Create a map to avoid duplicates
+          const existingDivisionsMap = new Map();
+
+          // First, add existing divisions from current mergedRequestedDivisions
+          prevMerged.forEach(div => {
+            const key = String(div.divisionId || div.id);
+            existingDivisionsMap.set(key, div);
+          });
+
+          // Then, add/update with opened divisions (opened divisions take precedence)
+          formattedOpenedDivisions.forEach(div => {
+            const key = String(div.divisionId || div.id);
+            existingDivisionsMap.set(key, div);
+          });
+
+          // Return merged data
+          return Array.from(existingDivisionsMap.values());
+        });
+      } else {
+        // For non-active customers (including pending), clear opened divisions
+        openedDivisions = [];
+      }
+
+      // Process all available divisions and filter out already linked ones
+      if (
+        allDivisionsResponse?.data?.divisions &&
+        Array.isArray(allDivisionsResponse.data.divisions)
+      ) {
+        const linkedDivisionIds = openedDivisions.map(d =>
+          Number(d.divisionId),
+        );
+        otherDivisions = allDivisionsResponse.data.divisions.filter(
+          d => !linkedDivisionIds.includes(Number(d.divisionId)),
+        );
+      }
+
+      // Only set opened divisions data for active customers
+      // For pending or other non-active customers, explicitly set to empty array
+      if (isActiveCustomer) {
+        setOpenedDivisionsData(openedDivisions);
+      } else {
+        setOpenedDivisionsData([]);
+      }
+      setOtherDivisionsData(otherDivisions);
+      setDivisionsDataFetched(true);
+    } catch (error) {
+      setDivisionsError(error.message);
+      setOtherDivisionsData([]);
+      setOpenedDivisionsData([]);
+    } finally {
+      setDivisionsLoading(false);
+    }
+
+
+  }, [activeSubTab, effectiveCustomerId, instance, selectedCustomer]);
 
   // Fetch divisions data on component mount (since it's the default tab)
   // Also trigger when customerCode or statusName changes for active customers
   useEffect(() => {
-      fetchDivisionsData();
+    fetchDivisionsData();
   }, [activeSubTab, fetchDivisionsData, selectedCustomer?.action, selectedCustomer?.statusName, selectedCustomer?.customerCode]);
 
   // Function to fetch field team data
@@ -813,7 +813,7 @@ export const LinkagedTab = ({
       if (response?.data) {
         // Extract data from response - could be in different formats
         const newData = response.data.data || response.data.companyUsers || response.data.fieldList || response.data || [];
-        
+
         if (loadMore) {
           // Append new data to existing data
           setFieldTeamData(prev => [...prev, ...newData]);
@@ -827,7 +827,7 @@ export const LinkagedTab = ({
         // If we got a full page (10 items), there might be more
         const hasMore = Array.isArray(newData) && newData.length === 10;
         setFieldTeamHasMore(hasMore);
-        
+
         if (hasMore) {
           setFieldTeamPage(page + 1);
         } else {
@@ -876,10 +876,10 @@ export const LinkagedTab = ({
       setDistributorsError(null);
 
       // Get stationCode from loggedInUser
-      const stationCode = loggedInUser?.stationCode || 
-                         loggedInUser?.userDetails?.stationCodes?.[0]?.stationCode || 
-                         loggedInUser?.userDetails?.stationCode || 
-                         '';
+      const stationCode = loggedInUser?.stationCode ||
+        loggedInUser?.userDetails?.stationCodes?.[0]?.stationCode ||
+        loggedInUser?.userDetails?.stationCode ||
+        '';
 
       // Extract divisionIds from mergedRequestedDivisions
       // Ensure we get all divisionIds from the requested divisions
@@ -892,7 +892,7 @@ export const LinkagedTab = ({
         .filter(id => id != null && id !== '' && id !== 'undefined');
 
       // Call API to get preferred distributors
-        const response = await distributorAPI_getPreferredDistributors(
+      const response = await distributorAPI_getPreferredDistributors(
         1, // page
         20, // limit
         stationCode,
@@ -911,7 +911,7 @@ export const LinkagedTab = ({
         setPreferredDistributorsData([]);
       }
     } catch (error) {
-     
+
       setDistributorsError(error.message);
       setPreferredDistributorsData([]);
     } finally {
@@ -921,18 +921,18 @@ export const LinkagedTab = ({
 
   // Fetch preferred distributors when Preferred tab is active (only if distributors tab is already active)
   useEffect(() => {
-    
+
     if (
-      activeSubTab === 'distributors' && 
-      distributorsDataFetched && 
-      activeDistributorTab === 'preferred' && 
+      activeSubTab === 'distributors' &&
+      distributorsDataFetched &&
+      activeDistributorTab === 'preferred' &&
       effectiveCustomerId &&
       shouldFetchPreferredDistributorsRef.current
     ) {
       shouldFetchPreferredDistributorsRef.current = false; // Reset flag
       fetchPreferredDistributorsData();
     } else {
-     
+
     }
   }, [activeDistributorTab, activeSubTab, distributorsDataFetched, effectiveCustomerId, fetchPreferredDistributorsData]);
 
@@ -945,7 +945,7 @@ export const LinkagedTab = ({
     }
 
     // Get divisionIds from mergedRequestedDivisions
-    const divisionIds = (mergedRequestedDivisions || []).map(div => 
+    const divisionIds = (mergedRequestedDivisions || []).map(div =>
       String(div.divisionId || div.id)
     ).filter(id => id && id !== 'undefined' && id !== 'null');
 
@@ -978,7 +978,7 @@ export const LinkagedTab = ({
         setLinkedDistributorsData([]);
       }
     } catch (error) {
-     
+
       setDistributorsError(error.message);
       setLinkedDistributorsData([]);
     } finally {
@@ -1013,7 +1013,7 @@ export const LinkagedTab = ({
           const distributorId = String(distributor.id || distributor.distributorId || '');
           return !linkedDistributorIds.has(distributorId);
         });
-    
+
         setAllDistributorsData(filteredDistributors);
         setFilteredDistributorsData(filteredDistributors);
       } else {
@@ -1172,7 +1172,7 @@ export const LinkagedTab = ({
 
       // Get instanceId from customerDetails response (selectedCustomer from Redux)
       const effectiveInstanceId = instanceIdFromDetails;
-      
+
       if (!effectiveInstanceId) {
         showToast('Instance ID not found. Please refresh and try again.', 'error');
         setLinkingDistributors(false);
@@ -1192,7 +1192,7 @@ export const LinkagedTab = ({
       // Get existing linked distributors to merge with newly selected ones
       // Also check latest draft for distributors that might be in draft but not yet linked
       let existingDistributorsFromDraft = [];
-      if( Object.keys(instance).length !== 0 ){
+      if (Object.keys(instance).length !== 0) {
         try {
           const draftResponse = await customerAPI.getLatestDraft(effectiveInstanceId, actorId);
           if (draftResponse?.data?.success && draftResponse?.data?.hasDraft && draftResponse?.data?.draftEdits?.distributors) {
@@ -1204,7 +1204,7 @@ export const LinkagedTab = ({
       }
       // Create a map to avoid duplicates
       const allDistributorsMap = new Map();
-      
+
       // First, add all existing linked distributors from API
       (linkedDistributorsData || []).forEach(linkedDist => {
         const distId = String(linkedDist.id || linkedDist.distributorId || '');
@@ -1475,10 +1475,10 @@ export const LinkagedTab = ({
   // Handle approve for customer hierarchy items (hospitals, doctors, pharmacies, group hospitals)
   const handleHierarchyApprove = async (item, itemType) => {
     try {
-      
+
       // Get instanceId from customerDetails response (selectedCustomer from Redux)
       const effectiveInstanceId = instanceIdFromDetails;
-      
+
       if (!effectiveInstanceId) {
         showToast('Instance ID not available', 'error');
         return;
@@ -1546,7 +1546,7 @@ export const LinkagedTab = ({
       // Get existing mapping data
       const hierarchyData = hierarchyMappingData || {};
       const itemId = Number(item.id || item.customerId);
-      
+
       // Helper function to format mapping items - preserve existing isApproved: true values
       const formatMappingItem = (mappingItem, isBeingApproved) => {
         const formatted = {
@@ -1564,7 +1564,7 @@ export const LinkagedTab = ({
           subCategoryId: mappingItem.subCategoryId !== undefined ? Number(mappingItem.subCategoryId) : (mappingItem.subCategoryId || 0),
           action: 'APPROVE',
         };
-        
+
         // Handle isApproved: preserve existing true values, set true for item being approved
         if (isBeingApproved) {
           // Item being approved gets isApproved: true
@@ -1574,7 +1574,7 @@ export const LinkagedTab = ({
           formatted.isApproved = true;
         }
         // If item doesn't have isApproved or it's false, don't include the property
-        
+
         return formatted;
       };
 
@@ -1604,7 +1604,7 @@ export const LinkagedTab = ({
 
       // If the item being approved doesn't exist in the mapping, add it
       const approvedItem = formatMappingItem(item, true);
-      
+
       if (itemType === 'hospital') {
         const existingIndex = mappingHospitals.findIndex(h => h.id === itemId);
         if (existingIndex >= 0) {
@@ -1661,7 +1661,7 @@ export const LinkagedTab = ({
       await customerAPI.draftEdit(effectiveInstanceId, draftEditPayload);
 
       showToast(`${item.customerName || item.name} approved successfully!`, 'success');
-      
+
       // Refresh latest draft data to update the UI
       await fetchLatestDraftData();
     } catch (error) {
@@ -1675,7 +1675,7 @@ export const LinkagedTab = ({
     try {
       // Get instanceId from customerDetails response (selectedCustomer from Redux)
       const effectiveInstanceId = instanceIdFromDetails;
-      
+
       if (!effectiveInstanceId) {
         showToast('Instance ID not available', 'error');
         return;
@@ -1743,7 +1743,7 @@ export const LinkagedTab = ({
       // Get existing mapping data
       const hierarchyData = hierarchyMappingData || {};
       const itemId = Number(item.id || item.customerId);
-      
+
       // Helper function to format mapping items for reject - preserve existing isApproved: true values
       const formatMappingItem = (mappingItem, isBeingRejected) => {
         const formatted = {
@@ -1761,7 +1761,7 @@ export const LinkagedTab = ({
           subCategoryId: mappingItem.subCategoryId !== undefined ? Number(mappingItem.subCategoryId) : (mappingItem.subCategoryId || 0),
           action: isBeingRejected ? 'REJECT' : 'APPROVE',
         };
-        
+
         // Handle isActive: set false for rejected items, preserve existing for others
         if (isBeingRejected) {
           // Rejected item gets isActive: false
@@ -1770,7 +1770,7 @@ export const LinkagedTab = ({
           // Preserve existing isActive value for other items
           formatted.isActive = mappingItem.isActive;
         }
-        
+
         // Handle isApproved: preserve existing true values, don't set for rejected item
         if (isBeingRejected) {
           // Rejected item doesn't get isApproved (or gets false)
@@ -1779,7 +1779,7 @@ export const LinkagedTab = ({
           // Preserve existing isApproved: true for other items
           formatted.isApproved = true;
         }
-        
+
         return formatted;
       };
 
@@ -1809,7 +1809,7 @@ export const LinkagedTab = ({
 
       // If the item being rejected doesn't exist in the mapping, add it (without isApproved)
       const rejectedItem = formatMappingItem(item, true);
-      
+
       if (itemType === 'hospital') {
         const existingIndex = mappingHospitals.findIndex(h => h.id === itemId);
         if (existingIndex >= 0) {
@@ -1866,7 +1866,7 @@ export const LinkagedTab = ({
       await customerAPI.draftEdit(effectiveInstanceId, draftEditPayload);
 
       showToast(`${item.customerName || item.name} rejected!`, 'error');
-      
+
       // Refresh latest draft data to update the UI
       await fetchLatestDraftData();
     } catch (error) {
@@ -1919,7 +1919,7 @@ export const LinkagedTab = ({
 
       // Get instanceId from customerDetails response (selectedCustomer from Redux)
       const effectiveInstanceId = instanceIdFromDetails;
-      
+
       if (!effectiveInstanceId) {
         showToast('Instance ID not found. Please refresh and try again.', 'error');
         setLinkingDistributors(false);
@@ -2191,7 +2191,7 @@ export const LinkagedTab = ({
 
       // Get instanceId from customerDetails response (selectedCustomer from Redux)
       const effectiveInstanceId = instanceIdFromDetails;
-      
+
       if (!effectiveInstanceId) {
         showToast('Instance ID not found. Please refresh and try again.', 'error');
         return;
@@ -2210,7 +2210,7 @@ export const LinkagedTab = ({
       // Get existing linked distributors to merge with newly added one
       // Also check latest draft for distributors that might be in draft but not yet linked
       let existingDistributorsFromDraft = [];
-      if( Object.keys(instance).length !== 0 ){
+      if (Object.keys(instance).length !== 0) {
         console.log('instanceId', instanceId);
         try {
           const draftResponse = await customerAPI.getLatestDraft(effectiveInstanceId, actorId);
@@ -2225,7 +2225,7 @@ export const LinkagedTab = ({
 
       // Create a map to avoid duplicates
       const allDistributorsMap = new Map();
-      
+
       // First, add all existing linked distributors from API
       (linkedDistributorsData || []).forEach(linkedDist => {
         const distId = String(linkedDist.id || linkedDist.distributorId || '');
@@ -2327,7 +2327,7 @@ export const LinkagedTab = ({
       // Finally, add the newly selected distributor
       const distId = String(distributor.id);
       // Get supply type (default to Net Rate if not specified)
-      const supplyType = allDistributorSupplyType[distributor.id] || 
+      const supplyType = allDistributorSupplyType[distributor.id] ||
         (distributor.inviteStatusId === 2 ? 'Chargeback (CM)' : 'NetRate (DM)');
       const typeId = supplyType.includes('Chargeback') || supplyType.includes('CM') ? 2 : 1;
 
@@ -2567,7 +2567,7 @@ export const LinkagedTab = ({
       // Get instanceId from customerDetails response (selectedCustomer from Redux)
       // Use instanceIdFromDetails which is already calculated from selectedCustomer
       const effectiveInstanceId = instanceIdFromDetails;
-      
+
       // instanceId is required for draft-edit API
       if (!effectiveInstanceId) {
         showToast('Instance ID not found. Please refresh and try again.', 'error');
@@ -2576,11 +2576,11 @@ export const LinkagedTab = ({
       }
 
       const actorId = loggedInUser?.userId || loggedInUser?.id;
-      
+
       // Get all existing divisions from mergedRequestedDivisions (includes divisions already in draft)
       // Create a map to avoid duplicates
       const allDivisionsMap = new Map();
-      
+
       // First, add all existing divisions from mergedRequestedDivisions
       mergedRequestedDivisions.forEach(div => {
         const key = String(div.divisionId || div.id);
@@ -2591,7 +2591,7 @@ export const LinkagedTab = ({
           isOpen: div.isOpen !== undefined ? div.isOpen : false,
         });
       });
-      
+
       // Then, add newly selected divisions (they will overwrite if duplicate, but that's fine)
       validDivisions.forEach(division => {
         const key = String(division.divisionId);
@@ -2602,7 +2602,7 @@ export const LinkagedTab = ({
           isOpen: false, // Default to false for newly mapped divisions
         });
       });
-      
+
       // Convert map to array - this includes all existing + newly selected divisions
       const formattedDivisions = Array.from(allDivisionsMap.values());
 
@@ -2645,7 +2645,7 @@ export const LinkagedTab = ({
       // Refresh divisions data after linking - ONLY for active customers
       const isPendingCustomer = selectedCustomer?.statusName === 'PENDING';
       const isActiveCustomer = !isPendingCustomer && (selectedCustomer?.customerCode != null || selectedCustomer?.statusName === 'ACTIVE');
-      
+
       if (effectiveCustomerId && isActiveCustomer) {
         try {
           // Fetch updated customer divisions (opened) - only for active customers
@@ -2710,7 +2710,7 @@ export const LinkagedTab = ({
 
     try {
       setBlockingDivision(division.divisionId);
-      
+
       await customerAPI.blockUnblockDivision(
         effectiveCustomerId,
         division.divisionId,
@@ -2933,7 +2933,7 @@ export const LinkagedTab = ({
                     { flex: 1, textAlign: 'center' },
                   ]}
                 >
-                 Type
+                  Type
                 </AppText>
                 <AppText
                   style={[
@@ -3306,286 +3306,299 @@ export const LinkagedTab = ({
                 <AppText style={styles.emptyText}>No linked distributors found</AppText>
               </View>
             ) : (
-              linkedDistributorsData.map(item => (
-              <View key={item.id || item.distributorId} style={styles.linkedCard}>
+              linkedDistributorsData.map(item => {
 
-                {/* NAME + MARGIN LABEL */}
-                <View style={styles.topRow}>
-                  <View style={{ flex: 1 }}>
-                    <AppText style={styles.name}>{item.name || item.distributorName}</AppText>
+                const distId = String(item.id || item.distributorId);
+                const isOpen =
+                  showAllDivisionsDropdown[distId] ||
+                  showLinkedOrgCodeDropdown[distId];
+                return (
+                  <View key={distId} style={[
+                    styles.linkedCard,
+                    isOpen && {
+                      zIndex: 10000,
+                      elevation: 50, // Android
+                    },
+                  ]}>
 
-                  </View>
-                  {/* <AppText style={styles.marginLabel}>Margin</AppText> */}
-                </View>
+                    {/* NAME + MARGIN LABEL */}
+                    <View style={styles.topRow}>
+                      <View style={{ flex: 1 }}>
+                        <AppText style={styles.name}>{item.name || item.distributorName}</AppText>
 
-                {/* DROPDOWNS + MARGIN */}
-                <View style={styles.middleRow}>
-
-                  <View>
-
-                    <AppText style={styles.subTextLiked}>
-                      {(item.code || item.distributorCode) || 'N/A'} | One city | {item.cityName || 'Pune'}
-                    </AppText>
-
-                    <View style={styles.middleRowDropdown}>
-                      {/* Organization Code Dropdown (SPLL/SPIL) */}
-                      <View style={styles.dropdownWrapper}>
-                        <TouchableOpacity 
-                          style={styles.dropdown}
-                          onPress={() => {
-                            const distId = String(item.id || item.distributorId);
-                            // Close other dropdowns when opening this one
-                            setShowAllDivisionsDropdown(prev => ({ ...prev, [distId]: false }));
-                            setShowLinkedOrgCodeDropdown(prev => ({
-                              ...prev,
-                              [distId]: !prev[distId],
-                            }));
-                          }}
-                        >
-                          <AppText style={styles.dropdownText}>
-                            {linkedDistributorOrgCodes[String(item.id || item.distributorId)] || item.organizationCode || 'SPLL'}
-                          </AppText>
-                          <IconMaterial
-                            name="keyboard-arrow-down"
-                            size={18}
-                            color="#6B7280"
-                          />
-                        </TouchableOpacity>
-                        
-                        {showLinkedOrgCodeDropdown[String(item.id || item.distributorId)] && (
-                          <View style={styles.orgCodeDropdownMenu}>
-                            <TouchableOpacity
-                              style={styles.dropdownMenuItem}
-                              onPress={() => {
-                                const distId = String(item.id || item.distributorId);
-                                setLinkedDistributorOrgCodes(prev => ({
-                                  ...prev,
-                                  [distId]: 'SPLL',
-                                }));
-                                setShowLinkedOrgCodeDropdown(prev => ({
-                                  ...prev,
-                                  [distId]: false,
-                                }));
-                              }}
-                            >
-                              <AppText style={styles.dropdownMenuText}>SPLL</AppText>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.dropdownMenuItem, styles.dropdownMenuItemLast]}
-                              onPress={() => {
-                                const distId = String(item.id || item.distributorId);
-                                setLinkedDistributorOrgCodes(prev => ({
-                                  ...prev,
-                                  [distId]: 'SPIL',
-                                }));
-                                setShowLinkedOrgCodeDropdown(prev => ({
-                                  ...prev,
-                                  [distId]: false,
-                                }));
-                              }}
-                            >
-                              <AppText style={styles.dropdownMenuText}>SPIL</AppText>
-                            </TouchableOpacity>
-                          </View>
-                        )}
                       </View>
+                      {/* <AppText style={styles.marginLabel}>Margin</AppText> */}
+                    </View>
 
-                      {/* All Divisions Dropdown - Shows requested divisions with checkboxes */}
-                      <View style={styles.dropdownWrapper}>
-                        <TouchableOpacity 
-                          style={[
-                            styles.dropdown,
-                            (() => {
-                              const distId = String(item.id || item.distributorId);
-                              const selectedDivs = linkedDistributorSelectedDivisions[distId] || [];
-                              const hasSelection = selectedDivs.length > 0;
-                              return !hasSelection ? styles.dropdownError : null;
-                            })()
-                          ]}
-                          onPress={() => {
-                            const distId = String(item.id || item.distributorId);
-                            // Close other dropdowns when opening this one
-                            setShowLinkedOrgCodeDropdown(prev => ({ ...prev, [distId]: false }));
-                            setShowAllDivisionsDropdown(prev => ({
-                              ...prev,
-                              [distId]: !prev[distId],
-                            }));
-                          }}
-                        >
-                          <AppText style={styles.dropdownText}>
-                            {(() => {
-                              const distId = String(item.id || item.distributorId);
-                              const selectedDivs = linkedDistributorSelectedDivisions[distId] || [];
-                              if (selectedDivs.length === 0) {
-                                return 'All Divisions';
-                              } else if (selectedDivs.length === 1) {
-                                const divId = selectedDivs[0];
-                                const div = mergedRequestedDivisions.find(d => String(d.divisionId || d.id) === divId);
-                                return div ? `${div.divisionName || div.name}` : 'All Divisions';
-                              } else {
-                                return `${selectedDivs.length} Divisions Selected`;
-                              }
-                            })()}
-                          </AppText>
-                          <IconMaterial
-                            name="keyboard-arrow-down"
-                            size={18}
-                            color="#6B7280"
-                          />
-                        </TouchableOpacity>
-                        
-                        {showAllDivisionsDropdown[String(item.id || item.distributorId)] && (
-                          <View style={[styles.dropdownMenu, styles.allDivisionsDropdownMenu]}>
-                            {mergedRequestedDivisions && mergedRequestedDivisions.length > 0 ? (
-                              mergedRequestedDivisions.map((division, index) => {
+                    {/* DROPDOWNS + MARGIN */}
+                    <View style={styles.middleRow}>
+
+                      <View>
+
+                        <AppText style={styles.subTextLiked}>
+                          {(item.code || item.distributorCode) || 'N/A'} | {item.cityName || 'N/A'}
+                        </AppText>
+
+                        <View style={styles.middleRowDropdown}>
+                          {/* Organization Code Dropdown (SPLL/SPIL) */}
+                          <View style={styles.dropdownWrapper}>
+                            <TouchableOpacity
+                              style={styles.dropdown}
+                              onPress={() => {
                                 const distId = String(item.id || item.distributorId);
-                                const divisionId = String(division.divisionId || division.id);
-                                const selectedDivs = linkedDistributorSelectedDivisions[distId] || [];
-                                const isSelected = selectedDivs.includes(divisionId);
-                                
-                                return (
-                                  <TouchableOpacity
-                                    key={`${division.divisionId || division.id}-${index}`}
-                                    style={[
-                                      styles.dropdownMenuItem,
-                                      styles.dropdownMenuItemWithCheckbox,
-                                      index === mergedRequestedDivisions.length - 1 && styles.dropdownMenuItemLast
-                                    ]}
-                                    onPress={() => {
-                                      const currentSelected = linkedDistributorSelectedDivisions[distId] || [];
-                                      let newSelected;
-                                      
-                                      if (isSelected) {
-                                        // If trying to deselect, ensure at least one remains selected
-                                        if (currentSelected.length > 1) {
-                                          newSelected = currentSelected.filter(id => id !== divisionId);
-                                        } else {
-                                          // Cannot deselect the last one
-                                          return;
-                                        }
-                                      } else {
-                                        // Add to selection
-                                        newSelected = [...currentSelected, divisionId];
-                                      }
-                                      
-                                      setLinkedDistributorSelectedDivisions(prev => ({
-                                        ...prev,
-                                        [distId]: newSelected,
-                                      }));
-                                    }}
-                                  >
-                                    <View style={styles.checkboxContainer}>
-                                      <View style={[
-                                        styles.checkbox,
-                                        isSelected && styles.checkboxSelected
-                                      ]}>
-                                        {isSelected && (
-                                          <IconMaterial name="check" size={14} color="#fff" />
-                                        )}
-                                      </View>
-                                    </View>
-                                    <AppText style={styles.dropdownMenuText}>
-                                      {division.divisionName || division.name} ({division.divisionCode || division.code})
-                                    </AppText>
-                                  </TouchableOpacity>
-                                );
-                              })
-                            ) : (
-                              <View style={styles.dropdownMenuItem}>
-                                <AppText style={styles.dropdownMenuText}>No divisions available</AppText>
+                                // Close other dropdowns when opening this one
+                                setShowAllDivisionsDropdown(prev => ({ ...prev, [distId]: false }));
+                                setShowLinkedOrgCodeDropdown(prev => ({
+                                  ...prev,
+                                  [distId]: !prev[distId],
+                                }));
+                              }}
+                            >
+                              <AppText style={styles.dropdownText}>
+                                {linkedDistributorOrgCodes[String(item.id || item.distributorId)] || item.organizationCode || 'SPLL'}
+                              </AppText>
+                              <IconMaterial
+                                name="keyboard-arrow-down"
+                                size={18}
+                                color="#6B7280"
+                              />
+                            </TouchableOpacity>
+
+                            {showLinkedOrgCodeDropdown[String(item.id || item.distributorId)] && (
+                              <View style={styles.orgCodeDropdownMenu}>
+                                <TouchableOpacity
+                                  style={styles.dropdownMenuItem}
+                                  onPress={() => {
+                                    const distId = String(item.id || item.distributorId);
+                                    setLinkedDistributorOrgCodes(prev => ({
+                                      ...prev,
+                                      [distId]: 'SPLL',
+                                    }));
+                                    setShowLinkedOrgCodeDropdown(prev => ({
+                                      ...prev,
+                                      [distId]: false,
+                                    }));
+                                  }}
+                                >
+                                  <AppText style={styles.dropdownMenuText}>SPLL</AppText>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={[styles.dropdownMenuItem, styles.dropdownMenuItemLast]}
+                                  onPress={() => {
+                                    const distId = String(item.id || item.distributorId);
+                                    setLinkedDistributorOrgCodes(prev => ({
+                                      ...prev,
+                                      [distId]: 'SPIL',
+                                    }));
+                                    setShowLinkedOrgCodeDropdown(prev => ({
+                                      ...prev,
+                                      [distId]: false,
+                                    }));
+                                  }}
+                                >
+                                  <AppText style={styles.dropdownMenuText}>SPIL</AppText>
+                                </TouchableOpacity>
                               </View>
                             )}
                           </View>
-                        )}
+
+                          {/* All Divisions Dropdown - Shows requested divisions with checkboxes */}
+                          <View style={styles.dropdownWrapper}>
+                            <TouchableOpacity
+                              style={[
+                                styles.dropdown,
+                                (() => {
+                                  const distId = String(item.id || item.distributorId);
+                                  const selectedDivs = linkedDistributorSelectedDivisions[distId] || [];
+                                  const hasSelection = selectedDivs.length > 0;
+                                  return !hasSelection ? styles.dropdownError : null;
+                                })()
+                              ]}
+                              onPress={() => {
+                                const distId = String(item.id || item.distributorId);
+                                // Close other dropdowns when opening this one
+                                setShowLinkedOrgCodeDropdown(prev => ({ ...prev, [distId]: false }));
+                                setShowAllDivisionsDropdown(prev => ({
+                                  ...prev,
+                                  [distId]: !prev[distId],
+                                }));
+                              }}
+                            >
+                              <AppText style={styles.dropdownText}>
+                                {(() => {
+                                  const distId = String(item.id || item.distributorId);
+                                  const selectedDivs = linkedDistributorSelectedDivisions[distId] || [];
+                                  if (selectedDivs.length === 0) {
+                                    return 'All Divisions';
+                                  } else if (selectedDivs.length === 1) {
+                                    const divId = selectedDivs[0];
+                                    const div = mergedRequestedDivisions.find(d => String(d.divisionId || d.id) === divId);
+                                    return div ? `${div.divisionName || div.name}` : 'All Divisions';
+                                  } else {
+                                    return `${selectedDivs.length} Selected`;
+                                  }
+                                })()}
+                              </AppText>
+                              <IconMaterial
+                                name="keyboard-arrow-down"
+                                size={18}
+                                color="#6B7280"
+                              />
+                            </TouchableOpacity>
+
+                            {showAllDivisionsDropdown[String(item.id || item.distributorId)] && (
+                              <View style={[styles.dropdownMenu, styles.allDivisionsDropdownMenu]}>
+                                {mergedRequestedDivisions && mergedRequestedDivisions.length > 0 ? (
+                                  mergedRequestedDivisions.map((division, index) => {
+                                    const distId = String(item.id || item.distributorId);
+                                    const divisionId = String(division.divisionId || division.id);
+                                    const selectedDivs = linkedDistributorSelectedDivisions[distId] || [];
+                                    const isSelected = selectedDivs.includes(divisionId);
+
+                                    return (
+                                      <TouchableOpacity
+                                        key={`${division.divisionId || division.id}-${index}`}
+                                        style={[
+                                          styles.dropdownMenuItem,
+                                          styles.dropdownMenuItemWithCheckbox,
+                                          index === mergedRequestedDivisions.length - 1 && styles.dropdownMenuItemLast
+                                        ]}
+                                        onPress={() => {
+                                          const currentSelected = linkedDistributorSelectedDivisions[distId] || [];
+                                          let newSelected;
+
+                                          if (isSelected) {
+                                            // If trying to deselect, ensure at least one remains selected
+                                            if (currentSelected.length > 1) {
+                                              newSelected = currentSelected.filter(id => id !== divisionId);
+                                            } else {
+                                              // Cannot deselect the last one
+                                              return;
+                                            }
+                                          } else {
+                                            // Add to selection
+                                            newSelected = [...currentSelected, divisionId];
+                                          }
+
+                                          setLinkedDistributorSelectedDivisions(prev => ({
+                                            ...prev,
+                                            [distId]: newSelected,
+                                          }));
+                                        }}
+                                      >
+                                        <View style={styles.checkboxContainer}>
+                                          <View style={[
+                                            styles.checkbox,
+                                            isSelected && styles.checkboxSelected
+                                          ]}>
+                                            {isSelected && (
+                                              <IconMaterial name="check" size={14} color="#fff" />
+                                            )}
+                                          </View>
+                                        </View>
+                                        <AppText style={styles.dropdownMenuText}>
+                                          {division.divisionName || division.name} ({division.divisionCode || division.code})
+                                        </AppText>
+                                      </TouchableOpacity>
+                                    );
+                                  })
+                                ) : (
+                                  <View style={styles.dropdownMenuItem}>
+                                    <AppText style={styles.dropdownMenuText}>No divisions available</AppText>
+                                  </View>
+                                )}
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                      <View>
+                        <AppText style={styles.subTextLiked}>Margin</AppText>
+
+                        <View style={styles.marginBox}>
+                          <AppInput
+                            value={linkedDistributorMargins[String(item.id || item.distributorId)] ||
+                              item.doctorSupplyMargin ||
+                              item.hospitalSupplyMargin ||
+                              ''}
+                            onChangeText={(text) => {
+                              const distId = String(item.id || item.distributorId);
+                              setLinkedDistributorMargins(prev => ({
+                                ...prev,
+                                [distId]: text,
+                              }));
+                            }}
+                            keyboardType="numeric"
+                            style={styles.marginInput}
+                          />
+                          <AppText style={styles.percent}>%</AppText>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                  <View>
-                    <AppText style={styles.subTextLiked}>Margin</AppText>
 
-                    <View style={styles.marginBox}>
-                      <AppInput
-                        value={linkedDistributorMargins[String(item.id || item.distributorId)] || 
-                               item.doctorSupplyMargin || 
-                               item.hospitalSupplyMargin || 
-                               ''}
-                        onChangeText={(text) => {
-                          const distId = String(item.id || item.distributorId);
-                          setLinkedDistributorMargins(prev => ({
-                            ...prev,
-                            [distId]: text,
-                          }));
-                        }}
-                        keyboardType="numeric"
-                        style={styles.marginInput}
-                      />
-                      <AppText style={styles.percent}>%</AppText>
+                    {/* RADIO + REMOVE */}
+                    <View style={styles.bottomRow}>
+                      <View style={styles.radioRow}>
+                        <TouchableOpacity
+                          style={styles.radioItem}
+                          onPress={() => {
+                            const distId = String(item.id || item.distributorId);
+                            setLinkedDistributorSupplyModes(prev => ({
+                              ...prev,
+                              [distId]: '0', // Net Rate
+                            }));
+                          }}
+                        >
+                          <View style={[
+                            styles.radioOuter,
+                            linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '0' && styles.radioSelected
+                          ]}>
+                            {linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '0' && (
+                              <View style={styles.radioInner} />
+                            )}
+                          </View>
+                          <AppText style={styles.radioText}>Net Rate</AppText>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.radioItem}
+                          onPress={() => {
+                            const distId = String(item.id || item.distributorId);
+                            setLinkedDistributorSupplyModes(prev => ({
+                              ...prev,
+                              [distId]: '1', // Chargeback
+                            }));
+                          }}
+                        >
+                          <View style={[
+                            styles.radioOuter,
+                            linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '1' && styles.radioSelected
+                          ]}>
+                            {linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '1' && (
+                              <View style={styles.radioInner} />
+                            )}
+                          </View>
+                          <AppText style={styles.radioText}>Chargeback</AppText>
+                        </TouchableOpacity>
+                      </View>
+
+                      <TouchableOpacity style={styles.removeBtn}>
+                        <AppText style={styles.removeText}>Remove</AppText>
+                        <IconFeather
+                          name="trash-2"
+                          size={15}
+                          color="#F97316"
+                        />
+                      </TouchableOpacity>
                     </View>
                   </View>
-                </View>
-
-                {/* RADIO + REMOVE */}
-                <View style={styles.bottomRow}>
-                  <View style={styles.radioRow}>
-                    <TouchableOpacity 
-                      style={styles.radioItem}
-                      onPress={() => {
-                        const distId = String(item.id || item.distributorId);
-                        setLinkedDistributorSupplyModes(prev => ({
-                          ...prev,
-                          [distId]: '0', // Net Rate
-                        }));
-                      }}
-                    >
-                      <View style={[
-                        styles.radioOuter,
-                        linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '0' && styles.radioSelected
-                      ]}>
-                        {linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '0' && (
-                          <View style={styles.radioInner} />
-                        )}
-                      </View>
-                      <AppText style={styles.radioText}>Net Rate</AppText>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                      style={styles.radioItem}
-                      onPress={() => {
-                        const distId = String(item.id || item.distributorId);
-                        setLinkedDistributorSupplyModes(prev => ({
-                          ...prev,
-                          [distId]: '1', // Chargeback
-                        }));
-                      }}
-                    >
-                      <View style={[
-                        styles.radioOuter,
-                        linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '1' && styles.radioSelected
-                      ]}>
-                        {linkedDistributorSupplyModes[String(item.id || item.distributorId)] === '1' && (
-                          <View style={styles.radioInner} />
-                        )}
-                      </View>
-                      <AppText style={styles.radioText}>Chargeback</AppText>
-                    </TouchableOpacity>
-                  </View>
-
-                  <TouchableOpacity style={styles.removeBtn}>
-                    <AppText style={styles.removeText}>Remove</AppText>
-                    <IconFeather
-                      name="trash-2"
-                      size={15}
-                      color="#F97316"
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )))}
+                )
+              }))}
           </ScrollView>
 
           {/* FINISH BUTTON */}
           <View style={styles.finishContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.finishBtn}
               onPress={handleFinishLinkedDistributors}
               disabled={linkingDistributors}
@@ -3626,14 +3639,13 @@ export const LinkagedTab = ({
         </View>
       ) : (
         <>
-        
+
 
           <ScrollView
             showsVerticalScrollIndicator={false}
             style={styles.scrollContent}
-            contentContainerStyle={[
-              (hasApprovePermission || isCustomerActive) && styles.scrollContentWithButton
-            ]}
+            contentContainerStyle={styles.scrollContentContainer}
+
           >
 
             {/* ---------- HEADER (Requested / Other / Opened) ---------- */}
@@ -3664,7 +3676,7 @@ export const LinkagedTab = ({
               </View>
 
               {hasOtherDivisionPermission && <View style={styles.divider} />}
-              
+
               {hasOtherDivisionPermission && (
                 <View style={styles.colOther}>
                   <AppText style={styles.subHeaderText}>Name & Code</AppText>
@@ -3769,11 +3781,11 @@ export const LinkagedTab = ({
                             div.isBlocked && styles.unblockText
                           ]}
                         >
-                          {blockingDivision === div.divisionId 
-                            ? "Processing..." 
-                            : div.isBlocked 
-                            ? "Unblock" 
-                            : "Block"}
+                          {blockingDivision === div.divisionId
+                            ? "Processing..."
+                            : div.isBlocked
+                              ? "Unblock"
+                              : "Block"}
                         </AppText>
                       </TouchableOpacity>
                     </View>
@@ -3787,26 +3799,26 @@ export const LinkagedTab = ({
 
           {/* Sticky Continue Button at Bottom - Only show if user has selected divisions from Other column */}
 
-          
+
           {/* {(hasApprovePermission || isCustomerActive) && selectedDivisions.length > 0 && ( */}
-           
-            <View style={styles.stickyButtonContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.continueButton,
-                  (linkingDivisions || selectedDivisions.length === 0) &&
-                  styles.continueButtonDisabled,
-                ]}
-                onPress={handleLinkDivisionsAPI}
-                disabled={linkingDivisions || selectedDivisions.length === 0}
-              >
-                {linkingDivisions ? (
-                  <AppText style={styles.linkButtonText}>Linking...</AppText>
-                ) : (
-                  <AppText style={styles.linkButtonText}>Link Division</AppText>
-                )}
-              </TouchableOpacity>
-            </View>
+
+          <View style={styles.stickyButtonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.continueButton,
+                (linkingDivisions || selectedDivisions.length === 0) &&
+                styles.continueButtonDisabled,
+              ]}
+              onPress={handleLinkDivisionsAPI}
+              disabled={linkingDivisions || selectedDivisions.length === 0}
+            >
+              {linkingDivisions ? (
+                <AppText style={styles.linkButtonText}>Linking...</AppText>
+              ) : (
+                <AppText style={styles.linkButtonText}>Link Division</AppText>
+              )}
+            </TouchableOpacity>
+          </View>
           {/* )} */}
         </>
       )}
@@ -3868,14 +3880,14 @@ export const LinkagedTab = ({
           </AppText>
         </View>
       ) : (
-        <ScrollView 
+        <ScrollView
           style={styles.fieldScrollContent}
           contentContainerStyle={styles.fieldScrollContentContainer}
           onScroll={({ nativeEvent }) => {
             const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
             const paddingToBottom = 20;
             const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
-            
+
             if (isCloseToBottom && fieldTeamHasMore && !fieldTeamLoadingMore && !fieldTeamLoading) {
               fetchFieldTeamData(fieldTeamPage, true);
             }
@@ -3953,10 +3965,10 @@ export const LinkagedTab = ({
       return item.hasOwnProperty('isApproved') || item.isApproved !== undefined;
     };
 
-    if ((!doctors || doctors.length === 0) && 
-        (!pharmacy || pharmacy.length === 0) && 
-        (!hospitals || hospitals.length === 0) && 
-        (!groupHospitals || groupHospitals.length === 0)) {
+    if ((!doctors || doctors.length === 0) &&
+      (!pharmacy || pharmacy.length === 0) &&
+      (!hospitals || hospitals.length === 0) &&
+      (!groupHospitals || groupHospitals.length === 0)) {
       return (
         <View style={styles.tabContent}>
           <View style={styles.scrollContent}>
@@ -4007,7 +4019,7 @@ export const LinkagedTab = ({
 
                   <View style={styles.hierarchyActions}>
                     <View style={styles.actionButtons}>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.approveButton}
                         onPress={() => handleHierarchyApprove(item, 'pharmacy')}
                       >
@@ -4015,7 +4027,7 @@ export const LinkagedTab = ({
                         <AppText style={styles.approveButtonText}>Approve</AppText>
                       </TouchableOpacity>
 
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.rejectButton}
                         onPress={() => handleHierarchyReject(item, 'pharmacy')}
                       >
@@ -4133,25 +4145,40 @@ export const LinkagedTab = ({
 
                             <View style={styles.accordionItemActions}>
                               {isItemProcessed(item) ? (
-                                <View style={styles.statusBadge}>
-                                  <AppText style={styles.statusText}>
-                                    {item.isApproved === true ? 'Approved' : 'Rejected'}
-                                  </AppText>
+                                 <View style={styles.statusRow}>
+                            {item.isApproved ? (
+                              <>
+                                <IconMaterial name="check" size={18} color="#16A34A" />
+                                <AppText style={[styles.statusText, styles.approvedText]}>
+                                  APPROVED
+                                </AppText>
+                              </>
+
+                            ) : (
+                              <>
+                                <View style={styles.rejectedIconCircle}>
+                                  <IconMaterial name="close" size={14} color="#EF4444" />
                                 </View>
+                                <AppText style={[styles.statusText, styles.rejectedText]}>
+                                  REJECTED
+                                </AppText>
+                              </>
+                            )}
+                          </View>
                               ) : (
                                 <>
-                              <TouchableOpacity 
-                                style={styles.approveButton}
-                                onPress={() => handleHierarchyApprove(item, activeTab === 'pharmacies' ? 'pharmacy' : 'doctor')}
-                              >
-                                <Icon name="check" size={14} color="#fff" />
-                              </TouchableOpacity>
-                              <TouchableOpacity 
-                                style={styles.rejectButton}
-                                onPress={() => handleHierarchyReject(item, activeTab === 'pharmacies' ? 'pharmacy' : 'doctor')}
-                              >
-                                <Icon name="close" size={14} color="#2B2B2B" />
-                              </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={styles.approveButton}
+                                    onPress={() => handleHierarchyApprove(item, activeTab === 'pharmacies' ? 'pharmacy' : 'doctor')}
+                                  >
+                                    <Icon name="check" size={14} color="#fff" />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={styles.rejectButton}
+                                    onPress={() => handleHierarchyReject(item, activeTab === 'pharmacies' ? 'pharmacy' : 'doctor')}
+                                  >
+                                    <Icon name="close" size={14} color="#2B2B2B" />
+                                  </TouchableOpacity>
                                 </>
                               )}
                             </View>
@@ -4210,14 +4237,29 @@ export const LinkagedTab = ({
 
                       <View style={styles.hierarchyActions}>
                         {isItemProcessed(item) ? (
-                          <View style={styles.statusBadge}>
-                            <AppText style={styles.statusText}>
-                              {item.isApproved === true ? 'Approved' : 'Rejected'}
-                            </AppText>
+                          <View style={styles.statusRow}>
+                            {item.isApproved ? (
+                              <>
+                                <IconMaterial name="check" size={18} color="#16A34A" />
+                                <AppText style={[styles.statusText, styles.approvedText]}>
+                                  APPROVED
+                                </AppText>
+                              </>
+
+                            ) : (
+                              <>
+                                <View style={styles.rejectedIconCircle}>
+                                  <IconMaterial name="close" size={14} color="#EF4444" />
+                                </View>
+                                <AppText style={[styles.statusText, styles.rejectedText]}>
+                                  REJECTED
+                                </AppText>
+                              </>
+                            )}
                           </View>
                         ) : (
                           <View style={styles.actionButtons}>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                               style={styles.approveButton}
                               onPress={() => {
                                 let itemType = 'hospital';
@@ -4231,7 +4273,7 @@ export const LinkagedTab = ({
                               <AppText style={styles.approveButtonText}>Approve</AppText>
                             </TouchableOpacity>
 
-                            <TouchableOpacity 
+                            <TouchableOpacity
                               style={styles.rejectButton}
                               onPress={() => {
                                 let itemType = 'hospital';
@@ -4306,7 +4348,7 @@ export const LinkagedTab = ({
                 divisionsToShow.map(division => {
                   const divisionId = String(division.divisionId || division.id);
                   const orgCodes = divisionOrgCodes[divisionId] || {};
-                  
+
                   return (
                     <View key={divisionId} style={styles.divisionModalItemWithCheckboxes}>
                       <View style={styles.divisionModalItemMain}>
@@ -4327,7 +4369,7 @@ export const LinkagedTab = ({
                           {division.divisionCode || division.code}
                         </AppText>
                       </View>
-                      
+
                       {/* SPIL and SPILL checkboxes */}
                       <View style={styles.orgCodeCheckboxes}>
                         <TouchableOpacity
@@ -4346,7 +4388,7 @@ export const LinkagedTab = ({
                           </View>
                           <AppText style={styles.orgCodeText}>SPIL</AppText>
                         </TouchableOpacity>
-                        
+
                         <TouchableOpacity
                           style={styles.orgCodeCheckboxItem}
                           onPress={() => toggleDivisionOrgCode(divisionId, 'SPILL')}
@@ -4378,7 +4420,6 @@ export const LinkagedTab = ({
   return (
     <>
       <View style={styles.container}>
-        {/* Sub-tabs - Sticky */}
         <View style={styles.stickyTabsContainer}>
           <ScrollView
             ref={tabScrollRef}
@@ -4387,109 +4428,104 @@ export const LinkagedTab = ({
             style={styles.subTabsContainer}
             scrollEventThrottle={16}
           >
-          {/* Divisions Tab - Always visible */}
-          <TouchableOpacity
-            ref={ref => (tabRefs.current['divisions'] = ref)}
-            style={[
-              styles.subTab,
-              activeSubTab === 'divisions' && styles.activeSubTab,
-            ]}
-            onPress={() => handleTabPress('divisions')}
-          >
-            <Divisions color={activeSubTab === 'divisions' ? '#000' : '#999'} />
-            <AppText
+            <TouchableOpacity
+              ref={ref => (tabRefs.current['divisions'] = ref)}
               style={[
-                styles.subTabText,
-                activeSubTab === 'divisions' && styles.activeSubTabText,
+                styles.subTab,
+                activeSubTab === 'divisions' && styles.activeSubTab,
               ]}
+              onPress={() => handleTabPress('divisions')}
             >
-              Divisions
-            </AppText>
-          </TouchableOpacity>
+              <Divisions color={activeSubTab === 'divisions' ? '#000' : '#999'} />
+              <AppText
+                style={[
+                  styles.subTabText,
+                  activeSubTab === 'divisions' && styles.activeSubTabText,
+                ]}
+              >
+                Divisions
+              </AppText>
+            </TouchableOpacity>
 
-          {/* Distributors Tab - Disabled if no opened divisions */}
-          <TouchableOpacity
-            style={[
-              styles.subTab,
-              activeSubTab === 'distributors' && styles.activeSubTab,
-            ]}
-            ref={ref => (tabRefs.current['distributors'] = ref)}
-            onPress={() => handleTabPress('distributors')}
-          >
-            <Distributors
-              color={
-                activeSubTab === 'distributors'
-                  ? '#000'
-                  : '#999'
-              }
-            />
-
-            <AppText
+            <TouchableOpacity
               style={[
-                styles.subTabText,
-                activeSubTab === 'distributors' && styles.activeSubTabText,
+                styles.subTab,
+                activeSubTab === 'distributors' && styles.activeSubTab,
               ]}
+              ref={ref => (tabRefs.current['distributors'] = ref)}
+              onPress={() => handleTabPress('distributors')}
             >
-              Distributors
-            </AppText>
-          </TouchableOpacity>
-
-          {/* Field Tab - Disabled if no opened divisions */}
-          <TouchableOpacity
-            style={[
-              styles.subTab,
-              activeSubTab === 'field' && styles.activeSubTab,
-            ]}
-            ref={ref => (tabRefs.current['field'] = ref)}
-            onPress={() => handleTabPress('field')}
-          >
-            <Field
-              color={
-                activeSubTab === 'field'
-                  ? '#000'
-                  : '#999'
-              }
-            />
-            <AppText
-              style={[
-                styles.subTabText,
-                activeSubTab === 'field' && styles.activeSubTabText,
-              ]}
-            >
-              Field
-            </AppText>
-          </TouchableOpacity>
-
-          {/* Customer Hierarchy Tab - Always visible */}
-          <TouchableOpacity
-            style={[
-              styles.subTab,
-              activeSubTab === 'hierarchy' && styles.activeSubTab,
-            ]}
-            onPress={() => handleTabPress('hierarchy')}
-            ref={ref => (tabRefs.current['hierarchy'] = ref)}
-          >
-            <CustomerHierarchy
-              color={
-                openedDivisionsData.length > 0
-                  ? activeSubTab === 'hierarchy'
+              <Distributors
+                color={
+                  activeSubTab === 'distributors'
                     ? '#000'
                     : '#999'
-                  : '#CCC'
-              }
-            />
-            <AppText
+                }
+              />
+
+              <AppText
+                style={[
+                  styles.subTabText,
+                  activeSubTab === 'distributors' && styles.activeSubTabText,
+                ]}
+              >
+                Distributors
+              </AppText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={[
-                styles.subTabText,
-                activeSubTab === 'hierarchy' && styles.activeSubTabText,
+                styles.subTab,
+                activeSubTab === 'field' && styles.activeSubTab,
               ]}
+              ref={ref => (tabRefs.current['field'] = ref)}
+              onPress={() => handleTabPress('field')}
             >
-              Customer Hierarchy
-            </AppText>
-          </TouchableOpacity>
+              <Field
+                color={
+                  activeSubTab === 'field'
+                    ? '#000'
+                    : '#999'
+                }
+              />
+              <AppText
+                style={[
+                  styles.subTabText,
+                  activeSubTab === 'field' && styles.activeSubTabText,
+                ]}
+              >
+                Field
+              </AppText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.subTab,
+                activeSubTab === 'hierarchy' && styles.activeSubTab,
+              ]}
+              onPress={() => handleTabPress('hierarchy')}
+              ref={ref => (tabRefs.current['hierarchy'] = ref)}
+            >
+              <CustomerHierarchy
+                color={
+                  openedDivisionsData.length > 0
+                    ? activeSubTab === 'hierarchy'
+                      ? '#000'
+                      : '#999'
+                    : '#CCC'
+                }
+              />
+              <AppText
+                style={[
+                  styles.subTabText,
+                  activeSubTab === 'hierarchy' && styles.activeSubTabText,
+                ]}
+              >
+                Customer Hierarchy
+              </AppText>
+            </TouchableOpacity>
           </ScrollView>
         </View>
-        {/* Divisions Tab - Always visible */}
 
 
         <View style={styles.tabContentWrapper}>
@@ -4560,16 +4596,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    // shadowOffset: {
+    //   width: 0,
+    //   height: 2,
+    // },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingRight: 16,
+    paddingRight: 16
   },
   topRightButtons: {
     flexDirection: 'row',
@@ -4644,12 +4680,13 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     flex: 1,
+
   },
   scrollContent: {
     flex: 1,
     overflow: 'visible',
   },
-  scrollContentWithButton: {
+  scrollContentContainer: {
     paddingBottom: 100, // Add padding to ensure last item is visible above sticky button
   },
   distributorTabs: {
@@ -5049,7 +5086,7 @@ const styles = StyleSheet.create({
   },
   distributorRowWithDropdown: {
     zIndex: 10001,
-    elevation: 26,
+    // elevation: 26,
   },
   distributorInfoColumn: {
     paddingRight: 12,
@@ -5547,7 +5584,7 @@ const styles = StyleSheet.create({
   // Dropdown menu styles
   dropdownWrapper: {
     position: 'relative',
-    flex: 1,
+    // flex: 1,
     zIndex: 10000,
     elevation: 20,
   },
@@ -5558,7 +5595,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: '#fff',
     borderRadius: 8,
-    zIndex: 10001,
+    zIndex: 100010,
     elevation: 30,
     marginTop: 4,
     shadowColor: '#000',
@@ -5568,13 +5605,11 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5,
-    zIndex: 1000,
+
     backgroundColor: '#fff',
     borderRadius: 6,
     paddingVertical: 4,
     marginTop: 6,
-    elevation: 4,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -5822,11 +5857,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
   },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-  },
+
   // Hospital card styles (for expandable design)
   hospitalCard: {
     marginHorizontal: 12,
@@ -6198,7 +6229,7 @@ const styles = StyleSheet.create({
   },
   tabContentWrapper: {
     flex: 1,
-    paddingTop: 70, // Same height as sticky tab bar (60 + 10 margin)
+    paddingTop: 60, // Same height as sticky tab bar (60 + 10 margin)
     overflow: 'visible', // Changed to visible to allow dropdown to overflow
   },
 
@@ -6306,14 +6337,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 20,
+    gap: 10,
   },
 
   /* Opened Rows */
   openedRow: {
-    // flexDirection: "row",
-    // justifyContent: "space-between",
-    // alignItems: "center",
-    // marginBottom: 28,
+
     borderBottomColor: "#D9DFE2",
     borderBottomWidth: 1,
     paddingBottom: 10,
@@ -6323,7 +6352,6 @@ const styles = StyleSheet.create({
   },
 
   emptyText: {
-    // marginTop: 10,
     fontSize: 13,
     color: "#999",
     lineHeight: 18,
@@ -6389,9 +6417,9 @@ const styles = StyleSheet.create({
   },
 
   subTabsWrapper: {
+    marginTop: 0,
     height: 60,
     backgroundColor: '#fff',
-
     zIndex: 10,
   },
 
@@ -6732,7 +6760,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,               // ✅ spacing without breaking layout
   },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8, // space between icon & text
+  },
 
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 1,
+  },
+
+  approvedText: {
+    color: '#16A34A', // green
+  },
+
+  rejectedText: {
+    color: '#EF4444', // red
+  },
+  rejectedIconCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 export default LinkagedTab;

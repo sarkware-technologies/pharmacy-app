@@ -1,7 +1,7 @@
 /* eslint-disable no-dupe-keys */
 // src/screens/authorized/registration/GovtHospitalRegistrationForm.js
 
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -1371,7 +1371,9 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
     }
     if (!formData.registrationDate) {
       newErrors.registrationDate = 'Legal Start date is required';
-    } else {
+    } 
+    
+    else {
 
       const [day, month, year] = formData.registrationDate.split('/');
       const selected = new Date(year, month - 1, day);
