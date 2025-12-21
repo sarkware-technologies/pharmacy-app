@@ -33,6 +33,8 @@ import FilterModal from '../../../components/FilterModal';
 import CustomerSearchResultsIcon from '../../../components/icons/CustomerSearchResultsIcon';
 import Toast from 'react-native-toast-message';
 import { handleOnboardCustomer } from '../../../utils/customerNavigationHelper';
+import { checkStoragePermission, requestStoragePermission } from '../../../utils/permissions';
+import ReactNativeBlobUtil from 'react-native-blob-util';
 import Phone from '../../../components/icons/Phone';
 import Edit from '../../../components/icons/Edit';
 import Download from '../../../components/icons/Download';
@@ -48,8 +50,11 @@ import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModa
 import RejectCustomerModal from '../../../components/modals/RejectCustomerModal';
 import WorkflowTimelineModal from '../../../components/modals/WorkflowTimelineModal';
 
-const CustomerSearch = ({ navigation }) => {
+const CustomerSearch = ({ navigation, route }) => {
   const dispatch = useDispatch();
+  
+  // Get activeTab from route params (passed from CustomerList)
+  const activeTabFromRoute = route?.params?.activeTab || 'all';
   
   // Get logged-in user data
   const loggedInUser = useSelector(state => state.auth.user);
@@ -82,6 +87,9 @@ const CustomerSearch = ({ navigation }) => {
   // Workflow timeline modal state
   const [workflowTimelineVisible, setWorkflowTimelineVisible] = useState(false);
   const [selectedCustomerForWorkflow, setSelectedCustomerForWorkflow] = useState(null);
+
+  // Download state
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -119,20 +127,35 @@ const CustomerSearch = ({ navigation }) => {
     }, 300);
 
     // Set flag in Redux and clear Redux when component unmounts (user navigates away)
+    // Note: We preserve the activeTab instead of resetting to 'all'
     return () => {
       // Clear search timeout
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-      // Clear Redux and set flag
+      // Clear Redux and set flag to refresh (but preserve current tab)
       dispatch(resetCustomersList());
-      dispatch(setShouldResetToAllTab(true));
+      dispatch(setShouldResetToAllTab(true)); // This will trigger refresh but preserve activeTab
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const searchInputRef = useRef(null);
   const searchTimeoutRef = useRef(null);
+
+  // Helper function to get statusIds for tab (same as CustomerList)
+  const getStatusIdsForTab = (tab) => {
+    const statusMap = {
+      'all': [0],
+      'waitingForApproval': [5],
+      'notOnboarded': [18],
+      'unverified': [19],
+      'rejected': [6],
+      'doctorSupply': [7],
+      'draft': [4]
+    };
+    return statusMap[tab] || [0];
+  };
 
   const performSearch = async (text) => {
     if (!text.trim()) {
@@ -155,15 +178,42 @@ const CustomerSearch = ({ navigation }) => {
       }),
     ]).start();
 
-    // Call API directly and store in local state
+    // Call API based on activeTab (same logic as CustomerList)
     setSearchLoading(true);
     try {
-      const response = await customerAPI.getCustomersList({
+      let payload = {
         page: 1,
         limit: 20,
         searchText: text,
-        isStaging: false,
-      });
+      };
+
+      if (activeTabFromRoute === 'all') {
+        // All tab - regular endpoint, no staging
+        payload.isStaging = false;
+        payload.isAll = true;
+      } else if (activeTabFromRoute === 'waitingForApproval' || activeTabFromRoute === 'rejected' || activeTabFromRoute === 'draft') {
+        // Waiting for Approval, Rejected, and Draft - staging endpoint
+        const statusIds = getStatusIdsForTab(activeTabFromRoute);
+        payload.isStaging = true;
+        payload.statusIds = statusIds;
+        // Add filter for draft tab
+        if (activeTabFromRoute === 'draft') {
+          payload.filter = 'NEW';
+        }
+      } else if (activeTabFromRoute === 'doctorSupply') {
+        // Doctor Supply - regular endpoint with statusIds and customerGroupId
+        const statusIds = getStatusIdsForTab(activeTabFromRoute);
+        payload.isStaging = false;
+        payload.statusIds = statusIds;
+        payload.customerGroupId = 1;
+      } else {
+        // Other tabs - regular endpoint with statusIds
+        const statusIds = getStatusIdsForTab(activeTabFromRoute);
+        payload.statusIds = statusIds;
+      }
+
+      console.log(`🔍 Searching in "${activeTabFromRoute}" tab with payload:`, payload);
+      const response = await customerAPI.getCustomersList(payload);
       
       // API returns { data: { customers: [...], total: ... } }
       if (response?.data?.customers) {
@@ -333,21 +383,166 @@ const CustomerSearch = ({ navigation }) => {
     }
   };
 
+  // Helper function to get MIME type from file extension
+  const getMimeType = (extension) => {
+    const mimeTypes = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'bmp': 'image/bmp',
+      'webp': 'image/webp',
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'mp4': 'video/mp4',
+      'mov': 'video/quicktime',
+      'avi': 'video/x-msvideo',
+      'mkv': 'video/x-matroska',
+      '3gp': 'video/3gpp',
+    };
+    return mimeTypes[extension.toLowerCase()] || 'application/octet-stream';
+  };
+
   // Download document
-  const downloadDocument = async (doc) => {
-    if (!doc || !doc.s3Path) {
-      Alert.alert('Info', 'Document not available for download');
+  const downloadDocument = async (docInfo) => {
+    // Prevent multiple simultaneous downloads
+    if (isDownloading) {
+      Toast.show({
+        type: 'info',
+        text1: 'Download in progress',
+        text2: 'Please wait for the current download to complete',
+        position: 'bottom',
+      });
       return;
     }
 
     try {
-      const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
-      if (response?.data?.signedUrl) {
-        await Linking.openURL(response.data.signedUrl);
+      setIsDownloading(true);
+
+      if (!docInfo?.s3Path) {
+        Alert.alert('Error', 'Document not available');
+        setIsDownloading(false);
+        return;
       }
+
+      // Check and request storage permission
+      if (Platform.OS === 'android') {
+        let hasPermission = await checkStoragePermission();
+        if (!hasPermission) {
+          console.log('Storage permission not granted, requesting...');
+          hasPermission = await requestStoragePermission();
+        }
+
+        if (!hasPermission) {
+          Alert.alert(
+            'Permission Denied',
+            'Storage permission is required to download files. Please grant the permission to continue.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => Linking.openSettings() },
+            ]
+          );
+          setIsDownloading(false);
+          return;
+        }
+      }
+
+      // 1️⃣ Get signed URL
+      const response = await customerAPI.getDocumentSignedUrl(docInfo.s3Path);
+      const signedUrl = response?.data?.signedUrl;
+
+      if (!signedUrl) {
+        Alert.alert('Error', 'Failed to get download link');
+        setIsDownloading(false);
+        return;
+      }
+
+      // 2️⃣ Prepare file name and determine save location
+      const fileName = docInfo.fileName || docInfo.doctypeName || 'document';
+      const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
+      
+      // Determine if it's an image/video (for gallery visibility)
+      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(fileExtension);
+      const isVideo = ['mp4', 'mov', 'avi', 'mkv', '3gp'].includes(fileExtension);
+      
+      // Get appropriate directory
+      let dirs = ReactNativeBlobUtil.fs.dirs;
+      let downloadPath;
+      
+      if (Platform.OS === 'android') {
+        if (isImage) {
+          // Save images to Pictures folder (visible in gallery)
+          downloadPath = dirs.PictureDir;
+        } else if (isVideo) {
+          // Save videos to Movies folder (visible in gallery)
+          downloadPath = dirs.MovieDir || dirs.DownloadDir;
+        } else {
+          // Save other files to Downloads folder
+          downloadPath = dirs.DownloadDir;
+        }
+      } else {
+        // iOS - use DocumentDirectory
+        downloadPath = dirs.DocumentDir;
+      }
+
+      const filePath = `${downloadPath}/${fileName}`;
+
+      console.log('📥 Starting download...');
+      console.log('📥 File:', fileName);
+      console.log('📥 Save path:', filePath);
+      console.log('📥 Signed URL:', signedUrl.substring(0, 100) + '...');
+
+      // Show loading toast
+      Toast.show({
+        type: 'info',
+        text1: 'Downloading...',
+        text2: fileName,
+        position: 'bottom',
+      });
+
+      // 3️⃣ Download file using react-native-blob-util
+      const downloadTask = ReactNativeBlobUtil.config({
+        fileCache: false, // Don't cache when using download manager
+        path: filePath,
+        addAndroidDownloads: {
+          useDownloadManager: true,
+          notification: true,
+          title: fileName,
+          description: 'Downloading file...',
+          mime: getMimeType(fileExtension),
+          mediaScannable: true, // Make file visible in gallery
+          path: filePath, // Explicit path for download manager
+        },
+      });
+
+      const res = await downloadTask.fetch('GET', signedUrl);
+
+      console.log('✅ Download completed');
+      console.log('✅ File saved to:', res.path());
+
+      // Show success message
+      Toast.show({
+        type: 'success',
+        text1: 'Download Complete',
+        text2: `${fileName} saved successfully`,
+        position: 'bottom',
+      });
+
     } catch (error) {
-      console.error('Error downloading document:', error);
-      Alert.alert('Error', 'Failed to download document');
+      console.error('Download error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Download Failed',
+        text2: error.message || 'Failed to download file',
+        position: 'bottom',
+      });
+      Alert.alert('Error', `Download failed: ${error.message || 'Unknown error'}`);
+    } finally {
+      // Always reset downloading state
+      setIsDownloading(false);
     }
   };
 
@@ -679,7 +874,12 @@ const CustomerSearch = ({ navigation }) => {
             <TouchableOpacity
               onPress={() => {
                 // stageId is always an array, get the first element
-                const stageId = item.stageId && Array.isArray(item.stageId) ? item.stageId : null;
+                // Use fallback to stgCustomerId if stageId is not available (same as CustomerList)
+                const stageId = item.stageId && Array.isArray(item.stageId) 
+                  ? item.stageId 
+                  : (item.stgCustomerId ? [item.stgCustomerId] : null);
+                
+                console.log('🔍 Clicked status badge - stageId:', stageId, 'item:', item);
                 if (stageId && stageId.length > 0) {
                   handleViewWorkflowTimeline(
                     stageId,
@@ -687,7 +887,7 @@ const CustomerSearch = ({ navigation }) => {
                     item.customerType
                   );
                 } else {
-                  console.warn('⚠️ No stageId found for item:', item);
+                  console.warn('⚠️ No stageId or stgCustomerId found for item:', item);
                   Toast.show({
                     type: 'error',
                     text1: 'Error',

@@ -28,7 +28,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Icon from 'react-native-vector-icons/Ionicons';
 import { WebView } from 'react-native-webview';
 import { colors } from '../../../styles/colors';
-import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useRoute, useNavigation, DrawerActions } from '@react-navigation/native';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -61,6 +61,8 @@ import { customerAPI } from '../../../api/customer';
 import { SkeletonList } from '../../../components/SkeletonLoader';
 import { AppText, AppInput } from "../../../components"
 import Toast from 'react-native-toast-message';
+import { checkStoragePermission, requestStoragePermission } from '../../../utils/permissions';
+import ReactNativeBlobUtil from 'react-native-blob-util';
 import { handleOnboardCustomer } from '../../../utils/customerNavigationHelper';
 import PermissionWrapper from "../../../utils/RBAC/permissionWrapper"
 import PERMISSIONS from "../../../utils/RBAC/permissionENUM"
@@ -640,11 +642,11 @@ const CustomerList = ({ navigation: navigationProp }) => {
     }
   }, [listLoading, customers.length, activeTab]);
 
-  // Handle reset to "all" tab when returning from search - Hard Refresh
+  // Handle refresh when returning from search - Preserve current tab instead of resetting to "all"
   useFocusEffect(
     React.useCallback(() => {
       if (shouldResetToAllTab) {
-        console.log('🔄 Hard refresh triggered from CustomerSearch');
+        console.log('🔄 Refresh triggered from CustomerSearch - preserving current tab:', activeTab);
         
         // Set hard refreshing flag to show loading and prevent stale data
         setIsHardRefreshing(true);
@@ -656,28 +658,69 @@ const CustomerList = ({ navigation: navigationProp }) => {
         // Clear Redux customers list completely
         dispatch(resetCustomersList());
         
-        // Force reset to "all" tab immediately (this will trigger useEffect, but ref will prevent it)
-        setActiveTab('all');
+        // DON'T reset to "all" tab - keep the current activeTab
+        // The activeTab is already set, so we just need to refresh its data
         currentTabForDataRef.current = null; // Clear ref to prevent showing stale data
         
-        // Force fetch "all" tab data immediately (hard refresh)
-        const payload = {
-          page: 1,
-          limit: 10,
-          isLoadMore: false,
-          isStaging: false,
-          typeCode: [],
-          categoryCode: [],
-          subCategoryCode: [],
-          sortBy: '',
-          sortDirection: 'ASC',
-          isAll:true
-        };
-        
-        console.log('🔄 Fetching "all" tab data with payload:', payload);
-        dispatch(fetchCustomersList(payload));
+        // Force fetch current tab's data immediately (hard refresh)
+        // Use the same logic as the initial tab load
+        if (activeTab === 'all') {
+          const payload = {
+            page: 1,
+            limit: 10,
+            isLoadMore: false,
+            isStaging: false,
+            typeCode: [],
+            categoryCode: [],
+            subCategoryCode: [],
+            sortBy: '',
+            sortDirection: 'ASC',
+            isAll:true
+          };
+          console.log('🔄 Fetching "all" tab data with payload:', payload);
+          dispatch(fetchCustomersList(payload));
+        } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
+          const statusIds = getStatusIdsForTab(activeTab);
+          const payload = {
+            page: 1,
+            limit: 10,
+            isLoadMore: false,
+            isStaging: true,
+            statusIds: statusIds
+          };
+          if (activeTab === 'waitingForApproval') {
+            payload.filter = getFilterValue(activeFilterButton);
+          }
+          if (activeTab === 'draft') {
+            payload.filter = 'NEW';
+          }
+          console.log(`🔄 Fetching "${activeTab}" tab data with payload:`, payload);
+          dispatch(fetchCustomersList(payload));
+        } else if (activeTab === 'doctorSupply') {
+          const statusIds = getStatusIdsForTab(activeTab);
+          const payload = {
+            page: 1,
+            limit: 10,
+            isLoadMore: false,
+            isStaging: false,
+            statusIds: statusIds,
+            customerGroupId: 1
+          };
+          console.log(`🔄 Fetching "${activeTab}" tab data with payload:`, payload);
+          dispatch(fetchCustomersList(payload));
+        } else {
+          const statusIds = getStatusIdsForTab(activeTab);
+          const payload = {
+            page: 1,
+            limit: 10,
+            isLoadMore: false,
+            statusIds: statusIds
+          };
+          console.log(`🔄 Fetching "${activeTab}" tab data with payload:`, payload);
+          dispatch(fetchCustomersList(payload));
+        }
       }
-    }, [shouldResetToAllTab, dispatch])
+    }, [shouldResetToAllTab, activeTab, activeFilterButton, dispatch])
   );
 
   // Clear hard refreshing flag when loading completes
@@ -692,9 +735,12 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
 
 
-  // Handle search with debounce
+  // Handle search with debounce - now includes activeTab to search within current tab
   useEffect(() => {
-
+    // Only perform search if searchText is not empty
+    if (!searchText || searchText.trim() === '') {
+      return;
+    }
 
     const delayDebounceFn = setTimeout(() => {
       dispatch(resetCustomersList());
@@ -774,9 +820,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
     return () => clearTimeout(delayDebounceFn);
 
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchText, dispatch]); // Only trigger on search text change, not on tab change
+  }, [searchText, activeTab, dispatch]); // Now includes activeTab - search within current tab
 
   // Refresh function
   const onRefresh = async () => {
@@ -2898,7 +2943,11 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+          <TouchableOpacity onPress={() => {
+            // Use DrawerActions to open drawer from nested navigation
+            // This works from any screen in the navigation hierarchy
+            navigation.dispatch(DrawerActions.openDrawer());
+          }}>
             <Menu />
           </TouchableOpacity>
           <AppText style={styles.headerTitle}>Customers</AppText>
@@ -3089,7 +3138,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
         <View style={styles.searchContainer}>
           <TouchableOpacity
             style={styles.searchBar}
-            onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerSearchMain' })}
+            onPress={() => navigation.navigate('CustomerStack', { 
+              screen: 'CustomerSearchMain',
+              params: { activeTab: activeTab } // Pass current active tab to search screen
+            })}
             activeOpacity={0.7}
           >
             <Search color="#999" />

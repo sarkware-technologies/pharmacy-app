@@ -1558,7 +1558,10 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
   const handleCancel = () => {
     if (isEditMode || isOnboardMode) {
       // In edit mode or onboard mode, navigate to CustomerStack which contains CustomerList
-      navigation.navigate('CustomerStack', { screen: 'CustomerList' });
+      // Use goBack() to preserve tab bar visibility
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
     } else {
       // In registration mode, show cancel confirmation modal
       setShowCancelModal(true);
@@ -1599,7 +1602,10 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
         });
 
         setTimeout(() => {
-          navigation.navigate('CustomerStack', { screen: 'CustomerList' });
+          // Use goBack() to preserve tab bar visibility
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
         }, 1500);
       } else {
         Toast.show({
@@ -2754,7 +2760,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
       {(isEditMode || isOnboardMode) && (
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerList' })}
+            onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
             <ChevronLeft />

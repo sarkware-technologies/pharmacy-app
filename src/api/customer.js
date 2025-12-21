@@ -224,6 +224,36 @@ export const customerAPI = {
         }
     },
 
+    // Download document directly using API endpoint
+    downloadDocument: async (s3Path) => {
+        try {
+            const token = await apiClient.getToken();
+            const encodedS3Path = encodeURIComponent(s3Path);
+            const url = `${apiClient.BASE_URL || 'https://pharmsupply-dev-api.pharmconnect.com'}/user-management/customer/download-doc?s3Path=${encodedS3Path}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                },
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error(`Download failed: ${response.status}`);
+            }
+
+            // Return the response for handling
+            return response;
+        } catch (error) {
+            console.error('Error downloading document:', error);
+            throw error;
+        }
+    },
+
     // Generate OTP for mobile or email verification (NEW)
     generateOTP: async (data) => {
         try {
