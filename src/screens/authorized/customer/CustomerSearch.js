@@ -837,12 +837,34 @@ const CustomerSearch = ({ navigation, route }) => {
           <View style={styles.customerInfo}>
             <View style={styles.infoRow}>
               <AddrLine color="#999" />
-              <AppText style={styles.infoText}>{item.customerCode || item.stgCustomerId}</AppText>
+              <AppText 
+                style={[styles.infoText, { maxWidth: 80 }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.customerCode || item.stgCustomerId}
+              </AppText>
               <AppText style={styles.divider}>|</AppText>
-              {item.cityName && (<><AppText style={styles.infoText}>{item.cityName}</AppText>
-                <AppText style={styles.divider}>|</AppText></>)}
+              {item.cityName && (
+                <>
+                  <AppText 
+                    style={[styles.infoText, { maxWidth: 100 }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.cityName}
+                  </AppText>
+                  <AppText style={styles.divider}>|</AppText>
+                </>
+              )}
 
-              <AppText style={styles.infoText}>{item.groupName}</AppText>
+              <AppText 
+                style={[styles.infoText, { maxWidth: 80 }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.groupName}
+              </AppText>
               <AppText style={styles.divider}>|</AppText>
               <AppText
                 style={[styles.infoText, { flex: 1, maxWidth: 80 }]}
