@@ -36,10 +36,10 @@ const DOC_TYPES = {
 const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, categoryId, subCategoryId, mappingName, mappingLabel }) => {
 
 
-  
 
-    const loggedInUser = useSelector(state => state.auth.user);
-  
+
+  const loggedInUser = useSelector(state => state.auth.user);
+
   const [hospitalForm, setHospitalForm] = useState({
     category: 'Private',
     subCategory: '',
@@ -644,7 +644,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         customerDocs: uploadedDocs,
         isBuyer: true,
         customerGroupId: 1,
-         stationCode: hospitalForm.stationCode,
+        stationCode: hospitalForm.stationCode,
         generalDetails: {
           name: hospitalForm.hospitalName,
           shortName: hospitalForm.shortName || '',
@@ -681,11 +681,12 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
       const response = await customerAPI.createCustomer(registrationData);
 
-      if (response.success) {
+
+      if (response?.data?.success) {
         Toast.show({
           type: 'success',
           text1: 'Hospital Added',
-          text2: response.message || 'Hospital registered successfully',
+          text2: response.data.message || 'Hospital registered successfully',
           position: 'top',
         });
 
@@ -712,16 +713,16 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         Toast.show({
           type: 'error',
           text1: 'Registration Failed',
-          text2: response.details || 'Failed to register hospital. Please try again.',
+          text2: response.data.message || 'Failed to register hospital. Please try again.',
           position: 'top',
         });
       }
     } catch (error) {
-      console.error('Hospital registration error:', error);
+
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'An error occurred while registering the hospital. Please try again.',
+        text1: 'Registration Failed',
+        text2: error.response?.message || 'An error occurred while registering the hospital',
         position: 'top',
       });
     } finally {
@@ -746,32 +747,32 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
           {/* Category Section */}
           {!subCategoryId &&
-          
-          
-          <>
-          <AppText style={styles.categoryLabel}>Category <AppText style={styles.categoryPlaceholder}>(Select Any One)</AppText></AppText>
-     
-          <View style={styles.radioGroupHorizontal}>
-            <TouchableOpacity
-              style={styles.radioOptionHorizontal}
-              onPress={() => setHospitalForm(prev => ({ ...prev, subCategory: 'Clinic' }))}
-            >
-              <View style={[styles.radioCircle, hospitalForm.subCategory === 'Clinic' && styles.radioCircleSelected]}>
-                {hospitalForm.subCategory === 'Clinic' && <View style={styles.radioInner} />}
-              </View>
-              <AppText style={styles.radioLabel}>Private-Clinic</AppText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.radioOptionHorizontal}
-              onPress={() => setHospitalForm(prev => ({ ...prev, subCategory: 'Individual Hospital' }))}
-            >
-              <View style={[styles.radioCircle, hospitalForm.subCategory === 'Individual Hospital' && styles.radioCircleSelected]}>
-                {hospitalForm.subCategory === 'Individual Hospital' && <View style={styles.radioInner} />}
-              </View>
-              <AppText style={styles.radioLabel}>Private-Individual Hospital</AppText>
-            </TouchableOpacity>
-          </View></>}
-          
+
+
+            <>
+              <AppText style={styles.categoryLabel}>Category <AppText style={styles.categoryPlaceholder}>(Select Any One)</AppText></AppText>
+
+              <View style={styles.radioGroupHorizontal}>
+                <TouchableOpacity
+                  style={styles.radioOptionHorizontal}
+                  onPress={() => setHospitalForm(prev => ({ ...prev, subCategory: 'Clinic' }))}
+                >
+                  <View style={[styles.radioCircle, hospitalForm.subCategory === 'Clinic' && styles.radioCircleSelected]}>
+                    {hospitalForm.subCategory === 'Clinic' && <View style={styles.radioInner} />}
+                  </View>
+                  <AppText style={styles.radioLabel}>Private-Clinic</AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.radioOptionHorizontal}
+                  onPress={() => setHospitalForm(prev => ({ ...prev, subCategory: 'Individual Hospital' }))}
+                >
+                  <View style={[styles.radioCircle, hospitalForm.subCategory === 'Individual Hospital' && styles.radioCircleSelected]}>
+                    {hospitalForm.subCategory === 'Individual Hospital' && <View style={styles.radioInner} />}
+                  </View>
+                  <AppText style={styles.radioLabel}>Private-Individual Hospital</AppText>
+                </TouchableOpacity>
+              </View></>}
+
 
           <AppText style={[styles.modalSectionLabel, styles.modalSectionTopspacing]}>License Details<AppText style={styles.mandatory}>*</AppText></AppText>
 
@@ -1020,33 +1021,33 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           />
 
           {/* Station code */}
-                    <View style={styles.dropdownContainer}>
-                      {(hospitalForm.stationCode) && (
-                        <AppText
-                          style={[styles.floatingLabel, { color: colors.primary }]}
-                        >
-                          Station<AppText style={styles.asteriskPrimary}>*</AppText>
-                        </AppText>
-                      )}
-                      <TouchableOpacity
-                        style={[styles.dropdown, hospitalErrors.stationCode && styles.inputError]}
-                        onPress={() => setShowStationModal(true)}
-                      >
-                        <View style={styles.inputTextContainer}>
-                          <AppText style={hospitalForm.stationCode ? styles.inputText : styles.placeholderText}>
-                            {hospitalForm.stationCode || ('Station')}
-                          </AppText>
-                          {!hospitalForm.stationCode && (
-                                                                  <AppText style={styles.inlineAsterisk}>*</AppText>
-                                                                  )}
-                        </View>
-                        <Icon name="arrow-drop-down" size={24} color="#666" />
-                      </TouchableOpacity>
-          
-                      {hospitalErrors.stationCode && (
-                        <AppText style={styles.errorText}>{hospitalErrors.stationCode}</AppText>
-                      )}
-                    </View>
+          <View style={styles.dropdownContainer}>
+            {(hospitalForm.stationCode) && (
+              <AppText
+                style={[styles.floatingLabel, { color: colors.primary }]}
+              >
+                Station<AppText style={styles.asteriskPrimary}>*</AppText>
+              </AppText>
+            )}
+            <TouchableOpacity
+              style={[styles.dropdown, hospitalErrors.stationCode && styles.inputError]}
+              onPress={() => setShowStationModal(true)}
+            >
+              <View style={styles.inputTextContainer}>
+                <AppText style={hospitalForm.stationCode ? styles.inputText : styles.placeholderText}>
+                  {hospitalForm.stationCode || ('Station')}
+                </AppText>
+                {!hospitalForm.stationCode && (
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                )}
+              </View>
+              <Icon name="arrow-drop-down" size={24} color="#666" />
+            </TouchableOpacity>
+
+            {hospitalErrors.stationCode && (
+              <AppText style={styles.errorText}>{hospitalErrors.stationCode}</AppText>
+            )}
+          </View>
 
           <AddressInputWithLocation
             label="Address 1"
@@ -1157,9 +1158,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                 <AppText style={hospitalForm.area ? styles.inputText : styles.placeholderText}>
                   {hospitalForm.area || 'Area'}
                 </AppText>
-              {!hospitalForm.area && (
-                                                      <AppText style={styles.inlineAsterisk}>*</AppText>
-                                                      )}
+                {!hospitalForm.area && (
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
@@ -1194,8 +1195,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                   {hospitalForm.city || ('City')}
                 </AppText>
                 {!hospitalForm.city && (
-                                                        <AppText style={styles.inlineAsterisk}>*</AppText>
-                                                        )}
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
@@ -1230,8 +1231,8 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                   {hospitalForm.state || ('State')}
                 </AppText>
                 {!hospitalForm.state && (
-                                                        <AppText style={styles.inlineAsterisk}>*</AppText>
-                                                        )}
+                  <AppText style={styles.inlineAsterisk}>*</AppText>
+                )}
               </View>
               <Icon name="arrow-drop-down" size={24} color="#666" />
             </TouchableOpacity>
@@ -1675,71 +1676,71 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         </Modal>
 
 
-         <Modal
-                  visible={showStationModal}
-                  transparent={true}
-                  animationType="slide"
-                  onRequestClose={() => setShowStationModal(false)}
-                >
-                  <View style={styles.modalOverlay}>
-                    <View style={styles.dropdownModal}>
-        
-                      {/* Header */}
-                      <View style={styles.dropdownModalHeader}>
-                        <AppText style={styles.dropdownModalTitle}>Select Station</AppText>
-                        <TouchableOpacity onPress={() => setShowStationModal(false)}>
-                          <Icon name="close" size={24} color="#666" />
-                        </TouchableOpacity>
-                      </View>
-        
-                      {/* Loader */}
-        
-                      <FlatList
-                        data={loggedInUser?.userDetails?.stationCodes?.map((item) => ({
-                          id: item.stationCode,
-                          name: item.stationCode,
-                        }))}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                          <TouchableOpacity
-                            style={[
-                              styles.dropdownModalItem,
-                              hospitalForm.stationCode === item.name &&
-                              styles.modalItemSelected,
-                            ]}
-                            onPress={() => {
-                              setHospitalForm(prev => ({
-                                ...prev,
-                                stationCode: item.name,
-                              }));
-                              setShowStationModal(false);
-                              setHospitalErrors(prev => ({ ...prev, stationCode: null }));
-        
-                            }}
-                          >
-                            <AppText
-                              style={[
-                                styles.dropdownModalItemText,
-                                hospitalForm.stationCode === item.name &&
-                                styles.modalItemTextSelected,
-                              ]}
-                            >
-                              {item.name}
-                            </AppText>
-        
-                            {hospitalForm.stationCode === item.name && (
-                              <Icon name="check" size={20} color={colors.primary} />
-                            )}
-                          </TouchableOpacity>
-                        )}
-                        ListEmptyComponent={
-                          <AppText style={styles.emptyText}>No Stations Available</AppText>
-                        }
-                      />
-        
-                    </View>
-                  </View>
-                </Modal>
+        <Modal
+          visible={showStationModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowStationModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.dropdownModal}>
+
+              {/* Header */}
+              <View style={styles.dropdownModalHeader}>
+                <AppText style={styles.dropdownModalTitle}>Select Station</AppText>
+                <TouchableOpacity onPress={() => setShowStationModal(false)}>
+                  <Icon name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Loader */}
+
+              <FlatList
+                data={loggedInUser?.userDetails?.stationCodes?.map((item) => ({
+                  id: item.stationCode,
+                  name: item.stationCode,
+                }))}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.dropdownModalItem,
+                      hospitalForm.stationCode === item.name &&
+                      styles.modalItemSelected,
+                    ]}
+                    onPress={() => {
+                      setHospitalForm(prev => ({
+                        ...prev,
+                        stationCode: item.name,
+                      }));
+                      setShowStationModal(false);
+                      setHospitalErrors(prev => ({ ...prev, stationCode: null }));
+
+                    }}
+                  >
+                    <AppText
+                      style={[
+                        styles.dropdownModalItemText,
+                        hospitalForm.stationCode === item.name &&
+                        styles.modalItemTextSelected,
+                      ]}
+                    >
+                      {item.name}
+                    </AppText>
+
+                    {hospitalForm.stationCode === item.name && (
+                      <Icon name="check" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={
+                  <AppText style={styles.emptyText}>No Stations Available</AppText>
+                }
+              />
+
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </Modal>
   );

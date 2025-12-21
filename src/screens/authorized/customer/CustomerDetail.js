@@ -1581,7 +1581,10 @@ const CustomerDetail = ({ navigation, route }) => {
                         style={styles.commentIconButton}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
+                        <View style={styles.commentWrapper}>
                         <Comment width={22} height={22} color={colors.primary} />
+
+                        </View>
                       </TouchableOpacity>
                     </View>
 
@@ -1983,6 +1986,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 16,
     marginBottom: 12,
+  },
+
+  commentWrapper:{
+
+    backgroundColor:"#F7941E1A",
+    borderRadius:100,
+    padding:10
+    
+
   },
   commentIconButton: {
     padding: 6,

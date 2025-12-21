@@ -934,14 +934,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
 
       const response = await customerAPI.createCustomer(registrationData);
 
-      console.log('=== API Response ===');
-      console.log('Response:', response);
 
-      if (response.success) {
+      if (response?.data?.success) {
         Toast.show({
           type: 'success',
           text1: 'Doctor Added',
-          text2: response.message || 'Doctor registered successfully',
+          text2: response.data.message || 'Doctor registered successfully',
         });
 
         // Pass the created doctor data back to parent
@@ -979,11 +977,10 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
         });
       }
     } catch (error) {
-      console.error('Doctor registration error:', error);
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'An error occurred while registering the doctor. Please try again.',
+        text1: 'Registration Faild',
+        text2: error.response?.message || 'An error occurred while registering the doctor. Please try again.',
       });
     } finally {
       setLoading(false);
