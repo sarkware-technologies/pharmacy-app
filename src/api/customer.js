@@ -41,6 +41,8 @@ export const customerAPI = {
         sortBy = '',
         sortDirection = 'ASC',
         filter = '',
+        startDate = null,
+        endDate = null,
         isAll,
     
     } = {}) => {
@@ -53,6 +55,8 @@ export const customerAPI = {
                 statusIds: Array.isArray(statusIds) ? statusIds : [],
                 page,
                 limit,
+                startDate: startDate || null,
+                endDate: endDate || null,
                 sortBy: sortBy || '',
                 sortDirection: sortDirection || 'ASC'
             };

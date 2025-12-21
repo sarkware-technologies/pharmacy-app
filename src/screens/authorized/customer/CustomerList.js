@@ -21,10 +21,12 @@ import {
   Linking,
   Image,
   PanResponder,
+  PermissionsAndroid,
 } from 'react-native';
 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { WebView } from 'react-native-webview';
 import { colors } from '../../../styles/colors';
 import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 
@@ -35,9 +37,11 @@ import Phone from '../../../components/icons/Phone';
 import Edit from '../../../components/icons/Edit';
 import Download from '../../../components/icons/Download';
 import Filter from '../../../components/icons/Filter';
+import Calendar from '../../../components/icons/Calendar';
 import AddrLine from '../../../components/icons/AddrLine';
 import Email from '../../../components/icons/Email';
 import Search from '../../../components/icons/Search';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import Locked from '../../../components/icons/Locked';
 import UnLocked from '../../../components/icons/UnLocked';
 import AlertFilled from '../../../components/icons/AlertFilled';
@@ -117,12 +121,34 @@ const CustomerList = ({ navigation: navigationProp }) => {
   const listError = useSelector(state => state.customer.error);
   const tabCounts = useSelector(selectTabCounts); // Re-added tabCounts selector
   const shouldResetToAllTab = useSelector(state => state.customer.shouldResetToAllTab); // Get reset flag
+  
+  // Fetch customer groups for mapping names to IDs
+  const [customerGroups, setCustomerGroups] = useState([]);
+  
+  useEffect(() => {
+    const loadCustomerGroups = async () => {
+      try {
+        const response = await customerAPI.getCustomerGroups();
+        if (response.success && response.data) {
+          setCustomerGroups(response.data || []);
+        }
+      } catch (error) {
+        console.error('Error loading customer groups:', error);
+      }
+    };
+    loadCustomerGroups();
+  }, []);
 
 
   const [activeTab, setActiveTab] = useState('all');
   const [activeFilterButton, setActiveFilterButton] = useState('newCustomer');
   const [searchText, setSearchText] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [datePickerModalVisible, setDatePickerModalVisible] = useState(false);
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
+  const [showFromDatePicker, setShowFromDatePicker] = useState(false);
+  const [showToDatePicker, setShowToDatePicker] = useState(false);
   const [downloadModalVisible, setDownloadModalVisible] = useState(false);
   const [documentModalVisible, setDocumentModalVisible] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -161,6 +187,13 @@ const CustomerList = ({ navigation: navigationProp }) => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewSignedUrl, setPreviewSignedUrl] = useState(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  
+  // State to show preview inside DocumentsModal
+  const [showPreviewInDocumentsModal, setShowPreviewInDocumentsModal] = useState(false);
+  
+  // Refs to prevent duplicate API calls
+  const isFetchingPreviewRef = useRef(false);
+  const lastFetchedPreviewPathRef = useRef(null);
 
   // Block/Unblock state
   const [blockUnblockLoading, setBlockUnblockLoading] = useState(false);
@@ -219,6 +252,18 @@ const CustomerList = ({ navigation: navigationProp }) => {
       'existingCustomer': 'EXISTING'
     };
     return filterMap[filterButton] || null;
+  };
+
+  // Format dates to ISO string for API - ensures time is always 00:00:00Z
+  const formatDateForAPI = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    // Use UTC methods to ensure time is always 00:00:00Z regardless of timezone
+    // This ensures the date is formatted as YYYY-MM-DDTHH:MM:SSZ with 00:00:00Z
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}T00:00:00Z`;
   };
 
   // Check tab permissions on mount
@@ -378,6 +423,14 @@ const CustomerList = ({ navigation: navigationProp }) => {
             page: 1,
             limit: pagination.limit,
             searchText: filters.searchText,
+            ...(fromDate && toDate ? {
+              startDate: formatDateForAPI(fromDate),
+              endDate: formatDateForAPI(toDate),
+            } : {}),
+            ...(filters.startDate && filters.endDate ? {
+              startDate: filters.startDate,
+              endDate: filters.endDate,
+            } : {}),
             isStaging: false,
             isAll: true
           }));
@@ -387,6 +440,14 @@ const CustomerList = ({ navigation: navigationProp }) => {
             page: 1,
             limit: pagination.limit,
             searchText: filters.searchText,
+            ...(fromDate && toDate ? {
+              startDate: formatDateForAPI(fromDate),
+              endDate: formatDateForAPI(toDate),
+            } : {}),
+            ...(filters.startDate && filters.endDate ? {
+              startDate: filters.startDate,
+              endDate: filters.endDate,
+            } : {}),
             isStaging: true,
             statusIds: statusIds
           };
@@ -405,6 +466,14 @@ const CustomerList = ({ navigation: navigationProp }) => {
             page: 1,
             limit: pagination.limit,
             searchText: filters.searchText,
+            ...(fromDate && toDate ? {
+              startDate: formatDateForAPI(fromDate),
+              endDate: formatDateForAPI(toDate),
+            } : {}),
+            ...(filters.startDate && filters.endDate ? {
+              startDate: filters.startDate,
+              endDate: filters.endDate,
+            } : {}),
             isStaging: false,
             statusIds: statusIds,
             customerGroupId: 1
@@ -415,6 +484,14 @@ const CustomerList = ({ navigation: navigationProp }) => {
             page: 1,
             limit: pagination.limit,
             searchText: filters.searchText,
+            ...(fromDate && toDate ? {
+              startDate: formatDateForAPI(fromDate),
+              endDate: formatDateForAPI(toDate),
+            } : {}),
+            ...(filters.startDate && filters.endDate ? {
+              startDate: filters.startDate,
+              endDate: filters.endDate,
+            } : {}),
             isStaging: false,
             statusIds: statusIds
           }));
@@ -440,6 +517,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
       // Update ref to track that we're switching tabs (data doesn't match yet)
       currentTabForDataRef.current = null;
 
+      // Get dates from state or filters (prefer filters as source of truth)
+      const startDate = filters.startDate || (fromDate ? formatDateForAPI(fromDate) : null);
+      const endDate = filters.endDate || (toDate ? formatDateForAPI(toDate) : null);
+
       // Fetch customers based on active tab with page: 1
       if (activeTab === 'all') {
         // All tab - regular endpoint, no statusIds
@@ -451,6 +532,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
           typeCode: [],
           categoryCode: [],
           subCategoryCode: [],
+          ...(startDate && endDate ? {
+            startDate: startDate,
+            endDate: endDate,
+          } : {}),
           sortBy: '',
           sortDirection: 'ASC',
           isAll:true
@@ -469,6 +554,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
           categoryCode: [],
           subCategoryCode: [],
           statusIds: statusIds,
+          ...(startDate && endDate ? {
+            startDate: startDate,
+            endDate: endDate,
+          } : {}),
           sortBy: '',
           sortDirection: 'ASC'
         };
@@ -495,6 +584,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
           categoryCode: [],
           subCategoryCode: [],
           statusIds: statusIds,
+          ...(startDate && endDate ? {
+            startDate: startDate,
+            endDate: endDate,
+          } : {}),
           sortBy: '',
           sortDirection: 'ASC',
           customerGroupId: 1
@@ -695,6 +788,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
         page: 1,
         limit: 10,
         ...filters,
+        ...(fromDate && toDate ? {
+          startDate: formatDateForAPI(fromDate),
+          endDate: formatDateForAPI(toDate),
+        } : {}),
         isLoadMore: false,
         isStaging: false,
         isAll:true
@@ -706,6 +803,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
         page: 1,
         limit: 10,
         ...filters,
+        ...(fromDate && toDate ? {
+          startDate: formatDateForAPI(fromDate),
+          endDate: formatDateForAPI(toDate),
+        } : {}),
         isLoadMore: false,
         isStaging: true,
         statusIds: statusIds
@@ -722,10 +823,16 @@ const CustomerList = ({ navigation: navigationProp }) => {
     } else if (activeTab === 'doctorSupply') {
       // Doctor Supply - regular endpoint with statusIds and customerGroupId
       const statusIds = getStatusIdsForTab(activeTab);
+      const startDate = filters.startDate || (fromDate ? formatDateForAPI(fromDate) : null);
+      const endDate = filters.endDate || (toDate ? formatDateForAPI(toDate) : null);
       await dispatch(fetchCustomersList({
         page: 1,
         limit: 10,
         ...filters,
+        ...(startDate && endDate ? {
+          startDate: startDate,
+          endDate: endDate,
+        } : {}),
         isLoadMore: false,
         isStaging: false,
         statusIds: statusIds,
@@ -734,10 +841,16 @@ const CustomerList = ({ navigation: navigationProp }) => {
     } else {
       // Not Onboarded and Unverified - regular endpoint with statusIds
       const statusIds = getStatusIdsForTab(activeTab);
+      const startDate = filters.startDate || (fromDate ? formatDateForAPI(fromDate) : null);
+      const endDate = filters.endDate || (toDate ? formatDateForAPI(toDate) : null);
       await dispatch(fetchCustomersList({
         page: 1,
         limit: 10,
         ...filters,
+        ...(startDate && endDate ? {
+          startDate: startDate,
+          endDate: endDate,
+        } : {}),
         isLoadMore: false,
         isStaging: false,
         statusIds: statusIds
@@ -992,27 +1105,34 @@ const CustomerList = ({ navigation: navigationProp }) => {
     }
   };
 
-  // Preview document
-  const previewDocument = async (doc) => {
-    // ⛔ Ignore if already running
-    if (isPreviewing) return;
-
-    // 🔒 Lock
-    setIsPreviewing(true);
-
-
-    if (!doc || !doc.s3Path) {
-      Alert.alert('Info', 'Document not available');
-      setIsPreviewing(false); // unlock
-      return;
+  // Fetch signed URL when preview is shown (either in separate modal or inside documents modal)
+  useEffect(() => {
+    // Only fetch when preview is shown and we have a document
+    if ((previewModalVisible || showPreviewInDocumentsModal) && selectedDocumentForPreview?.s3Path) {
+      // Prevent duplicate calls - check if we're already fetching or if this is the same document
+      if (!isFetchingPreviewRef.current && lastFetchedPreviewPathRef.current !== selectedDocumentForPreview.s3Path) {
+        fetchPreviewSignedUrl();
+      }
+    } else if (!previewModalVisible && !showPreviewInDocumentsModal) {
+      // Reset when preview closes
+      setIsFullScreenPreview(false);
+      setPreviewSignedUrl(null);
+      lastFetchedPreviewPathRef.current = null;
+      isFetchingPreviewRef.current = false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewModalVisible, showPreviewInDocumentsModal, selectedDocumentForPreview?.s3Path]);
 
-    setSelectedDocumentForPreview(doc);
-    setPreviewModalVisible(true);
+  const fetchPreviewSignedUrl = async () => {
+    if (!selectedDocumentForPreview?.s3Path || isFetchingPreviewRef.current) return;
+
+    // Mark as fetching and store the path
+    isFetchingPreviewRef.current = true;
+    lastFetchedPreviewPathRef.current = selectedDocumentForPreview.s3Path;
+
     setPreviewLoading(true);
-
     try {
-      const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
+      const response = await customerAPI.getDocumentSignedUrl(selectedDocumentForPreview.s3Path);
       if (response?.data?.signedUrl) {
         setPreviewSignedUrl(response.data.signedUrl);
       }
@@ -1021,13 +1141,46 @@ const CustomerList = ({ navigation: navigationProp }) => {
       Alert.alert('Error', 'Failed to load document');
     } finally {
       setPreviewLoading(false);
-
-      // 🔓 Unlock after load completes
-      setIsPreviewing(false);
+      isFetchingPreviewRef.current = false;
     }
   };
 
-  // Download document
+  // Preview document - shows preview inside DocumentsModal if it's open, otherwise opens separate modal
+  const previewDocument = (doc) => {
+    // ⛔ Ignore if already fetching
+    if (isFetchingPreviewRef.current) return;
+    if (!doc || !doc.s3Path) {
+      Alert.alert('Info', 'Document not available');
+      return;
+    }
+
+    // Check if this is the same document already being previewed
+    if (selectedDocumentForPreview?.s3Path === doc.s3Path && (previewModalVisible || showPreviewInDocumentsModal)) {
+      return; // Already showing this document
+    }
+
+    // If DocumentsModal is open, show preview inside it (don't open separate modal)
+    if (showDocumentsModal) {
+      setSelectedDocumentForPreview(doc);
+      setShowPreviewInDocumentsModal(true);
+      setPreviewSignedUrl(null); // Clear previous URL
+      // Explicitly ensure separate preview modal is closed
+      setPreviewModalVisible(false);
+      setIsFullScreenPreview(false);
+    } else {
+      // Otherwise open separate preview modal
+      setSelectedDocumentForPreview(doc);
+      setPreviewModalVisible(true);
+      setPreviewSignedUrl(null); // Clear previous URL
+      // Make sure inline preview is not shown
+      setShowPreviewInDocumentsModal(false);
+    }
+  };
+
+  // Download document - using WebView to trigger automatic download
+  const [downloadWebViewUrl, setDownloadWebViewUrl] = useState(null);
+  const downloadWebViewRef = useRef(null);
+
   const downloadDocument = async (doc) => {
     if (!doc || !doc.s3Path) {
       Alert.alert('Info', 'Document not available for download');
@@ -1037,7 +1190,67 @@ const CustomerList = ({ navigation: navigationProp }) => {
     try {
       const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
       if (response?.data?.signedUrl) {
-        await Linking.openURL(response.data.signedUrl);
+        let signedUrl = response.data.signedUrl;
+        const fileName = doc.fileName || doc.doctypeName || 'document';
+
+        // Add download parameter to force download
+        const separator = signedUrl.includes('?') ? '&' : '?';
+        const downloadUrl = `${signedUrl}${separator}response-content-disposition=attachment${fileName ? `; filename="${encodeURIComponent(fileName)}"` : ''}`;
+
+        if (Platform.OS === 'android') {
+          try {
+            // Check Android version - Android 10+ doesn't need WRITE_EXTERNAL_STORAGE
+            const androidVersion = Platform.Version;
+            let hasPermission = true;
+
+            if (androidVersion < 29) {
+              const granted = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+                {
+                  title: 'Storage Permission',
+                  message: 'App needs access to storage to download files',
+                  buttonNeutral: 'Ask Me Later',
+                  buttonNegative: 'Cancel',
+                  buttonPositive: 'OK',
+                }
+              );
+              hasPermission = granted === PermissionsAndroid.RESULTS.GRANTED;
+            }
+
+            if (hasPermission) {
+              // Use WebView to trigger download
+              setDownloadWebViewUrl(downloadUrl);
+              
+              Toast.show({
+                type: 'success',
+                text1: 'Download Started',
+                text2: `${fileName} is being downloaded`,
+                position: 'bottom',
+              });
+            } else {
+              Alert.alert('Permission Denied', 'Storage permission is required to download files');
+            }
+          } catch (err) {
+            console.error('Download error:', err);
+            // Fallback: use WebView
+            setDownloadWebViewUrl(downloadUrl);
+            Toast.show({
+              type: 'info',
+              text1: 'Download',
+              text2: 'Download initiated',
+              position: 'bottom',
+            });
+          }
+        } else {
+          // For iOS, use WebView to trigger download
+          setDownloadWebViewUrl(downloadUrl);
+          Toast.show({
+            type: 'success',
+            text1: 'Download Started',
+            text2: `${fileName} is being downloaded`,
+            position: 'bottom',
+          });
+        }
       }
     } catch (error) {
       console.error('Error downloading document:', error);
@@ -1589,31 +1802,25 @@ const CustomerList = ({ navigation: navigationProp }) => {
     let statusIds = [];
     let stateIds = [];
     let cityIds = [];
+    let customerGroupIds = [];
 
-    // Handle customerGroup (customer type) - map to typeCode array
+    // Handle customerGroup - now from API, map customerGroupName to customerGroupId
     if (filters.customerGroup && filters.customerGroup.length > 0 && !filters.customerGroup.includes('All')) {
-      typeCode = filters.customerGroup
+      customerGroupIds = filters.customerGroup
         .map(groupName => {
-          const type = customerTypes.find(t => t.name === groupName);
-          return type?.code;
+          const group = customerGroups.find(g => (g.customerGroupName || g.name) === groupName);
+          return group?.customerGroupId || group?.id;
         })
-        .filter(code => code !== undefined);
+        .filter(id => id !== undefined);
     }
-
-    // Handle category - map to categoryCode array
+    
+    // Handle category - now contains customer types (previously in customerGroup)
+    // Map to typeCode array
     if (filters.category && filters.category.length > 0 && !filters.category.includes('All')) {
-      categoryCode = filters.category
+      typeCode = filters.category
         .map(catName => {
-          // Search for category code in all customer types
-          for (let type of customerTypes) {
-            if (type?.customerCategories) {
-              const category = type.customerCategories.find(cat => cat.name === catName);
-              if (category) {
-                return category.code; // "OW", "OR", "RCW", "GOV", "PRI"
-              }
-            }
-          }
-          return undefined;
+          const type = customerTypes.find(t => t.name === catName);
+          return type?.code;
         })
         .filter(code => code !== undefined);
     }
@@ -1659,6 +1866,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
         .filter(id => id !== undefined);
     }
 
+    // Get dates from state or filters (prefer filters as source of truth)
+    const startDate = filters.startDate || (fromDate ? formatDateForAPI(fromDate) : null);
+    const endDate = filters.endDate || (toDate ? formatDateForAPI(toDate) : null);
+
     // Build API payload matching the format
     const filterParams = {
       typeCode: typeCode.length > 0 ? typeCode : [],
@@ -1667,19 +1878,27 @@ const CustomerList = ({ navigation: navigationProp }) => {
       statusIds: statusIds.length > 0 ? statusIds : [],
       stateIds: stateIds.length > 0 ? stateIds : [],
       cityIds: cityIds.length > 0 ? cityIds : [],
+      customerGroupIds: customerGroupIds.length > 0 ? customerGroupIds : [],
+      ...(startDate && endDate ? {
+        startDate: startDate,
+        endDate: endDate,
+      } : {}),
       page: 1,
       limit: 10,
       sortBy: '',
       sortDirection: 'ASC',
     };
 
+    console.log('📅 Filter params with dates:', JSON.stringify(filterParams, null, 2));
     dispatch(setFilters(filterParams));
     if (activeTab === 'all') {
-      dispatch(fetchCustomersList({
+      const payload = {
         ...filterParams,
         isStaging: false,
         isAll:true
-      }));
+      };
+      console.log('📅 All tab payload with dates:', JSON.stringify(payload, null, 2));
+      dispatch(fetchCustomersList(payload));
     } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
       const tabStatusIds = getStatusIdsForTab(activeTab);
       const payload = {
@@ -1995,22 +2214,155 @@ const CustomerList = ({ navigation: navigationProp }) => {
   };
 
   // Documents Modal - Shows all documents for a customer
-  const DocumentsModal = () => (
-    <Modal
-      visible={showDocumentsModal}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowDocumentsModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.documentsModalContent}>
-          {/* Header */}
-          <View style={styles.documentsModalHeader}>
-            <AppText style={styles.documentsModalTitle}>All Documents</AppText>
-            <TouchableOpacity onPress={() => setShowDocumentsModal(false)}>
-              <CloseCircle />
-            </TouchableOpacity>
-          </View>
+  const DocumentsModal = () => {
+    const handleClose = () => {
+      setShowDocumentsModal(false);
+      setShowPreviewInDocumentsModal(false);
+      setSelectedDocumentForPreview(null);
+      setPreviewSignedUrl(null);
+    };
+
+    const handleOverlayPress = (e) => {
+      // Prevent closing when preview is shown
+      if (!showPreviewInDocumentsModal) {
+        e.stopPropagation();
+        handleClose();
+      }
+    };
+
+    const handleBackFromPreview = () => {
+      setShowPreviewInDocumentsModal(false);
+      setSelectedDocumentForPreview(null);
+      setPreviewSignedUrl(null);
+    };
+
+    return (
+      <Modal
+        visible={showDocumentsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={handleClose}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={handleOverlayPress}
+          disabled={showPreviewInDocumentsModal}
+        >
+          <TouchableOpacity 
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+            style={styles.documentsModalContent}
+            pointerEvents="auto"
+          >
+          {showPreviewInDocumentsModal ? (
+            // Show preview inside the modal - full screen document view
+            <View style={styles.previewContainerInModal}>
+              {/* Close button overlay */}
+              <TouchableOpacity 
+                onPress={handleBackFromPreview} 
+                style={styles.previewCloseButton}
+              >
+                <View style={styles.previewCloseButtonCircle}>
+                  <Icon name="close" size={24} color="#000" />
+                </View>
+              </TouchableOpacity>
+
+              {previewLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <AppText style={styles.loadingText}>Loading document...</AppText>
+                </View>
+              ) : (() => {
+                const isImageFile = selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpg') ||
+                  selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpeg') ||
+                  selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.png');
+                
+                return previewSignedUrl && isImageFile ? (
+                  <ScrollView 
+                    style={styles.previewScrollContainer}
+                    contentContainerStyle={styles.previewScrollContent}
+                    showsVerticalScrollIndicator={true}
+                  >
+                    <View style={styles.previewImageWrapper}>
+                      <TouchableOpacity
+                        activeOpacity={1}
+                        onPress={() => {
+                          // Show full screen preview in a separate modal even when inside DocumentsModal
+                          setPreviewModalVisible(true);
+                          setIsFullScreenPreview(true);
+                        }}
+                        style={styles.imagePreviewTouchable}
+                      >
+                        <ZoomableImage
+                          imageUri={previewSignedUrl}
+                          containerWidth={width * 0.95 - 32}
+                          containerHeight={height * 0.65}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    
+                    {/* Filename and actions */}
+                    <View style={styles.previewDocumentInfo}>
+                      <AppText style={styles.previewFileName} numberOfLines={1}>
+                        {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
+                      </AppText>
+                      <View style={styles.previewActions}>
+                        <TouchableOpacity
+                          style={styles.previewActionButton}
+                          onPress={() => {
+                            setPreviewModalVisible(true);
+                            setIsFullScreenPreview(true);
+                          }}
+                        >
+                          <EyeOpen width={20} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.previewActionButton}
+                          onPress={() => downloadDocument(selectedDocumentForPreview)}
+                        >
+                          <Download width={20} color={colors.primary} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </ScrollView>
+                ) : previewSignedUrl ? (
+                  <ScrollView 
+                    style={styles.previewScrollContainer}
+                    contentContainerStyle={styles.previewScrollContent}
+                  >
+                    <View style={styles.documentPreviewPlaceholder}>
+                      <Icon name="document-text-outline" size={64} color="#999" />
+                      <AppText style={styles.documentPreviewText}>{selectedDocumentForPreview?.fileName}</AppText>
+                    </View>
+                    
+                    {/* Filename and actions */}
+                    <View style={styles.previewDocumentInfo}>
+                      <AppText style={styles.previewFileName} numberOfLines={1}>
+                        {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
+                      </AppText>
+                      <View style={styles.previewActions}>
+                        <TouchableOpacity
+                          style={styles.previewActionButton}
+                          onPress={() => downloadDocument(selectedDocumentForPreview)}
+                        >
+                          <Download width={20} color={colors.primary} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </ScrollView>
+                ) : null;
+              })()}
+            </View>
+          ) : (
+            <>
+            {/* Header - only show when not in preview mode */}
+            <View style={styles.documentsModalHeader}>
+              <AppText style={styles.documentsModalTitle}>All Documents</AppText>
+              <TouchableOpacity onPress={handleClose}>
+                <CloseCircle />
+              </TouchableOpacity>
+            </View>
 
           {loadingDocuments ? (
             <View style={styles.loadingContainer}>
@@ -2036,7 +2388,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
                       <View style={styles.documentActionsSmall}>
                         <TouchableOpacity
                           style={styles.documentActionButtonSmall}
-                          onPress={() => previewDocument(customerDocuments.gstDoc)}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            previewDocument(customerDocuments.gstDoc);
+                          }}
                         >
                           <EyeOpen width={16} color={colors.primary} />
                         </TouchableOpacity>
@@ -2065,7 +2420,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
                       <View style={styles.documentActionsSmall}>
                         <TouchableOpacity
                           style={styles.documentActionButtonSmall}
-                          onPress={() => previewDocument(customerDocuments.panDoc)}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            previewDocument(customerDocuments.panDoc);
+                          }}
                         >
                           <EyeOpen width={16} color={colors.primary} />
                         </TouchableOpacity>
@@ -2099,7 +2457,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
                       <View style={styles.documentActions}>
                         <TouchableOpacity
                           style={styles.documentActionButton}
-                          onPress={() => previewDocument(doc)}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            previewDocument(doc);
+                          }}
                         >
                           <EyeOpen width={18} color={colors.primary} />
                         </TouchableOpacity>
@@ -2120,10 +2481,13 @@ const CustomerList = ({ navigation: navigationProp }) => {
               <AppText style={styles.noDocumentsText}>No documents available</AppText>
             </View>
           )}
-        </View>
-      </View>
-    </Modal>
-  );
+          </>
+          )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+    );
+  };
 
 
   console.log(filteredCustomers);
@@ -2370,14 +2734,20 @@ const CustomerList = ({ navigation: navigationProp }) => {
       setPreviewModalVisible(false);
       setIsPreviewing(false);
       setIsFullScreenPreview(false);
+      // Don't close documents modal - keep it open in background
     };
+
+    // Don't show this modal if preview is being shown inside DocumentsModal (unless it's full screen)
+    if (showPreviewInDocumentsModal && !isFullScreenPreview) {
+      return null;
+    }
 
     const isImageFile = selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpg') ||
       selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpeg') ||
       selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.png');
 
-    // Full Screen Image Preview
-    if (isFullScreenPreview && previewSignedUrl && isImageFile) {
+    // Full Screen Image Preview - show even if opened from DocumentsModal
+    if (isFullScreenPreview && previewSignedUrl && isImageFile && previewModalVisible) {
       return (
         <Modal
           visible={previewModalVisible}
@@ -2388,7 +2758,14 @@ const CustomerList = ({ navigation: navigationProp }) => {
         >
           <View style={styles.fullScreenPreviewContainer}>
             <View style={styles.fullScreenPreviewHeader}>
-              <TouchableOpacity onPress={() => setIsFullScreenPreview(false)} style={styles.fullScreenCloseButton}>
+              <TouchableOpacity onPress={() => {
+                setIsFullScreenPreview(false);
+                // If opened from DocumentsModal, just exit full screen and keep DocumentsModal open
+                // Otherwise close the preview modal
+                if (!showPreviewInDocumentsModal) {
+                  setPreviewModalVisible(false);
+                }
+              }} style={styles.fullScreenCloseButton}>
                 <Icon name="close" size={28} color="#fff" />
               </TouchableOpacity>
             </View>
@@ -2402,7 +2779,11 @@ const CustomerList = ({ navigation: navigationProp }) => {
       );
     }
 
-    // Regular Modal View
+    // Regular Modal View - only show if not opened from DocumentsModal
+    if (showPreviewInDocumentsModal) {
+      return null; // Don't show separate modal if preview is inside DocumentsModal
+    }
+
     return (
       <Modal
         visible={previewModalVisible}
@@ -2410,8 +2791,16 @@ const CustomerList = ({ navigation: navigationProp }) => {
         animationType="fade"
         onRequestClose={closeModal}
       >
-        <View style={styles.previewModalOverlay}>
-          <View style={styles.previewModalContent}>
+        <TouchableOpacity 
+          style={styles.previewModalOverlay}
+          activeOpacity={1}
+          onPress={closeModal}
+        >
+          <TouchableOpacity 
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+            style={styles.previewModalContent}
+          >
             <View style={styles.previewModalHeader}>
               <AppText style={styles.previewModalTitle} numberOfLines={1}>
                 {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
@@ -2427,7 +2816,11 @@ const CustomerList = ({ navigation: navigationProp }) => {
               ) : previewSignedUrl && isImageFile ? (
                 <TouchableOpacity
                   activeOpacity={1}
-                  onPress={() => setIsFullScreenPreview(true)}
+                      onPress={() => {
+                        // Show full screen preview in a separate modal even when inside DocumentsModal
+                        setPreviewModalVisible(true);
+                        setIsFullScreenPreview(true);
+                      }}
                   style={styles.imagePreviewTouchable}
                 >
                   <ZoomableImage
@@ -2451,8 +2844,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
               <Download width={20} color="#fff" />
               <AppText style={styles.downloadButtonText}>Download</AppText>
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     );
   };
@@ -2708,6 +3101,12 @@ const CustomerList = ({ navigation: navigationProp }) => {
           >
             <Filter color="#666" />
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setDatePickerModalVisible(true)}
+          >
+            <Calendar color="#666" />
+          </TouchableOpacity>
         </View>
 
         {/* Customer List */}
@@ -2799,6 +3198,45 @@ const CustomerList = ({ navigation: navigationProp }) => {
         <DocumentsModal />
         <DocumentPreviewModal />
 
+        {/* Hidden WebView for automatic downloads */}
+        {downloadWebViewUrl && (
+          <WebView
+            ref={downloadWebViewRef}
+            source={{ uri: downloadWebViewUrl }}
+            style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+            onShouldStartLoadWithRequest={(request) => {
+              // Allow the download to proceed
+              return true;
+            }}
+            onLoadEnd={() => {
+              // Reset after a short delay to allow download to start
+              setTimeout(() => {
+                setDownloadWebViewUrl(null);
+              }, 2000);
+            }}
+            onError={(syntheticEvent) => {
+              const { nativeEvent } = syntheticEvent;
+              console.error('WebView error:', nativeEvent);
+              setDownloadWebViewUrl(null);
+            }}
+            // Android download handler - this triggers the download manager
+            onFileDownload={(request) => {
+              // Download request received
+              console.log('Download request:', request);
+              // The download should start automatically
+              setTimeout(() => {
+                setDownloadWebViewUrl(null);
+              }, 1000);
+            }}
+            // iOS - downloads are handled automatically
+            allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
+            // Enable downloads
+            allowsBackForwardNavigationGestures={false}
+            startInLoadingState={false}
+          />
+        )}
+
         <FilterModal
           visible={filterModalVisible}
           onClose={() => setFilterModalVisible(false)}
@@ -2870,6 +3308,207 @@ const CustomerList = ({ navigation: navigationProp }) => {
             </View>
           </View>
         )}
+
+        {/* Date Picker Modal */}
+        <Modal
+          visible={datePickerModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setDatePickerModalVisible(false)}
+        >
+          <View style={styles.dateModalOverlay}>
+            <View style={styles.dateModalContent}>
+              <View style={styles.dateModalHeader}>
+                <AppText style={styles.dateModalTitle}>Select Date Range</AppText>
+                <TouchableOpacity onPress={() => setDatePickerModalVisible(false)}>
+                  <CloseCircle />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.dateInputContainer}>
+                <TouchableOpacity
+                  style={[styles.dateInput, !fromDate && styles.dateInputPlaceholder]}
+                  onPress={() => setShowFromDatePicker(true)}
+                >
+                  <Calendar color="#666" />
+                  <AppText style={[styles.dateInputText, !fromDate && styles.dateInputPlaceholderText]}>
+                    {fromDate ? fromDate.toLocaleDateString('en-GB') : 'From Date'}
+                  </AppText>
+                </TouchableOpacity>
+
+                {Platform.OS === 'ios' && showFromDatePicker && (
+                  <DateTimePicker
+                    value={fromDate || new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      setShowFromDatePicker(false);
+                      if (selectedDate) {
+                        setFromDate(selectedDate);
+                        if (toDate && selectedDate > toDate) {
+                          setToDate(null);
+                        }
+                      }
+                    }}
+                    maximumDate={toDate || new Date()}
+                  />
+                )}
+
+                {Platform.OS === 'android' && showFromDatePicker && (
+                  <DateTimePicker
+                    value={fromDate || new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      setShowFromDatePicker(false);
+                      if (event.type === 'set' && selectedDate) {
+                        setFromDate(selectedDate);
+                        if (toDate && selectedDate > toDate) {
+                          setToDate(null);
+                        }
+                      }
+                    }}
+                    maximumDate={toDate || new Date()}
+                  />
+                )}
+
+                <TouchableOpacity
+                  style={[styles.dateInput, !toDate && styles.dateInputPlaceholder]}
+                  onPress={() => setShowToDatePicker(true)}
+                >
+                  <Calendar color="#666" />
+                  <AppText style={[styles.dateInputText, !toDate && styles.dateInputPlaceholderText]}>
+                    {toDate ? toDate.toLocaleDateString('en-GB') : 'To Date'}
+                  </AppText>
+                </TouchableOpacity>
+
+                {Platform.OS === 'ios' && showToDatePicker && (
+                  <DateTimePicker
+                    value={toDate || new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      setShowToDatePicker(false);
+                      if (selectedDate) {
+                        setToDate(selectedDate);
+                      }
+                    }}
+                    minimumDate={fromDate || undefined}
+                    maximumDate={new Date()}
+                  />
+                )}
+
+                {Platform.OS === 'android' && showToDatePicker && (
+                  <DateTimePicker
+                    value={toDate || new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      setShowToDatePicker(false);
+                      if (event.type === 'set' && selectedDate) {
+                        setToDate(selectedDate);
+                      }
+                    }}
+                    minimumDate={fromDate || undefined}
+                    maximumDate={new Date()}
+                  />
+                )}
+              </View>
+
+              <View style={styles.dateModalActions}>
+                <TouchableOpacity
+                  style={[styles.dateModalButton, styles.clearButton]}
+                  onPress={() => {
+                    setFromDate(null);
+                    setToDate(null);
+                    // Clear dates from filters and refresh
+                    const filterParams = {
+                      typeCode: filters.typeCode || [],
+                      categoryCode: filters.categoryCode || [],
+                      subCategoryCode: filters.subCategoryCode || [],
+                      statusIds: getStatusIdsForTab(activeTab),
+                      stateIds: [],
+                      cityIds: [],
+                      customerGroupIds: [],
+                      page: 1,
+                      limit: 10,
+                      sortBy: '',
+                      sortDirection: 'ASC',
+                    };
+                    dispatch(setFilters(filterParams));
+                    if (activeTab === 'all') {
+                      dispatch(fetchCustomersList({
+                        ...filterParams,
+                        isStaging: false,
+                        isAll: true
+                      }));
+                    } else {
+                      const tabStatusIds = getStatusIdsForTab(activeTab);
+                      dispatch(fetchCustomersList({
+                        ...filterParams,
+                        isStaging: activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft',
+                        statusIds: tabStatusIds
+                      }));
+                    }
+                    setDatePickerModalVisible(false);
+                  }}
+                >
+                  <AppText style={styles.clearButtonText}>Clear</AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.dateModalButton, styles.applyButton, (!fromDate || !toDate) && styles.applyButtonDisabled]}
+                  onPress={() => {
+                    if (fromDate && toDate) {
+                      // Apply date filter and refresh
+                      const filterParams = {
+                        typeCode: filters.typeCode || [],
+                        categoryCode: filters.categoryCode || [],
+                        subCategoryCode: filters.subCategoryCode || [],
+                        statusIds: [], // Empty array when dates are selected
+                        stateIds: filters.stateIds || [],
+                        cityIds: filters.cityIds || [],
+                        customerGroupIds: filters.customerGroupIds || [],
+                        startDate: formatDateForAPI(fromDate),
+                        endDate: formatDateForAPI(toDate),
+                        page: 1,
+                        limit: 10,
+                        sortBy: '',
+                        sortDirection: 'ASC',
+                      };
+                      dispatch(setFilters(filterParams));
+                      if (activeTab === 'all') {
+                        dispatch(fetchCustomersList({
+                          ...filterParams,
+                          isStaging: false,
+                          isAll: true
+                        }));
+                      } else {
+                        dispatch(fetchCustomersList({
+                          ...filterParams,
+                          isStaging: activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft',
+                          statusIds: [] // Empty array when dates are selected
+                        }));
+                      }
+                      setDatePickerModalVisible(false);
+                    } else {
+                      Toast.show({
+                        type: 'error',
+                        text1: 'Date Range Required',
+                        text2: 'Please select both from and to dates',
+                        position: 'top',
+                      });
+                    }
+                  }}
+                  disabled={!fromDate || !toDate}
+                >
+                  <AppText style={[styles.applyButtonText, (!fromDate || !toDate) && styles.applyButtonTextDisabled]}>
+                    Apply
+                  </AppText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
       </View>
     </SafeAreaView>
@@ -3707,6 +4346,164 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  previewContainerInModal: {
+    flex: 1,
+    backgroundColor: '#fff',
+    position: 'relative',
+  },
+  previewCloseButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10,
+  },
+  previewCloseButtonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  previewScrollContainer: {
+    flex: 1,
+  },
+  previewScrollContent: {
+    flexGrow: 1,
+    padding: 16,
+    paddingTop: 60,
+    paddingBottom: 100,
+  },
+  previewImageWrapper: {
+    width: '100%',
+    minHeight: height * 0.65,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  previewImageContainer: {
+    width: '100%',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewDocumentInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  previewFileName: {
+    flex: 1,
+    fontSize: 14,
+    color: '#666',
+    marginRight: 12,
+  },
+  previewActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  previewActionButton: {
+    padding: 8,
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
+  },
+  dateModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  dateModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 32,
+  },
+  dateModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  dateModalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+  },
+  dateInputContainer: {
+    gap: 16,
+    marginBottom: 24,
+  },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#fff',
+    gap: 12,
+  },
+  dateInputPlaceholder: {
+    borderColor: '#E0E0E0',
+  },
+  dateInputText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+  },
+  dateInputPlaceholderText: {
+    color: '#999',
+  },
+  dateModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dateModalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  clearButton: {
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: '#fff',
+  },
+  clearButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  applyButton: {
+    backgroundColor: colors.primary,
+  },
+  applyButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+  },
+  applyButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  applyButtonTextDisabled: {
+    color: '#999',
   },
 });
 

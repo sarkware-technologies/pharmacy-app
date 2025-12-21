@@ -1430,6 +1430,9 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
     if (!formData.licenseFile) {
       newErrors.licenseFile = 'Registration Certificate is required';
     }
+    if (!formData.licenseImage) {
+      newErrors.licenseImage = 'Clinic image is required';
+    }
 
     if (!formData.stationCode)
       newErrors.stationCode = 'Station Code is required';
@@ -1504,6 +1507,7 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
     if (!formData.registrationNumber) isValid = false;
     else if (!formData.registrationDate) isValid = false;
     else if (!formData.licenseFile) isValid = false;
+    else if (!formData.licenseImage) isValid = false;
     else if (!formData.clinicName) isValid = false;
     else if (!formData.address1) isValid = false;
     else if (!formData.address2) isValid = false;

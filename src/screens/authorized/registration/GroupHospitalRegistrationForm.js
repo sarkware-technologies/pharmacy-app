@@ -1224,6 +1224,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
   };
   // Helper function to format dates for API submission
   // Handles both ISO format and DD/MM/YYYY format dates
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const formatDateForAPI = date => {
     if (!date) return null;
     try {
@@ -1262,6 +1263,9 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
     if (!formData.registrationCertificateFile) {
       newErrors.registrationCertificateFile =
         'Registration Certificate is required';
+    }
+    if (!formData.hospitalImageFile) {
+      newErrors.hospitalImageFile = 'Hospital image is required';
     }
     if (!formData.registrationDate) {
       newErrors.registrationDate = 'Registration date is required';
@@ -1358,6 +1362,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
     let isValid = true;
     if (!formData.registrationNumber) isValid = false;
     else if (!formData.registrationCertificateFile) isValid = false;
+    else if (!formData.hospitalImageFile) isValid = false;
     else if (!formData.registrationDate) isValid = false;
     else if (!formData.hospitalName) isValid = false;
     else if (!formData.address1) isValid = false;

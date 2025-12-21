@@ -29,11 +29,12 @@ export const fetchCustomerStatuses = createAsyncThunk(
 export const fetchCustomersList = createAsyncThunk(
   'customer/fetchLists',
   async (params = {}, { rejectWithValue }) => {
+    console.log('fetchCustomersList params:', params);
     try {
       // Pass isStaging flag to the API
       const response = await customerAPI.getCustomersList({
         ...params,
-        isStaging: params.isStaging || false // Add isStaging support
+        isStaging: params.isStaging || false
       });
       return {
         data: response.data,
@@ -196,7 +197,9 @@ const initialState = {
     statusId: [],
     cityIds: [],
     categoryCode: '',
-    subCategoryCode: ''
+    subCategoryCode: '',
+    startDate: null,
+    endDate: null
   },
   
   // Selected customer

@@ -1474,6 +1474,9 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
     if (!formData.addressProofFile) {
       newErrors.addressProofFile = 'Address proof is required';
     }
+    if (!formData.clinicImageFile) {
+      newErrors.clinicImageFile = 'Clinic image is required';
+    }
 
     if (!formData.stationCode)
       newErrors.stationCode = 'Station Code is required';
@@ -1484,6 +1487,9 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
 
     const specialityError = validateField('speciality', formData.speciality, true, 'Speciality is required');
     if (specialityError) newErrors.speciality = specialityError;
+
+    const clinicNameError = validateField('clinicName', formData.clinicName, true, 'Clinic name is required');
+    if (clinicNameError) newErrors.clinicName = clinicNameError;
 
     const address1Error = validateField('address1', formData.address1, true, 'Address 1 is required');
     if (address1Error) newErrors.address1 = address1Error;
@@ -2083,6 +2089,7 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
                 initialFile={formData.clinicImageFile}
                 onFileUpload={file => handleFileUpload('clinicImageFile', file)}
                 onFileDelete={() => handleFileDelete('clinicImageFile')}
+                errorMessage={errors.clinicImageFile}
               />
 
 
@@ -2096,7 +2103,7 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
               </AppText>
 
               <CustomInput
-                placeholder="Name of the doctor"
+                placeholder="Name of the Doctor"
                 value={formData.doctorName}
                 onChangeText={createFilteredInputHandler('doctorName', (text) => {
                   setFormData(prev => ({ ...prev, doctorName: text }));
@@ -2120,12 +2127,14 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
 
               {/* Clinic Name */}
               <CustomInput
-                placeholder="Clinic Name"
+                placeholder="Clinic name"
                 value={formData.clinicName}
                 onChangeText={createFilteredInputHandler('clinicName', (text) => {
                   setFormData(prev => ({ ...prev, clinicName: text }));
                   setErrors(prev => ({ ...prev, clinicName: null }));
                 }, 40)}
+                mandatory={true}
+                error={errors.clinicName}
               />
 
               {/* Station code */}

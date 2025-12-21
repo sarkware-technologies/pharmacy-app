@@ -14,6 +14,7 @@ import {
 
 import { useSelector, useDispatch } from 'react-redux';
 import apiClient from '../api/apiClient';
+import { customerAPI } from '../api/customer';
 import { AppText, AppInput } from ".";
 import CloseCircle from './icons/CloseCircle';
 import ModalClose from './icons/modalClose';
@@ -53,6 +54,10 @@ const FilterModal = ({
 
   const customerTypes = useSelector(selectCustomerTypes) || [];
   const customerStatuses = useSelector(selectCustomerStatuses) || [];
+  
+  // Customer groups from API (for customerGroup filter)
+  const [customerGroups, setCustomerGroups] = useState([]);
+  const [loadingCustomerGroups, setLoadingCustomerGroups] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(height)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -120,11 +125,27 @@ const FilterModal = ({
   }, []);
 
 
+  /** FETCH CUSTOMER GROUPS FROM API */
+  const fetchCustomerGroups = async () => {
+    setLoadingCustomerGroups(true);
+    try {
+      const response = await customerAPI.getCustomerGroups();
+      if (response.success && response.data) {
+        setCustomerGroups(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching customer groups:', error);
+    } finally {
+      setLoadingCustomerGroups(false);
+    }
+  };
+
   /** INITIAL FETCH */
   useEffect(() => {
     dispatch(fetchCustomerTypes());
     dispatch(fetchCustomerStatuses());
     fetchStates();
+    fetchCustomerGroups();
   }, [dispatch]);
 
   /** FETCH CITIES WHEN STATE CHANGES */
@@ -177,32 +198,17 @@ const FilterModal = ({
     ]).start(onClose);
   };
 
-  /** SUBCATEGORY LOGIC */
-  const getCategoriesForSelectedGroups = () => {
-    const selectedGroups = filters.customerGroup;
-    const categories = new Set();
-
-    selectedGroups.forEach(groupName => {
-      const group = customerTypes.find(t => t.name === groupName);
-      group?.customerCategories?.forEach(cat => {
-        if (!cat.name.includes('/') && !cat.name.includes('-')) {
-          categories.add(cat.name);
-        }
-      });
-    });
-
-    return Array.from(categories);
-  };
-
   /** FILTER DATA PROVIDER */
   const getFilterData = () => {
     switch (activeSection) {
       case 'customerGroup':
-        return ['All', ...customerTypes.map(t => t.name)];
+        // Use customer groups from API
+        return ['All', ...customerGroups.map(g => g.customerGroupName || g.name)];
       case 'status':
         return ['All', ...customerStatuses.map(s => s.name)];
       case 'category':
-        return ['All', ...getCategoriesForSelectedGroups()];
+        // Use customer types (which were previously shown in customerGroup)
+        return ['All', ...customerTypes.map(t => t.name)];
       case 'state':
         return ['All', ...states.map(s => ({ id: s.id, name: s.stateName }))];
       case 'city':
@@ -240,17 +246,17 @@ const FilterModal = ({
         }
 
         if (type === "customerGroup") {
-          const all = customerTypes.map(t => t.name);
+          const all = customerGroups.map(g => g.customerGroupName || g.name);
           return prev.customerGroup.length === all.length
-            ? { ...prev, customerGroup: [], category: [] }
-            : { ...prev, customerGroup: all, category: getCategoriesForSelectedGroups() };
+            ? { ...prev, customerGroup: [] }
+            : { ...prev, customerGroup: all };
         }
 
         if (type === "category") {
-          const cats = getCategoriesForSelectedGroups();
-          return prev.category.length === cats.length
+          const all = customerTypes.map(t => t.name);
+          return prev.category.length === all.length
             ? { ...prev, category: [] }
-            : { ...prev, category: cats };
+            : { ...prev, category: all };
         }
 
         const all = getFilterData().filter(i => i !== "All");
@@ -279,16 +285,16 @@ const FilterModal = ({
       }
 
       if (type === "customerGroup") {
-        const all = customerTypes.map(t => t.name);
+        const all = customerGroups.map(g => g.customerGroupName || g.name);
         return updated.length === all.length
-          ? { ...prev, customerGroup: all, category: getCategoriesForSelectedGroups() }
-          : { ...prev, customerGroup: updated, category: getCategoriesForSelectedGroups() };
+          ? { ...prev, customerGroup: all }
+          : { ...prev, customerGroup: updated };
       }
 
       if (type === "category") {
-        const cats = getCategoriesForSelectedGroups();
-        return updated.length === cats.length
-          ? { ...prev, category: cats }
+        const all = customerTypes.map(t => t.name);
+        return updated.length === all.length
+          ? { ...prev, category: all }
           : { ...prev, category: updated };
       }
 
@@ -439,7 +445,7 @@ const FilterModal = ({
                       // rawList.length <= 1 means only "All" exists (i.e. nothing to list)
                       <AppText style={styles.noResults}>No results found</AppText>
                     ) : (
-                      <View style={{ gap: 10 }}>
+                      <View style={{ gap: 16 }}>
                         {/*
         Only filter out "All" when rawList indicates the list is empty.
         Keep "All" when there are real items to select.
@@ -458,9 +464,9 @@ const FilterModal = ({
                                     : activeSection === "city"
                                       ? filters.city.length === availableCities.length
                                       : activeSection === "customerGroup"
-                                        ? filters.customerGroup.length === customerTypes.length
+                                        ? filters.customerGroup.length === customerGroups.length
                                         : activeSection === "category"
-                                          ? filters.category.length === getCategoriesForSelectedGroups().length
+                                          ? filters.category.length === customerTypes.length
                                           : filters[activeSection].length === (rawList.length - 1)
                                 )
                                 : filters[activeSection].includes(val);

@@ -15,10 +15,13 @@ import {
   Linking,
   ActivityIndicator,
   PanResponder,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { WebView } from 'react-native-webview';
 import { colors } from '../../../styles/colors';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCustomerDetails, clearSelectedCustomer, fetchCustomersList, setCurrentCustomerId } from '../../../redux/slices/customerSlice';
@@ -832,20 +835,31 @@ const CustomerDetail = ({ navigation, route }) => {
     const [loadingDoc, setLoadingDoc] = useState(false);
     const [signedUrl, setSignedUrl] = useState(null);
     const [isFullScreenPreview, setIsFullScreenPreview] = useState(false);
+    const isFetchingRef = useRef(false);
+    const lastFetchedPathRef = useRef(null);
 
     useEffect(() => {
+      // Only fetch when modal opens and we have a document
       if (showDocumentModal && selectedDocument?.s3Path) {
-        fetchSignedUrl();
-      }
-      // Reset full screen when modal closes
-      if (!showDocumentModal) {
+        // Prevent duplicate calls - check if we're already fetching or if this is the same document
+        if (!isFetchingRef.current && lastFetchedPathRef.current !== selectedDocument.s3Path) {
+          fetchSignedUrl();
+        }
+      } else if (!showDocumentModal) {
+        // Reset when modal closes
         setIsFullScreenPreview(false);
+        setSignedUrl(null);
+        lastFetchedPathRef.current = null;
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showDocumentModal, selectedDocument]);
+    }, [showDocumentModal, selectedDocument?.s3Path]);
 
     const fetchSignedUrl = async () => {
-      if (!selectedDocument?.s3Path) return;
+      if (!selectedDocument?.s3Path || isFetchingRef.current) return;
+
+      // Mark as fetching and store the path
+      isFetchingRef.current = true;
+      lastFetchedPathRef.current = selectedDocument.s3Path;
 
       setLoadingDoc(true);
       try {
@@ -857,6 +871,7 @@ const CustomerDetail = ({ navigation, route }) => {
         Alert.alert('Error', 'Failed to load document');
       } finally {
         setLoadingDoc(false);
+        isFetchingRef.current = false;
       }
     };
 
@@ -973,6 +988,10 @@ const CustomerDetail = ({ navigation, route }) => {
     }
   };
 
+  // Download document - using WebView to trigger automatic download
+  const [downloadWebViewUrl, setDownloadWebViewUrl] = useState(null);
+  const downloadWebViewRef = useRef(null);
+
   const downloadDocument = async (docInfo) => {
     if (!docInfo || typeof docInfo === 'string') {
       Alert.alert('Info', 'Document not available for download');
@@ -982,7 +1001,67 @@ const CustomerDetail = ({ navigation, route }) => {
     try {
       const response = await customerAPI.getDocumentSignedUrl(docInfo.s3Path);
       if (response?.data?.signedUrl) {
-        await Linking.openURL(response.data.signedUrl);
+        let signedUrl = response.data.signedUrl;
+        const fileName = docInfo.fileName || docInfo.doctypeName || 'document';
+
+        // Add download parameter to force download
+        const separator = signedUrl.includes('?') ? '&' : '?';
+        const downloadUrl = `${signedUrl}${separator}response-content-disposition=attachment${fileName ? `; filename="${encodeURIComponent(fileName)}"` : ''}`;
+
+        if (Platform.OS === 'android') {
+          try {
+            // Check Android version - Android 10+ doesn't need WRITE_EXTERNAL_STORAGE
+            const androidVersion = Platform.Version;
+            let hasPermission = true;
+
+            if (androidVersion < 29) {
+              const granted = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+                {
+                  title: 'Storage Permission',
+                  message: 'App needs access to storage to download files',
+                  buttonNeutral: 'Ask Me Later',
+                  buttonNegative: 'Cancel',
+                  buttonPositive: 'OK',
+                }
+              );
+              hasPermission = granted === PermissionsAndroid.RESULTS.GRANTED;
+            }
+
+            if (hasPermission) {
+              // Use WebView to trigger download
+              setDownloadWebViewUrl(downloadUrl);
+              
+              Toast.show({
+                type: 'success',
+                text1: 'Download Started',
+                text2: `${fileName} is being downloaded`,
+                position: 'bottom',
+              });
+            } else {
+              Alert.alert('Permission Denied', 'Storage permission is required to download files');
+            }
+          } catch (err) {
+            console.error('Download error:', err);
+            // Fallback: use WebView
+            setDownloadWebViewUrl(downloadUrl);
+            Toast.show({
+              type: 'info',
+              text1: 'Download',
+              text2: 'Download initiated',
+              position: 'bottom',
+            });
+          }
+        } else {
+          // For iOS, use WebView to trigger download
+          setDownloadWebViewUrl(downloadUrl);
+          Toast.show({
+            type: 'success',
+            text1: 'Download Started',
+            text2: `${fileName} is being downloaded`,
+            position: 'bottom',
+          });
+        }
       }
     } catch (error) {
       console.error('Error downloading document:', error);
@@ -1581,7 +1660,7 @@ const CustomerDetail = ({ navigation, route }) => {
                         style={styles.commentIconButton}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <View style={styles.commentWrapper}>
+                         <View style={styles.commentWrapper}>
                         <Comment width={22} height={22} color={colors.primary} />
 
                         </View>
@@ -1819,6 +1898,45 @@ const CustomerDetail = ({ navigation, route }) => {
 
         <DocumentModal />
 
+        {/* Hidden WebView for automatic downloads */}
+        {downloadWebViewUrl && (
+          <WebView
+            ref={downloadWebViewRef}
+            source={{ uri: downloadWebViewUrl }}
+            style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+            onShouldStartLoadWithRequest={(request) => {
+              // Allow the download to proceed
+              return true;
+            }}
+            onLoadEnd={() => {
+              // Reset after a short delay to allow download to start
+              setTimeout(() => {
+                setDownloadWebViewUrl(null);
+              }, 2000);
+            }}
+            onError={(syntheticEvent) => {
+              const { nativeEvent } = syntheticEvent;
+              console.error('WebView error:', nativeEvent);
+              setDownloadWebViewUrl(null);
+            }}
+            // Android download handler - this triggers the download manager
+            onFileDownload={(request) => {
+              // Download request received
+              console.log('Download request:', request);
+              // The download should start automatically
+              setTimeout(() => {
+                setDownloadWebViewUrl(null);
+              }, 1000);
+            }}
+            // iOS - downloads are handled automatically
+            allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
+            // Enable downloads
+            allowsBackForwardNavigationGestures={false}
+            startInLoadingState={false}
+          />
+        )}
+
         <CommentsModal
           visible={commentsVisible}
           onClose={() => setCommentsVisible(false)}
@@ -1986,15 +2104,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 16,
     marginBottom: 12,
-  },
-
-  commentWrapper:{
-
-    backgroundColor:"#F7941E1A",
-    borderRadius:100,
-    padding:10
-    
-
   },
   commentIconButton: {
     padding: 6,
@@ -2466,6 +2575,14 @@ const styles = StyleSheet.create({
   imagePreviewTouchable: {
     width: '100%',
     height: '100%',
+  },
+  commentWrapper:{
+
+    backgroundColor:"#F7941E1A",
+    borderRadius:100,
+    padding:10
+    
+
   },
 });
 
