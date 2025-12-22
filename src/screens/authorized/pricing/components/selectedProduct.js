@@ -8,13 +8,13 @@ import DateIcon from "../../../../components/icons/date";
 import { useState } from "react";
 import RadioOption from "../../../../components/view/RadioOption"
 
-const ProductCard = ({ type, productLabel = "SELECTED PRODUCT", isSpecial = false }) => {
+const ProductCard = ({ type, productLabel = "SELECTED PRODUCT", isSpecial = false, product, customerList, handleAction, multiSelect }) => {
 
-    if (type == "1") return <Type1Card />;
+    if (type == "1") return <Type1Card product={product} customerList={customerList} handleAction={handleAction} />;
 
-    if (type == "2") return <Type2Card productLabel={productLabel} isSpecial={isSpecial} />;
+    if (type == "2") return <Type2Card product={product} productLabel={productLabel} isSpecial={isSpecial} handleAction={handleAction} multiSelect={multiSelect} />;
 
-    if (type == "3") return <Type3Card productLabel={productLabel} isSpecial={isSpecial} />;
+    if (type == "3") return <Type3Card product={product} productLabel={productLabel} isSpecial={isSpecial} handleAction={handleAction} />;
 
     return null;
 };
@@ -22,35 +22,39 @@ const ProductCard = ({ type, productLabel = "SELECTED PRODUCT", isSpecial = fals
 /* -------------------------------------------------------
    TYPE 1 CARD
 ------------------------------------------------------- */
-const Type1Card = () => {
+const Type1Card = ({ product, customerList, handleAction }) => {
+    const rcCount = customerList?.length || 0;
     return (
         <View style={styles.topSection}>
             {/* Product Info */}
             <View style={styles.customerSection}>
-                <View style={{ marginBottom: 10, gap: 6 }}>
+                <View style={{ marginBottom: 0, gap: 6 }}>
                     <AppText style={[CommonStyle.secondaryText, { fontSize: 12 }]}>Selected Product</AppText>
                     <AppText style={[CommonStyle.primaryText, { fontSize: 14, fontWeight: 500 }]}>
-                        BRUFFEN 100MG 1X10 TAB
+                        {product?.productName}
                     </AppText>
                 </View>
+                {customerList && (
+                    <View style={{ marginTop: 10 }}>
+                        <AppText style={[CommonStyle.secondaryText, { fontSize: 12, marginBottom: 6 }]}>
+                            Selected Customer/RC’s
+                        </AppText>
+                        <TouchableOpacity style={styles.customerDropdown} onPress={() => handleAction?.("selectRc")}>
+                            <AppText style={[CommonStyle.primaryText, { fontSize: 14, fontWeight: 500 }]}>
+                                {rcCount} {rcCount === 1 ? "RC" : "RC’s"} Selected
+                            </AppText>
+                            <Icon name="arrow-drop-down" size={24} color={colors.text} />
+                        </TouchableOpacity>
+                    </View>
 
-                <AppText style={[CommonStyle.secondaryText, { fontSize: 12, marginBottom: 6 }]}>
-                    Selected Customer/RC’s
-                </AppText>
-
-                <TouchableOpacity style={styles.customerDropdown}>
-                    <AppText style={[CommonStyle.primaryText, { fontSize: 14, fontWeight: 500 }]}>
-                        4 RC’s Selected
-                    </AppText>
-                    <Icon name="arrow-drop-down" size={24} color={colors.text} />
-                </TouchableOpacity>
+                )}
             </View>
 
             {/* Date Section */}
-            <DatePickerRow />
+            <DatePickerRow handleAction={handleAction} />
 
             {/* Supply Mode */}
-            <SupplyMode />
+            <SupplyMode handleAction={handleAction} />
         </View>
     );
 };
@@ -58,8 +62,9 @@ const Type1Card = () => {
 /* -------------------------------------------------------
    TYPE 2 CARD
 ------------------------------------------------------- */
-const Type2Card = ({ productLabel, isSpecial }) => {
+const Type2Card = ({ productLabel, isSpecial, product, handleAction,multiSelect }) => {
     const [viewMore, setViewMore] = useState(false);
+    console.log(product, 4982378)
 
     return (
         <View
@@ -70,14 +75,14 @@ const Type2Card = ({ productLabel, isSpecial }) => {
             ]}
         >
             <View style={[styles.customerSection, { padding: 10 }]}>
-                <Header productLabel={productLabel} />
+                <Header productLabel={productLabel} productName={product?.productName} productCode={product?.productCode} />
 
                 {/* PTS Row */}
                 <InfoRow
                     leftItems={[
-                        { label: "PTS:", value: "₹70.20" },
-                        { label: "PTS:", value: "₹70.20" },
-                        { label: "PTS:", value: "₹70.20" }
+                        { label: "PTS:", value: `₹${product?.pts ?? "-"}` },
+                        { label: "PTR:", value: `₹${product?.ptr ?? "-"}` },
+                        { label: "MRP:", value: `₹${product?.mrp ?? "-"}` }
                     ]}
                     rightContent={
                         !viewMore && (
@@ -125,7 +130,7 @@ const Type2Card = ({ productLabel, isSpecial }) => {
 /* -------------------------------------------------------
    TYPE 3 CARD
 ------------------------------------------------------- */
-const Type3Card = ({ productLabel, isSpecial }) => {
+const Type3Card = ({ productLabel, isSpecial, product, handleAction }) => {
     return (
         <View
             style={[
@@ -135,16 +140,16 @@ const Type3Card = ({ productLabel, isSpecial }) => {
             ]}
         >
             <View style={[styles.customerSection, CommonStyle.SpaceBetween, { alignItems: "flex-end", padding: 10 }]}>
-                <View style={{ gap: 6 }}>
+                <View style={{ gap: 6, maxWidth: "65%" }}>
                     <AppText style={[CommonStyle.secondaryText, { fontSize: 11 }]}>
                         {productLabel}
                     </AppText>
                     <AppText style={[CommonStyle.primaryText, { fontSize: 13, fontWeight: 500 }]}>
-                        BRUFFEN 100MG 1X10 TAB
+                        {product?.productName}
                     </AppText>
                 </View>
 
-                <AppText style={[CommonStyle.secondaryText, { fontSize: 11 }]}>10106555</AppText>
+                <AppText style={[CommonStyle.secondaryText, { fontSize: 11, maxWidth: "35%" }]}> {product?.productCode}</AppText>
             </View>
         </View>
     );
@@ -154,16 +159,17 @@ const Type3Card = ({ productLabel, isSpecial }) => {
    REUSABLE COMPONENTS
 ------------------------------------------------------- */
 
-const Header = ({ productLabel }) => (
+const Header = ({ productLabel, productName, productCode }) => (
     <View style={[CommonStyle.SpaceBetween, { alignItems: "flex-end" }]}>
-        <View style={{ gap: 6 }}>
+        <View style={{ gap: 6, maxWidth: "65%" }}>
             <AppText style={[CommonStyle.secondaryText, { fontSize: 11 }]}>{productLabel}</AppText>
             <AppText style={[CommonStyle.primaryText, { fontSize: 13, fontWeight: 500 }]}>
-                BRUFFEN 100MG 1X10 TAB
+                {productName}
             </AppText>
         </View>
-
-        <AppText style={[CommonStyle.secondaryText, { fontSize: 11 }]}>10106555</AppText>
+        <View style={{ maxWidth: "35%" }}>
+            <AppText style={[CommonStyle.secondaryText, { fontSize: 11 }]}>{productCode}</AppText>
+        </View>
     </View>
 );
 
@@ -186,7 +192,7 @@ const InfoRow = ({ leftItems = [], rightContent = null }) => (
 
 /* --------------------------- DATE ROW --------------------------- */
 
-const DatePickerRow = () => (
+const DatePickerRow = ({ handleAction }) => (
     <View style={styles.dateSection}>
         <DatePicker label="Start Date" />
         <DatePicker label="End Date" />
@@ -205,19 +211,26 @@ const DatePicker = ({ label }) => (
 
 /* --------------------------- SUPPLY MODE --------------------------- */
 
-const SupplyMode = () => (
-    <View style={styles.section}>
-        <AppText style={[CommonStyle.secondaryText, { fontSize: 12, marginBottom: 10 }]}>
-            Supply Mode
-        </AppText>
+const SupplyMode = ({ handleAction }) => {
+    const [selected, setSelected] = useState("Net Rate")
+    const handleSelect = (name) => {
+        setSelected(name);
+        handleAction?.("supllyMode", name);
+    }
+    return (
+        <View style={styles.section}>
+            <AppText style={[CommonStyle.secondaryText, { fontSize: 12, marginBottom: 10 }]}>
+                Supply Mode
+            </AppText>
 
-        <View style={styles.supplyModeOptions}>
-            <RadioOption label="Net Rate" selected />
-            <RadioOption label="Chargeback" />
-            <RadioOption label="Mixed" />
+            <View style={styles.supplyModeOptions}>
+                <RadioOption label="Net Rate" selected={selected == "Net Rate"} onSelect={() => handleSelect("Net Rate")} />
+                <RadioOption label="Chargeback" selected={selected == "Chargeback"} onSelect={() => handleSelect("Chargeback")} />
+                <RadioOption label="Mixed" selected={selected == "Mixed"} onSelect={() => handleSelect("Mixed")} />
+            </View>
         </View>
-    </View>
-);
+    )
+};
 
 export default ProductCard;
 

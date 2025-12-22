@@ -79,6 +79,19 @@ export const getRCStatus = async () => {
   }
 };
 
+export const getRCFilter = async () => {
+  try {
+    const response = await apiClient.get(
+      "/rate-contract/rc/filter",
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
 
 
 

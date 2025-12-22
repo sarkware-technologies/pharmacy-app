@@ -10,21 +10,27 @@ import Delete from "../../../../components/icons/Delete";
 import Svg, { Path } from "react-native-svg";
 import RadioOption from "../../../../components/view/RadioOption";
 import CustomCheckbox from "../../../../components/view/checkbox";
+import CustomDropdown from "../../../../components/view/customDropdown";
+import { useRef } from "react";
 
-const RcItem = ({ product = {}, type = 1 }) => {
+const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = false }) => {
     return (
         <View style={styles.productCard}>
-            <View style={styles.productHeader}>
-                <CustomCheckbox activeColor="#F7941E" size={14} title={<AppText style={styles.productName}>Agarwal Maternity General hospital</AppText>} />
-
-            </View>
-            <View style={styles.productHeader}>
-                <AppText style={styles.productName}>Agarwal Maternity General hospital</AppText>
+            <View style={[CommonStyle.SpaceBetween, { alignItems: "flex-start" }]}>
+                <View >
+                    {multiSelect && (
+                        <View style={{ marginBottom: 8 }}>
+                            <CustomCheckbox activeColor="#F7941E" size={14} title={<AppText style={styles.productName}>Agarwal Maternity General hospital</AppText>} />
+                        </View>
+                    )}
+                    <View style={{ marginBottom: 6, }}>
+                        <AppText style={[styles.productName, { fontSize: 14 }]}>Agarwal Maternity General hospital</AppText>
+                    </View>
+                </View>
                 <TouchableOpacity onPress={() => { }}>
                     <Svg width="13" height="15" viewBox="0 0 13 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <Path d="M11.5 2.83333L11.0867 9.51667C10.9813 11.224 10.9287 12.078 10.5 12.692C10.2884 12.9954 10.0159 13.2515 9.7 13.444C9.062 13.8333 8.20667 13.8333 6.496 13.8333C4.78267 13.8333 3.926 13.8333 3.28667 13.4433C2.97059 13.2505 2.69814 12.9939 2.48667 12.69C2.05867 12.0753 2.00667 11.22 1.904 9.51L1.5 2.83333M0.5 2.83333H12.5M9.204 2.83333L8.74867 1.89467C8.44667 1.27067 8.29533 0.959333 8.03467 0.764667C7.97676 0.721544 7.91545 0.683195 7.85133 0.65C7.56267 0.5 7.216 0.5 6.52333 0.5C5.81267 0.5 5.45733 0.5 5.16333 0.656C5.09834 0.690807 5.03635 0.730945 4.978 0.776C4.71467 0.978 4.56733 1.30133 4.27267 1.94733L3.86867 2.83333" stroke="#909090" strokeLinecap="round" strokeLinejoin="round" />
                     </Svg>
-
                 </TouchableOpacity>
             </View>
 
@@ -46,10 +52,22 @@ const RcItem = ({ product = {}, type = 1 }) => {
                     <View style={styles.productInputRow}>
                         <View style={styles.inputGroup}>
                             <AppText style={[styles.inputLabel]}>Special Price Type</AppText>
-                            <TouchableOpacity style={styles.dropdown}>
-                                <AppText style={styles.dropdownText}>Discount on PTR</AppText>
-                                <Icon name="arrow-drop-down" size={20} color={colors.text} />
-                            </TouchableOpacity>
+                            <CustomDropdown
+                                dref={useRef(null)}
+                                data={specialPriceType}
+                                // value={value?.specialType?.value}
+                                onChange={(e) => {
+                                    const selected = specialPriceType.find(
+                                        (s) => s.value === e
+                                    );
+                                    // handleAction?.("specialType", selected);
+                                }}
+                            >
+                                <View style={styles.dropdown}>
+                                    <AppText style={styles.dropdownText}>Discount on PTR</AppText>
+                                    <Icon name="arrow-drop-down" size={20} color={colors.text} />
+                                </View>
+                            </CustomDropdown>
                         </View>
 
                         <View style={styles.inputGroupSmall}>
@@ -167,7 +185,7 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     productName: {
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: '500',
         color: colors.text,
     },

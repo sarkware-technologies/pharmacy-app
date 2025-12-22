@@ -73,13 +73,14 @@ export const bulkUpdateProductDiscounts = async (productIds, doctorDiscount, hos
     }
 };
 
-export const getProductsByDistributorAndCustomer = async (
+export const getProductsByDistributorAndCustomer = async ({
     pageNo = 1,
     pageSize = 10,
     search = "",
     customerIds = [],
-    distributorIds = []
-) => {
+    distributorIds = [],
+    specialPriceTypeIds = [],
+}) => {
     try {
         const payload = {
             pageNo,
@@ -89,8 +90,10 @@ export const getProductsByDistributorAndCustomer = async (
         if (customerIds?.length > 0) payload.customerIds = customerIds;
         if (distributorIds?.length > 0) payload.distributorIds = distributorIds;
 
-        const trimmedSearch = search?.trim();
-        if (trimmedSearch) payload.search = trimmedSearch;
+        if (search) payload.search = search;
+
+        if (specialPriceTypeIds?.length > 0)
+            payload.specialPriceTypeIds = specialPriceTypeIds;
 
         const response = await apiClient.post(
             "/rate-contract/rc/products-by-distributor-and-customer",
