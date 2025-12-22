@@ -8,7 +8,7 @@ import { store } from './src/redux/store';
 import AppNavigator from './src/navigation/AppNavigator';
 import NoInternetScreen from './src/components/NoInternetscreen';
 import SplashScreen from './src/components/SplashScreen';
-
+import { requestAllPermissions } from './src/utils/permissions';
 
 import './GlobalFont';
 
@@ -16,15 +16,54 @@ const App = () => {
     const navigationRef = useRef(null);
     const [isConnected, setIsConnected] = useState(true);
     const [checking, setChecking] = useState(true);
+    const [permissionsRequested, setPermissionsRequested] = useState(false);
 
     useEffect(() => {
+        // Request permissions at app startup (sequentially)
+        const requestPermissions = async () => {
+            try {
+                // Show splash screen while requesting permissions
+                console.log('Starting permission requests...');
+                
+                // Request permissions one by one
+                const permissions = await requestAllPermissions();
+                
+                console.log('All permissions requested. Status:', permissions);
+                
+                // Wait a bit to ensure all permission dialogs are closed
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Mark permissions as requested
+                setPermissionsRequested(true);
+            } catch (error) {
+                console.error('Error requesting permissions:', error);
+                // Even if there's an error, continue with app
+                setPermissionsRequested(true);
+            }
+        };
+
+        // Start permission requests
+        requestPermissions();
+
+        // Check network connectivity
         const unsubscribe = NetInfo.addEventListener(state => {
             setIsConnected(state.isConnected);
-            setTimeout(() => setChecking(false), 1500);
         });
 
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        // Once permissions are requested, wait a bit then hide splash screen
+        // This ensures the app doesn't freeze and all permission dialogs are closed
+        if (permissionsRequested) {
+            const timer = setTimeout(() => {
+                console.log('Hiding splash screen, starting app...');
+                setChecking(false);
+            }, 1500);
+            return () => clearTimeout(timer);
+        }
+    }, [permissionsRequested]);
 
 
     if (checking) {

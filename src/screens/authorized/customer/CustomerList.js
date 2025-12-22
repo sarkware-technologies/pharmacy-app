@@ -28,7 +28,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Icon from 'react-native-vector-icons/Ionicons';
 import { WebView } from 'react-native-webview';
 import { colors } from '../../../styles/colors';
-import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useRoute, useNavigation, DrawerActions } from '@react-navigation/native';
 
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -61,6 +61,8 @@ import { customerAPI } from '../../../api/customer';
 import { SkeletonList } from '../../../components/SkeletonLoader';
 import { AppText, AppInput } from "../../../components"
 import Toast from 'react-native-toast-message';
+import { checkStoragePermission, requestStoragePermission } from '../../../utils/permissions';
+import ReactNativeBlobUtil from 'react-native-blob-util';
 import { handleOnboardCustomer } from '../../../utils/customerNavigationHelper';
 import PermissionWrapper from "../../../utils/RBAC/permissionWrapper"
 import PERMISSIONS from "../../../utils/RBAC/permissionENUM"
@@ -408,11 +410,36 @@ const CustomerList = ({ navigation: navigationProp }) => {
     }, [navigation])
   );
 
+  // Clean up documents modal when screen loses focus (to prevent overlay from staying visible)
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        // Cleanup: Close modal when screen loses focus
+        setShowDocumentsModal(false);
+        setShowPreviewInDocumentsModal(false);
+        setPreviewModalVisible(false);
+        setSelectedDocumentForPreview(null);
+        setPreviewSignedUrl(null);
+        setIsFullScreenPreview(false);
+      };
+    }, [])
+  );
+
   // Fetch tab counts and refresh list whenever the customer tab becomes active (screen is focused)
   useFocusEffect(
     React.useCallback(() => {
       console.log('🔄 Customer tab is active - fetching tab counts');
       dispatch(fetchTabCounts());
+      
+      // Ensure modal is closed when screen comes into focus (in case it was left open)
+      if (showDocumentsModal) {
+        setShowDocumentsModal(false);
+        setShowPreviewInDocumentsModal(false);
+        setPreviewModalVisible(false);
+        setSelectedDocumentForPreview(null);
+        setPreviewSignedUrl(null);
+        setIsFullScreenPreview(false);
+      }
       
       // Refresh the customer list when screen comes into focus (after navigating back from CustomerDetail)
       // Only refresh if we were previously focused (to avoid refreshing on initial mount)
@@ -640,11 +667,11 @@ const CustomerList = ({ navigation: navigationProp }) => {
     }
   }, [listLoading, customers.length, activeTab]);
 
-  // Handle reset to "all" tab when returning from search - Hard Refresh
+  // Handle refresh when returning from search - Preserve current tab instead of resetting to "all"
   useFocusEffect(
     React.useCallback(() => {
       if (shouldResetToAllTab) {
-        console.log('🔄 Hard refresh triggered from CustomerSearch');
+        console.log('🔄 Refresh triggered from CustomerSearch - preserving current tab:', activeTab);
         
         // Set hard refreshing flag to show loading and prevent stale data
         setIsHardRefreshing(true);
@@ -656,28 +683,69 @@ const CustomerList = ({ navigation: navigationProp }) => {
         // Clear Redux customers list completely
         dispatch(resetCustomersList());
         
-        // Force reset to "all" tab immediately (this will trigger useEffect, but ref will prevent it)
-        setActiveTab('all');
+        // DON'T reset to "all" tab - keep the current activeTab
+        // The activeTab is already set, so we just need to refresh its data
         currentTabForDataRef.current = null; // Clear ref to prevent showing stale data
         
-        // Force fetch "all" tab data immediately (hard refresh)
-        const payload = {
-          page: 1,
-          limit: 10,
-          isLoadMore: false,
-          isStaging: false,
-          typeCode: [],
-          categoryCode: [],
-          subCategoryCode: [],
-          sortBy: '',
-          sortDirection: 'ASC',
-          isAll:true
-        };
-        
-        console.log('🔄 Fetching "all" tab data with payload:', payload);
-        dispatch(fetchCustomersList(payload));
+        // Force fetch current tab's data immediately (hard refresh)
+        // Use the same logic as the initial tab load
+        if (activeTab === 'all') {
+          const payload = {
+            page: 1,
+            limit: 10,
+            isLoadMore: false,
+            isStaging: false,
+            typeCode: [],
+            categoryCode: [],
+            subCategoryCode: [],
+            sortBy: '',
+            sortDirection: 'ASC',
+            isAll:true
+          };
+          console.log('🔄 Fetching "all" tab data with payload:', payload);
+          dispatch(fetchCustomersList(payload));
+        } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
+          const statusIds = getStatusIdsForTab(activeTab);
+          const payload = {
+            page: 1,
+            limit: 10,
+            isLoadMore: false,
+            isStaging: true,
+            statusIds: statusIds
+          };
+          if (activeTab === 'waitingForApproval') {
+            payload.filter = getFilterValue(activeFilterButton);
+          }
+          if (activeTab === 'draft') {
+            payload.filter = 'NEW';
+          }
+          console.log(`🔄 Fetching "${activeTab}" tab data with payload:`, payload);
+          dispatch(fetchCustomersList(payload));
+        } else if (activeTab === 'doctorSupply') {
+          const statusIds = getStatusIdsForTab(activeTab);
+          const payload = {
+            page: 1,
+            limit: 10,
+            isLoadMore: false,
+            isStaging: false,
+            statusIds: statusIds,
+            customerGroupId: 1
+          };
+          console.log(`🔄 Fetching "${activeTab}" tab data with payload:`, payload);
+          dispatch(fetchCustomersList(payload));
+        } else {
+          const statusIds = getStatusIdsForTab(activeTab);
+          const payload = {
+            page: 1,
+            limit: 10,
+            isLoadMore: false,
+            statusIds: statusIds
+          };
+          console.log(`🔄 Fetching "${activeTab}" tab data with payload:`, payload);
+          dispatch(fetchCustomersList(payload));
+        }
       }
-    }, [shouldResetToAllTab, dispatch])
+    }, [shouldResetToAllTab, activeTab, activeFilterButton, dispatch])
   );
 
   // Clear hard refreshing flag when loading completes
@@ -692,9 +760,12 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
 
 
-  // Handle search with debounce
+  // Handle search with debounce - now includes activeTab to search within current tab
   useEffect(() => {
-
+    // Only perform search if searchText is not empty
+    if (!searchText || searchText.trim() === '') {
+      return;
+    }
 
     const delayDebounceFn = setTimeout(() => {
       dispatch(resetCustomersList());
@@ -774,9 +845,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
     return () => clearTimeout(delayDebounceFn);
 
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchText, dispatch]); // Only trigger on search text change, not on tab change
+  }, [searchText, activeTab, dispatch]); // Now includes activeTab - search within current tab
 
   // Refresh function
   const onRefresh = async () => {
@@ -1177,84 +1247,182 @@ const CustomerList = ({ navigation: navigationProp }) => {
     }
   };
 
-  // Download document - using WebView to trigger automatic download
-  const [downloadWebViewUrl, setDownloadWebViewUrl] = useState(null);
-  const downloadWebViewRef = useRef(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  const downloadDocument = async (doc) => {
-    if (!doc || !doc.s3Path) {
-      Alert.alert('Info', 'Document not available for download');
+  // Helper function to get MIME type from file extension
+  const getMimeType = (extension) => {
+    const mimeTypes = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'bmp': 'image/bmp',
+      'webp': 'image/webp',
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'mp4': 'video/mp4',
+      'mov': 'video/quicktime',
+      'avi': 'video/x-msvideo',
+      'mkv': 'video/x-matroska',
+      '3gp': 'video/3gpp',
+    };
+    return mimeTypes[extension.toLowerCase()] || 'application/octet-stream';
+  };
+
+  const downloadDocument = async (docInfo) => {
+    // Prevent multiple simultaneous downloads
+    if (isDownloading) {
+      Toast.show({
+        type: 'info',
+        text1: 'Download in progress',
+        text2: 'Please wait for the current download to complete',
+        position: 'bottom',
+      });
       return;
     }
 
     try {
-      const response = await customerAPI.getDocumentSignedUrl(doc.s3Path);
-      if (response?.data?.signedUrl) {
-        let signedUrl = response.data.signedUrl;
-        const fileName = doc.fileName || doc.doctypeName || 'document';
+      // Set downloading state without causing modal to re-render
+      setIsDownloading(true);
+      
+      // Small delay to ensure modal state is stable before starting download
+      await new Promise(resolve => setTimeout(resolve, 50));
 
-        // Add download parameter to force download
-        const separator = signedUrl.includes('?') ? '&' : '?';
-        const downloadUrl = `${signedUrl}${separator}response-content-disposition=attachment${fileName ? `; filename="${encodeURIComponent(fileName)}"` : ''}`;
+      if (!docInfo?.s3Path) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Document not available',
+          position: 'bottom',
+        });
+        setIsDownloading(false);
+        return;
+      }
 
-        if (Platform.OS === 'android') {
-          try {
-            // Check Android version - Android 10+ doesn't need WRITE_EXTERNAL_STORAGE
-            const androidVersion = Platform.Version;
-            let hasPermission = true;
+      // Check and request storage permission
+      if (Platform.OS === 'android') {
+        let hasPermission = await checkStoragePermission();
+        if (!hasPermission) {
+          console.log('Storage permission not granted, requesting...');
+          hasPermission = await requestStoragePermission();
+        }
 
-            if (androidVersion < 29) {
-              const granted = await PermissionsAndroid.request(
-                PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-                {
-                  title: 'Storage Permission',
-                  message: 'App needs access to storage to download files',
-                  buttonNeutral: 'Ask Me Later',
-                  buttonNegative: 'Cancel',
-                  buttonPositive: 'OK',
-                }
-              );
-              hasPermission = granted === PermissionsAndroid.RESULTS.GRANTED;
-            }
-
-            if (hasPermission) {
-              // Use WebView to trigger download
-              setDownloadWebViewUrl(downloadUrl);
-              
-              Toast.show({
-                type: 'success',
-                text1: 'Download Started',
-                text2: `${fileName} is being downloaded`,
-                position: 'bottom',
-              });
-            } else {
-              Alert.alert('Permission Denied', 'Storage permission is required to download files');
-            }
-          } catch (err) {
-            console.error('Download error:', err);
-            // Fallback: use WebView
-            setDownloadWebViewUrl(downloadUrl);
-            Toast.show({
-              type: 'info',
-              text1: 'Download',
-              text2: 'Download initiated',
-              position: 'bottom',
-            });
-          }
-        } else {
-          // For iOS, use WebView to trigger download
-          setDownloadWebViewUrl(downloadUrl);
+        if (!hasPermission) {
+          // Use Toast instead of Alert to prevent modal from closing
           Toast.show({
-            type: 'success',
-            text1: 'Download Started',
-            text2: `${fileName} is being downloaded`,
+            type: 'error',
+            text1: 'Permission Denied',
+            text2: 'Storage permission is required. Please grant permission in settings.',
             position: 'bottom',
+            visibilityTime: 4000,
+            onPress: () => Linking.openSettings(),
           });
+          setIsDownloading(false);
+          return;
         }
       }
+
+      // 1️⃣ Get signed URL
+      const response = await customerAPI.getDocumentSignedUrl(docInfo.s3Path);
+      const signedUrl = response?.data?.signedUrl;
+
+      if (!signedUrl) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to get download link',
+          position: 'bottom',
+        });
+        setIsDownloading(false);
+        return;
+      }
+
+      // 2️⃣ Prepare file name and determine save location
+      const fileName = docInfo.fileName || docInfo.doctypeName || 'document';
+      const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
+      
+      // Determine if it's an image/video (for gallery visibility)
+      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(fileExtension);
+      const isVideo = ['mp4', 'mov', 'avi', 'mkv', '3gp'].includes(fileExtension);
+      
+      // Get appropriate directory
+      let dirs = ReactNativeBlobUtil.fs.dirs;
+      let downloadPath;
+      
+      if (Platform.OS === 'android') {
+        if (isImage) {
+          // Save images to Pictures folder (visible in gallery)
+          downloadPath = dirs.PictureDir;
+        } else if (isVideo) {
+          // Save videos to Movies folder (visible in gallery)
+          downloadPath = dirs.MovieDir || dirs.DownloadDir;
+        } else {
+          // Save other files to Downloads folder
+          downloadPath = dirs.DownloadDir;
+        }
+      } else {
+        // iOS - use DocumentDirectory
+        downloadPath = dirs.DocumentDir;
+      }
+
+      const filePath = `${downloadPath}/${fileName}`;
+
+      console.log('📥 Starting download...');
+      console.log('📥 File:', fileName);
+      console.log('📥 Save path:', filePath);
+      console.log('📥 Signed URL:', signedUrl.substring(0, 100) + '...');
+
+      // Show loading toast
+      Toast.show({
+        type: 'info',
+        text1: 'Downloading...',
+        text2: fileName,
+        position: 'bottom',
+      });
+
+      // 3️⃣ Download file using react-native-blob-util
+      const downloadTask = ReactNativeBlobUtil.config({
+        fileCache: false, // Don't cache when using download manager
+        path: filePath,
+        addAndroidDownloads: {
+          useDownloadManager: true,
+          notification: true,
+          title: fileName,
+          description: 'Downloading file...',
+          mime: getMimeType(fileExtension),
+          mediaScannable: true, // Make file visible in gallery
+          path: filePath, // Explicit path for download manager
+        },
+      });
+
+      const res = await downloadTask.fetch('GET', signedUrl);
+
+      console.log('✅ Download completed');
+      console.log('✅ File saved to:', res.path());
+
+      // Show success message
+      Toast.show({
+        type: 'success',
+        text1: 'Download Complete',
+        text2: `${fileName} saved successfully`,
+        position: 'bottom',
+      });
+
     } catch (error) {
-      console.error('Error downloading document:', error);
-      Alert.alert('Error', 'Failed to download document');
+      console.error('Download error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Download Failed',
+        text2: error.message || 'Failed to download file',
+        position: 'bottom',
+      });
+      // Don't show Alert.alert as it can cause modal to close - use Toast instead
+    } finally {
+      // Always reset downloading state
+      setIsDownloading(false);
     }
   };
 
@@ -2028,12 +2196,34 @@ const CustomerList = ({ navigation: navigationProp }) => {
           <View style={styles.customerInfo}>
             <View style={styles.infoRow}>
               <AddrLine color="#999" />
-              <AppText style={styles.infoText}>{item.customerCode || item.stgCustomerId}</AppText>
+              <AppText 
+                style={[styles.infoText, { maxWidth: 80 }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.customerCode || item.stgCustomerId}
+              </AppText>
               <AppText style={styles.divider}>|</AppText>
-              {item.cityName && (<><AppText style={styles.infoText}>{item.cityName}</AppText>
-                <AppText style={styles.divider}>|</AppText></>)}
+              {item.cityName && (
+                <>
+                  <AppText 
+                    style={[styles.infoText, { maxWidth: 100 }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.cityName}
+                  </AppText>
+                  <AppText style={styles.divider}>|</AppText>
+                </>
+              )}
 
-              <AppText style={styles.infoText}>{item.groupName}</AppText>
+              <AppText 
+                style={[styles.infoText, { maxWidth: 80 }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.groupName}
+              </AppText>
               <AppText style={styles.divider}>|</AppText>
               <AppText
                 style={[styles.infoText, { flex: 1, maxWidth: 80 }]}
@@ -2216,10 +2406,13 @@ const CustomerList = ({ navigation: navigationProp }) => {
   // Documents Modal - Shows all documents for a customer
   const DocumentsModal = () => {
     const handleClose = () => {
+      // Clean up all modal state
       setShowDocumentsModal(false);
       setShowPreviewInDocumentsModal(false);
+      setPreviewModalVisible(false);
       setSelectedDocumentForPreview(null);
       setPreviewSignedUrl(null);
+      setIsFullScreenPreview(false);
     };
 
     const handleOverlayPress = (e) => {
@@ -2236,24 +2429,29 @@ const CustomerList = ({ navigation: navigationProp }) => {
       setPreviewSignedUrl(null);
     };
 
+    // Don't render if modal is not visible
+    if (!showDocumentsModal) {
+      return null;
+    }
+
     return (
       <Modal
         visible={showDocumentsModal}
         transparent
         animationType="slide"
         onRequestClose={handleClose}
+        statusBarTranslucent={true}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={handleOverlayPress}
-          disabled={showPreviewInDocumentsModal}
-        >
+        <View style={styles.modalOverlay}>
           <TouchableOpacity 
             activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
+            onPress={handleOverlayPress}
+            disabled={showPreviewInDocumentsModal}
+            style={StyleSheet.absoluteFill}
+          />
+          <View 
             style={styles.documentsModalContent}
-            pointerEvents="auto"
+            pointerEvents="box-none"
           >
           {showPreviewInDocumentsModal ? (
             // Show preview inside the modal - full screen document view
@@ -2319,7 +2517,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.previewActionButton}
-                          onPress={() => downloadDocument(selectedDocumentForPreview)}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            downloadDocument(selectedDocumentForPreview);
+                          }}
                         >
                           <Download width={20} color={colors.primary} />
                         </TouchableOpacity>
@@ -2344,7 +2545,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
                       <View style={styles.previewActions}>
                         <TouchableOpacity
                           style={styles.previewActionButton}
-                          onPress={() => downloadDocument(selectedDocumentForPreview)}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            downloadDocument(selectedDocumentForPreview);
+                          }}
                         >
                           <Download width={20} color={colors.primary} />
                         </TouchableOpacity>
@@ -2397,7 +2601,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.documentActionButtonSmall}
-                          onPress={() => downloadDocument(customerDocuments.gstDoc)}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            downloadDocument(customerDocuments.gstDoc);
+                          }}
                         >
                           <Download width={16} color={colors.primary} />
                         </TouchableOpacity>
@@ -2429,7 +2636,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.documentActionButtonSmall}
-                          onPress={() => downloadDocument(customerDocuments.panDoc)}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            downloadDocument(customerDocuments.panDoc);
+                          }}
                         >
                           <Download width={16} color={colors.primary} />
                         </TouchableOpacity>
@@ -2464,12 +2674,15 @@ const CustomerList = ({ navigation: navigationProp }) => {
                         >
                           <EyeOpen width={18} color={colors.primary} />
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.documentActionButton}
-                          onPress={() => downloadDocument(doc)}
-                        >
-                          <Download width={18} color={colors.primary} />
-                        </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.documentActionButton}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              downloadDocument(doc);
+                            }}
+                          >
+                            <Download width={18} color={colors.primary} />
+                          </TouchableOpacity>
                       </View>
                     </View>
                   </View>
@@ -2483,8 +2696,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
           )}
           </>
           )}
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     );
   };
@@ -2898,7 +3111,11 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+          <TouchableOpacity onPress={() => {
+            // Use DrawerActions to open drawer from nested navigation
+            // This works from any screen in the navigation hierarchy
+            navigation.dispatch(DrawerActions.openDrawer());
+          }}>
             <Menu />
           </TouchableOpacity>
           <AppText style={styles.headerTitle}>Customers</AppText>
@@ -3089,7 +3306,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
         <View style={styles.searchContainer}>
           <TouchableOpacity
             style={styles.searchBar}
-            onPress={() => navigation.navigate('CustomerStack', { screen: 'CustomerSearchMain' })}
+            onPress={() => navigation.navigate('CustomerStack', { 
+              screen: 'CustomerSearchMain',
+              params: { activeTab: activeTab } // Pass current active tab to search screen
+            })}
             activeOpacity={0.7}
           >
             <Search color="#999" />
@@ -3198,44 +3418,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
         <DocumentsModal />
         <DocumentPreviewModal />
 
-        {/* Hidden WebView for automatic downloads */}
-        {downloadWebViewUrl && (
-          <WebView
-            ref={downloadWebViewRef}
-            source={{ uri: downloadWebViewUrl }}
-            style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
-            onShouldStartLoadWithRequest={(request) => {
-              // Allow the download to proceed
-              return true;
-            }}
-            onLoadEnd={() => {
-              // Reset after a short delay to allow download to start
-              setTimeout(() => {
-                setDownloadWebViewUrl(null);
-              }, 2000);
-            }}
-            onError={(syntheticEvent) => {
-              const { nativeEvent } = syntheticEvent;
-              console.error('WebView error:', nativeEvent);
-              setDownloadWebViewUrl(null);
-            }}
-            // Android download handler - this triggers the download manager
-            onFileDownload={(request) => {
-              // Download request received
-              console.log('Download request:', request);
-              // The download should start automatically
-              setTimeout(() => {
-                setDownloadWebViewUrl(null);
-              }, 1000);
-            }}
-            // iOS - downloads are handled automatically
-            allowsInlineMediaPlayback={true}
-            mediaPlaybackRequiresUserAction={false}
-            // Enable downloads
-            allowsBackForwardNavigationGestures={false}
-            startInLoadingState={false}
-          />
-        )}
 
         <FilterModal
           visible={filterModalVisible}
