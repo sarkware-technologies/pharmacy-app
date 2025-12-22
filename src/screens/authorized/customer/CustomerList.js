@@ -410,36 +410,13 @@ const CustomerList = ({ navigation: navigationProp }) => {
     }, [navigation])
   );
 
-  // Clean up documents modal when screen loses focus (to prevent overlay from staying visible)
-  useFocusEffect(
-    React.useCallback(() => {
-      return () => {
-        // Cleanup: Close modal when screen loses focus
-        setShowDocumentsModal(false);
-        setShowPreviewInDocumentsModal(false);
-        setPreviewModalVisible(false);
-        setSelectedDocumentForPreview(null);
-        setPreviewSignedUrl(null);
-        setIsFullScreenPreview(false);
-      };
-    }, [])
-  );
-
   // Fetch tab counts and refresh list whenever the customer tab becomes active (screen is focused)
   useFocusEffect(
     React.useCallback(() => {
       console.log('🔄 Customer tab is active - fetching tab counts');
       dispatch(fetchTabCounts());
       
-      // Ensure modal is closed when screen comes into focus (in case it was left open)
-      if (showDocumentsModal) {
-        setShowDocumentsModal(false);
-        setShowPreviewInDocumentsModal(false);
-        setPreviewModalVisible(false);
-        setSelectedDocumentForPreview(null);
-        setPreviewSignedUrl(null);
-        setIsFullScreenPreview(false);
-      }
+      // Don't close documents modal on focus - let user control it explicitly
       
       // Refresh the customer list when screen comes into focus (after navigating back from CustomerDetail)
       // Only refresh if we were previously focused (to avoid refreshing on initial mount)
@@ -1248,6 +1225,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
   };
 
   const [isDownloading, setIsDownloading] = useState(false);
+  
+  // Download document - using WebView to trigger automatic download
+  const [downloadWebViewUrl, setDownloadWebViewUrl] = useState(null);
+  const downloadWebViewRef = useRef(null);
 
   // Helper function to get MIME type from file extension
   const getMimeType = (extension) => {
@@ -1283,6 +1264,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
       });
       return;
     }
+
+    // Store these in outer scope for WebView fallback
+    let downloadSignedUrl = null;
+    let downloadFileName = null;
 
     try {
       // Set downloading state without causing modal to re-render
@@ -1342,6 +1327,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
       // 2️⃣ Prepare file name and determine save location
       const fileName = docInfo.fileName || docInfo.doctypeName || 'document';
+      
+      // Store these in outer scope for WebView fallback
+      downloadSignedUrl = signedUrl;
+      downloadFileName = fileName;
       const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
       
       // Determine if it's an image/video (for gallery visibility)
@@ -1398,10 +1387,60 @@ const CustomerList = ({ navigation: navigationProp }) => {
         },
       });
 
-      const res = await downloadTask.fetch('GET', signedUrl);
+      // Add timeout and better error handling for release builds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Download timeout after 60 seconds')), 60000);
+      });
 
-      console.log('✅ Download completed');
-      console.log('✅ File saved to:', res.path());
+      const downloadPromise = downloadTask.fetch('GET', signedUrl, {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      });
+
+      const res = await Promise.race([downloadPromise, timeoutPromise]);
+
+      // Check if download was successful
+      if (!res || !res.path()) {
+        throw new Error('Download failed: No file path returned');
+      }
+
+      const savedPath = res.path();
+
+      // Verify file exists (especially important in release builds)
+      const fileExists = await ReactNativeBlobUtil.fs.exists(savedPath);
+      if (!fileExists) {
+        // If file doesn't exist, try WebView fallback for release builds
+        console.log('File not found, trying WebView fallback...');
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body>
+              <script>
+                (function() {
+                  try {
+                    const link = document.createElement('a');
+                    link.href = '${downloadSignedUrl}';
+                    link.download = '${downloadFileName}';
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.ReactNativeWebView.postMessage('DOWNLOAD_STARTED');
+                  } catch (error) {
+                    window.ReactNativeWebView.postMessage('DOWNLOAD_ERROR: ' + error.message);
+                  }
+                })();
+              </script>
+            </body>
+          </html>
+        `;
+        setDownloadWebViewUrl(htmlContent);
+        setIsDownloading(false);
+        return;
+      }
 
       // Show success message
       Toast.show({
@@ -1413,16 +1452,77 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
     } catch (error) {
       console.error('Download error:', error);
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      
+      // Try WebView fallback on error (especially for release builds)
+      console.log('Trying WebView fallback due to error...');
+      try {
+        // Get signed URL again if not already available
+        let fallbackSignedUrl = downloadSignedUrl;
+        let fallbackFileName = downloadFileName;
+        
+        if (!fallbackSignedUrl) {
+          const fallbackResponse = await customerAPI.getDocumentSignedUrl(docInfo.s3Path);
+          fallbackSignedUrl = fallbackResponse?.data?.signedUrl;
+          fallbackFileName = docInfo.fileName || docInfo.doctypeName || 'document';
+        }
+        
+        if (fallbackSignedUrl) {
+          const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              </head>
+              <body>
+                <script>
+                  (function() {
+                    try {
+                      const link = document.createElement('a');
+                      link.href = '${fallbackSignedUrl}';
+                      link.download = '${fallbackFileName}';
+                      link.target = '_blank';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      window.ReactNativeWebView.postMessage('DOWNLOAD_STARTED');
+                    } catch (error) {
+                      window.ReactNativeWebView.postMessage('DOWNLOAD_ERROR: ' + error.message);
+                    }
+                  })();
+                </script>
+              </body>
+            </html>
+          `;
+          setDownloadWebViewUrl(htmlContent);
+          setIsDownloading(false);
+          return;
+        }
+      } catch (webViewError) {
+        console.error('WebView fallback also failed:', webViewError);
+      }
+      
+      // More specific error messages
+      let errorMessage = 'Failed to download file';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.toString && error.toString() !== '[object Object]') {
+        errorMessage = error.toString();
+      }
+
       Toast.show({
         type: 'error',
         text1: 'Download Failed',
-        text2: error.message || 'Failed to download file',
+        text2: errorMessage,
         position: 'bottom',
+        visibilityTime: 5000,
       });
-      // Don't show Alert.alert as it can cause modal to close - use Toast instead
-    } finally {
-      // Always reset downloading state
       setIsDownloading(false);
+    } finally {
+      // Only reset if not using WebView fallback
+      if (!downloadWebViewUrl) {
+        setIsDownloading(false);
+      }
     }
   };
 
@@ -2406,18 +2506,21 @@ const CustomerList = ({ navigation: navigationProp }) => {
   // Documents Modal - Shows all documents for a customer
   const DocumentsModal = () => {
     const handleClose = () => {
-      // Clean up all modal state
-      setShowDocumentsModal(false);
-      setShowPreviewInDocumentsModal(false);
-      setPreviewModalVisible(false);
-      setSelectedDocumentForPreview(null);
-      setPreviewSignedUrl(null);
-      setIsFullScreenPreview(false);
+      // Only close if preview is not active and not downloading - prevent accidental closes
+      if (!showPreviewInDocumentsModal && !isDownloading) {
+        // Clean up all modal state
+        setShowDocumentsModal(false);
+        setShowPreviewInDocumentsModal(false);
+        setPreviewModalVisible(false);
+        setSelectedDocumentForPreview(null);
+        setPreviewSignedUrl(null);
+        setIsFullScreenPreview(false);
+      }
     };
 
     const handleOverlayPress = (e) => {
-      // Prevent closing when preview is shown
-      if (!showPreviewInDocumentsModal) {
+      // Prevent closing when preview is shown or downloading
+      if (!showPreviewInDocumentsModal && !isDownloading) {
         e.stopPropagation();
         handleClose();
       }
@@ -2439,134 +2542,34 @@ const CustomerList = ({ navigation: navigationProp }) => {
         visible={showDocumentsModal}
         transparent
         animationType="slide"
-        onRequestClose={handleClose}
+        onRequestClose={() => {
+          // Only allow closing via back button if not previewing or downloading
+          if (!showPreviewInDocumentsModal && !isDownloading) {
+            handleClose();
+          }
+        }}
         statusBarTranslucent={true}
       >
         <View style={styles.modalOverlay}>
           <TouchableOpacity 
             activeOpacity={1}
             onPress={handleOverlayPress}
-            disabled={showPreviewInDocumentsModal}
+            disabled={showPreviewInDocumentsModal || isDownloading}
             style={StyleSheet.absoluteFill}
           />
           <View 
             style={styles.documentsModalContent}
             pointerEvents="box-none"
           >
-          {showPreviewInDocumentsModal ? (
-            // Show preview inside the modal - full screen document view
-            <View style={styles.previewContainerInModal}>
-              {/* Close button overlay */}
-              <TouchableOpacity 
-                onPress={handleBackFromPreview} 
-                style={styles.previewCloseButton}
-              >
-                <View style={styles.previewCloseButtonCircle}>
-                  <Icon name="close" size={24} color="#000" />
-                </View>
-              </TouchableOpacity>
-
-              {previewLoading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color={colors.primary} />
-                  <AppText style={styles.loadingText}>Loading document...</AppText>
-                </View>
-              ) : (() => {
-                const isImageFile = selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpg') ||
-                  selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpeg') ||
-                  selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.png');
-                
-                return previewSignedUrl && isImageFile ? (
-                  <ScrollView 
-                    style={styles.previewScrollContainer}
-                    contentContainerStyle={styles.previewScrollContent}
-                    showsVerticalScrollIndicator={true}
-                  >
-                    <View style={styles.previewImageWrapper}>
-                      <TouchableOpacity
-                        activeOpacity={1}
-                        onPress={() => {
-                          // Show full screen preview in a separate modal even when inside DocumentsModal
-                          setPreviewModalVisible(true);
-                          setIsFullScreenPreview(true);
-                        }}
-                        style={styles.imagePreviewTouchable}
-                      >
-                        <ZoomableImage
-                          imageUri={previewSignedUrl}
-                          containerWidth={width * 0.95 - 32}
-                          containerHeight={height * 0.65}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                    
-                    {/* Filename and actions */}
-                    <View style={styles.previewDocumentInfo}>
-                      <AppText style={styles.previewFileName} numberOfLines={1}>
-                        {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
-                      </AppText>
-                      <View style={styles.previewActions}>
-                        <TouchableOpacity
-                          style={styles.previewActionButton}
-                          onPress={() => {
-                            setPreviewModalVisible(true);
-                            setIsFullScreenPreview(true);
-                          }}
-                        >
-                          <EyeOpen width={20} color={colors.primary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.previewActionButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            downloadDocument(selectedDocumentForPreview);
-                          }}
-                        >
-                          <Download width={20} color={colors.primary} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </ScrollView>
-                ) : previewSignedUrl ? (
-                  <ScrollView 
-                    style={styles.previewScrollContainer}
-                    contentContainerStyle={styles.previewScrollContent}
-                  >
-                    <View style={styles.documentPreviewPlaceholder}>
-                      <Icon name="document-text-outline" size={64} color="#999" />
-                      <AppText style={styles.documentPreviewText}>{selectedDocumentForPreview?.fileName}</AppText>
-                    </View>
-                    
-                    {/* Filename and actions */}
-                    <View style={styles.previewDocumentInfo}>
-                      <AppText style={styles.previewFileName} numberOfLines={1}>
-                        {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
-                      </AppText>
-                      <View style={styles.previewActions}>
-                        <TouchableOpacity
-                          style={styles.previewActionButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            downloadDocument(selectedDocumentForPreview);
-                          }}
-                        >
-                          <Download width={20} color={colors.primary} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </ScrollView>
-                ) : null;
-              })()}
-            </View>
-          ) : (
-            <>
-            {/* Header - only show when not in preview mode */}
-            <View style={styles.documentsModalHeader}>
-              <AppText style={styles.documentsModalTitle}>All Documents</AppText>
-              <TouchableOpacity onPress={handleClose}>
-                <CloseCircle />
-              </TouchableOpacity>
-            </View>
+            {/* Documents List - Always visible, but dimmed when preview is shown */}
+            <View style={[styles.documentsListWrapper, showPreviewInDocumentsModal && styles.documentsListDimmed]}>
+              {/* Header */}
+              <View style={styles.documentsModalHeader}>
+                <AppText style={styles.documentsModalTitle}>All Documents</AppText>
+                <TouchableOpacity onPress={handleClose}>
+                  <CloseCircle />
+                </TouchableOpacity>
+              </View>
 
           {loadingDocuments ? (
             <View style={styles.loadingContainer}>
@@ -2686,16 +2689,124 @@ const CustomerList = ({ navigation: navigationProp }) => {
                       </View>
                     </View>
                   </View>
-                ))}
-            </ScrollView>
-          ) : (
-            <View style={styles.noDocumentsContainer}>
-              <Icon name="document-outline" size={48} color="#ccc" />
-              <AppText style={styles.noDocumentsText}>No documents available</AppText>
+                  ))}
+                </ScrollView>
+              ) : (
+                <View style={styles.noDocumentsContainer}>
+                  <Icon name="document-outline" size={48} color="#ccc" />
+                  <AppText style={styles.noDocumentsText}>No documents available</AppText>
+                </View>
+              )}
             </View>
-          )}
-          </>
-          )}
+
+            {/* Image Preview Overlay - Shows on top of documents modal */}
+            {showPreviewInDocumentsModal && (
+              <View style={styles.previewOverlayContainer}>
+                <View style={styles.previewOverlayContent}>
+                  {/* Close button */}
+                  <TouchableOpacity 
+                    onPress={handleBackFromPreview} 
+                    style={styles.previewCloseButton}
+                  >
+                    <View style={styles.previewCloseButtonCircle}>
+                      <Icon name="close" size={24} color="#000" />
+                    </View>
+                  </TouchableOpacity>
+
+                  {previewLoading ? (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="large" color={colors.primary} />
+                      <AppText style={styles.loadingText}>Loading document...</AppText>
+                    </View>
+                  ) : (() => {
+                    const isImageFile = selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpg') ||
+                      selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpeg') ||
+                      selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.png');
+                    
+                    return previewSignedUrl && isImageFile ? (
+                      <ScrollView 
+                        style={styles.previewScrollContainer}
+                        contentContainerStyle={styles.previewScrollContent}
+                        showsVerticalScrollIndicator={true}
+                      >
+                        <View style={styles.previewImageWrapper}>
+                          <TouchableOpacity
+                            activeOpacity={1}
+                            onPress={() => {
+                              // Show full screen preview in a separate modal even when inside DocumentsModal
+                              setPreviewModalVisible(true);
+                              setIsFullScreenPreview(true);
+                            }}
+                            style={styles.imagePreviewTouchable}
+                          >
+                            <ZoomableImage
+                              imageUri={previewSignedUrl}
+                              containerWidth={width * 0.95 - 32}
+                              containerHeight={height * 0.65}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                        
+                        {/* Filename and actions */}
+                        <View style={styles.previewDocumentInfo}>
+                          <AppText style={styles.previewFileName} numberOfLines={1}>
+                            {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
+                          </AppText>
+                          <View style={styles.previewActions}>
+                            <TouchableOpacity
+                              style={styles.previewActionButton}
+                              onPress={() => {
+                                setPreviewModalVisible(true);
+                                setIsFullScreenPreview(true);
+                              }}
+                            >
+                              <EyeOpen width={20} color={colors.primary} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.previewActionButton}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                downloadDocument(selectedDocumentForPreview);
+                              }}
+                            >
+                              <Download width={20} color={colors.primary} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </ScrollView>
+                    ) : previewSignedUrl ? (
+                      <ScrollView 
+                        style={styles.previewScrollContainer}
+                        contentContainerStyle={styles.previewScrollContent}
+                      >
+                        <View style={styles.documentPreviewPlaceholder}>
+                          <Icon name="document-text-outline" size={64} color="#999" />
+                          <AppText style={styles.documentPreviewText}>{selectedDocumentForPreview?.fileName}</AppText>
+                        </View>
+                        
+                        {/* Filename and actions */}
+                        <View style={styles.previewDocumentInfo}>
+                          <AppText style={styles.previewFileName} numberOfLines={1}>
+                            {selectedDocumentForPreview?.fileName || selectedDocumentForPreview?.doctypeName}
+                          </AppText>
+                          <View style={styles.previewActions}>
+                            <TouchableOpacity
+                              style={styles.previewActionButton}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                downloadDocument(selectedDocumentForPreview);
+                              }}
+                            >
+                              <Download width={20} color={colors.primary} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </ScrollView>
+                    ) : null;
+                  })()}
+                </View>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -3692,6 +3803,78 @@ const CustomerList = ({ navigation: navigationProp }) => {
           </View>
         </Modal>
 
+        {/* Hidden WebView for automatic downloads */}
+        {downloadWebViewUrl && (
+          <WebView
+            ref={downloadWebViewRef}
+            source={{ html: downloadWebViewUrl }}
+            style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+            onMessage={(event) => {
+              const message = event.nativeEvent.data;
+              console.log('WebView message:', message);
+              if (message === 'DOWNLOAD_STARTED') {
+                console.log('✅ Download started successfully');
+                Toast.show({
+                  type: 'success',
+                  text1: 'Download Started',
+                  text2: 'File is being downloaded',
+                  position: 'bottom',
+                });
+                setTimeout(() => {
+                  setDownloadWebViewUrl(null);
+                }, 2000);
+              } else if (message && message.startsWith('DOWNLOAD_ERROR')) {
+                console.error('Download failed:', message);
+                Toast.show({
+                  type: 'error',
+                  text1: 'Download Failed',
+                  text2: 'Failed to download document. Please try again.',
+                  position: 'bottom',
+                });
+                setDownloadWebViewUrl(null);
+              }
+            }}
+            onShouldStartLoadWithRequest={(request) => {
+              console.log('WebView loading request:', request.url);
+              // Allow navigation to download URL
+              return true;
+            }}
+            onLoadStart={() => {
+              console.log('WebView started loading:', downloadWebViewUrl.substring(0, 100));
+            }}
+            onLoadEnd={() => {
+              console.log('WebView finished loading');
+              // Reset after a delay to allow download to start
+              setTimeout(() => {
+                setDownloadWebViewUrl(null);
+              }, 10000);
+            }}
+            onError={(syntheticEvent) => {
+              const { nativeEvent } = syntheticEvent;
+              console.error('WebView error:', nativeEvent);
+              setDownloadWebViewUrl(null);
+            }}
+            // Android download handler - this triggers the download manager
+            onFileDownload={(request) => {
+              // Download request received - Android will handle this automatically
+              console.log('✅ Download request received in onFileDownload');
+              console.log('Download URL:', request.url);
+              
+              // Show success message
+              Toast.show({
+                type: 'success',
+                text1: 'Download Started',
+                text2: 'File is being downloaded',
+                position: 'bottom',
+              });
+              
+              setTimeout(() => {
+                setDownloadWebViewUrl(null);
+              }, 3000);
+            }}
+          />
+        )}
+
       </View>
     </SafeAreaView>
   );
@@ -4528,6 +4711,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  documentsListWrapper: {
+    flex: 1,
+    width: '100%',
+  },
+  documentsListDimmed: {
+    opacity: 0.3,
+  },
+  previewOverlayContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    zIndex: 1000,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewOverlayContent: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: '#fff',
+    position: 'relative',
   },
   previewContainerInModal: {
     flex: 1,

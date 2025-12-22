@@ -518,10 +518,30 @@ const CustomerSearch = ({ navigation, route }) => {
         },
       });
 
-      const res = await downloadTask.fetch('GET', signedUrl);
+      // Add timeout and better error handling for release builds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Download timeout after 60 seconds')), 60000);
+      });
 
-      console.log('✅ Download completed');
-      console.log('✅ File saved to:', res.path());
+      const downloadPromise = downloadTask.fetch('GET', signedUrl, {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      });
+
+      const res = await Promise.race([downloadPromise, timeoutPromise]);
+
+      // Check if download was successful
+      if (!res || !res.path()) {
+        throw new Error('Download failed: No file path returned');
+      }
+
+      const savedPath = res.path();
+
+      // Verify file exists (especially important in release builds)
+      const fileExists = await ReactNativeBlobUtil.fs.exists(savedPath);
+      if (!fileExists) {
+        throw new Error('Download failed: File was not saved');
+      }
 
       // Show success message
       Toast.show({
@@ -533,13 +553,23 @@ const CustomerSearch = ({ navigation, route }) => {
 
     } catch (error) {
       console.error('Download error:', error);
+      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      
+      // More specific error messages
+      let errorMessage = 'Failed to download file';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.toString && error.toString() !== '[object Object]') {
+        errorMessage = error.toString();
+      }
+
       Toast.show({
         type: 'error',
         text1: 'Download Failed',
-        text2: error.message || 'Failed to download file',
+        text2: errorMessage,
         position: 'bottom',
+        visibilityTime: 5000,
       });
-      Alert.alert('Error', `Download failed: ${error.message || 'Unknown error'}`);
     } finally {
       // Always reset downloading state
       setIsDownloading(false);
