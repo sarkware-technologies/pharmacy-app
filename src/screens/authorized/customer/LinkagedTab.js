@@ -539,8 +539,10 @@ export const LinkagedTab = ({
 
     // Fetch latest draft data when LinkagedTab is clicked/visible
     // This populates requested divisions and linked distributors from draft
-    await fetchLatestDraftData();
 
+     if (!instanceIdFromDetails) {
+    await fetchLatestDraftData();
+     }
     // Fetch data based on the tab clicked
     if (tabName === 'divisions') {
       console.log('instanceId', instanceId);
@@ -552,6 +554,9 @@ export const LinkagedTab = ({
       setDistributorsDataFetched(true);
       shouldFetchPreferredDistributorsRef.current = true;
     } else if (tabName === 'field' && !fieldDataFetched) {
+
+      console.log("section is working");
+      
       // Reset pagination when switching to field tab
       setFieldTeamPage(1);
       setFieldTeamHasMore(true);
@@ -663,125 +668,112 @@ export const LinkagedTab = ({
     });
   }, [preferredSearchText, preferredDistributorsData, linkedDistributorIds]);
 
-  // Function to fetch divisions data
-  const fetchDivisionsData = useCallback(async () => {
-    // if (divisionsDataFetched || !effectiveCustomerId) {
-    //   return;
-    // }
 
-    try {
-      setDivisionsLoading(true);
-      setDivisionsError(null);
 
-      let customerDivisionsResponse;
-      let allDivisionsResponse;
 
-      // Determine if customer is active: check customerCode (not null and not empty) or statusName === 'ACTIVE'
-      // Explicitly exclude PENDING customers
-      const isPendingCustomer = selectedCustomer?.statusName === 'PENDING';
-      const hasCustomerCode = selectedCustomer?.customerCode != null && selectedCustomer?.customerCode !== '';
-      const isActiveCustomer = !isPendingCustomer && (hasCustomerCode || selectedCustomer?.statusName === 'ACTIVE');
+const fetchDivisionsData = useCallback(async () => {
+  setDivisionsLoading(true);
+  setDivisionsError(null);
 
-      // Fetch customer's linked divisions ONLY for active customers (not pending)
-      // Always fetch if active customer, regardless of activeSubTab (since divisions tab is default)
-      if (isActiveCustomer && effectiveCustomerId) {
-        console.log('Fetching customer divisions for active customer');
-        try {
-          customerDivisionsResponse = await customerAPI.getCustomerDivisions(effectiveCustomerId);
-          console.log('customerDivisionsResponse', customerDivisionsResponse);
-        } catch (error) {
-          console.error('Error fetching customer divisions:', error);
-          // Don't throw, just log - we'll handle empty data
-        }
+  // Safe defaults
+  let customerDivisionsResponse = { data: [] };
+  let allDivisionsResponse = { data: { divisions: [] } };
+
+  try {
+    // ------------------------------------
+    // Determine customer state
+    // ------------------------------------
+    const isPendingCustomer = selectedCustomer?.statusName === 'PENDING';
+    const hasCustomerCode =
+      selectedCustomer?.customerCode !== null &&
+      selectedCustomer?.customerCode !== '';
+
+    const isActiveCustomer =
+      !isPendingCustomer &&
+      (hasCustomerCode || selectedCustomer?.statusName === 'ACTIVE');
+
+    // ------------------------------------
+    // 1️⃣ Have Customer Code → fetch opened divisions
+    // ------------------------------------
+    if (hasCustomerCode && effectiveCustomerId) {
+      try {
+        customerDivisionsResponse =
+          await customerAPI.getCustomerDivisions(effectiveCustomerId);
+      } catch (err) {
+        console.error('getCustomerDivisions failed:', err);
+        customerDivisionsResponse = { data: [] }; // fallback
       }
-
-      // Fetch all divisions - for active customers, fetch even if instance is empty
-      if (Object.keys(instance).length !== 0 || isActiveCustomer) {
-        allDivisionsResponse = await customerAPI.getAllDivisions();
-      }
-
-      let openedDivisions = [];
-      let otherDivisions = [];
-
-      // Process customer's linked divisions (opened) - ONLY for active customers (not pending)
-      console.log('Processing opened divisions - isActiveCustomer:', isActiveCustomer);
-      console.log('customerDivisionsResponse:', customerDivisionsResponse);
-
-      if (
-        isActiveCustomer &&
-        customerDivisionsResponse?.data &&
-        Array.isArray(customerDivisionsResponse.data)
-      ) {
-        openedDivisions = customerDivisionsResponse.data;
-        console.log('openedDivisions from API:', openedDivisions);
-
-        // For active customers, opened divisions should also show in "Requested" column
-        // Format opened divisions to match the structure needed for mergedRequestedDivisions
-        const formattedOpenedDivisions = openedDivisions.map(div => ({
-          divisionId: div.divisionId || div.id,
-          divisionCode: div.divisionCode || '',
-          divisionName: div.divisionName || '',
-          isOpen: div.isOpen !== undefined ? div.isOpen : false,
-        }));
-
-        // Merge with existing mergedRequestedDivisions (from props or draft)
-        // Use functional update to get current state and avoid dependency issues
-        setMergedRequestedDivisions(prevMerged => {
-          // Create a map to avoid duplicates
-          const existingDivisionsMap = new Map();
-
-          // First, add existing divisions from current mergedRequestedDivisions
-          prevMerged.forEach(div => {
-            const key = String(div.divisionId || div.id);
-            existingDivisionsMap.set(key, div);
-          });
-
-          // Then, add/update with opened divisions (opened divisions take precedence)
-          formattedOpenedDivisions.forEach(div => {
-            const key = String(div.divisionId || div.id);
-            existingDivisionsMap.set(key, div);
-          });
-
-          // Return merged data
-          return Array.from(existingDivisionsMap.values());
-        });
-      } else {
-        // For non-active customers (including pending), clear opened divisions
-        openedDivisions = [];
-      }
-
-      // Process all available divisions and filter out already linked ones
-      if (
-        allDivisionsResponse?.data?.divisions &&
-        Array.isArray(allDivisionsResponse.data.divisions)
-      ) {
-        const linkedDivisionIds = openedDivisions.map(d =>
-          Number(d.divisionId),
-        );
-        otherDivisions = allDivisionsResponse.data.divisions.filter(
-          d => !linkedDivisionIds.includes(Number(d.divisionId)),
-        );
-      }
-
-      // Only set opened divisions data for active customers
-      // For pending or other non-active customers, explicitly set to empty array
-      if (isActiveCustomer) {
-        setOpenedDivisionsData(openedDivisions);
-      } else {
-        setOpenedDivisionsData([]);
-      }
-      setOtherDivisionsData(otherDivisions);
-      setDivisionsDataFetched(true);
-    } catch (error) {
-      setDivisionsError(error.message);
-      setOtherDivisionsData([]);
-      setOpenedDivisionsData([]);
-    } finally {
-      setDivisionsLoading(false);
     }
 
+    // ------------------------------------
+    // 2️⃣ Instance exists → fetch all divisions
+    // ------------------------------------
+    if (instance && Object.keys(instance).length > 0) {
+      try {
+        allDivisionsResponse = await customerAPI.getAllDivisions();
+      } catch (err) {
+        console.error('getAllDivisions failed:', err);
+        allDivisionsResponse = { data: { divisions: [] } }; // fallback
+      }
+    }
 
-  }, [activeSubTab, effectiveCustomerId, instance, selectedCustomer]);
+    // ------------------------------------
+    // Opened divisions (hasCustomerCode only)
+    // ------------------------------------
+    const openedDivisions = hasCustomerCode &&
+      Array.isArray(customerDivisionsResponse.data)
+      ? customerDivisionsResponse.data
+      : [];
+
+    // ------------------------------------
+    // Other divisions (from all divisions)
+    // ------------------------------------
+    const allDivisions = Array.isArray(
+      allDivisionsResponse?.data?.divisions,
+    )
+      ? allDivisionsResponse.data.divisions
+      : [];
+
+    const linkedDivisionIds = openedDivisions.map(d =>
+      Number(d.divisionId),
+    );
+
+    const otherDivisions = allDivisions.filter(
+      d => !linkedDivisionIds.includes(Number(d.divisionId)),
+    );
+
+    // ------------------------------------
+    // FINAL STATE SETTING (VERY IMPORTANT)
+    // ------------------------------------
+    if (hasCustomerCode) {
+      // ✅ ACTIVE customer
+      setOpenedDivisionsData(openedDivisions);
+
+      // ❌ No requested divisions for active customer
+      setMergedRequestedDivisions([]);
+    } else {
+      // ❌ NON-ACTIVE / PENDING customer
+      setOpenedDivisionsData([]);
+      // requested divisions handled elsewhere (draft / props)
+    }
+
+    setOtherDivisionsData(otherDivisions);
+    setDivisionsDataFetched(true);
+
+  } catch (err) {
+    // Only unexpected JS errors reach here
+    console.error('Unexpected error in fetchDivisionsData:', err);
+    setDivisionsError(err.message);
+    setOpenedDivisionsData([]);
+    setOtherDivisionsData([]);
+    setMergedRequestedDivisions([]);
+  } finally {
+    setDivisionsLoading(false);
+  }
+}, [effectiveCustomerId, instance, selectedCustomer]);
+
+  console.log(openedDivisionsData);
+  
 
   // Fetch divisions data on component mount (since it's the default tab)
   // Also trigger when customerCode or statusName changes for active customers
@@ -794,6 +786,9 @@ export const LinkagedTab = ({
     if (!effectiveCustomerId) {
       return;
     }
+
+    console.log("working field");
+    
 
     // Determine isStaging based on customer status
     // If customer is active (customerCode not null or statusName === 'ACTIVE'), isStaging=false, else isStaging=true

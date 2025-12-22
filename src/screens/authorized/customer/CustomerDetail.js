@@ -551,13 +551,16 @@ const CustomerDetail = ({ navigation, route }) => {
 
   // Get customer name for header
   const getCustomerName = () => {
-    if (selectedCustomer?.clinicName) {
+    if (selectedCustomer?.name) {
+      return selectedCustomer?.name;
+    } else if (selectedCustomer?.generalDetails?.customerName) {
+      return selectedCustomer.generalDetails.customerName;
+    } 
+    else if (selectedCustomer?.clinicName) {
       return selectedCustomer?.clinicName;
     } else if (selectedCustomer?.generalDetails?.ownerName) {
       return `${selectedCustomer.generalDetails.ownerName}`;
-    } else if (selectedCustomer?.generalDetails?.customerName) {
-      return selectedCustomer.generalDetails.customerName;
-    } else if (customer?.customerName) {
+    }else if (customer?.customerName) {
       return customer.customerName;
     }
     return 'Customer Details';
