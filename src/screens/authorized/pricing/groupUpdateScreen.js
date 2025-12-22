@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -33,14 +33,35 @@ import SuccessModal from "./model/successModal"
 import DiscountModal from "./model/discountModal"
 import DiscountPreviousModal from "./model/discountPreviousModal"
 import LinkDistributorModal from "./model/linkedDistributors"
+import { getRCFilter } from '../../../api/rate-contract';
+import { getProductsByDistributorAndCustomer } from '../../../api/product';
+import { SkeletonList } from '../../../components/SkeletonLoader';
+import SelectRC from './model/selectRC';
+import UpdateAll from "./components/updateAll"
 
 
 const GroupUpdateScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { selectProduct, selectProductOld, selectProductNew, selectedCustomers, groupType, rcAction } = route.params || {};
+
+    const {
+        selectProduct,
+        selectProductOld,
+        selectProductNew,
+        selectedCustomers,
+        groupType,
+        rcAction,
+    } = route.params || {};
 
     const [quickApproval, setQuickApproval] = useState(false);
+    const [selectedCustomerList, setselectedCustomerList] = useState(selectedCustomers);
+    const [showRCselection, setShowRCselection] = useState(false);
+    const [specialPriceType, setSpecialPriceType] = useState([]);
+
+    const [buldkUpdate, setBuldkUpdate] = useState({ specialType: {} });
+
+
+    console.log(selectProductOld, 402389)
     const TITLE_MAP = {
         addNew: "Add Products",
         productSwapping: "Product Swapping",
@@ -50,6 +71,112 @@ const GroupUpdateScreen = () => {
     };
 
     const title = TITLE_MAP[groupType] || "No page found";
+
+    const [rcFilter, setRcFilter] = useState(null);
+    const [filter, setFilter] = useState(null);
+
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(20);
+    const [search, setSearch] = useState();
+
+    const [rcList, setRcList] = useState();
+    const [isLoading, setIsLoading] = useState(false);
+    const getGroupDetails = useCallback(async () => {
+        try {
+            const response = await getRCFilter();
+            setRcFilter(response);
+
+            const specialPriceTypeId = response?.specialPriceType
+                ?.find((e) => e?.priceType === "Discount on PTR")
+                ?.id;
+
+            if (specialPriceTypeId && title == "Product Swapping") {
+                setFilter({ specialPriceTypeIds: [specialPriceTypeId] });
+            }
+        } catch (error) {
+            console.error("Error fetching RC filter:", error);
+        }
+    }, []);
+
+    const getDistributorProduct = useCallback(async (pageNo, pageSize, filter, search) => {
+        setIsLoading(true);
+        try {
+            const response = await getProductsByDistributorAndCustomer({
+                pageNo,
+                pageSize,
+                specialPriceTypeIds: filter?.specialPriceTypeIds || [],
+                search
+            });
+
+            console.log("Distributor products:", response);
+        } catch (error) {
+            console.error("Error fetching distributor products:", error);
+        }
+        finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+
+    useEffect(() => {
+        getGroupDetails();
+    }, [getGroupDetails]);
+
+    useEffect(() => {
+        const shouldFetch =
+            title !== "Product Swapping" ||
+            filter?.specialPriceTypeIds?.length;
+
+        if (shouldFetch) {
+            getDistributorProduct(page, limit, filter, search);
+        }
+    }, [title, filter, page, limit, getDistributorProduct, search]);
+
+    const _fetchFixedPrice = () => {
+        const specialPriceTypeId = rcFilter?.specialPriceType?.find((e) => e?.priceType === "Fixed Price")?.id;
+        setFilter((prev) => {
+            return { ...prev, ...{ specialPriceTypeIds: [specialPriceTypeId] } }
+        });
+    }
+    const handleAction = (action, value) => {
+        console.log(action, 2983742)
+        if (action == "selectRc") {
+            setShowRCselection(true)
+        }
+
+    }
+
+    const handleUpdate = (action, value) => {
+        setBuldkUpdate((prev) => ({
+            ...prev,
+            [action]: value,
+        }));
+    };
+
+
+    useEffect(() => {
+        if (!rcFilter?.specialPriceType?.length) return;
+
+        const list = rcFilter.specialPriceType
+            .map((e) => ({
+                label: e.priceType,
+                value: e.id,
+            }))
+            .sort((a, b) => a.value - b.value);
+
+        const defaultItem = list.find(
+            (e) => e.label === "Discount on PTR"
+        );
+
+        setSpecialPriceType(list);
+
+        if (defaultItem) {
+            setBuldkUpdate((prev) => ({
+                ...prev,
+                specialType: defaultItem,
+            }));
+        }
+    }, [rcFilter]);
 
 
 
@@ -62,30 +189,34 @@ const GroupUpdateScreen = () => {
                         <View style={[CommonStyle.SpaceBetween]}>
                             <BackButton />
                             <AppText style={CommonStyle.headerTitle}>{title}</AppText>
-                            <Button style={{ paddingVertical: 4, paddingHorizontal: 7, backgroundColor: "#f7f1e8", borderRadius: 5 }} >
-                                <AppText style={{ fontSize: 12, color: '#AE7017' }}>DRAFT</AppText>
-                            </Button>
+                            {groupType == 'productSwapping' && (
+                                <Button style={{ paddingVertical: 4, paddingHorizontal: 7, backgroundColor: "#f7f1e8", borderRadius: 5 }} >
+                                    <AppText style={{ fontSize: 12, color: '#AE7017' }}>DRAFT</AppText>
+                                </Button>
+                            )}
                         </View>
-                        <DownloadArrow />
+                        {groupType == 'addNew' && (
+                            <DownloadArrow specialPriceType={specialPriceType} />
+                        )}
 
                     </View>
                     {(groupType == 'productSwapping' || groupType == 'updateDiscount' || groupType == 'updateSupply' || groupType == 'quotation') && (
-                        <View style={{ paddingVertical: 15 }}>
+                        <View style={{ paddingVertical: 15, paddingBottom: 5 }}>
                             {groupType == 'productSwapping' && (
                                 <View >
-                                    <ProductCard type="2" productLabel={"OLD PRODUCT"} />
+                                    <ProductCard product={selectProductOld} type="2" productLabel={"OLD PRODUCT"} />
                                     <View style={{ display: "flex", alignItems: "center", marginVertical: -7 }}>
                                         <SwappingIcon />
                                     </View>
-                                    <ProductCard type="2" productLabel={"NEW PRODUCT"} isSpecial={true} />
+                                    <ProductCard product={selectProductNew} type="2" productLabel={"NEW PRODUCT"} isSpecial={true} />
                                 </View>
                             )}
                             {groupType == 'updateDiscount' && (
-                                <ProductCard type="2" />
+                                <ProductCard product={selectProduct} type="2" />
 
                             )}
                             {(groupType == 'updateSupply' || groupType == 'quotation') && (
-                                <ProductCard type="3" />
+                                <ProductCard product={selectProduct} type="3" />
 
                             )}
                         </View>
@@ -93,24 +224,44 @@ const GroupUpdateScreen = () => {
 
                 </View>
                 {groupType == 'addNew' && (
-                    <ProductCard type="1" />
+                    <ProductCard product={selectProduct} type="1" customerList={selectedCustomerList} handleAction={handleAction} />
+                )}
+
+                {groupType == 'updateDiscount' && (
+                    <UpdateAll specialPriceType={specialPriceType} handleAction={handleUpdate} value={buldkUpdate} />
                 )}
 
 
-                <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                    <View style={{ paddingBottom: 10 }}>
-                        <AppText style={[CommonStyle.primaryText, { fontSize: 16, fontWeight: 700, marginBottom: 7 }]}>RC's</AppText>
-                        <SearchBar />
-                        <View style={[{ paddingBottom: 10, }, CommonStyle.SpaceBetween]}>
-                            <CustomCheckbox activeColor="#F7941E" size={14} title={<AppText style={CommonStyle.primaryText}>All RC’s</AppText>} />
-                            <AppText style={{ color: "#F7941E", fontSize: 14 }}>Fetched Fixed Price</AppText>
+                <ScrollView contentContainerStyle={{ paddingBottom: 80 }} style={styles.content} showsVerticalScrollIndicator={false}>
+                    {isLoading ? <SkeletonList /> :
+
+                        <View style={{ paddingBottom: 10 }}>
+                            {title == "Add Products" && (
+                                <View style={{ marginTop: 15 }}>
+                                    <AppText style={[CommonStyle.primaryText, { fontSize: 16, fontWeight: 700, marginBottom: 7 }]}>RC's</AppText>
+                                </View>
+                            )}
+                            <SearchBar />
+                            <View style={[CommonStyle.SpaceBetween]}>
+                                {title != "Add Products" && (
+                                    <View style={{ paddingBottom: 10 }}>
+                                        <CustomCheckbox activeColor="#F7941E" size={14} title={<AppText style={CommonStyle.primaryText}>All RC’s</AppText>} />
+                                    </View>
+                                )}
+                                {title == "Product Swapping" && (
+                                    <TouchableOpacity style={{ paddingBottom: 10 }} onPress={() => _fetchFixedPrice()}>
+                                        <AppText style={{ color: "#F7941E", fontSize: 14 }}>Fetched Fixed Price</AppText>
+                                    </TouchableOpacity>
+                                )}
+
+                            </View>
+                            <RcItem multiSelect={groupType != 'addNew'} key={1} specialPriceType={specialPriceType} type={groupType == 'updateSupply' ? 2 : 1} />
+                            <RcItem multiSelect={groupType != 'addNew'} key={2} specialPriceType={specialPriceType} />
+                            <RcItem multiSelect={groupType != 'addNew'} key={3} specialPriceType={specialPriceType} />
+                            <RcItem multiSelect={groupType != 'addNew'} key={4} specialPriceType={specialPriceType} />
+                            <RcItem multiSelect={groupType != 'addNew'} key={5} specialPriceType={specialPriceType} />
                         </View>
-                        <RcItem type={groupType == 'updateSupply' ? 2 : 1} />
-                        <RcItem />
-                        <RcItem />
-                        <RcItem />
-                        <RcItem />
-                    </View>
+                    }
 
                 </ScrollView>
 
@@ -132,8 +283,9 @@ const GroupUpdateScreen = () => {
                 {/* <DiscountModal visible={quickApproval} onClose={() => setQuickApproval(false)} onPress={() => setQuickApproval(false)} /> */}
                 <LinkDistributorModal visible={quickApproval} onClose={() => setQuickApproval(false)} onPress={() => setQuickApproval(false)} />
 
+                <SelectRC selected={selectedCustomerList} onSelectCustomer={(e) => setselectedCustomerList(e)} visible={showRCselection} onClose={() => { setShowRCselection(false) }} />
 
-            </SafeAreaView>
+            </SafeAreaView >
         </>
     );
 };
@@ -150,21 +302,23 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 20,
         margin: -15,
-        marginBottom: 15
+        marginBottom: 15,
+        paddingBottom: 10
     },
     content: {
         flex: 1,
         backgroundColor: "#EDEDED",
-        paddingTop: 15,
+        paddingTop: 0,
     },
     footer: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
         backgroundColor: colors.white,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        margin: -15,
-        marginBottom: -25,
-        marginTop: 5
+        padding: 16,
     },
+
     lastSavedRow: {
         flexDirection: 'row',
         alignItems: 'center',

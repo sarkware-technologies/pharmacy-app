@@ -200,7 +200,7 @@ const RateContractList = () => {
         navigation.navigate('GroupUpdateScreen', { selectProduct, selectProductOld, selectProductNew: product, selectedCustomers, groupType, rcAction })
       }
     }
-    else if (groupType == "addNew") {
+    else if (groupType == "addNew" || groupType == "updateDiscount" || groupType == "updateSupply" || groupType == "quotation") {
       setSelectedProduct(product)
     }
 
@@ -219,7 +219,7 @@ const RateContractList = () => {
     clearState();
     setGroupType(type);
     setShowGroupupdate(false);
-    if (type == "addNew") {
+    if (type == "addNew" || type == "updateDiscount" || type == "updateSupply" || type == "quotation") {
       setShowSelectProduct(true)
     }
     else if (type == "productSwapping") {
@@ -230,7 +230,13 @@ const RateContractList = () => {
   const onRcClick = (action) => {
     setShowSelectProduct(false)
     setRcAction(action);
-    setShowRCselection(true);
+    if (action == "all") {
+      navigation.navigate('GroupUpdateScreen', { selectProduct, selectProductOld, selectProductNew, selectedCustomers: null, groupType, rcAction: action })
+    }
+    else {
+      setShowRCselection(true);
+    }
+
   }
 
   const handleSelectCustomer = (e) => {

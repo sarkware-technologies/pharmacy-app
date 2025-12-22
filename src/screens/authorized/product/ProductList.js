@@ -5,7 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  TextInput,  
+  TextInput,
   StatusBar,
   ActivityIndicator,
   RefreshControl,
@@ -38,7 +38,7 @@ import Bell from '../../../components/icons/Bell';
 import Search from '../../../components/icons/Search';
 import Filter from '../../../components/icons/Filter';
 import FilterModal from '../../../components/FilterModal';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from "../../../components"
 
 // Skeleton Loading Component
 const SkeletonProductCard = () => {
@@ -97,13 +97,13 @@ const SkeletonProductCard = () => {
 const ProductList = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const { 
-    products = [], 
-    loading, 
-    pagination, 
+  const {
+    products = [],
+    loading,
+    pagination,
     filters,
     selectedProducts,
-    bulkEditMode 
+    bulkEditMode
   } = useSelector(state => state.product || {});
 
   const [searchText, setSearchText] = useState('');
@@ -156,12 +156,12 @@ const ProductList = () => {
 
     try {
       // Use new rate contract API
-      const response = await getProductsByDistributorAndCustomer(1, pageSize);
-      
+      const response = await getProductsByDistributorAndCustomer({ pageNo: 1, pageSize: pageSize });
+
       if (response?.rcDetails) {
         const rcDetails = response.rcDetails || [];
         const total = response.total || 0;
-        
+
         setAllProducts(rcDetails);
         setTotalRecords(total);
         dispatch(setProducts(rcDetails));
@@ -191,12 +191,12 @@ const ProductList = () => {
 
     try {
       // Fetch from page 1 from scratch
-      const response = await getProductsByDistributorAndCustomer(1, pageSize);
-      
+      const response = await getProductsByDistributorAndCustomer({ pageNo: 1, pageSize: pageSize });
+
       if (response?.rcDetails) {
         const rcDetails = response.rcDetails || [];
         const total = response.total || 0;
-        
+
         // Set fresh data
         setAllProducts(rcDetails);
         setTotalRecords(total);
@@ -210,7 +210,7 @@ const ProductList = () => {
         // Calculate pagination
         const totalPages = Math.ceil(total / pageSize);
         setHasMoreData(1 < totalPages);
-        
+
         console.log('✅ Refresh complete - Page 1 loaded with', rcDetails.length, 'products');
       }
     } catch (error) {
@@ -234,8 +234,8 @@ const ProductList = () => {
     const nextPage = currentPage + 1;
 
     try {
-      const response = await getProductsByDistributorAndCustomer(nextPage, pageSize);
-      
+      const response = await getProductsByDistributorAndCustomer({ pageNo: nextPage, pageSize });
+
       if (response?.rcDetails) {
         const newProducts = response.rcDetails || [];
         const total = response.total || 0;
@@ -281,15 +281,15 @@ const ProductList = () => {
 
   const handleProductPress = (rateContractItem) => {
     const productId = rateContractItem.productId || rateContractItem.id;
-    
+
     if (bulkEditMode) {
       dispatch(toggleProductSelection(productId));
     } else {
       // Pass both the rate contract item and product details
-      dispatch(setSelectedProduct(rateContractItem));      
+      dispatch(setSelectedProduct(rateContractItem));
       navigation.getParent()?.navigate('ProductStack', {
         screen: 'ProductDetail',
-        params: { 
+        params: {
           product: rateContractItem,
           rateContractData: rateContractItem,
           productDetails: rateContractItem.productDetails,
@@ -304,7 +304,7 @@ const ProductList = () => {
       await updateProductStatus(product.productId, !product.isActive);
       const updatedProduct = { ...product, isActive: !product.isActive };
       dispatch(updateProduct(updatedProduct));
-      
+
       // Update local state
       const index = allProducts.findIndex(p => p.productId === product.productId);
       if (index !== -1) {
@@ -326,13 +326,13 @@ const ProductList = () => {
       Alert.alert('No Selection', 'Please select products to edit');
       return;
     }
-      navigation.getParent()?.navigate('ProductStack', {
-        screen: 'ProductBulkEdit',
-        params: { 
-          productIds: selectedProducts,
-          products: allProducts.filter(p => selectedProducts.includes(p.productId))
-        },
-      });
+    navigation.getParent()?.navigate('ProductStack', {
+      screen: 'ProductBulkEdit',
+      params: {
+        productIds: selectedProducts,
+        products: allProducts.filter(p => selectedProducts.includes(p.productId))
+      },
+    });
   };
 
   const handleSelectAll = () => {
@@ -366,7 +366,7 @@ const ProductList = () => {
     const productId = item.productId || item.id;
     const isSelected = selectedProducts && selectedProducts.includes(productId);
     const productDetails = item.productDetails || item;
-    
+
     return (
       <TouchableOpacity
         style={[styles.productCard, isSelected && styles.selectedCard]}
@@ -375,14 +375,14 @@ const ProductList = () => {
       >
         {bulkEditMode && (
           <View style={styles.checkboxContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => dispatch(toggleProductSelection(productId))}
               style={styles.checkbox}
             >
-              <Icon 
-                name={isSelected ? 'check-box' : 'check-box-outline-blank'} 
-                size={24} 
-                color={isSelected ? colors.primary : '#999'} 
+              <Icon
+                name={isSelected ? 'check-box' : 'check-box-outline-blank'}
+                size={24}
+                color={isSelected ? colors.primary : '#999'}
               />
             </TouchableOpacity>
           </View>
@@ -416,7 +416,7 @@ const ProductList = () => {
               {formatPrice((productDetails.ptr - productDetails.pts) || 0)}
             </AppText>
           </View>
-          <View style={{ ...styles.priceItem, alignItems: 'flex-end'}}>
+          <View style={{ ...styles.priceItem, alignItems: 'flex-end' }}>
             <AppText style={styles.priceLabel}>MRP</AppText>
             <AppText style={styles.priceValue}>{formatPrice(productDetails.mrp)}</AppText>
           </View>
@@ -456,127 +456,127 @@ const ProductList = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>      
-      
+    <SafeAreaView style={styles.container} edges={['top']}>
+
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      <View style={{flex: 1, backgroundColor: '#F8F9FA'}}>
+      <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
 
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.openDrawer()}>
-          <Menu />
-        </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Products</AppText>
-        <View style={styles.headerRight}>
-          <TouchableOpacity>
-            <Bell />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+            <Menu />
           </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Search />
-          <AppInput
-            style={styles.searchInput}
-            placeholder="Search by product name/code"
-            value={searchText}
-            onChangeText={handleSearch}
-            placeholderTextColor="#999"
-          />
-        </View>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setShowFilterModal(true)}
-        >
-          <Filter />
-        </TouchableOpacity>
-      </View>      
-
-      {bulkEditMode && (
-        <View style={styles.bulkEditBar}>
-          <TouchableOpacity onPress={handleSelectAll}>
-            <AppText style={styles.selectAllText}>
-              {selectedProducts.length === allProducts.length ? 'Deselect All' : 'Select All'}
-            </AppText>
-          </TouchableOpacity>
-          <AppText style={styles.selectedCount}>
-            {selectedProducts.length} selected
-          </AppText>
-          <TouchableOpacity onPress={handleBulkEdit}>
-            <AppText style={styles.bulkEditText}>Edit</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => dispatch(setBulkEditMode(false))}>
-            <Icon name="close" size={20} color="#666" />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <Animated.View
-        style={[
-          styles.listContainer,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-          },
-        ]}
-      >
-        {(loading || refreshing) && allProducts.length === 0 ? (
-          <FlatList
-            data={[1, 2, 3, 4, 5]}
-            renderItem={() => <SkeletonProductCard />}
-            keyExtractor={(item, index) => `skeleton-${index}`}
-            scrollEnabled={false}
-            contentContainerStyle={styles.skeletonContainer}
-          />
-        ) : listError && allProducts.length === 0 ? (
-          <View style={styles.errorContainer}>
-            <Icon name="error-outline" size={60} color="#EF4444" />
-            <AppText style={styles.errorTitle}>Unable to Load Products</AppText>
-            <AppText style={styles.errorMessage}>
-              {listError || 'Something went wrong. Please try again.'}
-            </AppText>
-            <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-              <Icon name="refresh" size={20} color="#fff" />
-              <AppText style={styles.retryButtonText}>Retry</AppText>
+          <AppText style={styles.headerTitle}>Products</AppText>
+          <View style={styles.headerRight}>
+            <TouchableOpacity>
+              <Bell />
             </TouchableOpacity>
           </View>
-        ) : allProducts.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Icon name="inventory" size={60} color="#9CA3AF" />
-            <AppText style={styles.emptyTitle}>No Products Found</AppText>
-            <AppText style={styles.emptyMessage}>
-              {searchText ? `No products match "${searchText}"` : 'No products available'}
-            </AppText>
-          </View>
-        ) : (
-          <FlatList
-            data={allProducts}
-            renderItem={renderProduct}
-            keyExtractor={keyExtractor}
-            contentContainerStyle={styles.listContent}
-            removeClippedSubviews={true}
-            maxToRenderPerBatch={20}
-            windowSize={20}
-            initialNumToRender={10}
-            updateCellsBatchingPeriod={50}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                colors={[colors.primary]}
-                tintColor={colors.primary}
-              />
-            }
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.3}
-            ListFooterComponent={renderFooter()}
-          />
-        )}
-      </Animated.View>
+        </View>
 
-      <FilterModal 
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Search />
+            <AppInput
+              style={styles.searchInput}
+              placeholder="Search by product name/code"
+              value={searchText}
+              onChangeText={handleSearch}
+              placeholderTextColor="#999"
+            />
+          </View>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowFilterModal(true)}
+          >
+            <Filter />
+          </TouchableOpacity>
+        </View>
+
+        {bulkEditMode && (
+          <View style={styles.bulkEditBar}>
+            <TouchableOpacity onPress={handleSelectAll}>
+              <AppText style={styles.selectAllText}>
+                {selectedProducts.length === allProducts.length ? 'Deselect All' : 'Select All'}
+              </AppText>
+            </TouchableOpacity>
+            <AppText style={styles.selectedCount}>
+              {selectedProducts.length} selected
+            </AppText>
+            <TouchableOpacity onPress={handleBulkEdit}>
+              <AppText style={styles.bulkEditText}>Edit</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => dispatch(setBulkEditMode(false))}>
+              <Icon name="close" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <Animated.View
+          style={[
+            styles.listContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+            },
+          ]}
+        >
+          {(loading || refreshing) && allProducts.length === 0 ? (
+            <FlatList
+              data={[1, 2, 3, 4, 5]}
+              renderItem={() => <SkeletonProductCard />}
+              keyExtractor={(item, index) => `skeleton-${index}`}
+              scrollEnabled={false}
+              contentContainerStyle={styles.skeletonContainer}
+            />
+          ) : listError && allProducts.length === 0 ? (
+            <View style={styles.errorContainer}>
+              <Icon name="error-outline" size={60} color="#EF4444" />
+              <AppText style={styles.errorTitle}>Unable to Load Products</AppText>
+              <AppText style={styles.errorMessage}>
+                {listError || 'Something went wrong. Please try again.'}
+              </AppText>
+              <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+                <Icon name="refresh" size={20} color="#fff" />
+                <AppText style={styles.retryButtonText}>Retry</AppText>
+              </TouchableOpacity>
+            </View>
+          ) : allProducts.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Icon name="inventory" size={60} color="#9CA3AF" />
+              <AppText style={styles.emptyTitle}>No Products Found</AppText>
+              <AppText style={styles.emptyMessage}>
+                {searchText ? `No products match "${searchText}"` : 'No products available'}
+              </AppText>
+            </View>
+          ) : (
+            <FlatList
+              data={allProducts}
+              renderItem={renderProduct}
+              keyExtractor={keyExtractor}
+              contentContainerStyle={styles.listContent}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={20}
+              windowSize={20}
+              initialNumToRender={10}
+              updateCellsBatchingPeriod={50}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                  colors={[colors.primary]}
+                  tintColor={colors.primary}
+                />
+              }
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.3}
+              ListFooterComponent={renderFooter()}
+            />
+          )}
+        </Animated.View>
+
+        <FilterModal
           visible={showFilterModal}
           onClose={() => setShowFilterModal(false)}
           onApply={handleApplyFilters}
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     marginBottom: 12,
-    padding: 16,    
+    padding: 16,
   },
   selectedCard: {
     borderColor: colors.primary,
@@ -717,14 +717,14 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   moqValue: {
-    fontSize: 14,    
+    fontSize: 14,
     color: '#999',
     fontWeight: '500'
   },
   priceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 0,    
+    paddingVertical: 0,
   },
   priceItem: {
     flex: 1,

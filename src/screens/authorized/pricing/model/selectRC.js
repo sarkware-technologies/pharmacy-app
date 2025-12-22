@@ -28,7 +28,7 @@ const SearchIcon = () => (
     </Svg>
 );
 
-const SelectRC = ({ visible, onClose, onSelectCustomer, showContinue = false }) => {
+const SelectRC = ({ visible, onClose, onSelectCustomer, showContinue = false, selected = [] }) => {
     const [selectedFilters, setSelectedFilters] = useState({
         stateIds: [],
         cityIds: [],
@@ -38,7 +38,7 @@ const SelectRC = ({ visible, onClose, onSelectCustomer, showContinue = false }) 
             setHasMore(true)
             setLoading(false)
             setSearchText('');
-            setSelectedCustomers([])
+            setSelectedCustomers(selected)
             loadCustomers(1, searchText, selectedFilters);
         }
     }, [visible]);
