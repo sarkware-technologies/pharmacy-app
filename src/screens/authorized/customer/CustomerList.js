@@ -1532,16 +1532,54 @@ const CustomerList = ({ navigation: navigationProp }) => {
     setApproveModalVisible(true);
   };
 
-  const handleApproveConfirm = async (comment) => {
-    console.log(selectedCustomerForAction, 'selectedCustomerForAction')
-    try {
 
+    const normalizeMappingIsApproved = (mapping = {}) =>
+    Object.fromEntries(
+      Object.entries(mapping).map(([key, list]) => [
+        key,
+        (list || []).map(item => ({
+          ...item,
+          isApproved:
+            item.isApproved !== undefined ? item.isApproved : true,
+        })),
+      ])
+    );
+
+
+  const handleApproveConfirm = async (comment) => {
+    try {
 
       const workflowId = selectedCustomerForAction?.workflowId || selectedCustomerForAction?.stgCustomerId;
       const instanceId = selectedCustomerForAction?.instaceId || selectedCustomerForAction?.instaceId;
       const actorId = loggedInUser?.userId || loggedInUser?.id;
       const parellGroupId = selectedCustomerForAction?.instance?.stepInstances[0]?.parallelGroup
       const stepOrderId = selectedCustomerForAction?.instance?.stepInstances[0]?.stepOrder
+
+  
+
+
+       const draftResponse = await customerAPI.getLatestDraft(instanceId, actorId);
+      
+            const latestDraft = draftResponse?.data;
+            let dataChanges;
+      
+            if (latestDraft.hasDraft) {
+              dataChanges = {
+                ...latestDraft.draftEdits,
+                mapping: normalizeMappingIsApproved(latestDraft.draftEdits?.mapping),
+              };
+            } else {
+              dataChanges = {
+                customerGroupId: selectedCustomerForAction?.customerGroupId,
+                distributors: [],
+                divisions: selectedCustomerForAction?.divisions,
+                mapping: normalizeMappingIsApproved(selectedCustomerForAction?.mapping),
+              };
+            }
+      
+            if (!latestDraft) {
+              throw new Error('Latest draft data not found');
+            }
 
       const actionDataPyaload = {
         stepOrder: stepOrderId,
@@ -1554,10 +1592,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           field: "status",
           newValue: "Approved"
         },
-        dataChanges: {
-          previousStatus: "Pending",
-          newStatus: "Approved"
-        }
+        dataChanges: dataChanges
       };
 
       const response = await customerAPI.workflowAction(instanceId, actionDataPyaload);
@@ -1768,31 +1803,25 @@ const CustomerList = ({ navigation: navigationProp }) => {
       // Extract data from latest draft response
       const parallelGroup = draftData?.parallelGroup || selectedCustomerForAction?.instance?.stepInstances?.[0]?.parallelGroup || 1;
       const stepOrder = draftData?.stepOrder || selectedCustomerForAction?.instance?.stepInstances?.[0]?.stepOrder || 1;
-      const draftEdits = draftData?.draftEdits || {};
-
-      // Build dataChanges from latest draft
-      const dataChanges = {
-        mapping: draftEdits.mapping || {},
-        customerGroupId: draftEdits.customerGroupId || selectedCustomerForAction?.customerGroupId,
+       const draftEdits = {
+        ...draftData,
+        mapping: normalizeMappingIsApproved(draftData?.mapping),
+      } || {
+        customerGroupId: selectedCustomerForAction?.customerGroupId,
+        distributors: [],
+        divisions: selectedCustomerForAction?.divisions,
+        mapping: normalizeMappingIsApproved(selectedCustomerForAction?.mapping),
       };
 
-      // Add divisions if present
-      if (draftEdits.divisions && draftEdits.divisions.length > 0) {
-        dataChanges.divisions = draftEdits.divisions;
-      }
-
-      // Add distributors if present
-      if (draftEdits.distributors && draftEdits.distributors.length > 0) {
-        dataChanges.distributors = draftEdits.distributors;
-      }
-
+  
+      
       const actionDataPayload = {
         action: "APPROVE",
         parallelGroup: parallelGroup,
         stepOrder: stepOrder,
         actorId: actorId,
         comments: comment || "approved",
-        dataChanges: dataChanges,
+        dataChanges: draftEdits,
       };
 
       const response = await customerAPI.workflowAction(instanceId, actionDataPayload);

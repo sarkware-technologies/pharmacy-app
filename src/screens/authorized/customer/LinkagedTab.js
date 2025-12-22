@@ -122,6 +122,8 @@ export const LinkagedTab = ({
   instance = null,
   action = null
 }) => {
+
+
   const [activeSubTab, setActiveSubTab] = useState('divisions');
   const [activeDistributorTab, setActiveDistributorTab] = useState('preferred');
   const [showDivisionModal, setShowDivisionModal] = useState(false);
@@ -142,6 +144,91 @@ export const LinkagedTab = ({
   // All-distributors supply-type state & dropdown control
   const [allDistributorSupplyType, setAllDistributorSupplyType] = useState({});
   const [showAllSupplyDropdown, setShowAllSupplyDropdown] = useState({});
+
+
+
+
+
+  // Helper function to format mapping items - preserve existing isApproved: true values
+  const formatMappingItemApprove = (mappingItem, isBeingApproved) => {
+    const formatted = {
+      id: Number(mappingItem.id || mappingItem.customerId),
+      isNew: mappingItem.isNew !== undefined ? mappingItem.isNew : false,
+      cityId: mappingItem.cityId ? String(mappingItem.cityId) : (mappingItem.cityId || ''),
+      typeId: mappingItem.typeId !== undefined ? Number(mappingItem.typeId) : (mappingItem.typeId || null),
+      stateId: mappingItem.stateId ? String(mappingItem.stateId) : (mappingItem.stateId || ''),
+      cityName: mappingItem.cityName || '',
+      stateName: mappingItem.stateName || '',
+      categoryId: mappingItem.categoryId !== undefined ? Number(mappingItem.categoryId) : (mappingItem.categoryId || null),
+      stationCode: mappingItem.stationCode || '',
+      customerCode: mappingItem.customerCode || '',
+      customerName: mappingItem.customerName || '',
+      subCategoryId: mappingItem.subCategoryId !== undefined ? Number(mappingItem.subCategoryId) : (mappingItem.subCategoryId || 0),
+      action: 'APPROVE',
+    };
+
+    // Handle isApproved: preserve existing true values, set true for item being approved
+    if (isBeingApproved) {
+      // Item being approved gets isApproved: true
+      formatted.isApproved = true;
+    } 
+    
+    
+    if (mappingItem.hasOwnProperty('isApproved') ) {
+      // Preserve existing isApproved: true for other items
+      formatted.isApproved = mappingItem.isApproved;
+    }
+    // If item doesn't have isApproved or it's false, don't include the property
+
+    return formatted;
+  };
+
+  // Helper function to format mapping items for reject - preserve existing isApproved: true values
+  const formatMappingItemReject = (mappingItem, isBeingRejected) => {
+    const formatted = {
+      id: Number(mappingItem.id || mappingItem.customerId),
+      isNew: mappingItem.isNew !== undefined ? mappingItem.isNew : false,
+      cityId: mappingItem.cityId ? String(mappingItem.cityId) : (mappingItem.cityId || ''),
+      typeId: mappingItem.typeId !== undefined ? Number(mappingItem.typeId) : (mappingItem.typeId || null),
+      stateId: mappingItem.stateId ? String(mappingItem.stateId) : (mappingItem.stateId || ''),
+      cityName: mappingItem.cityName || '',
+      stateName: mappingItem.stateName || '',
+      categoryId: mappingItem.categoryId !== undefined ? Number(mappingItem.categoryId) : (mappingItem.categoryId || null),
+      stationCode: mappingItem.stationCode || '',
+      customerCode: mappingItem.customerCode || '',
+      customerName: mappingItem.customerName || '',
+      subCategoryId: mappingItem.subCategoryId !== undefined ? Number(mappingItem.subCategoryId) : (mappingItem.subCategoryId || 0),
+      action: 'APPROVE',
+    };
+
+    // Handle isActive: set false for rejected items, preserve existing for others
+    if (isBeingRejected) {
+      // Rejected item gets isActive: false
+      formatted.isApproved = false;
+    } 
+    
+    if (mappingItem.hasOwnProperty('isApproved')) {
+      // Preserve existing isActive value for other items
+      formatted.isApproved = mappingItem.isApproved;
+    }
+
+    // Handle isApproved: preserve existing true values, don't set for rejected item
+    if (isBeingRejected) {
+      // Rejected item doesn't get isApproved (or gets false)
+      // Don't include isApproved property for rejected items
+    } else if (mappingItem.hasOwnProperty('isApproved') && mappingItem.isApproved === true) {
+      // Preserve existing isApproved: true for other items
+      formatted.isApproved = true;
+    }
+
+    return formatted;
+  };
+
+
+
+
+
+
 
   const toggleAllSupplyDropdown = distributorId => {
     setShowAllSupplyDropdown(prev => ({
@@ -228,6 +315,7 @@ export const LinkagedTab = ({
 
   // Helper function to fetch latest draft and populate divisions and distributors
   const fetchLatestDraftData = useCallback(async () => {
+
     // Only fetch if instanceId is available
 
     if (!instanceIdFromDetails) {
@@ -248,8 +336,7 @@ export const LinkagedTab = ({
     // Check customerCode (not null) or statusName === 'ACTIVE'
     const isActiveCustomer = selectedCustomer?.customerCode != null || selectedCustomer?.statusName === 'ACTIVE';
 
-    if (Object.keys(instance).length !== 0 || isActiveCustomer) {
-      console.log('instanceId', instanceId);
+    if (Object.keys(instance).length !== 0) {
       try {
         const response = await customerAPI.getLatestDraft(instanceIdFromDetails, actorId);
 
@@ -540,12 +627,11 @@ export const LinkagedTab = ({
     // Fetch latest draft data when LinkagedTab is clicked/visible
     // This populates requested divisions and linked distributors from draft
 
-     if (!instanceIdFromDetails) {
-    await fetchLatestDraftData();
-     }
+    if (!instanceIdFromDetails) {
+      await fetchLatestDraftData();
+    }
     // Fetch data based on the tab clicked
     if (tabName === 'divisions') {
-      console.log('instanceId', instanceId);
       await fetchDivisionsData();
     } else if (tabName === 'distributors' && !distributorsDataFetched) {
       // Note: linked distributors are already set from latest-draft API above
@@ -555,8 +641,7 @@ export const LinkagedTab = ({
       shouldFetchPreferredDistributorsRef.current = true;
     } else if (tabName === 'field' && !fieldDataFetched) {
 
-      console.log("section is working");
-      
+
       // Reset pagination when switching to field tab
       setFieldTeamPage(1);
       setFieldTeamHasMore(true);
@@ -671,129 +756,124 @@ export const LinkagedTab = ({
 
 
 
-const fetchDivisionsData = useCallback(async () => {
-  setDivisionsLoading(true);
-  setDivisionsError(null);
+  const fetchDivisionsData = useCallback(async () => {
 
-  // Safe defaults
-  let customerDivisionsResponse = { data: [] };
-  let allDivisionsResponse = { data: { divisions: [] } };
 
-  try {
-    // ------------------------------------
-    // Determine customer state
-    // ------------------------------------
-    const isPendingCustomer = selectedCustomer?.statusName === 'PENDING';
-    const hasCustomerCode =
-      selectedCustomer?.customerCode !== null &&
-      selectedCustomer?.customerCode !== '';
+    setDivisionsLoading(true);
+    setDivisionsError(null);
 
-    const isActiveCustomer =
-      !isPendingCustomer &&
-      (hasCustomerCode || selectedCustomer?.statusName === 'ACTIVE');
+    // Safe defaults
+    let customerDivisionsResponse = { data: [] };
+    let allDivisionsResponse = { data: { divisions: [] } };
 
-    // ------------------------------------
-    // 1️⃣ Have Customer Code → fetch opened divisions
-    // ------------------------------------
-    if (hasCustomerCode && effectiveCustomerId) {
-      try {
-        customerDivisionsResponse =
-          await customerAPI.getCustomerDivisions(effectiveCustomerId);
-      } catch (err) {
-        console.error('getCustomerDivisions failed:', err);
-        customerDivisionsResponse = { data: [] }; // fallback
+    try {
+      // ------------------------------------
+      // Determine customer state
+      // ------------------------------------
+      const isPendingCustomer = selectedCustomer?.statusName === 'PENDING';
+      const hasCustomerCode =
+        selectedCustomer?.customerCode !== null &&
+        selectedCustomer?.customerCode !== '';
+
+
+
+      const isActiveCustomer =
+        !isPendingCustomer &&
+        (hasCustomerCode || selectedCustomer?.statusName === 'ACTIVE');
+
+      // ------------------------------------
+      // 1️⃣ Have Customer Code → fetch opened divisions
+      // ------------------------------------
+      if (customerId && effectiveCustomerId) {
+        try {
+          customerDivisionsResponse =
+            await customerAPI.getCustomerDivisions(effectiveCustomerId);
+        } catch (err) {
+          console.error('getCustomerDivisions failed:', err);
+          customerDivisionsResponse = { data: [] }; // fallback
+        }
       }
-    }
 
-    // ------------------------------------
-    // 2️⃣ Instance exists → fetch all divisions
-    // ------------------------------------
-    if (instance && Object.keys(instance).length > 0) {
-      try {
-        allDivisionsResponse = await customerAPI.getAllDivisions();
-      } catch (err) {
-        console.error('getAllDivisions failed:', err);
-        allDivisionsResponse = { data: { divisions: [] } }; // fallback
+      // ------------------------------------
+      // 2️⃣ Instance exists → fetch all divisions
+      // ------------------------------------
+      if (instance && Object.keys(instance).length > 0) {
+        try {
+          allDivisionsResponse = await customerAPI.getAllDivisions();
+        } catch (err) {
+          console.error('getAllDivisions failed:', err);
+          allDivisionsResponse = { data: { divisions: [] } }; // fallback
+        }
       }
-    }
 
-    // ------------------------------------
-    // Opened divisions (hasCustomerCode only)
-    // ------------------------------------
-    const openedDivisions = hasCustomerCode &&
-      Array.isArray(customerDivisionsResponse.data)
-      ? customerDivisionsResponse.data
-      : [];
+      // ------------------------------------
+      // Opened divisions (hasCustomerCode only)
+      // ------------------------------------
+      const openedDivisions = customerId &&
+        Array.isArray(customerDivisionsResponse.data)
+        ? customerDivisionsResponse.data
+        : [];
 
-    // ------------------------------------
-    // Other divisions (from all divisions)
-    // ------------------------------------
-    const allDivisions = Array.isArray(
-      allDivisionsResponse?.data?.divisions,
-    )
-      ? allDivisionsResponse.data.divisions
-      : [];
+      // ------------------------------------
+      // Other divisions (from all divisions)
+      // ------------------------------------
+      const allDivisions = Array.isArray(
+        allDivisionsResponse?.data?.divisions,
+      )
+        ? allDivisionsResponse.data.divisions
+        : [];
 
-    const linkedDivisionIds = openedDivisions.map(d =>
-      Number(d.divisionId),
-    );
+      const linkedDivisionIds = openedDivisions.map(d =>
+        Number(d.divisionId),
+      );
 
-    const otherDivisions = allDivisions.filter(
-      d => !linkedDivisionIds.includes(Number(d.divisionId)),
-    );
+      const otherDivisions = allDivisions.filter(
+        d => !linkedDivisionIds.includes(Number(d.divisionId)),
+      );
 
-    // ------------------------------------
-    // FINAL STATE SETTING (VERY IMPORTANT)
-    // ------------------------------------
-    if (hasCustomerCode) {
-      // ✅ ACTIVE customer
-      setOpenedDivisionsData(openedDivisions);
+      // ------------------------------------
+      // FINAL STATE SETTING (VERY IMPORTANT)
+      // ------------------------------------
+      if (customerId) {
+        // ✅ ACTIVE customer
+        setOpenedDivisionsData(openedDivisions);
 
-      // ❌ No requested divisions for active customer
-      setMergedRequestedDivisions([]);
-    } else {
-      // ❌ NON-ACTIVE / PENDING customer
+        // ❌ No requested divisions for active customer
+        setMergedRequestedDivisions([]);
+      } else {
+        // ❌ NON-ACTIVE / PENDING customer
+        setOpenedDivisionsData([]);
+        // requested divisions handled elsewhere (draft / props)
+      }
+
+      setOtherDivisionsData(otherDivisions);
+      setDivisionsDataFetched(true);
+
+    } catch (err) {
+      // Only unexpected JS errors reach here
+      setDivisionsError(err.message);
       setOpenedDivisionsData([]);
-      // requested divisions handled elsewhere (draft / props)
+      setOtherDivisionsData([]);
+      setMergedRequestedDivisions([]);
+    } finally {
+      setDivisionsLoading(false);
     }
+  }, [effectiveCustomerId, instance, selectedCustomer]);
 
-    setOtherDivisionsData(otherDivisions);
-    setDivisionsDataFetched(true);
 
-  } catch (err) {
-    // Only unexpected JS errors reach here
-    console.error('Unexpected error in fetchDivisionsData:', err);
-    setDivisionsError(err.message);
-    setOpenedDivisionsData([]);
-    setOtherDivisionsData([]);
-    setMergedRequestedDivisions([]);
-  } finally {
-    setDivisionsLoading(false);
-  }
-}, [effectiveCustomerId, instance, selectedCustomer]);
-
-  console.log(openedDivisionsData);
-  
 
   // Fetch divisions data on component mount (since it's the default tab)
   // Also trigger when customerCode or statusName changes for active customers
   useEffect(() => {
     fetchDivisionsData();
-  }, [activeSubTab, fetchDivisionsData, selectedCustomer?.action, selectedCustomer?.statusName, selectedCustomer?.customerCode]);
+  }, [fetchDivisionsData, selectedCustomer?.action, selectedCustomer?.statusName, selectedCustomer?.customerCode]);
 
   // Function to fetch field team data
   const fetchFieldTeamData = useCallback(async (page = 1, loadMore = false) => {
-    if (!effectiveCustomerId) {
-      return;
-    }
-
-    console.log("working field");
-    
 
     // Determine isStaging based on customer status
     // If customer is active (customerCode not null or statusName === 'ACTIVE'), isStaging=false, else isStaging=true
-    const isActiveCustomer = selectedCustomer?.customerCode != null || selectedCustomer?.statusName === 'ACTIVE';
-    const isStaging = isActiveCustomer ? false : true;
+    const isStaging = customerId ? false : true;
 
     try {
       if (loadMore) {
@@ -803,7 +883,9 @@ const fetchDivisionsData = useCallback(async () => {
         setFieldTeamError(null);
       }
 
-      const response = await customerAPI.getFieldList(page, 10, effectiveCustomerId, isStaging);
+
+
+      const response = await customerAPI.getFieldList(page, 10, customerId || selectedCustomer?.stgCustomerId, isStaging);
 
       if (response?.data) {
         // Extract data from response - could be in different formats
@@ -933,55 +1015,48 @@ const fetchDivisionsData = useCallback(async () => {
 
   // Function to fetch linked distributors using distributor/list API with divisionIds
   // This function can be called regardless of which distributor sub-tab is active
-  const fetchLinkedDistributorsData = useCallback(async (forceFetch = false) => {
-    // Only check tab if not forcing fetch (for initial load)
-    if (!forceFetch && activeDistributorTab !== 'linked') {
+  const fetchLinkedDistributorsData = async () => {
+    // Fetch only when Linked tab is active
+    if (activeDistributorTab !== 'linked') {
       return;
     }
 
-    // Get divisionIds from mergedRequestedDivisions
-    const divisionIds = (mergedRequestedDivisions || []).map(div =>
-      String(div.divisionId || div.id)
-    ).filter(id => id && id !== 'undefined' && id !== 'null');
+    // Extract valid division IDs
+    const divisionIds = (openedDivisionsData || [])
+      .map(div => String(div.divisionId || div.id))
+      .filter(id => id && id !== 'undefined' && id !== 'null');
 
+    // No divisions → clear data
     if (divisionIds.length === 0) {
+
       setLinkedDistributorsData([]);
       return;
     }
 
     try {
-      // Don't set loading state if we're fetching in background (for filtering)
-      if (activeDistributorTab === 'linked') {
-        setDistributorsLoading(true);
-      }
+      setDistributorsLoading(true);
       setDistributorsError(null);
 
-      // Call the distributor/list API with divisionIds for linked distributors
-      // API: /user-management/distributor/list?page=1&limit=20&divisionIds=143
-      // Note: stationCode is NOT sent for linked distributors
-      const response = await distributorAPI_getPreferredDistributors(
-        1, // page
-        20, // limit - use 20 as per API example
-        null, // stationCode - not needed for linked distributors
-        divisionIds,
+      // API call for linked distributors
+      const response = await customerAPI.getLinkedDistributorDivisions(
+        customerId
       );
 
-      // Handle response - API returns { distributors: [], page: 1, limit: 20, total: 38 }
-      if (response?.distributors && Array.isArray(response.distributors)) {
-        setLinkedDistributorsData(response.distributors);
+
+
+      if (response?.data?.customer?.distributorDetails && Array.isArray(response?.data?.customer?.distributorDetails)) {
+        setLinkedDistributorsData(response?.data?.customer?.distributorDetails);
       } else {
         setLinkedDistributorsData([]);
       }
     } catch (error) {
-
       setDistributorsError(error.message);
       setLinkedDistributorsData([]);
     } finally {
-      if (activeDistributorTab === 'linked') {
-        setDistributorsLoading(false);
-      }
+      setDistributorsLoading(false);
     }
-  }, [activeDistributorTab, mergedRequestedDivisions]);
+  };
+
 
   // Note: Linked distributors come from latest-draft API only
   // No separate fetch needed - data is set by fetchLatestDraftData() when tab is clicked
@@ -1012,7 +1087,6 @@ const fetchDivisionsData = useCallback(async () => {
         setAllDistributorsData(filteredDistributors);
         setFilteredDistributorsData(filteredDistributors);
       } else {
-        console.log('LinkagedTab: Invalid distributors response format');
         setAllDistributorsData([]);
         setFilteredDistributorsData([]);
       }
@@ -1031,6 +1105,20 @@ const fetchDivisionsData = useCallback(async () => {
       fetchDistributorsData();
     }
   }, [activeDistributorTab, activeSubTab, distributorsDataFetched, fetchDistributorsData]);
+
+
+  useEffect(() => {
+
+    if (
+      customerId &&
+      activeSubTab === 'distributors' &&
+      activeDistributorTab === 'linked'
+    ) {
+
+
+      fetchLinkedDistributorsData();
+    }
+  }, [activeDistributorTab, activeSubTab, customerId, mergedRequestedDivisions]);
 
   // Apply filters to distributors (also filters out linked distributors)
   useEffect(() => {
@@ -1125,305 +1213,6 @@ const fetchDivisionsData = useCallback(async () => {
     return false;
   };
 
-  const handleLinkDistributors = async () => {
-    if (selectedDistributors.length === 0) {
-      showToast('Please select at least one distributor', 'error');
-      return;
-    }
-
-    // Validate all required fields
-    const selectedDists = preferredDistributorsData.filter(d =>
-      selectedDistributors.includes(d.id),
-    );
-
-    if (selectedDists.length === 0) {
-      showToast('No valid distributors selected', 'error');
-      return;
-    }
-
-    for (const distributor of selectedDists) {
-      // Check if margin is filled
-      if (
-        !distributorMargins[distributor.id] ||
-        distributorMargins[distributor.id] === ''
-      ) {
-        showToast(`Please enter margin for ${distributor.name}`, 'error');
-        return;
-      }
-
-      // Check if rate type is selected (Net Rate or Chargeback)
-      if (
-        !distributorRateType[distributor.id] ||
-        (distributorRateType[distributor.id] !== 'Net Rate' &&
-          distributorRateType[distributor.id] !== 'Chargeback')
-      ) {
-        showToast(`Please select rate type for ${distributor.name}`, 'error');
-        return;
-      }
-    }
-
-    try {
-      setLinkingDistributors(true);
-
-      // Get instanceId from customerDetails response (selectedCustomer from Redux)
-      const effectiveInstanceId = instanceIdFromDetails;
-
-      if (!effectiveInstanceId) {
-        showToast('Instance ID not found. Please refresh and try again.', 'error');
-        setLinkingDistributors(false);
-        return;
-      }
-
-      const actorId = loggedInUser?.userId || loggedInUser?.id;
-
-      // Format all existing divisions from mergedRequestedDivisions
-      const formattedDivisions = (mergedRequestedDivisions || []).map(div => ({
-        divisionId: String(div.divisionId || div.id),
-        divisionCode: div.divisionCode || '',
-        divisionName: div.divisionName || '',
-        isOpen: div.isOpen !== undefined ? div.isOpen : false,
-      }));
-
-      // Get existing linked distributors to merge with newly selected ones
-      // Also check latest draft for distributors that might be in draft but not yet linked
-      let existingDistributorsFromDraft = [];
-      if (Object.keys(instance).length !== 0) {
-        try {
-          const draftResponse = await customerAPI.getLatestDraft(effectiveInstanceId, actorId);
-          if (draftResponse?.data?.success && draftResponse?.data?.hasDraft && draftResponse?.data?.draftEdits?.distributors) {
-            existingDistributorsFromDraft = draftResponse.data.draftEdits.distributors;
-          }
-        } catch (error) {
-          console.warn('Could not fetch distributors from draft:', error);
-        }
-      }
-      // Create a map to avoid duplicates
-      const allDistributorsMap = new Map();
-
-      // First, add all existing linked distributors from API
-      (linkedDistributorsData || []).forEach(linkedDist => {
-        const distId = String(linkedDist.id || linkedDist.distributorId || '');
-        if (distId && distId !== 'undefined') {
-          // Format existing linked distributor
-          const distributorDivisions = (linkedDist.divisions || []).map(div => ({
-            cfaId: div.cfaId || '',
-            cfaCode: div.cfaCode || '',
-            cfaName: div.cfaName || null,
-            divisionId: String(div.divisionId || ''),
-            divisionCode: div.divisionCode || '',
-            divisionName: div.divisionName || '',
-            distributorId: Number(linkedDist.id || linkedDist.distributorId),
-            organizationCode: div.organizationCode || 'SPLL',
-          }));
-
-          allDistributorsMap.set(distId, {
-            id: String(linkedDist.id || linkedDist.distributorId),
-            code: linkedDist.code || '',
-            name: linkedDist.name || linkedDist.distributorName || '',
-            email: linkedDist.email || '',
-            cityId: linkedDist.cityId || null,
-            typeId: linkedDist.typeId || null,
-            mobile1: linkedDist.mobile1 || '',
-            mobile2: linkedDist.mobile2 || null,
-            stateId: linkedDist.stateId || null,
-            address1: linkedDist.address1 || null,
-            address2: linkedDist.address2 || null,
-            cityName: linkedDist.cityName || null,
-            isActive: linkedDist.isActive !== undefined ? linkedDist.isActive : true,
-            divisions: distributorDivisions,
-            gstNumber: linkedDist.gstNumber || null,
-            panNumber: linkedDist.panNumber || null,
-            stateName: linkedDist.stateName || null,
-            licence20BNo: linkedDist.licence20BNo || null,
-            licence21BNo: linkedDist.licence21BNo || null,
-            divisionCount: linkedDist.divisionCount || distributorDivisions.length,
-            expiryDate20B: linkedDist.expiryDate20B || null,
-            expiryDate21B: linkedDist.expiryDate21B || null,
-            inviteStatusId: linkedDist.inviteStatusId || 1,
-            distributorType: linkedDist.distributorType || null,
-            inviteStatusName: linkedDist.inviteStatusName || 'Not Invited',
-            organizationCode: linkedDist.organizationCode || 'SPLL',
-            doctorSupplyMargin: linkedDist.doctorSupplyMargin || null,
-            hospitalSupplyMargin: linkedDist.hospitalSupplyMargin || null,
-          });
-        }
-      });
-
-      // Then, add distributors from draft (if any)
-      existingDistributorsFromDraft.forEach(draftDist => {
-        const distId = String(draftDist.id || '');
-        if (distId && distId !== 'undefined' && !allDistributorsMap.has(distId)) {
-          // Format draft distributor
-          const distributorDivisions = (draftDist.divisions || []).map(div => ({
-            cfaId: div.cfaId || '',
-            cfaCode: div.cfaCode || '',
-            cfaName: div.cfaName || null,
-            divisionId: String(div.divisionId || ''),
-            divisionCode: div.divisionCode || '',
-            divisionName: div.divisionName || '',
-            distributorId: Number(draftDist.id),
-            organizationCode: div.organizationCode || 'SPLL',
-          }));
-
-          allDistributorsMap.set(distId, {
-            id: String(draftDist.id),
-            code: draftDist.code || '',
-            name: draftDist.name || '',
-            email: draftDist.email || '',
-            cityId: draftDist.cityId || null,
-            typeId: draftDist.typeId || null,
-            mobile1: draftDist.mobile1 || '',
-            mobile2: draftDist.mobile2 || null,
-            stateId: draftDist.stateId || null,
-            address1: draftDist.address1 || null,
-            address2: draftDist.address2 || null,
-            cityName: draftDist.cityName || null,
-            isActive: draftDist.isActive !== undefined ? draftDist.isActive : true,
-            divisions: distributorDivisions,
-            gstNumber: draftDist.gstNumber || null,
-            panNumber: draftDist.panNumber || null,
-            stateName: draftDist.stateName || null,
-            licence20BNo: draftDist.licence20BNo || null,
-            licence21BNo: draftDist.licence21BNo || null,
-            divisionCount: draftDist.divisionCount || distributorDivisions.length,
-            expiryDate20B: draftDist.expiryDate20B || null,
-            expiryDate21B: draftDist.expiryDate21B || null,
-            inviteStatusId: draftDist.inviteStatusId || 1,
-            distributorType: draftDist.distributorType || null,
-            inviteStatusName: draftDist.inviteStatusName || 'Not Invited',
-            organizationCode: draftDist.organizationCode || 'SPLL',
-            doctorSupplyMargin: draftDist.doctorSupplyMargin || null,
-            hospitalSupplyMargin: draftDist.hospitalSupplyMargin || null,
-          });
-        }
-      });
-
-      // Finally, add newly selected distributors (they will overwrite if duplicate, but that's fine)
-      selectedDists.forEach(distributor => {
-        const distId = String(distributor.id);
-        // Get supply type (Net Rate = DM, Chargeback = CM)
-        const supplyType = distributorRateType[distributor.id] === 'Chargeback' ? 'CM' : 'DM';
-        const typeId = supplyType === 'CM' ? 2 : 1; // Chargeback = 2, Net Rate = 1
-
-        // Format distributor divisions (from the distributor's divisions array)
-        const distributorDivisions = (distributor.divisions || []).map(div => ({
-          cfaId: div.cfaId || '',
-          cfaCode: div.cfaCode || '',
-          cfaName: div.cfaName || null,
-          divisionId: String(div.divisionId || ''),
-          divisionCode: div.divisionCode || '',
-          divisionName: div.divisionName || '',
-          distributorId: Number(distributor.id),
-          organizationCode: div.organizationCode || 'SPLL',
-        }));
-
-        allDistributorsMap.set(distId, {
-          id: String(distributor.id),
-          code: distributor.code || '',
-          name: distributor.name || '',
-          email: distributor.email || '',
-          cityId: distributor.cityId || null,
-          typeId: typeId,
-          mobile1: distributor.mobile1 || '',
-          mobile2: distributor.mobile2 || null,
-          stateId: distributor.stateId || null,
-          address1: distributor.address1 || null,
-          address2: distributor.address2 || null,
-          cityName: distributor.cityName || null,
-          isActive: distributor.isActive !== undefined ? distributor.isActive : true,
-          divisions: distributorDivisions,
-          gstNumber: distributor.gstNumber || null,
-          panNumber: distributor.panNumber || null,
-          stateName: distributor.stateName || null,
-          licence20BNo: distributor.licence20BNo || null,
-          licence21BNo: distributor.licence21BNo || null,
-          divisionCount: distributor.divisionCount || distributorDivisions.length,
-          expiryDate20B: distributor.expiryDate20B || null,
-          expiryDate21B: distributor.expiryDate21B || null,
-          inviteStatusId: distributor.inviteStatusId || 1,
-          distributorType: distributor.distributorType || null,
-          inviteStatusName: distributor.inviteStatusName || 'Not Invited',
-          organizationCode: distributor.organizationCode || 'SPLL',
-          doctorSupplyMargin: distributor.doctorSupplyMargin || distributorMargins[distributor.id] || null,
-          hospitalSupplyMargin: distributor.hospitalSupplyMargin || distributorMargins[distributor.id] || null,
-        });
-      });
-
-      // Convert map to array - this includes all existing + newly selected distributors
-      const formattedDistributors = Array.from(allDistributorsMap.values());
-
-      // Format mapping data (customer hierarchy)
-      const formattedMapping = {
-        groupHospitals: (mappingData?.groupHospitals || []).map(h => ({
-          id: Number(h.id),
-          isNew: h.isNew !== undefined ? h.isNew : false,
-          action: h.action || 'LINK_DT',
-          cityId: h.cityId || null,
-          typeId: h.typeId || null,
-          stateId: h.stateId || null,
-          cityName: h.cityName || null,
-          stateName: h.stateName || null,
-          categoryId: h.categoryId || null,
-          stationCode: h.stationCode || null,
-          customerCode: h.customerCode || null,
-          customerName: h.customerName || null,
-          subCategoryId: h.subCategoryId || null,
-        })),
-        hospitals: (mappingData?.hospitals || []).map(h => ({
-          id: Number(h.id),
-          isNew: h.isNew !== undefined ? h.isNew : false,
-        })),
-        doctors: (mappingData?.doctors || []).map(d => ({
-          id: Number(d.id),
-          isNew: d.isNew !== undefined ? d.isNew : false,
-        })),
-        pharmacy: (mappingData?.pharmacy || []).map(p => ({
-          id: Number(p.id),
-          isNew: p.isNew !== undefined ? p.isNew : false,
-        })),
-      };
-
-      const draftEditPayload = {
-        stepOrder: 3,
-        parallelGroup: 1,
-        comments: '',
-        actorId: actorId,
-        dataChanges: {
-          divisions: formattedDivisions,
-          distributors: formattedDistributors,
-          mapping: formattedMapping,
-          customerGroupId: customerGroupId || selectedCustomer?.customerGroupId || 1,
-        },
-      };
-
-      console.log('Calling draft-edit API for distributors with payload:', draftEditPayload);
-
-      // Call draft-edit API
-      const draftEditResponse = await customerAPI.draftEdit(effectiveInstanceId, draftEditPayload);
-      console.log('Draft-edit API response:', draftEditResponse);
-
-      showToast('Distributors linked successfully!', 'success');
-
-      setPreferredViewMode('selection');
-      setSelectedDistributors([]);
-      setDistributorMargins({});
-      setDistributorRateType({});
-
-      // After successful mapping, fetch latest draft to update divisions and distributors
-      // This will update linked distributors from latest-draft response (ONLY source)
-      await fetchLatestDraftData();
-
-      // Refresh preferred distributors list
-      if (activeDistributorTab === 'preferred' && effectiveCustomerId) {
-        await fetchPreferredDistributorsData();
-      }
-    } catch (error) {
-      console.error('Error linking distributors:', error);
-      showToast(`Failed to link distributors: ${error.message}`, 'error');
-    } finally {
-      setLinkingDistributors(false);
-    }
-  };
 
   const handleApprove = item => {
     setSelectedItem(item);
@@ -1449,10 +1238,6 @@ const fetchDivisionsData = useCallback(async () => {
         actionData: {},
       };
 
-      console.log('Approving item:', selectedItem?.name);
-      console.log('Workflow ID:', workflowId);
-      console.log('Logged-in User ID (actorId):', actorId);
-      console.log('Action Data:', actionData);
 
       const response = await customerAPI.workflowAction(workflowId, actionData);
 
@@ -1541,64 +1326,32 @@ const fetchDivisionsData = useCallback(async () => {
       // Get existing mapping data
       const hierarchyData = hierarchyMappingData || {};
       const itemId = Number(item.id || item.customerId);
-
-      // Helper function to format mapping items - preserve existing isApproved: true values
-      const formatMappingItem = (mappingItem, isBeingApproved) => {
-        const formatted = {
-          id: Number(mappingItem.id || mappingItem.customerId),
-          isNew: mappingItem.isNew !== undefined ? mappingItem.isNew : false,
-          cityId: mappingItem.cityId ? String(mappingItem.cityId) : (mappingItem.cityId || ''),
-          typeId: mappingItem.typeId !== undefined ? Number(mappingItem.typeId) : (mappingItem.typeId || null),
-          stateId: mappingItem.stateId ? String(mappingItem.stateId) : (mappingItem.stateId || ''),
-          cityName: mappingItem.cityName || '',
-          stateName: mappingItem.stateName || '',
-          categoryId: mappingItem.categoryId !== undefined ? Number(mappingItem.categoryId) : (mappingItem.categoryId || null),
-          stationCode: mappingItem.stationCode || '',
-          customerCode: mappingItem.customerCode || '',
-          customerName: mappingItem.customerName || '',
-          subCategoryId: mappingItem.subCategoryId !== undefined ? Number(mappingItem.subCategoryId) : (mappingItem.subCategoryId || 0),
-          action: 'APPROVE',
-        };
-
-        // Handle isApproved: preserve existing true values, set true for item being approved
-        if (isBeingApproved) {
-          // Item being approved gets isApproved: true
-          formatted.isApproved = true;
-        } else if (mappingItem.hasOwnProperty('isApproved') && mappingItem.isApproved === true) {
-          // Preserve existing isApproved: true for other items
-          formatted.isApproved = true;
-        }
-        // If item doesn't have isApproved or it's false, don't include the property
-
-        return formatted;
-      };
-
       // Format all hospitals - only the one being approved gets isApproved: true
       const mappingHospitals = (hierarchyData?.hospitals || []).map(h => {
         const isBeingApproved = itemType === 'hospital' && Number(h.id || h.customerId) === itemId;
-        return formatMappingItem(h, isBeingApproved);
+        return formatMappingItemApprove(h, isBeingApproved);
       });
 
       // Format all doctors - only the one being approved gets isApproved: true
       const mappingDoctors = (hierarchyData?.doctors || []).map(d => {
         const isBeingApproved = itemType === 'doctor' && Number(d.id || d.customerId) === itemId;
-        return formatMappingItem(d, isBeingApproved);
+        return formatMappingItemApprove(d, isBeingApproved);
       });
 
       // Format all pharmacies - only the one being approved gets isApproved: true
       const mappingPharmacy = (hierarchyData?.pharmacy || []).map(p => {
         const isBeingApproved = itemType === 'pharmacy' && Number(p.id || p.customerId) === itemId;
-        return formatMappingItem(p, isBeingApproved);
+        return formatMappingItemApprove(p, isBeingApproved);
       });
 
       // Format all group hospitals - only the one being approved gets isApproved: true
       const mappingGroupHospitals = (hierarchyData?.groupHospitals || []).map(gh => {
         const isBeingApproved = itemType === 'groupHospital' && Number(gh.id || gh.customerId) === itemId;
-        return formatMappingItem(gh, isBeingApproved);
+        return formatMappingItemApprove(gh, isBeingApproved);
       });
 
       // If the item being approved doesn't exist in the mapping, add it
-      const approvedItem = formatMappingItem(item, true);
+      const approvedItem = formatMappingItemApprove(item, true);
 
       if (itemType === 'hospital') {
         const existingIndex = mappingHospitals.findIndex(h => h.id === itemId);
@@ -1739,71 +1492,34 @@ const fetchDivisionsData = useCallback(async () => {
       const hierarchyData = hierarchyMappingData || {};
       const itemId = Number(item.id || item.customerId);
 
-      // Helper function to format mapping items for reject - preserve existing isApproved: true values
-      const formatMappingItem = (mappingItem, isBeingRejected) => {
-        const formatted = {
-          id: Number(mappingItem.id || mappingItem.customerId),
-          isNew: mappingItem.isNew !== undefined ? mappingItem.isNew : false,
-          cityId: mappingItem.cityId ? String(mappingItem.cityId) : (mappingItem.cityId || ''),
-          typeId: mappingItem.typeId !== undefined ? Number(mappingItem.typeId) : (mappingItem.typeId || null),
-          stateId: mappingItem.stateId ? String(mappingItem.stateId) : (mappingItem.stateId || ''),
-          cityName: mappingItem.cityName || '',
-          stateName: mappingItem.stateName || '',
-          categoryId: mappingItem.categoryId !== undefined ? Number(mappingItem.categoryId) : (mappingItem.categoryId || null),
-          stationCode: mappingItem.stationCode || '',
-          customerCode: mappingItem.customerCode || '',
-          customerName: mappingItem.customerName || '',
-          subCategoryId: mappingItem.subCategoryId !== undefined ? Number(mappingItem.subCategoryId) : (mappingItem.subCategoryId || 0),
-          action: isBeingRejected ? 'REJECT' : 'APPROVE',
-        };
 
-        // Handle isActive: set false for rejected items, preserve existing for others
-        if (isBeingRejected) {
-          // Rejected item gets isActive: false
-          formatted.isActive = false;
-        } else if (mappingItem.hasOwnProperty('isActive')) {
-          // Preserve existing isActive value for other items
-          formatted.isActive = mappingItem.isActive;
-        }
-
-        // Handle isApproved: preserve existing true values, don't set for rejected item
-        if (isBeingRejected) {
-          // Rejected item doesn't get isApproved (or gets false)
-          // Don't include isApproved property for rejected items
-        } else if (mappingItem.hasOwnProperty('isApproved') && mappingItem.isApproved === true) {
-          // Preserve existing isApproved: true for other items
-          formatted.isApproved = true;
-        }
-
-        return formatted;
-      };
 
       // Format all hospitals - preserve existing isApproved: true
       const mappingHospitals = (hierarchyData?.hospitals || []).map(h => {
         const isBeingRejected = itemType === 'hospital' && Number(h.id || h.customerId) === itemId;
-        return formatMappingItem(h, isBeingRejected);
+        return formatMappingItemReject(h, isBeingRejected);
       });
 
       // Format all doctors - preserve existing isApproved: true
       const mappingDoctors = (hierarchyData?.doctors || []).map(d => {
         const isBeingRejected = itemType === 'doctor' && Number(d.id || d.customerId) === itemId;
-        return formatMappingItem(d, isBeingRejected);
+        return formatMappingItemReject(d, isBeingRejected);
       });
 
       // Format all pharmacies - preserve existing isApproved: true
       const mappingPharmacy = (hierarchyData?.pharmacy || []).map(p => {
         const isBeingRejected = itemType === 'pharmacy' && Number(p.id || p.customerId) === itemId;
-        return formatMappingItem(p, isBeingRejected);
+        return formatMappingItemReject(p, isBeingRejected);
       });
 
       // Format all group hospitals - preserve existing isApproved: true
       const mappingGroupHospitals = (hierarchyData?.groupHospitals || []).map(gh => {
         const isBeingRejected = itemType === 'groupHospital' && Number(gh.id || gh.customerId) === itemId;
-        return formatMappingItem(gh, isBeingRejected);
+        return formatMappingItemReject(gh, isBeingRejected);
       });
 
       // If the item being rejected doesn't exist in the mapping, add it (without isApproved)
-      const rejectedItem = formatMappingItem(item, true);
+      const rejectedItem = formatMappingItemReject(item, true);
 
       if (itemType === 'hospital') {
         const existingIndex = mappingHospitals.findIndex(h => h.id === itemId);
@@ -1884,10 +1600,7 @@ const fetchDivisionsData = useCallback(async () => {
         actionData: {},
       };
 
-      console.log('Rejecting item:', selectedItem?.name);
-      console.log('Workflow ID:', workflowId);
-      console.log('Logged-in User ID (actorId):', actorId);
-      console.log('Action Data:', actionData);
+
 
       const response = await customerAPI.workflowAction(workflowId, actionData);
 
@@ -1985,25 +1698,38 @@ const fetchDivisionsData = useCallback(async () => {
         };
       });
 
-      // Get customer hierarchy mapping data
+      // Get existing mapping data
       const hierarchyData = hierarchyMappingData || {};
+
+
+      // Format all hospitals - only the one being approved gets isApproved: true
+      const mappingHospitals = (hierarchyData?.hospitals || []).map(h => {
+        return formatMappingItemApprove(h);
+      });
+
+      // Format all doctors - only the one being approved gets isApproved: true
+      const mappingDoctors = (hierarchyData?.doctors || []).map(d => {
+        return formatMappingItemApprove(d);
+      });
+
+      // Format all pharmacies - only the one being approved gets isApproved: true
+      const mappingPharmacy = (hierarchyData?.pharmacy || []).map(p => {
+        return formatMappingItemApprove(p);
+      });
+
+      // Format all group hospitals - only the one being approved gets isApproved: true
+      const mappingGroupHospitals = (hierarchyData?.groupHospitals || []).map(gh => {
+        return formatMappingItemApprove(gh,);
+      });
+
+
+
+      // Format mapping object
       const formattedMapping = {
-        groupHospitals: (hierarchyData?.groupHospitals || []).map(gh => ({
-          id: Number(gh.id),
-          isNew: gh.isNew !== undefined ? gh.isNew : false,
-        })),
-        hospitals: (hierarchyData?.hospitals || []).map(h => ({
-          id: Number(h.id),
-          isNew: h.isNew !== undefined ? h.isNew : false,
-        })),
-        doctors: (hierarchyData?.doctors || []).map(d => ({
-          id: Number(d.id),
-          isNew: d.isNew !== undefined ? d.isNew : false,
-        })),
-        pharmacy: (hierarchyData?.pharmacy || []).map(p => ({
-          id: Number(p.id),
-          isNew: p.isNew !== undefined ? p.isNew : false,
-        })),
+        hospitals: mappingHospitals,
+        doctors: mappingDoctors,
+        pharmacy: mappingPharmacy,
+        groupHospitals: mappingGroupHospitals,
       };
 
       const draftEditPayload = {
@@ -2019,11 +1745,9 @@ const fetchDivisionsData = useCallback(async () => {
         },
       };
 
-      console.log('Calling draft-edit API for linked distributors with payload:', draftEditPayload);
 
       // Call draft-edit API
       const draftEditResponse = await customerAPI.draftEdit(effectiveInstanceId, draftEditPayload);
-      console.log('Draft-edit API response:', draftEditResponse);
 
       showToast('Linked distributors updated successfully!', 'success');
 
@@ -2039,7 +1763,6 @@ const fetchDivisionsData = useCallback(async () => {
 
   const handleLinkDivisionsConfirmModal = comment => {
     // TODO: API integration
-    console.log('Link Divisions with comment:', comment);
     setShowLinkDivisionsModal(false);
     showToast('Divisions linked successfully!', 'success');
   };
@@ -2118,7 +1841,6 @@ const fetchDivisionsData = useCallback(async () => {
 
   const handleTagConfirm = () => {
     // TODO: API integration
-    console.log('Tagged');
     setShowTagModal(false);
     showToast('Hospital tagged successfully!', 'success');
   };
@@ -2182,7 +1904,6 @@ const fetchDivisionsData = useCallback(async () => {
     }
 
     try {
-      console.log('Adding distributor:', distributor.id);
 
       // Get instanceId from customerDetails response (selectedCustomer from Redux)
       const effectiveInstanceId = instanceIdFromDetails;
@@ -2206,12 +1927,11 @@ const fetchDivisionsData = useCallback(async () => {
       // Also check latest draft for distributors that might be in draft but not yet linked
       let existingDistributorsFromDraft = [];
       if (Object.keys(instance).length !== 0) {
-        console.log('instanceId', instanceId);
         try {
+
           const draftResponse = await customerAPI.getLatestDraft(effectiveInstanceId, actorId);
           if (draftResponse?.data?.success && draftResponse?.data?.hasDraft && draftResponse?.data?.draftEdits?.distributors) {
             existingDistributorsFromDraft = draftResponse.data.draftEdits.distributors;
-            console.log('Found existing distributors in draft:', existingDistributorsFromDraft);
           }
         } catch (error) {
           console.warn('Could not fetch distributors from draft:', error);
@@ -2416,7 +2136,6 @@ const fetchDivisionsData = useCallback(async () => {
         },
       };
 
-      console.log('Calling draft-edit API for adding distributor with payload:', draftEditPayload);
 
       // Call draft-edit API
       const draftEditResponse = await customerAPI.draftEdit(effectiveInstanceId, draftEditPayload);
@@ -2612,16 +2331,13 @@ const fetchDivisionsData = useCallback(async () => {
         },
       };
 
-      console.log('Calling draft-edit API with payload:', draftEditPayload);
-      console.log('Instance ID from customerDetails:', effectiveInstanceId);
-      console.log('Selected Customer:', selectedCustomer);
+
 
       // Call draft-edit API only
       const draftEditResponse = await customerAPI.draftEdit(effectiveInstanceId, draftEditPayload);
-      console.log('Draft-edit API response:', draftEditResponse);
 
       // Move valid selected divisions to opened locally (so UI updates immediately)
-      setOpenedDivisionsData(prev => [...prev, ...validDivisions]);
+      // setOpenedDivisionsData(prev => [...prev, ...validDivisions]);
 
       // Remove from other divisions locally
       const selectedIds = validDivisions.map(d => d.divisionId);
@@ -2649,6 +2365,8 @@ const fetchDivisionsData = useCallback(async () => {
 
           // Fetch all available divisions
           const allDivisionsResponse = await customerAPI.getAllDivisions();
+
+
 
           let updatedOpenedDivisions = [];
           let updatedOtherDivisions = [];
@@ -3688,8 +3406,6 @@ const fetchDivisionsData = useCallback(async () => {
             {/* ---------- BODY (3 Columns) ---------- */}
             <View style={styles.columnsRow}>
 
-              {console.log(mergedRequestedDivisions, 'mergedRequestedDivisions')
-              }
 
               {/* ========== REQUESTED COLUMN ========== */}
               <View style={styles.colRequested}>
@@ -4140,26 +3856,26 @@ const fetchDivisionsData = useCallback(async () => {
 
                             <View style={styles.accordionItemActions}>
                               {isItemProcessed(item) ? (
-                                 <View style={styles.statusRow}>
-                            {item.isApproved ? (
-                              <>
-                                <IconMaterial name="check" size={18} color="#16A34A" />
-                                <AppText style={[styles.statusText, styles.approvedText]}>
-                                  APPROVED
-                                </AppText>
-                              </>
+                                <View style={styles.statusRow}>
+                                  {item.isApproved ? (
+                                    <>
+                                      <IconMaterial name="check" size={18} color="#16A34A" />
+                                      <AppText style={[styles.statusText, styles.approvedText]}>
+                                        APPROVED
+                                      </AppText>
+                                    </>
 
-                            ) : (
-                              <>
-                                <View style={styles.rejectedIconCircle}>
-                                  <IconMaterial name="close" size={14} color="#EF4444" />
+                                  ) : (
+                                    <>
+                                      <View style={styles.rejectedIconCircle}>
+                                        <IconMaterial name="close" size={14} color="#EF4444" />
+                                      </View>
+                                      <AppText style={[styles.statusText, styles.rejectedText]}>
+                                        REJECTED
+                                      </AppText>
+                                    </>
+                                  )}
                                 </View>
-                                <AppText style={[styles.statusText, styles.rejectedText]}>
-                                  REJECTED
-                                </AppText>
-                              </>
-                            )}
-                          </View>
                               ) : (
                                 <>
                                   <TouchableOpacity

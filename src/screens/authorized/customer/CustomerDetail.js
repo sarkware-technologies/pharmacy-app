@@ -92,6 +92,10 @@ const CustomerDetail = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { customer } = route.params;
 
+
+  console.log(customer);
+
+
   const [activeTab, setActiveTab] = useState('details');
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
@@ -113,7 +117,7 @@ const CustomerDetail = ({ navigation, route }) => {
   );
 
   useEffect(() => {
-    if(selectedCustomer?.action == "LINK_DT"){
+    if (selectedCustomer?.action == "LINK_DT") {
       setActiveTab('linkaged');
     }
   }, [selectedCustomer]);
@@ -131,7 +135,7 @@ const CustomerDetail = ({ navigation, route }) => {
   useEffect(() => {
 
     console.log(customer, "custoemr");
-    
+
     const customerId = customer?.stgCustomerId || customer?.customerId;
     const isStaging = customer?.customerId === null || customer?.customerId === undefined;
 
@@ -555,12 +559,12 @@ const CustomerDetail = ({ navigation, route }) => {
       return selectedCustomer?.name;
     } else if (selectedCustomer?.generalDetails?.customerName) {
       return selectedCustomer.generalDetails.customerName;
-    } 
+    }
     else if (selectedCustomer?.clinicName) {
       return selectedCustomer?.clinicName;
     } else if (selectedCustomer?.generalDetails?.ownerName) {
       return `${selectedCustomer.generalDetails.ownerName}`;
-    }else if (customer?.customerName) {
+    } else if (customer?.customerName) {
       return customer.customerName;
     }
     return 'Customer Details';
@@ -1052,15 +1056,15 @@ const CustomerDetail = ({ navigation, route }) => {
       // 2️⃣ Prepare file name and determine save location
       const fileName = docInfo.fileName || docInfo.doctypeName || 'document';
       const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
-      
+
       // Determine if it's an image/video (for gallery visibility)
       const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(fileExtension);
       const isVideo = ['mp4', 'mov', 'avi', 'mkv', '3gp'].includes(fileExtension);
-      
+
       // Get appropriate directory
       let dirs = ReactNativeBlobUtil.fs.dirs;
       let downloadPath;
-      
+
       if (Platform.OS === 'android') {
         if (isImage) {
           // Save images to Pictures folder (visible in gallery)
@@ -1148,7 +1152,7 @@ const CustomerDetail = ({ navigation, route }) => {
     } catch (error) {
       console.error('Download error:', error);
       console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      
+
       // More specific error messages
       let errorMessage = 'Failed to download file';
       if (error.message) {
@@ -1198,12 +1202,12 @@ const CustomerDetail = ({ navigation, route }) => {
   // Show toast notification
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const showToast = (message, type = 'success') => {
-   Toast.show({
-    type: type,
-    text1: type === 'success' ? 'Success' : 'Error',
-    text2: message,
-    position: 'bottom',
-   });
+    Toast.show({
+      type: type,
+      text1: type === 'success' ? 'Success' : 'Error',
+      text2: message,
+      position: 'bottom',
+    });
   };
 
   const handleSendBackConfirm = useCallback(async (comment) => {
@@ -1239,6 +1243,19 @@ const CustomerDetail = ({ navigation, route }) => {
     }
   }, [selectedCustomer, loggedInUser, navigation, showToast]);
 
+
+  const normalizeMappingIsApproved = (mapping = {}) =>
+    Object.fromEntries(
+      Object.entries(mapping).map(([key, list]) => [
+        key,
+        (list || []).map(item => ({
+          ...item,
+          isApproved:
+            item.isApproved !== undefined ? item.isApproved : true,
+        })),
+      ])
+    );
+
   // Handle approve customer
   const handleApproveConfirm = async (comment) => {
     try {
@@ -1247,6 +1264,29 @@ const CustomerDetail = ({ navigation, route }) => {
       const actorId = loggedInUser?.userId || loggedInUser?.id;
       const parallelGroupId = selectedCustomer?.instance?.stepInstances[0]?.parallelGroup;
       const stepOrderId = selectedCustomer?.instance?.stepInstances[0]?.stepOrder;
+
+      const draftResponse = await customerAPI.getLatestDraft(instanceId, actorId);
+
+      const latestDraft = draftResponse?.data;
+      let dataChanges;
+
+      if (latestDraft.hasDraft) {
+        dataChanges = {
+          ...latestDraft.draftEdits,
+          mapping: normalizeMappingIsApproved(latestDraft.draftEdits?.mapping),
+        };
+      } else {
+        dataChanges = {
+          customerGroupId: selectedCustomer?.customerGroupId,
+          distributors: [],
+          divisions: selectedCustomer?.divisions,
+          mapping: normalizeMappingIsApproved(selectedCustomer?.mapping),
+        };
+      }
+
+      if (!latestDraft) {
+        throw new Error('Latest draft data not found');
+      }
 
       const actionDataPayload = {
         stepOrder: stepOrderId,
@@ -1259,10 +1299,7 @@ const CustomerDetail = ({ navigation, route }) => {
           field: "status",
           newValue: "Approved"
         },
-        dataChanges: {
-          previousStatus: "Pending",
-          newStatus: "Approved"
-        }
+        dataChanges: dataChanges
       };
 
       const response = await customerAPI.workflowAction(instanceId, actionDataPayload);
@@ -1304,7 +1341,7 @@ const CustomerDetail = ({ navigation, route }) => {
 
       // Fetch latest draft data
       const latestDraftResponse = await customerAPI.getLatestDraft(instanceId, actorId);
-      
+
       if (latestDraftResponse?.data?.data) {
         setLatestDraftData(latestDraftResponse.data.data);
         setVerifyModalVisible(true);
@@ -1341,23 +1378,17 @@ const CustomerDetail = ({ navigation, route }) => {
       // Extract data from latest draft response
       const parallelGroup = draftData?.parallelGroup || selectedCustomer?.instance?.stepInstances?.[0]?.parallelGroup || 1;
       const stepOrder = draftData?.stepOrder || selectedCustomer?.instance?.stepInstances?.[0]?.stepOrder || 1;
-      const draftEdits = draftData?.draftEdits || {};
-
-      // Build dataChanges from latest draft
-      const dataChanges = {
-        mapping: draftEdits.mapping || {},
-        customerGroupId: draftEdits.customerGroupId || selectedCustomer?.customerGroupId || customer?.customerGroupId,
+      const draftEdits = {
+        ...draftData,
+        mapping: normalizeMappingIsApproved(draftData?.mapping),
+      } || {
+        customerGroupId: selectedCustomer?.customerGroupId,
+        distributors: [],
+        divisions: selectedCustomer?.divisions,
+        mapping: normalizeMappingIsApproved(selectedCustomer?.mapping),
       };
 
-      // Add divisions if present
-      if (draftEdits.divisions && draftEdits.divisions.length > 0) {
-        dataChanges.divisions = draftEdits.divisions;
-      }
-
-      // Add distributors if present
-      if (draftEdits.distributors && draftEdits.distributors.length > 0) {
-        dataChanges.distributors = draftEdits.distributors;
-      }
+   
 
       const actionDataPayload = {
         action: "APPROVE",
@@ -1365,7 +1396,7 @@ const CustomerDetail = ({ navigation, route }) => {
         stepOrder: stepOrder,
         actorId: actorId,
         comments: comment || "approved",
-        dataChanges: dataChanges,
+        dataChanges: draftEdits,
       };
 
       const response = await customerAPI.workflowAction(instanceId, actionDataPayload);
@@ -1447,7 +1478,7 @@ const CustomerDetail = ({ navigation, route }) => {
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
       <View style={styles.container}>
         {/* Header */}
-  
+
 
         <View style={styles.header}>
           {/* LEFT SECTION – 60% */}
@@ -1488,7 +1519,7 @@ const CustomerDetail = ({ navigation, route }) => {
                 {customer?.statusName === 'PENDING' && customer?.action === 'APPROVE' && (
                   <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
                     <View style={styles.topActionButtons}>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.topApproveButton}
                         onPress={() => setApproveModalVisible(true)}
                         disabled={actionLoading}
@@ -1497,7 +1528,7 @@ const CustomerDetail = ({ navigation, route }) => {
                         <AppText style={styles.topApproveButtonText}>Approve</AppText>
                       </TouchableOpacity>
 
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.topRejectButton}
                         onPress={() => setRejectModalVisible(true)}
                         disabled={actionLoading}
@@ -1509,32 +1540,32 @@ const CustomerDetail = ({ navigation, route }) => {
                 )}
 
                 {/* Verify/Reject buttons for LINK_DT action */}
-                {(customer?.action === 'LINK_DT' || selectedCustomer?.action === 'LINK_DT') && 
-                 (customer?.statusName === 'IN_PROGRESS' || customer?.statusName === 'PENDING' || 
-                  selectedCustomer?.statusName === 'IN_PROGRESS' || selectedCustomer?.statusName === 'PENDING') && (
-                  <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
-                    <View style={styles.topActionButtons}>
-                      <TouchableOpacity 
-                        style={styles.topVerifyButton}
-                        onPress={handleVerifyClick}
-                        disabled={actionLoading}
-                      >
-                        <MaterialIcons name="check" size={14} color="#fff" />
-                        <AppText style={styles.topVerifyButtonText}>Verify</AppText>
-                      </TouchableOpacity>
+                {(customer?.action === 'LINK_DT' || selectedCustomer?.action === 'LINK_DT') &&
+                  (customer?.statusName === 'IN_PROGRESS' || customer?.statusName === 'PENDING' ||
+                    selectedCustomer?.statusName === 'IN_PROGRESS' || selectedCustomer?.statusName === 'PENDING') && (
+                    <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+                      <View style={styles.topActionButtons}>
+                        <TouchableOpacity
+                          style={styles.topVerifyButton}
+                          onPress={handleVerifyClick}
+                          disabled={actionLoading}
+                        >
+                          <MaterialIcons name="check" size={14} color="#fff" />
+                          <AppText style={styles.topVerifyButtonText}>Verify</AppText>
+                        </TouchableOpacity>
 
-                      <TouchableOpacity 
-                        style={styles.topRejectButton}
-                        onPress={() => setRejectModalVisible(true)}
-                        disabled={actionLoading}
-                      >
-                        <CloseCircle color="#2B2B2B" />
-                      </TouchableOpacity>
-                    </View>
-                  </PermissionWrapper>
-                )}
+                        <TouchableOpacity
+                          style={styles.topRejectButton}
+                          onPress={() => setRejectModalVisible(true)}
+                          disabled={actionLoading}
+                        >
+                          <CloseCircle color="#2B2B2B" />
+                        </TouchableOpacity>
+                      </View>
+                    </PermissionWrapper>
+                  )}
               </>
-            )            }
+            )}
 
           </View>
         </View>
@@ -1566,283 +1597,264 @@ const CustomerDetail = ({ navigation, route }) => {
         {activeTab === 'details' && (
 
           <>
-        <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-          >
-            {detailsLoading ? (
-              <SkeletonDetailPage />
-            ) : !selectedCustomer ? (
-              <View style={{ padding: 20 }}>
-                <AppText>No customer data available</AppText>
-              </View>
-            ) : (
-              <Animated.View
-                style={{
-                  opacity: fadeAnim,
-                  transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-                }}
-              >
+            <ScrollView
+              style={styles.content}
+              showsVerticalScrollIndicator={false}
+            >
+              {detailsLoading ? (
+                <SkeletonDetailPage />
+              ) : !selectedCustomer ? (
+                <View style={{ padding: 20 }}>
+                  <AppText>No customer data available</AppText>
+                </View>
+              ) : (
+                <Animated.View
+                  style={{
+                    opacity: fadeAnim,
+                    transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+                  }}
+                >
 
-                {console.log(customerData)
-                }
-                {/* Details Section */}
-                <AnimatedSection >
-                  <AppText style={styles.sectionTitle}>Details</AppText>
-                  <View style={styles.card}>
-                    <View style={{ display: 'flex', flexDirection: 'row', gap: 120 }}>
-                      <InfoRow label="Code" value={customerData.code} />
-                      <InfoRow label="Mobile Number" value={customerData.mobileNumber} />
-                    </View>
-
-                    <InfoRow label="Email Address" value={customerData.email} />
-                  </View>
-                </AnimatedSection>
-
-                {/* Address Details */}
-                <AnimatedSection >
-                  <View style={styles.sectionHeader}>
-                    <AppText style={styles.sectionTitle}>Address Details</AppText>
-                    {customerData.documents.addressProof && (
-
-
-                      <View style={{ ...styles.fileLinkGroup, marginTop: 4 }}>
-                        <AppText
-                          style={styles.linkText}
-                          numberOfLines={1}
-                          ellipsizeMode="middle"
-                        >
-                          {customerData.documents.addressProof?.fileName ||
-                            customerData.documents.addressProof}
-                        </AppText>
-
-                        <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
-                          <TouchableOpacity onPress={() => openDocument(customerData.documents.addressProof)}>
-                            <EyeOpen width={18} color={colors.primary} />
-                          </TouchableOpacity>
-
-                          <AppText style={{ color: '#777' }}>|</AppText>
-
-                          <TouchableOpacity onPress={() => downloadDocument(customerData.documents.addressProof)}>
-                            <Download width={16} color={colors.primary} />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    )}
-
-                  </View>
-                  <View style={styles.card}>
-                    <InfoRow label="Address" value={customerData.address} />
-                    <View style={{ ...styles.rowContainer, marginTop: 5, paddingBottom: 10 }}>
-                      <View style={[styles.halfRow, { marginRight: 8 }]}>
-                        <AppText style={styles.infoLabel}>Pincode</AppText>
-                        <AppText style={styles.infoValue}>{customerData.pincode}</AppText>
-                      </View>
-                      <View style={[styles.halfRow, { marginLeft: 8 }]}>
-                        <AppText style={styles.infoLabel}>City</AppText>
-                        <AppText style={styles.infoValue}>{customerData.city}</AppText>
-                      </View>
-                      <View style={[styles.halfRow, { marginLeft: 8 }]}>
-                        <AppText style={styles.infoLabel}>State</AppText>
-                        <AppText style={styles.infoValue}>{customerData.state}</AppText>
-                      </View>
-                    </View>
-                  </View>
-                </AnimatedSection>
-
-                {/* License Details */}
-                {customerData.licenseData && customerData.licenseData.length > 0 && (
+                  {console.log(customerData)
+                  }
+                  {/* Details Section */}
                   <AnimatedSection >
-                    <AppText style={styles.sectionTitle}>License Details</AppText>
+                    <AppText style={styles.sectionTitle}>Details</AppText>
                     <View style={styles.card}>
-                      {customerData.licenseData.map((license, index) => (
-                        <View key={index}>
-                          <View style={[styles.licenseRow, index > 0 && { marginTop: 10 }]}>
-                            <View style={styles.licenseInfo}>
-                              <AppText style={styles.infoLabel}>{license.label}</AppText>
-                              <AppText style={styles.infoValue}>{license.licenseNumber}</AppText>
-                            </View>
-                            <View style={styles.licenseExpiry}>
-                              <AppText style={styles.infoLabel}>Expiry</AppText>
-                              <AppText style={styles.infoValue}>{license.expiry}</AppText>
-                            </View>
+                      <View style={{ display: 'flex', flexDirection: 'row', gap: 120 }}>
+                        <InfoRow label="Code" value={customerData.code} />
+                        <InfoRow label="Mobile Number" value={customerData.mobileNumber} />
+                      </View>
+
+                      <InfoRow label="Email Address" value={customerData.email} />
+                    </View>
+                  </AnimatedSection>
+
+                  {/* Address Details */}
+                  <AnimatedSection >
+                    <View style={styles.sectionHeader}>
+                      <AppText style={styles.sectionTitle}>Address Details</AppText>
+                      {customerData.documents.addressProof && (
+
+
+                        <View style={{ ...styles.fileLinkGroup, marginTop: 4 }}>
+                          <AppText
+                            style={styles.linkText}
+                            numberOfLines={1}
+                            ellipsizeMode="middle"
+                          >
+                            {customerData.documents.addressProof?.fileName ||
+                              customerData.documents.addressProof}
+                          </AppText>
+
+                          <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
+                            <TouchableOpacity onPress={() => openDocument(customerData.documents.addressProof)}>
+                              <EyeOpen width={18} color={colors.primary} />
+                            </TouchableOpacity>
+
+                            <AppText style={{ color: '#777' }}>|</AppText>
+
+                            <TouchableOpacity onPress={() => downloadDocument(customerData.documents.addressProof)}>
+                              <Download width={16} color={colors.primary} />
+                            </TouchableOpacity>
                           </View>
-
-                          {license.document && (
-                            <>
-                              <AppText style={styles.uploadedFileLabel}>Uploaded file</AppText>
-                              <View style={[styles.fileRow, index === customerData.licenseData.length - 1 && { marginBottom: 8 }]}>
-                                <AppText style={styles.fileName} numberOfLines={1}
-                                  ellipsizeMode="tail">{license.document?.fileName || ''}</AppText>
-                                <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
-                                  <TouchableOpacity
-                                    style={styles.uploadedFile}
-                                    onPress={() => openDocument(license.document)}
-                                  >
-                                    <EyeOpen width={18} color={colors.primary} />
-                                  </TouchableOpacity>
-                                  <AppText style={{ color: '#777' }}>|</AppText>
-                                  <TouchableOpacity
-                                    style={styles.uploadedFile}
-                                    onPress={() => downloadDocument(license.document)}
-                                  >
-                                    <Download width={16} color={colors.primary} />
-                                  </TouchableOpacity>
-                                </View>
-                              </View>
-                            </>
-                          )}
                         </View>
-                      ))}
+                      )}
+
                     </View>
-                  </AnimatedSection>
-                )}
-
-
-                {/* Image */}
-                {customerData.documents.image && (
-                  <AnimatedSection >
-                    <AppText style={styles.sectionTitle}>Image</AppText>
                     <View style={styles.card}>
-                      <View style={styles.valueWithIcons}>
-                        <AppText style={styles.imageName} numberOfLines={1}
-                          ellipsizeMode="tail">{customerData.documents.image?.fileName || customerData.documents.image}</AppText>
-                        <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
-                          <TouchableOpacity
-                            style={styles.uploadedFile}
-                            onPress={() => openDocument(customerData.documents.image)}
-                          ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                          <AppText style={{ color: '#777' }}>|</AppText>
-                          <TouchableOpacity
-                            style={{ ...styles.uploadedFile }}
-                            onPress={() => downloadDocument(customerData.documents.image)}
-                          ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                      <InfoRow label="Address" value={customerData.address} />
+                      <View style={{ ...styles.rowContainer, marginTop: 5, paddingBottom: 10 }}>
+                        <View style={[styles.halfRow, { marginRight: 8 }]}>
+                          <AppText style={styles.infoLabel}>Pincode</AppText>
+                          <AppText style={styles.infoValue}>{customerData.pincode}</AppText>
+                        </View>
+                        <View style={[styles.halfRow, { marginLeft: 8 }]}>
+                          <AppText style={styles.infoLabel}>City</AppText>
+                          <AppText style={styles.infoValue}>{customerData.city}</AppText>
+                        </View>
+                        <View style={[styles.halfRow, { marginLeft: 8 }]}>
+                          <AppText style={styles.infoLabel}>State</AppText>
+                          <AppText style={styles.infoValue}>{customerData.state}</AppText>
                         </View>
                       </View>
                     </View>
                   </AnimatedSection>
-                )}
-                {/* Security Details */}
-                <AnimatedSection >
-                  <AppText style={styles.sectionTitle}>Security Details</AppText>
-                  <View style={styles.card}>
-                    <View style={styles.otherDetailRow}>
-                      <View style={styles.otherDetailItem}>
-                        <AppText style={styles.infoLabel}>PAN</AppText>
-                        <View style={styles.valueWithIcons}>
-                          <AppText style={styles.infoValue}>{customerData.pan}</AppText>
-                          {customerData.documents.panDoc && (
-                            <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
-                              <TouchableOpacity
-                                style={styles.uploadedFile}
-                                onPress={() => openDocument(customerData.documents.panDoc)}
-                              ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
-                              <AppText style={{ color: '#777' }}>|</AppText>
-                              <TouchableOpacity
-                                style={styles.uploadedFile}
-                                onPress={() => downloadDocument(customerData.documents.panDoc)}
-                              ><Download width={16} color={colors.primary} /></TouchableOpacity>
+
+                  {/* License Details */}
+                  {customerData.licenseData && customerData.licenseData.length > 0 && (
+                    <AnimatedSection >
+                      <AppText style={styles.sectionTitle}>License Details</AppText>
+                      <View style={styles.card}>
+                        {customerData.licenseData.map((license, index) => (
+                          <View key={index}>
+                            <View style={[styles.licenseRow, index > 0 && { marginTop: 10 }]}>
+                              <View style={styles.licenseInfo}>
+                                <AppText style={styles.infoLabel}>{license.label}</AppText>
+                                <AppText style={styles.infoValue}>{license.licenseNumber}</AppText>
+                              </View>
+                              <View style={styles.licenseExpiry}>
+                                <AppText style={styles.infoLabel}>Expiry</AppText>
+                                <AppText style={styles.infoValue}>{license.expiry}</AppText>
+                              </View>
                             </View>
-                          )}
+
+                            {license.document && (
+                              <>
+                                <AppText style={styles.uploadedFileLabel}>Uploaded file</AppText>
+                                <View style={[styles.fileRow, index === customerData.licenseData.length - 1 && { marginBottom: 8 }]}>
+                                  <AppText style={styles.fileName} numberOfLines={1}
+                                    ellipsizeMode="tail">{license.document?.fileName || ''}</AppText>
+                                  <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
+                                    <TouchableOpacity
+                                      style={styles.uploadedFile}
+                                      onPress={() => openDocument(license.document)}
+                                    >
+                                      <EyeOpen width={18} color={colors.primary} />
+                                    </TouchableOpacity>
+                                    <AppText style={{ color: '#777' }}>|</AppText>
+                                    <TouchableOpacity
+                                      style={styles.uploadedFile}
+                                      onPress={() => downloadDocument(license.document)}
+                                    >
+                                      <Download width={16} color={colors.primary} />
+                                    </TouchableOpacity>
+                                  </View>
+                                </View>
+                              </>
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    </AnimatedSection>
+                  )}
+
+
+                  {/* Image */}
+                  {customerData.documents.image && (
+                    <AnimatedSection >
+                      <AppText style={styles.sectionTitle}>Image</AppText>
+                      <View style={styles.card}>
+                        <View style={styles.valueWithIcons}>
+                          <AppText style={styles.imageName} numberOfLines={1}
+                            ellipsizeMode="tail">{customerData.documents.image?.fileName || customerData.documents.image}</AppText>
+                          <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
+                            <TouchableOpacity
+                              style={styles.uploadedFile}
+                              onPress={() => openDocument(customerData.documents.image)}
+                            ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                            <AppText style={{ color: '#777' }}>|</AppText>
+                            <TouchableOpacity
+                              style={{ ...styles.uploadedFile }}
+                              onPress={() => downloadDocument(customerData.documents.image)}
+                            ><Download width={16} color={colors.primary} /></TouchableOpacity>
+                          </View>
                         </View>
                       </View>
-
-
-                      {(customerData.documents.gstDoc || customerData.gst) &&
-
-                        <View style={[styles.otherDetailItem, { marginLeft: 0 }]}>
-                          <AppText style={styles.infoLabel}>GST</AppText>
+                    </AnimatedSection>
+                  )}
+                  {/* Security Details */}
+                  <AnimatedSection >
+                    <AppText style={styles.sectionTitle}>Security Details</AppText>
+                    <View style={styles.card}>
+                      <View style={styles.otherDetailRow}>
+                        <View style={styles.otherDetailItem}>
+                          <AppText style={styles.infoLabel}>PAN</AppText>
                           <View style={styles.valueWithIcons}>
-                            {customerData.gst &&
-                              <AppText style={styles.infoValue}>{customerData.gst}</AppText>
-                            }
-                            {customerData.documents.gstDoc && (
+                            <AppText style={styles.infoValue}>{customerData.pan}</AppText>
+                            {customerData.documents.panDoc && (
                               <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
                                 <TouchableOpacity
                                   style={styles.uploadedFile}
-                                  onPress={() => openDocument(customerData.documents.gstDoc)}
+                                  onPress={() => openDocument(customerData.documents.panDoc)}
                                 ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
                                 <AppText style={{ color: '#777' }}>|</AppText>
                                 <TouchableOpacity
                                   style={styles.uploadedFile}
-                                  onPress={() => downloadDocument(customerData.documents.gstDoc)}
+                                  onPress={() => downloadDocument(customerData.documents.panDoc)}
                                 ><Download width={16} color={colors.primary} /></TouchableOpacity>
                               </View>
                             )}
                           </View>
-                        </View>}
-
-                    </View>
-                  </View>
-                </AnimatedSection>
-
-                {/* Customer Group */}
-                {customerData.customerGroupId && (
-                  <AnimatedSection  >
-                    <View style={styles.sectionHeaderRow}>
-                      <AppText style={styles.sectionTitle}>Customer Group</AppText>
-                      <TouchableOpacity
-                        onPress={() => setCommentsVisible(true)}
-                        style={styles.commentIconButton}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                         <View style={styles.commentWrapper}>
-                        <Comment width={22} height={22} color={colors.primary} />
-
                         </View>
-                      </TouchableOpacity>
-                    </View>
 
-                    <View style={[styles.card, { marginBottom: 20 }]}>
-                      {!isEditingCustomerGroup ? (
-                        // Display mode - show customer group name and Change button
-                        <View style={styles.customerGroupRow}>
-                          <AppText style={styles.infoValue}>{customerData.customerGroupName}</AppText>
-                          <PermissionWrapper permission={PERMISSIONS.ONBOARDING_DETAILS_PAGE_CHANGE_CUSTOMER_GROUP}>
-                            <TouchableOpacity
-                              style={styles.changeButton}
-                              onPress={handleChangeCustomerGroup}
-                              activeOpacity={0.7}
-                            >
 
-                              <Sync />
-                              <AppText style={styles.changeButtonText}>Change</AppText>
-                            </TouchableOpacity>
-                          </PermissionWrapper>
-                        </View>
-                      ) : (
-                        // Edit mode - show radio buttons inline
-                        <View style={styles.customerGroupEditContainer}>
-                          <View style={styles.radioGroupContainer}>
-                            {customerGroups.length > 0 ? (
-                              <>
-                                <View style={styles.radioRow}>
-                                  {customerGroups.slice(0, 2).map((group) => (
-                                    <TouchableOpacity
-                                      key={group.customerGroupId}
-                                      style={[styles.radioOption, styles.radioOptionFlex]}
-                                      onPress={() => {
-                                        setSelectedGroupId(group.customerGroupId);
-                                      }}
-                                    >
-                                      <View style={styles.radioCircle}>
-                                        {selectedGroupId === group.customerGroupId && (
-                                          <View style={styles.radioSelected} />
-                                        )}
-                                      </View>
-                                      <AppText style={styles.radioText}>
-                                        {group.customerGroupId}-{group.customerGroupName}
-                                      </AppText>
-                                    </TouchableOpacity>
-                                  ))}
+                        {(customerData.documents.gstDoc || customerData.gst) &&
+
+                          <View style={[styles.otherDetailItem, { marginLeft: 0 }]}>
+                            <AppText style={styles.infoLabel}>GST</AppText>
+                            <View style={styles.valueWithIcons}>
+                              {customerData.gst &&
+                                <AppText style={styles.infoValue}>{customerData.gst}</AppText>
+                              }
+                              {customerData.documents.gstDoc && (
+                                <View style={{ ...styles.iconGroup, justifyContent: 'space-around' }}>
+                                  <TouchableOpacity
+                                    style={styles.uploadedFile}
+                                    onPress={() => openDocument(customerData.documents.gstDoc)}
+                                  ><EyeOpen width={18} color={colors.primary} /></TouchableOpacity>
+                                  <AppText style={{ color: '#777' }}>|</AppText>
+                                  <TouchableOpacity
+                                    style={styles.uploadedFile}
+                                    onPress={() => downloadDocument(customerData.documents.gstDoc)}
+                                  ><Download width={16} color={colors.primary} /></TouchableOpacity>
                                 </View>
-                                {customerGroups.length > 2 && (
+                              )}
+                            </View>
+                          </View>}
+
+                      </View>
+                    </View>
+                  </AnimatedSection>
+
+                  {/* Customer Group */}
+                  {customerData.customerGroupId && (
+                    <AnimatedSection  >
+                      <View style={styles.sectionHeaderRow}>
+                        <AppText style={styles.sectionTitle}>Customer Group</AppText>
+                        <TouchableOpacity
+                          onPress={() => setCommentsVisible(true)}
+                          style={styles.commentIconButton}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <View style={styles.commentWrapper}>
+                            <Comment width={22} height={22} color={colors.primary} />
+
+                          </View>
+                        </TouchableOpacity>
+                      </View>
+
+                      <View style={[styles.card, { marginBottom: 20 }]}>
+                        {!isEditingCustomerGroup ? (
+                          // Display mode - show customer group name and Change button
+                          <View style={styles.customerGroupRow}>
+                            <AppText style={styles.infoValue}>{customerData.customerGroupName}</AppText>
+                            <PermissionWrapper permission={PERMISSIONS.ONBOARDING_DETAILS_PAGE_CHANGE_CUSTOMER_GROUP}>
+                              <TouchableOpacity
+                                style={styles.changeButton}
+                                onPress={handleChangeCustomerGroup}
+                                activeOpacity={0.7}
+                              >
+
+                                <Sync />
+                                <AppText style={styles.changeButtonText}>Change</AppText>
+                              </TouchableOpacity>
+                            </PermissionWrapper>
+                          </View>
+                        ) : (
+                          // Edit mode - show radio buttons inline
+                          <View style={styles.customerGroupEditContainer}>
+                            <View style={styles.radioGroupContainer}>
+                              {customerGroups.length > 0 ? (
+                                <>
                                   <View style={styles.radioRow}>
-                                    {customerGroups.slice(2, 4).map((group) => (
+                                    {customerGroups.slice(0, 2).map((group) => (
                                       <TouchableOpacity
                                         key={group.customerGroupId}
                                         style={[styles.radioOption, styles.radioOptionFlex]}
-                                        onPress={() => setSelectedGroupId(group.customerGroupId)}
+                                        onPress={() => {
+                                          setSelectedGroupId(group.customerGroupId);
+                                        }}
                                       >
                                         <View style={styles.radioCircle}>
                                           {selectedGroupId === group.customerGroupId && (
@@ -1855,54 +1867,73 @@ const CustomerDetail = ({ navigation, route }) => {
                                       </TouchableOpacity>
                                     ))}
                                   </View>
-                                )}
-                              </>
-                            ) : (
-                              <ActivityIndicator size="small" color={colors.primary} />
-                            )}
-                          </View>
-
-                          <View style={styles.inlineModalButtons}>
-
-                            <TouchableOpacity
-                              style={styles.inlineDoneButton}
-                              onPress={handleDoneCustomerGroup}
-                              disabled={updatingCustomerGroup}
-                            >
-                              {updatingCustomerGroup ? (
-                                <ActivityIndicator size="small" color="#fff" />
+                                  {customerGroups.length > 2 && (
+                                    <View style={styles.radioRow}>
+                                      {customerGroups.slice(2, 4).map((group) => (
+                                        <TouchableOpacity
+                                          key={group.customerGroupId}
+                                          style={[styles.radioOption, styles.radioOptionFlex]}
+                                          onPress={() => setSelectedGroupId(group.customerGroupId)}
+                                        >
+                                          <View style={styles.radioCircle}>
+                                            {selectedGroupId === group.customerGroupId && (
+                                              <View style={styles.radioSelected} />
+                                            )}
+                                          </View>
+                                          <AppText style={styles.radioText}>
+                                            {group.customerGroupId}-{group.customerGroupName}
+                                          </AppText>
+                                        </TouchableOpacity>
+                                      ))}
+                                    </View>
+                                  )}
+                                </>
                               ) : (
-                                <AppText style={styles.inlineDoneButtonText}>Done</AppText>
+                                <ActivityIndicator size="small" color={colors.primary} />
                               )}
-                            </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.inlineModalButtons}>
+
+                              <TouchableOpacity
+                                style={styles.inlineDoneButton}
+                                onPress={handleDoneCustomerGroup}
+                                disabled={updatingCustomerGroup}
+                              >
+                                {updatingCustomerGroup ? (
+                                  <ActivityIndicator size="small" color="#fff" />
+                                ) : (
+                                  <AppText style={styles.inlineDoneButtonText}>Done</AppText>
+                                )}
+                              </TouchableOpacity>
 
 
-                            <TouchableOpacity
-                              style={styles.inlineCancelButton}
-                              onPress={handleCancelCustomerGroup}
-                            >
-                              <AppText style={styles.inlineCancelButtonText}>Cancel</AppText>
-                            </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.inlineCancelButton}
+                                onPress={handleCancelCustomerGroup}
+                              >
+                                <AppText style={styles.inlineCancelButtonText}>Cancel</AppText>
+                              </TouchableOpacity>
 
+                            </View>
                           </View>
-                        </View>
-                      )}
+                        )}
 
 
-                    </View>
-
-
-                    
-                  </AnimatedSection>
-                )}
+                      </View>
 
 
 
+                    </AnimatedSection>
+                  )}
 
 
-              </Animated.View>
-            )}
-          </ScrollView>
+
+
+
+                </Animated.View>
+              )}
+            </ScrollView>
 
           </>
         )}
@@ -1911,7 +1942,7 @@ const CustomerDetail = ({ navigation, route }) => {
 
         {activeTab === 'linkaged' && <LinkagedTab
           customerType={customerData.customerType}
-          customerId={customerData.customerId}
+          customerId={customer.customerId}
           mappingData={selectedCustomer?.mapping}
           hasApprovePermission={customer?.action === 'APPROVE'}
           isCustomerActive={customer?.statusName === 'ACTIVE' || selectedCustomer?.statusName === 'ACTIVE'}
@@ -2071,7 +2102,7 @@ const CustomerDetail = ({ navigation, route }) => {
               console.log('✅ Download request received in onFileDownload');
               console.log('Download URL:', request.url);
               console.log('Download request details:', JSON.stringify(request, null, 2));
-              
+
               // Show success message
               Toast.show({
                 type: 'success',
@@ -2079,7 +2110,7 @@ const CustomerDetail = ({ navigation, route }) => {
                 text2: 'File is being downloaded',
                 position: 'bottom',
               });
-              
+
               setTimeout(() => {
                 setDownloadWebViewUrl(null);
               }, 3000);
@@ -2163,7 +2194,7 @@ const CustomerDetail = ({ navigation, route }) => {
 
       </View>
     </SafeAreaView>
-    
+
   );
 };
 
@@ -2193,7 +2224,7 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     flex: 1,
     flexShrink: 1,
-    
+
   },
   headerActions: {
     flexDirection: 'row',
@@ -2642,7 +2673,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: '#fff',
 
- 
+
     zIndex: 999
   },
 
@@ -2748,12 +2779,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  commentWrapper:{
+  commentWrapper: {
 
-    backgroundColor:"#F7941E1A",
-    borderRadius:100,
-    padding:10
-    
+    backgroundColor: "#F7941E1A",
+    borderRadius: 100,
+    padding: 10
+
 
   },
 });
