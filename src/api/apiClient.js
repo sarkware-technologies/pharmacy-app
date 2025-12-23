@@ -7,8 +7,8 @@ import { store } from "../redux/store";
 import { logout } from "../redux/slices/authSlice";
 
 
-export const BASE_URL = 'https://pharmsupply-dev-api.pharmconnect.com';
-// export const BASE_URL = 'https://dev-specialrates-api.sunpharma.cloud';
+// export const BASE_URL = 'https://pharmsupply-dev-api.pharmconnect.com';
+export const BASE_URL = 'https://dev-specialrates-api.sunpharma.cloud';
 
 class ApiClient {
     constructor() {
