@@ -225,11 +225,6 @@ export const LinkagedTab = ({
   };
 
 
-
-
-
-
-
   const toggleAllSupplyDropdown = distributorId => {
     setShowAllSupplyDropdown(prev => ({
       ...prev,
@@ -1393,7 +1388,7 @@ export const LinkagedTab = ({
 
       // Prepare draft-edit payload
       const draftEditPayload = {
-        stepOrder: 1,
+        stepOrder: selectedCustomer?.instance?.stepInstances?.[0]?.stepOrder || 1,
         parallelGroup: 1,
         comments: '',
         actorId: actorId,
@@ -1561,7 +1556,7 @@ export const LinkagedTab = ({
 
       // Prepare draft-edit payload
       const draftEditPayload = {
-        stepOrder: 1,
+        stepOrder: selectedCustomer?.instance?.stepInstances?.[0]?.stepOrder || 1,
         parallelGroup: 1,
         comments: '',
         actorId: actorId,
@@ -1592,7 +1587,7 @@ export const LinkagedTab = ({
       const actorId = loggedInUser?.userId || loggedInUser?.id;
 
       const actionData = {
-        stepOrder: 3,
+        stepOrder: selectedCustomer?.instance?.stepInstances?.[0]?.stepOrder || 3,
         parallelGroup: 1,
         actorId: actorId,
         action: 'REJECT',
@@ -1733,7 +1728,7 @@ export const LinkagedTab = ({
       };
 
       const draftEditPayload = {
-        stepOrder: 3,
+        stepOrder: selectedCustomer?.instance?.stepInstances?.[0]?.stepOrder || 3,
         parallelGroup: 1,
         comments: '',
         actorId: actorId,
@@ -2124,7 +2119,7 @@ export const LinkagedTab = ({
       };
 
       const draftEditPayload = {
-        stepOrder: 3,
+        stepOrder: selectedCustomer?.instance?.stepInstances?.[0]?.stepOrder || 3,
         parallelGroup: 1,
         comments: '',
         actorId: actorId,
@@ -2321,7 +2316,7 @@ export const LinkagedTab = ({
       const formattedDivisions = Array.from(allDivisionsMap.values());
 
       const draftEditPayload = {
-        stepOrder: 3,
+        stepOrder: selectedCustomer?.instance?.stepInstances?.[0]?.stepOrder || 3,
         parallelGroup: 1,
         comments: '',
         actorId: actorId,

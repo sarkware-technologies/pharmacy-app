@@ -1278,7 +1278,7 @@ const CustomerDetail = ({ navigation, route }) => {
       } else {
         dataChanges = {
           customerGroupId: selectedCustomer?.customerGroupId,
-          distributors: [],
+          distributorMapping: [],
           divisions: selectedCustomer?.divisions,
           mapping: normalizeMappingIsApproved(selectedCustomer?.mapping),
         };
@@ -1294,11 +1294,6 @@ const CustomerDetail = ({ navigation, route }) => {
         actorId: actorId,
         action: "APPROVE",
         comments: comment || "Approved",
-        instanceId: instanceId,
-        actionData: {
-          field: "status",
-          newValue: "Approved"
-        },
         dataChanges: dataChanges
       };
 
@@ -1383,7 +1378,7 @@ const CustomerDetail = ({ navigation, route }) => {
         mapping: normalizeMappingIsApproved(draftData?.mapping),
       } || {
         customerGroupId: selectedCustomer?.customerGroupId,
-        distributors: [],
+        distributorMapping: [],
         divisions: selectedCustomer?.divisions,
         mapping: normalizeMappingIsApproved(selectedCustomer?.mapping),
       };
@@ -1439,11 +1434,7 @@ const CustomerDetail = ({ navigation, route }) => {
         actorId: actorId,
         action: "REJECT",
         comments: comment || "Rejected",
-        instanceId: instanceId,
-        actionData: {
-          field: "status",
-          newValue: "Rejected"
-        },
+       
         dataChanges: {
           previousStatus: "Pending",
           newStatus: "Rejected"

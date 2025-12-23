@@ -123,10 +123,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
   const listError = useSelector(state => state.customer.error);
   const tabCounts = useSelector(selectTabCounts); // Re-added tabCounts selector
   const shouldResetToAllTab = useSelector(state => state.customer.shouldResetToAllTab); // Get reset flag
-  
+
   // Fetch customer groups for mapping names to IDs
   const [customerGroups, setCustomerGroups] = useState([]);
-  
+
   useEffect(() => {
     const loadCustomerGroups = async () => {
       try {
@@ -189,10 +189,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewSignedUrl, setPreviewSignedUrl] = useState(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
-  
+
   // State to show preview inside DocumentsModal
   const [showPreviewInDocumentsModal, setShowPreviewInDocumentsModal] = useState(false);
-  
+
   // Refs to prevent duplicate API calls
   const isFetchingPreviewRef = useRef(false);
   const lastFetchedPreviewPathRef = useRef(null);
@@ -220,7 +220,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
   const isHardRefreshRef = useRef(false); // Track if we're doing a hard refresh
   const currentTabForDataRef = useRef(activeTab); // Track which tab's data is currently displayed
   const wasFocusedRef = useRef(false); // Track if screen was previously focused (to detect return from CustomerDetail)
-  
+
   // Filter buttons scroll ref for "waiting for approval" tab
   const filterButtonsScrollRef = useRef(null);
   const filterButtonRefs = useRef({});
@@ -378,11 +378,11 @@ const CustomerList = ({ navigation: navigationProp }) => {
           const parentState = parentNav.getState();
           const currentRoute = parentState?.routes?.[parentState?.index];
           const pendingAction = currentRoute?.params?.pendingCustomerAction;
-          
+
           if (pendingAction) {
             let message = '';
             let type = 'success';
-            
+
             if (pendingAction === 'approve') {
               message = 'Customer has been successfully approved!';
               type = 'success';
@@ -393,7 +393,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
               message = 'Customer has been successfully verified!';
               type = 'success';
             }
-            
+
             if (message) {
               // Use setTimeout to ensure toast shows after navigation completes
               setTimeout(() => {
@@ -415,9 +415,9 @@ const CustomerList = ({ navigation: navigationProp }) => {
     React.useCallback(() => {
       console.log('🔄 Customer tab is active - fetching tab counts');
       dispatch(fetchTabCounts());
-      
+
       // Don't close documents modal on focus - let user control it explicitly
-      
+
       // Refresh the customer list when screen comes into focus (after navigating back from CustomerDetail)
       // Only refresh if we were previously focused (to avoid refreshing on initial mount)
       if (wasFocusedRef.current) {
@@ -501,10 +501,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
           }));
         }
       }
-      
+
       // Mark that we've been focused
       wasFocusedRef.current = true;
-      
+
       // Cleanup: reset on blur
       return () => {
         // Keep wasFocusedRef.current as true so next focus will trigger refresh
@@ -517,7 +517,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
     const initializeData = async () => {
       // Immediately clear customers list when tab changes (prevents showing wrong tab's data)
       dispatch(resetCustomersList());
-      
+
       // Update ref to track that we're switching tabs (data doesn't match yet)
       currentTabForDataRef.current = null;
 
@@ -542,7 +542,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           } : {}),
           sortBy: '',
           sortDirection: 'ASC',
-          isAll:true
+          isAll: true
         };
         console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
         dispatch(fetchCustomersList(payload));
@@ -649,21 +649,21 @@ const CustomerList = ({ navigation: navigationProp }) => {
     React.useCallback(() => {
       if (shouldResetToAllTab) {
         console.log('🔄 Refresh triggered from CustomerSearch - preserving current tab:', activeTab);
-        
+
         // Set hard refreshing flag to show loading and prevent stale data
         setIsHardRefreshing(true);
         isHardRefreshRef.current = true; // Set ref to prevent useEffect from running
-        
+
         // Clear the flag first
         dispatch(clearShouldResetToAllTab());
-        
+
         // Clear Redux customers list completely
         dispatch(resetCustomersList());
-        
+
         // DON'T reset to "all" tab - keep the current activeTab
         // The activeTab is already set, so we just need to refresh its data
         currentTabForDataRef.current = null; // Clear ref to prevent showing stale data
-        
+
         // Force fetch current tab's data immediately (hard refresh)
         // Use the same logic as the initial tab load
         if (activeTab === 'all') {
@@ -677,7 +677,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
             subCategoryCode: [],
             sortBy: '',
             sortDirection: 'ASC',
-            isAll:true
+            isAll: true
           };
           console.log('🔄 Fetching "all" tab data with payload:', payload);
           dispatch(fetchCustomersList(payload));
@@ -759,7 +759,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           cityIds: selectedFilters.cityIds,
           isLoadMore: false,
           isStaging: false,
-          isAll:true
+          isAll: true
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         // Waiting for Approval, Rejected, and Draft - staging endpoint
@@ -841,7 +841,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
         } : {}),
         isLoadMore: false,
         isStaging: false,
-        isAll:true
+        isAll: true
       }));
     } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
       // Waiting for Approval, Rejected, and Draft - staging endpoint
@@ -1024,21 +1024,21 @@ const CustomerList = ({ navigation: navigationProp }) => {
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current);
     }
-    
+
     setToastMessage(message);
     setToastType(type);
-    
+
     // Show toast after 500ms delay
     toastTimeoutRef.current = setTimeout(() => {
       setToastVisible(true);
-      
+
       // Hide toast after 3 seconds
       setTimeout(() => {
         setToastVisible(false);
       }, 3000);
     }, 500);
   };
-  
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -1079,52 +1079,52 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
 
   const handleFilterButtonPress = (buttonName) => {
-  // If same button is clicked again → deselect
-  const isSameButton = activeFilterButton === buttonName;
+    // If same button is clicked again → deselect
+    const isSameButton = activeFilterButton === buttonName;
 
-  // Reset list always
-  dispatch(resetCustomersList());
+    // Reset list always
+    dispatch(resetCustomersList());
 
-  // Toggle logic
-  const newActiveButton = isSameButton ? null : buttonName;
+    // Toggle logic
+    const newActiveButton = isSameButton ? null : buttonName;
 
-  console.log(newActiveButton);
-  
-  setActiveFilterButton(newActiveButton);
+    console.log(newActiveButton);
 
-  // If deselected, no need to scroll
-  // if (isSameButton) return;
+    setActiveFilterButton(newActiveButton);
 
-  // Scroll selected button into view
-  setTimeout(() => {
-    if (
-      filterButtonRefs.current[buttonName] &&
-      filterButtonsScrollRef.current
-    ) {
-      filterButtonRefs.current[buttonName].measureLayout(
-        filterButtonsScrollRef.current.getNode
-          ? filterButtonsScrollRef.current.getNode()
-          : filterButtonsScrollRef.current,
-        (x, y, w) => {
-          const screenWidth = Dimensions.get('window').width;
-          const scrollX = x - screenWidth / 2 + w / 2;
+    // If deselected, no need to scroll
+    // if (isSameButton) return;
 
-          filterButtonsScrollRef.current.scrollTo({
-            x: Math.max(0, scrollX),
-            animated: true,
-          });
-        }
-      );
-    }
-  }, 100);
-};
+    // Scroll selected button into view
+    setTimeout(() => {
+      if (
+        filterButtonRefs.current[buttonName] &&
+        filterButtonsScrollRef.current
+      ) {
+        filterButtonRefs.current[buttonName].measureLayout(
+          filterButtonsScrollRef.current.getNode
+            ? filterButtonsScrollRef.current.getNode()
+            : filterButtonsScrollRef.current,
+          (x, y, w) => {
+            const screenWidth = Dimensions.get('window').width;
+            const scrollX = x - screenWidth / 2 + w / 2;
+
+            filterButtonsScrollRef.current.scrollTo({
+              x: Math.max(0, scrollX),
+              animated: true,
+            });
+          }
+        );
+      }
+    }, 100);
+  };
 
   // Fetch customer documents
   const fetchCustomerDocuments = async (customer) => {
     setLoadingDocuments(true);
     try {
-      const customerId = customer?.stgCustomerId || customer?.customerId;
-      const isStaging = customer?.statusName === 'ACTIVE' || customer?.statusName === 'UNVERIFIED' ? false : true;
+      const customerId = customer?.customerId || customer?.stgCustomerId;
+      const isStaging = customer?.customerId ? false : true;
 
       const response = await customerAPI.getCustomerDetails(customerId, isStaging);
 
@@ -1225,7 +1225,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
   };
 
   const [isDownloading, setIsDownloading] = useState(false);
-  
+
   // Download document - using WebView to trigger automatic download
   const [downloadWebViewUrl, setDownloadWebViewUrl] = useState(null);
   const downloadWebViewRef = useRef(null);
@@ -1272,7 +1272,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
     try {
       // Set downloading state without causing modal to re-render
       setIsDownloading(true);
-      
+
       // Small delay to ensure modal state is stable before starting download
       await new Promise(resolve => setTimeout(resolve, 50));
 
@@ -1327,20 +1327,20 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
       // 2️⃣ Prepare file name and determine save location
       const fileName = docInfo.fileName || docInfo.doctypeName || 'document';
-      
+
       // Store these in outer scope for WebView fallback
       downloadSignedUrl = signedUrl;
       downloadFileName = fileName;
       const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
-      
+
       // Determine if it's an image/video (for gallery visibility)
       const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(fileExtension);
       const isVideo = ['mp4', 'mov', 'avi', 'mkv', '3gp'].includes(fileExtension);
-      
+
       // Get appropriate directory
       let dirs = ReactNativeBlobUtil.fs.dirs;
       let downloadPath;
-      
+
       if (Platform.OS === 'android') {
         if (isImage) {
           // Save images to Pictures folder (visible in gallery)
@@ -1453,20 +1453,20 @@ const CustomerList = ({ navigation: navigationProp }) => {
     } catch (error) {
       console.error('Download error:', error);
       console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      
+
       // Try WebView fallback on error (especially for release builds)
       console.log('Trying WebView fallback due to error...');
       try {
         // Get signed URL again if not already available
         let fallbackSignedUrl = downloadSignedUrl;
         let fallbackFileName = downloadFileName;
-        
+
         if (!fallbackSignedUrl) {
           const fallbackResponse = await customerAPI.getDocumentSignedUrl(docInfo.s3Path);
           fallbackSignedUrl = fallbackResponse?.data?.signedUrl;
           fallbackFileName = docInfo.fileName || docInfo.doctypeName || 'document';
         }
-        
+
         if (fallbackSignedUrl) {
           const htmlContent = `
             <!DOCTYPE html>
@@ -1501,7 +1501,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
       } catch (webViewError) {
         console.error('WebView fallback also failed:', webViewError);
       }
-      
+
       // More specific error messages
       let errorMessage = 'Failed to download file';
       if (error.message) {
@@ -1533,7 +1533,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
   };
 
 
-    const normalizeMappingIsApproved = (mapping = {}) =>
+  const normalizeMappingIsApproved = (mapping = {}) =>
     Object.fromEntries(
       Object.entries(mapping).map(([key, list]) => [
         key,
@@ -1555,31 +1555,44 @@ const CustomerList = ({ navigation: navigationProp }) => {
       const parellGroupId = selectedCustomerForAction?.instance?.stepInstances[0]?.parallelGroup
       const stepOrderId = selectedCustomerForAction?.instance?.stepInstances[0]?.stepOrder
 
-  
 
 
-       const draftResponse = await customerAPI.getLatestDraft(instanceId, actorId);
-      
-            const latestDraft = draftResponse?.data;
-            let dataChanges;
-      
-            if (latestDraft.hasDraft) {
-              dataChanges = {
-                ...latestDraft.draftEdits,
-                mapping: normalizeMappingIsApproved(latestDraft.draftEdits?.mapping),
-              };
-            } else {
-              dataChanges = {
-                customerGroupId: selectedCustomerForAction?.customerGroupId,
-                distributors: [],
-                divisions: selectedCustomerForAction?.divisions,
-                mapping: normalizeMappingIsApproved(selectedCustomerForAction?.mapping),
-              };
-            }
-      
-            if (!latestDraft) {
-              throw new Error('Latest draft data not found');
-            }
+
+      const draftResponse = await customerAPI.getLatestDraft(instanceId, actorId);
+
+      const latestDraft = draftResponse?.data;
+      let dataChanges;
+
+      if (latestDraft.hasDraft) {
+        dataChanges = {
+          ...latestDraft.draftEdits,
+          mapping: normalizeMappingIsApproved(latestDraft.draftEdits?.mapping),
+        };
+      } else {
+
+
+        const customerId = selectedCustomerForAction?.customerId || selectedCustomerForAction?.stgCustomerId;
+
+        if (!customerId) {
+          throw new Error('Customer ID is missing');
+        }
+        const isStaging = selectedCustomerForAction?.customerId ? false : true;
+
+        const response = await customerAPI.getCustomerDetails(customerId, isStaging);
+
+
+
+        dataChanges = {
+          customerGroupId: response?.data?.customerGroupId,
+          distributors: [],
+          divisions: response?.data?.divisions,
+          mapping: normalizeMappingIsApproved(response?.data?.mapping),
+        };
+      }
+
+      if (!latestDraft) {
+        throw new Error('Latest draft data not found');
+      }
 
       const actionDataPyaload = {
         stepOrder: stepOrderId,
@@ -1587,11 +1600,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
         actorId: actorId,
         action: "APPROVE",
         comments: comment || "Approved",
-        instanceId: instanceId,
-        actionData: {
-          field: "status",
-          newValue: "Approved"
-        },
+       
         dataChanges: dataChanges
       };
 
@@ -1608,7 +1617,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           limit: pagination.limit,
           searchText: filters.searchText,
           isStaging: false,
-          isAll:true
+          isAll: true
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
@@ -1703,7 +1712,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           limit: pagination.limit,
           searchText: filters.searchText,
           isStaging: false,
-          isAll:true
+          isAll: true
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
@@ -1766,7 +1775,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
       // Fetch latest draft data
       const latestDraftResponse = await customerAPI.getLatestDraft(instanceId, actorId);
-      
+
       if (latestDraftResponse?.data?.draftEdits) {
         setLatestDraftData(latestDraftResponse.data.draftEdits);
         setVerifyModalVisible(true);
@@ -1803,18 +1812,41 @@ const CustomerList = ({ navigation: navigationProp }) => {
       // Extract data from latest draft response
       const parallelGroup = draftData?.parallelGroup || selectedCustomerForAction?.instance?.stepInstances?.[0]?.parallelGroup || 1;
       const stepOrder = draftData?.stepOrder || selectedCustomerForAction?.instance?.stepInstances?.[0]?.stepOrder || 1;
-       const draftEdits = {
-        ...draftData,
-        mapping: normalizeMappingIsApproved(draftData?.mapping),
-      } || {
-        customerGroupId: selectedCustomerForAction?.customerGroupId,
-        distributors: [],
-        divisions: selectedCustomerForAction?.divisions,
-        mapping: normalizeMappingIsApproved(selectedCustomerForAction?.mapping),
-      };
 
-  
-      
+
+      let draftEdits;
+
+      if (draftData) {
+        // ✅ Case 1: Draft exists
+        draftEdits = {
+          ...draftData,
+          mapping: normalizeMappingIsApproved(draftData?.mapping),
+        };
+      } else {
+        // ✅ Case 2: No draft → fetch customer details
+        const customerId =
+          selectedCustomerForAction?.customerId ||
+          selectedCustomerForAction?.stgCustomerId;
+
+        if (!customerId) {
+          throw new Error('Customer ID is missing');
+        }
+
+        const isStaging = selectedCustomerForAction?.customerId ? false : true;
+
+        const response = await customerAPI.getCustomerDetails(customerId, isStaging);
+
+        draftEdits = {
+          customerGroupId: response?.data?.customerGroupId,
+          distributorMapping: [],
+          divisions: response?.data?.divisions,
+          mapping: normalizeMappingIsApproved(response?.data?.mapping),
+        };
+      }
+
+
+
+
       const actionDataPayload = {
         action: "APPROVE",
         parallelGroup: parallelGroup,
@@ -1838,7 +1870,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           limit: pagination.limit,
           searchText: filters.searchText,
           isStaging: false,
-          isAll:true
+          isAll: true
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
@@ -1908,7 +1940,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           limit: pagination.limit,
           searchText: filters.searchText,
           isStaging: false,
-          isAll:true
+          isAll: true
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
@@ -1977,7 +2009,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           limit: pagination.limit,
           searchText: filters.searchText,
           isStaging: false,
-          isAll:true
+          isAll: true
         }));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         const statusIds = getStatusIdsForTab(activeTab);
@@ -2110,7 +2142,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
         })
         .filter(id => id !== undefined);
     }
-    
+
     // Handle category - now contains customer types (previously in customerGroup)
     // Map to typeCode array
     if (filters.category && filters.category.length > 0 && !filters.category.includes('All')) {
@@ -2192,7 +2224,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
       const payload = {
         ...filterParams,
         isStaging: false,
-        isAll:true
+        isAll: true
       };
       console.log('📅 All tab payload with dates:', JSON.stringify(payload, null, 2));
       dispatch(fetchCustomersList(payload));
@@ -2270,226 +2302,226 @@ const CustomerList = ({ navigation: navigationProp }) => {
               style={{ marginLeft: 6 }}
             />
           </TouchableOpacity>
-            <View style={styles.actionsContainer}>
-              {item.statusName === 'NOT-ONBOARDED' && (
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => {
-                    const customerId = item.customerId || item.stgCustomerId;
-                    // Determine isStaging based on tab - only waitingForApproval and rejected use staging
-                    const isStaging = activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft';
-                    handleOnboardCustomer(
-                      navigation,
-                      customerId,
-                      isStaging,
-                      customerAPI,
-                      (toastConfig) => Toast.show(toastConfig),
-                      item.statusName // Pass status name
-                    );
-                  }}
-                >
-                  <Edit color="#666" />
-                </TouchableOpacity>
-              )}
-
-              {(item.statusName?.toLowerCase() === 'approved' || item.statusName?.toLowerCase() === 'active') && (
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => {
-                    const customerId = item.customerId || item.stgCustomerId;
-                    const isStaging = false;
-                    handleOnboardCustomer(
-                      navigation,
-                      customerId,
-                      isStaging,
-                      customerAPI,
-                      (toastConfig) => Toast.show(toastConfig),
-                      item.statusName // Pass status name to determine edit vs onboard
-                    );
-                  }}
-                >
-                  <Edit color="#666" />
-                </TouchableOpacity>
-              )}
-
-
+          <View style={styles.actionsContainer}>
+            {item.statusName === 'NOT-ONBOARDED' && (
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => fetchCustomerDocuments(item)}
-              >
-                <Download color="#666" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.customerInfo}>
-            <View style={styles.infoRow}>
-              <AddrLine color="#999" />
-              <AppText 
-                style={[styles.infoText, { maxWidth: 80 }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.customerCode || item.stgCustomerId}
-              </AppText>
-              <AppText style={styles.divider}>|</AppText>
-              {item.cityName && (
-                <>
-                  <AppText 
-                    style={[styles.infoText, { maxWidth: 100 }]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {item.cityName}
-                  </AppText>
-                  <AppText style={styles.divider}>|</AppText>
-                </>
-              )}
-
-              <AppText 
-                style={[styles.infoText, { maxWidth: 80 }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.groupName}
-              </AppText>
-              <AppText style={styles.divider}>|</AppText>
-              <AppText
-                style={[styles.infoText, { flex: 1, maxWidth: 80 }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.customerType}
-              </AppText>
-
-              {item.customerType === 'Hospital' && (
-                <AlertFilled color="#999" style={styles.infoIcon} />
-              )}
-            </View>
-            <View style={styles.contactRow}>
-              <Phone color="#999" />
-              <AppText style={{ ...styles.contactText, marginRight: 15 }}>{item.mobile}</AppText>
-              <Email color="#999" style={styles.mailIcon} />
-              {/* <AppText style={styles.contactText} ellipsizeMode="tail" numberOfLines={1}  >{item.email}</AppText> */}
-
-              <AppText
-                style={[styles.contactText, { flex: 1, maxWidth: "100%" }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.email}
-              </AppText>
-            </View>
-          </View>
-
-          <View style={styles.statusRow}>
-            <TouchableOpacity
-              onPress={() => {
-                // stageId is always an array, get the first element
-                const stageId = item.stageId && Array.isArray(item.stageId) ? item.stageId : [item.stgCustomerId];
-
-                
-                console.log('🔍 Clicked status badge - stageId:', stageId, 'item:', item);
-                if (stageId && stageId.length > 0) {
-                  handleViewWorkflowTimeline(
-                    stageId,
-                    item.customerName,
-                    item.customerType
+                onPress={() => {
+                  const customerId = item.customerId || item.stgCustomerId;
+                  // Determine isStaging based on tab - only waitingForApproval and rejected use staging
+                  const isStaging = activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft';
+                  handleOnboardCustomer(
+                    navigation,
+                    customerId,
+                    isStaging,
+                    customerAPI,
+                    (toastConfig) => Toast.show(toastConfig),
+                    item.statusName // Pass status name
                   );
-                } else {
-                  console.warn('⚠️ No stageId found for item:', item);
-                  Toast.show({
-                    type: 'error',
-                    text1: 'Error',
-                    text2: 'Customer ID not available',
-                  });
-                }
-              }}
-              activeOpacity={0.7}
+                }}
+              >
+                <Edit color="#666" />
+              </TouchableOpacity>
+            )}
+
+            {(item.statusName?.toLowerCase() === 'approved' || item.statusName?.toLowerCase() === 'active') && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  const customerId = item.customerId || item.stgCustomerId;
+                  const isStaging = false;
+                  handleOnboardCustomer(
+                    navigation,
+                    customerId,
+                    isStaging,
+                    customerAPI,
+                    (toastConfig) => Toast.show(toastConfig),
+                    item.statusName // Pass status name to determine edit vs onboard
+                  );
+                }}
+              >
+                <Edit color="#666" />
+              </TouchableOpacity>
+            )}
+
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => fetchCustomerDocuments(item)}
             >
-              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
-                <AppText style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
-                  {item.statusName}
-                </AppText>
-              </View>
+              <Download color="#666" />
             </TouchableOpacity>
-            {item.statusName === 'LOCKED' ? (
-              <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
-                <TouchableOpacity
-                  style={styles.unlockButton}
-                  onPress={() => handleUnblockCustomer(item)}
-                  disabled={blockUnblockLoading}
+          </View>
+        </View>
+
+        <View style={styles.customerInfo}>
+          <View style={styles.infoRow}>
+            <AddrLine color="#999" />
+            <AppText
+              style={[styles.infoText, { maxWidth: 80 }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.customerCode || item.stgCustomerId}
+            </AppText>
+            <AppText style={styles.divider}>|</AppText>
+            {item.cityName && (
+              <>
+                <AppText
+                  style={[styles.infoText, { maxWidth: 100 }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
-                  <UnLocked fill="#EF4444" />
-                  <AppText style={styles.unlockButtonText}>Unblock</AppText>
-                </TouchableOpacity>
-              </PermissionWrapper>
-            ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
-              <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
+                  {item.cityName}
+                </AppText>
+                <AppText style={styles.divider}>|</AppText>
+              </>
+            )}
+
+            <AppText
+              style={[styles.infoText, { maxWidth: 80 }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.groupName}
+            </AppText>
+            <AppText style={styles.divider}>|</AppText>
+            <AppText
+              style={[styles.infoText, { flex: 1, maxWidth: 80 }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.customerType}
+            </AppText>
+
+            {item.customerType === 'Hospital' && (
+              <AlertFilled color="#999" style={styles.infoIcon} />
+            )}
+          </View>
+          <View style={styles.contactRow}>
+            <Phone color="#999" />
+            <AppText style={{ ...styles.contactText, marginRight: 15 }}>{item.mobile}</AppText>
+            <Email color="#999" style={styles.mailIcon} />
+            {/* <AppText style={styles.contactText} ellipsizeMode="tail" numberOfLines={1}  >{item.email}</AppText> */}
+
+            <AppText
+              style={[styles.contactText, { flex: 1, maxWidth: "100%" }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.email}
+            </AppText>
+          </View>
+        </View>
+
+        <View style={styles.statusRow}>
+          <TouchableOpacity
+            onPress={() => {
+              // stageId is always an array, get the first element
+              const stageId = item.stageId && Array.isArray(item.stageId) ? item.stageId : [item.stgCustomerId];
+
+
+              console.log('🔍 Clicked status badge - stageId:', stageId, 'item:', item);
+              if (stageId && stageId.length > 0) {
+                handleViewWorkflowTimeline(
+                  stageId,
+                  item.customerName,
+                  item.customerType
+                );
+              } else {
+                console.warn('⚠️ No stageId found for item:', item);
+                Toast.show({
+                  type: 'error',
+                  text1: 'Error',
+                  text2: 'Customer ID not available',
+                });
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
+              <AppText style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
+                {item.statusName}
+              </AppText>
+            </View>
+          </TouchableOpacity>
+          {item.statusName === 'LOCKED' ? (
+            <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
+              <TouchableOpacity
+                style={styles.unlockButton}
+                onPress={() => handleUnblockCustomer(item)}
+                disabled={blockUnblockLoading}
+              >
+                <UnLocked fill="#EF4444" />
+                <AppText style={styles.unlockButtonText}>Unblock</AppText>
+              </TouchableOpacity>
+            </PermissionWrapper>
+          ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
+            <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
+              <TouchableOpacity
+                style={styles.blockButton}
+                onPress={() => handleBlockCustomer(item)}
+                disabled={blockUnblockLoading}
+              >
+                <Locked fill="#666" />
+                <AppText style={styles.blockButtonText}>Block</AppText>
+              </TouchableOpacity>
+            </PermissionWrapper>
+          ) : item.statusName === 'PENDING' && item.action == 'APPROVE' ? (
+            <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+              <View style={styles.pendingActions}>
                 <TouchableOpacity
-                  style={styles.blockButton}
-                  onPress={() => handleBlockCustomer(item)}
-                  disabled={blockUnblockLoading}
+                  style={styles.approveButton}
+                  onPress={() => handleApprovePress(item)}
                 >
-                  <Locked fill="#666" />
-                  <AppText style={styles.blockButtonText}>Block</AppText>
+
+
+                  <View style={styles.approveButtonContent}>
+                    <Icon name="checkmark-outline" size={18} color="white" />
+                    <AppText style={styles.approveButtonText}>Approve</AppText>
+                  </View>
                 </TouchableOpacity>
-              </PermissionWrapper>
-            ) : item.statusName === 'PENDING' && item.action == 'APPROVE' ? (
-              <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
-                <View style={styles.pendingActions}>
-                  <TouchableOpacity
-                    style={styles.approveButton}
-                    onPress={() => handleApprovePress(item)}
-                  >
+                <TouchableOpacity
+                  style={styles.rejectButton}
+                  onPress={() => handleRejectPress(item)}
+                >
+                  <CloseCircle color='#000' />
+                </TouchableOpacity>
+              </View>
+            </PermissionWrapper>
+          ) : item.statusName === 'PENDING' && item.action == 'LINK_DT' ? (
+            <View style={styles.pendingActions}>
+              <TouchableOpacity
+                style={styles.linkDtButton}
+                onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
+              >
 
 
-                    <View style={styles.approveButtonContent}>
-                      <Icon name="checkmark-outline" size={18} color="white" />
-                      <AppText style={styles.approveButtonText}>Approve</AppText>
-                    </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.rejectButton}
-                    onPress={() => handleRejectPress(item)}
-                  >
-                    <CloseCircle color='#000' />
-                  </TouchableOpacity>
+                <View style={styles.linkDtButtonContent}>
+                  <AppText style={styles.linkDtButtonText}>LINK DT</AppText>
                 </View>
-              </PermissionWrapper>
-            ) : item.statusName === 'PENDING' && item.action == 'LINK_DT' ? (
-                <View style={styles.pendingActions}>
-                  <TouchableOpacity
-                    style={styles.linkDtButton}
-            onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
-                  >
+              </TouchableOpacity>
 
+              <TouchableOpacity
+                style={styles.rejectButton}
+                onPress={() => handleRejectPress(item)}
+              >
+                <CloseCircle color='#000' />
+              </TouchableOpacity>
 
-                    <View style={styles.linkDtButtonContent}>
-                      <AppText style={styles.linkDtButtonText}>LINK DT</AppText>
-                    </View>
-                  </TouchableOpacity>
+            </View>
+          )
 
-                  <TouchableOpacity
-                    style={styles.rejectButton}
-                    onPress={() => handleRejectPress(item)}
-                  >
-                    <CloseCircle color='#000' />
-                  </TouchableOpacity>
-                 
-                </View>
-            )
-            
             : item.statusName === 'IN_PROGRESS' ||
-            (item.statusName === 'PENDING' && item.action === 'VERIFY')
-             ? (
+              (item.statusName === 'PENDING' && item.action === 'VERIFY')
+              ? (
                 <View style={styles.pendingActions}>
                   <TouchableOpacity
                     style={styles.approveButton}
                     onPress={() => handleVerifyClick(item)}
                     disabled={actionLoading}
                   >
-                     <View style={styles.approveButtonContent}>
+                    <View style={styles.approveButtonContent}>
                       <Icon name="checkmark-outline" size={18} color="white" />
                       <AppText style={styles.approveButtonText}>Verify</AppText>
                     </View>
@@ -2502,32 +2534,32 @@ const CustomerList = ({ navigation: navigationProp }) => {
                   >
                     <CloseCircle color='#000' />
                   </TouchableOpacity>
-                 
+
                 </View>
-            ):
-            
-            item.statusName === 'NOT-ONBOARDED' ? (
-              <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_ONBOARD}>
-                <TouchableOpacity
-                  style={styles.onboardButton}
-                  onPress={() => {
-                    const customerId = item.customerId || item.stgCustomerId;
-                    // For onboard mode, always use isStaging = false
-                    const isStaging = false;
-                    handleOnboardCustomer(
-                      navigation,
-                      customerId,
-                      isStaging,
-                      customerAPI,
-                      (toastConfig) => Toast.show(toastConfig),
-                      item.statusName // Pass status name
-                    );
-                  }}>
-                  <AppText style={styles.onboardButtonText}>Onboard</AppText>
-                </TouchableOpacity>
-              </PermissionWrapper>
-            ) : null}
-          </View>
+              ) :
+
+              item.statusName === 'NOT-ONBOARDED' ? (
+                <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_ONBOARD}>
+                  <TouchableOpacity
+                    style={styles.onboardButton}
+                    onPress={() => {
+                      const customerId = item.customerId || item.stgCustomerId;
+                      // For onboard mode, always use isStaging = false
+                      const isStaging = false;
+                      handleOnboardCustomer(
+                        navigation,
+                        customerId,
+                        isStaging,
+                        customerAPI,
+                        (toastConfig) => Toast.show(toastConfig),
+                        item.statusName // Pass status name
+                      );
+                    }}>
+                    <AppText style={styles.onboardButtonText}>Onboard</AppText>
+                  </TouchableOpacity>
+                </PermissionWrapper>
+              ) : null}
+        </View>
       </Animated.View>
     );
   };
@@ -2580,13 +2612,13 @@ const CustomerList = ({ navigation: navigationProp }) => {
         statusBarTranslucent={true}
       >
         <View style={styles.modalOverlay}>
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={1}
             onPress={handleOverlayPress}
             disabled={showPreviewInDocumentsModal || isDownloading}
             style={StyleSheet.absoluteFill}
           />
-          <View 
+          <View
             style={styles.documentsModalContent}
             pointerEvents="box-none"
           >
@@ -2600,125 +2632,125 @@ const CustomerList = ({ navigation: navigationProp }) => {
                 </TouchableOpacity>
               </View>
 
-          {loadingDocuments ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <AppText style={styles.loadingText}>Loading documents...</AppText>
-            </View>
-          ) : customerDocuments && customerDocuments.allDocuments && customerDocuments.allDocuments.length > 0 ? (
-            <ScrollView style={styles.documentsListContainer} showsVerticalScrollIndicator={false}>
-              {/* Top Row: GST and PAN side by side */}
-              <View style={styles.documentsTopRow}>
-                {customerDocuments.gstDoc && (
-                  <View style={styles.documentCardSmall}>
-                    <View style={styles.documentCardContentSmall}>
-                      <View style={styles.documentCardLeftSmall}>
-                        <Icon name="document-outline" size={20} color={colors.primary} />
-                        <View style={styles.documentInfoSmall}>
-                          <AppText style={styles.documentFileNameSmall} numberOfLines={1}>
-                            {customerDocuments.gstDoc.fileName || 'GST'}
-                          </AppText>
-                          <AppText style={styles.documentTypeSmall}>{customerDocuments.gstDoc.doctypeName}</AppText>
+              {loadingDocuments ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <AppText style={styles.loadingText}>Loading documents...</AppText>
+                </View>
+              ) : customerDocuments && customerDocuments.allDocuments && customerDocuments.allDocuments.length > 0 ? (
+                <ScrollView style={styles.documentsListContainer} showsVerticalScrollIndicator={false}>
+                  {/* Top Row: GST and PAN side by side */}
+                  <View style={styles.documentsTopRow}>
+                    {customerDocuments.gstDoc && (
+                      <View style={styles.documentCardSmall}>
+                        <View style={styles.documentCardContentSmall}>
+                          <View style={styles.documentCardLeftSmall}>
+                            <Icon name="document-outline" size={20} color={colors.primary} />
+                            <View style={styles.documentInfoSmall}>
+                              <AppText style={styles.documentFileNameSmall} numberOfLines={1}>
+                                {customerDocuments.gstDoc.fileName || 'GST'}
+                              </AppText>
+                              <AppText style={styles.documentTypeSmall}>{customerDocuments.gstDoc.doctypeName}</AppText>
+                            </View>
+                          </View>
+                          <View style={styles.documentActionsSmall}>
+                            <TouchableOpacity
+                              style={styles.documentActionButtonSmall}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                previewDocument(customerDocuments.gstDoc);
+                              }}
+                            >
+                              <EyeOpen width={16} color={colors.primary} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.documentActionButtonSmall}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                downloadDocument(customerDocuments.gstDoc);
+                              }}
+                            >
+                              <Download width={16} color={colors.primary} />
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       </View>
-                      <View style={styles.documentActionsSmall}>
-                        <TouchableOpacity
-                          style={styles.documentActionButtonSmall}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            previewDocument(customerDocuments.gstDoc);
-                          }}
-                        >
-                          <EyeOpen width={16} color={colors.primary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.documentActionButtonSmall}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            downloadDocument(customerDocuments.gstDoc);
-                          }}
-                        >
-                          <Download width={16} color={colors.primary} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
-                )}
-                {customerDocuments.panDoc && (
-                  <View style={styles.documentCardSmall}>
-                    <View style={styles.documentCardContentSmall}>
-                      <View style={styles.documentCardLeftSmall}>
-                        <Icon name="document-outline" size={20} color={colors.primary} />
-                        <View style={styles.documentInfoSmall}>
-                          <AppText style={styles.documentFileNameSmall} numberOfLines={1}>
-                            {customerDocuments.panDoc.fileName || 'PAN'}
-                          </AppText>
-                          <AppText style={styles.documentTypeSmall}>{customerDocuments.panDoc.doctypeName}</AppText>
+                    )}
+                    {customerDocuments.panDoc && (
+                      <View style={styles.documentCardSmall}>
+                        <View style={styles.documentCardContentSmall}>
+                          <View style={styles.documentCardLeftSmall}>
+                            <Icon name="document-outline" size={20} color={colors.primary} />
+                            <View style={styles.documentInfoSmall}>
+                              <AppText style={styles.documentFileNameSmall} numberOfLines={1}>
+                                {customerDocuments.panDoc.fileName || 'PAN'}
+                              </AppText>
+                              <AppText style={styles.documentTypeSmall}>{customerDocuments.panDoc.doctypeName}</AppText>
+                            </View>
+                          </View>
+                          <View style={styles.documentActionsSmall}>
+                            <TouchableOpacity
+                              style={styles.documentActionButtonSmall}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                previewDocument(customerDocuments.panDoc);
+                              }}
+                            >
+                              <EyeOpen width={16} color={colors.primary} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.documentActionButtonSmall}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                downloadDocument(customerDocuments.panDoc);
+                              }}
+                            >
+                              <Download width={16} color={colors.primary} />
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       </View>
-                      <View style={styles.documentActionsSmall}>
-                        <TouchableOpacity
-                          style={styles.documentActionButtonSmall}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            previewDocument(customerDocuments.panDoc);
-                          }}
-                        >
-                          <EyeOpen width={16} color={colors.primary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.documentActionButtonSmall}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            downloadDocument(customerDocuments.panDoc);
-                          }}
-                        >
-                          <Download width={16} color={colors.primary} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
+                    )}
                   </View>
-                )}
-              </View>
 
-              {/* Other Documents Below */}
-              {customerDocuments.allDocuments
-                .filter(doc => doc.doctypeName !== 'GSTIN' && doc.doctypeName !== 'PAN CARD')
-                .map((doc, index) => (
-                  <View key={index} style={styles.documentCard}>
-                    <View style={styles.documentCardContent}>
-                      <View style={styles.documentCardLeft}>
-                        <Icon name="document-outline" size={24} color={colors.primary} />
-                        <View style={styles.documentInfo}>
-                          <AppText style={styles.documentFileName} numberOfLines={1}>
-                            {doc.fileName || doc.doctypeName}
-                          </AppText>
-                          <AppText style={styles.documentType}>{doc.doctypeName}</AppText>
+                  {/* Other Documents Below */}
+                  {customerDocuments.allDocuments
+                    .filter(doc => doc.doctypeName !== 'GSTIN' && doc.doctypeName !== 'PAN CARD')
+                    .map((doc, index) => (
+                      <View key={index} style={styles.documentCard}>
+                        <View style={styles.documentCardContent}>
+                          <View style={styles.documentCardLeft}>
+                            <Icon name="document-outline" size={24} color={colors.primary} />
+                            <View style={styles.documentInfo}>
+                              <AppText style={styles.documentFileName} numberOfLines={1}>
+                                {doc.fileName || doc.doctypeName}
+                              </AppText>
+                              <AppText style={styles.documentType}>{doc.doctypeName}</AppText>
+                            </View>
+                          </View>
+                          <View style={styles.documentActions}>
+                            <TouchableOpacity
+                              style={styles.documentActionButton}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                previewDocument(doc);
+                              }}
+                            >
+                              <EyeOpen width={18} color={colors.primary} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.documentActionButton}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                downloadDocument(doc);
+                              }}
+                            >
+                              <Download width={18} color={colors.primary} />
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       </View>
-                      <View style={styles.documentActions}>
-                        <TouchableOpacity
-                          style={styles.documentActionButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            previewDocument(doc);
-                          }}
-                        >
-                          <EyeOpen width={18} color={colors.primary} />
-                        </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.documentActionButton}
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              downloadDocument(doc);
-                            }}
-                          >
-                            <Download width={18} color={colors.primary} />
-                          </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
-                  ))}
+                    ))}
                 </ScrollView>
               ) : (
                 <View style={styles.noDocumentsContainer}>
@@ -2733,8 +2765,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
               <View style={styles.previewOverlayContainer}>
                 <View style={styles.previewOverlayContent}>
                   {/* Close button */}
-                  <TouchableOpacity 
-                    onPress={handleBackFromPreview} 
+                  <TouchableOpacity
+                    onPress={handleBackFromPreview}
                     style={styles.previewCloseButton}
                   >
                     <View style={styles.previewCloseButtonCircle}>
@@ -2751,9 +2783,9 @@ const CustomerList = ({ navigation: navigationProp }) => {
                     const isImageFile = selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpg') ||
                       selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.jpeg') ||
                       selectedDocumentForPreview?.fileName?.toLowerCase().endsWith('.png');
-                    
+
                     return previewSignedUrl && isImageFile ? (
-                      <ScrollView 
+                      <ScrollView
                         style={styles.previewScrollContainer}
                         contentContainerStyle={styles.previewScrollContent}
                         showsVerticalScrollIndicator={true}
@@ -2775,7 +2807,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
                             />
                           </TouchableOpacity>
                         </View>
-                        
+
                         {/* Filename and actions */}
                         <View style={styles.previewDocumentInfo}>
                           <AppText style={styles.previewFileName} numberOfLines={1}>
@@ -2804,7 +2836,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
                         </View>
                       </ScrollView>
                     ) : previewSignedUrl ? (
-                      <ScrollView 
+                      <ScrollView
                         style={styles.previewScrollContainer}
                         contentContainerStyle={styles.previewScrollContent}
                       >
@@ -2812,7 +2844,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
                           <Icon name="document-text-outline" size={64} color="#999" />
                           <AppText style={styles.documentPreviewText}>{selectedDocumentForPreview?.fileName}</AppText>
                         </View>
-                        
+
                         {/* Filename and actions */}
                         <View style={styles.previewDocumentInfo}>
                           <AppText style={styles.previewFileName} numberOfLines={1}>
@@ -2850,7 +2882,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
     const scale = useRef(new Animated.Value(1)).current;
     const translateX = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(0)).current;
-    
+
     const savedScale = useRef(1);
     const currentTranslateX = useRef(0);
     const currentTranslateY = useRef(0);
@@ -2874,7 +2906,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
     const handleTouchStart = (evt) => {
       const touches = evt.nativeEvent.touches;
       activeTouches.current = Array.from(touches);
-      
+
       if (touches.length === 2) {
         // Pinch gesture
         initialDistance.current = getDistance(touches);
@@ -2883,7 +2915,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
         // Single touch - check for double tap
         const now = Date.now();
         const DOUBLE_TAP_DELAY = 300;
-        
+
         if (lastTap.current && (now - lastTap.current) < DOUBLE_TAP_DELAY) {
           // Double tap detected
           if (savedScale.current > MIN_SCALE) {
@@ -2927,7 +2959,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
         } else {
           lastTap.current = now;
         }
-        
+
         // Save current translation for pan
         translateX.stopAnimation((x) => {
           currentTranslateX.current = x;
@@ -2942,22 +2974,22 @@ const CustomerList = ({ navigation: navigationProp }) => {
     const handleTouchMove = (evt) => {
       const touches = evt.nativeEvent.touches;
       activeTouches.current = Array.from(touches);
-      
+
       if (touches.length === 2) {
         const currentDistance = getDistance(touches);
-        
+
         // Initialize distance if not set
         if (!initialDistance.current && currentDistance) {
           initialDistance.current = currentDistance;
           initialScale.current = savedScale.current;
         }
-        
+
         // Perform pinch zoom
         if (currentDistance && initialDistance.current && initialDistance.current > 0) {
           const scaleRatio = currentDistance / initialDistance.current;
           const newScale = initialScale.current * scaleRatio;
           const clampedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-          
+
           scale.setValue(clampedScale);
           savedScale.current = clampedScale;
         }
@@ -2968,7 +3000,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
     const handleTouchEnd = (evt) => {
       const touches = evt.nativeEvent.touches;
       activeTouches.current = Array.from(touches);
-      
+
       if (touches.length === 0) {
         initialDistance.current = null;
         translateX.stopAnimation((x) => {
@@ -3000,10 +3032,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
       } else {
         const maxTranslateX = (containerWidth * (scaleValue - 1)) / 2;
         const maxTranslateY = (containerHeight * (scaleValue - 1)) / 2;
-        
+
         const clampedX = Math.max(-maxTranslateX, Math.min(maxTranslateX, currentX));
         const clampedY = Math.max(-maxTranslateY, Math.min(maxTranslateY, currentY));
-        
+
         Animated.parallel([
           Animated.spring(translateX, {
             toValue: clampedX,
@@ -3018,7 +3050,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
             friction: 7,
           }),
         ]).start();
-        
+
         currentTranslateX.current = clampedX;
         currentTranslateY.current = clampedY;
       }
@@ -3037,10 +3069,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
         },
         onPanResponderMove: (evt, gestureState) => {
           const touches = evt.nativeEvent.touches;
-          
+
           // Handle pinch in touch move handler
           handleTouchMove(evt);
-          
+
           // Handle single finger pan when zoomed
           if (touches.length === 1 && savedScale.current > MIN_SCALE) {
             const newX = currentTranslateX.current + gestureState.dx;
@@ -3068,7 +3100,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
     };
 
     return (
-      <View 
+      <View
         style={[styles.zoomableImageWrapper, { width: containerWidth, height: containerHeight }]}
         {...panResponder.panHandlers}
       >
@@ -3144,12 +3176,12 @@ const CustomerList = ({ navigation: navigationProp }) => {
         animationType="fade"
         onRequestClose={closeModal}
       >
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.previewModalOverlay}
           activeOpacity={1}
           onPress={closeModal}
         >
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
             style={styles.previewModalContent}
@@ -3169,11 +3201,11 @@ const CustomerList = ({ navigation: navigationProp }) => {
               ) : previewSignedUrl && isImageFile ? (
                 <TouchableOpacity
                   activeOpacity={1}
-                      onPress={() => {
-                        // Show full screen preview in a separate modal even when inside DocumentsModal
-                        setPreviewModalVisible(true);
-                        setIsFullScreenPreview(true);
-                      }}
+                  onPress={() => {
+                    // Show full screen preview in a separate modal even when inside DocumentsModal
+                    setPreviewModalVisible(true);
+                    setIsFullScreenPreview(true);
+                  }}
                   style={styles.imagePreviewTouchable}
                 >
                   <ZoomableImage
@@ -3294,15 +3326,15 @@ const CustomerList = ({ navigation: navigationProp }) => {
             </TouchableOpacity>
           )}
           {/* {hasWaitingForApprovalTabPermission && ( */}
-            <TouchableOpacity
-              ref={(ref) => tabRefs.current['waitingForApproval'] = ref}
-              style={[styles.tab, activeTab === 'waitingForApproval' && styles.activeTab]}
-              onPress={() => handleTabPress('waitingForApproval')}
-            >
-              <AppText style={[styles.tabText, activeTab === 'waitingForApproval' && styles.activeTabText]}>
-                Waiting for Approval ({tabCounts.waitingForApproval})
-              </AppText>
-            </TouchableOpacity>
+          <TouchableOpacity
+            ref={(ref) => tabRefs.current['waitingForApproval'] = ref}
+            style={[styles.tab, activeTab === 'waitingForApproval' && styles.activeTab]}
+            onPress={() => handleTabPress('waitingForApproval')}
+          >
+            <AppText style={[styles.tabText, activeTab === 'waitingForApproval' && styles.activeTabText]}>
+              Waiting for Approval ({tabCounts.waitingForApproval})
+            </AppText>
+          </TouchableOpacity>
           {/* )} */}
           {hasNotOnboardedTabPermission && (
             <TouchableOpacity
@@ -3446,7 +3478,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
         <View style={styles.searchContainer}>
           <TouchableOpacity
             style={styles.searchBar}
-            onPress={() => navigation.navigate('CustomerStack', { 
+            onPress={() => navigation.navigate('CustomerStack', {
               screen: 'CustomerSearchMain',
               params: { activeTab: activeTab } // Pass current active tab to search screen
             })}
@@ -3888,7 +3920,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
               // Download request received - Android will handle this automatically
               console.log('✅ Download request received in onFileDownload');
               console.log('Download URL:', request.url);
-              
+
               // Show success message
               Toast.show({
                 type: 'success',
@@ -3896,7 +3928,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
                 text2: 'File is being downloaded',
                 position: 'bottom',
               });
-              
+
               setTimeout(() => {
                 setDownloadWebViewUrl(null);
               }, 3000);
@@ -4223,22 +4255,22 @@ const styles = StyleSheet.create({
   },
 
 
-    linkDtButton: {
+  linkDtButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
     gap: 4,
-    borderColor:colors.primary,
-    borderWidth:1
+    borderColor: colors.primary,
+    borderWidth: 1
   },
 
 
   linkDtButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color:colors.primary,
+    color: colors.primary,
     marginLeft: 4,          // ⬅️ spacing between icon & text
   },
 
