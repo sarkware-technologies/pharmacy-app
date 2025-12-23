@@ -2345,29 +2345,34 @@ const renderCustomerAction = (item) => {
         </PermissionWrapper>
       );
 
-    case 'VERIFY':
-      return (
-        <View style={styles.pendingActions}>
-          <TouchableOpacity
-            style={styles.approveButton}
-            onPress={() => handleVerifyClick(item)}
-            disabled={actionLoading}
-          >
-            <View style={styles.approveButtonContent}>
-              <Icon name="checkmark-outline" size={18} color="white" />
-              <AppText style={styles.approveButtonText}>Verify</AppText>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.rejectButton}
-            onPress={() => handleRejectPress(item)}
-            disabled={actionLoading}
-          >
-            <CloseCircle color="#000" />
-          </TouchableOpacity>
+   case 'VERIFY':
+  return (
+    <View style={styles.pendingActions}>
+      <TouchableOpacity
+        style={styles.approveButton}
+        onPress={() => handleVerifyClick(item)}
+        disabled={actionLoading}
+      >
+        <View style={styles.approveButtonContent}>
+          <Icon name="checkmark-outline" size={18} color="white" />
+          <AppText style={styles.approveButtonText}>
+            {item?.instance?.stepInstances?.[0]?.approverType === 'ROLE'
+              ? 'Verify'
+              : 'Approve'}
+          </AppText>
         </View>
-      );
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.rejectButton}
+        onPress={() => handleRejectPress(item)}
+        disabled={actionLoading}
+      >
+        <CloseCircle color="#000" />
+      </TouchableOpacity>
+    </View>
+  );
+
 
     case 'LINK_DT':
       return (
@@ -2596,11 +2601,48 @@ const renderCustomerAction = (item) => {
             }}
             activeOpacity={0.7}
           >
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
+            {/* <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
               <AppText style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
                 {item.statusName}
               </AppText>
-            </View>
+            </View> */}
+
+            <View
+  style={[
+    styles.statusBadge,
+    {
+      backgroundColor: getStatusColor(
+        item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
+          ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
+            ? 'APPROVED'
+            : 'REASSIGNED'
+          : item.statusName
+      ),
+    },
+  ]}
+>
+  <AppText
+    style={[
+      styles.statusText,
+      {
+        color: getStatusTextColor(
+          item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
+            ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
+              ? 'APPROVED'
+              : 'REASSIGNED'
+            : item.statusName
+        ),
+      },
+    ]}
+  >
+    {item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
+      ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
+        ? 'APPROVED'
+        : 'REASSIGNED'
+      : item.statusName}
+  </AppText>
+</View>
+
           </TouchableOpacity>
 
 

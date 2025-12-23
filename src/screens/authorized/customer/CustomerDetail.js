@@ -1506,7 +1506,6 @@ const CustomerDetail = ({ navigation, route }) => {
               </TouchableOpacity>
             ) : (
               <>
-                {/* Approve/Reject buttons for APPROVE action */}
                 {customer?.statusName === 'PENDING' && customer?.action === 'APPROVE' && (
                   <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
                     <View style={styles.topActionButtons}>
@@ -1530,7 +1529,6 @@ const CustomerDetail = ({ navigation, route }) => {
                   </PermissionWrapper>
                 )}
 
-                {/* Verify/Reject buttons for LINK_DT action */}
                 {(customer?.action === 'LINK_DT' || selectedCustomer?.action === 'LINK_DT') &&
                   (customer?.statusName === 'IN_PROGRESS' || customer?.statusName === 'PENDING' ||
                     selectedCustomer?.statusName === 'IN_PROGRESS' || selectedCustomer?.statusName === 'PENDING') && (
