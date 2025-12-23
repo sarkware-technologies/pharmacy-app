@@ -1464,6 +1464,14 @@ const CustomerDetail = ({ navigation, route }) => {
     }
   };
 
+  const getTopActionLabel = (customer) => {
+    
+  const approverType =
+    customer?.instance?.stepInstances?.[0]?.approverType 
+
+  return approverType === 'ROLE' ? 'Verify' : 'Approve';
+};
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
@@ -1506,54 +1514,59 @@ const CustomerDetail = ({ navigation, route }) => {
               </TouchableOpacity>
             ) : (
               <>
-                {customer?.statusName === 'PENDING' && customer?.action === 'APPROVE' && (
-                  <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
-                    <View style={styles.topActionButtons}>
-                      <TouchableOpacity
-                        style={styles.topApproveButton}
-                        onPress={() => setApproveModalVisible(true)}
-                        disabled={actionLoading}
-                      >
-                        <MaterialIcons name="check" size={14} color="#fff" />
-                        <AppText style={styles.topApproveButtonText}>Approve</AppText>
-                      </TouchableOpacity>
 
-                      <TouchableOpacity
-                        style={styles.topRejectButton}
-                        onPress={() => setRejectModalVisible(true)}
-                        disabled={actionLoading}
-                      >
-                        <Icon name="close" size={14} color="#2B2B2B" />
-                      </TouchableOpacity>
-                    </View>
-                  </PermissionWrapper>
-                )}
+              {
+                console.log((customer?.statusName))
+              }
+              
+               {
+                console.log((customer?.action))
+              }
+              {
+                
+              
+              console.log((customer?.statusName === 'PENDING' || customer?.statusName === 'IN_PROGRESS') &&
+    (customer?.action === 'APPROVE' || customer?.action === 'LINK_DT'))
+              }
+              
+          
+  {(
+  customer?.statusName === 'IN_PROGRESS' ||
+  (
+    customer?.statusName === 'PENDING' &&
+    (customer?.action === 'APPROVE' || customer?.action === 'LINK_DT')
+  )
+) && (
+      
+      <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+        <View style={styles.topActionButtons}>
+          <TouchableOpacity
+            style={styles.topApproveButton}
+            onPress={() =>
+              getTopActionLabel(customer) === 'Verify'
+                ? handleVerifyClick()
+                : setApproveModalVisible(true)
+            }
+            disabled={actionLoading}
+          >
+            <MaterialIcons name="check" size={14} color="#fff" />
+            <AppText style={styles.topApproveButtonText}>
+              {getTopActionLabel(customer)}
+            </AppText>
+          </TouchableOpacity>
 
-                {(customer?.action === 'LINK_DT' || selectedCustomer?.action === 'LINK_DT') &&
-                  (customer?.statusName === 'IN_PROGRESS' || customer?.statusName === 'PENDING' ||
-                    selectedCustomer?.statusName === 'IN_PROGRESS' || selectedCustomer?.statusName === 'PENDING') && (
-                    <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
-                      <View style={styles.topActionButtons}>
-                        <TouchableOpacity
-                          style={styles.topVerifyButton}
-                          onPress={handleVerifyClick}
-                          disabled={actionLoading}
-                        >
-                          <MaterialIcons name="check" size={14} color="#fff" />
-                          <AppText style={styles.topVerifyButtonText}>Verify</AppText>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          style={styles.topRejectButton}
-                          onPress={() => setRejectModalVisible(true)}
-                          disabled={actionLoading}
-                        >
-                          <CloseCircle color="#2B2B2B" />
-                        </TouchableOpacity>
-                      </View>
-                    </PermissionWrapper>
-                  )}
-              </>
+          <TouchableOpacity
+            style={styles.topRejectButton}
+            onPress={() => setRejectModalVisible(true)}
+            disabled={actionLoading}
+          >
+            <Icon name="close" size={14} color="#2B2B2B" />
+          </TouchableOpacity>
+        </View>
+      </PermissionWrapper>
+    )}
+</>
+             
             )}
 
           </View>

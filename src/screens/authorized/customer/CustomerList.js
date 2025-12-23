@@ -2601,11 +2601,7 @@ const renderCustomerAction = (item) => {
             }}
             activeOpacity={0.7}
           >
-            {/* <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
-              <AppText style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
-                {item.statusName}
-              </AppText>
-            </View> */}
+           
 
             <View
   style={[
