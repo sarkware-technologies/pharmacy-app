@@ -2263,6 +2263,163 @@ const CustomerList = ({ navigation: navigationProp }) => {
     setFilterModalVisible(false);
   };
 
+
+  const getCustomerActionType = (item) => {
+  if (item.statusName === 'LOCKED') return 'UNBLOCK';
+
+  if (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED')
+    return 'BLOCK';
+
+  if (item.statusName === 'PENDING' && item.action === 'LINK_DT')
+    return 'LINK_DT';
+
+  if (item.statusName === 'PENDING' && item.action === 'APPROVE')
+    return 'APPROVE';
+
+  if (
+    item.statusName === 'IN_PROGRESS' ||
+    (item.statusName === 'PENDING' && item.action === 'VERIFY')
+  )
+    return 'VERIFY';
+
+  if (item.statusName === 'NOT-ONBOARDED')
+    return 'ONBOARD';
+
+  return null;
+};
+
+
+const renderCustomerAction = (item) => {
+  const actionType = getCustomerActionType(item);
+
+  switch (actionType) {
+    case 'UNBLOCK':
+      return (
+        <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
+          <TouchableOpacity
+            style={styles.unlockButton}
+            onPress={() => handleUnblockCustomer(item)}
+            disabled={blockUnblockLoading}
+          >
+            <UnLocked fill="#EF4444" />
+            <AppText style={styles.unlockButtonText}>Unblock</AppText>
+          </TouchableOpacity>
+        </PermissionWrapper>
+      );
+
+    case 'BLOCK':
+      return (
+        <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
+          <TouchableOpacity
+            style={styles.blockButton}
+            onPress={() => handleBlockCustomer(item)}
+            disabled={blockUnblockLoading}
+          >
+            <Locked fill="#666" />
+            <AppText style={styles.blockButtonText}>Block</AppText>
+          </TouchableOpacity>
+        </PermissionWrapper>
+      );
+
+    case 'APPROVE':
+      return (
+        <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+          <View style={styles.pendingActions}>
+            <TouchableOpacity
+              style={styles.approveButton}
+              onPress={() => handleApprovePress(item)}
+            >
+              <View style={styles.approveButtonContent}>
+                <Icon name="checkmark-outline" size={18} color="white" />
+                <AppText style={styles.approveButtonText}>Approve</AppText>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.rejectButton}
+              onPress={() => handleRejectPress(item)}
+            >
+              <CloseCircle color="#000" />
+            </TouchableOpacity>
+          </View>
+        </PermissionWrapper>
+      );
+
+    case 'VERIFY':
+      return (
+        <View style={styles.pendingActions}>
+          <TouchableOpacity
+            style={styles.approveButton}
+            onPress={() => handleVerifyClick(item)}
+            disabled={actionLoading}
+          >
+            <View style={styles.approveButtonContent}>
+              <Icon name="checkmark-outline" size={18} color="white" />
+              <AppText style={styles.approveButtonText}>Verify</AppText>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.rejectButton}
+            onPress={() => handleRejectPress(item)}
+            disabled={actionLoading}
+          >
+            <CloseCircle color="#000" />
+          </TouchableOpacity>
+        </View>
+      );
+
+    case 'LINK_DT':
+      return (
+        <View style={styles.pendingActions}>
+          <TouchableOpacity
+            style={styles.linkDtButton}
+            onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
+          >
+            <View style={styles.linkDtButtonContent}>
+              <AppText style={styles.linkDtButtonText}>LINK DT</AppText>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.rejectButton}
+            onPress={() => handleRejectPress(item)}
+          >
+            <CloseCircle color="#000" />
+          </TouchableOpacity>
+        </View>
+      );
+
+    case 'ONBOARD':
+      return (
+        <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_ONBOARD}>
+          <TouchableOpacity
+            style={styles.onboardButton}
+            onPress={() => {
+              const customerId = item.customerId || item.stgCustomerId;
+              handleOnboardCustomer(
+                navigation,
+                customerId,
+                false,
+                customerAPI,
+                (toastConfig) => Toast.show(toastConfig),
+                item.statusName
+              );
+            }}
+          >
+            <AppText style={styles.onboardButtonText}>Onboard</AppText>
+          </TouchableOpacity>
+        </PermissionWrapper>
+      );
+
+    default:
+      return null;
+  }
+};
+
+
+
+
   const renderCustomerItem = ({ item, index }) => {
     return (
       <Animated.View
@@ -2445,124 +2602,21 @@ const CustomerList = ({ navigation: navigationProp }) => {
               </AppText>
             </View>
           </TouchableOpacity>
-          {item.statusName === 'LOCKED' ? (
-            <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
-              <TouchableOpacity
-                style={styles.unlockButton}
-                onPress={() => handleUnblockCustomer(item)}
-                disabled={blockUnblockLoading}
-              >
-                <UnLocked fill="#EF4444" />
-                <AppText style={styles.unlockButtonText}>Unblock</AppText>
-              </TouchableOpacity>
-            </PermissionWrapper>
-          ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
-            <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
-              <TouchableOpacity
-                style={styles.blockButton}
-                onPress={() => handleBlockCustomer(item)}
-                disabled={blockUnblockLoading}
-              >
-                <Locked fill="#666" />
-                <AppText style={styles.blockButtonText}>Block</AppText>
-              </TouchableOpacity>
-            </PermissionWrapper>
-          ) : item.statusName === 'PENDING' && item.action == 'APPROVE' ? (
-            <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
-              <View style={styles.pendingActions}>
-                <TouchableOpacity
-                  style={styles.approveButton}
-                  onPress={() => handleApprovePress(item)}
-                >
 
 
-                  <View style={styles.approveButtonContent}>
-                    <Icon name="checkmark-outline" size={18} color="white" />
-                    <AppText style={styles.approveButtonText}>Approve</AppText>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.rejectButton}
-                  onPress={() => handleRejectPress(item)}
-                >
-                  <CloseCircle color='#000' />
-                </TouchableOpacity>
-              </View>
-            </PermissionWrapper>
-          ) : item.statusName === 'PENDING' && item.action == 'LINK_DT' ? (
-            <View style={styles.pendingActions}>
-              <TouchableOpacity
-                style={styles.linkDtButton}
-                onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
-              >
+
+        
+
+              {renderCustomerAction(item)}
 
 
-                <View style={styles.linkDtButtonContent}>
-                  <AppText style={styles.linkDtButtonText}>LINK DT</AppText>
-                </View>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.rejectButton}
-                onPress={() => handleRejectPress(item)}
-              >
-                <CloseCircle color='#000' />
-              </TouchableOpacity>
 
-            </View>
-          )
-
-            : item.statusName === 'IN_PROGRESS' ||
-              (item.statusName === 'PENDING' && item.action === 'VERIFY')
-              ? (
-                <View style={styles.pendingActions}>
-                  <TouchableOpacity
-                    style={styles.approveButton}
-                    onPress={() => handleVerifyClick(item)}
-                    disabled={actionLoading}
-                  >
-                    <View style={styles.approveButtonContent}>
-                      <Icon name="checkmark-outline" size={18} color="white" />
-                      <AppText style={styles.approveButtonText}>Verify</AppText>
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.rejectButton}
-                    onPress={() => handleRejectPress(item)}
-                    disabled={actionLoading}
-                  >
-                    <CloseCircle color='#000' />
-                  </TouchableOpacity>
-
-                </View>
-              ) :
-
-              item.statusName === 'NOT-ONBOARDED' ? (
-                <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_ONBOARD}>
-                  <TouchableOpacity
-                    style={styles.onboardButton}
-                    onPress={() => {
-                      const customerId = item.customerId || item.stgCustomerId;
-                      // For onboard mode, always use isStaging = false
-                      const isStaging = false;
-                      handleOnboardCustomer(
-                        navigation,
-                        customerId,
-                        isStaging,
-                        customerAPI,
-                        (toastConfig) => Toast.show(toastConfig),
-                        item.statusName // Pass status name
-                      );
-                    }}>
-                    <AppText style={styles.onboardButtonText}>Onboard</AppText>
-                  </TouchableOpacity>
-                </PermissionWrapper>
-              ) : null}
         </View>
       </Animated.View>
     );
   };
+
 
   // Documents Modal - Shows all documents for a customer
   const DocumentsModal = () => {
