@@ -19,7 +19,7 @@ const { width, height } = Dimensions.get('window');
 
 const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName, checkboxLabel, loading = false }) => {
   const [comment, setComment] = useState('');
-  const [checkConfirm, setCheckConfirm] = useState(true);
+  const [checkConfirm, setCheckConfirm] = useState(false);
   const [error, setError] = useState('');
 
   const handleConfirm = async () => {
@@ -64,8 +64,11 @@ const ApproveCustomerModal = ({ visible, onClose, onConfirm, customerName, check
             <View style={styles.modalContainer}>
               {/* Warning Icon */}
               <View style={styles.iconContainer}>
+
+                <View style={styles.iconCircleOuter}>
                 <View style={styles.iconCircle}>
                   <AppText style={styles.iconText}>!</AppText>
+                </View>
                 </View>
               </View>
 
@@ -176,18 +179,25 @@ const styles = StyleSheet.create({
   iconContainer: {
     marginBottom: 20,
   },
+
+  iconCircleOuter:{
+    backgroundColor:"#F7941E1A",
+   borderRadius:100,
+   padding:20
+
+  },
   iconCircle: {
-    width: 64,
-    height: 64,
+    width: 49,
+    height: 49,
     borderRadius: 32,
-    backgroundColor: '#FFF4ED',
+    backgroundColor: '#FF8A3D',
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#FF8A3D',
+    color: '#ffffff',
   },
   title: {
     fontSize: 18,

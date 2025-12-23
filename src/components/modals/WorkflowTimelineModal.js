@@ -123,6 +123,7 @@ const VerticalTimeline = ({ steps }) => {
                       {step.status === 'submitted' ? 'SUBMITTED' :
                         step.status === 'approved' ? 'APPROVED' :
                           step.status === 'rejected' ? 'REJECTED' :
+                          step.status === 'REASSIGN' ? 'SENT BACK' :
                             step.status.toUpperCase()}
                     </AppText>
                   </View>

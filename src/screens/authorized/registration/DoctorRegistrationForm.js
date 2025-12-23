@@ -1410,7 +1410,18 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
         updates.clinicRegistrationDate = formattedDate;
       }
     }
+if (ocrData.issueDate && !formData.practiceLicenseDate) {
+      const parts = ocrData.issueDate.split('-');
+      if (parts.length === 3) {
+        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
+        updates.practiceLicenseDate = formattedDate;
+      }
+    }
 
+
+
+
+    // practiceLicenseDate
     // Populate expiry date if available
     if (ocrData.expiryDate) {
       const parts = ocrData.expiryDate.split('-');

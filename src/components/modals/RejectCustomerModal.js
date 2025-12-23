@@ -62,8 +62,14 @@ const RejectCustomerModal = ({
             <View style={styles.modalContainer}>
           {/* Warning Icon */}
           <View style={styles.iconContainer}>
+
+                        <View style={styles.iconCircleOuter}>
+
+
             <View style={styles.iconCircle}>
               <AppText style={styles.iconText}>!</AppText>
+            </View>
+
             </View>
           </View>
 
@@ -141,22 +147,29 @@ const styles = StyleSheet.create({
   iconContainer: {
     marginBottom: 20,
   },
+
+  iconCircleOuter:{
+    backgroundColor:"#FFE3E3",
+   borderRadius:100,
+   padding:20
+
+  },
   iconCircle: {
-    width: 64,
-    height: 64,
+    width: 49,
+    height: 49,
     borderRadius: 32,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: '#FF7779',
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#EF4444',
+    color: '#ffffff',
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#1F2937',
     textAlign: 'center',
     marginBottom: 20,

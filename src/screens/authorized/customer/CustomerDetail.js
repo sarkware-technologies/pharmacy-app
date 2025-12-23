@@ -1231,10 +1231,15 @@ const CustomerDetail = ({ navigation, route }) => {
       };
 
       await customerAPI.workflowReassign(instanceId, payload);
-      showToast('Customer sent back successfully!', 'success');
+      // showToast('Customer sent back successfully!', 'success');
       setSendBackModalVisible(false);
+     const parentNav = navigation.getParent();
+if (parentNav) {
+  parentNav.setParams({ pendingCustomerAction: 'sendBack' });
+}
+navigation.goBack();
 
-      navigation.navigate('CustomerList', { sendBackToast: true });
+
     } catch (error) {
       console.error('Error sending back customer:', error);
       showToast(error.response?.data?.message || error.message || 'Failed to send back customer', 'error');
@@ -1337,8 +1342,13 @@ const CustomerDetail = ({ navigation, route }) => {
       // Fetch latest draft data
       const latestDraftResponse = await customerAPI.getLatestDraft(instanceId, actorId);
 
-      if (latestDraftResponse?.data?.data) {
-        setLatestDraftData(latestDraftResponse.data.data);
+
+      
+
+      
+
+      if (latestDraftResponse?.data?.draftEdits) {
+        setLatestDraftData(latestDraftResponse.data.draftEdits);
         setVerifyModalVisible(true);
       } else {
         showToast('Failed to fetch latest draft data', 'error');
@@ -1538,16 +1548,16 @@ const CustomerDetail = ({ navigation, route }) => {
   )
 ) && (
       
-      <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+      <PermissionWrapper permission={PERMISSIONS.ONBOARDING_DETAILS_PAGE_APPROVE_REJECT}>
         <View style={styles.topActionButtons}>
           <TouchableOpacity
-            style={styles.topApproveButton}
+            style={[styles.topApproveButton, customer?.action === 'LINK_DT' && styles.disabledButton]}
             onPress={() =>
               getTopActionLabel(customer) === 'Verify'
                 ? handleVerifyClick()
                 : setApproveModalVisible(true)
             }
-            disabled={actionLoading}
+            disabled={actionLoading || customer?.action === 'LINK_DT'}
           >
             <MaterialIcons name="check" size={14} color="#fff" />
             <AppText style={styles.topApproveButtonText}>
@@ -1963,98 +1973,76 @@ const CustomerDetail = ({ navigation, route }) => {
           action={customer?.action || selectedCustomer?.action}
         />}
 
-        {/* Action Buttons - Show only on Details tab and if customer action is APPROVE and status is PENDING */}
-        {activeTab === 'details' && customer?.statusName === 'PENDING' && customer?.action === 'APPROVE' && (
-          <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
-            <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity
-                style={styles.sendBackButton}
-                onPress={() => setSendBackModalVisible(true)}
-                disabled={actionLoading}
-              >
-                {actionLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
+       {activeTab === 'details' &&
+  (
+    customer?.statusName === 'IN_PROGRESS' ||
+    (
+      customer?.statusName === 'PENDING' &&
+      (customer?.action === 'APPROVE' || customer?.action === 'LINK_DT')
+    )
+  ) && (
+    <PermissionWrapper permission={PERMISSIONS.ONBOARDING_DETAILS_PAGE_APPROVE_REJECT}>
+      <View style={styles.actionButtonsContainer}>
+        {/* Send Back */}
+        <TouchableOpacity
+          style={styles.sendBackButton}
+          onPress={() => setSendBackModalVisible(true)}
+          disabled={actionLoading}
+        >
+          {actionLoading ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <>
+              <Reassigned color={colors.primary} width={18} height={18} />
+              <AppText style={styles.sendBackButtonText}>Send Back</AppText>
+            </>
+          )}
+        </TouchableOpacity>
 
-                    <Reassigned color={colors.primary} width={18} height={18} />
-
-                    <AppText style={styles.sendBackButtonText}>Send Back</AppText>
-                  </>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.approveButton}
-                onPress={() => setApproveModalVisible(true)}
-                disabled={actionLoading}
-              >
-                {actionLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Icon name="checkmark-outline" size={20} color="#fff" />
-
-                    <AppText style={styles.approveButtonText}>Approve</AppText>
-                  </>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.rejectButton}
-                onPress={() => setRejectModalVisible(true)}
-                disabled={actionLoading}
-              >
-                <Icon name="close-circle-outline" size={20} color="#2B2B2B" />
-                <AppText style={styles.rejectButtonText}>Reject</AppText>
-              </TouchableOpacity>
-
-            </View>
-          </PermissionWrapper>
+       {/* Approve / Verify */}
+      <TouchableOpacity
+        style={
+         [ getTopActionLabel(customer) === 'Verify'
+            ? styles.verifyButton
+            : styles.approveButton, customer?.action === 'LINK_DT' && styles.disabledButton]
+        }
+        onPress={() =>
+          getTopActionLabel(customer) === 'Verify'
+            ? handleVerifyClick()
+            : setApproveModalVisible(true)
+        }
+        disabled={actionLoading || customer?.action === 'LINK_DT' }
+      >
+        {actionLoading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <>
+            <MaterialIcons name="check" size={20} color="#fff" />
+            <AppText
+              style={
+                getTopActionLabel(customer) === 'Verify'
+                  ? styles.verifyButtonText
+                  : styles.approveButtonText
+              }
+            >
+              {getTopActionLabel(customer)}
+            </AppText>
+          </>
         )}
+      </TouchableOpacity>
 
-        {/* Action Buttons for LINK_DT - Show only on Details tab and if customer action is LINK_DT */}
-        {activeTab === 'details' && (customer?.action === 'LINK_DT' || selectedCustomer?.action === 'LINK_DT') && (
-          <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
-            <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity
-                style={styles.sendBackButton}
-                onPress={() => setSendBackModalVisible(true)}
-                disabled={actionLoading}
-              >
-                {actionLoading ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <>
-                    <Reassigned color={colors.primary} width={18} height={18} />
-                    <AppText style={styles.sendBackButtonText}>Send Back</AppText>
-                  </>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.verifyButton}
-                onPress={handleVerifyClick}
-                disabled={actionLoading}
-              >
-                {actionLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <MaterialIcons name="check" size={20} color="#fff" />
-                    <AppText style={styles.verifyButtonText}>Verify</AppText>
-                  </>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.rejectButton}
-                onPress={() => setRejectModalVisible(true)}
-                disabled={actionLoading}
-              >
-                <CloseCircle color="#2B2B2B" />
-                <AppText style={styles.rejectButtonText}>Reject</AppText>
-              </TouchableOpacity>
-            </View>
-          </PermissionWrapper>
-        )}
-
+        {/* Reject */}
+        <TouchableOpacity
+          style={styles.rejectButton}
+          onPress={() => setRejectModalVisible(true)}
+          disabled={actionLoading}
+        >
+          <CloseCircle color="#2B2B2B" />
+          <AppText style={styles.rejectButtonText}>Reject</AppText>
+        </TouchableOpacity>
+      </View>
+    </PermissionWrapper>
+  )}
         <DocumentModal />
 
         {/* Hidden WebView for automatic downloads */}
@@ -2175,7 +2163,7 @@ const CustomerDetail = ({ navigation, route }) => {
           visible={sendBackModalVisible}
           onClose={() => setSendBackModalVisible(false)}
           onConfirm={handleSendBackConfirm}
-          titleText={'Are you sure you want to\nSend back customer?'}
+          titleText={'Are you sure you want to send \n this request back to the MR?'}
           confirmLabel="Send Back"
           requireComment={true}
           loading={actionLoading}
@@ -2717,6 +2705,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10
+  },
+
+   disabledButton: {
+
+    opacity:0.5
+    
   },
   topApproveButton: {
 

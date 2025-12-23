@@ -779,7 +779,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           {/* Registration Certificate */}
           <FileUploadComponent
             placeholder="Upload registration certificate"
-            accept={['pdf', 'jpg', 'png']}
+            accept={['pdf', 'jpg','jpeg', 'png']}
             maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
             initialFile={hospitalForm.registrationCertificate}
@@ -990,7 +990,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           /></AppText>
           <FileUploadComponent
             placeholder="Upload"
-            accept={['jpg', 'png', 'jpeg']}
+            accept={['jpg', 'png', 'jpeg','jpeg']}
             maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.HOSPITAL_IMAGE}
             initialFile={hospitalForm.image}
