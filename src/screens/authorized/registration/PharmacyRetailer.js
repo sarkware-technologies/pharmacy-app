@@ -409,7 +409,7 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
   const loadInitialData = async () => {
     // Fetch license types from API
     await fetchLicenseTypes();
-    
+
     // Load customer groups
     try {
       const groupsResponse = await customerAPI.getCustomerGroups();
@@ -1157,9 +1157,9 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
 
         setTimeout(() => {
           // Use goBack() to preserve tab bar visibility
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      }
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          }
         }, 1500);
       } else {
         Toast.show({
@@ -2093,7 +2093,7 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
 
       // Check if there's at least some data to save
       // First check the built payload
-      const hasPayloadData = 
+      const hasPayloadData =
         (draftPayload.generalDetails && Object.keys(draftPayload.generalDetails).length > 0) ||
         (draftPayload.securityDetails && Object.keys(draftPayload.securityDetails).length > 0) ||
         (draftPayload.licenceDetails && draftPayload.licenceDetails.licence && draftPayload.licenceDetails.licence.length > 0) ||
@@ -2102,7 +2102,7 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
         (draftPayload.suggestedDistributors && Array.isArray(draftPayload.suggestedDistributors) && draftPayload.suggestedDistributors.length > 0);
 
       // Fallback: Check formData directly for any filled fields
-      const hasFormData = 
+      const hasFormData =
         (formData.pharmacyName && formData.pharmacyName.trim()) ||
         (formData.shortName && formData.shortName.trim()) ||
         (formData.address1 && formData.address1.trim()) ||
@@ -2358,7 +2358,7 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
 
               {/* Station code */}
               <View style={styles.dropdownContainer}>
-                {(formData.stationCode ) && (
+                {(formData.stationCode) && (
                   <AppText
                     style={[styles.floatingLabel, { color: colors.primary }]}
                   >
@@ -2406,11 +2406,13 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
                   });
 
                   // Update address fields only
+
+
                   setFormData(prev => ({
                     ...prev,
-                    address1: filteredParts[0] || '',
-                    address2: filteredParts[1] || '',
-                    address3: filteredParts[2] || '',
+                    address1: filterForField('address1', filteredParts[0] || '', 40),
+                    address2: filterForField('address2', filteredParts[1] || '', 40),
+                    address3: filterForField('address3', filteredParts[2] || '', 60),
                     address4: filteredParts.slice(3).join(', ') || '',
                   }));
 

@@ -2279,6 +2279,7 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
                 mandatory={true}
                 value={formData.registrationDate}
                 error={errors.registrationDate}
+                maximumDate={new Date()}
                 onChange={(date) => {
                   setFormData(prev => ({ ...prev, registrationDate: date }));
                   setErrors(prev => ({ ...prev, registrationDate: null }));
@@ -2387,13 +2388,14 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
                   });
 
                   // Update address fields only
-                  setFormData(prev => ({
-                    ...prev,
-                    address1: filteredParts[0] || '',
-                    address2: filteredParts[1] || '',
-                    address3: filteredParts[2] || '',
-                    address4: filteredParts.slice(3).join(', ') || '',
-                  }));
+                setFormData(prev => ({
+                                    ...prev,
+                                    address1: filterForField('address1', filteredParts[0] || '', 40),
+                                    address2: filterForField('address2', filteredParts[1] || '', 40),
+                                    address3: filterForField('address3', filteredParts[2] || '', 60),
+                                    address4: filteredParts.slice(3).join(', ') || '',
+                                  }));
+                
 
                   // Update pincode and trigger lookup (this will populate area, city, state)
                   if (extractedPincode) {

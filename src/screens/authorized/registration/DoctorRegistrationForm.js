@@ -117,14 +117,14 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
     CLINIC_REGISTRATION: {
-      id: 6,
-      docTypeId: 10,
+      id: 7,
+      docTypeId: 8,
       name: 'Clinic Registration',
       code: 'CLINIC_REG',
     },
     PRACTICE_LICENSE: {
-      id: 7,
-      docTypeId: 8,
+      id: 6,
+      docTypeId: 10,
       name: 'Practice License',
       code: 'PRACTICE_LIC',
     },
@@ -577,14 +577,14 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
       if (licenseResponse.success && licenseResponse.data) {
         const licenseData = {};
         licenseResponse.data.forEach(license => {
-          if (license.code === 'CLINIC_REG' || license.id === 6) {
+          if (license.code === 'CLINIC_REG' || license.id === 7) {
             licenseData.CLINIC_REGISTRATION = {
               id: license.id,
               docTypeId: license.docTypeId,
               name: license.name,
               code: license.code,
             };
-          } else if (license.code === 'PRACTICE_LIC' || license.id === 7) {
+          } else if (license.code === 'PRACTICE_LIC' || license.id === 6) {
             licenseData.PRACTICE_LICENSE = {
               id: license.id,
               docTypeId: license.docTypeId,
@@ -1650,13 +1650,13 @@ if (ocrData.issueDate && !formData.practiceLicenseDate) {
           registrationDate: new Date().toISOString(),
           licence: [
             {
-              licenceTypeId: licenseTypes.CLINIC_REGISTRATION?.id || 6,
+              licenceTypeId: licenseTypes.CLINIC_REGISTRATION?.id || 7,
               licenceNo: formData.clinicRegistrationNumber,
               licenceValidUpto: formatDateForAPI(formData.clinicRegistrationDate),
               hospitalCode: '',
             },
             {
-              licenceTypeId: licenseTypes.PRACTICE_LICENSE?.id || 7,
+              licenceTypeId: licenseTypes.PRACTICE_LICENSE?.id || 6,
               licenceNo: formData.practiceLicenseNumber,
               licenceValidUpto: formatDateForAPI(formData.practiceLicenseDate),
               hospitalCode: '',
@@ -2196,7 +2196,7 @@ if (ocrData.issueDate && !formData.practiceLicenseDate) {
                   // Update address field only
                   setFormData(prev => ({
                     ...prev,
-                    address1: locationData.address,
+                    address1: filterForField('address1', locationData.address || '', 40),
                   }));
 
                   // Split address by commas for other address fields
@@ -2209,23 +2209,26 @@ if (ocrData.issueDate && !formData.practiceLicenseDate) {
                       part !== locationData.pincode,
                   );
 
+                 
+               
+
                   // Fill remaining address fields
                   if (filteredParts.length > 1) {
                     setFormData(prev => ({
                       ...prev,
-                      address2: filteredParts[1] || '',
+                      address2: filterForField('address2', filteredParts[1] || '', 40),
                     }));
                   }
                   if (filteredParts.length > 2) {
                     setFormData(prev => ({
                       ...prev,
-                      address3: filteredParts[2] || '',
+                      address3: filterForField('address3', filteredParts[2] || '', 60),
                     }));
                   }
                   if (filteredParts.length > 3) {
                     setFormData(prev => ({
                       ...prev,
-                      address4: filteredParts[3] || '',
+                      address4: filterForField('address3', filteredParts[3] || '', 60),
                     }));
                   }
 

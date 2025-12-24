@@ -137,7 +137,7 @@ const CustomerDetail = ({ navigation, route }) => {
     console.log(customer, "custoemr");
 
     const customerId = customer?.stgCustomerId || customer?.customerId;
-    const isStaging = customer?.customerId === null || customer?.customerId === undefined;
+    const isStaging = customer?.stgCustomerId?true:false;
 
     if (customerId) {
       dispatch(setCurrentCustomerId(customerId));
@@ -317,8 +317,7 @@ const CustomerDetail = ({ navigation, route }) => {
       // Show success message
       // Refresh customer details to get updated data
       const customerId = customer?.stgCustomerId || customer?.customerId;
-      const isStaging = customer?.statusName === 'ACTIVE' ? false : true;
-
+        const isStaging = customer?.stgCustomerId?true:false;
       if (customerId) {
         dispatch(fetchCustomerDetails({
           customerId,
