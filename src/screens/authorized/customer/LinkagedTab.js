@@ -2856,7 +2856,7 @@ export const LinkagedTab = ({
                     { flex: 1, textAlign: 'center' },
                   ]}
                 >
-                  Supply type
+                   Type
                 </AppText>
                 <AppText
                   style={[
