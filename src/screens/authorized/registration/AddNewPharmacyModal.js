@@ -1032,11 +1032,11 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
       console.log('=== API Response ===');
       console.log('Response:', response);
 
-      if (response?.data?.success) {
+      if (response?.success) {
         Toast.show({
           type: 'success',
           text1: 'Pharmacy Added',
-          text2: response.data.message || 'Pharmacy registered successfully',
+          text2: response.message || 'Pharmacy registered successfully',
           position: 'top',
         });
 
@@ -1065,7 +1065,6 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
     }
 
     catch (error) {
-      console.error('Pharmacy registration error:', error);
       Toast.show({
         type: 'error',
         text1: 'Registration Failed',

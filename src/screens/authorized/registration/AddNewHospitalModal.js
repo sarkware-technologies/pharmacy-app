@@ -681,12 +681,18 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
       const response = await customerAPI.createCustomer(registrationData);
 
+    
 
-      if (response?.data?.success) {
+      if (response?.success) {
+
+
+        
+      
+        
         Toast.show({
           type: 'success',
           text1: 'Hospital Added',
-          text2: response.data.message || 'Hospital registered successfully',
+          text2: response.message || 'Hospital registered successfully',
           position: 'top',
         });
 
@@ -710,14 +716,16 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         resetForm();
         onClose();
       } else {
+        
         Toast.show({
           type: 'error',
           text1: 'Registration Failed',
-          text2: response.data.message || 'Failed to register hospital. Please try again.',
+          text2: response.message || 'Failed to register hospital. Please try again.',
           position: 'top',
         });
       }
     } catch (error) {
+
 
       Toast.show({
         type: 'error',

@@ -935,11 +935,11 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
       const response = await customerAPI.createCustomer(registrationData);
 
 
-      if (response?.data?.success) {
+      if (response?.success) {
         Toast.show({
           type: 'success',
           text1: 'Doctor Added',
-          text2: response.data.message || 'Doctor registered successfully',
+          text2: response.message || 'Doctor registered successfully',
         });
 
         // Pass the created doctor data back to parent
