@@ -27,6 +27,7 @@ const DivisionLinkage = ({
     const [loading, setLoading] = useState(true);
 
 
+    
     useEffect(() => {
         const fetchDivisions = async () => {
             try {
