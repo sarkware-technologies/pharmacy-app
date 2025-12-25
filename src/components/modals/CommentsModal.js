@@ -23,7 +23,7 @@ const formatDateTime = (dateString) => {
     const date = new Date(dateString.replace(' ', 'T'));
     if (Number.isNaN(date.getTime())) return dateString;
     const day = String(date.getDate()).padStart(2, '0');
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'];
     const month = monthNames[date.getMonth()];
     const year = date.getFullYear();
@@ -110,7 +110,7 @@ const CommentsModal = ({ visible, onClose, moduleRecordId, moduleName }) => {
     return apiResponse.data.map((item, idx) => {
       const approvers = item.approvers || [];
       const recordId = item.moduleRecordId || item.instanceId;
-      
+
       // Determine action type - default to "Creation", can be "Approve" if needed
       // Based on the screenshot, we show both "Creation" and "Approve" as separate accordions
       // For now, we'll use "Creation" as default, but this can be enhanced based on business logic
@@ -139,6 +139,7 @@ const CommentsModal = ({ visible, onClose, moduleRecordId, moduleName }) => {
     try {
       const response = await customerAPI.getUserWiseAudit(moduleRecordId, moduleName);
       const transformed = transformData(response);
+      console.log(transformed, 230427)
       setAccordionData(transformed);
       if (transformed.length > 0) {
         setExpanded(transformed[0].id);

@@ -17,6 +17,7 @@ import More from '../components/icons/menu/More';
 // Import screens
 import CustomerList from '../screens/authorized/customer/CustomerList';
 import CustomerDetail from '../screens/authorized/customer/CustomerDetail';
+import CustomerDetails from '../screens/authorized/customer/customerDetails';
 import CustomerSearch from '../screens/authorized/customer/CustomerSearch';
 
 // Import Pricing screens
@@ -86,7 +87,7 @@ const CustomerStack = () => {
     <Stack.Screen name="CustomerList" component={CustomerList} />
     <Stack.Screen
       name="CustomerDetail"
-      component={CustomerDetail}
+      component={CustomerDetails}
       options={{
         tabBarStyle: { display: 'none' }
       }}

@@ -866,8 +866,9 @@ export const LinkagedTab = ({
   // Function to fetch field team data
   const fetchFieldTeamData = useCallback(async (page = 1, loadMore = false) => {
 
-
-    const isStaging = selectedCustomer.stgCustomerId ? true : false;
+    // Determine isStaging based on customer status
+    // If customer is active (customerCode not null or statusName === 'ACTIVE'), isStaging=false, else isStaging=true
+    const isStaging = customerId ? false : true;
 
     try {
       if (loadMore) {
@@ -3520,7 +3521,7 @@ export const LinkagedTab = ({
               {linkingDivisions ? (
                 <AppText style={styles.linkButtonText}>Linking...</AppText>
               ) : (
-                <AppText style={styles.linkButtonText}>Continue</AppText>
+                <AppText style={styles.linkButtonText}>Link Division</AppText>
               )}
             </TouchableOpacity>
           </View>

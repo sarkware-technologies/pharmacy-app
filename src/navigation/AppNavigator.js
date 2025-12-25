@@ -64,6 +64,8 @@ import InvoiceDetails from '../screens/authorized/netrate/InvoiceDetails';
 // Customer Screens
 import CustomerSearch from '../screens/authorized/customer/CustomerSearch';
 import CustomerDetail from '../screens/authorized/customer/CustomerDetail';
+import CustomerDetails from '../screens/authorized/customer/customerDetails';
+
 
 // Main Navigation
 import BottomTabNavigator from './BottomTabNavigator';
@@ -301,7 +303,7 @@ const CustomerStack = () => (
     }}
   >
     <Stack.Screen name="CustomerSearchMain" component={CustomerSearch} />
-    <Stack.Screen name="CustomerDetail" component={CustomerDetail} />
+    <Stack.Screen name="CustomerDetail" component={CustomerDetails} />
     <Stack.Screen name="CustomerList" component={CustomerList} />
   </Stack.Navigator>
 );

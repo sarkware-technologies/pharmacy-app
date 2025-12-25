@@ -369,53 +369,53 @@ const CustomerList = ({ navigation: navigationProp }) => {
   }, [route?.params?.sendBackToast, navigation]);
 
   // Show toast when returning from CustomerDetail after approve/reject/verify
-useFocusEffect(
-  React.useCallback(() => {
-    const parentNav = navigation.getParent();
-    if (!parentNav) return;
+  useFocusEffect(
+    React.useCallback(() => {
+      const parentNav = navigation.getParent();
+      if (!parentNav) return;
 
-    try {
-      const parentState = parentNav.getState();
-      const currentRoute = parentState?.routes?.[parentState?.index];
-      const pendingAction = currentRoute?.params?.pendingCustomerAction;
+      try {
+        const parentState = parentNav.getState();
+        const currentRoute = parentState?.routes?.[parentState?.index];
+        const pendingAction = currentRoute?.params?.pendingCustomerAction;
 
-      if (!pendingAction) return;
+        if (!pendingAction) return;
 
-      let message = '';
-      let type = 'success';
+        let message = '';
+        let type = 'success';
 
-      switch (pendingAction) {
-        case 'approve':
-          message = 'Customer has been successfully approved!';
-          type = 'success';
-          break;
-        case 'reject':
-          message = 'Customer has been rejected!';
-          type = 'error';
-          break;
-        case 'verify':
-          message = 'Customer has been successfully verified!';
-          type = 'success';
-          break;
-        case 'sendBack':
-          message = 'Customer form has been sent back!';
-          type = 'warning';
-          break;
-        default:
-          break;
+        switch (pendingAction) {
+          case 'approve':
+            message = 'Customer has been successfully approved!';
+            type = 'success';
+            break;
+          case 'reject':
+            message = 'Customer has been rejected!';
+            type = 'error';
+            break;
+          case 'verify':
+            message = 'Customer has been successfully verified!';
+            type = 'success';
+            break;
+          case 'sendBack':
+            message = 'Customer form has been sent back!';
+            type = 'warning';
+            break;
+          default:
+            break;
+        }
+
+        if (message) {
+          setTimeout(() => {
+            showToast(message, type);
+            parentNav.setParams({ pendingCustomerAction: undefined });
+          }, 600);
+        }
+      } catch (error) {
+        console.error('Error checking parent navigation params:', error);
       }
-
-      if (message) {
-        setTimeout(() => {
-          showToast(message, type);
-          parentNav.setParams({ pendingCustomerAction: undefined });
-        }, 600);
-      }
-    } catch (error) {
-      console.error('Error checking parent navigation params:', error);
-    }
-  }, [navigation])
-);
+    }, [navigation])
+  );
 
 
   // Fetch tab counts and refresh list whenever the customer tab becomes active (screen is focused)
@@ -2387,7 +2387,8 @@ useFocusEffect(
           <View style={styles.pendingActions}>
             <TouchableOpacity
               style={styles.linkDtButton}
-              onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
+              onPress={() => navigation.navigate('CustomerDetail', { customerId: item?.stgCustomerId ?? item?.customerId, isStaging: item?.stgCustomerId ? true : false, activeTab: "linkage" })}
+
             >
               <View style={styles.linkDtButtonContent}>
                 <AppText style={styles.linkDtButtonText}>LINK DT</AppText>
@@ -2455,7 +2456,7 @@ useFocusEffect(
           {/* Customer Name - Clickable to navigate to CustomerDetail */}
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
+            onPress={() => navigation.navigate('CustomerDetail', { customerId: item?.stgCustomerId ?? item?.customerId, isStaging: item?.stgCustomerId ? true : false, })}
             style={styles.customerNameRow}
           >
             <AppText
@@ -2515,52 +2516,52 @@ useFocusEffect(
               </TouchableOpacity>
             )} */}
 
-{(
-  (
-    item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
-      ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
-        ? 'approved'
-        : 'reassigned'
-      : item.statusName?.toLowerCase()
-  ) &&
-  ['not-onboarded', 'approved', 'active', 'reassigned'].includes(
-    item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
-      ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
-        ? 'approved'
-        : 'reassigned'
-      : item.statusName?.toLowerCase()
-  )
-) && (
-  <TouchableOpacity
-    style={styles.actionButton}
-    onPress={() => {
-      const derivedStatus =
-        item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
-          ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
-            ? 'approved'
-            : 'reassigned'
-          : item.statusName?.toLowerCase();
+            {(
+              (
+                item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
+                  ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
+                    ? 'approved'
+                    : 'reassigned'
+                  : item.statusName?.toLowerCase()
+              ) &&
+              ['not-onboarded', 'approved', 'active', 'reassigned'].includes(
+                item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
+                  ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
+                    ? 'approved'
+                    : 'reassigned'
+                  : item.statusName?.toLowerCase()
+              )
+            ) && (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => {
+                    const derivedStatus =
+                      item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
+                        ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
+                          ? 'approved'
+                          : 'reassigned'
+                        : item.statusName?.toLowerCase();
 
-      const customerId = item.customerId || item.stgCustomerId;
+                    const customerId = item.customerId || item.stgCustomerId;
 
-      const isStaging =
-        derivedStatus === 'not-onboarded' || derivedStatus === 'reassigned'
-          ? ['waitingForApproval', 'rejected', 'draft'].includes(activeTab)
-          : false;
+                    const isStaging =
+                      derivedStatus === 'not-onboarded' || derivedStatus === 'reassigned'
+                        ? ['waitingForApproval', 'rejected', 'draft'].includes(activeTab)
+                        : false;
 
-      handleOnboardCustomer(
-        navigation,
-        customerId,
-        isStaging,
-        customerAPI,
-        toastConfig => Toast.show(toastConfig),
-        derivedStatus
-      );
-    }}
-  >
-    <Edit color="#666" />
-  </TouchableOpacity>
-)}
+                    handleOnboardCustomer(
+                      navigation,
+                      customerId,
+                      isStaging,
+                      customerAPI,
+                      toastConfig => Toast.show(toastConfig),
+                      derivedStatus
+                    );
+                  }}
+                >
+                  <Edit color="#666" />
+                </TouchableOpacity>
+              )}
 
             <TouchableOpacity
               style={styles.actionButton}
@@ -3791,36 +3792,36 @@ useFocusEffect(
         />
 
         {/* Toast Notification */}
-     {toastVisible && (
-  <View style={[styles.toastContainer, { bottom: insets.bottom || 8 }]}>
-    <View
-      style={[
-        styles.toast,
-        toastType === 'success'
-          ? styles.toastSuccess
-          : toastType === 'warning'
-          ? styles.toastWarning
-          : styles.toastError,
-      ]}
-    >
-      <View style={styles.toastHeader}>
-        <AppText style={styles.toastLabel}>
-          {toastType === 'success'
-            ? 'Approve'
-            : toastType === 'warning'
-            ? 'Send Back'
-            : 'Reject'}
-        </AppText>
+        {toastVisible && (
+          <View style={[styles.toastContainer, { bottom: insets.bottom || 8 }]}>
+            <View
+              style={[
+                styles.toast,
+                toastType === 'success'
+                  ? styles.toastSuccess
+                  : toastType === 'warning'
+                    ? styles.toastWarning
+                    : styles.toastError,
+              ]}
+            >
+              <View style={styles.toastHeader}>
+                <AppText style={styles.toastLabel}>
+                  {toastType === 'success'
+                    ? 'Approve'
+                    : toastType === 'warning'
+                      ? 'Send Back'
+                      : 'Reject'}
+                </AppText>
 
-        <TouchableOpacity onPress={() => setToastVisible(false)}>
-          <AppText style={styles.toastOkButton}>OK</AppText>
-        </TouchableOpacity>
-      </View>
+                <TouchableOpacity onPress={() => setToastVisible(false)}>
+                  <AppText style={styles.toastOkButton}>OK</AppText>
+                </TouchableOpacity>
+              </View>
 
-      <AppText style={styles.toastMessage}>{toastMessage}</AppText>
-    </View>
-  </View>
-)}
+              <AppText style={styles.toastMessage}>{toastMessage}</AppText>
+            </View>
+          </View>
+        )}
 
 
         {/* Date Picker Modal */}
@@ -4673,7 +4674,7 @@ const styles = StyleSheet.create({
   },
   toastError: {
     backgroundColor: '#EF6B6B',
-  },toastError: {
+  }, toastError: {
     backgroundColor: '#EF6B6B',
   },
   toastHeader: {

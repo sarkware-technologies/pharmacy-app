@@ -36,7 +36,7 @@ export const customerAPI = {
         categoryCode = [],
         subCategoryCode = [],
         statusIds = [],
-        stateIds=[],
+        stateIds = [],
         isStaging = false, // NEW: Flag to determine which endpoint to use
         sortBy = '',
         sortDirection = 'ASC',
@@ -44,7 +44,7 @@ export const customerAPI = {
         startDate = null,
         endDate = null,
         isAll,
-    
+
     } = {}) => {
         try {
             // Build request body with all required fields (matching curl format)
@@ -63,7 +63,7 @@ export const customerAPI = {
 
             if (isAll === true) {
                 requestBody.isAll = true;
-                }
+            }
 
             // Add optional filters only if they have values
             if (searchText) requestBody.searchText = searchText;
@@ -76,7 +76,7 @@ export const customerAPI = {
             }
 
             // Use staging endpoint for staging requests, main endpoint otherwise
-            const endpoint = isStaging 
+            const endpoint = isStaging
                 ? '/user-management/customer/customers-list/staging'
                 : '/user-management/customer/customers-list';
 
@@ -230,7 +230,7 @@ export const customerAPI = {
             const token = await apiClient.getToken();
             const encodedS3Path = encodeURIComponent(s3Path);
             const url = `${apiClient.BASE_URL || 'https://pharmsupply-dev-api.pharmconnect.com'}/user-management/customer/download-doc?s3Path=${encodedS3Path}`;
-            
+
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -447,14 +447,14 @@ export const customerAPI = {
     getDistributorsList: async (page = 1, limit = 20, divisionIds = [], stateId = 0, cityId = 0) => {
         try {
             let url = `/user-management/distributor/list?page=${page}&limit=${limit}&stateId=${stateId}&cityId=${cityId}`;
-            
+
             // Add division IDs to query params
             if (divisionIds && divisionIds.length > 0) {
                 divisionIds.forEach(divId => {
                     url += `&divisionIds=${divId}`;
                 });
             }
-            
+
             const response = await apiClient.get(url);
             return response;
         } catch (error) {
@@ -494,7 +494,7 @@ export const customerAPI = {
                 page,
                 limit
             };
-            
+
             // Add optional filters if provided
             if (stateIds && stateIds.length > 0) {
                 payload.stateIds = stateIds;
@@ -505,7 +505,7 @@ export const customerAPI = {
             if (searchText && searchText.trim().length > 0) {
                 payload.searchText = searchText.trim();
             }
-            
+
             const response = await apiClient.post('/user-management/customer/customers-list', payload);
             return response;
         } catch (error) {
@@ -548,7 +548,7 @@ export const customerAPI = {
                 page,
                 limit
             };
-            
+
             // Add optional filters if provided
             if (stateIds && stateIds.length > 0) {
                 payload.stateIds = stateIds;
@@ -559,7 +559,7 @@ export const customerAPI = {
             if (searchText && searchText.trim().length > 0) {
                 payload.searchText = searchText.trim();
             }
-            
+
             const response = await apiClient.post('/user-management/customer/customers-list', payload);
             return response;
         } catch (error) {
@@ -579,7 +579,7 @@ export const customerAPI = {
         }
     },
 
-     getCustomersListMapping: async (payload) => {
+    getCustomersListMapping: async (payload) => {
         try {
             const response = await apiClient.post('/user-management/customer/mapping-customer-list', payload);
             return response.data;
@@ -597,7 +597,7 @@ export const customerAPI = {
                 page,
                 limit
             };
-            
+
             // Add optional filters if provided
             if (stateIds && stateIds.length > 0) {
                 payload.stateIds = stateIds;
@@ -608,7 +608,7 @@ export const customerAPI = {
             if (searchText && searchText.trim().length > 0) {
                 payload.searchText = searchText.trim();
             }
-            
+
             const response = await apiClient.post('/user-management/customer/customers-list', payload);
             return response;
         } catch (error) {
@@ -631,7 +631,7 @@ export const customerAPI = {
     // Onboard customer (assign customer to distributor)
     onboardCustomer: async (payload, isStaging = false) => {
         try {
-            const endpoint = isStaging 
+            const endpoint = isStaging
                 ? '/user-management/customer/onboard/staging'
                 : '/user-management/customer/onboard';
             const response = await apiClient.post(endpoint, payload);
@@ -678,11 +678,11 @@ export const customerAPI = {
         try {
             const payload = {
                 moduleRecordIds: Array.isArray(moduleRecordIds) ? moduleRecordIds : [moduleRecordIds],
-                // moduleName: Array.isArray(moduleName) ? moduleName : [moduleName]
-                moduleName:  [
-                    "NEW_CUSTOMER_ONBOARDING",
-                    "EXISTING_CUSTOMER_ONBOARDING"
-                ]
+                moduleName: Array.isArray(moduleName) ? moduleName : [moduleName]
+                // moduleName:  [
+                //     "NEW_CUSTOMER_ONBOARDING",
+                //     "EXISTING_CUSTOMER_ONBOARDING"
+                // ]
             };
             const response = await apiClient.post('/approval/workflow-actions/bulk/customer/user-wise-audit', payload);
             return response;
