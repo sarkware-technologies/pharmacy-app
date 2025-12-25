@@ -3,6 +3,8 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
 
+apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -79,6 +81,9 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.pharmacyapp"
+
+    flavorDimensions "env"
+
     defaultConfig {
         applicationId "com.pharmacyapp"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -86,6 +91,36 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
+   productFlavors {
+        dev {
+            dimension "env"
+            applicationId "com.pharmacyapp.dev"
+            versionNameSuffix "-dev"
+            resValue "string", "app_name", "Sun Pharma Dev"
+
+            buildConfigField "String", "ENVFILE", "\".env.dev\""
+        }
+
+        uat {
+            dimension "env"
+            applicationId "com.pharmacyapp.uat"
+            versionNameSuffix "-uat"
+            resValue "string", "app_name", "Sun Pharma UAT"
+
+            buildConfigField "String", "ENVFILE", "\".env.uat\""
+        }
+
+        prod {
+            dimension "env"
+            applicationId "com.pharmacyapp"
+            resValue "string", "app_name", "Sun Pharma"
+
+            buildConfigField "String", "ENVFILE", "\".env.prod\""
+        }
+    }
+
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -102,18 +137,19 @@ android {
             }
         }
     }
-    buildTypes {
+   buildTypes {
         debug {
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
-            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            proguardFiles getDefaultProguardFile(
+                "proguard-android.txt"
+            ), "proguard-rules.pro"
         }
     }
+
 }
 
 dependencies {
