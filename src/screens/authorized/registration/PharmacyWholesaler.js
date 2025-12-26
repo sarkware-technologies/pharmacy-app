@@ -40,11 +40,13 @@ import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isV
 
 // Document types for file uploads
 const DOC_TYPES = {
-  LICENSE_20B: 2, // License Type ID for 20B
-  LICENSE_21B: 4, // License Type ID for 21B
+  LICENSE_20B: 4, // License Type ID for 20B
+  LICENSE_21B: 6, // License Type ID for 21B
   PHARMACY_IMAGE: 1,
-  PAN: 7,
-  GST: 8,
+  PAN_CARD: 7,
+  GST_CERTIFICATE: 2,
+
+
 };
 
 const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
@@ -81,8 +83,8 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
 
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
-    LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
-    LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
+    // LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
+    // LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
   });
 
   // Form state
@@ -374,7 +376,7 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
       // Check if there's at least some data to save
       // Check if there's at least some data to save
       // First check the built payload
-      const hasPayloadData = 
+      const hasPayloadData =
         (draftPayload.generalDetails && Object.keys(draftPayload.generalDetails).length > 0) ||
         (draftPayload.securityDetails && Object.keys(draftPayload.securityDetails).length > 0) ||
         (draftPayload.licenceDetails && draftPayload.licenceDetails.licence && draftPayload.licenceDetails.licence.length > 0) ||
@@ -383,7 +385,7 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
         (draftPayload.suggestedDistributors && Array.isArray(draftPayload.suggestedDistributors) && draftPayload.suggestedDistributors.length > 0);
 
       // Fallback: Check formData directly for any filled fields
-      const hasFormData = 
+      const hasFormData =
         (formData.pharmacyName && formData.pharmacyName.trim()) ||
         (formData.shortName && formData.shortName.trim()) ||
         (formData.address1 && formData.address1.trim()) ||
@@ -1373,7 +1375,7 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
     else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
     else if (!formData.panFile) isValid = false;
     else if (formData.gstNumber && !isValidGST(formData.gstNumber)) isValid = false;
-    else if (formData.selectedDoctors.length ===0  && formData.selectedHospitals.length ===0 ) isValid = false;
+    else if (formData.selectedDoctors.length === 0 && formData.selectedHospitals.length === 0) isValid = false;
 
     setIsFormValid(isValid);
   }, [formData, verificationStatus]);
@@ -1504,9 +1506,9 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
 
         setTimeout(() => {
           // Use goBack() to preserve tab bar visibility
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      }
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          }
         }, 1500);
       } else {
         Toast.show({
@@ -2032,7 +2034,7 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
 
               {/* Station code */}
               <View style={styles.dropdownContainer}>
-                {(formData.stationCode ) && (
+                {(formData.stationCode) && (
                   <AppText
                     style={[styles.floatingLabel, { color: colors.primary }]}
                   >
@@ -2048,8 +2050,8 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
                       {formData.stationCode || ('Station')}
                     </AppText>
                     {!formData.stationCode && (
-                        <AppText style={styles.inlineAsterisk}>*</AppText>
-                      )}
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
+                    )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
                 </TouchableOpacity>
@@ -2084,13 +2086,13 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
                   });
 
                   setFormData(prev => ({
-                                      ...prev,
-                                      address1: filterForField('address1', filteredParts[0] || '', 40),
-                                      address2: filterForField('address2', filteredParts[1] || '', 40),
-                                      address3: filterForField('address3', filteredParts[2] || '', 60),
-                                      address4: filteredParts.slice(3).join(', ') || '',
-                                    }));
-                  
+                    ...prev,
+                    address1: filterForField('address1', filteredParts[0] || '', 40),
+                    address2: filterForField('address2', filteredParts[1] || '', 40),
+                    address3: filterForField('address3', filteredParts[2] || '', 60),
+                    address4: filteredParts.slice(3).join(', ') || '',
+                  }));
+
 
                   // Update pincode and trigger lookup (this will populate area, city, state)
                   if (extractedPincode) {
@@ -2182,7 +2184,7 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
                       {formData.area || (areas.length === 0 ? 'Area' : 'Area')}
                     </AppText>
                     {!formData.area && (
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
 
                     )}
                   </View>
@@ -2211,7 +2213,7 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
                       {formData.city || ('City')}
                     </AppText>
                     {!formData.city && (
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
                     )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
@@ -2229,9 +2231,9 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
                     style={[styles.floatingLabel, { color: colors.primary }]}
                   >
                     State
-                    
+
                     {!formData.city && (
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
                     )}<AppText style={styles.asteriskPrimary}>*</AppText>
                   </AppText>
                 )}
@@ -2244,7 +2246,7 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
                       {formData.state || ('State')}
                     </AppText>
                     {!formData.state && (
-                    <AppText style={styles.inlineAsterisk}>*</AppText>
+                      <AppText style={styles.inlineAsterisk}>*</AppText>
                     )}
                   </View>
                   <Icon name="arrow-drop-down" size={24} color="#666" />
@@ -2391,7 +2393,7 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
                   placeholder="Upload PAN"
                   accept={['pdf', 'jpg', 'png', 'jpeg']}
                   maxSize={15 * 1024 * 1024}
-                  docType={DOC_TYPES.PAN}
+                  docType={DOC_TYPES.PAN_CARD}
                   initialFile={formData.panFile}
                   onFileUpload={file => handleFileUpload('panFile', file)}
                   onFileDelete={() => handleFileDelete('panFile')}
@@ -2494,7 +2496,7 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
                   placeholder="Upload GST"
                   accept={['pdf', 'jpg', 'png', 'jpeg']}
                   maxSize={15 * 1024 * 1024}
-                  docType={DOC_TYPES.GST}
+                  docType={DOC_TYPES.GST_CERTIFICATE}
                   initialFile={formData.gstFile}
                   onFileUpload={file => handleFileUpload('gstFile', file)}
                   onFileDelete={() => handleFileDelete('gstFile')}
@@ -2607,7 +2609,7 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
                           },
                           mappingFor: "PCM",
                           customerGroupId: formData.customerGroupId,
-                            ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
                           ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
 
                         });
@@ -2653,7 +2655,7 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
                           },
                           mappingFor: "PCM",
                           customerGroupId: formData.customerGroupId,
-                            ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
                           ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                         });
                       }}
@@ -3322,9 +3324,9 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   inlineVerifyText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   verifiedText: {
     color: colors.primary,

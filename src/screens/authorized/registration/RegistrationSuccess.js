@@ -22,22 +22,22 @@ const { width } = Dimensions.get('window');
 const RegistrationSuccess = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { 
-    customerCode, 
-    registrationCode, 
-    codeType, 
+  const {
+    customerCode,
+    registrationCode,
+    codeType,
     type,
-    isEditMode 
+    isEditMode
   } = route.params || { customerCode: 'HSP12345', codeType: 'Customer' };
-  
+
   // Determine the display code and label based on registration type
   const code = registrationCode || customerCode || 'HSP12345';
-  
+
   // Determine the code label based on type
   const getCodeLabel = () => {
     if (codeType) return codeType;
-    
-    switch(type) {
+
+    switch (type) {
       case 'hospital':
         return 'Group Hospital';
       case 'doctor':
@@ -48,19 +48,19 @@ const RegistrationSuccess = () => {
         return 'Customer';
     }
   };
-  
+
   const codeLabel = getCodeLabel();
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
   const checkAnim = useRef(new Animated.Value(0)).current;
   const contentFadeAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Decorative elements animations
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const floatAnim = useRef(new Animated.Value(0)).current;
-  
+
   useEffect(() => {
     // Sequence of animations
     Animated.sequence([
@@ -92,7 +92,7 @@ const RegistrationSuccess = () => {
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     // Continuous animations for decorative elements
     Animated.loop(
       Animated.sequence([
@@ -108,7 +108,7 @@ const RegistrationSuccess = () => {
         }),
       ])
     ).start();
-    
+
     Animated.loop(
       Animated.sequence([
         Animated.timing(floatAnim, {
@@ -123,9 +123,9 @@ const RegistrationSuccess = () => {
         }),
       ])
     ).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
+
   const handleOkay = () => {
     navigation.navigate('DrawerMain', {
       screen: 'MainTabs',
@@ -137,21 +137,21 @@ const RegistrationSuccess = () => {
       }
     });
   };
-  
+
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
-  
+
   const float = floatAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -10],
   });
-  
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
+
       <View style={styles.content}>
         {/* Logo/Icon at top */}
         <Animated.View
@@ -165,12 +165,12 @@ const RegistrationSuccess = () => {
         >
           <SunLogo width={80} height={80} />
         </Animated.View>
-        
+
         {/* Success Icon */}
         <Animated.View>
           <SuccessRegistrationIcon />
         </Animated.View>
-        
+
         {/* Success Message */}
         <Animated.View
           style={[
@@ -182,18 +182,18 @@ const RegistrationSuccess = () => {
         >
           <AppText style={styles.successTitle}>Successful!</AppText>
           <AppText style={styles.successMessage}>
-            {isEditMode 
+            {isEditMode
               ? 'Customer details have been updated successfully.'
-              : `We have received your information,${'\n'}It will take upto 24 hours to approved, if we found${'\n'}any issue our team will get back to you`}
+              : `We have received your information,${'\n'}It will take upto 24 hours to approved, if we found any issue our team will get back to you`}
           </AppText>
           {/* {!isEditMode && (
             <AppText style={styles.customerCode}>{codeLabel} Code: {code}</AppText>
           )} */}
         </Animated.View>
-        
+
         {/* Spacer */}
         <View style={{ flex: 1 }} />
-        
+
         {/* Okay Button */}
         <Animated.View
           style={[

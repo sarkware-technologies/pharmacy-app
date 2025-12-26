@@ -33,7 +33,7 @@ const DOC_TYPES = {
 };
 
 
-const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, categoryId, subCategoryId, mappingName, mappingLabel }) => {
+const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, categoryId, subCategoryId, mappingName, mappingLabel, titleName = null }) => {
 
 
 
@@ -77,6 +77,10 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     mobile: false,
     email: false,
     pan: false,
+  });
+
+  const [licenseTypes, setLicenseTypes] = useState({
+
   });
 
 
@@ -131,6 +135,47 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       Object.values(timers).forEach(timer => clearTimeout(timer));
     };
   }, [otpTimers, showOTP]);
+
+
+  const loadInitialData = async () => {
+    // Note: States and cities are now loaded via pincode lookup only
+    // Load license types from API
+    try {
+      const response = await customerAPI.getLicenseTypes(2, 4, titleName ? 3 : 1); // typeId: 1 (pharmacy), categoryId: 1 (Only Retailer)
+      if (response.success && response.data) {
+        console.log(response);
+
+        const licenseData = {};
+        response.data.forEach(license => {
+          // Map the license codes to match what we expect
+          // Note: The API might return different codes, so we map them appropriately
+          if (license.code === 'REG' || license.name === 'REGISTRATION') {
+            licenseData.REGISTRATION = {
+              id: license.id,
+              docTypeId: license.docTypeId,
+              name: license.name,
+              code: license.code,
+            };
+          }
+
+        });
+
+        if (Object.keys(licenseData).length > 0) {
+          setLicenseTypes(prev => ({ ...prev, ...licenseData }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching license types:', error);
+      // Keep default values if API fails
+    }
+  };
+
+  useEffect(() => {
+    if (visible) {
+      loadInitialData();
+    }
+  }, [visible]);
+
 
   // Handle pincode change and trigger lookup
   const handlePincodeChange = async (text) => {
@@ -635,7 +680,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           registrationDate: new Date().toISOString(),
           licence: [
             {
-              licenceTypeId: 7,
+              licenceTypeId: licenseTypes.REGISTRATION?.id || 7,
               licenceNo: hospitalForm.registrationNumber,
               licenceValidUpto: formatDateForAPI(hospitalForm.registrationDate),
             }
@@ -681,14 +726,14 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
       const response = await customerAPI.createCustomer(registrationData);
 
-    
+
 
       if (response?.success) {
 
 
-        
-      
-        
+
+
+
         Toast.show({
           type: 'success',
           text1: 'Hospital Added',
@@ -716,7 +761,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         resetForm();
         onClose();
       } else {
-        
+
         Toast.show({
           type: 'error',
           text1: 'Registration Failed',
@@ -750,7 +795,11 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <Icon name="close" size={20} color="#666" />
           </TouchableOpacity>
-          <AppText style={styles.modalTitle}>Add Hospital account</AppText>
+
+
+
+
+          <AppText style={styles.modalTitle}>Add {titleName ? titleName : "Hospital"} account</AppText>
         </View>
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
           {/* Category Section */}
@@ -787,9 +836,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           {/* Registration Certificate */}
           <FileUploadComponent
             placeholder="Upload registration certificate"
-            accept={['pdf', 'jpg','jpeg', 'png']}
+            accept={['pdf', 'jpg', 'jpeg', 'png']}
             maxSize={15 * 1024 * 1024}
-            docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
+            docType={licenseTypes?.REGISTRATION?.docTypeId || 8}
             initialFile={hospitalForm.registrationCertificate}
             onFileUpload={(file) => handleFileUpload('registrationCertificate', file)}
             onFileDelete={() => handleFileDelete('registrationCertificate')}
@@ -983,7 +1032,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
             mandatory={true}
             value={hospitalForm.registrationDate}
             error={hospitalErrors.registrationDate}
-maximumDate={new Date()}
+            maximumDate={new Date()}
             onChange={(date) => {
               setHospitalForm(prev => ({ ...prev, registrationDate: date }));
               setHospitalErrors(prev => ({ ...prev, registrationDate: null }));
@@ -998,7 +1047,7 @@ maximumDate={new Date()}
           /></AppText>
           <FileUploadComponent
             placeholder="Upload"
-            accept={['jpg', 'png', 'jpeg','jpeg']}
+            accept={['jpg', 'png', 'jpeg', 'jpeg']}
             maxSize={15 * 1024 * 1024}
             docType={DOC_TYPES.HOSPITAL_IMAGE}
             initialFile={hospitalForm.image}
@@ -1082,13 +1131,13 @@ maximumDate={new Date()}
 
               // Update address fields only
               setHospitalForm(prev => ({
-                                  ...prev,
-                                  address1: filterForField('address1', filteredParts[0] || '', 40),
-                                  address2: filterForField('address2', filteredParts[1] || '', 40),
-                                  address3: filterForField('address3', filteredParts[2] || '', 60),
-                                  address4: filteredParts.slice(3).join(', ') || '',
-                                }));
-              
+                ...prev,
+                address1: filterForField('address1', filteredParts[0] || '', 40),
+                address2: filterForField('address2', filteredParts[1] || '', 40),
+                address3: filterForField('address3', filteredParts[2] || '', 60),
+                address4: filteredParts.slice(3).join(', ') || '',
+              }));
+
               // Update pincode and trigger lookup (this will populate area, city, state)
               if (extractedPincode) {
                 setHospitalForm(prev => ({ ...prev, pincode: extractedPincode }));
@@ -1805,9 +1854,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   inlineVerifyText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   otpNote: {
     fontSize: 11,
@@ -2068,11 +2117,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginLeft: 8,
   },
-  inlineVerifyText: {
-    fontSize: 11,
-    color: colors.primary,
-    fontWeight: '600',
-  },
+
   verifiedText: {
     color: colors.primary
   },

@@ -190,6 +190,8 @@ export const getEditNavigationScreen = (customerData) => {
             mode: 'edit',
             customerId: customerData.id,
             customerData: customerData,
+            
+
           }
         };
       } else if (categoryLower.includes('group') || categoryLower.includes('corporate')) {
@@ -240,9 +242,7 @@ export const getEditNavigationScreen = (customerData) => {
     customerCategoryCode,
   });
   
-  // Don't return null - instead, default to PharmacyRetailerForm as a last resort
-  // This ensures we always navigate to a registration form
-  console.warn('⚠️ Defaulting to PharmacyRetailerForm as fallback');
+
   return {
     screenName: 'PharmacyRetailerForm',
     params: {

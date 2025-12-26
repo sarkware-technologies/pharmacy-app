@@ -287,11 +287,20 @@ const DoctorSelector = () => {
     // Search is handled by API call through useEffect
   };
 
+  const MAX_SELECTION = 4;
+
   const handleToggleHospital = (hospital) => {
     const isSelected = selectedItems.some(item => item.id === hospital.id);
+
     if (isSelected) {
+      // Remove if already selected
       setSelectedItems(selectedItems.filter(item => item.id !== hospital.id));
     } else {
+      // Prevent adding more than 4
+      if (selectedItems.length >= MAX_SELECTION) {
+        // Optional: show a message / toast here
+        return;
+      }
       setSelectedItems([...selectedItems, hospital]);
     }
   };
@@ -373,7 +382,7 @@ const DoctorSelector = () => {
         >
           <Icon name="close" size={24} color="#333" />
         </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Select Doctor</AppText>
+        <AppText style={styles.headerTitle}>Select Doctor <AppText style={styles.optionalText}>(Max 4)</AppText></AppText>
       </View>
 
       {/* Filter Dropdowns Container */}
@@ -494,6 +503,15 @@ const DoctorSelector = () => {
           <Icon name="close" size={15} color="#999" style={styles.closeIcon} />
         </TouchableOpacity>
       </View>
+
+      {/* Header Row */}
+      {!loading && !error && doctorsData.length > 0 && (
+        <View style={styles.headerRow}>
+          <View style={styles.headerRadioSpace} />
+          <AppText style={styles.headerText}>Name</AppText>
+          <AppText style={styles.headerCityText}>City</AppText>
+        </View>
+      )}
 
       {/* Doctor List */}
       {loading ? (
@@ -933,6 +951,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.primary,
     fontWeight: '600',
+  },
+
+
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F8F8F8',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  headerRadioSpace: {
+    width: 34,
+    marginRight: 12,
+  },
+  headerText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
+  },
+  headerCityText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
+    marginRight: 4,
+  },
+  optionalText: {
+    fontSize: 18,
+    fontWeight: '400',
+    color: '#999',
   },
 });
 

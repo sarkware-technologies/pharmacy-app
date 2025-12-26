@@ -51,18 +51,14 @@ import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isV
 const { width, height } = Dimensions.get('window');
 
 // Mock data
-const MOCK_HOSPITALS = [
-  { id: '1', name: 'Columbia Asia', code: '10106555', city: 'Pune' },
-  { id: '2', name: 'Command', code: '10006565', city: 'Bengaluru' },
-  { id: '3', name: 'Tata Memorial Hospital', code: '10106555', city: 'Jaipur' },
-];
+
 
 // Document types for file uploads
 const DOC_TYPES = {
   REGISTRATION_CERTIFICATE: 8,
   HOSPITAL_IMAGE: 1,
   PAN: 7,
-  GST: 8,
+  GST: 2,
 };
 
 const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
@@ -92,6 +88,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
   const [loadingCustomerData, setLoadingCustomerData] = useState(false);
   const isMounted = useRef(true);
 
+  const [licenseTypes, setLicenseTypes] = useState({});
   // Form state
   const [formData, setFormData] = useState({
     // License Details
@@ -221,7 +218,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
         const draftPayload = {
           typeId: typeId || 2,
           categoryId: categoryId || 4,
-          subCategoryId: subCategoryId || 1,
+          subCategoryId: subCategoryId || 3,
           isMobileVerified: verificationStatus.mobile || false,
           isEmailVerified: verificationStatus.email || false,
           isExisting: false,
@@ -308,7 +305,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
 
         if (formData.registrationNumber && formData.registrationNumber.trim()) {
           licenceDetails.licence.push({
-            licenceTypeId: 7,
+            licenceTypeId: licenseTypes.REGISTRATION?.id || 7,
             licenceNo: formData.registrationNumber.trim(),
             licenceValidUpto: formatDateForAPI(formData.registrationDate),
             hospitalCode: '',
@@ -439,7 +436,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
     } finally {
       setLoading(false);
     }
-  }, [typeId, categoryId, subCategoryId, verificationStatus, formData, uploadedDocs, stockists, formatDateForAPI]);
+  }, [typeId, categoryId, subCategoryId, verificationStatus, formData, licenseTypes, uploadedDocs, stockists, formatDateForAPI]);
 
   // Set navigation header - always hide default header, we use custom header
   useLayoutEffect(() => {
@@ -487,6 +484,43 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
   const loadInitialData = async () => {
     // Note: States and cities are now loaded via pincode lookup only
     // Keep this function in case we add more initial loads later (customer groups etc.)
+
+
+
+    try {
+      // Load license types first      
+      const licenseResponse = await customerAPI.getLicenseTypes(
+        typeId || 2,
+        categoryId || 4,
+        subCategoryId || 3,
+      );
+      if (licenseResponse.success && licenseResponse.data) {
+        const licenseData = {};
+        licenseResponse.data.forEach(license => {
+          // For Private Hospital, we typically have Registration license type
+          // Adjust mapping based on actual API response
+          if (
+            license.id === 7 ||
+            license.code === 'REG' ||
+            license.code === 'REGISTRATION'
+          ) {
+            licenseData.REGISTRATION = {
+              id: license.id,
+              docTypeId: license.docTypeId,
+              name: license.name,
+              code: license.code,
+            };
+          }
+        });
+
+        if (Object.keys(licenseData).length > 0) {
+          setLicenseTypes(licenseData);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading license types:', error);
+    }
+
     loadCustomerGroups();
   };
 
@@ -1431,7 +1465,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
       const registrationData = {
         typeId: typeId || 2,
         categoryId: categoryId || 4,
-        subCategoryId: subCategoryId || 1,
+        subCategoryId: subCategoryId || 3,
         isMobileVerified: verificationStatus.mobile,
         isEmailVerified: verificationStatus.email,
         isExisting: false,
@@ -1439,7 +1473,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
           registrationDate: new Date().toISOString(),
           licence: [
             {
-              licenceTypeId: 7,
+              licenceTypeId: licenseTypes.REGISTRATION?.id || 7,
               licenceNo: formData.registrationNumber,
               licenceValidUpto: formatDateForAPI(formData.registrationDate),
               hospitalCode: '',
@@ -1688,7 +1722,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
           placeholder="Upload registration certificate"
           accept={['pdf', 'jpg', 'png', 'jpeg']}
           maxSize={15 * 1024 * 1024}
-          docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
+          docType={licenseTypes?.REGISTRATION?.doctypeId || 8}
           initialFile={formData.registrationCertificateFile}
           onFileUpload={file =>
             handleFileUpload('registrationCertificate', file)
@@ -2298,10 +2332,10 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                   ));
                   setErrors(prev => ({ ...prev, linkedHospitals: null }));
                 },
-                  categoryCode: ["OR", "RCW", "OW", "PRI"],
-                mappingFor:"PGH",
-                 ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
-                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
+                categoryCode: ["OR", "RCW", "OW", "PRI"],
+                mappingFor: "PGH",
+                ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
               });
             }}
             activeOpacity={0.7}
@@ -2329,9 +2363,9 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                   setErrors(prev => ({ ...prev, linkedHospitals: null }));
                 },
                 categoryCode: ["OR", "RCW", "OW", "PRI"],
-                mappingFor:"PGH",
-                 ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
-                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
+                mappingFor: "PGH",
+                ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
               });
             }}
             activeOpacity={0.7}
@@ -2450,7 +2484,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                           },
                           customerGroupId: formData.customerGroupId,
                           mappingFor: "PGH",
-                           ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
                           ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                         });
                       }}
@@ -2497,7 +2531,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
               formData.selectedCategory.pharmacy && styles.checkboxSelected
             ]}>
               {formData.selectedCategory.pharmacy && (
-                <AppText style={styles.checkboxTick}>✓</AppText>
+                <AppText style={styles.checkboxTick}><Icon name="check" size={15} color="#ffffff" /></AppText>
               )}
             </View>
             <AppText style={styles.checkboxLabel}>Pharmacy</AppText>
@@ -2695,13 +2729,14 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                   }}
                   style={[styles.deleteStockistButton, { marginLeft: 'auto' }]}
                 >
-                  <Icon name="trash-outline" size={20} color="#FF3B30" />
+                  <Icon name="delete" size={20} color="#FF3B30" />
+
                 </TouchableOpacity>
               </View>
             )}
 
             <CustomInput
-              placeholder="Name of the stockist"
+              placeholder={`Name of the Stockist ${index + 1}`}
               value={stockist.name}
               onChangeText={createFilteredInputHandler('nameOfStockist', (text) => {
                 setStockists(prev =>
@@ -3355,9 +3390,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   inlineVerifyText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   otpContainer: {
     backgroundColor: '#F8F9FA',

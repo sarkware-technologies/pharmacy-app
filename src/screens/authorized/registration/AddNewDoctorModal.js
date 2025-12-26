@@ -30,21 +30,13 @@ import { useSelector } from 'react-redux';
 
 
 const DOC_TYPES = {
-  LICENSE_20B: 3,
-  LICENSE_21B: 5,
-  PHARMACY_IMAGE: 1,
+  CLINIC_REGISTRATION: 8,
+  PRACTICE_LICENSE: 10,
+  ADDRESS_PROOF: 11,
+  CLINIC_IMAGE: 1,
   PAN: 7,
   GST: 2,
 };
-
-const MOCK_AREAS = [
-  { id: 0, name: 'Vadgaonsheri' },
-  { id: 1, name: 'Kharadi' },
-  { id: 2, name: 'Viman Nagar' },
-  { id: 3, name: 'Kalyani Nagar' },
-  { id: 4, name: 'Koregaon Park' },
-  { id: 5, name: 'Sadar' },
-];
 
 const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, mappingLabel }) => {
 
@@ -89,7 +81,9 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
     // Mapping
     isWholesalerOnly: false,
   });
+  const [licenseTypes, setLicenseTypes] = useState({
 
+  });
   const [doctorErrors, setDoctorErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -128,6 +122,54 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
 
   // Pincode lookup hook
   const { areas: pincodeAreas, cities: pincodeCities, states: pincodeStates, loading: pincodeLoading, lookupByPincode, clearData } = usePincodeLookup();
+
+
+
+  const loadInitialData = async () => {
+    // Note: States and cities are now loaded via pincode lookup only
+    // Load license types from API
+    try {
+      const licenseResponse = await customerAPI.getLicenseTypes(1, 1); // typeId: 1 (pharmacy), categoryId: 1 (Only Retailer)
+
+      if (licenseResponse.success && licenseResponse.data) {
+        const licenseData = {};
+        licenseResponse.data.forEach(license => {
+          if (license.code === 'CLINIC_REG' || license.id === 7) {
+            licenseData.CLINIC_REGISTRATION = {
+              id: license.id,
+              docTypeId: license.docTypeId,
+              name: license.name,
+              code: license.code,
+            };
+          } else if (license.code === 'PRACTICE_LIC' || license.id === 6) {
+            licenseData.PRACTICE_LICENSE = {
+              id: license.id,
+              docTypeId: license.docTypeId,
+              name: license.name,
+              code: license.code,
+            };
+          }
+        });
+
+        if (Object.keys(licenseData).length > 0) {
+          setLicenseTypes(licenseData);
+        }
+      }
+
+
+
+    } catch (error) {
+      console.error('Error fetching license types:', error);
+      // Keep default values if API fails
+    }
+  };
+
+  useEffect(() => {
+    if (visible) {
+      loadInitialData();
+    }
+  }, [visible]);
+
 
   // Handle pincode change and trigger lookup
   const handlePincodeChange = async (text) => {
@@ -884,12 +926,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           registrationDate: new Date().toISOString(),
           licence: [
             {
-              licenceTypeId: 6,
+              licenceTypeId: licenseTypes.CLINIC_REGISTRATION?.id || 7,
               licenceNo: doctorForm.clinicRegistrationNumber,
               licenceValidUpto: formatDateForAPI(doctorForm.clinicRegistrationExpiryDate),
             },
             {
-              licenceTypeId: 7,
+              licenceTypeId: licenseTypes.PRACTICE_LICENSE?.id || 6,
               licenceNo: doctorForm.practiceLicenseNumber,
               licenceValidUpto: formatDateForAPI(doctorForm.practiceLicenseExpiryDate),
             }
@@ -1013,7 +1055,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
             placeholder="Upload Certificate"
             accept={['pdf', 'jpg', 'png', 'jpeg']}
             maxSize={15 * 1024 * 1024}
-            docType={DOC_TYPES.LICENSE_20B}
+            docType={licenseTypes.CLINIC_REGISTRATION?.docTypeId || 8}
             initialFile={doctorForm.clinicRegistrationCertificateFile}
             onFileUpload={(file) => handleFileUpload('clinicRegistrationCertificate', file)}
             onFileDelete={() => handleFileDelete('clinicRegistrationCertificate')}
@@ -1060,7 +1102,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
             placeholder="Upload License"
             accept={['pdf', 'jpg', 'png', 'jpeg']}
             maxSize={15 * 1024 * 1024}
-            docType={DOC_TYPES.LICENSE_20B}
+            docType={licenseTypes.PRACTICE_LICENSE?.docTypeId || 10}
             initialFile={doctorForm.practiceLicenseFile}
             onFileUpload={(file) => handleFileUpload('practiceLicense', file)}
             onFileDelete={() => handleFileDelete('practiceLicense')}
@@ -1108,10 +1150,10 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           {/* Address Proof / Clinic Image */}
           <AppText style={[styles.fieldLabel, styles.sectionTopSpacing]}>Address Proof<AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
-            placeholder="Upload"
+            placeholder="Upload Electricity/Telephone bill"
             accept={['jpg', 'png', 'jpeg']}
             maxSize={15 * 1024 * 1024}
-            docType={DOC_TYPES.PHARMACY_IMAGE}
+            docType={DOC_TYPES.ADDRESS_PROOF}
             initialFile={doctorForm.addressProofFile}
             onFileUpload={(file) => handleFileUpload('addressProof', file)}
             onFileDelete={() => handleFileDelete('addressProof')}
@@ -1124,7 +1166,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
             placeholder="Upload"
             accept={['jpg', 'png', 'jpeg']}
             maxSize={15 * 1024 * 1024}
-            docType={DOC_TYPES.PHARMACY_IMAGE}
+            docType={DOC_TYPES.CLINIC_IMAGE}
             initialFile={doctorForm.clinicImageFile}
             onFileUpload={(file) => handleFileUpload('clinicImage', file)}
             onFileDelete={() => handleFileDelete('clinicImage')}
@@ -1237,13 +1279,13 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
 
               // Update address fields only
               setDoctorForm(prev => ({
-                                  ...prev,
-                                  address1: filterForField('address1', filteredParts[0] || '', 40),
-                                  address2: filterForField('address2', filteredParts[1] || '', 40),
-                                  address3: filterForField('address3', filteredParts[2] || '', 60),
-                                  address4: filteredParts.slice(3).join(', ') || '',
-                                }));
-              
+                ...prev,
+                address1: filterForField('address1', filteredParts[0] || '', 40),
+                address2: filterForField('address2', filteredParts[1] || '', 40),
+                address3: filterForField('address3', filteredParts[2] || '', 60),
+                address4: filteredParts.slice(3).join(', ') || '',
+              }));
+
 
               // Update pincode and trigger lookup (this will populate area, city, state)
               if (extractedPincode) {
@@ -2142,7 +2184,7 @@ const styles = StyleSheet.create({
     // marginLeft: 8,
   },
   inlineVerifyText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.primary,
     fontWeight: '600',
   },

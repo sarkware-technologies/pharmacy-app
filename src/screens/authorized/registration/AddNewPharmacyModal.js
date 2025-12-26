@@ -26,22 +26,12 @@ import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isV
 import { useSelector } from 'react-redux';
 
 const DOC_TYPES = {
-  LICENSE_20B: 3,
-  LICENSE_21B: 5,
+
   PHARMACY_IMAGE: 1,
   PAN: 7,
   GST: 2,
 };
 
-
-const MOCK_AREAS = [
-  { id: 0, name: 'Vadgaonsheri' },
-  { id: 1, name: 'Kharadi' },
-  { id: 2, name: 'Viman Nagar' },
-  { id: 3, name: 'Kalyani Nagar' },
-  { id: 4, name: 'Koregaon Park' },
-  { id: 5, name: 'Sadar' },
-];
 
 const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingLabel, parentHospitalName = null }) => {
 
@@ -108,10 +98,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
 
   // License types state
   const [licenseTypes, setLicenseTypes] = useState({
-    LICENSE_20: { id: 1, docTypeId: 3, name: '20', code: 'LIC20' },
-    LICENSE_21: { id: 3, docTypeId: 5, name: '21', code: 'LIC21' },
-    LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
-    LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
+
   });
 
 
@@ -141,12 +128,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
   const loadInitialData = async () => {
     // Note: States and cities are now loaded via pincode lookup only
     // Load license types from API
-    await fetchLicenseTypes();
-  };
-
-  const fetchLicenseTypes = async () => {
     try {
-      const response = await customerAPI.getLicenseTypes(1, pharmacyForm.licenseTypeId || 1); // typeId: 1 (pharmacy), categoryId: 1 (Only Retailer)
+      const response = await customerAPI.getLicenseTypes(1, 3);
       if (response.success && response.data) {
         console.log(response);
 
@@ -173,7 +156,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
             licenseData.LICENSE_20 = {
               id: license.id,
               docTypeId: license.docTypeId,
-              name: '20', // Keep the display name as 20
+              name: license.name,
               code: license.code,
             };
           } else if (license.code === 'LIC21B' || license.name === '21B') {
@@ -181,7 +164,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
             licenseData.LICENSE_21 = {
               id: license.id,
               docTypeId: license.docTypeId,
-              name: '21', // Keep the display name as 21
+              name: license.name,
               code: license.code,
             };
           }
@@ -196,6 +179,8 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
       // Keep default values if API fails
     }
   };
+
+
 
 
   const handleLicenseOcrData = async (ocrData) => {
@@ -358,9 +343,10 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
   };
 
   useEffect(() => {
-    loadInitialData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pharmacyForm.licenseTypeId]);
+    if (visible) {
+      loadInitialData();
+    }
+  }, [visible]);
 
   // Handle pincode change and trigger lookup
   const handlePincodeChange = async (text) => {
@@ -1068,7 +1054,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
       Toast.show({
         type: 'error',
         text1: 'Registration Failed',
-        text2: error.response?.message ||'An error occurred while registering the pharmacy. Please try again.',
+        text2: error.response?.message || 'An error occurred while registering the pharmacy. Please try again.',
         position: 'top',
       });
     } finally {
@@ -1328,7 +1314,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           )}
 
           {/* Pharmacy Image */}
-          <AppText style={[styles.fieldLabel, styles.sectionTopSpacing]}>Pharmacy Image *</AppText>
+          <AppText style={[styles.fieldLabel, styles.sectionTopSpacing]}>Pharmacy Image <AppText style={styles.mandatory}>*</AppText></AppText>
           <FileUploadComponent
             placeholder="Upload"
             accept={['jpg', 'png', 'jpeg']}
@@ -1425,13 +1411,13 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
 
               // Update address fields only
               setPharmacyForm(prev => ({
-                                  ...prev,
-                                  address1: filterForField('address1', filteredParts[0] || '', 40),
-                                  address2: filterForField('address2', filteredParts[1] || '', 40),
-                                  address3: filterForField('address3', filteredParts[2] || '', 60),
-                                  address4: filteredParts.slice(3).join(', ') || '',
-                                }));
-              
+                ...prev,
+                address1: filterForField('address1', filteredParts[0] || '', 40),
+                address2: filterForField('address2', filteredParts[1] || '', 40),
+                address3: filterForField('address3', filteredParts[2] || '', 60),
+                address4: filteredParts.slice(3).join(', ') || '',
+              }));
+
               // Update pincode and trigger lookup (this will populate area, city, state)
               if (extractedPincode) {
                 setPharmacyForm(prev => ({ ...prev, pincode: extractedPincode }));
@@ -2384,7 +2370,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   inlineVerifyText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.primary,
     fontWeight: '600',
   },

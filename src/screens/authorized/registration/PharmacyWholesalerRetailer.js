@@ -81,10 +81,10 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
 
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
-    LICENSE_20: { id: 1, docTypeId: 3, name: '20', code: 'LIC20' },
-    LICENSE_21: { id: 3, docTypeId: 5, name: '21', code: 'LIC21' },
-    LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
-    LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
+    // LICENSE_20: { id: 1, docTypeId: 3, name: '20', code: 'LIC20' },
+    // LICENSE_21: { id: 3, docTypeId: 5, name: '21', code: 'LIC21' },
+    // LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
+    // LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
   });
 
   // Form state
@@ -332,7 +332,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
 
         if (formData.license20 && formData.license20.trim()) {
           licenceDetails.licence.push({
-            licenceTypeId: licenseTypes.LICENSE_20?.id || 1,
+            licenceTypeId: licenseTypes.LICENSE_20?.id || 3,
             licenceNo: formData.license20.trim(),
             licenceValidUpto: formatDateForAPI(formData.license20ExpiryDate),
             hospitalCode: '',
@@ -341,7 +341,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
 
         if (formData.license21 && formData.license21.trim()) {
           licenceDetails.licence.push({
-            licenceTypeId: licenseTypes.LICENSE_21?.id || 3,
+            licenceTypeId: licenseTypes.LICENSE_21?.id || 5,
             licenceNo: formData.license21.trim(),
             licenceValidUpto: formatDateForAPI(formData.license21ExpiryDate),
             hospitalCode: '',
@@ -350,7 +350,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
 
         if (formData.license20b && formData.license20b.trim()) {
           licenceDetails.licence.push({
-            licenceTypeId: licenseTypes.LICENSE_20B?.id || 2,
+            licenceTypeId: licenseTypes.LICENSE_20B?.id || 4,
             licenceNo: formData.license20b.trim(),
             licenceValidUpto: formatDateForAPI(formData.license20bExpiryDate),
             hospitalCode: '',
@@ -359,7 +359,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
 
         if (formData.license21b && formData.license21b.trim()) {
           licenceDetails.licence.push({
-            licenceTypeId: licenseTypes.LICENSE_21B?.id || 4,
+            licenceTypeId: licenseTypes.LICENSE_21B?.id || 6,
             licenceNo: formData.license21b.trim(),
             licenceValidUpto: formatDateForAPI(formData.license21bExpiryDate),
             hospitalCode: '',
@@ -418,7 +418,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
       // Check if there's at least some data to save
       // Check if there's at least some data to save
       // First check the built payload
-      const hasPayloadData = 
+      const hasPayloadData =
         (draftPayload.generalDetails && Object.keys(draftPayload.generalDetails).length > 0) ||
         (draftPayload.securityDetails && Object.keys(draftPayload.securityDetails).length > 0) ||
         (draftPayload.licenceDetails && draftPayload.licenceDetails.licence && draftPayload.licenceDetails.licence.length > 0) ||
@@ -427,7 +427,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
         (draftPayload.suggestedDistributors && Array.isArray(draftPayload.suggestedDistributors) && draftPayload.suggestedDistributors.length > 0);
 
       // Fallback: Check formData directly for any filled fields
-      const hasFormData = 
+      const hasFormData =
         (formData.pharmacyName && formData.pharmacyName.trim()) ||
         (formData.shortName && formData.shortName.trim()) ||
         (formData.address1 && formData.address1.trim()) ||
@@ -607,10 +607,10 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
         gst: null,
       });
       setLicenseTypes({
-        LICENSE_20: { id: 1, docTypeId: 3, name: '20', code: 'LIC20' },
-        LICENSE_21: { id: 3, docTypeId: 5, name: '21', code: 'LIC21' },
-        LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
-        LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
+        // LICENSE_20: { id: 1, docTypeId: 3, name: '20', code: 'LIC20' },
+        // LICENSE_21: { id: 3, docTypeId: 5, name: '21', code: 'LIC21' },
+        // LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
+        // LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
       });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1459,9 +1459,9 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
 
         setTimeout(() => {
           // Use goBack() to preserve tab bar visibility
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      }
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          }
         }, 1500);
       } else {
         Toast.show({
@@ -2611,13 +2611,13 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
 
                   // Update address fields only
                   setFormData(prev => ({
-                                      ...prev,
-                                      address1: filterForField('address1', filteredParts[0] || '', 40),
-                                      address2: filterForField('address2', filteredParts[1] || '', 40),
-                                      address3: filterForField('address3', filteredParts[2] || '', 60),
-                                      address4: filteredParts.slice(3).join(', ') || '',
-                                    }));
-                  
+                    ...prev,
+                    address1: filterForField('address1', filteredParts[0] || '', 40),
+                    address2: filterForField('address2', filteredParts[1] || '', 40),
+                    address3: filterForField('address3', filteredParts[2] || '', 60),
+                    address4: filteredParts.slice(3).join(', ') || '',
+                  }));
+
 
                   // Update pincode and trigger lookup (this will populate area, city, state)
                   if (extractedPincode) {
@@ -3136,7 +3136,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
                           },
                           mappingFor: "PCM",
                           customerGroupId: formData.customerGroupId,
-                            ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
                           ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                         });
                       }}
@@ -3195,7 +3195,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
                           },
                           mappingFor: "PCM",
                           customerGroupId: formData.customerGroupId,
-                            ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
                           ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                         });
                       }}
@@ -3891,9 +3891,9 @@ const styles = StyleSheet.create({
     // backgroundColor: '#E8F5E9',
   },
   inlineVerifyText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   verifiedText: {
     color: colors.primary,

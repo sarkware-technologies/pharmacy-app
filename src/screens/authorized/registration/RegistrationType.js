@@ -30,29 +30,29 @@ const { width } = Dimensions.get('window');
 const RegistrationType = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  
+
   // Redux state
   const customerTypes = useSelector(selectCustomerTypes);
   const { typesLoading, typesError } = useSelector((state) => ({
     typesLoading: state.customer.typesLoading,
     typesError: state.customer.typesError,
-  }));  
-  
+  }));
+
   // Local state - store the actual objects instead of just strings
   const [selectedType, setSelectedType] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
-  
+
   // Ref to access form's save draft function
   const formSaveDraftRef = useRef(null);
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
-  
+
   // Category and subcategory animation values
   const categoryFadeAnim = useRef(new Animated.Value(0)).current;
   const categorySlideAnim = useRef(new Animated.Value(30)).current;
@@ -62,7 +62,7 @@ const RegistrationType = () => {
   useEffect(() => {
     // Fetch customer types when component mounts
     dispatch(fetchCustomerTypes());
-    
+
     // Entry animation
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -129,7 +129,7 @@ const RegistrationType = () => {
       setSelectedCategory(null);
       setSelectedSubCategory(null);
       setFormSubmitted(false);
-      
+
       // Reset animations
       categoryFadeAnim.setValue(0);
       categorySlideAnim.setValue(30);
@@ -141,7 +141,7 @@ const RegistrationType = () => {
       setSelectedCategory(null);
       setSelectedSubCategory(null);
       setFormSubmitted(false);
-      
+
       // Reset animations for category and subcategory
       categoryFadeAnim.setValue(0);
       categorySlideAnim.setValue(30);
@@ -161,7 +161,7 @@ const RegistrationType = () => {
       setSelectedCategory(null);
       setSelectedSubCategory(null);
       setFormSubmitted(false);
-      
+
       // Reset subcategory animation
       subCategoryFadeAnim.setValue(0);
       subCategorySlideAnim.setValue(30);
@@ -169,7 +169,7 @@ const RegistrationType = () => {
       // Different category selected
       setSelectedCategory(category);
       setSelectedSubCategory(null);
-      
+
       // Reset subcategory animation
       subCategoryFadeAnim.setValue(0);
       subCategorySlideAnim.setValue(30);
@@ -183,6 +183,9 @@ const RegistrationType = () => {
       }
     }
   };
+
+  console.log(selectedType);
+
 
   const handleSubCategorySelect = (subCategory) => {
     // If clicking the same subcategory, toggle it off (allow deselection)
@@ -341,12 +344,12 @@ const RegistrationType = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
+
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
-        >          
+        >
           <ChevronLeft />
         </TouchableOpacity>
         <AppText style={styles.headerTitle}>Registration</AppText>
@@ -474,26 +477,26 @@ const RegistrationType = () => {
 
           {/* Dynamic Form Router - Shows below selections */}
           {formSubmitted && selectedType && (
-            (!needsCategory() || selectedCategory) && 
+            (!needsCategory() || selectedCategory) &&
             (!needsSubCategory() || selectedSubCategory)
           ) && (
-            <View style={styles.formSection}>
-              <RegistrationFormRouter
-                selectedType={selectedType}
-                selectedCategory={selectedCategory}
-                selectedSubCategory={selectedSubCategory}
-                navigation={navigation}
-                onChangeSelection={() => {
-                  // Go back to selection screen
-                  setFormSubmitted(false);
-                  formSaveDraftRef.current = null;
-                }}
-                onSaveDraftRef={(saveDraftFn) => {
-                  formSaveDraftRef.current = saveDraftFn;
-                }}
-              />
-            </View>
-          )}
+              <View style={styles.formSection}>
+                <RegistrationFormRouter
+                  selectedType={selectedType}
+                  selectedCategory={selectedCategory}
+                  selectedSubCategory={selectedSubCategory}
+                  navigation={navigation}
+                  onChangeSelection={() => {
+                    // Go back to selection screen
+                    setFormSubmitted(false);
+                    formSaveDraftRef.current = null;
+                  }}
+                  onSaveDraftRef={(saveDraftFn) => {
+                    formSaveDraftRef.current = saveDraftFn;
+                  }}
+                />
+              </View>
+            )}
         </Animated.View>
       </ScrollView>
     </SafeAreaView>
@@ -656,7 +659,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 20,
-    backgroundColor: '#fff',    
+    backgroundColor: '#fff',
   },
   continueButton: {
     backgroundColor: colors.primary,

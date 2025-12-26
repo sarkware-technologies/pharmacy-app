@@ -35,7 +35,8 @@ const HospitalSelector = () => {
     subCategoryCode = false,
     customerGroupId,
     cityIds,
-    stateIds
+    stateIds,
+    isGroupHospital = false
   } = route.params || {};
 
 
@@ -149,7 +150,7 @@ const HospitalSelector = () => {
     }
   };
   const fetchHospitals = async (pageNumber = 1, isLoadMoreCall = false) => {
-    
+
 
     try {
       if (isLoadMoreCall) {
@@ -390,14 +391,16 @@ const HospitalSelector = () => {
       <PhamacySearchNotFound width={40} height={40} color="#999" />
       <AppText style={styles.emptyTitle}>Hospital Not Found</AppText>
       <AppText style={styles.emptySubtitle}>
-        Hospital not found. You can add a new hospital to continue
+
+        {isGroupHospital ? "Hospital not found. You can add group hospital to continue. Else try to search different hospital" : " Hospital not found. You can add a new hospital to continue"}
+
       </AppText>
       <TouchableOpacity
         style={styles.addNewPharmacyButtonEmpty}
         onPress={handleAddNewHospital}
       >
         <AppText style={styles.addNewPharmacyTextEmpty}>
-          +Add New Hospital
+          +Add New {isGroupHospital && "Group"} Hospital
         </AppText>
       </TouchableOpacity>
     </View>
@@ -609,6 +612,8 @@ const HospitalSelector = () => {
               <ActivityIndicator size="small" color={colors.primary} />
             ) : null
           }
+
+          ListEmptyComponent={renderEmptyList}
         />
       )}
 
@@ -636,6 +641,7 @@ const HospitalSelector = () => {
         visible={showAddHospitalModal}
         onClose={() => setShowAddHospitalModal(false)}
         onSubmit={handleHospitalSubmit}
+        titleName={isGroupHospital ? "Group Hospital" : null}
       />
     </SafeAreaView>
   );

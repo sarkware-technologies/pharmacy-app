@@ -59,19 +59,11 @@ const MOCK_SPECIALTIES = [
   'ENT Specialist',
 ];
 
-// Mock data for areas only (as there's no API for areas)
-const MOCK_AREAS = [
-  { id: 0, name: 'Vadgaonsheri' },
-  { id: 1, name: 'Kharadi' },
-  { id: 2, name: 'Viman Nagar' },
-  { id: 3, name: 'Kalyani Nagar' },
-  { id: 4, name: 'Koregaon Park' },
-];
 
 // Document types for file uploads
 const DOC_TYPES = {
-  CLINIC_REGISTRATION: 10,
-  PRACTICE_LICENSE: 8,
+  CLINIC_REGISTRATION: 8,
+  PRACTICE_LICENSE: 10,
   ADDRESS_PROOF: 11,
   CLINIC_IMAGE: 1,
   PAN: 7,
@@ -116,18 +108,7 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
 
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
-    CLINIC_REGISTRATION: {
-      id: 7,
-      docTypeId: 8,
-      name: 'Clinic Registration',
-      code: 'CLINIC_REG',
-    },
-    PRACTICE_LICENSE: {
-      id: 6,
-      docTypeId: 10,
-      name: 'Practice License',
-      code: 'PRACTICE_LIC',
-    },
+
   });
 
   // Form state
@@ -365,7 +346,7 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
 
         if (formData.clinicRegistrationNumber && formData.clinicRegistrationNumber.trim()) {
           licenceDetails.licence.push({
-            licenceTypeId: licenseTypes.CLINIC_REGISTRATION?.id || 6,
+            licenceTypeId: licenseTypes.CLINIC_REGISTRATION?.id || 7,
             licenceNo: formData.clinicRegistrationNumber.trim(),
             licenceValidUpto: formatDateForAPI(formData.clinicRegistrationDate),
             hospitalCode: '',
@@ -374,7 +355,7 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
 
         if (formData.practiceLicenseNumber && formData.practiceLicenseNumber.trim()) {
           licenceDetails.licence.push({
-            licenceTypeId: licenseTypes.PRACTICE_LICENSE?.id || 7,
+            licenceTypeId: licenseTypes.PRACTICE_LICENSE?.id || 6,
             licenceNo: formData.practiceLicenseNumber.trim(),
             licenceValidUpto: formatDateForAPI(formData.practiceLicenseDate),
             hospitalCode: '',
@@ -432,7 +413,7 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
 
       // Check if there's at least some data to save
       // First check the built payload
-      const hasPayloadData = 
+      const hasPayloadData =
         (draftPayload.generalDetails && Object.keys(draftPayload.generalDetails).length > 0) ||
         (draftPayload.securityDetails && Object.keys(draftPayload.securityDetails).length > 0) ||
         (draftPayload.licenceDetails && draftPayload.licenceDetails.licence && draftPayload.licenceDetails.licence.length > 0) ||
@@ -441,7 +422,7 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
         (draftPayload.suggestedDistributors && Array.isArray(draftPayload.suggestedDistributors) && draftPayload.suggestedDistributors.length > 0);
 
       // Fallback: Check formData directly for any filled fields
-      const hasFormData = 
+      const hasFormData =
         (formData.doctorName && formData.doctorName.trim()) ||
         (formData.clinicName && formData.clinicName.trim()) ||
         (formData.speciality && formData.speciality.trim()) ||
@@ -697,17 +678,17 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
       const clinicLicense = licenceDetails.licence?.find(l =>
         l.licenceTypeCode === 'CLINIC_REG' ||
         l.licenceTypeCode === 'REG' ||
-        l.docTypeId === 10
+        l.docTypeId === 8
       );
       const practiceLicense = licenceDetails.licence?.find(l =>
         l.licenceTypeCode === 'PRACTICE_LIC' ||
         l.licenceTypeCode === 'PRLIC' ||
-        l.docTypeId === 8
+        l.docTypeId === 10
       );
 
       // Find document files
-      const clinicRegDoc = docType.find(d => d.doctypeId === '10' || d.doctypeName === 'CLINIC REGISTRATION');
-      const practiceLicDoc = docType.find(d => d.doctypeId === '8' || d.doctypeName === 'PRACTICE LICENSE');
+      const clinicRegDoc = docType.find(d => d.doctypeId === '8' || d.doctypeName === 'CLINIC REGISTRATION');
+      const practiceLicDoc = docType.find(d => d.doctypeId === '10' || d.doctypeName === 'PRACTICE LICENSE');
       const addressProofDoc = docType.find(d => d.doctypeId === '11' || d.doctypeName === 'ADDRESS PROOF');
       const clinicImageDoc = docType.find(d => d.doctypeId === '1' || d.doctypeName === 'CLINIC IMAGE');
       const panDoc = docType.find(d => d.doctypeId === '7' || d.doctypeName === 'PAN CARD');
@@ -1410,7 +1391,7 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
         updates.clinicRegistrationDate = formattedDate;
       }
     }
-if (ocrData.issueDate && !formData.practiceLicenseDate) {
+    if (ocrData.issueDate && formData.clinicRegistrationDate && !formData.practiceLicenseDate) {
       const parts = ocrData.issueDate.split('-');
       if (parts.length === 3) {
         const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
@@ -1977,8 +1958,7 @@ if (ocrData.issueDate && !formData.practiceLicenseDate) {
                 accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={
-                  licenseTypes.CLINIC_REGISTRATION?.docTypeId ||
-                  DOC_TYPES.CLINIC_REGISTRATION
+                  licenseTypes.CLINIC_REGISTRATION?.docTypeId || 8
                 }
                 initialFile={formData.clinicRegistrationFile}
                 onFileUpload={file =>
@@ -2031,8 +2011,7 @@ if (ocrData.issueDate && !formData.practiceLicenseDate) {
                 accept={['pdf', 'jpg', 'png', 'jpeg']}
                 maxSize={15 * 1024 * 1024}
                 docType={
-                  licenseTypes.PRACTICE_LICENSE?.docTypeId ||
-                  DOC_TYPES.PRACTICE_LICENSE
+                  licenseTypes.PRACTICE_LICENSE?.docTypeId || 10
                 }
                 initialFile={formData.practiceLicenseFile}
                 onFileUpload={file =>
@@ -2209,8 +2188,8 @@ if (ocrData.issueDate && !formData.practiceLicenseDate) {
                       part !== locationData.pincode,
                   );
 
-                 
-               
+
+
 
                   // Fill remaining address fields
                   if (filteredParts.length > 1) {
@@ -2782,8 +2761,8 @@ if (ocrData.issueDate && !formData.practiceLicenseDate) {
                           }));
                         },
                         mappingFor: "HOSP",
-                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
-                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
+                        ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                        ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                       });
                     }}
                     activeOpacity={0.7}
@@ -2828,8 +2807,8 @@ if (ocrData.issueDate && !formData.practiceLicenseDate) {
                         },
                         customerGroupId: formData.customerGroupId,
                         mappingFor: "DOCT",
-                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
-                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
+                        ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                        ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                       });
                     }}
                     activeOpacity={0.7}
@@ -2989,7 +2968,7 @@ if (ocrData.issueDate && !formData.practiceLicenseDate) {
                     </View>
                   )}
                   <CustomInput
-                    placeholder="Name of the Stockist"
+                    placeholder={`Name of the Stockist ${index + 1}`}
                     value={stockist.name}
                     onChangeText={createFilteredInputHandler('nameOfStockist', (text) =>
                       handleStockistChange(index, 'name', text), 40
@@ -3462,9 +3441,9 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   inlineVerifyText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   verifiedText: {
     color: colors.primary,

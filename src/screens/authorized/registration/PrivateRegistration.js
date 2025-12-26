@@ -48,13 +48,6 @@ import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isV
 const { width, height } = Dimensions.get('window');
 
 // Mock data for areas only (as there's no API for areas)
-const MOCK_AREAS = [
-  'Vadgaonsheri',
-  'Kharadi',
-  'Viman Nagar',
-  'Kalyani Nagar',
-  'Koregaon Park',
-];
 
 const DOC_TYPES = {
   CLINIC_IMAGE: 1,
@@ -63,7 +56,7 @@ const DOC_TYPES = {
   GST: 2,
 };
 
-const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
+const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useDispatch();
@@ -104,7 +97,7 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
 
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
-    REGISTRATION: { id: 7, docTypeId: 8, name: 'Registration', code: 'REG' },
+    // REGISTRATION: { id: 7, docTypeId: 8, name: 'Registration', code: 'REG' },
   });
 
   // Form state
@@ -321,7 +314,7 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
         const draftPayload = {
           typeId: typeId || 2,
           categoryId: categoryId || 4,
-          subCategoryId: subCategoryId || 1,
+          subCategoryId: subCategoryId || (selectedSubCategory?.code == 'PIH' ? 2 : 1),
           isMobileVerified: verificationStatus.mobile || false,
           isEmailVerified: verificationStatus.email || false,
           isExisting: false,
@@ -466,7 +459,7 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
 
       // Check if there's at least some data to save
       // First check the built payload
-      const hasPayloadData = 
+      const hasPayloadData =
         (draftPayload.generalDetails && Object.keys(draftPayload.generalDetails).length > 0) ||
         (draftPayload.securityDetails && Object.keys(draftPayload.securityDetails).length > 0) ||
         (draftPayload.licenceDetails && draftPayload.licenceDetails.licence && draftPayload.licenceDetails.licence.length > 0) ||
@@ -475,7 +468,7 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
         (draftPayload.suggestedDistributors && Array.isArray(draftPayload.suggestedDistributors) && draftPayload.suggestedDistributors.length > 0);
 
       // Fallback: Check formData directly for any filled fields
-      const hasFormData = 
+      const hasFormData =
         (formData.clinicName && formData.clinicName.trim()) ||
         (formData.shortName && formData.shortName.trim()) ||
         (formData.address1 && formData.address1.trim()) ||
@@ -1127,12 +1120,16 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
 
   // Load states, license types and customer groups on mount
   const loadInitialData = async () => {
+
+
+
+
     try {
-      // Load license types first
+      // Load license types first      
       const licenseResponse = await customerAPI.getLicenseTypes(
         typeId || 2,
         categoryId || 4,
-        subCategoryId || 1,
+        subCategoryId || (selectedSubCategory?.code == 'PIH' ? 2 : 1),
       );
       if (licenseResponse.success && licenseResponse.data) {
         const licenseData = {};
@@ -1685,7 +1682,7 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
         : categoryId || 4;
       const finalSubCategoryId = isEditMode
         ? originalTypeData.subCategoryId
-        : subCategoryId || 1;
+        : subCategoryId || (selectedSubCategory?.code == 'PIH' ? 2 : 1);
 
       // Prepare customerDocs array with proper structure
       const prepareCustomerDocs = () => {
@@ -2079,7 +2076,7 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
                 placeholder="Upload registration certificate"
                 accept={['pdf', 'jpg', 'jpeg', 'png']}
                 maxSize={15 * 1024 * 1024} // 15MB
-                docType={DOC_TYPES.LICENSE_CERTIFICATE}
+                docType={licenseTypes?.REGISTRATION?.docTypeId || 8}
                 initialFile={formData.licenseFile}
                 onFileUpload={file => {
                   setFormData(prev => ({ ...prev, licenseFile: file }));
@@ -2388,14 +2385,14 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
                   });
 
                   // Update address fields only
-                setFormData(prev => ({
-                                    ...prev,
-                                    address1: filterForField('address1', filteredParts[0] || '', 40),
-                                    address2: filterForField('address2', filteredParts[1] || '', 40),
-                                    address3: filterForField('address3', filteredParts[2] || '', 60),
-                                    address4: filteredParts.slice(3).join(', ') || '',
-                                  }));
-                
+                  setFormData(prev => ({
+                    ...prev,
+                    address1: filterForField('address1', filteredParts[0] || '', 40),
+                    address2: filterForField('address2', filteredParts[1] || '', 40),
+                    address3: filterForField('address3', filteredParts[2] || '', 60),
+                    address4: filteredParts.slice(3).join(', ') || '',
+                  }));
+
 
                   // Update pincode and trigger lookup (this will populate area, city, state)
                   if (extractedPincode) {
@@ -2915,7 +2912,7 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
                     ]}
                   >
                     {formData.selectedCategory.groupCorporateHospital && (
-                      <AppText style={styles.checkboxTick}>✓</AppText>
+                      <AppText style={styles.checkboxTick}><Icon name="check" size={15} color="#ffffff" /></AppText>
                     )}
                   </View>
                   <AppText style={styles.checkboxLabel}>
@@ -2945,8 +2942,9 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
                           },
                           mappingFor: "HOSP",
                           subCategoryCode: ["PGH"],
-                               ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
                           ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
+                          isGroupHospital: true
                         });
                       }}
                       activeOpacity={0.7}
@@ -2998,7 +2996,7 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
                     ]}
                   >
                     {formData.selectedCategory.pharmacy && (
-                      <AppText style={styles.checkboxTick}>✓</AppText>
+                      <AppText style={styles.checkboxTick}><Icon name="check" size={15} color="#ffffff" /></AppText>
                     )}
                   </View>
                   <AppText style={styles.checkboxLabel}>
@@ -3028,8 +3026,8 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
                         },
                         customerGroupId: formData.customerGroupId,
                         mappingFor: "HOSP",
-                             ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
-                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
+                        ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                        ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                       });
                     }
 
@@ -3137,7 +3135,7 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
                               isDisabled && styles.radioButtonLabelDisabled,
                             ]}
                           >
-                            {group.customerGroupId} {group.customerGroupName}
+                            {group.customerGroupName}
                           </AppText>
                         </TouchableOpacity>
                       );
@@ -3168,13 +3166,14 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
                           { marginLeft: 'auto' },
                         ]}
                       >
-                        <Icon name="trash-outline" size={20} color="#FF3B30" />
+                        <Icon name="delete" size={20} color="#FF3B30" />
+
                       </TouchableOpacity>
                     </View>
                   )}
 
                   <CustomInput
-                    placeholder="Name of the stockist"
+                    placeholder={`Name of the Stockist ${index + 1}`}
                     value={stockist.name}
                     onChangeText={createFilteredInputHandler('nameOfStockist', (text) => {
                       setStockists(prev =>
@@ -3316,6 +3315,7 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
           setShowHospitalModal(false);
         }}
         subCategoryId="3"
+        titleName={'Group Hospital'}
       />
 
       {/* Add New Pharmacy Modal */}
@@ -3716,9 +3716,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   inlineVerifyText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   verifiedButton: {
     // backgroundColor: '#E8F5E9',

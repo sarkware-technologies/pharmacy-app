@@ -71,6 +71,7 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
     customerData: routeCustomerData,
   } = route.params || {};
 
+
   // Edit mode and onboard mode detection
   const isEditMode = mode === 'edit' || !!customerId;
   const isOnboardMode = mode === 'onboard';
@@ -80,8 +81,8 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
 
   // State for license types fetched from API
   const [licenseTypes, setLicenseTypes] = useState({
-    LICENSE_20: { id: 1, docTypeId: 3, name: '20', code: 'LIC20' },
-    LICENSE_21: { id: 3, docTypeId: 5, name: '21', code: 'LIC21' },
+    // LICENSE_20: { id: 1, docTypeId: 3, name: '20', code: 'LIC20' },
+    // LICENSE_21: { id: 3, docTypeId: 5, name: '21', code: 'LIC21' },
   });
 
   // Form state
@@ -701,22 +702,6 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
               name: license.name,
               code: license.code,
             };
-          } else if (license.code === 'LIC20B' || license.name === '20B') {
-            // If API returns 20B instead of 20, map it
-            licenseData.LICENSE_20 = {
-              id: license.id,
-              docTypeId: license.docTypeId,
-              name: '20', // Keep the display name as 20
-              code: license.code,
-            };
-          } else if (license.code === 'LIC21B' || license.name === '21B') {
-            // If API returns 21B instead of 21, map it
-            licenseData.LICENSE_21 = {
-              id: license.id,
-              docTypeId: license.docTypeId,
-              name: '21', // Keep the display name as 21
-              code: license.code,
-            };
           }
         });
 
@@ -1300,13 +1285,13 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
           registrationDate: new Date().toISOString(),
           licence: [
             {
-              licenceTypeId: licenseTypes.LICENSE_20?.id || 1,
+              licenceTypeId: licenseTypes.LICENSE_20?.id || 3,
               licenceNo: formData.license20,
               licenceValidUpto: formatDateForAPI(formData.license20ExpiryDate),
               hospitalCode: '', // Add hospitalCode field
             },
             {
-              licenceTypeId: licenseTypes.LICENSE_21?.id || 3,
+              licenceTypeId: licenseTypes.LICENSE_21?.id || 5,
               licenceNo: formData.license21,
               licenceValidUpto: formatDateForAPI(formData.license21ExpiryDate),
               hospitalCode: '', // Add hospitalCode field
@@ -2986,7 +2971,7 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
                           },
                           mappingFor: "PCM",
                           customerGroupId: formData.customerGroupId,
-                            ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
                           ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                         });
                       }}
@@ -3689,9 +3674,9 @@ const styles = StyleSheet.create({
     // backgroundColor: '#E8F5E9',
   },
   inlineVerifyText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   verifiedText: {
     color: colors.primary,

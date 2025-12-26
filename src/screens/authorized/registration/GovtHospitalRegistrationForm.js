@@ -49,20 +49,14 @@ import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isV
 
 const { width, height } = Dimensions.get('window');
 
-// Mock data
-const MOCK_AREAS = ['Vadgaonsheri', 'Kharadi', 'Viman Nagar', 'Kalyani Nagar', 'Koregaon Park'];
-const MOCK_HOSPITALS = [
-  { id: '1', name: 'Columbia Asia', code: '10106555', city: 'Pune' },
-  { id: '2', name: 'Command', code: '10006565', city: 'Bengaluru' },
-  { id: '3', name: 'Tata Memorial Hospital', code: '10106555', city: 'Jaipur' },
-];
+
 
 // Document types for file uploads
 const DOC_TYPES = {
   REGISTRATION_CERTIFICATE: 8,
   HOSPITAL_IMAGE: 1,
   PAN: 7,
-  GST: 8,
+  GST: 2,
 };
 
 const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
@@ -97,6 +91,7 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
   const isOnboardMode = mode === 'onboard';
   const [loadingCustomerData, setLoadingCustomerData] = useState(false);
   const isMounted = useRef(true);
+  const [licenseTypes, setLicenseTypes] = useState({});
 
   // Form state
   const [formData, setFormData] = useState({
@@ -137,7 +132,7 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
     markAsBuyingEntity: true,
     linkedHospitals: [],
     linkedPharmacies: [],
-    customerGroupId: 12,
+    customerGroupId: 4,
     selectedCategory: {
       pharmacy: false,
     },
@@ -228,8 +223,8 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
       const buildDraftPayload = () => {
         const draftPayload = {
           typeId: typeId || 2,
-          categoryId: categoryId || 4,
-          subCategoryId: subCategoryId || 2,
+          categoryId: categoryId || 5,
+          subCategoryId: subCategoryId || 0,
           isMobileVerified: verificationStatus.mobile || false,
           isEmailVerified: verificationStatus.email || false,
           isExisting: false,
@@ -316,7 +311,7 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
 
         if (formData.registrationNumber && formData.registrationNumber.trim()) {
           licenceDetails.licence.push({
-            licenceTypeId: 7,
+            licenceTypeId: licenseTypes.REGISTRATION?.id || 7,
             licenceNo: formData.registrationNumber.trim(),
             licenceValidUpto: formatDateForAPI(formData.registrationDate),
             hospitalCode: formData.registrationNumber.trim() || '',
@@ -372,10 +367,8 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
 
       const draftPayload = buildDraftPayload();
 
-      // Check if there's at least some data to save
-      // Check if there's at least some data to save
-      // First check the built payload
-      const hasPayloadData = 
+
+      const hasPayloadData =
         (draftPayload.generalDetails && Object.keys(draftPayload.generalDetails).length > 0) ||
         (draftPayload.securityDetails && Object.keys(draftPayload.securityDetails).length > 0) ||
         (draftPayload.licenceDetails && draftPayload.licenceDetails.licence && draftPayload.licenceDetails.licence.length > 0) ||
@@ -384,7 +377,7 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
         (draftPayload.suggestedDistributors && Array.isArray(draftPayload.suggestedDistributors) && draftPayload.suggestedDistributors.length > 0);
 
       // Fallback: Check formData directly for any filled fields
-      const hasFormData = 
+      const hasFormData =
         (formData.hospitalName && formData.hospitalName.trim()) ||
         (formData.shortName && formData.shortName.trim()) ||
         (formData.address1 && formData.address1.trim()) ||
@@ -447,7 +440,7 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
     } finally {
       setLoading(false);
     }
-  }, [typeId, categoryId, subCategoryId, verificationStatus, formData, uploadedDocs, stockists, formatDateForAPI]);
+  }, [typeId, categoryId, subCategoryId, verificationStatus, formData, licenseTypes, uploadedDocs, stockists, formatDateForAPI]);
 
   // Set navigation header - always hide default header, we use custom header
   useLayoutEffect(() => {
@@ -475,6 +468,7 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
 
     // Load customer groups on mount (states and cities now loaded via pincode lookup only)
     loadCustomerGroups();
+    fetchLicenseTypes();
 
     // Handle edit mode and onboard mode - fetch customer details
     if (isEditMode || isOnboardMode) {
@@ -707,6 +701,43 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
       console.error('Error loading customer groups:', error);
     }
   };
+
+
+  const fetchLicenseTypes = async () => {
+    try {
+      // Load license types first      
+      const licenseResponse = await customerAPI.getLicenseTypes(
+        typeId || 2,
+        categoryId || 4,
+
+      );
+      if (licenseResponse.success && licenseResponse.data) {
+        const licenseData = {};
+        licenseResponse.data.forEach(license => {
+          // For Private Hospital, we typically have Registration license type
+          // Adjust mapping based on actual API response
+          if (
+            license.id === 7 ||
+            license.code === 'REG' ||
+            license.code === 'REGISTRATION'
+          ) {
+            licenseData.REGISTRATION = {
+              id: license.id,
+              docTypeId: license.docTypeId,
+              name: license.name,
+              code: license.code,
+            };
+          }
+        });
+
+        if (Object.keys(licenseData).length > 0) {
+          setLicenseTypes(licenseData);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading license types:', error);
+    }
+  }
 
   // Fetch customer details for edit mode and onboard mode (same API)
   const fetchCustomerDetailsForEdit = async () => {
@@ -1371,8 +1402,8 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
     }
     if (!formData.registrationDate) {
       newErrors.registrationDate = 'Legal Start date is required';
-    } 
-    
+    }
+
     else {
 
       const [day, month, year] = formData.registrationDate.split('/');
@@ -1531,8 +1562,8 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
       // Prepare registration payload
       const registrationData = {
         typeId: typeId || 2,
-        categoryId: categoryId || 4,
-        subCategoryId: subCategoryId || 2,
+        categoryId: categoryId || 5,
+        subCategoryId: subCategoryId || 0,
         isMobileVerified: verificationStatus.mobile,
         isEmailVerified: verificationStatus.email,
         isExisting: false,
@@ -1540,7 +1571,7 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
           registrationDate: new Date().toISOString(),
           licence: [
             {
-              licenceTypeId: 7,
+              licenceTypeId: licenseTypes.REGISTRATION?.id || 7,
               licenceNo: formData.registrationNumber,
               licenceValidUpto: formatDateForAPI(formData.registrationDate),
               hospitalCode: formData.registrationNumber || '',
@@ -1708,9 +1739,9 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
 
         setTimeout(() => {
           // Use goBack() to preserve tab bar visibility
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      }
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          }
         }, 1500);
       } else {
         Toast.show({
@@ -1794,7 +1825,7 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
           placeholder="Upload Govt. Establishment Order"
           accept={['pdf', 'jpg', 'png', 'jpeg']}
           maxSize={15 * 1024 * 1024}
-          docType={DOC_TYPES.REGISTRATION_CERTIFICATE}
+          docType={licenseTypes?.REGISTRATION?.docTypeId || 8}
           initialFile={formData.registrationCertificateFile}
           onFileUpload={(file) => handleFileUpload('registrationCertificate', file)}
           onFileDelete={() => handleFileDelete('registrationCertificate')}
@@ -1831,7 +1862,6 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
 
         <FloatingDateInput
           label="Legal Start Date"
-          mandatory={true}
           value={formData.registrationDate}
           error={errors.registrationDate}
           onChange={(date) => {
@@ -1935,13 +1965,13 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
 
             // Update address fields only
             setFormData(prev => ({
-                                ...prev,
-                                address1: filterForField('address1', filteredParts[0] || '', 40),
-                                address2: filterForField('address2', filteredParts[1] || '', 40),
-                                address3: filterForField('address3', filteredParts[2] || '', 60),
-                                address4: filteredParts.slice(3).join(', ') || '',
-                              }));
-            
+              ...prev,
+              address1: filterForField('address1', filteredParts[0] || '', 40),
+              address2: filterForField('address2', filteredParts[1] || '', 40),
+              address3: filterForField('address3', filteredParts[2] || '', 60),
+              address4: filteredParts.slice(3).join(', ') || '',
+            }));
+
 
             // Update pincode and trigger lookup (this will populate area, city, state)
             if (extractedPincode) {
@@ -2399,8 +2429,8 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
               },
               mappingFor: "GOV",
               categoryCode: ["GOV"],
-                ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
-                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
+              ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+              ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
 
             });
           }}
@@ -2431,8 +2461,8 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
               },
               mappingFor: "GOV",
               categoryCode: ["GOV"],
-                ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
-                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
+              ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+              ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
             });
           }}
           activeOpacity={0.7}
@@ -2534,8 +2564,8 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                         },
                         categoryCode: ["GOV"],
                         mappingFor: "GOV",
-                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
-                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
+                        ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                        ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                       });
                     }}
                   >
@@ -2582,7 +2612,8 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
             formData.selectedCategory.pharmacy && styles.checkboxSelected
           ]}>
             {formData.selectedCategory.pharmacy && (
-              <AppText style={styles.checkboxTick}>✓</AppText>
+              <AppText style={styles.checkboxTick}><Icon name="check" size={15} color="#ffffff" />
+              </AppText>
             )}
           </View>
           <AppText style={styles.checkboxLabel}>Pharmacy</AppText>
@@ -2608,8 +2639,8 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                   },
                   categoryCode: ["GOV"],
                   mappingFor: "GOV",
-                    ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
-                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
+                  ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                  ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                 });
               }}
               activeOpacity={0.7}
@@ -2673,48 +2704,59 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
 
       {/* <View style={styles.divider} /> */}
       <View style={styles.customerGroupContainer}>
-        {/* Customer Group - Radio Buttons Grid */}
         <AppText style={styles.sectionLabel}>Customer group</AppText>
 
-        <View style={styles.radioGridContainer}>
-          {['9 Doctor Supply', '10 VQ', '11 RFQ', '12 GOVT'].map((group, index) => {
-            const groupId = index + 9; // 9, 10, 11, 12
-            const isDisabled = group !== '12 GOVT';
-            const isSelected = formData.customerGroupId === groupId;
+        <View style={styles.customerGroupGridContainer}>
+          {customerGroups.length > 0 ? (
+            customerGroups.map((group) => {
+              // Only DSUP (DOCTOR SUPPLY) is enabled, others are disabled
+              const isDisabled = group.customerGroupCode !== 'GOVT';
+              const isSelected = formData.customerGroupId === group.customerGroupId;
 
-            return (
-              <TouchableOpacity
-                key={group}
-                style={[styles.radioGridItem, isDisabled && styles.radioGridItemDisabled]}
-                onPress={() => {
-                  if (!isDisabled) {
-                    setFormData(prev => ({ ...prev, customerGroupId: groupId }));
-                  }
-                }}
-                activeOpacity={isDisabled ? 0.5 : 0.7}
-                disabled={isDisabled}
-              >
-                <View style={[
-                  styles.radioButton,
-                  isDisabled && styles.radioButtonDisabled,
-                  isSelected && styles.radioButtonSelected,
-                ]}>
-                  {isSelected && (
-                    <View style={styles.radioButtonInner} />
-                  )}
-                </View>
-                <AppText style={[
-                  styles.radioButtonLabel,
-                  isDisabled && styles.radioButtonLabelDisabled,
-                ]}>
-                  {group}
-                </AppText>
-              </TouchableOpacity>
-            );
-          })}
+              return (
+                <TouchableOpacity
+                  key={group.customerGroupId}
+                  style={[
+                    styles.radioButtonItem,
+                    isDisabled && styles.radioButtonItemDisabled,
+                  ]}
+                  onPress={() => {
+                    if (!isDisabled) {
+                      setFormData(prev => ({
+                        ...prev,
+                        customerGroupId: group.customerGroupId,
+                      }));
+                    }
+                  }}
+                  disabled={isDisabled}
+                  activeOpacity={isDisabled ? 1 : 0.7}
+                >
+                  <View
+                    style={[
+                      styles.radioButton,
+                      isSelected && styles.radioButtonSelected,
+                    ]}
+                  >
+                    {isSelected && (
+                      <View style={styles.radioButtonInner} />
+                    )}
+                  </View>
+                  <AppText
+                    style={[
+                      styles.radioButtonLabel,
+                      isDisabled && styles.radioButtonLabelDisabled,
+                    ]}
+                  >
+                    {group.customerGroupName}
+                  </AppText>
+                </TouchableOpacity>
+              );
+            })
+          ) : (
+            <ActivityIndicator size="small" color={colors.primary} />
+          )}
         </View>
       </View>
-
 
 
       {/* Stockist Suggestions */}
@@ -2735,13 +2777,14 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                   setStockists(prev => prev.filter((_, i) => i !== index));
                 }}
               >
-                <Icon name="trash-outline" size={20} color="#FF3B30" />
+                <Icon name="delete" size={20} color="#FF3B30" />
+
               </TouchableOpacity>
             )}
           </View>
 
           <CustomInput
-            placeholder="Name of the stockist"
+            placeholder={`Name of the Stockist ${index + 1}`}
             value={stockist.name}
             onChangeText={createFilteredInputHandler('nameOfStockist', (text) => {
               setStockists(prev => prev.map((s, i) =>
@@ -3396,9 +3439,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   inlineVerifyText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   verifiedButton: {
     // backgroundColor: '#E8F5E9',
@@ -3983,54 +4026,49 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   // Radio Button Styles
-  radioGridContainer: {
+  customerGroupGridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     // marginBottom: 20,
   },
-  radioGridItem: {
-    width: '48%',
+  radioButtonItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: '48%',
     paddingVertical: 12,
     paddingHorizontal: 0,
-    // marginBottom: 16,
+    marginBottom: 8,
+  },
+  radioButtonItemDisabled: {
+    opacity: 0.5,
   },
   radioButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#CCCCCC',
-    marginRight: 12,
+    borderColor: '#CCC',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 10,
   },
   radioButtonSelected: {
     borderColor: colors.primary,
-    backgroundColor: 'transparent',
   },
   radioButtonInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: colors.primary,
   },
   radioButtonLabel: {
     fontSize: 14,
     color: '#333',
-    fontWeight: '500',
-  },
-  radioGridItemDisabled: {
-    opacity: 0.5,
-  },
-  radioButtonDisabled: {
-    borderColor: '#CCCCCC',
-    backgroundColor: '#F5F5F5',
+    flex: 1,
   },
   radioButtonLabelDisabled: {
-    color: '#CCCCCC',
+    color: '#999',
   },
   // Pharmacy Selection Styles
   pharmacySelectionContainer: {
@@ -4132,9 +4170,9 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   checkboxTick: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: 'bold',
+    // fontSize: 14,
+    // color: '#fff',
+    // fontWeight: 'bold',
   },
   checkboxInner: {
     width: 10,
