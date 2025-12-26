@@ -17,40 +17,57 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from "../../../components"
 import { customerAPI } from '../../../api/customer';
 import PhamacySearchNotFound from '../../../components/icons/PhamacySearchNotFound';
 import AddNewDoctorModal from './AddNewDoctorModal';
 const DoctorSelector = () => {
+
+  const lastRequestedPageRef = useRef(1);
+
   const navigation = useNavigation();
   const route = useRoute();
-  const { onSelect, selectedDoctors = [], 
+  const { onSelect, selectedDoctors = [],
     mappingFor,
     categoryCode = false,
     subCategoryCode = false,
-    customerGroupId } = route.params || {};
-  
+    customerGroupId,
+    cityIds,
+    stateIds
+  } = route.params || {};
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState(selectedDoctors || []);
-      const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
-  
+  const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
+
   // Doctor data states
   const [doctorsData, setDoctorsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadMore, setIsLoadMore] = useState(false);
   // Filter states
-  const [selectedStates, setSelectedStates] = useState([]);
-  const [selectedCities, setSelectedCities] = useState([]);
+  const [selectedStates, setSelectedStates] = useState(() =>
+    Array.isArray(stateIds) && stateIds.length
+      ? stateIds.map(id => ({ id }))
+      : []
+  );
+
+  const [selectedCities, setSelectedCities] = useState(() =>
+    Array.isArray(cityIds) && cityIds.length
+      ? cityIds.map(id => ({ id }))
+      : []
+  );
   const [statesList, setStatesList] = useState([]);
   const [citiesList, setCitiesList] = useState([]);
   const [statesLoading, setStatesLoading] = useState(false);
   const [citiesLoading, setCitiesLoading] = useState(false);
-  
+
   // Filter dropdowns
   const [showStateDropdown, setShowStateDropdown] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
-  
+
   // Animation
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -70,109 +87,137 @@ const DoctorSelector = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch states and doctors on component mount
   useEffect(() => {
     fetchStates();
-    fetchDoctors();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // fetchDoctors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch doctors when filters or search changes
   useEffect(() => {
     // Debounce the API call to avoid too many requests
+
+    setPage(1);
+    setHasMore(true);
     const timer = setTimeout(() => {
-      fetchDoctors();
+      fetchDoctors(1);
     }, 300);
-    
+
     return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStates, selectedCities, searchQuery]);
 
   // Fetch cities when state is selected
   useEffect(() => {
     if (selectedStates.length > 0) {
-      // Fetch cities for all selected states
       fetchCitiesForStates(selectedStates);
     } else {
       setCitiesList([]);
-      setSelectedCities([]);
+      setSelectedCities(prev => (prev.length ? [] : prev));
     }
   }, [selectedStates]);
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = async (pageNumber = 1, isLoadMoreCall = false) => {
     try {
-      setLoading(true);
-      setError(null);
-      console.log('DoctorSelector: Fetching doctors with filters...');
-      
-      // Build state and city IDs arrays for filtering
-      const stateIds = selectedStates.length > 0 ? selectedStates.map(s => Number(s.id)) : [];
-      const cityIds = selectedCities.length > 0 ? selectedCities.map(c => Number(c.id)) : [];
-const payload = {
-  page: 1,
-  limit: 20,
-  mappingFor: mappingFor || "DOCT",
-  // searchQuery,
-
-  ...(stateIds.length > 0 ? { stateIds } : {}),
-  ...(cityIds.length > 0 ? { cityIds } : {}),
-  ...(searchQuery?.trim() ? { searchText:searchQuery } : {}),
-
-
-  ...(categoryCode ? { categoryCode: categoryCode } : {}),
-  ...(subCategoryCode ? { subCategoryCode: subCategoryCode} : {}),
-  ...(customerGroupId ? { customerGroupId } : {}),
-
-  typeCode: ['DOCT'],
-  statusIds: [7, 2],
-};
-
-console.log(payload)
-      // Call API with doctor type code and filters
-      const response = await customerAPI.getCustomersListMapping(payload);
-      console.log('DoctorSelector: Doctors API response:', response);
-      
-      if (response?.customers && Array.isArray(response.customers)) {
-        // Transform API response to match expected format
-        const transformedDoctors = response.customers.map(customer => ({
-          id: customer.customerId,
-          name: customer.customerName,
-          code: customer.customerCode || customer.sapCode || customer.customerId,
-          city: customer.cityName || 'N/A',
-          state: customer.stateName || 'N/A',
-          mobile: customer.mobile,
-          email: customer.email,
-          speciality: customer.customerCategory || 'General',
-        }));
-        
-        console.log('DoctorSelector: Transformed doctors:', transformedDoctors.length, 'items');
-        setDoctorsData(transformedDoctors);
+      if (isLoadMoreCall) {
+        setIsLoadMore(true);
       } else {
-        console.log('DoctorSelector: Invalid doctors response format');
-        setDoctorsData([]);
+        setLoading(true);
       }
+
+      setError(null);
+
+      const stateIds =
+        selectedStates.length > 0
+          ? selectedStates.map(s => Number(s.id))
+          : [];
+
+      const cityIds =
+        selectedCities.length > 0
+          ? selectedCities.map(c => Number(c.id))
+          : [];
+
+      const payload = {
+        page: pageNumber,
+        limit: 20,
+        mappingFor: mappingFor || 'DOCT',
+
+        ...(stateIds.length && { stateIds }),
+        ...(cityIds.length && { cityIds }),
+        ...(searchQuery?.trim() && { searchText: searchQuery.trim() }),
+
+        ...(categoryCode && { categoryCode }),
+        ...(subCategoryCode && { subCategoryCode }),
+        ...(customerGroupId && { customerGroupId }),
+
+        typeCode: ['DOCT'],
+        statusIds: [7, 2],
+      };
+
+      const response = await customerAPI.getCustomersListMapping(payload);
+      const customers = response?.customers || [];
+
+      const transformedDoctors = customers.map(customer => ({
+        id: customer.customerId,
+        name: customer.customerName,
+        code:
+          customer.customerCode ||
+          customer.sapCode ||
+          customer.customerId,
+        city: customer.cityName || 'N/A',
+        state: customer.stateName || 'N/A',
+        mobile: customer.mobile,
+        email: customer.email,
+        speciality: customer.customerCategory || 'General',
+      }));
+
+      // ✅ Replace on first page, append on load more
+      setDoctorsData(prev =>
+        pageNumber === 1
+          ? transformedDoctors
+          : [...prev, ...transformedDoctors]
+      );
+
+      setPage(pageNumber);
+      setHasMore(customers.length === 20); // stop if less than limit
     } catch (err) {
       console.error('DoctorSelector: Error fetching doctors:', err);
       setError(err.message || 'Failed to load doctors');
-      setDoctorsData([]);
     } finally {
       setLoading(false);
+      setIsLoadMore(false);
     }
   };
 
 
-   
+  const loadMoreDoctors = () => {
+    if (loading || isLoadMore || !hasMore) return;
+
+    const nextPage = page + 1;
+
+    // 🚫 Prevent duplicate calls for same page
+    if (lastRequestedPageRef.current === nextPage) {
+      return;
+    }
+
+    lastRequestedPageRef.current = nextPage;
+    fetchDoctors(nextPage, true);
+  };
+
+
+
   const fetchStates = async () => {
     try {
       setStatesLoading(true);
       console.log('HospitalSelector: Fetching states...');
-      
+
       const response = await customerAPI.getStatesList(1, 20);
       console.log('HospitalSelector: States API response:', response);
-      
+
       if (response?.data?.states && Array.isArray(response.data.states)) {
         // Transform state response
         const transformedStates = response.data.states.map(state => ({
@@ -195,10 +240,10 @@ console.log(payload)
     try {
       setCitiesLoading(true);
       console.log('HospitalSelector: Fetching cities for states...');
-      
+
       const response = await customerAPI.getCitiesList(1, 20);
       console.log('HospitalSelector: Cities API response:', response);
-      
+
       if (response?.data?.cities && Array.isArray(response.data.cities)) {
         // Filter cities by all selected states and transform
         const stateIds = states.map(s => Number(s.id));
@@ -259,12 +304,12 @@ console.log(payload)
   };
 
   const handleAddNewDoctor = () => {
-       setShowAddDoctorModal(true);
+    setShowAddDoctorModal(true);
 
   };
 
 
-    const handleDoctorSubmit = (newDoctor) => {
+  const handleDoctorSubmit = (newDoctor) => {
     // Add the new pharmacy to selected items
     setSelectedItems([...selectedItems, newDoctor]);
     // Optionally refresh the pharmacy list
@@ -272,7 +317,7 @@ console.log(payload)
   };
   const renderDoctorItem = ({ item }) => {
     const isSelected = selectedItems.some(doctor => doctor.id === item.id);
-    
+
     return (
       <TouchableOpacity
         style={styles.doctorItem}
@@ -284,7 +329,7 @@ console.log(payload)
             {isSelected && <Icon name="checkmark" size={16} color="#fff" />}
           </View>
         </View>
-        
+
         <View style={styles.doctorInfo}>
           <AppText style={styles.doctorName}>{item.name}</AppText>
           <View style={styles.doctorDetails}>
@@ -293,7 +338,7 @@ console.log(payload)
           </View>
           <AppText style={styles.doctorContact}>{item.mobile}</AppText>
         </View>
-        
+
         <AppText style={styles.doctorCity}>{item.city}</AppText>
       </TouchableOpacity>
     );
@@ -310,7 +355,7 @@ console.log(payload)
       <TouchableOpacity
         style={styles.addNewButton}
         onPress={handleAddNewDoctor}
-      >        
+      >
         <AppText style={styles.addNewButtonText}>+ Add New Doctor</AppText>
       </TouchableOpacity>
     </View>
@@ -319,13 +364,13 @@ console.log(payload)
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.closeButton}
-        >          
+        >
           <Icon name="close" size={24} color="#333" />
         </TouchableOpacity>
         <AppText style={styles.headerTitle}>Select Doctor</AppText>
@@ -434,7 +479,7 @@ console.log(payload)
       )}
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>        
+      <View style={styles.searchContainer}>
         <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
         <AppInput
           style={styles.searchInput}
@@ -445,9 +490,9 @@ console.log(payload)
           placeholderTextColor="#777777"
         />
 
-           <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <Icon name="close" size={15} color="#999" style={styles.closeIcon} />
-                  </TouchableOpacity>
+        <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <Icon name="close" size={15} color="#999" style={styles.closeIcon} />
+        </TouchableOpacity>
       </View>
 
       {/* Doctor List */}
@@ -461,7 +506,7 @@ console.log(payload)
           <Icon name="alert-circle" size={40} color="#EF4444" />
           <AppText style={styles.errorText}>Error loading doctors</AppText>
           <AppText style={styles.errorSubText}>{error}</AppText>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.retryButton}
             onPress={fetchDoctors}
           >
@@ -473,31 +518,45 @@ console.log(payload)
           data={doctorsData}
           renderItem={renderDoctorItem}
           keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            doctorsData.length === 0 && styles.emptyListContent,
+          ]}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={() => (
-           <View style={styles.emptyContainer}>
-              <PhamacySearchNotFound width={40} height={40} color="#999" />
-              <AppText style={styles.emptyTitle}>Doctor Not Found</AppText>
-              <AppText style={styles.emptySubtitle}>Doctor not found. You can add a new doctor to continue</AppText>
-              <TouchableOpacity
-                style={styles.addNewPharmacyButtonEmpty}
-                onPress={handleAddNewDoctor}
-              >
-                <AppText style={styles.addNewPharmacyTextEmpty}>+Add New Doctor</AppText>
-              </TouchableOpacity>
-            </View>
-          )}
-          // ListFooterComponent={() => (
-          //   <TouchableOpacity
-          //     style={styles.addNewButton}
-          //     onPress={handleAddNewHospital}
-          //   >
-          //     <Icon name="add" size={20} color={colors.primary} />
-          //     <AppText style={styles.addNewButtonText}>Add New Hospital</AppText>
-          //   </TouchableOpacity>
-          // )}
+
+          // 🔽 LOAD MORE
+          onEndReached={loadMoreDoctors}
+          onEndReachedThreshold={0.4}
+
+          // 🔄 FOOTER LOADER
+          ListFooterComponent={
+            isLoadMore ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : null
+          }
+
+          // 🚫 EMPTY STATE (ONLY WHEN NOT LOADING)
+          ListEmptyComponent={
+            !loading && !isLoadMore ? (
+              <View style={styles.emptyContainer}>
+                <PhamacySearchNotFound width={40} height={40} color="#999" />
+                <AppText style={styles.emptyTitle}>Doctor Not Found</AppText>
+                <AppText style={styles.emptySubtitle}>
+                  Doctor not found. You can add a new doctor to continue
+                </AppText>
+                <TouchableOpacity
+                  style={styles.addNewPharmacyButtonEmpty}
+                  onPress={handleAddNewDoctor}
+                >
+                  <AppText style={styles.addNewPharmacyTextEmpty}>
+                    +Add New Doctor
+                  </AppText>
+                </TouchableOpacity>
+              </View>
+            ) : null
+          }
         />
+
       )}
 
       {/* Bottom Button */}
@@ -520,7 +579,7 @@ console.log(payload)
       />
     </SafeAreaView>
 
-    
+
   );
 };
 
@@ -668,10 +727,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   closeIcon: {
-   
-     backgroundColor: '#EDEDED',
-     borderRadius:50,
-     padding:2
+
+    backgroundColor: '#EDEDED',
+    borderRadius: 50,
+    padding: 2
   },
   searchInput: {
     flex: 1,
@@ -778,7 +837,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
- 
+
   emptyText: {
     fontSize: 16,
     color: '#666',
@@ -840,7 +899,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-   emptyContainer: {
+  emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',

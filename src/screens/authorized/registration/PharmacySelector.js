@@ -20,53 +20,60 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../../../styles/colors';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from "../../../components"
 import { customerAPI } from '../../../api/customer';
 import PhamacySearchNotFound from '../../../components/icons/PhamacySearchNotFound';
 import AddNewPharmacyModal from './AddNewPharmacyModal';
 
 const PharmacySelector = () => {
+  const lastRequestedPageRef = useRef(1);
+
   const navigation = useNavigation();
   const route = useRoute();
-  const { onSelect, selectedPharmacies = [] , parentHospitalName, mappingName, mappingLabel,  mappingFor,
+  const { onSelect, selectedPharmacies = [], parentHospitalName, mappingName, mappingLabel, mappingFor,
     categoryCode = false,
     subCategoryCode = false,
-    customerGroupId} = route.params || {};
-
-    console.log(customerGroupId);
-    
-console.log(mappingFor);
-
-  
+    customerGroupId,
+    cityIds,
+    stateIds
+  } = route.params || {};
 
 
-
-
-  
-  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState(selectedPharmacies || []);
-  
+
   // Pharmacy data states
   const [pharmaciesData, setPharmaciesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadMore, setIsLoadMore] = useState(false);
+
   // Filter states
-  const [selectedStates, setSelectedStates] = useState([]);
-  const [selectedCities, setSelectedCities] = useState([]);
+  const [selectedStates, setSelectedStates] = useState(() =>
+    Array.isArray(stateIds) && stateIds.length
+      ? stateIds.map(id => ({ id }))
+      : []
+  );
+
+  const [selectedCities, setSelectedCities] = useState(() =>
+    Array.isArray(cityIds) && cityIds.length
+      ? cityIds.map(id => ({ id }))
+      : []
+  );
   const [statesList, setStatesList] = useState([]);
   const [citiesList, setCitiesList] = useState([]);
   const [statesLoading, setStatesLoading] = useState(false);
   const [citiesLoading, setCitiesLoading] = useState(false);
-  
+
   // Filter dropdowns
   const [showStateDropdown, setShowStateDropdown] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
-  
+
   // Add new pharmacy modal
   const [showAddPharmacyModal, setShowAddPharmacyModal] = useState(false);
-  
+
   // Animation
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -86,101 +93,125 @@ console.log(mappingFor);
         useNativeDriver: true,
       }),
     ]).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch states and pharmacies on component mount
   useEffect(() => {
     fetchStates();
-    fetchPharmacies();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // fetchPharmacies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch pharmacies when filters or search changes
   useEffect(() => {
-    if (!loading) {
-      fetchPharmacies();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    setPage(1);
+    setHasMore(true);
+    const timer = setTimeout(() => {
+      fetchPharmacies(1);
+    }, 300);
+
+    return () => clearTimeout(timer);
+
   }, [selectedStates, selectedCities, searchQuery]);
 
   // Fetch cities when state is selected
+  // Fetch cities when state is selected
   useEffect(() => {
     if (selectedStates.length > 0) {
-      // Fetch cities for all selected states
       fetchCitiesForStates(selectedStates);
     } else {
       setCitiesList([]);
-      setSelectedCities([]);
+      setSelectedCities(prev => (prev.length ? [] : prev));
     }
   }, [selectedStates]);
 
-  const fetchPharmacies = async () => {
+
+  const fetchPharmacies = async (pageNumber = 1, isLoadMoreCall = false) => {
     try {
-      setLoading(true);
-      setError(null);
-      console.log('PharmacySelector: Fetching pharmacies with filters...');
-      
-      // Build state and city IDs arrays
-      const stateIds = selectedStates.map(s => Number(s.id));
-      const cityIds = selectedCities.map(c => Number(c.id));
-      const payload = {
-  page: 1,
-  limit: 20,
-  mappingFor: mappingFor || "HOSP",
-  // searchQuery,
-
-  ...(stateIds.length > 0 ? { stateIds } : {}),
-  ...(cityIds.length > 0 ? { cityIds } : {}),
-  ...(searchQuery?.trim() ? { searchText:searchQuery } : {}),
-
-
-  ...(categoryCode ? { categoryCode: categoryCode } : {}),
-  ...(subCategoryCode ? { subCategoryCode: subCategoryCode } : {}),
-  ...(customerGroupId ? { customerGroupId } : {}),
-
-  typeCode: ['PCM'],
-  statusIds: [7, 2],
-};
-      
-      console.log('PharmacySelector: Filter params - stateIds:', stateIds, 'cityIds:', cityIds, 'searchText:', searchQuery);
-      
-      // Call API with filters and search
-      const response = await customerAPI.getCustomersListMapping(payload);
-      console.log('PharmacySelector: Pharmacies API response:', response);
-      
-      if (response?.customers && Array.isArray(response.customers)) {
-        // Transform API response to match expected format
-        const transformedPharmacies = response.customers.map(customer => ({
-          id: customer.customerId,
-          name: customer.customerName,
-          code: customer.customerCode || customer.customerId,
-          city: customer.cityName || 'N/A',
-          state: customer.stateName || 'N/A',
-        }));
-        console.log('PharmacySelector: Transformed pharmacies:', transformedPharmacies.length, 'items');
-        setPharmaciesData(transformedPharmacies);
+      if (isLoadMoreCall) {
+        setIsLoadMore(true);
       } else {
-        console.log('PharmacySelector: Invalid pharmacies response format');
-        setPharmaciesData([]);
+        setLoading(true);
       }
+
+      setError(null);
+
+      const stateIds =
+        selectedStates.length > 0
+          ? selectedStates.map(s => Number(s.id))
+          : [];
+
+      const cityIds =
+        selectedCities.length > 0
+          ? selectedCities.map(c => Number(c.id))
+          : [];
+
+      const payload = {
+        page: pageNumber,
+        limit: 20,
+        mappingFor: mappingFor || 'HOSP',
+
+        ...(stateIds.length && { stateIds }),
+        ...(cityIds.length && { cityIds }),
+        ...(searchQuery?.trim() && { searchText: searchQuery.trim() }),
+
+        ...(categoryCode && { categoryCode }),
+        ...(subCategoryCode && { subCategoryCode }),
+        ...(customerGroupId && { customerGroupId }),
+
+        typeCode: ['PCM'],
+        statusIds: [7, 2],
+      };
+
+      const response = await customerAPI.getCustomersListMapping(payload);
+      const customers = response?.customers || [];
+
+      const transformedPharmacies = customers.map(customer => ({
+        id: customer.customerId,
+        name: customer.customerName,
+        code: customer.customerCode || customer.customerId,
+        city: customer.cityName || 'N/A',
+        state: customer.stateName || 'N/A',
+      }));
+
+      // ✅ Replace on first page, append on load more
+      setPharmaciesData(prev =>
+        pageNumber === 1
+          ? transformedPharmacies
+          : [...prev, ...transformedPharmacies]
+      );
+
+      setPage(pageNumber);
+      setHasMore(customers.length === 20); // stop when less than limit
     } catch (err) {
       console.error('PharmacySelector: Error fetching pharmacies:', err);
       setError(err.message || 'Failed to load pharmacies');
-      setPharmaciesData([]);
     } finally {
       setLoading(false);
+      setIsLoadMore(false);
     }
+  };
+
+  const loadMorePharmacies = () => {
+    if (loading || isLoadMore || !hasMore) return;
+
+    const nextPage = page + 1;
+
+    if (lastRequestedPageRef.current === nextPage) return;
+
+    lastRequestedPageRef.current = nextPage;
+    fetchPharmacies(nextPage, true);
   };
 
   const fetchStates = async () => {
     try {
       setStatesLoading(true);
       console.log('PharmacySelector: Fetching states...');
-      
+
       const response = await customerAPI.getStatesList(1, 20);
       console.log('PharmacySelector: States API response:', response);
-      
+
       if (response?.data?.states && Array.isArray(response.data.states)) {
         // Transform state response
         const transformedStates = response.data.states.map(state => ({
@@ -203,10 +234,10 @@ console.log(mappingFor);
     try {
       setCitiesLoading(true);
       console.log('PharmacySelector: Fetching cities for states...');
-      
+
       const response = await customerAPI.getCitiesList(1, 20);
       console.log('PharmacySelector: Cities API response:', response);
-      
+
       if (response?.data?.cities && Array.isArray(response.data.cities)) {
         // Filter cities by all selected states and transform
         const stateIds = states.map(s => Number(s.id));
@@ -279,7 +310,7 @@ console.log(mappingFor);
 
   const renderPharmacyItem = ({ item }) => {
     const isSelected = selectedItems.some(pharmacy => pharmacy.id === item.id);
-    
+
     return (
       <TouchableOpacity
         style={styles.pharmacyItem}
@@ -291,12 +322,12 @@ console.log(mappingFor);
             {isSelected && <Icon name="checkmark" size={16} color="#fff" />}
           </View>
         </View>
-        
+
         <View style={styles.pharmacyInfo}>
           <AppText style={styles.pharmacyName}>{item.name}</AppText>
           <AppText style={styles.pharmacyCode}>{item.code}</AppText>
         </View>
-        
+
         <AppText style={styles.pharmacyCity}>{item.city}</AppText>
       </TouchableOpacity>
     );
@@ -305,7 +336,7 @@ console.log(mappingFor);
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -432,8 +463,8 @@ console.log(mappingFor);
         />
 
         <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Icon name="close" size={15} color="#999" style={styles.closeIcon} />
-          </TouchableOpacity>
+          <Icon name="close" size={15} color="#999" style={styles.closeIcon} />
+        </TouchableOpacity>
       </View>
 
       {/* Header Row for Name and City */}
@@ -456,7 +487,7 @@ console.log(mappingFor);
           <Icon name="alert-circle" size={40} color="#EF4444" />
           <AppText style={styles.errorText}>Error loading pharmacies</AppText>
           <AppText style={styles.errorSubText}>{error}</AppText>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.retryButton}
             onPress={fetchPharmacies}
           >
@@ -468,57 +499,73 @@ console.log(mappingFor);
           data={pharmaciesData}
           renderItem={renderPharmacyItem}
           keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <PhamacySearchNotFound width={40} height={40} color="#999" />
-              <AppText style={styles.emptyTitle}>Pharmacy Not Found</AppText>
-              <AppText style={styles.emptySubtitle}>Pharmacy not found. You can add a new pharmacy to continue</AppText>
-              <TouchableOpacity
-                style={styles.addNewPharmacyButtonEmpty}
-                onPress={handleAddNewPharmacy}
-              >
-                <AppText style={styles.addNewPharmacyTextEmpty}>+Add New Pharamcy</AppText>
-              </TouchableOpacity>
-            </View>
-          )}
-          // ListFooterComponent={() => (
-          //   <TouchableOpacity
-          //     style={styles.addNewPharmacyButton}
-          //     onPress={handleAddNewPharmacy}
-          //   >
-          //     <Icon name="add" size={20} color={colors.primary} />
-          //     <AppText style={styles.addNewPharmacyText}>Add New Pharmacy</AppText>
-          //   </TouchableOpacity>
-          // )}
+
+          // 🔽 LOAD MORE
+          onEndReached={loadMorePharmacies}
+          onEndReachedThreshold={0.4}
+
+          // 🔄 FOOTER LOADER
+          ListFooterComponent={
+            isLoadMore ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : null
+          }
+
+          // 🧩 CONTENT STYLE (CENTER EMPTY STATE)
+          contentContainerStyle={[
+            styles.listContent,
+            pharmaciesData.length === 0 && styles.emptyListContent,
+          ]}
+
+          // 🚫 EMPTY STATE (ONLY WHEN NOT LOADING)
+          ListEmptyComponent={
+            !loading && !isLoadMore ? (
+              <View style={styles.emptyContainer}>
+                <PhamacySearchNotFound width={40} height={40} color="#999" />
+                <AppText style={styles.emptyTitle}>Pharmacy Not Found</AppText>
+                <AppText style={styles.emptySubtitle}>
+                  Pharmacy not found. You can add a new pharmacy to continue
+                </AppText>
+                <TouchableOpacity
+                  style={styles.addNewPharmacyButtonEmpty}
+                  onPress={handleAddNewPharmacy}
+                >
+                  <AppText style={styles.addNewPharmacyTextEmpty}>
+                    +Add New Pharmacy
+                  </AppText>
+                </TouchableOpacity>
+              </View>
+            ) : null
+          }
         />
+
       )}
 
       {/* Bottom Button */}
       {/* {selectedItems.length > 0 && ( */}
-        <View style={styles.bottomContainer}>
-          <TouchableOpacity
-            style={styles.addNewButton}
-            onPress={handleAddNewPharmacy}
-          >
-            <AppText style={styles.addNewButtonText}>+Add New Pharamcy</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.continueButton}
-            onPress={handleContinue}
-          >
-            <AppText style={styles.continueButtonText}>
-              Continue
-            </AppText>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.bottomContainer}>
+        <TouchableOpacity
+          style={styles.addNewButton}
+          onPress={handleAddNewPharmacy}
+        >
+          <AppText style={styles.addNewButtonText}>+Add New Pharamcy</AppText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.continueButton}
+          onPress={handleContinue}
+        >
+          <AppText style={styles.continueButtonText}>
+            Continue
+          </AppText>
+        </TouchableOpacity>
+      </View>
       {/* )} */}
 
       {/* Add New Pharmacy Modal */}
       <AddNewPharmacyModal
         visible={showAddPharmacyModal}
-        mappingName={mappingName} 
+        mappingName={mappingName}
         mappingLabel={mappingLabel}
         parentHospitalName={parentHospitalName}
         onClose={() => setShowAddPharmacyModal(false)}
@@ -673,11 +720,11 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginRight: 12,
   },
-   closeIcon: {
-   
-     backgroundColor: '#EDEDED',
-     borderRadius:50,
-     padding:2
+  closeIcon: {
+
+    backgroundColor: '#EDEDED',
+    borderRadius: 50,
+    padding: 2
   },
   searchInput: {
     flex: 1,

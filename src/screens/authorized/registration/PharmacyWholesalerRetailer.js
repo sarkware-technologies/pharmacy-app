@@ -3135,7 +3135,9 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
                             }));
                           },
                           mappingFor: "PCM",
-                          customerGroupId: formData.customerGroupId
+                          customerGroupId: formData.customerGroupId,
+                            ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                         });
                       }}
                       activeOpacity={0.7}
@@ -3192,7 +3194,9 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
                             }));
                           },
                           mappingFor: "PCM",
-                          customerGroupId: formData.customerGroupId
+                          customerGroupId: formData.customerGroupId,
+                            ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                         });
                       }}
                     >

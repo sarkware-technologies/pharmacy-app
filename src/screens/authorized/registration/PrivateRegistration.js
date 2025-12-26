@@ -2944,7 +2944,9 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
                             }));
                           },
                           mappingFor: "HOSP",
-                          subCategoryCode: ["PGH"]
+                          subCategoryCode: ["PGH"],
+                               ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                         });
                       }}
                       activeOpacity={0.7}
@@ -3025,7 +3027,9 @@ const PrivateRegistrationForm = ({ onSaveDraftRef }) => {
                           }));
                         },
                         customerGroupId: formData.customerGroupId,
-                        mappingFor: "HOSP"
+                        mappingFor: "HOSP",
+                             ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                       });
                     }
 

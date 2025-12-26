@@ -20,6 +20,10 @@ import PhamacySearchNotFound from '../../../components/icons/PhamacySearchNotFou
 import AddNewHospitalModal from './AddNewHospitalModal';
 
 const HospitalSelector = () => {
+
+  const lastRequestedPageRef = useRef(1);
+
+
   const navigation = useNavigation();
   const route = useRoute();
   const {
@@ -29,7 +33,9 @@ const HospitalSelector = () => {
     mappingFor,
     categoryCode = false,
     subCategoryCode = false,
-    customerGroupId
+    customerGroupId,
+    cityIds,
+    stateIds
   } = route.params || {};
 
 
@@ -49,9 +55,24 @@ const HospitalSelector = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+
+
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadMore, setIsLoadMore] = useState(false);
+
   // Filter states
-  const [selectedStates, setSelectedStates] = useState([]);
-  const [selectedCities, setSelectedCities] = useState([]);
+  const [selectedStates, setSelectedStates] = useState(() =>
+    Array.isArray(stateIds) && stateIds.length
+      ? stateIds.map(id => ({ id }))
+      : []
+  );
+
+  const [selectedCities, setSelectedCities] = useState(() =>
+    Array.isArray(cityIds) && cityIds.length
+      ? cityIds.map(id => ({ id }))
+      : []
+  );
   const [statesList, setStatesList] = useState([]);
   const [citiesList, setCitiesList] = useState([]);
   const [statesLoading, setStatesLoading] = useState(false);
@@ -65,6 +86,8 @@ const HospitalSelector = () => {
   // Animation
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
+
+
 
   useEffect(() => {
     // Entry animation
@@ -87,28 +110,33 @@ const HospitalSelector = () => {
   // Fetch states and hospitals on component mount
   useEffect(() => {
     fetchStates();
-    fetchHospitals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch hospitals when filters or search changes
   useEffect(() => {
-    if (!loading) {
-      fetchHospitals();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setPage(1);
+    setHasMore(true);
+    const timer = setTimeout(() => {
+      fetchHospitals(1);
+    }, 300);
+
+    return () => clearTimeout(timer);
+
   }, [selectedStates, selectedCities, searchQuery]);
 
   // Fetch cities when state is selected
   useEffect(() => {
     if (selectedStates.length > 0) {
-      // Fetch cities for all selected states
       fetchCitiesForStates(selectedStates);
     } else {
       setCitiesList([]);
-      setSelectedCities([]);
+      setSelectedCities(prev => (prev.length ? [] : prev));
     }
   }, [selectedStates]);
+
+
+
   const handleAddNewHospital = () => {
     setShowAddHospitalModal(true);
   };
@@ -120,90 +148,79 @@ const HospitalSelector = () => {
       setSelectedItem(null);
     }
   };
+  const fetchHospitals = async (pageNumber = 1, isLoadMoreCall = false) => {
+    
 
-  const fetchHospitals = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      console.log('HospitalSelector: Fetching hospitals with filters...');
+      if (isLoadMoreCall) {
+        setIsLoadMore(true);
+      } else {
+        setLoading(true);
+      }
 
-      // Build state and city IDs arrays
+      setError(null);
+
       const stateIds = selectedStates.map(s => Number(s.id));
       const cityIds = selectedCities.map(c => Number(c.id));
 
-      console.log(
-        'HospitalSelector: Filter params - stateIds:',
-        stateIds,
-        'cityIds:',
-        cityIds,
-        'searchText:',
-        searchQuery,
-      );
-
-      // Build payload matching the API requirements
       const payload = {
         typeCode: ['HOSP'],
-        statusIds: [7, 2], // ACTIVE and APPROVED
-        page: 1,
+        statusIds: [7, 2],
+        page: pageNumber,
         limit: 20,
-        mappingFor: mappingFor || "HOSP",
-        ...(categoryCode
-          ? { categoryCode: categoryCode }
-          : {}),
-        ...(subCategoryCode ? { subCategoryCode: subCategoryCode } : {}),
-        ...(customerGroupId ? { customerGroupId: customerGroupId } : {})
-
-
+        mappingFor: mappingFor || 'HOSP',
+        ...(categoryCode && { categoryCode }),
+        ...(subCategoryCode && { subCategoryCode }),
+        ...(customerGroupId && { customerGroupId }),
+        ...(stateIds.length && { stateIds }),
+        ...(cityIds.length && { cityIds }),
+        ...(searchQuery?.trim() && { searchText: searchQuery.trim() }),
       };
 
-      // Add optional filters
-      if (stateIds.length > 0) {
-        payload.stateIds = stateIds;
-      }
-      if (cityIds.length > 0) {
-        payload.cityIds = cityIds;
-      }
-      if (searchQuery && searchQuery.trim().length > 0) {
-        payload.searchText = searchQuery.trim();
-      }
+      const response = await customerAPI.getCustomersListMapping(payload);
+      const customers = response?.customers || [];
 
-      console.log(
-        'HospitalSelector: API payload being sent:',
-        JSON.stringify(payload),
+      const transformedHospitals = customers.map(customer => ({
+        id: customer.customerId,
+        name: customer.customerName,
+        code: customer.customerCode || customer.customerId,
+        city: customer.cityName || 'N/A',
+        state: customer.stateName || 'N/A',
+      }));
+
+      setHospitalsData(prev =>
+        pageNumber === 1
+          ? transformedHospitals
+          : [...prev, ...transformedHospitals]
       );
 
-      // Call API directly with correct payload
-      const response = await customerAPI.getCustomersListMapping(payload);
-      console.log('HospitalSelector: Hospitals API response:', response);
+      setPage(pageNumber);
+      setHasMore(customers.length === 20);
 
-      if (response?.customers && Array.isArray(response.customers)) {
-        // Transform API response to match expected format
-        const transformedHospitals = response.customers.map(customer => ({
-          id: customer.customerId,
-          name: customer.customerName,
-          code: customer.customerCode || customer.customerId,
-          city: customer.cityName || 'N/A',
-          state: customer.stateName || 'N/A',
-          customerId: customer.customerId,
-          customerCode: customer.customerCode,
-        }));
-        console.log(
-          'HospitalSelector: Transformed hospitals:',
-          transformedHospitals.length,
-          'items',
-        );
-        setHospitalsData(transformedHospitals);
-      } else {
-        console.log('HospitalSelector: Invalid hospitals response format');
-        setHospitalsData([]);
-      }
+      // ✅ MARK INITIAL LOAD COMPLETE
+
     } catch (err) {
-      console.error('HospitalSelector: Error fetching hospitals:', err);
       setError(err.message || 'Failed to load hospitals');
-      setHospitalsData([]);
     } finally {
       setLoading(false);
+      setIsLoadMore(false);
     }
+  };
+
+
+
+  const loadMoreHospitals = () => {
+    if (loading || isLoadMore || !hasMore) return;
+
+    const nextPage = page + 1;
+
+    // 🚫 Prevent duplicate calls for same page
+    if (lastRequestedPageRef.current === nextPage) {
+      return;
+    }
+
+    lastRequestedPageRef.current = nextPage;
+    fetchHospitals(nextPage, true);
   };
 
   const fetchStates = async () => {
@@ -318,7 +335,7 @@ const HospitalSelector = () => {
     // Add the new pharmacy to selected items
     setSelectedItems([...selectedItems, newHospital]);
     // Optionally refresh the pharmacy list
-    fetchHospitals();
+    fetchHospitals(1);
   };
 
   const renderHospitalItem = ({ item }) => {
@@ -576,7 +593,7 @@ const HospitalSelector = () => {
           <Icon name="alert-circle" size={40} color="#EF4444" />
           <AppText style={styles.errorText}>Error loading hospitals</AppText>
           <AppText style={styles.errorSubText}>{error}</AppText>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchHospitals}>
+          <TouchableOpacity style={styles.retryButton} onPress={() => fetchHospitals(1)}>
             <AppText style={styles.retryButtonText}>Retry</AppText>
           </TouchableOpacity>
         </View>
@@ -585,9 +602,13 @@ const HospitalSelector = () => {
           data={hospitalsData}
           renderItem={renderHospitalItem}
           keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyList}
+          onEndReached={loadMoreHospitals}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={
+            isLoadMore ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : null
+          }
         />
       )}
 

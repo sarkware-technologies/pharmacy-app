@@ -680,7 +680,7 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
     try {
       const response = await customerAPI.getLicenseTypes(
         typeId || 1,
-        categoryId || 2,
+        categoryId || 1,
       );
       if (response.success && response.data) {
         const licenseData = {};
@@ -1290,7 +1290,7 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
       // Prepare the registration data according to API format
       const registrationData = {
         typeId: typeId || 1,
-        categoryId: categoryId || 2,
+        categoryId: categoryId || 1,
         subCategoryId: subCategoryId || 0,
         isMobileVerified: verificationStatus.mobile,
         isEmailVerified: verificationStatus.email,
@@ -2918,6 +2918,8 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
                   </TouchableOpacity>
                 </View>
 
+
+
                 {/* Group Hospital Selector - Show when Group Corporate Hospital is selected */}
                 {formData.selectedCategory === 'groupCorporateHospital' && (
                   <>
@@ -2933,7 +2935,9 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
                             }));
                           },
                           mappingFor: "PCM",
-                          customerGroupId: formData.customerGroupId
+                          customerGroupId: formData.customerGroupId,
+                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                         });
                       }}
                       activeOpacity={0.7}
@@ -2981,7 +2985,9 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
                             }));
                           },
                           mappingFor: "PCM",
-                          customerGroupId: formData.customerGroupId
+                          customerGroupId: formData.customerGroupId,
+                            ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                         });
                       }}
                     >

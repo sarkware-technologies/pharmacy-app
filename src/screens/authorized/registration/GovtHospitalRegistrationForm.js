@@ -2398,7 +2398,9 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                 setErrors(prev => ({ ...prev, linkedHospitals: null }));
               },
               mappingFor: "GOV",
-              categoryCode: ["GOV"]
+              categoryCode: ["GOV"],
+                ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
 
             });
           }}
@@ -2428,7 +2430,9 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                 setErrors(prev => ({ ...prev, linkedHospitals: null }));
               },
               mappingFor: "GOV",
-              categoryCode: ["GOV"]
+              categoryCode: ["GOV"],
+                ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
             });
           }}
           activeOpacity={0.7}
@@ -2529,7 +2533,9 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                           }));
                         },
                         categoryCode: ["GOV"],
-                        mappingFor: "GOV"
+                        mappingFor: "GOV",
+                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                       });
                     }}
                   >
@@ -2601,7 +2607,9 @@ const GovtHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                     }));
                   },
                   categoryCode: ["GOV"],
-                  mappingFor: "GOV"
+                  mappingFor: "GOV",
+                    ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                 });
               }}
               activeOpacity={0.7}

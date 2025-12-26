@@ -367,7 +367,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
       // Check if there's at least some data to save
       // Check if there's at least some data to save
       // First check the built payload
-      const hasPayloadData = 
+      const hasPayloadData =
         (draftPayload.generalDetails && Object.keys(draftPayload.generalDetails).length > 0) ||
         (draftPayload.securityDetails && Object.keys(draftPayload.securityDetails).length > 0) ||
         (draftPayload.licenceDetails && draftPayload.licenceDetails.licence && draftPayload.licenceDetails.licence.length > 0) ||
@@ -376,7 +376,7 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
         (draftPayload.suggestedDistributors && Array.isArray(draftPayload.suggestedDistributors) && draftPayload.suggestedDistributors.length > 0);
 
       // Fallback: Check formData directly for any filled fields
-      const hasFormData = 
+      const hasFormData =
         (formData.hospitalName && formData.hospitalName.trim()) ||
         (formData.shortName && formData.shortName.trim()) ||
         (formData.address1 && formData.address1.trim()) ||
@@ -1603,9 +1603,9 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
 
         setTimeout(() => {
           // Use goBack() to preserve tab bar visibility
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      }
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          }
         }, 1500);
       } else {
         Toast.show({
@@ -1823,14 +1823,14 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
             });
 
             // Update address fields only
-           setFormData(prev => ({
-                               ...prev,
-                               address1: filterForField('address1', filteredParts[0] || '', 40),
-                               address2: filterForField('address2', filteredParts[1] || '', 40),
-                               address3: filterForField('address3', filteredParts[2] || '', 60),
-                               address4: filteredParts.slice(3).join(', ') || '',
-                             }));
-           
+            setFormData(prev => ({
+              ...prev,
+              address1: filterForField('address1', filteredParts[0] || '', 40),
+              address2: filterForField('address2', filteredParts[1] || '', 40),
+              address3: filterForField('address3', filteredParts[2] || '', 60),
+              address4: filteredParts.slice(3).join(', ') || '',
+            }));
+
 
             // Update pincode and trigger lookup (this will populate area, city, state)
             if (extractedPincode) {
@@ -2298,7 +2298,10 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                   ));
                   setErrors(prev => ({ ...prev, linkedHospitals: null }));
                 },
-                formType: "PGH"
+                  categoryCode: ["OR", "RCW", "OW", "PRI"],
+                mappingFor:"PGH",
+                 ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
               });
             }}
             activeOpacity={0.7}
@@ -2325,7 +2328,10 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                   }));
                   setErrors(prev => ({ ...prev, linkedHospitals: null }));
                 },
-                categoryCode: ["OR", "RCW", "OW", "PRI"]
+                categoryCode: ["OR", "RCW", "OW", "PRI"],
+                mappingFor:"PGH",
+                 ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
               });
             }}
             activeOpacity={0.7}
@@ -2443,7 +2449,9 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
                             }));
                           },
                           customerGroupId: formData.customerGroupId,
-                          mappingFor: "PGH"
+                          mappingFor: "PGH",
+                           ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                         });
                       }}
                     >

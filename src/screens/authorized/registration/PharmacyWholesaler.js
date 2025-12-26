@@ -2606,7 +2606,9 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
                             }));
                           },
                           mappingFor: "PCM",
-                          customerGroupId: formData.customerGroupId
+                          customerGroupId: formData.customerGroupId,
+                            ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
 
                         });
                       }}
@@ -2650,7 +2652,9 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
                             }));
                           },
                           mappingFor: "PCM",
-                          customerGroupId: formData.customerGroupId
+                          customerGroupId: formData.customerGroupId,
+                            ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                         });
                       }}
                     >

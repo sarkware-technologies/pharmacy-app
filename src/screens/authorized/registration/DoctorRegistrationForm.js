@@ -2781,7 +2781,9 @@ if (ocrData.issueDate && !formData.practiceLicenseDate) {
                             selectedHospitals: hospitals,
                           }));
                         },
-                        mappingFor: "HOSP"
+                        mappingFor: "HOSP",
+                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                       });
                     }}
                     activeOpacity={0.7}
@@ -2825,7 +2827,9 @@ if (ocrData.issueDate && !formData.practiceLicenseDate) {
                           }));
                         },
                         customerGroupId: formData.customerGroupId,
-                        mappingFor: "DOCT"
+                        mappingFor: "DOCT",
+                          ...(formData?.stateId && { stateIds: [Number(formData.stateId)] }),
+                          ...(formData?.cityId && { cityIds: [Number(formData.cityId)] }),
                       });
                     }}
                     activeOpacity={0.7}
