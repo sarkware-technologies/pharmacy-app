@@ -3308,7 +3308,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
                                   !isEnabled && styles.disabledText,
                                 ]}
                               >
-                                {group.customerGroupId} {group.customerGroupName}
+                                {group.customerGroupName}
                               </AppText>
                             </TouchableOpacity>
                           );

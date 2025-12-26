@@ -2627,11 +2627,6 @@ const GroupHospitalRegistrationForm = ({ onSaveDraftRef }) => {
           <View style={styles.radioGridContainer}>
             {customerGroups.length > 0
               ? customerGroups
-                .filter(group =>
-                  ['DOCTOR SUPPLY', 'VQ', 'RFQ', 'GOVT'].includes(
-                    group.customerGroupName,
-                  ),
-                )
                 .map(group => {
                   const isEnabled = ['VQ', 'RFQ'].includes(
                     group.customerGroupName,
