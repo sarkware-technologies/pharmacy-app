@@ -1816,18 +1816,26 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
     }
 
     // License number
-    if (ocrData.licenseNumber) {
-      if (!formData.license20) updates.license20 = filterForField('license20', ocrData.licenseNumber, 50);
-      else if (!formData.license21) updates.license21 = filterForField('license21', ocrData.licenseNumber, 50);
-    }
+    const licenseMap = {
+      LIC20: { number: 'license20', expiry: 'license20ExpiryDate' },
+      LIC21: { number: 'license21', expiry: 'license21ExpiryDate' },
 
-    // Expiry date
-    if (ocrData.expiryDate) {
-      const parts = ocrData.expiryDate.split("-");
-      if (parts.length === 3) {
-        const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        if (!formData.license20ExpiryDate) updates.license20ExpiryDate = formatted;
-        else if (!formData.license21ExpiryDate) updates.license21ExpiryDate = formatted;
+    };
+
+    const map = licenseMap[ocrData.doctypeCode];
+
+    if (map) {
+      // License Number
+      if (ocrData.licenseNumber) {
+        updates[map.number] = filterForField(map.number, ocrData.licenseNumber, 50);
+      }
+
+      // Expiry Date
+      if (ocrData.expiryDate) {
+        const [dd, mm, yyyy] = ocrData.expiryDate.split('-');
+        if (dd && mm && yyyy) {
+          updates[map.expiry] = `${yyyy}-${mm}-${dd}`;
+        }
       }
     }
 
@@ -2111,6 +2119,13 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
         (formData.stockists && formData.stockists.length > 0 && formData.stockists.some(s => s.name || s.code || s.city));
 
       const hasData = hasPayloadData || hasFormData;
+
+      console.log(hasPayloadData);
+       console.log(hasPayloadData);
+       console.log(hasData);
+       console.log(formData);
+       
+       
 
       if (!hasData) {
         Toast.show({

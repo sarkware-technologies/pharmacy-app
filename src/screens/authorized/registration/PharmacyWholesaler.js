@@ -1296,16 +1296,29 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
       }
     }
 
-    // Populate license number if available and field is empty
-    if (ocrData.licenseNumber) {
-      // Determine which license field to populate based on which file was just uploaded
-      // This is a simplified approach - you may need to pass additional context
-      if (!formData.license20b) {
-        updates.license20b = filterForField('license20b', ocrData.licenseNumber, 50);
 
-      } else if (!formData.license21b) {
-        updates.license21b = filterForField('license21b', ocrData.licenseNumber, 50);
 
+    // License number
+    const licenseMap = {
+
+      LIC20B: { number: 'license20b', expiry: 'license20bExpiryDate' },
+      LIC21B: { number: 'license21b', expiry: 'license21bExpiryDate' },
+    };
+
+    const map = licenseMap[ocrData.doctypeCode];
+
+    if (map) {
+      // License Number
+      if (ocrData.licenseNumber) {
+        updates[map.number] = filterForField(map.number, ocrData.licenseNumber, 50);
+      }
+
+      // Expiry Date
+      if (ocrData.expiryDate) {
+        const [dd, mm, yyyy] = ocrData.expiryDate.split('-');
+        if (dd && mm && yyyy) {
+          updates[map.expiry] = `${yyyy}-${mm}-${dd}`;
+        }
       }
     }
 
@@ -1314,19 +1327,6 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
       updates.pincode = filterForField('pincode', ocrData.pincode, 6);
     }
 
-    // Populate expiry date if available
-    if (ocrData.expiryDate) {
-      // Convert date format from DD-MM-YYYY to required format
-      const parts = ocrData.expiryDate.split('-');
-      if (parts.length === 3) {
-        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
-        if (!formData.license20bExpiryDate) {
-          updates.license20bExpiryDate = formattedDate;
-        } else if (!formData.license21bExpiryDate) {
-          updates.license21bExpiryDate = formattedDate;
-        }
-      }
-    }
 
     // Apply all updates first
     if (Object.keys(updates).length > 0) {
@@ -2717,110 +2717,110 @@ const PharmacyWholesalerForm = ({ onSaveDraftRef }) => {
 
 
               <View style={styles.customerGroupContainer}>
-                            <AppText style={styles.customerGroupLabel}>
-                              Customer group
-                            </AppText>
-                            <View style={styles.radioGroupContainer}>
-                              {customerGroups.length > 0 ? (
-                                <>
-                                  {/* First row - first 2 groups */}
-                                  <View style={styles.radioRow}>
-                                    {customerGroups.slice(0, 2).map((group) => {
-                                      // Only DSUP (DOCTOR SUPPLY) is enabled, others are disabled
-                                      const isEnabled = group.customerGroupCode === 'DSUP';
-                                      return (
-                                        <TouchableOpacity
-                                          key={group.customerGroupId}
-                                          style={[
-                                            styles.radioOption,
-                                            styles.radioOptionFlex,
-                                            !isEnabled && styles.disabledOption,
-                                          ]}
-                                          onPress={() => {
-                                            if (isEnabled) {
-                                              setFormData(prev => ({
-                                                ...prev,
-                                                customerGroupId: group.customerGroupId,
-                                              }));
-                                            }
-                                          }}
-                                          disabled={!isEnabled}
-                                        >
-                                          <View
-                                            style={[
-                                              styles.radioCircle,
-                                              !isEnabled && styles.disabledRadio,
-                                            ]}
-                                          >
-                                            {formData.customerGroupId === group.customerGroupId && (
-                                              <View style={styles.radioSelected} />
-                                            )}
-                                          </View>
-                                          <AppText
-                                            style={[
-                                              styles.radioText,
-                                              !isEnabled && styles.disabledText,
-                                            ]}
-                                          >
-                                            {group.customerGroupName}
-                                          </AppText>
-                                        </TouchableOpacity>
-                                      );
-                                    })}
-                                  </View>
-                                  {/* Second row - remaining groups */}
-                                  {customerGroups.length > 2 && (
-                                    <View style={styles.radioRow}>
-                                      {customerGroups.slice(2, 4).map((group) => {
-                                        // Only DSUP (DOCTOR SUPPLY) is enabled, others are disabled
-                                        const isEnabled = group.customerGroupCode === 'DSUP';
-                                        return (
-                                          <TouchableOpacity
-                                            key={group.customerGroupId}
-                                            style={[
-                                              styles.radioOption,
-                                              styles.radioOptionFlex,
-                                              !isEnabled && styles.disabledOption,
-                                            ]}
-                                            onPress={() => {
-                                              if (isEnabled) {
-                                                setFormData(prev => ({
-                                                  ...prev,
-                                                  customerGroupId: group.customerGroupId,
-                                                }));
-                                              }
-                                            }}
-                                            disabled={!isEnabled}
-                                          >
-                                            <View
-                                              style={[
-                                                styles.radioCircle,
-                                                !isEnabled && styles.disabledRadio,
-                                              ]}
-                                            >
-                                              {formData.customerGroupId === group.customerGroupId && (
-                                                <View style={styles.radioSelected} />
-                                              )}
-                                            </View>
-                                            <AppText
-                                              style={[
-                                                styles.radioText,
-                                                !isEnabled && styles.disabledText,
-                                              ]}
-                                            >
-                                              {group.customerGroupId} {group.customerGroupName}
-                                            </AppText>
-                                          </TouchableOpacity>
-                                        );
-                                      })}
-                                    </View>
+                <AppText style={styles.customerGroupLabel}>
+                  Customer group
+                </AppText>
+                <View style={styles.radioGroupContainer}>
+                  {customerGroups.length > 0 ? (
+                    <>
+                      {/* First row - first 2 groups */}
+                      <View style={styles.radioRow}>
+                        {customerGroups.slice(0, 2).map((group) => {
+                          // Only DSUP (DOCTOR SUPPLY) is enabled, others are disabled
+                          const isEnabled = group.customerGroupCode === 'DSUP';
+                          return (
+                            <TouchableOpacity
+                              key={group.customerGroupId}
+                              style={[
+                                styles.radioOption,
+                                styles.radioOptionFlex,
+                                !isEnabled && styles.disabledOption,
+                              ]}
+                              onPress={() => {
+                                if (isEnabled) {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    customerGroupId: group.customerGroupId,
+                                  }));
+                                }
+                              }}
+                              disabled={!isEnabled}
+                            >
+                              <View
+                                style={[
+                                  styles.radioCircle,
+                                  !isEnabled && styles.disabledRadio,
+                                ]}
+                              >
+                                {formData.customerGroupId === group.customerGroupId && (
+                                  <View style={styles.radioSelected} />
+                                )}
+                              </View>
+                              <AppText
+                                style={[
+                                  styles.radioText,
+                                  !isEnabled && styles.disabledText,
+                                ]}
+                              >
+                                {group.customerGroupName}
+                              </AppText>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                      {/* Second row - remaining groups */}
+                      {customerGroups.length > 2 && (
+                        <View style={styles.radioRow}>
+                          {customerGroups.slice(2, 4).map((group) => {
+                            // Only DSUP (DOCTOR SUPPLY) is enabled, others are disabled
+                            const isEnabled = group.customerGroupCode === 'DSUP';
+                            return (
+                              <TouchableOpacity
+                                key={group.customerGroupId}
+                                style={[
+                                  styles.radioOption,
+                                  styles.radioOptionFlex,
+                                  !isEnabled && styles.disabledOption,
+                                ]}
+                                onPress={() => {
+                                  if (isEnabled) {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      customerGroupId: group.customerGroupId,
+                                    }));
+                                  }
+                                }}
+                                disabled={!isEnabled}
+                              >
+                                <View
+                                  style={[
+                                    styles.radioCircle,
+                                    !isEnabled && styles.disabledRadio,
+                                  ]}
+                                >
+                                  {formData.customerGroupId === group.customerGroupId && (
+                                    <View style={styles.radioSelected} />
                                   )}
-                                </>
-                              ) : (
-                                <ActivityIndicator size="small" color={colors.primary} />
-                              )}
-                            </View>
-                          </View>
+                                </View>
+                                <AppText
+                                  style={[
+                                    styles.radioText,
+                                    !isEnabled && styles.disabledText,
+                                  ]}
+                                >
+                                  {group.customerGroupId} {group.customerGroupName}
+                                </AppText>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      )}
+                    </>
+                  ) : (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  )}
+                </View>
+              </View>
             </View>
 
             {/* Stockist Suggestions Section */}

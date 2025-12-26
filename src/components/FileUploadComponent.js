@@ -262,7 +262,7 @@ const FileUploadComponent = ({
 
       if (responseData.success && responseData.data && responseData.data.length > 0) {
         const uploadedFile = responseData.data[0];
-        console.log("OCR Data Received:", responseData.data);
+        console.log("OCR Data Received:", uploadedFile);
 
 
 
@@ -288,6 +288,8 @@ const FileUploadComponent = ({
         // If OCR data is present, send it to parent via callback
         if (isOcrRequired && onOcrDataExtracted) {
           const ocrData = {};
+
+          ocrData.doctypeCode = uploadedFile.doctypeCode;
 
           // Extract PAN number if present
           if (uploadedFile.PANNumber) {

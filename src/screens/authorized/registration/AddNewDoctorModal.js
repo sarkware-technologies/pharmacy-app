@@ -275,31 +275,37 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
 
     // Populate registration number if available
 
-
-    if (ocrData.registrationNumber && !doctorForm.clinicRegistrationNumber) {
-      updates.clinicRegistrationNumber = filterForField('clinicRegistrationNumber', ocrData.registrationNumber, 20);
-    } else if (ocrData.licenseNumber) {
-      if (!doctorForm.clinicRegistrationNumber) {
-        updates.clinicRegistrationNumber = filterForField('clinicRegistrationNumber', ocrData.licenseNumber, 20);
-      } else if (!doctorForm.practiceLicenseNumber) {
-        updates.practiceLicenseNumber = filterForField('practiceLicenseNumber', ocrData.licenseNumber, 20);
-      }
-    }
-
-
-    // Populate expiry date if available
-    if (ocrData.expiryDate) {
-      const parts = ocrData.expiryDate.split('-');
-      if (parts.length === 3) {
-        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        if (!doctorForm.clinicRegistrationExpiryDate) {
-          updates.clinicRegistrationExpiryDate = formattedDate;
-          updates.practiceLicenseExpiryDate = formattedDate;
-
-
+    
+        // License number
+        const licenseMap = {
+          PRLIC: { number: 'practiceLicenseNumber', expiry: 'practiceLicenseExpiryDate' },
+          REG: { number: 'clinicRegistrationNumber', expiry: 'clinicRegistrationExpiryDate' },
+    
+        };
+    
+        const map = licenseMap[ocrData.doctypeCode];
+    
+        if (map) {
+          const value =
+            ocrData.registrationNumber ||
+            ocrData.licenseNumber;
+    
+          if (value) {
+            updates[map.number] = filterForField(map.number, value, 20);
+          }
+    
+          // Expiry Date
+          if (ocrData.expiryDate) {
+            const [dd, mm, yyyy] = ocrData.issueDate.split('-');
+            if (dd && mm && yyyy) {
+              updates[map.expiry] = `${yyyy}-${mm}-${dd}`;
+            }
+          }
         }
-      }
-    }
+
+
+  
+
 
 
 

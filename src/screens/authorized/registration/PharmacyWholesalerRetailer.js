@@ -2130,25 +2130,29 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
     }
 
     // License number
-    if (ocrData.licenseNumber) {
-      if (!formData.license20) updates.license20 = filterForField('license20', ocrData.licenseNumber, 50);
-      else if (!formData.license21) updates.license21 = filterForField('license21', ocrData.licenseNumber, 50);
-      else if (!formData.license20b) updates.license20b = filterForField('license20b', ocrData.licenseNumber, 50);
-      else if (!formData.license21b) updates.license21b = filterForField('license21b', ocrData.licenseNumber, 50);
-    }
+    const licenseMap = {
+      LIC20: { number: 'license20', expiry: 'license20ExpiryDate' },
+      LIC21: { number: 'license21', expiry: 'license21ExpiryDate' },
+      LIC20B: { number: 'license20b', expiry: 'license20bExpiryDate' },
+      LIC21B: { number: 'license21b', expiry: 'license21bExpiryDate' },
+    };
 
-    // Expiry date
-    if (ocrData.expiryDate) {
-      const parts = ocrData.expiryDate.split("-");
-      if (parts.length === 3) {
-        const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        if (!formData.license20ExpiryDate) updates.license20ExpiryDate = formatted;
-        else if (!formData.license21ExpiryDate) updates.license21ExpiryDate = formatted;
-        else if (!formData.license20bExpiryDate) updates.license20bExpiryDate = formatted;
-        else if (!formData.license21bExpiryDate) updates.license21bExpiryDate = formatted;
+    const map = licenseMap[ocrData.doctypeCode];
+
+    if (map) {
+      // License Number
+      if (ocrData.licenseNumber) {
+        updates[map.number] = filterForField(map.number, ocrData.licenseNumber, 50);
+      }
+
+      // Expiry Date
+      if (ocrData.expiryDate) {
+        const [dd, mm, yyyy] = ocrData.expiryDate.split('-');
+        if (dd && mm && yyyy) {
+          updates[map.expiry] = `${yyyy}-${mm}-${dd}`;
+        }
       }
     }
-
     // -----------------------------
     //  🔥 DIRECTLY USE OCR LOCATION
     // -----------------------------

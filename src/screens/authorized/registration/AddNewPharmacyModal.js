@@ -153,7 +153,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
             };
           } else if (license.code === 'LIC20B' || license.name === '20B') {
             // If API returns 20B instead of 20, map it
-            licenseData.LICENSE_20 = {
+            licenseData.LICENSE_20B = {
               id: license.id,
               docTypeId: license.docTypeId,
               name: license.name,
@@ -161,7 +161,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
             };
           } else if (license.code === 'LIC21B' || license.name === '21B') {
             // If API returns 21B instead of 21, map it
-            licenseData.LICENSE_21 = {
+            licenseData.LICENSE_21B = {
               id: license.id,
               docTypeId: license.docTypeId,
               name: license.name,
@@ -184,6 +184,9 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
 
 
   const handleLicenseOcrData = async (ocrData) => {
+
+    console.log();
+    
     console.log('License OCR Data:', ocrData);
 
     // Helper function to split address
@@ -240,28 +243,32 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
       }
     }
 
-    // Populate license number if available
-    if (ocrData.licenseNumber) {
-      if (!pharmacyForm.license20) updates.license20 = filterForField('license20', ocrData.licenseNumber, 50);
-      else if (!pharmacyForm.license21) updates.license21 = filterForField('license21', ocrData.licenseNumber, 50);
-      else if (!pharmacyForm.license20b) updates.license20b = filterForField('license20b', ocrData.licenseNumber, 50);
-      else if (!pharmacyForm.license21b) updates.license21b = filterForField('license21b', ocrData.licenseNumber, 50);
-    }
 
-
-
-
-    // Populate expiry date if available
-    if (ocrData.expiryDate) {
-      const parts = ocrData.expiryDate.split("-");
-      if (parts.length === 3) {
-        const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        if (!pharmacyForm.license20ExpiryDate) updates.license20ExpiryDate = formatted;
-        else if (!pharmacyForm.license21ExpiryDate) updates.license21ExpiryDate = formatted;
-        else if (!pharmacyForm.license20bExpiryDate) updates.license20bExpiryDate = formatted;
-        else if (!pharmacyForm.license21bExpiryDate) updates.license21bExpiryDate = formatted;
-      }
-    }
+    
+        // License number
+        const licenseMap = {
+          LIC20: { number: 'license20', expiry: 'license20ExpiryDate' },
+          LIC21: { number: 'license21', expiry: 'license21ExpiryDate' },
+          LIC20B: { number: 'license20b', expiry: 'license20bExpiryDate' },
+          LIC21B: { number: 'license21b', expiry: 'license21bExpiryDate' },
+        };
+    
+        const map = licenseMap[ocrData.doctypeCode];
+    
+        if (map) {
+          // License Number
+          if (ocrData.licenseNumber || ocrData.LicenseNumber) {
+            updates[map.number] = filterForField(map.number, ocrData.licenseNumber || ocrData.LicenseNumber, 50);
+          }
+    
+          // Expiry Date
+          if (ocrData.expiryDate) {
+            const [dd, mm, yyyy] = ocrData.expiryDate.split('-');
+            if (dd && mm && yyyy) {
+              updates[map.expiry] = `${yyyy}-${mm}-${dd}`;
+            }
+          }
+        }
 
     // Populate pincode
     if (ocrData.pincode && !pharmacyForm.pincode) {
@@ -1263,6 +1270,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
                 }}
               />
 
+        
 
               {/* 21 License */}
               <View style={[styles.labelWithIcon, styles.sectionTopSpacing]}>
