@@ -305,7 +305,7 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
   const otpSlideAnim = useRef(new Animated.Value(-50)).current;
 
   // Save as Draft handler - only sends filled fields
-  const handleSaveAsDraft = useCallback(async () => {
+  const handleSaveAsDraft = async () => {
     try {
       setLoading(true);
 
@@ -320,6 +320,10 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
           isExisting: false,
           isBuyer: formData.markAsBuyingEntity !== undefined ? formData.markAsBuyingEntity : true,
           customerGroupId: formData.customerGroupId || null,
+          stationCode: formData.stationCode || null,
+          ...(formData.stgCustomerId && {
+            stgCustomerId: formData.stgCustomerId,
+          }),
         };
 
         // Build generalDetails with only filled fields
@@ -471,6 +475,7 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
       const hasFormData =
         (formData.clinicName && formData.clinicName.trim()) ||
         (formData.shortName && formData.shortName.trim()) ||
+         (formData.stationCode) ||
         (formData.address1 && formData.address1.trim()) ||
         (formData.address2 && formData.address2.trim()) ||
         (formData.address3 && formData.address3.trim()) ||
@@ -492,6 +497,9 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
 
       const hasData = hasPayloadData || hasFormData;
 
+      console.log(formData);
+      
+
       if (!hasData) {
         Toast.show({
           type: 'info',
@@ -512,6 +520,14 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
           text2: 'Your registration has been saved as draft successfully',
           position: 'top',
         });
+
+          if (!formData.stgCustomerId) {
+          setFormData(prev => ({
+            ...prev,
+            stgCustomerId: response?.data?.data?.stgCustomerId,
+          }));
+        }
+
       } else {
         Toast.show({
           type: 'error',
@@ -531,8 +547,17 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
     } finally {
       setLoading(false);
     }
-  }, [typeId, categoryId, subCategoryId, verificationStatus, formData, licenseTypes, uploadedDocs, stockists]);
+  };
+  useEffect(() => {
+    onSaveDraftRef?.(handleSaveAsDraft);
+    return () => onSaveDraftRef?.(null);
+  }, [onSaveDraftRef, handleSaveAsDraft]);
 
+    useEffect(() => {
+      if (verificationStatus.mobile || verificationStatus.email) {
+        handleSaveAsDraft();
+      }
+    }, [verificationStatus.mobile, verificationStatus.email]);
   // Set navigation header - always hide default header, we use custom header
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -1755,6 +1780,9 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
         isMobileVerified: verificationStatus.mobile,
         isEmailVerified: verificationStatus.email,
         isExisting: false,
+         ...(formData.stgCustomerId && {
+            stgCustomerId: formData.stgCustomerId,
+          }),
         licenceDetails: {
           registrationDate: registrationDate,
           licence: [

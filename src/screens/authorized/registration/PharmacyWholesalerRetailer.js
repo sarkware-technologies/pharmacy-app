@@ -236,7 +236,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
   const [customerGroups, setCustomerGroups] = useState([]);
 
   // Save as Draft handler - only sends filled fields
-  const handleSaveAsDraft = useCallback(async () => {
+  const handleSaveAsDraft =async () => {
     try {
       setLoading(true);
 
@@ -251,6 +251,11 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
           isExisting: false,
           isBuyer: formData.isBuyer !== undefined ? formData.isBuyer : true,
           customerGroupId: formData.customerGroupId || null,
+                    stationCode: formData.stationCode || null,
+
+            ...(formData.stgCustomerId && {
+            stgCustomerId: formData.stgCustomerId,
+          }),
         };
 
         // Build generalDetails with only filled fields
@@ -430,6 +435,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
       const hasFormData =
         (formData.pharmacyName && formData.pharmacyName.trim()) ||
         (formData.shortName && formData.shortName.trim()) ||
+        (formData.stationCode) ||
         (formData.address1 && formData.address1.trim()) ||
         (formData.address2 && formData.address2.trim()) ||
         (formData.address3 && formData.address3.trim()) ||
@@ -472,6 +478,15 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
           text2: 'Your registration has been saved as draft successfully',
           position: 'top',
         });
+
+
+         if (!formData.stgCustomerId) {
+          setFormData(prev => ({
+            ...prev,
+            stgCustomerId: response?.data?.data?.stgCustomerId,
+          }));
+
+        }
       } else {
         Toast.show({
           type: 'error',
@@ -491,8 +506,18 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
     } finally {
       setLoading(false);
     }
-  }, [typeId, categoryId, subCategoryId, verificationStatus, formData, licenseTypes, uploadedDocs, formatDateForAPI]);
+  };
 
+    useEffect(() => {
+      onSaveDraftRef?.(handleSaveAsDraft);
+      return () => onSaveDraftRef?.(null);
+    }, [onSaveDraftRef, handleSaveAsDraft]);
+  
+    useEffect(() => {
+      if (verificationStatus.mobile || verificationStatus.email) {
+        handleSaveAsDraft();
+      }
+    }, [verificationStatus.mobile, verificationStatus.email]);
   // Set navigation header - always hide default header, we use custom header
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -1592,6 +1617,9 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
         isMobileVerified: verificationStatus.mobile,
         isEmailVerified: verificationStatus.email,
         isExisting: false,
+        ...(formData.stgCustomerId && {
+            stgCustomerId: formData.stgCustomerId,
+          }),
         licenceDetails: {
           registrationDate: new Date().toISOString(),
           licence: [

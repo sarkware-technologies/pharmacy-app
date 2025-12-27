@@ -163,7 +163,6 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
     stockists: [{ name: '', code: '', city: '' }],
   });
 
-  console.log(formData);
 
 
   const [errors, setErrors] = useState({});
@@ -247,7 +246,7 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
   const [uploadedDocs, setUploadedDocs] = useState([]);
 
   // Save as Draft handler - only sends filled fields
-  const handleSaveAsDraft = useCallback(async () => {
+  const handleSaveAsDraft = async () => {
     try {
       setLoading(true);
 
@@ -262,6 +261,10 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
           isExisting: false,
           isBuyer: formData.markAsBuyingEntity !== undefined ? formData.markAsBuyingEntity : true,
           customerGroupId: formData.customerGroupId || null,
+           stationCode: formData.stationCode || null,
+          ...(formData.stgCustomerId && {
+            stgCustomerId: formData.stgCustomerId,
+          }),
         };
 
         // Build generalDetails with only filled fields
@@ -425,6 +428,7 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
       const hasFormData =
         (formData.doctorName && formData.doctorName.trim()) ||
         (formData.clinicName && formData.clinicName.trim()) ||
+          (formData.stationCode) ||
         (formData.speciality && formData.speciality.trim()) ||
         (formData.address1 && formData.address1.trim()) ||
         (formData.address2 && formData.address2.trim()) ||
@@ -468,6 +472,15 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
           text2: 'Your registration has been saved as draft successfully',
           position: 'top',
         });
+
+        
+        if (!formData.stgCustomerId) {
+          setFormData(prev => ({
+            ...prev,
+            stgCustomerId: response?.data?.data?.stgCustomerId,
+          }));
+        }
+
       } else {
         Toast.show({
           type: 'error',
@@ -487,8 +500,20 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
     } finally {
       setLoading(false);
     }
-  }, [typeId, categoryId, subCategoryId, verificationStatus, formData, licenseTypes, uploadedDocs, formatDateForAPI]);
+  };
 
+
+    useEffect(() => {
+      onSaveDraftRef?.(handleSaveAsDraft);
+      return () => onSaveDraftRef?.(null);
+    }, [onSaveDraftRef, handleSaveAsDraft]);
+  
+      useEffect(() => {
+        if (verificationStatus.mobile || verificationStatus.email) {
+          handleSaveAsDraft();
+        }
+      }, [verificationStatus.mobile, verificationStatus.email]);
+  
   // Set navigation header - always hide default header, we use custom header
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -1610,6 +1635,9 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
         isMobileVerified: verificationStatus.mobile,
         isEmailVerified: verificationStatus.email,
         isExisting: false,
+        ...(formData.stgCustomerId && {
+            stgCustomerId: formData.stgCustomerId,
+          }),
         licenceDetails: {
           registrationDate: new Date().toISOString(),
           licence: [
@@ -1777,7 +1805,6 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
   };
 
 
-  console.log(formData);
 
   // DropdownModal Component
   // eslint-disable-next-line react/no-unstable-nested-components
@@ -3064,7 +3091,6 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
           selectedId={formData.stationCode} // <-- match value
           onSelect={item => {
 
-            console.log(item);
 
             setFormData({
               ...formData,
@@ -3175,8 +3201,7 @@ const DoctorRegistrationForm = ({ onSaveDraftRef }) => {
         }}
       />
 
-      {console.log(formData)
-      }
+
 
       {/* Add New Pharmacy Modal */}
       <AddNewPharmacyModal

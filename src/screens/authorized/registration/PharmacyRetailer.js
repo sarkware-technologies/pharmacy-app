@@ -1281,6 +1281,9 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
         isEmailVerified: verificationStatus.email,
         isExisting: false,
         stationCode: formData.stationCode,
+        ...(formData.stgCustomerId && {
+            stgCustomerId: formData.stgCustomerId,
+          }),
         licenceDetails: {
           registrationDate: new Date().toISOString(),
           licence: [
@@ -1912,34 +1915,27 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
     }
   };
 
-  // Expose handleSaveAsDraft to parent via ref callback
-  useEffect(() => {
-    if (onSaveDraftRef && !isEditMode && !isOnboardMode) {
-      onSaveDraftRef(() => handleSaveAsDraft());
-    }
-    return () => {
-      if (onSaveDraftRef) {
-        onSaveDraftRef(null);
-      }
-    };
-  }, [onSaveDraftRef, isEditMode, isOnboardMode]);
+
 
   // Save as Draft handler - only sends filled fields
-  const handleSaveAsDraft = useCallback(async () => {
+  const handleSaveAsDraft = async () => {
     try {
       setLoading(true);
-
       // Build draft payload with only filled fields
       const buildDraftPayload = () => {
         const draftPayload = {
           typeId: typeId || 1,
-          categoryId: categoryId || 2,
+          categoryId: categoryId || 1,
           subCategoryId: subCategoryId || 0,
           isMobileVerified: verificationStatus.mobile || false,
           isEmailVerified: verificationStatus.email || false,
           isExisting: false,
           isBuyer: formData.isBuyer !== undefined ? formData.isBuyer : true,
           customerGroupId: formData.customerGroupId || null,
+          stationCode: formData.stationCode || null,
+          ...(formData.stgCustomerId && {
+            stgCustomerId: formData.stgCustomerId,
+          }),
         };
 
         // Build generalDetails with only filled fields
@@ -1992,6 +1988,8 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
 
         // Always add generalDetails to ensure validation works
         draftPayload.generalDetails = generalDetails;
+
+
 
         // Build securityDetails with only filled fields
         const securityDetails = {};
@@ -2098,6 +2096,7 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
       const hasFormData =
         (formData.pharmacyName && formData.pharmacyName.trim()) ||
         (formData.shortName && formData.shortName.trim()) ||
+        (formData.stationCode) ||
         (formData.address1 && formData.address1.trim()) ||
         (formData.address2 && formData.address2.trim()) ||
         (formData.address3 && formData.address3.trim()) ||
@@ -2120,12 +2119,9 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
 
       const hasData = hasPayloadData || hasFormData;
 
-      console.log(hasPayloadData);
-       console.log(hasPayloadData);
-       console.log(hasData);
-       console.log(formData);
-       
-       
+
+
+
 
       if (!hasData) {
         Toast.show({
@@ -2140,6 +2136,9 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
 
       const response = await customerAPI.saveCustomerDraft(draftPayload);
 
+
+
+
       if (response.success) {
         Toast.show({
           type: 'success',
@@ -2147,6 +2146,17 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
           text2: 'Your registration has been saved as draft successfully',
           position: 'top',
         });
+
+        if (!formData.stgCustomerId) {
+          setFormData(prev => ({
+            ...prev,
+            stgCustomerId: response?.data?.data?.stgCustomerId,
+          }));
+        }
+
+
+
+
       } else {
         Toast.show({
           type: 'error',
@@ -2166,7 +2176,18 @@ const PharmacyRegistrationForm = ({ onSaveDraftRef }) => {
     } finally {
       setLoading(false);
     }
-  }, [typeId, categoryId, subCategoryId, verificationStatus, formData, licenseTypes, uploadedDocs]);
+  };
+
+  useEffect(() => {
+    onSaveDraftRef?.(handleSaveAsDraft);
+    return () => onSaveDraftRef?.(null);
+  }, [onSaveDraftRef, handleSaveAsDraft]);
+
+    useEffect(() => {
+      if (verificationStatus.mobile || verificationStatus.email) {
+        handleSaveAsDraft();
+      }
+    }, [verificationStatus.mobile, verificationStatus.email]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

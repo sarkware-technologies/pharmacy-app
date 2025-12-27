@@ -223,35 +223,41 @@ const RegistrationType = () => {
   };
 
   // Handle Save as Draft - calls the form's save draft function
-  const handleSaveAsDraft = async () => {
-    if (!formSubmitted || !selectedType) {
-      Toast.show({
-        type: 'info',
-        text1: 'No Form',
-        text2: 'Please select a type and category first',
-        position: 'top',
-      });
-      return;
-    }
 
-    if (formSaveDraftRef.current) {
-      try {
-        setSavingDraft(true);
-        await formSaveDraftRef.current();
-      } catch (error) {
-        console.error('Error saving draft:', error);
-      } finally {
-        setSavingDraft(false);
-      }
-    } else {
-      Toast.show({
-        type: 'info',
-        text1: 'No Data',
-        text2: 'Please fill at least one field before saving as draft',
-        position: 'top',
-      });
-    }
-  };
+const handleSaveAsDraft = async () => {
+  if (!formSubmitted || !selectedType) {
+    Toast.show({
+      type: 'info',
+      text1: 'No Form',
+      text2: 'Please select a type and category first',
+      position: 'top',
+    });
+    return;
+  }
+
+  if (!formSaveDraftRef.current) {
+    Toast.show({
+      type: 'info',
+      text1: 'No Data',
+      text2: 'Please fill at least one field before saving as draft',
+      position: 'top',
+    });
+    return;
+  }
+
+  try {
+    setSavingDraft(true);
+
+    // 🔑 THIS IS THE FIX
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
+    await formSaveDraftRef.current();
+  } catch (e) {
+    console.error('Error saving draft:', e);
+  } finally {
+    setSavingDraft(false);
+  }
+};
 
   const TypeButton = ({ type, isSelected }) => {
     const buttonScale = useRef(new Animated.Value(1)).current;
