@@ -1,5 +1,10 @@
-import React, { useState } from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useState, useRef, useEffect } from "react";
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+} from "react-native";
 import AppText from "../AppText";
 
 export default function CustomCheckbox({
@@ -15,11 +20,45 @@ export default function CustomCheckbox({
   disabledColor = "#E5E5E5",
   size = 18,
   borderWidth = 2,
-  checkIcon = "✓"
+  checkIcon = "✓",
 }) {
+  /* -------------------- State -------------------- */
   const [internalChecked, setInternalChecked] = useState(false);
   const checked = controlledChecked ?? internalChecked;
 
+  /* -------------------- Animated values -------------------- */
+  const bgScale = useRef(new Animated.Value(checked ? 1 : 0)).current;
+  const bgOpacity = useRef(new Animated.Value(checked ? 1 : 0)).current;
+  const iconScale = useRef(new Animated.Value(checked ? 1 : 0)).current;
+  const iconOpacity = useRef(new Animated.Value(checked ? 1 : 0)).current;
+
+  /* -------------------- Animations -------------------- */
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(bgScale, {
+        toValue: checked ? 1 : 0,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bgOpacity, {
+        toValue: checked ? 1 : 0,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+      Animated.spring(iconScale, {
+        toValue: checked ? 1 : 0,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+      Animated.timing(iconOpacity, {
+        toValue: checked ? 1 : 0,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [checked]);
+
+  /* -------------------- Handler -------------------- */
   const handlePress = () => {
     if (disabled) return;
     const newValue = !checked;
@@ -27,6 +66,7 @@ export default function CustomCheckbox({
     onChange?.(newValue);
   };
 
+  /* -------------------- UI -------------------- */
   return (
     <TouchableOpacity
       style={[
@@ -35,36 +75,60 @@ export default function CustomCheckbox({
         containerStyle,
       ]}
       onPress={handlePress}
-      activeOpacity={0.8}
+      activeOpacity={1}
       disabled={disabled}
     >
+      {/* Checkbox */}
       <View
         style={[
           styles.checkbox,
           {
-            borderColor: disabled
-              ? disabledColor
-              : checked
-              ? activeColor
-              : inactiveColor,
-            backgroundColor:
-              disabled ? disabledColor : checked ? activeColor : "transparent",
             width: size,
             height: size,
             borderRadius: size / 4,
             borderWidth,
+            borderColor: disabled
+              ? disabledColor
+              : checked
+                ? activeColor
+                : inactiveColor,
           },
           checkboxStyle,
         ]}
       >
-        {checked && !disabled && (
-          <AppText style={[styles.checkMark, { fontSize: size - 8 }]}>
+        {/* Animated background */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFillObject,
+            {
+              backgroundColor: activeColor,
+              // borderRadius: size / 6,
+              opacity: bgOpacity,
+              transform: [{ scale: bgScale }],
+            },
+          ]}
+        />
+
+        {/* Animated check icon */}
+        <Animated.View
+          style={{
+            opacity: iconOpacity,
+            transform: [{ scale: iconScale }],
+          }}
+        >
+          <AppText
+            style={[
+              styles.checkMark,
+              { fontSize: size - 8 },
+            ]}
+          >
             {checkIcon}
           </AppText>
-        )}
+        </Animated.View>
       </View>
 
-      {/* ⭐ FIXED TITLE RENDERING */}
+      {/* Title */}
       {typeof title === "string" || typeof title === "number" ? (
         <AppText style={[styles.label, textStyle]}>{title}</AppText>
       ) : (
@@ -74,6 +138,7 @@ export default function CustomCheckbox({
   );
 }
 
+/* -------------------- Styles -------------------- */
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
@@ -83,6 +148,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 8,
+    overflow: "hidden",
   },
   checkMark: {
     color: "#fff",

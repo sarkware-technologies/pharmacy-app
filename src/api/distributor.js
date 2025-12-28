@@ -8,7 +8,7 @@ export const getDistributors = async (page = 1, limit = 10, search = '') => {
             endpoint += `&search=${search}`;
         }
         const response = await apiClient.get(endpoint);
-        
+
         // Return the data in a consistent format
         return {
             distributors: response.data.distributors || [],
@@ -76,14 +76,14 @@ export const updateCustomerStatus = async (customerId, distributorId, action) =>
 };
 
 // Get preferred distributors list with division filters
-export const getPreferredDistributors = async (page = 1, limit = 20, stationCode, divisionIds = []) => {
+export const getPreferredDistributors = async ({ page = 1, limit = 20, stationCode, divisionIds = [], stateIds = [], cityIds = [], search = "" }) => {
     try {
-        let endpoint = `/user-management/distributor/list?page=${page}&limit=${limit}`;
-        
+        let endpoint = `/user-management/distributor/list?page=${page}&limit=${limit}&search=${search}`;
+
         if (stationCode) {
             endpoint += `&stationCode=${stationCode}`;
         }
-        
+
         // Add divisionIds as multiple query parameters
         // Each divisionId should be added as a separate query parameter: &divisionIds=143&divisionIds=183
         if (Array.isArray(divisionIds) && divisionIds.length > 0) {
@@ -95,11 +95,27 @@ export const getPreferredDistributors = async (page = 1, limit = 20, stationCode
                 }
             });
         }
-        
-        console.log('getPreferredDistributors API endpoint:', endpoint);
-        
+        if (Array.isArray(stateIds) && stateIds.length > 0) {
+            stateIds.forEach(state => {
+                // Ensure divisionId is a valid string/number and not empty
+                const id = String(state).trim();
+                if (id && id !== 'undefined' && id !== 'null') {
+                    endpoint += `&stateIds=${encodeURIComponent(id)}`;
+                }
+            });
+        }
+        if (Array.isArray(cityIds) && cityIds.length > 0) {
+            cityIds.forEach(city => {
+                // Ensure divisionId is a valid string/number and not empty
+                const id = String(city).trim();
+                if (id && id !== 'undefined' && id !== 'null') {
+                    endpoint += `&cityIds=${encodeURIComponent(id)}`;
+                }
+            });
+        }
+
         const response = await apiClient.get(endpoint);
-        
+
         // Return the data in a consistent format
         // API response structure: { success: true, data: { distributors: [], page: 1, limit: 20, total: 38 } }
         return {

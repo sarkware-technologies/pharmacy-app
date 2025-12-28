@@ -192,7 +192,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                                     <InfoRow label="Code" value={customerData?.customerCode} />
                                     <InfoRow
                                         label="Mobile Number"
-                                        value={customerData?.securityDetails?.mobileNumber}
+                                        value={customerData?.securityDetails?.mobile}
                                     />
                                 </View>
                                 <InfoRow label="Email Address" value={customerData?.securityDetails?.email} />
@@ -395,7 +395,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                 />
                 <DocumentModal s3Path={showDocumentModal?.s3Path} fileName={showDocumentModal?.fileName} doctypeName={showDocumentModal?.doctypeName} showDocumentModal={showDocumentModal != null} close={() => setShowDocumentModal(null)} />
             </ScrollView>
-            {!loading && (
+            {!loading && customerData?.instance?.stepInstances && (
                 <View style={Customerstyles.stickyFooter}>
                     <PermissionWrapper permission={PERMISSIONS.ONBOARDING_DETAILS_PAGE_APPROVE_REJECT}>
                         <View style={Customerstyles.actionButtonsContainer}>

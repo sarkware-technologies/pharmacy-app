@@ -57,7 +57,7 @@ const Linkagestyles = StyleSheet.create({
         backgroundColor: '#fff',
         paddingVertical: 8,
         maxHeight: 60,
-        marginHorizontal: 16,
+        // marginHorizontal: 16,
         marginTop: 10,
     },
     subTab: {
@@ -120,11 +120,14 @@ const Linkagestyles = StyleSheet.create({
     },
     distributorTabText: {
         fontSize: 14,
-        color: '#999',
+        color: colors.secondaryText,
+        fontFamily: Fonts.Regular,
+        fontWeight: 400
     },
     activeDistributorTabText: {
-        color: '#FF6B00',
+        color: '#F7941E',
         fontWeight: '600',
+        fontFamily: Fonts.Bold,
     },
     suggestedSection: {
         flexDirection: 'row',
@@ -133,12 +136,16 @@ const Linkagestyles = StyleSheet.create({
         paddingVertical: 12,
     },
     suggestedTitle: {
-        fontSize: 14,
-        color: '#666',
-        fontWeight: '500',
+        fontSize: 16,
+        color: colors.primaryText,
+        fontWeight: '400',
+        fontFamily: Fonts.Regular,
+        marginTop: 10
     },
     infoIcon: {
         marginLeft: 8,
+        marginTop: 10
+
     },
     // Preferred Distributors Selection Mode Styles
     preferredSelectionContainer: {
@@ -436,7 +443,7 @@ const Linkagestyles = StyleSheet.create({
     filterRow: {
         flexDirection: 'row',
         paddingHorizontal: 20,
-        paddingVertical: 12,
+        paddingVertical: 10,
         gap: 8,
         alignItems: 'center',
     },
@@ -454,6 +461,7 @@ const Linkagestyles = StyleSheet.create({
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 8,
+        width: "40%"
     },
     filterText: {
         fontSize: 14,
@@ -505,16 +513,19 @@ const Linkagestyles = StyleSheet.create({
     },
     distributorInfoColumn: {
         paddingRight: 12,
+        gap: 5
     },
     distributorRowName: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '400',
-        color: '#333',
+        color: colors.primaryText,
         marginBottom: 4,
+        fontFamily: Fonts.Regular
     },
     distributorRowCode: {
-        fontSize: 13,
-        color: '#999',
+        fontSize: 12,
+        color: colors.secondaryText,
+        fontFamily: Fonts.Regular
     },
     supplyTypeColumn: {
         paddingHorizontal: 8,
@@ -532,17 +543,16 @@ const Linkagestyles = StyleSheet.create({
         marginRight: 4,
     },
     actionColumn: {
-        alignItems: 'flex-end',
         paddingLeft: 8,
     },
     addButton: {
-        paddingVertical: 4,
         paddingHorizontal: 8,
     },
     addButtonText: {
-        fontSize: 15,
-        color: '#FF6B00',
-        fontWeight: '400',
+        fontSize: 13,
+        color: '#F7941E',
+        fontWeight: '600',
+        fontFamily: Fonts.Bold
     },
     divisionsContainer: {
         flexDirection: 'row',
@@ -2232,6 +2242,21 @@ const Linkagestyles = StyleSheet.create({
     footer: {
 
     },
+    flatheader: {
+        width: "100%",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        paddingHorizontal: 10,
+        paddingVertical: 20,
+        backgroundColor: "#FBFBFB"
+    },
+    flatheaderText: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: colors.secondaryText,
+        fontFamily: Fonts.Bold,
+        paddingLeft: 10,
+    }
 
 
 

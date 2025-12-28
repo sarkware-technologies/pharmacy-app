@@ -25,7 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from "../../../components"
 import { resetCustomersList, setShouldResetToAllTab } from '../../../redux/slices/customerSlice';
 import { customerAPI } from '../../../api/customer';
 import { SkeletonList } from '../../../components/SkeletonLoader';
@@ -52,26 +52,26 @@ import WorkflowTimelineModal from '../../../components/modals/WorkflowTimelineMo
 
 const CustomerSearch = ({ navigation, route }) => {
   const dispatch = useDispatch();
-  
+
   // Get activeTab from route params (passed from CustomerList)
   const activeTabFromRoute = route?.params?.activeTab || 'all';
-  
+
   // Get logged-in user data
   const loggedInUser = useSelector(state => state.auth.user);
-  
+
   // Local state for search results (not Redux)
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  
+
   const [searchText, setSearchText] = useState('');
   const [recentSearches] = useState([]);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
-  
+
   // State for modals and actions (same as CustomerList)
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState(null);
-  
+
   // Documents modal state
   const [showDocumentsModal, setShowDocumentsModal] = useState(false);
   const [customerDocuments, setCustomerDocuments] = useState(null);
@@ -80,7 +80,7 @@ const CustomerSearch = ({ navigation, route }) => {
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewSignedUrl, setPreviewSignedUrl] = useState(null);
-  
+
   // Block/Unblock state
   const [blockUnblockLoading, setBlockUnblockLoading] = useState(false);
 
@@ -137,7 +137,7 @@ const CustomerSearch = ({ navigation, route }) => {
       dispatch(resetCustomersList());
       dispatch(setShouldResetToAllTab(true)); // This will trigger refresh but preserve activeTab
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const searchInputRef = useRef(null);
@@ -214,7 +214,7 @@ const CustomerSearch = ({ navigation, route }) => {
 
       console.log(`🔍 Searching in "${activeTabFromRoute}" tab with payload:`, payload);
       const response = await customerAPI.getCustomersList(payload);
-      
+
       // API returns { data: { customers: [...], total: ... } }
       if (response?.data?.customers) {
         setSearchResults(response.data.customers);
@@ -237,12 +237,12 @@ const CustomerSearch = ({ navigation, route }) => {
 
   const handleSearch = (text) => {
     setSearchText(text);
-    
+
     // Clear existing timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     // Debounce search API call
     searchTimeoutRef.current = setTimeout(() => {
       performSearch(text);
@@ -251,16 +251,16 @@ const CustomerSearch = ({ navigation, route }) => {
 
 
 
-//   useEffect(() => {
-//   return () => {
-//     // Reset customers list when screen unmounts
-//     dispatch(resetCustomersList());
-//   };
-// }, []);
+  //   useEffect(() => {
+  //   return () => {
+  //     // Reset customers list when screen unmounts
+  //     dispatch(resetCustomersList());
+  //   };
+  // }, []);
 
   const handleRecentSearchClick = (search) => {
     const bounceAnim = new Animated.Value(1);
-    
+
     Animated.sequence([
       Animated.timing(bounceAnim, {
         toValue: 0.95,
@@ -463,15 +463,15 @@ const CustomerSearch = ({ navigation, route }) => {
       // 2️⃣ Prepare file name and determine save location
       const fileName = docInfo.fileName || docInfo.doctypeName || 'document';
       const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
-      
+
       // Determine if it's an image/video (for gallery visibility)
       const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(fileExtension);
       const isVideo = ['mp4', 'mov', 'avi', 'mkv', '3gp'].includes(fileExtension);
-      
+
       // Get appropriate directory
       let dirs = ReactNativeBlobUtil.fs.dirs;
       let downloadPath;
-      
+
       if (Platform.OS === 'android') {
         if (isImage) {
           // Save images to Pictures folder (visible in gallery)
@@ -554,7 +554,7 @@ const CustomerSearch = ({ navigation, route }) => {
     } catch (error) {
       console.error('Download error:', error);
       console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      
+
       // More specific error messages
       let errorMessage = 'Failed to download file';
       if (error.message) {
@@ -795,205 +795,30 @@ const CustomerSearch = ({ navigation, route }) => {
           },
         ]}
       >
-          <View style={styles.customerHeader}>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('CustomerDetail', { customer: item })}
-              style={styles.customerNameRow}
+        <View style={styles.customerHeader}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('CustomerDetail', { customerId: item?.stgCustomerId ?? item?.customerId, isStaging: item?.stgCustomerId ? true : false, })}
+
+            style={styles.customerNameRow}
+          >
+            <AppText
+              style={styles.customerName}
+              numberOfLines={1}
+              ellipsizeMode="tail"
             >
-              <AppText
-                style={styles.customerName}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.customerName}
-              </AppText>
-              <ChevronRight
-                height={12}
-                color={colors.primary}
-                style={{ marginLeft: 6 }}
-              />
-            </TouchableOpacity>
-            <View style={styles.actionsContainer}>
-              {item.statusName === 'NOT-ONBOARDED' && (
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => {
-                    const customerId = item.customerId || item.stgCustomerId;
-                    const isStaging = false;
-                    handleOnboardCustomer(
-                      navigation,
-                      customerId,
-                      isStaging,
-                      customerAPI,
-                      (toastConfig) => Toast.show(toastConfig),
-                      item.statusName
-                    );
-                  }}
-                >
-                  <Edit color="#666" />
-                </TouchableOpacity>
-              )}
-
-              {(item.statusName?.toLowerCase() === 'approved' || item.statusName?.toLowerCase() === 'active') && (
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => {
-                    const customerId = item.customerId || item.stgCustomerId;
-                    const isStaging = false;
-                    handleOnboardCustomer(
-                      navigation,
-                      customerId,
-                      isStaging,
-                      customerAPI,
-                      (toastConfig) => Toast.show(toastConfig),
-                      item.statusName
-                    );
-                  }}
-                >
-                  <Edit color="#666" />
-                </TouchableOpacity>
-              )}
-
+              {item.customerName}
+            </AppText>
+            <ChevronRight
+              height={12}
+              color={colors.primary}
+              style={{ marginLeft: 6 }}
+            />
+          </TouchableOpacity>
+          <View style={styles.actionsContainer}>
+            {item.statusName === 'NOT-ONBOARDED' && (
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => fetchCustomerDocuments(item)}
-              >
-                <Download color="#666" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.customerInfo}>
-            <View style={styles.infoRow}>
-              <AddrLine color="#999" />
-              <AppText 
-                style={[styles.infoText, { maxWidth: 80 }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.customerCode || item.stgCustomerId}
-              </AppText>
-              <AppText style={styles.divider}>|</AppText>
-              {item.cityName && (
-                <>
-                  <AppText 
-                    style={[styles.infoText, { maxWidth: 100 }]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {item.cityName}
-                  </AppText>
-                  <AppText style={styles.divider}>|</AppText>
-                </>
-              )}
-
-              <AppText 
-                style={[styles.infoText, { maxWidth: 80 }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.groupName}
-              </AppText>
-              <AppText style={styles.divider}>|</AppText>
-              <AppText
-                style={[styles.infoText, { flex: 1, maxWidth: 80 }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.customerType}
-              </AppText>
-
-              {item.customerType === 'Hospital' && (
-                <AlertFilled color="#999" style={styles.infoIcon} />
-              )}
-            </View>
-            <View style={styles.contactRow}>
-              <Phone color="#999" />
-              <AppText style={{ ...styles.contactText, marginRight: 15 }}>{item.mobile}</AppText>
-              <Email color="#999" style={styles.mailIcon} />
-              <AppText
-                style={[styles.contactText, { flex: 1, maxWidth: "100%" }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {item.email}
-              </AppText>
-            </View>
-          </View>
-
-          <View style={styles.statusRow}>
-            <TouchableOpacity
-              onPress={() => {
-                // stageId is always an array, get the first element
-                // Use fallback to stgCustomerId if stageId is not available (same as CustomerList)
-                const stageId = item.stageId && Array.isArray(item.stageId) 
-                  ? item.stageId 
-                  : (item.stgCustomerId ? [item.stgCustomerId] : null);
-                
-                console.log('🔍 Clicked status badge - stageId:', stageId, 'item:', item);
-                if (stageId && stageId.length > 0) {
-                  handleViewWorkflowTimeline(
-                    stageId,
-                    item.customerName,
-                    item.customerType
-                  );
-                } else {
-                  console.warn('⚠️ No stageId or stgCustomerId found for item:', item);
-                  Toast.show({
-                    type: 'error',
-                    text1: 'Error',
-                    text2: 'Customer ID not available',
-                  });
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
-                <AppText style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
-                  {item.statusName}
-                </AppText>
-              </View>
-            </TouchableOpacity>
-            {item.statusName === 'LOCKED' ? (
-              <TouchableOpacity
-                style={styles.unlockButton}
-                onPress={() => handleUnblockCustomer(item)}
-                disabled={blockUnblockLoading}
-              >
-                <UnLocked fill="#EF4444" />
-                <AppText style={styles.unlockButtonText}>Unblock</AppText>
-              </TouchableOpacity>
-            ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
-              <TouchableOpacity
-                style={styles.blockButton}
-                onPress={() => handleBlockCustomer(item)}
-                disabled={blockUnblockLoading}
-              >
-                <Locked fill="#666" />
-                <AppText style={styles.blockButtonText}>Block</AppText>
-              </TouchableOpacity>
-            ) : item.statusName === 'PENDING' && item.action === 'APPROVE' ? (
-              <View style={styles.pendingActions}>
-                <TouchableOpacity
-                  style={styles.approveButton}
-                  onPress={() => handleApprovePress(item)}
-                >
-                  <View style={styles.approveButtonContent}>
-                    <Icon name="checkmark-outline" size={18} color="white" />
-                    <AppText style={styles.approveButtonText}>Approve</AppText>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.rejectButton}
-                  onPress={() => handleRejectPress(item)}
-                >
-                  <CloseCircle color='#000'/>
-                </TouchableOpacity>
-              </View>
-            ) : item.statusName === 'NOT-ONBOARDED' ? (
-              <TouchableOpacity
-                style={styles.onboardButton}
                 onPress={() => {
                   const customerId = item.customerId || item.stgCustomerId;
                   const isStaging = false;
@@ -1005,17 +830,193 @@ const CustomerSearch = ({ navigation, route }) => {
                     (toastConfig) => Toast.show(toastConfig),
                     item.statusName
                   );
-                }}>
-                <AppText style={styles.onboardButtonText}>Onboard</AppText>
+                }}
+              >
+                <Edit color="#666" />
               </TouchableOpacity>
-            ) : null}
+            )}
+
+            {(item.statusName?.toLowerCase() === 'approved' || item.statusName?.toLowerCase() === 'active') && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  const customerId = item.customerId || item.stgCustomerId;
+                  const isStaging = false;
+                  handleOnboardCustomer(
+                    navigation,
+                    customerId,
+                    isStaging,
+                    customerAPI,
+                    (toastConfig) => Toast.show(toastConfig),
+                    item.statusName
+                  );
+                }}
+              >
+                <Edit color="#666" />
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => fetchCustomerDocuments(item)}
+            >
+              <Download color="#666" />
+            </TouchableOpacity>
           </View>
+        </View>
+
+        <View style={styles.customerInfo}>
+          <View style={styles.infoRow}>
+            <AddrLine color="#999" />
+            <AppText
+              style={[styles.infoText, { maxWidth: 80 }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.customerCode || item.stgCustomerId}
+            </AppText>
+            <AppText style={styles.divider}>|</AppText>
+            {item.cityName && (
+              <>
+                <AppText
+                  style={[styles.infoText, { maxWidth: 100 }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {item.cityName}
+                </AppText>
+                <AppText style={styles.divider}>|</AppText>
+              </>
+            )}
+
+            <AppText
+              style={[styles.infoText, { maxWidth: 80 }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.groupName}
+            </AppText>
+            <AppText style={styles.divider}>|</AppText>
+            <AppText
+              style={[styles.infoText, { flex: 1, maxWidth: 80 }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.customerType}
+            </AppText>
+
+            {item.customerType === 'Hospital' && (
+              <AlertFilled color="#999" style={styles.infoIcon} />
+            )}
+          </View>
+          <View style={styles.contactRow}>
+            <Phone color="#999" />
+            <AppText style={{ ...styles.contactText, marginRight: 15 }}>{item.mobile}</AppText>
+            <Email color="#999" style={styles.mailIcon} />
+            <AppText
+              style={[styles.contactText, { flex: 1, maxWidth: "100%" }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.email}
+            </AppText>
+          </View>
+        </View>
+
+        <View style={styles.statusRow}>
+          <TouchableOpacity
+            onPress={() => {
+              // stageId is always an array, get the first element
+              // Use fallback to stgCustomerId if stageId is not available (same as CustomerList)
+              const stageId = item.stageId && Array.isArray(item.stageId)
+                ? item.stageId
+                : (item.stgCustomerId ? [item.stgCustomerId] : null);
+
+              console.log('🔍 Clicked status badge - stageId:', stageId, 'item:', item);
+              if (stageId && stageId.length > 0) {
+                handleViewWorkflowTimeline(
+                  stageId,
+                  item.customerName,
+                  item.customerType
+                );
+              } else {
+                console.warn('⚠️ No stageId or stgCustomerId found for item:', item);
+                Toast.show({
+                  type: 'error',
+                  text1: 'Error',
+                  text2: 'Customer ID not available',
+                });
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.statusName) }]}>
+              <AppText style={[styles.statusText, { color: getStatusTextColor(item.statusName) }]}>
+                {item.statusName}
+              </AppText>
+            </View>
+          </TouchableOpacity>
+          {item.statusName === 'LOCKED' ? (
+            <TouchableOpacity
+              style={styles.unlockButton}
+              onPress={() => handleUnblockCustomer(item)}
+              disabled={blockUnblockLoading}
+            >
+              <UnLocked fill="#EF4444" />
+              <AppText style={styles.unlockButtonText}>Unblock</AppText>
+            </TouchableOpacity>
+          ) : (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED') ? (
+            <TouchableOpacity
+              style={styles.blockButton}
+              onPress={() => handleBlockCustomer(item)}
+              disabled={blockUnblockLoading}
+            >
+              <Locked fill="#666" />
+              <AppText style={styles.blockButtonText}>Block</AppText>
+            </TouchableOpacity>
+          ) : item.statusName === 'PENDING' && item.action === 'APPROVE' ? (
+            <View style={styles.pendingActions}>
+              <TouchableOpacity
+                style={styles.approveButton}
+                onPress={() => handleApprovePress(item)}
+              >
+                <View style={styles.approveButtonContent}>
+                  <Icon name="checkmark-outline" size={18} color="white" />
+                  <AppText style={styles.approveButtonText}>Approve</AppText>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.rejectButton}
+                onPress={() => handleRejectPress(item)}
+              >
+                <CloseCircle color='#000' />
+              </TouchableOpacity>
+            </View>
+          ) : item.statusName === 'NOT-ONBOARDED' ? (
+            <TouchableOpacity
+              style={styles.onboardButton}
+              onPress={() => {
+                const customerId = item.customerId || item.stgCustomerId;
+                const isStaging = false;
+                handleOnboardCustomer(
+                  navigation,
+                  customerId,
+                  isStaging,
+                  customerAPI,
+                  (toastConfig) => Toast.show(toastConfig),
+                  item.statusName
+                );
+              }}>
+              <AppText style={styles.onboardButtonText}>Onboard</AppText>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </Animated.View>
     );
   };
 
   const EmptyState = () => (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.emptyState,
         {
@@ -1031,122 +1032,122 @@ const CustomerSearch = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-        
-        {/* Header with Search Bar */}
-      <Animated.View
-        style={[
-          styles.header,
-          {
-            opacity: fadeAnim,
-            transform: [
-              { translateY: slideAnim },
-              { scale: searchBarScale },
-            ],
-          },
-        ]}
-      >
-        <View style={styles.searchBar}>
-          <TouchableOpacity 
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Icon name="chevron-back" size={24} color={colors.primary} />
-          </TouchableOpacity>
-          
-          <AppInput
-            ref={searchInputRef}
-            style={styles.searchInput}
-            placeholder="Search by name or code"
-            placeholderTextColor="#999"
-            value={searchText}
-            onChangeText={handleSearch}
-            autoFocus
-            returnKeyType="search"
-          />
-          {searchText.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                setSearchText('');
-                dispatch(resetCustomersList());
-              }}
-              style={styles.clearButton}
-            >
-              <Icon name="close-circle" size={20} color="#999" />
-            </TouchableOpacity>
-          )}
-        </View>
-        
-        <TouchableOpacity 
-          style={styles.filterButton}
-          onPress={() => setFilterModalVisible(true)}
-        >
-          <Icon name="options-outline" size={24} color="#666" />
-        </TouchableOpacity>
-      </Animated.View>
 
-      {/* Recent Searches */}
-      {searchText.length === 0 && recentSearches.length > 0 && (
+        {/* Header with Search Bar */}
         <Animated.View
           style={[
-            styles.recentSearchContainer,
+            styles.header,
             {
               opacity: fadeAnim,
+              transform: [
+                { translateY: slideAnim },
+                { scale: searchBarScale },
+              ],
             },
           ]}
         >
-          <AppText style={styles.recentSearchTitle}>Recent Searches</AppText>
-          {recentSearches.map((search, index) => (
+          <View style={styles.searchBar}>
             <TouchableOpacity
-              key={index}
-              style={styles.recentSearchItem}
-              onPress={() => handleRecentSearchClick(search)}
-              activeOpacity={0.7}
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
             >
-              <Icon name="time-outline" size={18} color="#999" />
-              <AppText style={styles.recentSearchText}>{search}</AppText>
-              <Icon name="arrow-forward-outline" size={16} color="#999" />
+              <Icon name="chevron-back" size={24} color={colors.primary} />
             </TouchableOpacity>
-          ))}
-        </Animated.View>
-      )}
 
-      {/* Search Results */}
-      {searchText.length > 0 && searchLoading ? (
-        <SkeletonList items={5} />
-      ) : searchText.length > 0 && searchResults.length > 0 ? (
-        <FlatList
-          data={searchResults}
-          renderItem={renderSearchResult}
-          keyExtractor={(item) => item.customerId || item.stgCustomerId || item.id}
-          contentContainerStyle={styles.resultsList}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        />
-      ) : searchText.length > 0 && searchResults.length === 0 && !searchLoading ? (
-        <View style={styles.noResults}>
-          <Icon name="search-outline" size={60} color="#DDD" />
-          <AppText style={styles.noResultsText}>No results found for "{searchText}"</AppText>
-          <AppText style={styles.noResultsSubtext}>Try searching with different keywords</AppText>
-        </View>
-      ) : searchText.length === 0 && recentSearches.length === 0 ? (
-        <EmptyState />
-      ) : null}
+            <AppInput
+              ref={searchInputRef}
+              style={styles.searchInput}
+              placeholder="Search by name or code"
+              placeholderTextColor="#999"
+              value={searchText}
+              onChangeText={handleSearch}
+              autoFocus
+              returnKeyType="search"
+            />
+            {searchText.length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchText('');
+                  dispatch(resetCustomersList());
+                }}
+                style={styles.clearButton}
+              >
+                <Icon name="close-circle" size={20} color="#999" />
+              </TouchableOpacity>
+            )}
+          </View>
 
-      {/* Keyboard with Done button */}
-      {Platform.OS === 'ios' && (
-        <View style={styles.keyboardAccessory}>
           <TouchableOpacity
-            style={styles.doneButton}
-            onPress={() => Keyboard.dismiss()}
+            style={styles.filterButton}
+            onPress={() => setFilterModalVisible(true)}
           >
-            <AppText style={styles.doneButtonText}>DONE</AppText>
+            <Icon name="options-outline" size={24} color="#666" />
           </TouchableOpacity>
-        </View>)}
+        </Animated.View>
+
+        {/* Recent Searches */}
+        {searchText.length === 0 && recentSearches.length > 0 && (
+          <Animated.View
+            style={[
+              styles.recentSearchContainer,
+              {
+                opacity: fadeAnim,
+              },
+            ]}
+          >
+            <AppText style={styles.recentSearchTitle}>Recent Searches</AppText>
+            {recentSearches.map((search, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.recentSearchItem}
+                onPress={() => handleRecentSearchClick(search)}
+                activeOpacity={0.7}
+              >
+                <Icon name="time-outline" size={18} color="#999" />
+                <AppText style={styles.recentSearchText}>{search}</AppText>
+                <Icon name="arrow-forward-outline" size={16} color="#999" />
+              </TouchableOpacity>
+            ))}
+          </Animated.View>
+        )}
+
+        {/* Search Results */}
+        {searchText.length > 0 && searchLoading ? (
+          <SkeletonList items={5} />
+        ) : searchText.length > 0 && searchResults.length > 0 ? (
+          <FlatList
+            data={searchResults}
+            renderItem={renderSearchResult}
+            keyExtractor={(item) => item.customerId || item.stgCustomerId || item.id}
+            contentContainerStyle={styles.resultsList}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          />
+        ) : searchText.length > 0 && searchResults.length === 0 && !searchLoading ? (
+          <View style={styles.noResults}>
+            <Icon name="search-outline" size={60} color="#DDD" />
+            <AppText style={styles.noResultsText}>No results found for "{searchText}"</AppText>
+            <AppText style={styles.noResultsSubtext}>Try searching with different keywords</AppText>
+          </View>
+        ) : searchText.length === 0 && recentSearches.length === 0 ? (
+          <EmptyState />
+        ) : null}
+
+        {/* Keyboard with Done button */}
+        {Platform.OS === 'ios' && (
+          <View style={styles.keyboardAccessory}>
+            <TouchableOpacity
+              style={styles.doneButton}
+              onPress={() => Keyboard.dismiss()}
+            >
+              <AppText style={styles.doneButtonText}>DONE</AppText>
+            </TouchableOpacity>
+          </View>)}
       </KeyboardAvoidingView>
 
       {/* Filter Modal */}
@@ -1583,7 +1584,7 @@ const styles = StyleSheet.create({
   },
 
 
-   customerCard: {
+  customerCard: {
     backgroundColor: '#fff',
     marginHorizontal: 16,
     marginTop: 12,

@@ -18,7 +18,8 @@ const CustomDropdown = ({
     onChange,
     children,
     multiple = false,
-    dref
+    dref,
+    disabled
 }) => {
     /* -------------------- Hooks -------------------- */
     const inputRef = dref ?? useRef(null);
@@ -79,6 +80,7 @@ const CustomDropdown = ({
                 ref={inputRef}
                 onPress={openDropdown}
                 activeOpacity={0.8}
+                disabled={disabled}
             >
                 {children}
             </TouchableOpacity>

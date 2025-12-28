@@ -395,7 +395,7 @@ export const customerAPI = {
     },
 
     // Get field list (field team members with customerId and isStaging)
-    getFieldList: async (page = 1, limit = 20, customerId, isStaging = false) => {
+    getFieldList: async ({ page = 1, limit = 20, customerId, isStaging = false }) => {
         try {
             const payload = {
                 page,

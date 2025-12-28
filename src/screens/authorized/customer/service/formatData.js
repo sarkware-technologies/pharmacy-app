@@ -99,7 +99,7 @@ const applyMappingApproval = (
             return {
               ...p,
               ...(mappedChildValue !== null &&
-              mappedChildValue !== undefined
+                mappedChildValue !== undefined
                 ? { isApproved: mappedChildValue, action: "APPROVE" }
                 : {}),
             };
@@ -293,6 +293,133 @@ const removeKeyFromMapping = (data) => {
 };
 
 /* -------------------- EXPORTS -------------------- */
+
+
+const findAndUpdate = ({ mapping, tab, childTab, customerId, parentId, updateValue }) => {
+
+  const updatedTabData = mapping[tab]?.map((item) => {
+    // 👉 Child level update
+    if (childTab && parentId && item.id === parentId) {
+      return {
+        ...item,
+        [childTab]: item[childTab]?.map((child) =>
+          child.id == customerId
+            ? { ...child, ...updateValue }
+            : child
+        ),
+      };
+    }
+
+    // 👉 Parent level update
+    if (!childTab && item.id == customerId) {
+      return {
+        ...item,
+        ...updateValue
+      };
+    }
+
+    return item;
+  });
+
+  const updatedMapping = {
+    ...mapping,
+    [tab]: updatedTabData,
+  };
+  return updatedMapping;
+}
+
+
+
+function transformCustomerData(apiData) {
+  const d = apiData;
+
+  return {
+    typeId: d.typeId,
+    categoryId: d.categoryId,
+    subCategoryId: d.subCategoryId,
+    licenceDetails: {
+      licence: (d.licenceDetails?.licence || []).map((l) => ({
+        licenceTypeId: l.licenceTypeId,
+        licenceNo: l.licenceNo,
+        licenceValidUpto: l.licenceValidUpto,
+        hospitalCode: l.hospitalCode,
+        licenceTypeCode: l.licenceTypeCode,
+        licenceTypeName: l.licenceTypeName,
+      })),
+      registrationDate: d.licenceDetails?.registrationDate,
+    },
+
+    customerId: Number(d.id),
+    stgCustomerId: Number(d.id),
+    customerDocs: (d.docType || []).map((doc) => ({
+      s3Path: doc.s3Path,
+      docTypeId: Number(doc.doctypeId),
+      fileName: doc.fileName,
+      customerId: Number(d.id),
+      id: Number(doc.docId),
+    })),
+
+    isBuyer: d.isBuyer,
+    customerGroupId: d.groupDetails?.customerGroupId,
+    generalDetails: {
+      name: d.generalDetails?.customerName,
+      shortName: d.generalDetails?.shortName,
+      address1: d.generalDetails?.address1,
+      address2: d.generalDetails?.address2,
+      address3: d.generalDetails?.address3,
+      address4: d.generalDetails?.address4,
+      pincode: d.generalDetails?.pincode,
+      area: d.generalDetails?.area,
+      cityId: d.generalDetails?.cityId,
+      stateId: d.generalDetails?.stateId,
+      ownerName: d.generalDetails?.ownerName,
+      clinicName: d.generalDetails?.clinicName,
+      specialist: d.generalDetails?.specialist,
+      areaId: d.generalDetails?.areaId,
+    },
+    securityDetails: {
+      mobile: d.securityDetails?.mobile,
+      email: d.securityDetails?.email,
+      panNumber: d.securityDetails?.panNumber,
+      gstNumber: d.securityDetails?.gstNumber,
+    },
+    mapping: {
+      hospitals: (d.mapping?.hospitals || []).map((item) => ({
+        id: Number(item.customerId),
+        isNew: false,
+      })),
+
+      doctors: (d.mapping?.doctors || []).map((item) => ({
+        id: Number(item.customerId),
+        isNew: false,
+      })),
+
+      pharmacy: (d.mapping?.pharmacy || []).map((item) => ({
+        id: Number(item.customerId),
+        isNew: false,
+      })),
+
+      groupHospitals: (d.mapping?.groupHospitals || []).map((item) => ({
+        id: Number(item.customerId),
+        isNew: false,
+      })),
+    },
+    suggestedDistributors: (d.suggestedDistributors || []).map((s) => ({
+      distributorCode: s.distributorCode,
+      distributorName: s.distributorName,
+      city: s.city,
+      customerId: Number(s.customerId),
+    })),
+    isEmailVerified: d.isEmailVerified,
+    isMobileVerified: d.isMobileVerified,
+    isExisting: d.isExisting,
+    divisions: [],
+    isChildCustomer: false,
+    stationCode: d.stationCode,
+    isAssignedToCustomer: false,
+  };
+}
+
 export {
   formatRegisterData,
   mergeCustomerObjects,
@@ -302,4 +429,6 @@ export {
   findAndUpdateMapping,
   isAllApprovedChecked,
   removeKeyFromMapping,
+  findAndUpdate,
+  transformCustomerData
 };

@@ -1,4 +1,4 @@
-import { StatusBar, TouchableOpacity, View } from "react-native";
+import { Modal, StatusBar, TouchableOpacity, View } from "react-native";
 import { AppText } from "../../../components";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useCustomerLinkage } from "./service/useCustomerLinkage"
@@ -15,6 +15,10 @@ import Linkage from "../../../components/icons/Linkage";
 import { colors } from "../../../styles/colors";
 import DetailsView from "./linkage/details"
 import LinkageView from "./linkage/linkage"
+import ChildLinkageDetails from "./childLinkage"
+import { customerAPI } from "../../../api/customer";
+import { transformCustomerData } from "./service/formatData";
+
 const CustomerDetails = () => {
     const navigation = useNavigation();
     const route = useRoute();
@@ -35,8 +39,13 @@ const CustomerDetails = () => {
     });
 
     const [customerDetails, setCustomerDetails] = useState();
+    const [draftValue, setDraftValue] = useState();
     const [loading, setLoading] = useState(true);
     const [active, setActiveTab] = useState(activeTab);
+    const [childCustomer, setChildCustomer] = useState(null);
+    useEffect(() => {
+        console.log(childCustomer, 3498273)
+    }, [childCustomer])
 
     useEffect(() => {
         if (data && !isLoading) {
@@ -46,11 +55,57 @@ const CustomerDetails = () => {
         else {
             setLoading(false);
         }
+        setDraftValue(draft ?? {});
         console.log(data, draft, hasDraft, isLoading, 2938749283)
     }, [data, isLoading])
 
-    const saveDraft = (action, data) => {
+    const saveDraft = async (action, data) => {
         setCustomerDetails((prev) => ({ ...prev, ...data }));
+        if (customerDetails?.instance) {
+            const instance = customerDetails?.instance;
+            const draftEditPayload = {
+                stepOrder: instance?.stepInstances?.[0]?.stepOrder || 1,
+                parallelGroup: instance?.stepInstances?.[0]?.parallelGroup,
+                comments: '',
+                actorId: instance?.stepInstances?.[0]?.assignedUserId,
+                dataChanges: {
+                    ...draftValue,
+                    ...data
+                },
+            };
+            setDraftValue(draftEditPayload?.dataChanges)
+            await customerAPI.draftEdit(instance?.workflowInstance?.id, draftEditPayload);
+        }
+        else {
+            if (!["PENDING", "IN_PROGRESS"].includes(customerDetails?.statusName ?? "")) {
+                if (action == "divisions") {
+                    const divi = data?.divisions.map((e) => {
+                        return {
+                            divisionId: parseInt(e?.divisionId),
+                            isActive: true,
+                        };
+                    });
+                    await customerAPI.linkDivisions(customerId, { divisions: divi });
+                } else if (action == "distributors") {
+                    const distributor = data?.distributors?.map((dist) => ({
+                        distributorId: Number(dist?.id),
+                        divisions:
+                            dist?.divisions?.map((div) => ({
+                                id: Number(div?.divisionId),
+                                isActive: true,
+                            })) ?? [],
+                        supplyModeId: Number(dist?.supplyMode ?? 3),
+                        margin: Number(dist?.margin ?? 0),
+                        isActive: dist?.isActive,
+                    }));
+                    await customerAPI.linkDistributorDivisions(customerId, { mappings: distributor })
+                } else if (action == "customerGroup") {
+                    const cleanedPayload = transformCustomerData(customerDetails);
+                    await customerAPI.updateCustomerGroup(customerId, { ...cleanedPayload, ...{ customerGroupId: data?.customerGroupId }, })
+
+                }
+            }
+        }
         // console.log(action, data, 239482637)
         // if (action == "divisions") {
         //     setCustomerDetails((prev) => ({ ...prev, ...data }));
@@ -128,9 +183,17 @@ const CustomerDetails = () => {
                 </TouchableOpacity>
             </View>
 
-            {active == "details" ? <DetailsView customerData={customerDetails} loading={isLoading} saveDraft={saveDraft} /> : <LinkageView customerData={customerDetails} loading={isLoading} isChild={false} saveDraft={saveDraft} />}
+            {active == "details" ? <DetailsView customerData={customerDetails} loading={isLoading} saveDraft={saveDraft} /> : <LinkageView setChildCustomer={setChildCustomer} customerData={customerDetails} loading={isLoading} isChild={false} saveDraft={saveDraft} />}
 
+            <Modal
+                visible={childCustomer != null}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setChildCustomer(null)}
+            >
+                <ChildLinkageDetails parantCustomer={childCustomer} setChildCustomer={setChildCustomer} onClose={() => setChildCustomer(null)} activeTab={"details"} customerId={childCustomer?.customer?.id} isStaging={childCustomer?.isStaging} />
 
+            </Modal>
         </SafeAreaView>
     )
 

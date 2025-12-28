@@ -171,10 +171,10 @@ export const LinkagedTab = ({
     if (isBeingApproved) {
       // Item being approved gets isApproved: true
       formatted.isApproved = true;
-    } 
-    
-    
-    if (mappingItem.hasOwnProperty('isApproved') ) {
+    }
+
+
+    if (mappingItem.hasOwnProperty('isApproved')) {
       // Preserve existing isApproved: true for other items
       formatted.isApproved = mappingItem.isApproved;
     }
@@ -205,8 +205,8 @@ export const LinkagedTab = ({
     if (isBeingRejected) {
       // Rejected item gets isActive: false
       formatted.isApproved = false;
-    } 
-    
+    }
+
     if (mappingItem.hasOwnProperty('isApproved')) {
       // Preserve existing isActive value for other items
       formatted.isApproved = mappingItem.isApproved;
@@ -880,7 +880,7 @@ export const LinkagedTab = ({
 
 
 
-      const response = await customerAPI.getFieldList(page, 10, customerId || selectedCustomer?.stgCustomerId, isStaging);
+      const response = await customerAPI.getFieldList({ page, limit: 10, customerId: customerId || selectedCustomer?.stgCustomerId, isStaging });
 
       if (response?.data) {
         // Extract data from response - could be in different formats
@@ -964,12 +964,12 @@ export const LinkagedTab = ({
         .filter(id => id != null && id !== '' && id !== 'undefined');
 
       // Call API to get preferred distributors
-      const response = await distributorAPI_getPreferredDistributors(
-        1, // page
-        20, // limit
+      const response = await distributorAPI_getPreferredDistributors({
+        page: 1, // page
+        limit: 20, // limit
         stationCode,
         divisionIds,
-      );
+      });
 
       if (response?.distributors && Array.isArray(response.distributors)) {
         // Filter out linked distributors before setting the data
@@ -2856,7 +2856,7 @@ export const LinkagedTab = ({
                     { flex: 1, textAlign: 'center' },
                   ]}
                 >
-                   Type
+                  Type
                 </AppText>
                 <AppText
                   style={[
