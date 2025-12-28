@@ -39,6 +39,7 @@ import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
 import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler, filterForField } from '../../../utils/formValidation';
+import SearchableDropdownModal from '../../../components/modals/SearchableDropdownModal';
 
 // Default document types for file uploads (will be updated from API for licenses)
 const DOC_TYPES = {
@@ -80,12 +81,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
   const isMounted = useRef(true);
 
   // State for license types fetched from API
-  const [licenseTypes, setLicenseTypes] = useState({
-    // LICENSE_20: { id: 1, docTypeId: 3, name: '20', code: 'LIC20' },
-    // LICENSE_21: { id: 3, docTypeId: 5, name: '21', code: 'LIC21' },
-    // LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
-    // LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
-  });
+  const [licenseTypes, setLicenseTypes] = useState({});
 
   // Form state
   const [formData, setFormData] = useState({
@@ -175,6 +171,8 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
   const [areas, setAreas] = useState([]); // <-- NEW
+  const [searchCities, setSearchCities] = useState(null);
+
   const [uploadedAreas, setUploadedAreas] = useState([]); // already present
 
   // OTP states
@@ -228,15 +226,368 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
   const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
   const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
 
-  // Modal states for hospital and pharmacy selectors
-  const [showHospitalModal, setShowHospitalModal] = useState(false);
-  const [showPharmacyModal, setShowPharmacyModal] = useState(false);
-
   // Customer groups
   const [customerGroups, setCustomerGroups] = useState([]);
 
+
+
+
+  // useeffect section start.////////////////////////////////////////
+
+  useEffect(() => {
+    onSaveDraftRef?.(handleSaveAsDraft);
+    return () => onSaveDraftRef?.(null);
+  }, [onSaveDraftRef, handleSaveAsDraft]);
+
+  useEffect(() => {
+    if (verificationStatus.mobile || verificationStatus.email) {
+      handleSaveAsDraft();
+    }
+  }, [verificationStatus.mobile, verificationStatus.email]);
+  // Set navigation header - always hide default header, we use custom header
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false, // Always hide default header, we use custom header
+      headerBackTitleVisible: false,
+    });
+  }, [navigation]);
+
+  useEffect(() => {
+    // Entry animation
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Load initial data
+    loadInitialData();
+
+    // Handle edit mode and onboard mode - fetch customer details
+    if (isEditMode || isOnboardMode) {
+      if (routeCustomerData) {
+        // Use provided customer data
+        populateFormFromCustomerData(routeCustomerData);
+      } else if (customerId) {
+        // Fetch customer details from API (same API for both edit and onboard)
+        fetchCustomerDetailsForEdit();
+      }
+    }
+
+    return () => {
+      // Cleanup function to reset all states
+      setShowOTP({ mobile: false, email: false });
+      setOtpValues({ mobile: ['', '', '', ''], email: ['', '', '', ''] });
+      setOtpTimers({ mobile: 30, email: 30 });
+      setGeneratedOTP({ mobile: null, email: null });
+      setLoading(false);
+      setRegistering(false);
+      setVerificationStatus({
+        mobile: false,
+        email: false,
+        pan: false,
+        gst: false,
+      });
+      setErrors({});
+      setFormData({
+        // License Details
+        license20: '',
+        license20File: null,
+        license20ExpiryDate: null,
+        license20b: '',
+        license20bFile: null,
+        license20bExpiryDate: null,
+        license21: '',
+        license21File: null,
+        license21ExpiryDate: null,
+        license21b: '',
+        license21bFile: null,
+        license21bExpiryDate: null,
+        pharmacyImageFile: null,
+
+        // General Details
+        pharmacyName: '',
+        shortName: '',
+        address1: '',
+        address2: '',
+        address3: '',
+        address4: '',
+        pincode: '',
+        area: '',
+        areaId: '',
+        city: '',
+        cityId: '',
+        state: '',
+        stateId: '',
+
+        // Security Details
+        mobileNumber: '',
+        emailAddress: '',
+        panFile: null,
+        panNumber: '',
+        gstFile: null,
+        gstNumber: '',
+
+        // Mapping
+        hospitalCode: '',
+        hospitalName: '',
+
+        // Customer group
+        customerGroupId: 1,
+        isIPD: false,
+        isGOVT: false,
+        isBuyer: true,
+
+        // Stockist Suggestions
+        suggestedDistributors: [],
+      });
+      setDocumentIds({
+        license20: null,
+        license21: null,
+        license20b: null,
+        license21b: null,
+        pharmacyImage: null,
+        pan: null,
+        gst: null,
+      });
+      setLicenseTypes({});
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // Load initial data
+    loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // OTP Timer Effect
+  useEffect(() => {
+    const timers = {};
+
+    Object.keys(otpTimers).forEach(key => {
+      if (showOTP[key] && otpTimers[key] > 0) {
+        timers[key] = setTimeout(() => {
+          setOtpTimers(prev => ({
+            ...prev,
+            [key]: prev[key] - 1,
+          }));
+        }, 1000);
+      }
+    });
+
+    return () => {
+      Object.values(timers).forEach(timer => clearTimeout(timer));
+    };
+  }, [otpTimers, showOTP]);
+
+
+  // Auto-populate city, state, and area when pincode lookup (or OCR) completes
+  useEffect(() => {
+    // Use canonical cities/states from local variables (synced from the hook)
+    if (cities && cities.length > 0 && states && states.length > 0) {
+      const firstCity = cities[0];
+      const firstState = states[0];
+
+      setFormData(prev => ({
+        ...prev,
+        city: prev.city || firstCity.name,
+        cityId: prev.cityId || firstCity.id,
+        state: prev.state || firstState.name,
+        stateId: prev.stateId || firstState.id,
+      }));
+    }
+
+    // Prefer OCR uploadedAreas if present; otherwise use canonical 'areas'
+    if (uploadedAreas && uploadedAreas.length > 0 && !formData.area) {
+      const firstArea = uploadedAreas[0];
+      setFormData(prev => ({
+        ...prev,
+        area: firstArea.name || prev.area,
+        areaId: firstArea.id || prev.areaId,
+      }));
+    } else if (areas && areas.length > 0 && !formData.area) {
+      const firstArea = areas[0];
+      setFormData(prev => ({
+        ...prev,
+        area: firstArea.name || prev.area,
+        areaId: firstArea.id || prev.areaId,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cities, states, areas, uploadedAreas]);
+
+  // Keep local canonical lists in sync with pincode hook results
+   useEffect(() => {
+      // Map pincodeCities → cities
+      if (Array.isArray(pincodeCities) && pincodeCities.length > 0) {
+        const mappedCities = pincodeCities.map(c => ({
+          id: c.id ?? c.value,
+          name: c.name || c.cityName || c.city || c.label || '',
+        }));
+        setCities(mappedCities);
+  
+        // Auto-select the first city if none selected or cityId is falsy
+        const firstCity = mappedCities[0];
+        setFormData(prev => ({
+          ...prev,
+          city: prev.city || firstCity?.name || '',
+          cityId: prev.cityId || firstCity?.id || '',
+        }));
+      }
+  
+      // Map pincodeStates → states
+      if (Array.isArray(pincodeStates) && pincodeStates.length > 0) {
+        const mappedStates = pincodeStates.map(s => ({
+          id: s.id ?? s.value,
+          name: s.name || s.stateName || s.state || s.label || '',
+        }));
+        setStates(mappedStates);
+  
+        // Auto-select the first state if none selected or stateId is falsy
+        const firstState = mappedStates[0];
+        setFormData(prev => ({
+          ...prev,
+          state: prev.state || firstState?.name || '',
+          stateId: prev.stateId || firstState?.id || '',
+        }));
+      }
+  
+      // Map pincodeAreas → areas (this 'areas' variable is the component's local state)
+      if (Array.isArray(pincodeAreas) && pincodeAreas.length > 0) {
+        const mappedAreas = pincodeAreas.map(a => ({
+          id: a.id ?? a.value,
+          name: a.name || a.label || '',
+          cityId: a.cityId || a.raw?.cityId || '',
+        }));
+        setAreas(mappedAreas);
+  
+        // Auto-select first area if none selected
+        const firstArea = mappedAreas[0];
+        setFormData(prev => ({
+          ...prev,
+          area: prev.area || firstArea?.name || '',
+          areaId: prev.areaId || firstArea?.id || '',
+        }));
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pincodeCities, pincodeStates, pincodeAreas]);
+
+  // Check form validity whenever form data, document IDs, or verification status changes
+  useEffect(() => {
+    // Validate required fields
+    let isValid = true;
+    if (!formData.license20) isValid = false;
+    else if (!documentIds.license20) isValid = false;
+    else if (!formData.license20ExpiryDate) isValid = false;
+    else if (!formData.license21) isValid = false;
+    else if (!documentIds.license21) isValid = false;
+    else if (!formData.license21ExpiryDate) isValid = false;
+    else if (!formData.license20b) isValid = false;
+    else if (!documentIds.license20b) isValid = false;
+    else if (!formData.license20bExpiryDate) isValid = false;
+    else if (!formData.license21b) isValid = false;
+    else if (!documentIds.license21b) isValid = false;
+    else if (!formData.license21bExpiryDate) isValid = false;
+    else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
+    else if (!documentIds.pan) isValid = false;
+    else if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode)) isValid = false;
+    else if (!formData.area) isValid = false;
+    else if (!formData.cityId) isValid = false;
+    else if (!formData.stateId) isValid = false;
+    else if (!formData.stationCode) isValid = false;
+    else if (!formData.pharmacyName) isValid = false;
+    else if (!formData.address1) isValid = false;
+    else if (!formData.address2) isValid = false;
+    else if (!formData.address3) isValid = false;
+    else if (!formData.mobileNumber || !/^\d{10}$/.test(formData.mobileNumber)) isValid = false;
+    else if (!verificationStatus.mobile) isValid = false;
+    else if (!formData.emailAddress || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress)) isValid = false;
+    else if (!verificationStatus.email) isValid = false;
+    else if (formData.gstNumber && !isValidGST(formData.gstNumber)) isValid = false;
+    else if (formData.selectedDoctors.length === 0 && formData.selectedHospitals.length === 0) isValid = false;
+
+
+    setIsFormValid(isValid);
+  }, [formData, documentIds, verificationStatus]);
+
+  // useeffect end//////////////////////////////////////////////////////
+
+
+  //function section start/////////////////////////////////////////////////////
+
+
+   const handleCitySearch = async (text) => {
+      try {
+        const response = await customerAPI.getCitiesList({
+          page: 1,
+          limit: 50,
+          search: text,
+        });
+        const cityList = response?.data?.cities || [];
+        const formattedCities = cityList.map(city => ({
+          id: Number(city.id),
+          name: city.cityName,
+        }));
+  
+        setSearchCities(formattedCities);
+      } catch (error) {
+        console.error('Error fetching cities:', error);
+      }
+    };
+  
+    const addNewCity = async (cityName) => {
+      if (!formData.stateId) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: `Please select state to create city`,
+          position: 'top',
+        });
+
+        return
+      }
+      try {
+        const response = await customerAPI.createCity({
+          name: cityName,
+          stateId: formData?.stateId, // based on PIN/state
+        });
+  
+        if (response?.success) {
+          Toast.show({
+            type: 'success',
+            text1: 'City Created',
+            text2: `City created successfully`,
+            position: 'top',
+          });
+        }
+        const newCity = {
+          id: Number(response?.data?.cities[0]?.id),
+          name: response?.data?.cities[0]?.cityName,
+        };
+        setCities(prev => [newCity, ...prev]);
+        setFormData(prev => ({
+          ...prev,
+          cityId: newCity.id,
+          city: newCity.name,
+        }));
+        setSearchCities(null)
+  
+        setShowCityModal(false);
+      } catch (e) {
+        console.error('Add city failed', e);
+      }
+    };
+  
   // Save as Draft handler - only sends filled fields
-  const handleSaveAsDraft =async () => {
+  const handleSaveAsDraft = async () => {
     try {
       setLoading(true);
 
@@ -251,9 +602,9 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
           isExisting: false,
           isBuyer: formData.isBuyer !== undefined ? formData.isBuyer : true,
           customerGroupId: formData.customerGroupId || null,
-                    stationCode: formData.stationCode || null,
+          stationCode: formData.stationCode || null,
 
-            ...(formData.stgCustomerId && {
+          ...(formData.stgCustomerId && {
             stgCustomerId: formData.stgCustomerId,
           }),
         };
@@ -404,8 +755,8 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
         }
 
         // Add suggestedDistributors if there are any stockists
-        if (formData.stockists && formData.stockists.length > 0 && formData.stockists[0].name) {
-          draftPayload.suggestedDistributors = formData.stockists
+        if (formData?.stockists && formData?.stockists.length > 0 && formData?.stockists[0].name) {
+          draftPayload.suggestedDistributors = formData?.stockists
             .filter(s => s.name && s.name.trim())
             .map(stockist => ({
               distributorCode: stockist.code || '',
@@ -454,7 +805,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
         (uploadedDocs && uploadedDocs.length > 0) ||
         (formData.selectedHospitals && formData.selectedHospitals.length > 0) ||
         (formData.selectedDoctors && formData.selectedDoctors.length > 0) ||
-        (formData.stockists && formData.stockists.length > 0 && formData.stockists.some(s => s.name || s.code || s.city));
+        (formData?.stockists && formData?.stockists.length > 0 && formData?.stockists.some(s => s.name || s.code || s.city));
 
       const hasData = hasPayloadData || hasFormData;
 
@@ -480,7 +831,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
         });
 
 
-         if (!formData.stgCustomerId) {
+        if (!formData.stgCustomerId) {
           setFormData(prev => ({
             ...prev,
             stgCustomerId: response?.data?.data?.stgCustomerId,
@@ -508,144 +859,6 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
     }
   };
 
-    useEffect(() => {
-      onSaveDraftRef?.(handleSaveAsDraft);
-      return () => onSaveDraftRef?.(null);
-    }, [onSaveDraftRef, handleSaveAsDraft]);
-  
-    useEffect(() => {
-      if (verificationStatus.mobile || verificationStatus.email) {
-        handleSaveAsDraft();
-      }
-    }, [verificationStatus.mobile, verificationStatus.email]);
-  // Set navigation header - always hide default header, we use custom header
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: false, // Always hide default header, we use custom header
-      headerBackTitleVisible: false,
-    });
-  }, [navigation]);
-
-  useEffect(() => {
-    // Entry animation
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Load initial data
-    loadInitialData();
-
-    // Handle edit mode and onboard mode - fetch customer details
-    if (isEditMode || isOnboardMode) {
-      if (routeCustomerData) {
-        // Use provided customer data
-        populateFormFromCustomerData(routeCustomerData);
-      } else if (customerId) {
-        // Fetch customer details from API (same API for both edit and onboard)
-        fetchCustomerDetailsForEdit();
-      }
-    }
-
-    return () => {
-      // Cleanup function to reset all states
-      setShowOTP({ mobile: false, email: false });
-      setOtpValues({ mobile: ['', '', '', ''], email: ['', '', '', ''] });
-      setOtpTimers({ mobile: 30, email: 30 });
-      setGeneratedOTP({ mobile: null, email: null });
-      setLoading(false);
-      setRegistering(false);
-      setVerificationStatus({
-        mobile: false,
-        email: false,
-        pan: false,
-        gst: false,
-      });
-      setErrors({});
-      setFormData({
-        // License Details
-        license20: '',
-        license20File: null,
-        license20ExpiryDate: null,
-        license20b: '',
-        license20bFile: null,
-        license20bExpiryDate: null,
-        license21: '',
-        license21File: null,
-        license21ExpiryDate: null,
-        license21b: '',
-        license21bFile: null,
-        license21bExpiryDate: null,
-        pharmacyImageFile: null,
-
-        // General Details
-        pharmacyName: '',
-        shortName: '',
-        address1: '',
-        address2: '',
-        address3: '',
-        address4: '',
-        pincode: '',
-        area: '',
-        areaId: '',
-        city: '',
-        cityId: '',
-        state: '',
-        stateId: '',
-
-        // Security Details
-        mobileNumber: '',
-        emailAddress: '',
-        panFile: null,
-        panNumber: '',
-        gstFile: null,
-        gstNumber: '',
-
-        // Mapping
-        hospitalCode: '',
-        hospitalName: '',
-
-        // Customer group
-        customerGroupId: 1,
-        isIPD: false,
-        isGOVT: false,
-        isBuyer: true,
-
-        // Stockist Suggestions
-        suggestedDistributors: [],
-      });
-      setDocumentIds({
-        license20: null,
-        license21: null,
-        license20b: null,
-        license21b: null,
-        pharmacyImage: null,
-        pan: null,
-        gst: null,
-      });
-      setLicenseTypes({
-        // LICENSE_20: { id: 1, docTypeId: 3, name: '20', code: 'LIC20' },
-        // LICENSE_21: { id: 3, docTypeId: 5, name: '21', code: 'LIC21' },
-        // LICENSE_20B: { id: 2, docTypeId: 4, name: '20B', code: 'LIC20B' },
-        // LICENSE_21B: { id: 4, docTypeId: 6, name: '21B', code: 'LIC21B' },
-      });
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    // Load initial data
-    loadInitialData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const loadInitialData = async () => {
     // Fetch license types from API
@@ -1009,25 +1222,6 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
     }
   };
 
-  // OTP Timer Effect
-  useEffect(() => {
-    const timers = {};
-
-    Object.keys(otpTimers).forEach(key => {
-      if (showOTP[key] && otpTimers[key] > 0) {
-        timers[key] = setTimeout(() => {
-          setOtpTimers(prev => ({
-            ...prev,
-            [key]: prev[key] - 1,
-          }));
-        }, 1000);
-      }
-    });
-
-    return () => {
-      Object.values(timers).forEach(timer => clearTimeout(timer));
-    };
-  }, [otpTimers, showOTP]);
 
   // Handle pincode change and trigger lookup
   const handlePincodeChange = async text => {
@@ -1060,64 +1254,6 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
     }
   };
 
-  // Auto-populate city, state, and area when pincode lookup (or OCR) completes
-  useEffect(() => {
-    // Use canonical cities/states from local variables (synced from the hook)
-    if (cities && cities.length > 0 && states && states.length > 0) {
-      const firstCity = cities[0];
-      const firstState = states[0];
-
-      setFormData(prev => ({
-        ...prev,
-        city: prev.city || firstCity.name,
-        cityId: prev.cityId || firstCity.id,
-        state: prev.state || firstState.name,
-        stateId: prev.stateId || firstState.id,
-      }));
-    }
-
-    // Prefer OCR uploadedAreas if present; otherwise use canonical 'areas'
-    if (uploadedAreas && uploadedAreas.length > 0 && !formData.area) {
-      const firstArea = uploadedAreas[0];
-      setFormData(prev => ({
-        ...prev,
-        area: firstArea.name || prev.area,
-        areaId: firstArea.id || prev.areaId,
-      }));
-    } else if (areas && areas.length > 0 && !formData.area) {
-      const firstArea = areas[0];
-      setFormData(prev => ({
-        ...prev,
-        area: firstArea.name || prev.area,
-        areaId: firstArea.id || prev.areaId,
-      }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cities, states, areas, uploadedAreas]);
-
-  // Keep local canonical lists in sync with pincode hook results
-  useEffect(() => {
-    if (Array.isArray(pincodeStates) && pincodeStates.length > 0) {
-      setStates(pincodeStates);
-    }
-    if (Array.isArray(pincodeCities) && pincodeCities.length > 0) {
-      setCities(pincodeCities);
-    }
-    if (Array.isArray(pincodeAreas) && pincodeAreas.length > 0) {
-      setAreas(pincodeAreas);
-    }
-
-    // If hook cleared data, clear local lists as well
-    if (
-      (!pincodeStates || pincodeStates.length === 0) &&
-      (!pincodeCities || pincodeCities.length === 0) &&
-      (!pincodeAreas || pincodeAreas.length === 0)
-    ) {
-      setStates([]);
-      setCities([]);
-      setAreas([]);
-    }
-  }, [pincodeStates, pincodeCities, pincodeAreas]);
 
   const handleVerify = async field => {
     // Validate the field before showing OTP
@@ -1510,45 +1646,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
   };
   // GST validation function
 
-  // Check form validity whenever form data, document IDs, or verification status changes
-  useEffect(() => {
-    // Validate required fields
-    let isValid = true;
-    if (!formData.license20) isValid = false;
-    else if (!documentIds.license20) isValid = false;
-    else if (!formData.license20ExpiryDate) isValid = false;
-    else if (!formData.license21) isValid = false;
-    else if (!documentIds.license21) isValid = false;
-    else if (!formData.license21ExpiryDate) isValid = false;
-    else if (!formData.license20b) isValid = false;
-    else if (!documentIds.license20b) isValid = false;
-    else if (!formData.license20bExpiryDate) isValid = false;
-    else if (!formData.license21b) isValid = false;
-    else if (!documentIds.license21b) isValid = false;
-    else if (!formData.license21bExpiryDate) isValid = false;
-    else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
-    else if (!documentIds.pan) isValid = false;
-    else if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode)) isValid = false;
-    else if (!formData.area) isValid = false;
-    else if (!formData.cityId) isValid = false;
-    else if (!formData.stateId) isValid = false;
-    else if (!formData.stationCode) isValid = false;
-    else if (!formData.pharmacyName) isValid = false;
-    else if (!formData.address1) isValid = false;
-    else if (!formData.address2) isValid = false;
-    else if (!formData.address3) isValid = false;
-    else if (!formData.mobileNumber || !/^\d{10}$/.test(formData.mobileNumber)) isValid = false;
-    else if (!verificationStatus.mobile) isValid = false;
-    else if (!formData.emailAddress || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.emailAddress)) isValid = false;
-    else if (!verificationStatus.email) isValid = false;
-    else if (formData.gstNumber && !isValidGST(formData.gstNumber)) isValid = false;
-    else if (formData.selectedDoctors.length === 0 && formData.selectedHospitals.length === 0) isValid = false;
 
-
-    setIsFormValid(isValid);
-  }, [formData, documentIds, verificationStatus]);
-
-  // Helper function to format dates for API submission
   // Handles both ISO format and DD/MM/YYYY format dates
   const formatDateForAPI = date => {
     if (!date) return null;
@@ -1618,8 +1716,8 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
         isEmailVerified: verificationStatus.email,
         isExisting: false,
         ...(formData.stgCustomerId && {
-            stgCustomerId: formData.stgCustomerId,
-          }),
+          stgCustomerId: formData.stgCustomerId,
+        }),
         licenceDetails: {
           registrationDate: new Date().toISOString(),
           licence: [
@@ -1691,8 +1789,8 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
           panNumber: formData.panNumber,
           ...(formData.gstNumber ? { gstNumber: formData.gstNumber } : {}),
         },
-        ...(formData.stockists &&
-          formData.stockists.length > 0 && {
+        ...(formData?.stockists &&
+          formData?.stockists.length > 0 && {
           suggestedDistributors: formData?.stockists.map(stockist => ({
             distributorCode: stockist.code || '',
             distributorName: stockist.name || '',
@@ -1758,98 +1856,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
     }
   };
 
-  const handleAddNewHospital = () => {
-    navigation.navigate('HospitalSelector');
-  };
 
-  const DropdownModal = ({
-    visible,
-    onClose,
-    title,
-    data,
-    selectedId,
-    onSelect,
-    loading,
-  }) => {
-    return (
-      <Modal
-        visible={visible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={onClose}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.flexContainer}
-            activeOpacity={1}
-            onPress={onClose}
-          />
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <AppText style={styles.modalTitle}>{title}</AppText>
-              <TouchableOpacity onPress={onClose}>
-                <Icon name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            {loading ? (
-              <ActivityIndicator
-                size="large"
-                color={colors.primary}
-                style={styles.modalLoader}
-              />
-            ) : (
-              <>
-                {!data || data.length === 0 ? (
-                  <View
-                    style={[
-                      styles.modalList,
-                      { padding: 24, alignItems: 'center' },
-                    ]}
-                  >
-                    <AppText style={{ color: '#777', fontSize: 16 }}>
-                      No {title} found
-                    </AppText>
-                  </View>
-                ) : (
-                  <FlatList
-                    data={data}
-                    keyExtractor={item => item.id?.toString() || item.value}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={[
-                          styles.modalItem,
-                          selectedId == item.id && styles.modalItemSelected,
-                        ]}
-                        onPress={() => {
-                          onSelect(item);
-                          onClose();
-                        }}
-                      >
-                        <AppText
-                          style={[
-                            styles.modalItemText,
-                            selectedId == item.id &&
-                            styles.modalItemTextSelected,
-                          ]}
-                        >
-                          {item.name}
-                        </AppText>
-                        {selectedId == item.id && (
-                          <Icon name="check" size={20} color={colors.primary} />
-                        )}
-                      </TouchableOpacity>
-                    )}
-                    style={styles.modalList}
-                  />
-                )}
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
-    );
-  };
 
   const handleFileUpload = async (field, file) => {
     // keep original behaviour for document Ids and formData
@@ -2254,7 +2261,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
     }
   };
   const handleAddStockist = () => {
-    if (formData.stockists.length >= 4) {
+    if (formData?.stockists.length >= 4) {
       Toast.show({
         type: 'error',
         text1: 'Limit Reached',
@@ -3448,7 +3455,7 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
                 </View>
               ))}
 
-              {formData.stockists.length < 4 && (
+              {formData?.stockists.length < 4 && (
                 <TouchableOpacity onPress={handleAddStockist}>
                   <AppText style={styles.addMoreButtonText}>
                     + Add More Stockist
@@ -3533,57 +3540,51 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
 
       {/* Dropdown Modals */}
 
-      <DropdownModal
+     {/* start dropdown modal section////////////////////////////////////////// */}
+
+      <SearchableDropdownModal
         visible={showStationModal}
         onClose={() => setShowStationModal(false)}
-        title="Select Station"
+        title="Select Station Code"
         data={
           loggedInUser?.userDetails?.stationCodes?.map((item) => ({
             id: item.stationCode,
             name: item.stationCode,
           }))
         }
-        selectedId={formData.stationCode} // <-- match value
+        selectedId={formData.stationCode}
         onSelect={item => {
-
-          console.log(item);
-
-          setFormData({
-            ...formData,
-            stationCode: item.name,  // <-- store directly
-          });
-          setErrors(prev => ({
+          setFormData(prev => ({
             ...prev,
-            stationCode: null,
+            stationCode: item.name,
           }));
+          setErrors(prev => ({ ...prev, stationCode: null }));
         }}
+        loading={false}
       />
 
-      <DropdownModal
+      <SearchableDropdownModal
         visible={showAreaModal}
         onClose={() => setShowAreaModal(false)}
         title="Select Area"
-        data={
-          uploadedAreas && uploadedAreas.length > 0
-            ? uploadedAreas
-            : Array.isArray(areas)
-              ? areas.map(area => ({ id: area.id, name: area.name }))
-              : []
-        }
+        data={uploadedAreas && uploadedAreas.length > 0
+          ? uploadedAreas
+          : Array.isArray(areas)
+            ? areas.map(area => ({ id: area.id, name: area.name }))
+            : []}
         selectedId={formData.areaId}
         onSelect={item => {
           setFormData(prev => ({
             ...prev,
-            area: item.name,
             areaId: item.id,
+            area: item.name,
           }));
           setErrors(prev => ({ ...prev, area: null }));
         }}
-        loading={pincodeLoading}
+        loading={false}
       />
 
-      {/* Dropdown Modals */}
-      <DropdownModal
+      <SearchableDropdownModal
         visible={showStateModal}
         onClose={() => setShowStateModal(false)}
         title="Select State"
@@ -3594,18 +3595,20 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
             ...prev,
             stateId: item.id,
             state: item.name,
-            // Don't reset city and cityId - allow independent selection
           }));
           setErrors(prev => ({ ...prev, stateId: null }));
         }}
         loading={false}
       />
 
-      <DropdownModal
+      <SearchableDropdownModal
         visible={showCityModal}
-        onClose={() => setShowCityModal(false)}
+        onClose={() => {
+          setShowCityModal(false)
+          setSearchCities(null)
+        }}
         title="Select City"
-        data={cities}
+        data={searchCities ? searchCities : cities}
         selectedId={formData.cityId}
         onSelect={item => {
           setFormData(prev => ({
@@ -3614,9 +3617,18 @@ const PharmacyWholesalerRetailerForm = ({ onSaveDraftRef }) => {
             city: item.name,
           }));
           setErrors(prev => ({ ...prev, cityId: null }));
+          setCities(prevCities => {
+            const exists = prevCities.some(c => c.id === item.id);
+            if (exists) return prevCities;
+
+            return [item, ...prevCities]; // add on top
+          });
         }}
         loading={false}
+        onSearch={handleCitySearch}
+        onAddNew={addNewCity}
       />
+      {/* start dropdown modal section////////////////////////////////////////// */}
 
       {/* Add New Hospital Modal */}
       <AddNewHospitalModal
@@ -4160,58 +4172,9 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%',
-    paddingBottom: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  modalList: {
-    paddingHorizontal: 16,
-  },
-  modalItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  modalItemSelected: {
-    backgroundColor: '#FFF5ED',
-  },
-  modalItemText: {
-    fontSize: 16,
-    color: '#333',
-    flex: 1,
-    textAlign: 'left',
-  },
-  modalItemTextSelected: {
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  modalLoader: {
-    paddingVertical: 50,
-  },
+ 
+ 
+  
   cancelModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

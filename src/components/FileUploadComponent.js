@@ -63,10 +63,6 @@ const FileUploadComponent = ({
     setError(errorMessage);
   }, [errorMessage]);
 
-
-
-  console.log("File called but not working");
-
   // Animate on file change
   useEffect(() => {
     if (file) {

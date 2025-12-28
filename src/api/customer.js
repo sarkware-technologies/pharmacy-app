@@ -180,6 +180,18 @@ export const customerAPI = {
         }
     },
 
+    // Create new customer (for registration)
+    createCity: async (payload) => {
+        try {
+            const response = await apiClient.post('/user-management/cities/create', payload);
+            return response;
+        } catch (error) {
+            console.error('Error creating customer:', error);
+            throw error;
+        }
+    },
+
+
     // Get states (for filters)
     getStates: async () => {
         try {
@@ -526,9 +538,15 @@ export const customerAPI = {
     },
 
     // Get cities list
-    getCitiesList: async (page = 1, limit = 20) => {
+    getCitiesList: async ({ page = 1, limit = 20, search = '' }) => {
         try {
-            const response = await apiClient.get(`/user-management/cities?page=${page}&limit=${limit}`);
+            const queryParams = new URLSearchParams({
+                page,
+                limit,
+                ...(search ? { search } : {}), // 👈 only add if search exists
+            }).toString();
+
+            const response = await apiClient.get(`/user-management/cities?${queryParams}`);
             return response;
         } catch (error) {
             console.error('Error fetching cities list:', error);

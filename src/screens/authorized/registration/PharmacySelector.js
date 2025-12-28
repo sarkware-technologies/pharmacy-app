@@ -235,7 +235,7 @@ const PharmacySelector = () => {
       setCitiesLoading(true);
       console.log('PharmacySelector: Fetching cities for states...');
 
-      const response = await customerAPI.getCitiesList(1, 20);
+      const response = await customerAPI.getCitiesList({ page: 1, limit: 20 });
       console.log('PharmacySelector: Cities API response:', response);
 
       if (response?.data?.cities && Array.isArray(response.data.cities)) {

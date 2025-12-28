@@ -30,11 +30,7 @@ import CustomInput from '../../../components/CustomInput';
 import AddressInputWithLocation from '../../../components/AddressInputWithLocation';
 import FileUploadComponent from '../../../components/FileUploadComponent';
 import ChevronLeft from '../../../components/icons/ChevronLeft';
-import ChevronRight from '../../../components/icons/ChevronRight';
-import Calendar from '../../../components/icons/Calendar';
 import ArrowDown from '../../../components/icons/ArrowDown';
-import Search from '../../../components/icons/Search';
-import CloseCircle from '../../../components/icons/CloseCircle';
 import { customerAPI } from '../../../api/customer';
 import AddNewPharmacyModal from './AddNewPharmacyModal';
 import AddNewHospitalModal from './AddNewHospitalModal';
@@ -44,6 +40,7 @@ import FetchGst from '../../../components/icons/FetchGst';
 import { usePincodeLookup } from '../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../components/FloatingDateInput';
 import { validateField, isValidPAN, isValidGST, isValidEmail, isValidMobile, isValidPincode, createFilteredInputHandler, filterForField } from '../../../utils/formValidation';
+import SearchableDropdownModal from '../../../components/modals/SearchableDropdownModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -96,9 +93,7 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
   const isMounted = useRef(true);
 
   // State for license types fetched from API
-  const [licenseTypes, setLicenseTypes] = useState({
-    // REGISTRATION: { id: 7, docTypeId: 8, name: 'Registration', code: 'REG' },
-  });
+  const [licenseTypes, setLicenseTypes] = useState({});
 
   // Form state
   const [formData, setFormData] = useState({
@@ -175,84 +170,21 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
   // States and cities data
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
-  const [loadingStates, setLoadingStates] = useState(false);
-  const [loadingCities, setLoadingCities] = useState(false);
+  const [areas, setAreas] = useState([]); // <-- NEW
+
+  const [searchCities, setSearchCities] = useState(null);
   const [customerGroups, setCustomerGroups] = useState([]);
   const [uploadedAreas, setUploadedAreas] = useState([]); // For OCR-extracted areas
 
   // Pincode lookup hook
   const {
-    areas,
+    areas: pincodeAreas,
     cities: pincodeCities,
     states: pincodeStates,
     loading: pincodeLoading,
     lookupByPincode,
     clearData,
   } = usePincodeLookup();
-
-  // Handle pincode change and trigger lookup
-  const handlePincodeChange = async text => {
-    // Filter pincode input to only allow digits
-    const filtered = createFilteredInputHandler('pincode', null, 6)(text);
-    // If filtered text is different, it means invalid characters were typed, so don't proceed
-    if (filtered !== text && text.length > filtered.length) return;
-
-    setFormData(prev => ({ ...prev, pincode: filtered }));
-    setErrors(prev => ({ ...prev, pincode: null }));
-
-    // Clear previous selections when pincode changes
-    if (filtered.length < 6) {
-      setFormData(prev => ({
-        ...prev,
-        area: '',
-        areaId: null,
-        city: '',
-        cityId: null,
-        state: '',
-        stateId: null,
-      }));
-      clearData();
-      return;
-    }
-
-    // Trigger lookup when pincode is complete (6 digits)
-    if (filtered.length === 6) {
-      await lookupByPincode(filtered);
-    }
-  };
-
-  // Auto-populate city, state, and area when pincode lookup completes
-  useEffect(() => {
-    if (pincodeCities.length > 0 && pincodeStates.length > 0) {
-      // Auto-select first city and state from lookup results only if not already filled
-      const firstCity = pincodeCities[0];
-      const firstState = pincodeStates[0];
-
-      setFormData(prev => {
-        const updates = {};
-        if (!prev.city || !prev.cityId) {
-          updates.city = firstCity.name;
-          updates.cityId = firstCity.id;
-        }
-        if (!prev.state || !prev.stateId) {
-          updates.state = firstState.name;
-          updates.stateId = firstState.id;
-        }
-        return Object.keys(updates).length > 0 ? { ...prev, ...updates } : prev;
-      });
-    }
-
-    // Auto-select first area (0th index) if available and not already filled
-    if (areas.length > 0 && !formData.area) {
-      const firstArea = areas[0];
-      setFormData(prev => ({
-        ...prev,
-        area: firstArea.name,
-        areaId: firstArea.id,
-      }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pincodeCities, pincodeStates, areas]);
 
   // Dropdown Modals
   const [showAreaModal, setShowAreaModal] = useState(false);
@@ -303,7 +235,273 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const otpSlideAnim = useRef(new Animated.Value(-50)).current;
+  // useeffect section start/////////////////////////////////
 
+  useEffect(() => {
+    // Map pincodeCities → cities
+    if (Array.isArray(pincodeCities) && pincodeCities.length > 0) {
+      const mappedCities = pincodeCities.map(c => ({
+        id: c.id ?? c.value,
+        name: c.name || c.cityName || c.city || c.label || '',
+      }));
+      setCities(mappedCities);
+
+      // Auto-select the first city if none selected or cityId is falsy
+      const firstCity = mappedCities[0];
+      setFormData(prev => ({
+        ...prev,
+        city: prev.city || firstCity?.name || '',
+        cityId: prev.cityId || firstCity?.id || '',
+      }));
+    }
+
+    // Map pincodeStates → states
+    if (Array.isArray(pincodeStates) && pincodeStates.length > 0) {
+      const mappedStates = pincodeStates.map(s => ({
+        id: s.id ?? s.value,
+        name: s.name || s.stateName || s.state || s.label || '',
+      }));
+      setStates(mappedStates);
+
+      // Auto-select the first state if none selected or stateId is falsy
+      const firstState = mappedStates[0];
+      setFormData(prev => ({
+        ...prev,
+        state: prev.state || firstState?.name || '',
+        stateId: prev.stateId || firstState?.id || '',
+      }));
+    }
+
+    // Map pincodeAreas → areas (this 'areas' variable is the component's local state)
+    if (Array.isArray(pincodeAreas) && pincodeAreas.length > 0) {
+      const mappedAreas = pincodeAreas.map(a => ({
+        id: a.id ?? a.value,
+        name: a.name || a.label || '',
+        cityId: a.cityId || a.raw?.cityId || '',
+      }));
+      setAreas(mappedAreas);
+
+      // Auto-select first area if none selected
+      const firstArea = mappedAreas[0];
+      setFormData(prev => ({
+        ...prev,
+        area: prev.area || firstArea?.name || '',
+        areaId: prev.areaId || firstArea?.id || '',
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pincodeCities, pincodeStates, pincodeAreas]);
+
+
+  useEffect(() => {
+    onSaveDraftRef?.(handleSaveAsDraft);
+    return () => onSaveDraftRef?.(null);
+  }, [onSaveDraftRef, handleSaveAsDraft]);
+
+  useEffect(() => {
+    if (verificationStatus.mobile || verificationStatus.email) {
+      handleSaveAsDraft();
+    }
+  }, [verificationStatus.mobile, verificationStatus.email]);
+  // Set navigation header - always hide default header, we use custom header
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false, // Always hide default header, we use custom header
+      headerBackTitleVisible: false,
+    });
+  }, [navigation]);
+
+  useEffect(() => {
+    console.log('🚀 PrivateRegistration Form Mounted');
+    console.log('📦 Route Params:', {
+      mode,
+      isEditMode,
+      customerId,
+      hasEditData: !!editData,
+      hasCustomerData: !!routeCustomerData,
+      inEditMode,
+    });
+
+    // Entry animation
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Load initial data (license types, customer groups)
+    // Note: States and cities are now loaded via pincode lookup only
+    loadInitialData();
+
+    // Handle edit mode - fetch customer details
+    if (inEditMode) {
+      if (routeCustomerData) {
+        // Use provided customer data
+        populateFormFromCustomerData(routeCustomerData);
+      } else if (editData) {
+        // Use pre-fetched edit data (backward compatibility)
+        populateFormFromEditData(editData);
+      } else if (customerId) {
+        // Fetch customer details from API
+        fetchCustomerDetailsForEdit();
+      }
+    }
+
+    return () => {
+      isMounted.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
+  // OTP Timer Effect
+  useEffect(() => {
+    const timers = {};
+
+    Object.keys(otpTimers).forEach(key => {
+      if (showOTP[key] && otpTimers[key] > 0) {
+        timers[key] = setTimeout(() => {
+          setOtpTimers(prev => ({
+            ...prev,
+            [key]: prev[key] - 1,
+          }));
+        }, 1000);
+      }
+    });
+
+    return () => {
+      Object.values(timers).forEach(timer => clearTimeout(timer));
+    };
+  }, [otpTimers, showOTP]);
+
+  // Check form validity whenever form data or verification status changes
+  useEffect(() => {
+    // Validate required fields
+    let isValid = true;
+    if (!formData.registrationNumber) isValid = false;
+    else if (!formData.registrationDate) isValid = false;
+    else if (!formData.licenseFile) isValid = false;
+    else if (!formData.licenseImage) isValid = false;
+    else if (!formData.clinicName) isValid = false;
+    else if (!formData.address1) isValid = false;
+    else if (!formData.address2) isValid = false;
+    else if (!formData.address3) isValid = false;
+    else if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode)) isValid = false;
+    else if (!formData.area || formData.area.trim().length === 0) isValid = false;
+    else if (!formData.cityId) isValid = false;
+    else if (!formData.stateId) isValid = false;
+    else if (!formData.mobileNumber || formData.mobileNumber.length !== 10) isValid = false;
+    else if (!formData.emailAddress || !formData.emailAddress.includes('@')) isValid = false;
+    else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
+    else if (!formData.panFile) isValid = false;
+    else if (formData.gstNumber && formData.gstNumber.trim() != '' && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.gstNumber)) isValid = false;
+    else if (!inEditMode && !verificationStatus.mobile) isValid = false;
+    else if (!inEditMode && !verificationStatus.email) isValid = false;
+    else if (!formData.stationCode) isValid = false;
+
+
+    setIsFormValid(isValid);
+  }, [formData, verificationStatus, inEditMode]);
+
+
+  // function section start///////////////////////////////////
+  const handleCitySearch = async (text) => {
+    try {
+      const response = await customerAPI.getCitiesList({
+        page: 1,
+        limit: 50,
+        search: text,
+      });
+      const cityList = response?.data?.cities || [];
+      const formattedCities = cityList.map(city => ({
+        id: Number(city.id),
+        name: city.cityName,
+      }));
+
+      setSearchCities(formattedCities);
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+    }
+  };
+
+  const addNewCity = async (cityName) => {
+    if (!formData.stateId) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: `Please select state to create city`,
+        position: 'top',
+      });
+    }
+    try {
+      const response = await customerAPI.createCity({
+        name: cityName,
+        stateId: formData?.stateId, // based on PIN/state
+      });
+
+      if (response?.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'City Created',
+          text2: `City created successfully`,
+          position: 'top',
+        });
+      }
+      const newCity = {
+        id: Number(response?.data?.cities[0]?.id),
+        name: response?.data?.cities[0]?.cityName,
+      };
+      setCities(prev => [newCity, ...prev]);
+      setFormData(prev => ({
+        ...prev,
+        cityId: newCity.id,
+        city: newCity.name,
+      }));
+      setSearchCities(null)
+
+      setShowCityModal(false);
+    } catch (e) {
+      console.error('Add city failed', e);
+    }
+  };
+
+  // Handle pincode change and trigger lookup
+  const handlePincodeChange = async text => {
+    // Filter pincode input to only allow digits
+    const filtered = createFilteredInputHandler('pincode', null, 6)(text);
+    // If filtered text is different, it means invalid characters were typed, so don't proceed
+    if (filtered !== text && text.length > filtered.length) return;
+
+    setFormData(prev => ({ ...prev, pincode: filtered }));
+    setErrors(prev => ({ ...prev, pincode: null }));
+
+    // Clear previous selections when pincode changes
+    if (filtered.length < 6) {
+      setFormData(prev => ({
+        ...prev,
+        area: '',
+        areaId: null,
+        city: '',
+        cityId: null,
+        state: '',
+        stateId: null,
+      }));
+      clearData();
+      return;
+    }
+
+    // Trigger lookup when pincode is complete (6 digits)
+    if (filtered.length === 6) {
+      await lookupByPincode(filtered);
+    }
+  };
   // Save as Draft handler - only sends filled fields
   const handleSaveAsDraft = async () => {
     try {
@@ -475,7 +673,7 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
       const hasFormData =
         (formData.clinicName && formData.clinicName.trim()) ||
         (formData.shortName && formData.shortName.trim()) ||
-         (formData.stationCode) ||
+        (formData.stationCode) ||
         (formData.address1 && formData.address1.trim()) ||
         (formData.address2 && formData.address2.trim()) ||
         (formData.address3 && formData.address3.trim()) ||
@@ -498,7 +696,7 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
       const hasData = hasPayloadData || hasFormData;
 
       console.log(formData);
-      
+
 
       if (!hasData) {
         Toast.show({
@@ -521,7 +719,7 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
           position: 'top',
         });
 
-          if (!formData.stgCustomerId) {
+        if (!formData.stgCustomerId) {
           setFormData(prev => ({
             ...prev,
             stgCustomerId: response?.data?.data?.stgCustomerId,
@@ -548,72 +746,6 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    onSaveDraftRef?.(handleSaveAsDraft);
-    return () => onSaveDraftRef?.(null);
-  }, [onSaveDraftRef, handleSaveAsDraft]);
-
-    useEffect(() => {
-      if (verificationStatus.mobile || verificationStatus.email) {
-        handleSaveAsDraft();
-      }
-    }, [verificationStatus.mobile, verificationStatus.email]);
-  // Set navigation header - always hide default header, we use custom header
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: false, // Always hide default header, we use custom header
-      headerBackTitleVisible: false,
-    });
-  }, [navigation]);
-
-  useEffect(() => {
-    console.log('🚀 PrivateRegistration Form Mounted');
-    console.log('📦 Route Params:', {
-      mode,
-      isEditMode,
-      customerId,
-      hasEditData: !!editData,
-      hasCustomerData: !!routeCustomerData,
-      inEditMode,
-    });
-
-    // Entry animation
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Load initial data (license types, customer groups)
-    // Note: States and cities are now loaded via pincode lookup only
-    loadInitialData();
-
-    // Handle edit mode - fetch customer details
-    if (inEditMode) {
-      if (routeCustomerData) {
-        // Use provided customer data
-        populateFormFromCustomerData(routeCustomerData);
-      } else if (editData) {
-        // Use pre-fetched edit data (backward compatibility)
-        populateFormFromEditData(editData);
-      } else if (customerId) {
-        // Fetch customer details from API
-        fetchCustomerDetailsForEdit();
-      }
-    }
-
-    return () => {
-      isMounted.current = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleAddStockist = () => {
     if (stockists.length >= 4) {
@@ -629,7 +761,6 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
       { name: '', distributorCode: '', city: '' },
     ]);
   };
-  // Legacy function removed - cities now loaded via pincode lookup only
 
   // Populate form from customer data (API response) - matches PharmacyRetailer.js pattern
   const populateFormFromCustomerData = (data) => {
@@ -1146,9 +1277,6 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
   // Load states, license types and customer groups on mount
   const loadInitialData = async () => {
 
-
-
-
     try {
       // Load license types first      
       const licenseResponse = await customerAPI.getLicenseTypes(
@@ -1195,25 +1323,6 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
     }
   };
 
-  // OTP Timer Effect
-  useEffect(() => {
-    const timers = {};
-
-    Object.keys(otpTimers).forEach(key => {
-      if (showOTP[key] && otpTimers[key] > 0) {
-        timers[key] = setTimeout(() => {
-          setOtpTimers(prev => ({
-            ...prev,
-            [key]: prev[key] - 1,
-          }));
-        }, 1000);
-      }
-    });
-
-    return () => {
-      Object.values(timers).forEach(timer => clearTimeout(timer));
-    };
-  }, [otpTimers, showOTP]);
 
   const handleVerify = async field => {
     try {
@@ -1522,35 +1631,6 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Check form validity whenever form data or verification status changes
-  useEffect(() => {
-    // Validate required fields
-    let isValid = true;
-    if (!formData.registrationNumber) isValid = false;
-    else if (!formData.registrationDate) isValid = false;
-    else if (!formData.licenseFile) isValid = false;
-    else if (!formData.licenseImage) isValid = false;
-    else if (!formData.clinicName) isValid = false;
-    else if (!formData.address1) isValid = false;
-    else if (!formData.address2) isValid = false;
-    else if (!formData.address3) isValid = false;
-    else if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode)) isValid = false;
-    else if (!formData.area || formData.area.trim().length === 0) isValid = false;
-    else if (!formData.cityId) isValid = false;
-    else if (!formData.stateId) isValid = false;
-    else if (!formData.mobileNumber || formData.mobileNumber.length !== 10) isValid = false;
-    else if (!formData.emailAddress || !formData.emailAddress.includes('@')) isValid = false;
-    else if (!formData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) isValid = false;
-    else if (!formData.panFile) isValid = false;
-    else if (formData.gstNumber && formData.gstNumber.trim() != '' && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.gstNumber)) isValid = false;
-    else if (!inEditMode && !verificationStatus.mobile) isValid = false;
-    else if (!inEditMode && !verificationStatus.email) isValid = false;
-    else if (!formData.stationCode) isValid = false;
-
-
-    setIsFormValid(isValid);
-  }, [formData, verificationStatus, inEditMode]);
-
   const handleCancel = () => {
     if (inEditMode || isOnboardMode) {
       // In edit mode or onboard mode, use goBack() to preserve tab bar visibility
@@ -1623,7 +1703,6 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
     }
   };
 
-  // Helper function to format dates for API submission
   // Handles both ISO format and DD/MM/YYYY format dates
   const formatDateForAPI = date => {
     if (!date) return null;
@@ -1780,9 +1859,9 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
         isMobileVerified: verificationStatus.mobile,
         isEmailVerified: verificationStatus.email,
         isExisting: false,
-         ...(formData.stgCustomerId && {
-            stgCustomerId: formData.stgCustomerId,
-          }),
+        ...(formData.stgCustomerId && {
+          stgCustomerId: formData.stgCustomerId,
+        }),
         licenceDetails: {
           registrationDate: registrationDate,
           licence: [
@@ -1949,95 +2028,6 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
     );
   };
 
-  // DropdownModal Component (replace existing DropdownModal)
-  const DropdownModal = ({
-    visible,
-    onClose,
-    title,
-    data = [],
-    selectedId,
-    onSelect,
-    loading = false,
-  }) => {
-    return (
-      <Modal
-        visible={visible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={onClose}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={onClose}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <AppText style={styles.modalTitle}>{title}</AppText>
-              <TouchableOpacity onPress={onClose}>
-                <Icon name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            {loading ? (
-              <ActivityIndicator
-                size="large"
-                color={colors.primary}
-                style={styles.modalLoader}
-              />
-            ) : (
-              <FlatList
-                data={data}
-                keyExtractor={(item, idx) =>
-                  item.id?.toString
-                    ? item.id?.toString()
-                    : String(item.value || idx)
-                }
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.modalItem,
-                      selectedId == item.id && styles.modalItemSelected,
-                    ]}
-                    onPress={() => {
-                      onSelect(item);
-                      onClose();
-                    }}
-                  >
-                    <AppText
-                      style={[
-                        styles.modalItemText,
-                        selectedId == item.id && styles.modalItemTextSelected,
-                      ]}
-                    >
-                      {item.name ||
-                        item.stateName ||
-                        item.cityName ||
-                        item.label ||
-                        String(item.value)}
-                    </AppText>
-
-                    {selectedId == item.id && (
-                      // Ionicons correct check name
-                      <Icon name="checkmark" size={20} color={colors.primary} />
-                    )}
-                  </TouchableOpacity>
-                )}
-                style={styles.modalList}
-                ListEmptyComponent={
-                  <View style={{ paddingVertical: 28, alignItems: 'center' }}>
-                    <AppText
-                      style={{ fontSize: 15, color: '#777' }}
-                    >{`No ${title} available`}</AppText>
-                  </View>
-                }
-              />
-            )}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    );
-  };
 
   // Show loading indicator while fetching customer data
   if (loadingCustomerData) {
@@ -3388,90 +3378,54 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
         }}
       />
 
-      {/* Add New Doctor Modal */}
-      {/* <AddNewDoctorModal
-        visible={showDoctorModal}
-        onClose={() => setShowDoctorModal(false)}
-        onSubmit={(doctor) => {
-          setFormData(prev => ({
-            ...prev,
-            selectedDoctors: [...prev.selectedDoctors, doctor]
-          }));
-          setShowDoctorModal(false);
-        }}
-      /> */}
 
-      {/* Dropdown Modals */}
 
-      <DropdownModal
+
+      {/* start dropdown modal section////////////////////////////////////////// */}
+
+      <SearchableDropdownModal
         visible={showStationModal}
         onClose={() => setShowStationModal(false)}
-        title="Select Station"
+        title="Select Station Code"
         data={
           loggedInUser?.userDetails?.stationCodes?.map((item) => ({
             id: item.stationCode,
             name: item.stationCode,
           }))
         }
-        selectedId={formData.stationCode} // <-- match value
-        onSelect={item => {
-
-          console.log(item);
-
-          setFormData({
-            ...formData,
-            stationCode: item.name,  // <-- store directly
-          });
-          setErrors(prev => ({
-            ...prev,
-            stationCode: null,
-          }));
-        }}
-      />
-      <DropdownModal
-        visible={showAreaModal}
-        onClose={() => setShowAreaModal(false)}
-        title="Select Area"
-        data={
-          uploadedAreas && uploadedAreas.length > 0
-            ? uploadedAreas
-            : Array.isArray(areas)
-              ? areas.map(area => ({ id: area.id, name: area.name }))
-              : []
-        }
-        selectedId={formData.areaId}
+        selectedId={formData.stationCode}
         onSelect={item => {
           setFormData(prev => ({
             ...prev,
-            area: item.name,
-            areaId: item.id,
+            stationCode: item.name,
           }));
-          setErrors(prev => ({ ...prev, area: null }));
-        }}
-        loading={pincodeLoading}
-      />
-
-
-      {/* City Dropdown Modal */}
-      <DropdownModal
-        visible={showCityModal}
-        onClose={() => setShowCityModal(false)}
-        title="Select City"
-        data={cities}
-        selectedId={formData.cityId}
-        onSelect={item => {
-          setFormData(prev => ({
-            ...prev,
-            cityId: item.id,
-            city: item.name,
-          }));
-          setErrors(prev => ({ ...prev, cityId: null }));
+          setErrors(prev => ({ ...prev, stationCode: null }));
         }}
         loading={false}
       />
 
-      {/* Dropdown Modals */}
-      <DropdownModal
+      <SearchableDropdownModal
+        visible={showAreaModal}
+        onClose={() => setShowAreaModal(false)}
+        title="Select Area"
+        data={uploadedAreas && uploadedAreas.length > 0
+          ? uploadedAreas
+          : Array.isArray(areas)
+            ? areas.map(area => ({ id: area.id, name: area.name }))
+            : []}
+        selectedId={formData.areaId}
+        onSelect={item => {
+          setFormData(prev => ({
+            ...prev,
+            areaId: item.id,
+            area: item.name,
+          }));
+          setErrors(prev => ({ ...prev, area: null }));
+        }}
+        loading={false}
+      />
+
+      <SearchableDropdownModal
         visible={showStateModal}
         onClose={() => setShowStateModal(false)}
         title="Select State"
@@ -3482,12 +3436,40 @@ const PrivateRegistrationForm = ({ selectedSubCategory, onSaveDraftRef }) => {
             ...prev,
             stateId: item.id,
             state: item.name,
-            // Don't reset city and cityId - allow independent selection
           }));
           setErrors(prev => ({ ...prev, stateId: null }));
         }}
         loading={false}
       />
+
+      <SearchableDropdownModal
+        visible={showCityModal}
+        onClose={() => {
+          setShowCityModal(false)
+          setSearchCities(null)
+        }}
+        title="Select City"
+        data={searchCities ? searchCities : cities}
+        selectedId={formData.cityId}
+        onSelect={item => {
+          setFormData(prev => ({
+            ...prev,
+            cityId: item.id,
+            city: item.name,
+          }));
+          setErrors(prev => ({ ...prev, cityId: null }));
+          setCities(prevCities => {
+            const exists = prevCities.some(c => c.id === item.id);
+            if (exists) return prevCities;
+
+            return [item, ...prevCities]; // add on top
+          });
+        }}
+        loading={false}
+        onSearch={handleCitySearch}
+        onAddNew={addNewCity}
+      />
+      {/* end dropdown modal section////////////////////////////////////////// */}
 
       {/* Cancel Confirmation Modal */}
       <Modal
@@ -4202,20 +4184,8 @@ const styles = StyleSheet.create({
   registerButtonTextDisabled: {
     color: '#fff',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 32,
-    alignItems: 'center',
-  },
+
+
   modalIconContainer: {
     width: 60,
     height: 60,
@@ -4230,44 +4200,7 @@ const styles = StyleSheet.create({
     color: '#FF6B6B',
     fontWeight: 'bold',
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 24,
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  modalYesButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    alignItems: 'center',
-  },
-  modalYesButtonText: {
-    fontSize: 16,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  modalNoButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
-    backgroundColor: '#FF6B6B',
-    alignItems: 'center',
-  },
-  modalNoButtonText: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '600',
-  },
+
 
   cancelModalOverlay: {
     flex: 1,
@@ -4344,26 +4277,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
-  // Hospital and Pharmacy Modal Styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  modalContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
+
+
   modalCloseButton: {
     fontSize: 24,
     color: '#999',
@@ -4533,19 +4448,8 @@ const styles = StyleSheet.create({
     maxHeight: '70%',
     paddingBottom: 20,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
+
+
   modalList: {
     paddingHorizontal: 16,
   },
