@@ -5,7 +5,6 @@ const PermissionWrapper = ({ permission, Component, children }) => {
     const [allowed, setAllowed] = useState(permission ? false : true);
 
     useEffect(() => {
-        console.log(permission, 239273)
         if (permission) {
             const verify = async () => {
                 const has = await checkPermission(permission);

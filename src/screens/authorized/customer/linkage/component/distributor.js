@@ -13,6 +13,8 @@ import CommonStyle from "../../../../../styles/styles";
 import AnimatedContent from "../../../../../components/view/AnimatedContent";
 import DistributorCard from "./DistributorCard"
 import Button from "../../../../../components/Button";
+import Customerstyles from "../style/style";
+import CloseCircle from "../../../../../components/icons/CloseCircle";
 
 
 const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setActiveSubTab, instance, permisions }) => {
@@ -177,7 +179,7 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
             if (latest.filter((e) => e.isActive != false).every((e) => e.error == null)) {
                 const distributorsWithoutError = latest.map(({ error, ...rest }) => rest);
                 console.log(distributorsWithoutError, 3495827)
-                saveDraft?.("distributors", { distributors: distributorsWithoutError })
+                saveDraft?.("distributors", { distributors: distributorsWithoutError }, isChild)
                 if (!isChild) {
                     setActiveSubTab("hierarchy")
                 }
@@ -424,7 +426,15 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
                     activeLinkedDistributors.length != 0 && activeTabKey === "linked" && (
                         <View style={{ flexDirection: "row", gap: 10 }}>
                             <Button style={{ width: "48%" }} onPress={() => handleFinish()}>Approve</Button>
-                            <Button style={{ width: "48%" }} onPress={() => handleFinish()}>Reject</Button>
+                            {/* <Button style={[Customerstyles.rejectButton, { width: "48%" }]}   onPress={() => saveDraft("mapping", { isApproved: false }, true)}>Reject</Button> */}
+
+                            <TouchableOpacity
+                                            style={Customerstyles.rejectButton}
+                                            onPress={() => saveDraft("mapping", { isApproved: false }, true)}
+                                        >
+                                            <CloseCircle color="#2B2B2B" />
+                                            <AppText style={Customerstyles.rejectButtonText}>Reject</AppText>
+                                        </TouchableOpacity>
                         </View>
                     )
                 ) : (

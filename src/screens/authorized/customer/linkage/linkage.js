@@ -13,8 +13,9 @@ import CustomerHierarchy from "./component/CustomerHierarchy"
 import PERMISSIONS from "../../../../utils/RBAC/permissionENUM";
 import checkPermission from "../../../../utils/RBAC/permissionHelper";
 import HorizontalSelector from "../../../../components/view/HorizontalSelector";
+import { SkeletonDetailPage } from "../../../../components/SkeletonLoader";
 
-const LinkageView = ({ activeTab = "divisions", customerData, isLoading, isChild, saveDraft,setChildCustomer,instance }) => {
+const LinkageView = ({ activeTab = "divisions", customerData, loading, isChild, saveDraft,setChildCustomer,instance }) => {
     const [hasOtherDivisionPermission, setHasOtherDivisionPermission] = useState(false);
     const [hasPreferredDistributorPermission, setHasPreferredDistributorPermission,] = useState(false);
     const [checkLinkeEditAccess, setCheckLinkeEditAccess,] = useState(false);
@@ -54,13 +55,16 @@ const LinkageView = ({ activeTab = "divisions", customerData, isLoading, isChild
 
 
 
+    console.log(loading, 868);
+    
+
     const tabs = [
         {
             label: "Divisions",
             key: "divisions",
             icon: <Divisions color={activeSubTab === 'divisions' ? '#000' : '#999'} />,
             disabled: false,
-            component: <DivisionLinkage setActiveSubTab={setActiveSubTab} hasOtherDivisionPermission={hasOtherDivisionPermission} customerData={customerData} isLoading={isLoading} isChild={isChild} saveDraft={saveDraft} />
+            component: <DivisionLinkage setActiveSubTab={setActiveSubTab} hasOtherDivisionPermission={hasOtherDivisionPermission} customerData={customerData} isLoading={loading} isChild={isChild} saveDraft={saveDraft} />
         },
         {
             label: "Distributors",
@@ -68,14 +72,14 @@ const LinkageView = ({ activeTab = "divisions", customerData, isLoading, isChild
             icon: <Distributors color={activeSubTab === 'distributors' ? '#000' : '#999'}
             />,
             disabled: customerData?.divisions?.length == 0,
-            component: <DistributorLinkage permisions={{ hasPreferredDistributorPermission, checkLinkeEditAccess, hasAllDistributorPermission }} setActiveSubTab={setActiveSubTab} hasAllDistributorPermission={hasAllDistributorPermission} hasPreferredDistributorPermission={hasPreferredDistributorPermission} customerData={customerData} isLoading={isLoading} isChild={isChild} saveDraft={saveDraft} />
+            component: <DistributorLinkage permisions={{ hasPreferredDistributorPermission, checkLinkeEditAccess, hasAllDistributorPermission }} setActiveSubTab={setActiveSubTab} hasAllDistributorPermission={hasAllDistributorPermission} hasPreferredDistributorPermission={hasPreferredDistributorPermission} customerData={customerData} isLoading={loading} isChild={isChild} saveDraft={saveDraft} />
         },
         {
             label: "Field",
             key: "field",
             icon: <Field color={activeSubTab === 'field' ? '#000' : '#999'} />,
             disabled: customerData?.divisions?.length == 0,
-            component: <Fields customerData={customerData} isLoading={isLoading} isChild={isChild} saveDraft={saveDraft} />
+            component: <Fields customerData={customerData} isLoading={loading} isChild={isChild} saveDraft={saveDraft} />
         },
         {
             label: "Customer Hierarchy",
@@ -84,20 +88,19 @@ const LinkageView = ({ activeTab = "divisions", customerData, isLoading, isChild
             // color={openedDivisionsData.length > 0 ? activeSubTab === 'hierarchy' ? '#000' : '#999' : '#CCC'}
             />,
             disabled: isChild,
-            component: <CustomerHierarchy instance={instance} setChildCustomer={setChildCustomer} customerData={customerData} isLoading={isLoading} isChild={isChild} saveDraft={saveDraft} />
+            component: <CustomerHierarchy instance={instance} setChildCustomer={setChildCustomer} customerData={customerData} isLoading={loading} isChild={isChild} saveDraft={saveDraft} />
 
         },
     ]
 
     return (
-        <View style={Linkagestyles.container}>
+
+       
+        
+
+        loading ? ( <SkeletonDetailPage/>):( <View style={Linkagestyles.container}>
             <View style={Linkagestyles.stickyTabsContainer}>
-                {/* <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={Linkagestyles.subTabsContainer}
-                    scrollEventThrottle={16}
-                > */}
+               
                 <HorizontalSelector
                     onTabChange={(index) => {
                         if (!tabs[index].disabled) {
@@ -134,7 +137,8 @@ const LinkageView = ({ activeTab = "divisions", customerData, isLoading, isChild
             <View style={{ paddingTop: 50 }}>
                 {tabs.find((e) => e?.key == activeSubTab)?.component}
             </View>
-        </View>
+        </View>)
+       
     )
 
 }

@@ -2,7 +2,7 @@ import { Modal, StatusBar, TouchableOpacity, View } from "react-native";
 import { AppText } from "../../../components";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useCustomerLinkage } from "./service/useCustomerLinkage"
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback  } from "react";
 import Customerstyles from "./linkage/style/style"
 import { SafeAreaView } from "react-native-safe-area-context";
 import PermissionWrapper from "../../../utils/RBAC/permissionWrapper";
@@ -130,6 +130,125 @@ const CustomerDetails = () => {
         // }
     }
 
+    const workflowAction = async (action, comment = "") => {
+        try {
+            const instance = customerDetails?.instance;
+
+            if (!instance?.stepInstances?.length) {
+                Toast.show({
+                    type: "error",
+                    text1: "Action failed",
+                    text2: "Workflow instance not found",
+                });
+                return;
+            }
+
+            const stepInstance = instance.stepInstances[0];
+            const instanceId = instance.workflowInstance?.id;
+            const basePayload = {
+                stepOrder: stepInstance?.stepOrder || 1,
+                parallelGroup: stepInstance?.parallelGroup,
+                actorId: stepInstance?.assignedUserId,
+                comments: comment,
+                dataChanges: {
+                    customerGroupId: customerDetails?.customerGroupId,
+                    mapping: customerDetails?.mapping || [],
+                    divisions: (customerDetails?.divisions || []).filter(
+                        (div) => div?.isOpen !== true
+                    ),
+                    distributorMapping: customerDetails?.distributors || [],
+                },
+            };
+
+
+            if (
+                action === "APPROVE" ||
+                action === "REJECT"
+            ) {
+                const payload = {
+                    ...basePayload,
+                    action,
+                };
+
+                const response = await customerAPI.workflowAction(instanceId, payload);
+
+                // ✅ SUCCESS HANDLING
+                if (response?.status === 'success') {
+                    // notify parent list to refresh (optional but recommended)
+                    const parentNav = navigation.getParent();
+                    parentNav?.setParams({
+                        pendingCustomerAction: action, // APPROVE / REJECT
+                    });
+
+                    if (action == "APPROVE") {
+                        Toast.show({
+                            type: "success",
+                            text1: "Approve",
+                            text2: `Customer has been successfully approved!`,
+                        });
+                    } else {
+                        Toast.show({
+                            type: "error",
+                            text1: "Reject",
+                            text2: `Customer has been rejected!`,
+                        });
+                    }
+
+                    // go back
+                    setTimeout(() => {
+                        navigation.goBack();
+                    }, 300);
+                }
+
+                return response;
+            }
+
+            if (action === "send_back") {
+                const response = await customerAPI.workflowReassign(instanceId, basePayload);
+
+                console.log(response, 345);
+
+                // ✅ SUCCESS HANDLING
+                if (response?.status === 'success') {
+                    // notify parent list to refresh (optional but recommended)
+                    Toast.show({
+                        type: "error",
+                        text1: "Send Back",
+                        text2: `Customer form has been sent back!`,
+                    });
+
+                    const parentNav = navigation.getParent();
+                    parentNav?.setParams({
+                        pendingCustomerAction: action, // APPROVE / REJECT
+                    });
+
+                    // go back
+                    setTimeout(() => {
+                        navigation.goBack();
+                    }, 300);
+                }
+
+                return response;
+            }
+
+            Toast.show({
+                type: "error",
+                text1: "Invalid action",
+                text2: `Unsupported action: ${action}`,
+            });
+        } catch (error) {
+            console.error("performCustomerAction error:", error);
+            Toast.show({
+                type: "error",
+                text1: "Action failed",
+                text2: error?.message || "Something went wrong",
+            });
+            throw error;
+        }
+    };
+
+
+
 
     const saveDraftParent = (action, data) => {
         let parantData = findAndUpdate({ mapping: customerDetails?.mapping, tab: childCustomer?.tab, childTab: childCustomer?.childTab, customerId: childCustomer?.customer?.id, parentId: childCustomer?.parentId, updateValue: data })
@@ -203,7 +322,9 @@ const CustomerDetails = () => {
                 </TouchableOpacity>
             </View>
 
-            {active == "details" ? <DetailsView instance={customerDetails?.instance} customerData={customerDetails} loading={isLoading} saveDraft={saveDraft} /> : <LinkageView instance={customerDetails?.instance}  setChildCustomer={setChildCustomer} customerData={customerDetails} loading={isLoading} isChild={false} saveDraft={saveDraft} />}
+
+
+            {active == "details" ? <DetailsView instance={customerDetails?.instance} customerData={customerDetails} loading={isLoading} saveDraft={saveDraft} workflowAction={workflowAction} setActiveTab={setActiveTab} /> : <LinkageView instance={customerDetails?.instance} setChildCustomer={setChildCustomer} customerData={customerDetails} loading={isLoading} isChild={false} saveDraft={saveDraft} />}
 
             <Modal
                 visible={childCustomer != null}

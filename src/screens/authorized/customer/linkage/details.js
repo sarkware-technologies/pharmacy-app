@@ -26,11 +26,11 @@ import { colors } from "../../../../styles/colors";
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import CloseCircle from "../../../../components/icons/CloseCircle";
 import { isAllApprovedChecked } from "../service/formatData";
+import ConfirmActionModal from '../../../../components/modals/ConfirmActionModal';
 
 
 
-const DetailsView = ({ loading = false, customerData, instance, isChild = false, saveDraft }) => {
-    console.log(customerData?.isApproved, 23948236)
+const DetailsView = ({ loading = false, customerData, instance, isChild = false, saveDraft, workflowAction, setActiveTab }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(40)).current;
     const scaleAnim = useRef(new Animated.Value(0.96)).current;
@@ -41,6 +41,10 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
     const [updatingCustomerGroup, setUpdatingCustomerGroup] = useState(false);
     const [commentsVisible, setCommentsVisible] = useState(false);
     const [isDisabled, setIsDisabled] = useState(false);
+    const [approveModalVisible, setApproveModalVisible] = useState(false);
+    const [rejectModalVisible, setRejectModalVisible] = useState(false);
+    const [sendBackModalVisible, setSendBackModalVisible] = useState(false);
+
 
     useEffect(() => {
         Animated.parallel([
@@ -188,6 +192,9 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
             </>
         )
     }
+    console.log(loading, 868);
+
+
     return (
         <View style={{ flex: 1, paddingBottom: 90 }}>
             <ScrollView
@@ -428,8 +435,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                                     "INITIATOR" && (
                                         <TouchableOpacity
                                             style={Customerstyles.sendBackButton}
-                                        // onPress={() => setSendBackModalVisible(true)}
-                                        // disabled={actionLoading}
+                                            onPress={() => setSendBackModalVisible(true)}
                                         >
 
                                             <>
@@ -443,9 +449,10 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                                 {/* Approve / Verify */}
                                 <TouchableOpacity
                                     style={
-                                        [Customerstyles.approveButton,isDisabled&&{opacity:0.5}]
+                                        [Customerstyles.approveButton, isDisabled && { opacity: 0.5 }]
                                     }
                                     disabled={isDisabled}
+                                    onPress={() => setApproveModalVisible(true)}
                                 >
                                     <>
                                         <MaterialIcons name="check" size={20} color="#fff" />
@@ -460,7 +467,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                                 {/* Reject */}
                                 <TouchableOpacity
                                     style={Customerstyles.rejectButton}
-                                // onPress={() => setRejectModalVisible(true)}
+                                    onPress={() => setRejectModalVisible(true)}
                                 >
                                     <CloseCircle color="#2B2B2B" />
                                     <AppText style={Customerstyles.rejectButtonText}>Reject</AppText>
@@ -475,6 +482,12 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                                         style={
                                             [Customerstyles.approveButton]
                                         }
+                                        onPress={() => {
+                                            setActiveTab?.("linkaged");  
+                                            console.log("worjsiudfh");
+                                            
+                                        }}
+
                                     >
                                         <>
                                             <MaterialIcons name="check" size={20} color="#fff" />
@@ -524,9 +537,48 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
 
             )
             }
+            <ConfirmActionModal
+                visible={approveModalVisible}
+                onClose={() => setApproveModalVisible(false)}
+                onConfirm={(comment) => {
+                    workflowAction("APPROVE", comment)
+                    setApproveModalVisible(false)
+                }
+                }
+                title={"Are you sure you want to\nApprove customer?"}
+                showCheckbox
+                confirmColor={colors.primary}
+            />
+
+            <ConfirmActionModal
+                visible={rejectModalVisible}
+                onClose={() => setRejectModalVisible(false)}
+                onConfirm={(comment) => {
+                    workflowAction("REJECT", comment)
+                    setRejectModalVisible(false)
+                }
+                }
+                title={"Are you sure you want to\nReject customer?"}
+                confirmColor="#FF7779"
+            />
+
+
+            <ConfirmActionModal
+                visible={sendBackModalVisible}
+                onClose={() => setSendBackModalVisible(false)}
+                onConfirm={(comment) => {
+                    workflowAction("send_back", comment)
+                    setSendBackModalVisible(false)
+                }
+                }
+                title={"Are you sure you want to send\nthis request back to the MR?"}
+                confirmColor="#777777"
+            />
+
         </View >
     );
 };
+
 
 
 

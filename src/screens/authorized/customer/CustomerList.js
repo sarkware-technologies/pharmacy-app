@@ -105,7 +105,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
   // Get customers from Redux instead of mock data
   const customers = useSelector(selectCustomers);
 
-  console.log(loggedInUser, "loggedInUser");
 
 
   const customerTypes = useSelector(selectCustomerTypes);
@@ -152,8 +151,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
   const [showFromDatePicker, setShowFromDatePicker] = useState(false);
   const [showToDatePicker, setShowToDatePicker] = useState(false);
   const [downloadModalVisible, setDownloadModalVisible] = useState(false);
-  const [documentModalVisible, setDocumentModalVisible] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isHardRefreshing, setIsHardRefreshing] = useState(false);
 
   const [selectedFilters, setSelectedFilters] = useState({
@@ -208,6 +205,9 @@ const CustomerList = ({ navigation: navigationProp }) => {
   const [hasRejectedTabPermission, setHasRejectedTabPermission] = useState(true);
   const [hasDoctorSupplyTabPermission, setHasDoctorSupplyTabPermission] = useState(true);
   const [hasDraftTabPermission, setHasDraftTabPermission] = useState(true);
+  const [hasLinkDTAccess, setHasLinkDTAccess] = useState(true);
+
+  
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -256,6 +256,9 @@ const CustomerList = ({ navigation: navigationProp }) => {
     return filterMap[filterButton] || null;
   };
 
+    console.log(activeFilterButton, 897);
+
+
   // Format dates to ISO string for API - ensures time is always 00:00:00Z
   const formatDateForAPI = (date) => {
     if (!date) return null;
@@ -279,6 +282,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
         rejectedPermission,
         doctorSupplyPermission,
         draftPermission,
+        hasLinkDTAccess
+
       ] = await Promise.all([
         checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_PAGE_VIEW),
         checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_UNVERIFIED_PAGE_VIEW),
@@ -287,6 +292,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
         checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_REJECTED_PAGE_VIEW),
         checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_DOCTOR_SUPPLY_PAGE_VIEW),
         checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_DRAFT_PAGE_VIEW),
+        checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_LINK_DT)
       ]);
 
       setHasAllTabPermission(allPermission);
@@ -296,6 +302,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
       setHasRejectedTabPermission(rejectedPermission);
       setHasDoctorSupplyTabPermission(doctorSupplyPermission);
       setHasDraftTabPermission(draftPermission);
+      setHasLinkDTAccess(hasLinkDTAccess)
     };
 
     checkTabPermissions();
@@ -2272,166 +2279,320 @@ const CustomerList = ({ navigation: navigationProp }) => {
   };
 
 
-  const getCustomerActionType = (item) => {
-    if (item.statusName === 'LOCKED') return 'UNBLOCK';
+  // const getCustomerActionType = (item) => {
+  //   if (item.statusName === 'LOCKED') return 'UNBLOCK';
 
-    if (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED')
-      return 'BLOCK';
+  //   if (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED')
+  //     return 'BLOCK';
 
-    if (item.statusName === 'PENDING' && item.action === 'LINK_DT')
-      return 'LINK_DT';
+  //   if (item.statusName === 'PENDING' && item.action === 'LINK_DT')
+  //     return 'LINK_DT';
 
-    if (item.statusName === 'PENDING' && item.action === 'APPROVE')
-      return 'APPROVE';
+  //   if (item.statusName === 'PENDING' && item.action === 'APPROVE')
+  //     return 'APPROVE';
 
-    if (
-      item.statusName === 'IN_PROGRESS' ||
-      (item.statusName === 'PENDING' && item.action === 'VERIFY')
-    )
-      return 'VERIFY';
+  //   if (
+  //     item.statusName === 'IN_PROGRESS' ||
+  //     (item.statusName === 'PENDING' && item.action === 'VERIFY')
+  //   )
+  //     return 'VERIFY';
 
-    if (item.statusName === 'NOT-ONBOARDED')
-      return 'ONBOARD';
+  //   if (item.statusName === 'NOT-ONBOARDED')
+  //     return 'ONBOARD';
 
-    return null;
-  };
+  //   return null;
+  // };
 
 
-  const renderCustomerAction = (item) => {
-    const actionType = getCustomerActionType(item);
+  // const renderCustomerAction = (item) => {
+  //   const actionType = getCustomerActionType(item);
 
-    switch (actionType) {
-      case 'UNBLOCK':
-        return (
-          <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
-            <TouchableOpacity
-              style={styles.unlockButton}
-              onPress={() => handleUnblockCustomer(item)}
-              disabled={blockUnblockLoading}
-            >
-              <UnLocked fill="#EF4444" />
-              <AppText style={styles.unlockButtonText}>Unblock</AppText>
-            </TouchableOpacity>
-          </PermissionWrapper>
-        );
+  //   switch (actionType) {
+  //     case 'UNBLOCK':
+  //       return (
+  //         <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
+  //           <TouchableOpacity
+  //             style={styles.unlockButton}
+  //             onPress={() => handleUnblockCustomer(item)}
+  //             disabled={blockUnblockLoading}
+  //           >
+  //             <UnLocked fill="#EF4444" />
+  //             <AppText style={styles.unlockButtonText}>Unblock</AppText>
+  //           </TouchableOpacity>
+  //         </PermissionWrapper>
+  //       );
 
-      case 'BLOCK':
-        return (
-          <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
-            <TouchableOpacity
-              style={styles.blockButton}
-              onPress={() => handleBlockCustomer(item)}
-              disabled={blockUnblockLoading}
-            >
-              <Locked fill="#666" />
-              <AppText style={styles.blockButtonText}>Block</AppText>
-            </TouchableOpacity>
-          </PermissionWrapper>
-        );
+  //     case 'BLOCK':
+  //       return (
+  //         <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
+  //           <TouchableOpacity
+  //             style={styles.blockButton}
+  //             onPress={() => handleBlockCustomer(item)}
+  //             disabled={blockUnblockLoading}
+  //           >
+  //             <Locked fill="#666" />
+  //             <AppText style={styles.blockButtonText}>Block</AppText>
+  //           </TouchableOpacity>
+  //         </PermissionWrapper>
+  //       );
 
-      case 'APPROVE':
-        return (
-          <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
-            <View style={styles.pendingActions}>
-              <TouchableOpacity
-                style={styles.approveButton}
-                onPress={() => handleApprovePress(item)}
-              >
-                <View style={styles.approveButtonContent}>
-                  <Icon name="checkmark-outline" size={18} color="white" />
-                  <AppText style={styles.approveButtonText}>Approve</AppText>
-                </View>
-              </TouchableOpacity>
+  //     case 'APPROVE':
+  //       return (
+  //         <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
+  //           <View style={styles.pendingActions}>
+  //             <TouchableOpacity
+  //               style={styles.approveButton}
+  //               onPress={() => handleApprovePress(item)}
+  //             >
+  //               <View style={styles.approveButtonContent}>
+  //                 <Icon name="checkmark-outline" size={18} color="white" />
+  //                 <AppText style={styles.approveButtonText}>Approve</AppText>
+  //               </View>
+  //             </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.rejectButton}
-                onPress={() => handleRejectPress(item)}
-              >
-                <CloseCircle color="#000" />
-              </TouchableOpacity>
+  //             <TouchableOpacity
+  //               style={styles.rejectButton}
+  //               onPress={() => handleRejectPress(item)}
+  //             >
+  //               <CloseCircle color="#000" />
+  //             </TouchableOpacity>
+  //           </View>
+  //         </PermissionWrapper>
+  //       );
+
+  //     case 'VERIFY':
+  //       return (
+  //         <View style={styles.pendingActions}>
+  //           <TouchableOpacity
+  //             style={styles.approveButton}
+  //             onPress={() => handleVerifyClick(item)}
+  //             disabled={actionLoading}
+  //           >
+  //             <View style={styles.approveButtonContent}>
+  //               <Icon name="checkmark-outline" size={18} color="white" />
+  //               <AppText style={styles.approveButtonText}>
+  //                 {item?.instance?.stepInstances?.[0]?.approverType === 'ROLE'
+  //                   ? 'Verify'
+  //                   : 'Approve'}
+  //               </AppText>
+  //             </View>
+  //           </TouchableOpacity>
+
+  //           <TouchableOpacity
+  //             style={styles.rejectButton}
+  //             onPress={() => handleRejectPress(item)}
+  //             disabled={actionLoading}
+  //           >
+  //             <CloseCircle color="#000" />
+  //           </TouchableOpacity>
+  //         </View>
+  //       );
+
+
+  //     case 'LINK_DT':
+  //       return (
+  //         <View style={styles.pendingActions}>
+  //           <TouchableOpacity
+  //             style={styles.linkDtButton}
+  //             onPress={() => navigation.navigate('CustomerDetail', { customerId: item?.stgCustomerId ?? item?.customerId, isStaging: item?.stgCustomerId ? true : false, activeTab: "linkage" })}
+
+  //           >
+  //             <View style={styles.linkDtButtonContent}>
+  //               <AppText style={styles.linkDtButtonText}>LINK DT</AppText>
+  //             </View>
+  //           </TouchableOpacity>
+
+  //           <TouchableOpacity
+  //             style={styles.rejectButton}
+  //             onPress={() => handleRejectPress(item)}
+  //           >
+  //             <CloseCircle color="#000" />
+  //           </TouchableOpacity>
+  //         </View>
+  //       );
+
+  //     case 'ONBOARD':
+  //       return (
+  //         <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_ONBOARD}>
+  //           <TouchableOpacity
+  //             style={styles.onboardButton}
+  //             onPress={() => {
+  //               const customerId = item.customerId || item.stgCustomerId;
+  //               handleOnboardCustomer(
+  //                 navigation,
+  //                 customerId,
+  //                 false,
+  //                 customerAPI,
+  //                 (toastConfig) => Toast.show(toastConfig),
+  //                 item.statusName
+  //               );
+  //             }}
+  //           >
+  //             <AppText style={styles.onboardButtonText}>Onboard</AppText>
+  //           </TouchableOpacity>
+  //         </PermissionWrapper>
+  //       );
+
+  //     default:
+  //       return null;
+  //   }
+  // };
+
+
+const renderCustomerAction = (item) => {
+  // 1️⃣ BLOCK / UNBLOCK
+  if (item.statusName === 'LOCKED') {
+    return (
+      <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
+        <TouchableOpacity
+          style={styles.unlockButton}
+          onPress={() => handleUnblockCustomer(item)}
+          disabled={blockUnblockLoading}
+        >
+          <UnLocked fill="#EF4444" />
+          <AppText style={styles.unlockButtonText}>Unblock</AppText>
+        </TouchableOpacity>
+      </PermissionWrapper>
+    );
+  }
+
+  if (['ACTIVE', 'UN-VERIFIED'].includes(item.statusName)) {
+    return (
+      <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
+        <TouchableOpacity
+          style={styles.blockButton}
+          onPress={() => handleBlockCustomer(item)}
+          disabled={blockUnblockLoading}
+        >
+          <Locked fill="#666" />
+          <AppText style={styles.blockButtonText}>Block</AppText>
+        </TouchableOpacity>
+      </PermissionWrapper>
+    );
+  }
+
+  // 2️⃣ ONBOARD
+  if (item.statusName === 'NOT-ONBOARDED') {
+    return (
+      <PermissionWrapper permission={[
+            PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_ONBOARD,
+            PERMISSIONS.ONBOARDING_LISTING_PAGE_NOT_ONBOARDED_ONBOARD,
+          ]}>
+        <TouchableOpacity
+          style={styles.onboardButton}
+          onPress={() => {
+            const customerId = item.customerId || item.stgCustomerId;
+            handleOnboardCustomer(
+              navigation,
+              customerId,
+              false,
+              customerAPI,
+              (toastConfig) => Toast.show(toastConfig),
+              item.statusName
+            );
+          }}
+        >
+          <AppText style={styles.onboardButtonText}>Onboard</AppText>
+        </TouchableOpacity>
+      </PermissionWrapper>
+    );
+  }
+
+  // 3️⃣ INSTANCE BASED ACTIONS
+  const stepStatus =
+    item?.instance?.stepInstances?.[0]?.stepInstanceStatus;
+
+  const isInstance = ['PENDING', 'IN_PROGRESS'].includes(stepStatus);
+
+  const approverType = item?.instance?.stepInstances?.[0]?.approverType;
+
+  console.log(item);
+  console.log(hasLinkDTAccess);
+  console.log(approverType);
+  console.log(activeTab);
+  
+  console.log(isInstance);
+  
+  
+  
+  
+
+  
+
+  if (
+     (hasLinkDTAccess && activeTab == "all" && !item?.customerId && isInstance) ||
+        (hasLinkDTAccess &&
+          activeTab == "waitingForApproval" &&
+          activeFilterButton == "newCustomer" &&
+          !item?.customerId &&
+          isInstance)
+  ) {
+    return (
+      <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_LINK_DT}>
+        <View style={styles.pendingActions}>
+          <TouchableOpacity
+            style={styles.linkDtButton}
+            onPress={() =>
+              navigation.navigate('CustomerDetail', {
+                customerId: item.stgCustomerId,
+                isStaging: true,
+                activeTab: 'linkaged',
+              })
+            }
+          >
+            <View style={styles.linkDtButtonContent}>
+              <AppText style={styles.linkDtButtonText}>LINK DT</AppText>
             </View>
-          </PermissionWrapper>
-        );
+          </TouchableOpacity>
 
-      case 'VERIFY':
-        return (
-          <View style={styles.pendingActions}>
-            <TouchableOpacity
-              style={styles.approveButton}
-              onPress={() => handleVerifyClick(item)}
-              disabled={actionLoading}
-            >
-              <View style={styles.approveButtonContent}>
-                <Icon name="checkmark-outline" size={18} color="white" />
-                <AppText style={styles.approveButtonText}>
-                  {item?.instance?.stepInstances?.[0]?.approverType === 'ROLE'
-                    ? 'Verify'
-                    : 'Approve'}
-                </AppText>
-              </View>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.rejectButton}
+            onPress={() => handleRejectPress(item)}
+          >
+            <CloseCircle color="#000" />
+          </TouchableOpacity>
+        </View>
+      </PermissionWrapper>
+    );
+  }else{
+  // 3B️⃣ APPROVE / VERIFY
+  return (
 
-            <TouchableOpacity
-              style={styles.rejectButton}
-              onPress={() => handleRejectPress(item)}
-              disabled={actionLoading}
-            >
-              <CloseCircle color="#000" />
-            </TouchableOpacity>
+    isInstance ? (  <PermissionWrapper
+      permission={[
+        PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT,
+        PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_APPROVE_REJECT,
+      ]}
+    >
+      <View style={styles.pendingActions}>
+        <TouchableOpacity
+          style={styles.approveButton}
+          onPress={() => handleApprovePress(item)}
+          disabled={actionLoading}
+        >
+          <View style={styles.approveButtonContent}>
+            <Icon name="checkmark-outline" size={18} color="white" />
+            <AppText style={styles.approveButtonText}>
+              {approverType === 'ROLE' ? 'Verify' : 'Approve'}
+            </AppText>
           </View>
-        );
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.rejectButton}
+          onPress={() => handleRejectPress(item)}
+          disabled={actionLoading}
+        >
+          <CloseCircle color="#000" />
+        </TouchableOpacity>
+      </View>
+    </PermissionWrapper>) : null
+  
+  );
+  }
 
 
-      case 'LINK_DT':
-        return (
-          <View style={styles.pendingActions}>
-            <TouchableOpacity
-              style={styles.linkDtButton}
-              onPress={() => navigation.navigate('CustomerDetail', { customerId: item?.stgCustomerId ?? item?.customerId, isStaging: item?.stgCustomerId ? true : false, activeTab: "linkage" })}
-
-            >
-              <View style={styles.linkDtButtonContent}>
-                <AppText style={styles.linkDtButtonText}>LINK DT</AppText>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.rejectButton}
-              onPress={() => handleRejectPress(item)}
-            >
-              <CloseCircle color="#000" />
-            </TouchableOpacity>
-          </View>
-        );
-
-      case 'ONBOARD':
-        return (
-          <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_ONBOARD}>
-            <TouchableOpacity
-              style={styles.onboardButton}
-              onPress={() => {
-                const customerId = item.customerId || item.stgCustomerId;
-                handleOnboardCustomer(
-                  navigation,
-                  customerId,
-                  false,
-                  customerAPI,
-                  (toastConfig) => Toast.show(toastConfig),
-                  item.statusName
-                );
-              }}
-            >
-              <AppText style={styles.onboardButtonText}>Onboard</AppText>
-            </TouchableOpacity>
-          </PermissionWrapper>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-
+};
 
 
   const renderCustomerItem = ({ item, index }) => {
@@ -2475,46 +2636,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           </TouchableOpacity>
           <View style={styles.actionsContainer}>
 
-            {/* {item.statusName === 'NOT-ONBOARDED' && (
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => {
-                  const customerId = item.customerId || item.stgCustomerId;
-                  // Determine isStaging based on tab - only waitingForApproval and rejected use staging
-                  const isStaging = activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft';
-                  handleOnboardCustomer(
-                    navigation,
-                    customerId,
-                    isStaging,
-                    customerAPI,
-                    (toastConfig) => Toast.show(toastConfig),
-                    item.statusName // Pass status name
-                  );
-                }}
-              >
-                <Edit color="#666" />
-              </TouchableOpacity>
-            )}
-
-            {(item.statusName?.toLowerCase() === 'approved' || item.statusName?.toLowerCase() === 'active') && (
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => {
-                  const customerId = item.customerId || item.stgCustomerId;
-                  const isStaging = false;
-                  handleOnboardCustomer(
-                    navigation,
-                    customerId,
-                    isStaging,
-                    customerAPI,
-                    (toastConfig) => Toast.show(toastConfig),
-                    item.statusName // Pass status name to determine edit vs onboard
-                  );
-                }}
-              >
-                <Edit color="#666" />
-              </TouchableOpacity>
-            )} */}
+     
 
             {(
               (
@@ -3628,7 +3750,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
             style={styles.searchBar}
             onPress={() => navigation.navigate('CustomerStack', {
               screen: 'CustomerSearchMain',
-              params: { activeTab: activeTab } // Pass current active tab to search screen
+              params: { activeTab: activeTab , activeFilterButton: activeFilterButton} // Pass current active tab to search screen
             })}
             activeOpacity={0.7}
           >

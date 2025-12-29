@@ -126,7 +126,7 @@ const ChildLinkageDetails = ({ customerId, isStaging, activeTab, onClose, setChi
                         ellipsizeMode="tail"
                     >
 
-                        {customerDetails?.generalDetails?.customerName} child
+                        {customerDetails?.generalDetails?.customerName} 
                     </AppText>
                 </View>
 
@@ -152,7 +152,7 @@ const ChildLinkageDetails = ({ customerId, isStaging, activeTab, onClose, setChi
                 </TouchableOpacity>
             </View>
 
-            {active == "details" ? <DetailsView instance={instance} isChild={true} customerData={customerDetails} loading={isLoading} saveDraft={saveDraft} /> : <LinkageView setChildCustomer={setChildCustomer} customerData={customerDetails} loading={isLoading} isChild={true} saveDraft={saveDraft} />}
+            {active == "details" ? <DetailsView instance={instance} isChild={true} customerData={customerDetails} loading={isLoading} saveDraft={saveDraft} setActiveTab={setActiveTab}  /> : <LinkageView setChildCustomer={setChildCustomer} customerData={customerDetails} loading={isLoading} isChild={true} saveDraft={saveDraft} />}
 
 
         </View>
