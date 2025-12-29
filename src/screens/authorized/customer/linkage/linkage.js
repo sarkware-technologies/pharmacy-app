@@ -14,7 +14,7 @@ import PERMISSIONS from "../../../../utils/RBAC/permissionENUM";
 import checkPermission from "../../../../utils/RBAC/permissionHelper";
 import HorizontalSelector from "../../../../components/view/HorizontalSelector";
 
-const LinkageView = ({ activeTab = "divisions", customerData, isLoading, isChild, saveDraft,setChildCustomer }) => {
+const LinkageView = ({ activeTab = "divisions", customerData, isLoading, isChild, saveDraft,setChildCustomer,instance }) => {
     const [hasOtherDivisionPermission, setHasOtherDivisionPermission] = useState(false);
     const [hasPreferredDistributorPermission, setHasPreferredDistributorPermission,] = useState(false);
     const [checkLinkeEditAccess, setCheckLinkeEditAccess,] = useState(false);
@@ -84,7 +84,7 @@ const LinkageView = ({ activeTab = "divisions", customerData, isLoading, isChild
             // color={openedDivisionsData.length > 0 ? activeSubTab === 'hierarchy' ? '#000' : '#999' : '#CCC'}
             />,
             disabled: isChild,
-            component: <CustomerHierarchy setChildCustomer={setChildCustomer} customerData={customerData} isLoading={isLoading} isChild={isChild} saveDraft={saveDraft} />
+            component: <CustomerHierarchy instance={instance} setChildCustomer={setChildCustomer} customerData={customerData} isLoading={isLoading} isChild={isChild} saveDraft={saveDraft} />
 
         },
     ]

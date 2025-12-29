@@ -13,6 +13,7 @@ const checkPermission = async (permission) => {
         return false;
     }
 
+    console.log(permissions,2389426)
     if (!Array.isArray(permissions)) return false;
 
     if (Array.isArray(permission)) {

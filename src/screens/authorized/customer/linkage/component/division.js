@@ -32,7 +32,6 @@ const DivisionLinkage = ({
         setLoading(true)
     }, [])
 
-
     useEffect(() => {
         const fetchDivisions = async () => {
             try {
@@ -160,7 +159,7 @@ const DivisionLinkage = ({
                     <AnimatedContent duration={100} translateY={20}>
                         <View style={[{ flexDirection: "row", justifyContent: "space-between", paddingTop: 30, }]}>
                             {/* ---------------- Requested ---------------- */}
-                            <View style={[Linkagestyles.accordionCardG, { width: "33%", paddingBottom: 20 }]}>
+                            <View style={[Linkagestyles.accordionCardG, { flex: 1, paddingBottom: 20 }]}>
                                 <View style={Linkagestyles.header}>
                                     <AppText style={Linkagestyles.headerTitle}>Requested</AppText>
                                     <View style={{ backgroundColor: "#FBFBFB", width: "100%", borderRightWidth: 0.5, borderRightColor: "#90909080" }}>
@@ -182,84 +181,85 @@ const DivisionLinkage = ({
                             </View>
 
                             {/* ---------------- Other ---------------- */}
-                            <View style={[Linkagestyles.accordionCardG, { width: "34%" }]}>
-                                <View style={Linkagestyles.header}>
-                                    {hasOtherDivisionPermission && (
-                                        <AppText style={Linkagestyles.headerTitle}>Other</AppText>
-                                    )}
-                                    <View style={{ backgroundColor: "#FBFBFB", borderRightWidth: 0.5, borderRightColor: "#90909080" }}>
-                                        <AppText style={Linkagestyles.subHeaderText}>Name & Code</AppText>
-                                    </View>
-                                </View>
-
-                                <ScrollView style={[Linkagestyles.body, { borderRightWidth: 0.5, borderRightColor: "#90909080", paddingHorizontal: 10, paddingVertical: 20 }]}>
-                                    <AnimatedContent duration={350} translateY={20}>
+                            {hasOtherDivisionPermission && (
+                                <View style={[Linkagestyles.accordionCardG, { width: "34%" }]}>
+                                    <View style={Linkagestyles.header}>
                                         {hasOtherDivisionPermission && (
-                                            <View style={[Linkagestyles.colOther, { gap: 15, paddingBottom: 20 }]}>
-                                                {otherDivisions?.length != 0 && (
-                                                    <CustomCheckbox
-                                                        checkboxStyle={{ marginTop: 3 }}
-                                                        containerStyle={{ alignItems: "flex-start" }}
-                                                        activeColor="#F7941E"
-                                                        size={15}
-                                                        checked={selectedAll}
-                                                        borderWidth={2}
-                                                        onChange={(e) => handleToggleDivision("all", e)}
-                                                        checkIcon={
-                                                            <Svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                <Path d="M8.25 0.75L3.09375 5.90625L0.75 3.5625" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                                            </Svg>
-                                                        }
-                                                        title={
-                                                            <View style={{ flexShrink: 1, paddingBottom: 10 }}>
-                                                                <AppText style={Linkagestyles.divisionName}>
-                                                                    Select All
-                                                                </AppText>
-                                                            </View>
-                                                        }
-                                                    />
-                                                )}
-                                                {otherDivisions.length ? (
-                                                    otherDivisions.map(div => (
+                                            <AppText style={Linkagestyles.headerTitle}>Other</AppText>
+                                        )}
+                                        <View style={{ backgroundColor: "#FBFBFB", borderRightWidth: 0.5, borderRightColor: "#90909080" }}>
+                                            <AppText style={Linkagestyles.subHeaderText}>Name & Code</AppText>
+                                        </View>
+                                    </View>
+
+                                    <ScrollView style={[Linkagestyles.body, { borderRightWidth: 0.5, borderRightColor: "#90909080", paddingHorizontal: 10, paddingVertical: 20 }]}>
+                                        <AnimatedContent duration={350} translateY={20}>
+                                            {hasOtherDivisionPermission && (
+                                                <View style={[Linkagestyles.colOther, { gap: 15, paddingBottom: 20 }]}>
+                                                    {otherDivisions?.length != 0 && (
                                                         <CustomCheckbox
                                                             checkboxStyle={{ marginTop: 3 }}
                                                             containerStyle={{ alignItems: "flex-start" }}
-                                                            key={div.divisionId}
-                                                            checked={selectedDivisionIds.has(div.divisionId)}
                                                             activeColor="#F7941E"
                                                             size={15}
-                                                            borderWidth={1}
-                                                            onChange={() => handleToggleDivision(div)}
+                                                            checked={selectedAll}
+                                                            borderWidth={2}
+                                                            onChange={(e) => handleToggleDivision("all", e)}
                                                             checkIcon={
                                                                 <Svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                                     <Path d="M8.25 0.75L3.09375 5.90625L0.75 3.5625" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                                                 </Svg>
                                                             }
                                                             title={
-                                                                <View style={{ flexShrink: 1 }}>
+                                                                <View style={{ flexShrink: 1, paddingBottom: 10 }}>
                                                                     <AppText style={Linkagestyles.divisionName}>
-                                                                        {div.divisionName}
-                                                                    </AppText>
-                                                                    <AppText style={Linkagestyles.divisionCode}>
-                                                                        {div.divisionCode}
+                                                                        Select All
                                                                     </AppText>
                                                                 </View>
                                                             }
                                                         />
-                                                    ))
-                                                ) : (
-                                                    renderEmpty()
-                                                )}
-                                            </View>
-                                        )}
-                                    </AnimatedContent>
-                                </ScrollView>
+                                                    )}
+                                                    {otherDivisions.length ? (
+                                                        otherDivisions.map(div => (
+                                                            <CustomCheckbox
+                                                                checkboxStyle={{ marginTop: 3 }}
+                                                                containerStyle={{ alignItems: "flex-start" }}
+                                                                key={div.divisionId}
+                                                                checked={selectedDivisionIds.has(div.divisionId)}
+                                                                activeColor="#F7941E"
+                                                                size={15}
+                                                                borderWidth={1}
+                                                                onChange={() => handleToggleDivision(div)}
+                                                                checkIcon={
+                                                                    <Svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                        <Path d="M8.25 0.75L3.09375 5.90625L0.75 3.5625" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                                    </Svg>
+                                                                }
+                                                                title={
+                                                                    <View style={{ flexShrink: 1 }}>
+                                                                        <AppText style={Linkagestyles.divisionName}>
+                                                                            {div.divisionName}
+                                                                        </AppText>
+                                                                        <AppText style={Linkagestyles.divisionCode}>
+                                                                            {div.divisionCode}
+                                                                        </AppText>
+                                                                    </View>
+                                                                }
+                                                            />
+                                                        ))
+                                                    ) : (
+                                                        renderEmpty()
+                                                    )}
+                                                </View>
+                                            )}
+                                        </AnimatedContent>
+                                    </ScrollView>
 
-                                <View style={Linkagestyles.footer} />
-                            </View>
-
+                                    <View style={Linkagestyles.footer} />
+                                </View>
+                            )}
                             {/* ---------------- Opened ---------------- */}
-                            <View style={[Linkagestyles.accordionCardG, { width: "33%" }]}>
+                            <View style={[Linkagestyles.accordionCardG, { flex: 1 }]}>
                                 <View style={Linkagestyles.header}>
                                     <AppText style={Linkagestyles.headerTitle}>Opened</AppText>
                                     <View style={{ backgroundColor: "#FBFBFB" }}>

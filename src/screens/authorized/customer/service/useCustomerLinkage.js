@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { mergeCustomerObjects, applyMappingApproval } from "./formatData";
+import { mergeCustomerObjects, applyMappingApproval, removeKeyFromMapping } from "./formatData";
 import { customerAPI } from "../../../../api/customer";
 
 export const useCustomerLinkage = ({
   customerId,
   isStaging,
 }) => {
-  console.log(customerId, 23984273)
   const [finalData, setFinalData] = useState(null);
   const [draftData, setDraftData] = useState(null);
   const [hasDraft, setHasDraft] = useState(false);
@@ -48,7 +47,10 @@ export const useCustomerLinkage = ({
 
         if (activeCustomerRef.current !== customerId) return;
 
-        const customerData = response?.data;
+        const customerData = {
+          ...response?.data,
+          mapping: removeKeyFromMapping(response?.data?.mapping),
+        };
         if (!customerData) return;
 
         /* ---------- 2. DRAFT ---------- */

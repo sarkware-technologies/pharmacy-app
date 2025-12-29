@@ -3,8 +3,8 @@ import AppText from "../AppText"
 import { Fonts } from "../../utils/fontHelper";
 import { colors } from "../../styles/colors";
 
-const RadioOption = ({ label, selected, onSelect }) => (
-    <TouchableOpacity style={styles.radioOption} onPress={() => onSelect?.()}>
+const RadioOption = ({ label, selected, onSelect,disabled }) => (
+    <TouchableOpacity disabled={disabled} style={styles.radioOption} onPress={() => onSelect?.()}>
         <View style={[styles.radio, selected && styles.radioSelected]}>
             {selected && <View style={styles.radioInner} />}
         </View>

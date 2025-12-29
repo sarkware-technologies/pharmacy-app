@@ -17,7 +17,8 @@ import DetailsView from "./linkage/details"
 import LinkageView from "./linkage/linkage"
 import ChildLinkageDetails from "./childLinkage"
 import { customerAPI } from "../../../api/customer";
-import { transformCustomerData } from "./service/formatData";
+import { findAndUpdate, transformCustomerData } from "./service/formatData";
+import Toast from "react-native-toast-message";
 
 const CustomerDetails = () => {
     const navigation = useNavigation();
@@ -60,8 +61,14 @@ const CustomerDetails = () => {
     }, [data, isLoading])
 
     const saveDraft = async (action, data) => {
-        setCustomerDetails((prev) => ({ ...prev, ...data }));
-        if (customerDetails?.instance) {
+        console.log(customerDetails, 238942938)
+        if (customerDetails?.instance?.stepInstances) {
+            let filterData = data;
+            if (action == "distributors") {
+                filterData = { ...data, distributors: data?.distributors?.filter((e) => e.isActive == true) }
+            }
+
+            setCustomerDetails((prev) => ({ ...prev, ...filterData }));
             const instance = customerDetails?.instance;
             const draftEditPayload = {
                 stepOrder: instance?.stepInstances?.[0]?.stepOrder || 1,
@@ -70,14 +77,15 @@ const CustomerDetails = () => {
                 actorId: instance?.stepInstances?.[0]?.assignedUserId,
                 dataChanges: {
                     ...draftValue,
-                    ...data
+                    ...filterData
                 },
             };
             setDraftValue(draftEditPayload?.dataChanges)
             await customerAPI.draftEdit(instance?.workflowInstance?.id, draftEditPayload);
         }
         else {
-            if (!["PENDING", "IN_PROGRESS"].includes(customerDetails?.statusName ?? "")) {
+            if (!customerDetails?.stgCustomerId && customerDetails?.customerId) {
+                setCustomerDetails((prev) => ({ ...prev, ...data }));
                 if (action == "divisions") {
                     const divi = data?.divisions.map((e) => {
                         return {
@@ -105,6 +113,13 @@ const CustomerDetails = () => {
 
                 }
             }
+            else {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Task issue',
+                    text2: 'Task Not Assignt to you',
+                });
+            }
         }
         // console.log(action, data, 239482637)
         // if (action == "divisions") {
@@ -115,6 +130,11 @@ const CustomerDetails = () => {
         // }
     }
 
+
+    const saveDraftParent = (action, data) => {
+        let parantData = findAndUpdate({ mapping: customerDetails?.mapping, tab: childCustomer?.tab, childTab: childCustomer?.childTab, customerId: childCustomer?.customer?.id, parentId: childCustomer?.parentId, updateValue: data })
+        saveDraft(action, { mapping: parantData })
+    }
 
     return (
         <SafeAreaView style={Customerstyles.safeArea} edges={['top']}>
@@ -183,7 +203,7 @@ const CustomerDetails = () => {
                 </TouchableOpacity>
             </View>
 
-            {active == "details" ? <DetailsView customerData={customerDetails} loading={isLoading} saveDraft={saveDraft} /> : <LinkageView setChildCustomer={setChildCustomer} customerData={customerDetails} loading={isLoading} isChild={false} saveDraft={saveDraft} />}
+            {active == "details" ? <DetailsView instance={customerDetails?.instance} customerData={customerDetails} loading={isLoading} saveDraft={saveDraft} /> : <LinkageView instance={customerDetails?.instance}  setChildCustomer={setChildCustomer} customerData={customerDetails} loading={isLoading} isChild={false} saveDraft={saveDraft} />}
 
             <Modal
                 visible={childCustomer != null}
@@ -191,7 +211,7 @@ const CustomerDetails = () => {
                 animationType="fade"
                 onRequestClose={() => setChildCustomer(null)}
             >
-                <ChildLinkageDetails parantCustomer={childCustomer} setChildCustomer={setChildCustomer} onClose={() => setChildCustomer(null)} activeTab={"details"} customerId={childCustomer?.customer?.id} isStaging={childCustomer?.isStaging} />
+                <ChildLinkageDetails saveDraftParent={saveDraftParent} instance={customerDetails?.instance} parantCustomer={childCustomer?.customer} setChildCustomer={setChildCustomer} onClose={() => setChildCustomer(null)} activeTab={"details"} customerId={childCustomer?.customer?.id} isStaging={childCustomer?.isStaging} />
 
             </Modal>
         </SafeAreaView>

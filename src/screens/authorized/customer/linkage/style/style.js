@@ -400,7 +400,6 @@ const Customerstyles = StyleSheet.create({
         flexDirection: 'row',
         gap: 12,
         paddingHorizontal: 15,
-        paddingVertical: 16,
     },
     rejectButton: {
         flex: 1,

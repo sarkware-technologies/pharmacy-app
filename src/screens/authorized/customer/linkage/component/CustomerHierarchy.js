@@ -12,7 +12,7 @@ import AccordionCard from "../../../../../components/view/AccordionCard"
 import { colors } from "../../../../../styles/colors";
 import Svg, { Path } from "react-native-svg";
 
-const CustomerHierarchy = ({ customerData, isLoading, isChild, saveDraft, setChildCustomer }) => {
+const CustomerHierarchy = ({ customerData, isLoading, isChild, saveDraft, setChildCustomer, instance }) => {
 
     const [activeCustomerTab, setActiveCustomerTab] = useState(0);
     const [expanded, setExpanded] = useState(null);
@@ -21,11 +21,7 @@ const CustomerHierarchy = ({ customerData, isLoading, isChild, saveDraft, setChi
     const renderRef = useRef(false);
 
     useEffect(() => {
-        if (!renderRef.current && customerData?.mapping) {
-            renderRef.current = true;
-            console.log(23409802398)
-            setMapping(customerData.mapping);
-        }
+        setMapping(customerData.mapping);
     }, [customerData?.mapping]);
 
 
@@ -109,8 +105,7 @@ const CustomerHierarchy = ({ customerData, isLoading, isChild, saveDraft, setChi
                 [tab]: updatedTabData,
             };
 
-            console.log(updatedMapping, 398402793)
-            setMapping(updatedMapping);
+
             saveDraft("mapping", { mapping: updatedMapping });
         }
     };
@@ -184,7 +179,7 @@ const CustomerHierarchy = ({ customerData, isLoading, isChild, saveDraft, setChi
         return (
             <View style={[CommonStyle.SpaceBetween, { borderBottomColor: '#90909080', borderBottomWidth: borderBottomWidth, paddingVertical, backgroundColor, paddingHorizontal, overflow }]}>
                 <View style={{ gap: 5, maxWidth: "60%" }}>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleAction(true, customer, tab, childTab, parantId)}>
                         <AppText style={[CommonStyle.secondaryText, { fontSize: 12, color: colors.primaryText, textDecorationLine: "underline" }]}>{customer?.customerName}</AppText>
                     </TouchableOpacity>
                     <AppText style={[CommonStyle.secondaryText, { fontSize: 12, color: colors.secondaryText }]}>{customer?.customerCode}  |  {customer?.cityName}</AppText>
@@ -198,12 +193,14 @@ const CustomerHierarchy = ({ customerData, isLoading, isChild, saveDraft, setChi
                     )}
                 </View>
                 {customer?.isApproved == null ? (
-                    <ApproveRejectButton
-                        tab={tab}
-                        childTab={childTab}
-                        customer={customer}
-                        parantId={parantId}
-                    />
+                    instance?.stepInstances && (
+                        <ApproveRejectButton
+                            tab={tab}
+                            childTab={childTab}
+                            customer={customer}
+                            parantId={parantId}
+                        />
+                    )
                 ) : (
                     <View style={[CommonStyle.SpaceBetween, { gap: 5, width: "30%", justifyContent: "flex-start" }]}>
                         {customer?.isApproved ? (

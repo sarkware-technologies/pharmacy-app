@@ -25,10 +25,12 @@ import Reassigned from "../../../../components/icons/Reassigned";
 import { colors } from "../../../../styles/colors";
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import CloseCircle from "../../../../components/icons/CloseCircle";
+import { isAllApprovedChecked } from "../service/formatData";
 
 
 
 const DetailsView = ({ loading = false, customerData, instance, isChild = false, saveDraft }) => {
+    console.log(customerData?.isApproved, 23948236)
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(40)).current;
     const scaleAnim = useRef(new Animated.Value(0.96)).current;
@@ -38,6 +40,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
     const [selectedGroupId, setSelectedGroupId] = useState(null);
     const [updatingCustomerGroup, setUpdatingCustomerGroup] = useState(false);
     const [commentsVisible, setCommentsVisible] = useState(false);
+    const [isDisabled, setIsDisabled] = useState(false);
 
     useEffect(() => {
         Animated.parallel([
@@ -59,6 +62,25 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
         ]).start();
         loadCustomerGroups();
     }, []);
+
+
+    useEffect(() => {
+        if (customerData) {
+            const isMappingdone = isAllApprovedChecked(customerData?.mapping);
+            if (instance?.stepInstances?.[0]?.approverType !== "ROLE") {
+                setIsDisabled(!isMappingdone);
+            } else {
+                if (customerData) {
+                    setIsDisabled(
+                        !isMappingdone ||
+                        !customerData?.divisions?.length ||
+                        !customerData?.distributors?.length
+                    );
+                }
+            }
+        }
+    }, [customerData]);
+
 
     const InfoRow = ({ label, value, icon, onPress }) => (
         <TouchableOpacity
@@ -395,56 +417,114 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                 />
                 <DocumentModal s3Path={showDocumentModal?.s3Path} fileName={showDocumentModal?.fileName} doctypeName={showDocumentModal?.doctypeName} showDocumentModal={showDocumentModal != null} close={() => setShowDocumentModal(null)} />
             </ScrollView>
-            {!loading && customerData?.instance?.stepInstances && (
-                <View style={Customerstyles.stickyFooter}>
-                    <PermissionWrapper permission={PERMISSIONS.ONBOARDING_DETAILS_PAGE_APPROVE_REJECT}>
-                        <View style={Customerstyles.actionButtonsContainer}>
-                            {/* Send Back */}
-                            {customerData?.instance?.stepInstances && customerData?.instance?.stepInstances?.[0]?.approverType !==
-                                "INITIATOR" && (
-                                    <TouchableOpacity
-                                        style={Customerstyles.sendBackButton}
-                                    // onPress={() => setSendBackModalVisible(true)}
-                                    // disabled={actionLoading}
-                                    >
+            {!loading && instance?.stepInstances && (
 
+                <View style={Customerstyles.stickyFooter}>
+                    {!isChild ? (
+                        <PermissionWrapper permission={PERMISSIONS.ONBOARDING_DETAILS_PAGE_APPROVE_REJECT}>
+                            <View style={Customerstyles.actionButtonsContainer}>
+                                {/* Send Back */}
+                                {instance?.stepInstances && instance?.stepInstances?.[0]?.approverType !==
+                                    "INITIATOR" && (
+                                        <TouchableOpacity
+                                            style={Customerstyles.sendBackButton}
+                                        // onPress={() => setSendBackModalVisible(true)}
+                                        // disabled={actionLoading}
+                                        >
+
+                                            <>
+                                                <Reassigned color={colors.primary} width={18} height={18} />
+                                                <AppText style={Customerstyles.sendBackButtonText}>Send Back</AppText>
+                                            </>
+                                        </TouchableOpacity>
+                                    )}
+
+
+                                {/* Approve / Verify */}
+                                <TouchableOpacity
+                                    style={
+                                        [Customerstyles.approveButton,isDisabled&&{opacity:0.5}]
+                                    }
+                                    disabled={isDisabled}
+                                >
+                                    <>
+                                        <MaterialIcons name="check" size={20} color="#fff" />
+                                        <AppText
+                                            style={Customerstyles.approveButtonText}
+                                        >
+                                            {instance?.stepInstances?.[0]?.approverType === 'ROLE' ? "Verify" : 'Approve'}
+                                        </AppText>
+                                    </>
+                                </TouchableOpacity>
+
+                                {/* Reject */}
+                                <TouchableOpacity
+                                    style={Customerstyles.rejectButton}
+                                // onPress={() => setRejectModalVisible(true)}
+                                >
+                                    <CloseCircle color="#2B2B2B" />
+                                    <AppText style={Customerstyles.rejectButtonText}>Reject</AppText>
+                                </TouchableOpacity>
+                            </View>
+                        </PermissionWrapper>
+                    ) : (
+                        customerData?.isApproved == null && (
+                            <View style={Customerstyles.actionButtonsContainer}>
+                                {instance?.stepInstances?.[0]?.approverType === "ROLE" ? (
+                                    <TouchableOpacity
+                                        style={
+                                            [Customerstyles.approveButton]
+                                        }
+                                    >
                                         <>
-                                            <Reassigned color={colors.primary} width={18} height={18} />
-                                            <AppText style={Customerstyles.sendBackButtonText}>Send Back</AppText>
+                                            <MaterialIcons name="check" size={20} color="#fff" />
+                                            <AppText
+                                                style={Customerstyles.approveButtonText}
+                                            >
+                                                Continue
+                                            </AppText>
                                         </>
                                     </TouchableOpacity>
+                                ) : (
+                                    <>
+                                        <TouchableOpacity
+                                            style={
+                                                [Customerstyles.approveButton]
+                                            }
+                                            onPress={() => saveDraft("mapping", { isApproved: true }, true)}
+                                        >
+                                            <>
+                                                <MaterialIcons name="check" size={20} color="#fff" />
+                                                <AppText
+                                                    style={Customerstyles.approveButtonText}
+                                                >
+                                                    Approve
+                                                </AppText>
+                                            </>
+                                        </TouchableOpacity>
+
+                                        {/* Reject */}
+                                        <TouchableOpacity
+                                            style={Customerstyles.rejectButton}
+                                            onPress={() => saveDraft("mapping", { isApproved: false }, true)}
+                                        >
+                                            <CloseCircle color="#2B2B2B" />
+                                            <AppText style={Customerstyles.rejectButtonText}>Reject</AppText>
+                                        </TouchableOpacity>
+                                    </>
                                 )}
 
+                            </View>
+                        )
+                    )}
 
-                            {/* Approve / Verify */}
-                            <TouchableOpacity
-                                style={
-                                    [Customerstyles.approveButton]
-                                }
-                            >
-                                <>
-                                    <MaterialIcons name="check" size={20} color="#fff" />
-                                    <AppText
-                                        style={Customerstyles.approveButtonText}
-                                    >
-                                        {customerData?.instance?.stepInstances?.[0]?.approverType === 'ROLE' ? "Verify" : 'Approve'}
-                                    </AppText>
-                                </>
-                            </TouchableOpacity>
 
-                            {/* Reject */}
-                            <TouchableOpacity
-                                style={Customerstyles.rejectButton}
-                            // onPress={() => setRejectModalVisible(true)}
-                            >
-                                <CloseCircle color="#2B2B2B" />
-                                <AppText style={Customerstyles.rejectButtonText}>Reject</AppText>
-                            </TouchableOpacity>
-                        </View>
-                    </PermissionWrapper>
                 </View>
-            )}
-        </View>
+
+
+            )
+            }
+        </View >
     );
 };
 

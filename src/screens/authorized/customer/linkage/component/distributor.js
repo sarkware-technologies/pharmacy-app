@@ -176,9 +176,11 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
             setLinkedDistributor(latest);
             if (latest.filter((e) => e.isActive != false).every((e) => e.error == null)) {
                 const distributorsWithoutError = latest.map(({ error, ...rest }) => rest);
-                console.log(distributorsWithoutError,3495827)
+                console.log(distributorsWithoutError, 3495827)
                 saveDraft?.("distributors", { distributors: distributorsWithoutError })
-                setActiveSubTab("hierarchy")
+                if (!isChild) {
+                    setActiveSubTab("hierarchy")
+                }
             }
         }
     }
@@ -391,10 +393,15 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
                 >
                     {activeLinkedDistributors.filter((e) => e.isActive != false).map((e, i) =>
                         <DistributorCard disabled={!checkLinkeEditAccess} key={i.toString()} distributor={e} setValue={(value) => {
-                            setLinkedDistributor((prev) =>
-                                prev.filter((e) => e.isActive != false).map((item, index) =>
+                            setLinkedDistributor((prev) => {
+                                const distributors = prev.filter((e) => e.isActive != false).map((item, index) =>
                                     index === i ? value : item
-                                )
+                                );
+                                if (!value?.isActive) {
+                                    saveDraft?.("distributors", { distributors: distributors })
+                                }
+                                return distributors;
+                            }
                             );
                         }} />)
                     }

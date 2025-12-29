@@ -95,7 +95,7 @@ const DistributorCard = ({ distributor, setValue, disabled }) => {
             value={distributor?.margin != null ? String(distributor.margin) : ""}
             keyboardType="numeric"
             onChangeText={(text) => handleSetValue?.({ margin: text })}
-            disabled={disabled}
+            editable={!disabled}
           />
           <AppText style={styles.percent}>% </AppText>
         </View>

@@ -272,7 +272,7 @@ const removeKeyFromMapping = (data) => {
   if (typeof data === "object") {
     let rest = data;
 
-    if (data.isApproved === true) {
+    if (data.isApproved != null) {
       const { isApproved, ...remaining } = data;
       rest = remaining;
     }
