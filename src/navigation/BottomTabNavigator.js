@@ -16,7 +16,6 @@ import More from '../components/icons/menu/More';
 
 // Import screens
 import CustomerList from '../screens/authorized/customer/CustomerList';
-import CustomerDetail from '../screens/authorized/customer/CustomerDetail';
 import CustomerDetails from '../screens/authorized/customer/customerDetails';
 import CustomerSearch from '../screens/authorized/customer/CustomerSearch';
 
@@ -40,6 +39,7 @@ import NetRateListing from '../screens/authorized/netrate/NetRateListing';
 import MoreMenu from "../components/MoreMenu"
 import PermissionWrapper from '../utils/RBAC/permissionWrapper';
 import PERMISSIONS from '../utils/RBAC/permissionENUM';
+
 
 // Placeholder screens for other tabs
 const HomeScreen = () => (
@@ -322,7 +322,9 @@ const BottomTabNavigator = () => {
           tabBarButton: () => null, // Hide this tab from the tab bar
         }}
       />
+     
     </Tab.Navigator>
+    
   );
 };
 

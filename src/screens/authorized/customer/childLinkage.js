@@ -50,9 +50,10 @@ const ChildLinkageDetails = ({ customerId, isStaging, activeTab, onClose, setChi
 
 
     const saveDraft = async (action, data, close) => {
-        console.log(customerDetails, 238942938)
-
         if (instance?.stepInstances) {
+            if (action == "distributors") {
+                data = { data, isApproved: true }
+            }
             setCustomerDetails((prev) => ({ ...prev, ...data }));
             saveDraftParent('mapping', data)
         }
@@ -126,7 +127,7 @@ const ChildLinkageDetails = ({ customerId, isStaging, activeTab, onClose, setChi
                         ellipsizeMode="tail"
                     >
 
-                        {customerDetails?.generalDetails?.customerName} 
+                        {customerDetails?.generalDetails?.customerName}
                     </AppText>
                 </View>
 
@@ -152,7 +153,7 @@ const ChildLinkageDetails = ({ customerId, isStaging, activeTab, onClose, setChi
                 </TouchableOpacity>
             </View>
 
-            {active == "details" ? <DetailsView instance={instance} isChild={true} customerData={customerDetails} loading={isLoading} saveDraft={saveDraft} setActiveTab={setActiveTab}  /> : <LinkageView setChildCustomer={setChildCustomer} customerData={customerDetails} loading={isLoading} isChild={true} saveDraft={saveDraft} />}
+            {active == "details" ? <DetailsView instance={instance} isChild={true} customerData={customerDetails} loading={isLoading} saveDraft={saveDraft} setActiveTab={setActiveTab} /> : <LinkageView setChildCustomer={setChildCustomer} customerData={customerDetails} loading={isLoading} isChild={true} saveDraft={saveDraft} />}
 
 
         </View>

@@ -133,7 +133,7 @@ const Linkagestyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 20,
-        paddingVertical: 12,
+        paddingVertical: 8,
     },
     suggestedTitle: {
         fontSize: 16,
@@ -443,9 +443,11 @@ const Linkagestyles = StyleSheet.create({
     filterRow: {
         flexDirection: 'row',
         paddingHorizontal: 20,
-        paddingVertical: 10,
+        paddingBottom: 10,
+        paddingTop:16,
         gap: 8,
         alignItems: 'center',
+        
     },
     filterIcon: {
         padding: 8,
@@ -471,12 +473,14 @@ const Linkagestyles = StyleSheet.create({
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F5F5F5',
+        backgroundColor: '#ffffff',
         marginHorizontal: 20,
         marginVertical: 12,
         paddingHorizontal: 12,
         borderRadius: 12,
         height: 44,
+        borderWidth:1,
+        borderColor:"#777777"
     },
     searchInput: {
         flex: 1,

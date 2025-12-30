@@ -76,10 +76,15 @@ export const updateCustomerStatus = async (customerId, distributorId, action) =>
 };
 
 // Get preferred distributors list with division filters
-export const getPreferredDistributors = async ({ page = 1, limit = 20, stationCode, divisionIds = [], stateIds = [], cityIds = [], search = "" }) => {
+export const getPreferredDistributors = async ({ page = 1, limit = 20, stationCode, divisionIds = [], stateIds = [], cityIds = [], search = "", type = '' }) => {
     try {
-        let endpoint = `/user-management/distributor/list?page=${page}&limit=${limit}&search=${search}`;
-
+        let endpoint = `/user-management/distributor/list?page=${page}&limit=${limit}`;
+        if (search) {
+            endpoint += `&search=${search}`;
+        }
+        if (type) {
+            endpoint += `&type=${type}`;
+        }
         if (stationCode) {
             endpoint += `&stationCode=${stationCode}`;
         }
@@ -129,3 +134,15 @@ export const getPreferredDistributors = async ({ page = 1, limit = 20, stationCo
         throw error;
     }
 };
+
+
+export const getDistributorType = async (page = 1, limit = 100) => {
+    try {
+        const response = await apiClient.get(`/user-management/distributor/default-margin?page=${page}&limit=${limit}`);
+        return response;
+    } catch (error) {
+        console.error('Error fetching distributors:', error);
+        throw error;
+    }
+}
+

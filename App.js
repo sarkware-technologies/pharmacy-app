@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Provider } from 'react-redux';
 import NetInfo from '@react-native-community/netinfo';
 import Toast from 'react-native-toast-message';
-
+import AppToast from "./src/components/AppToast"
 import { store } from './src/redux/store';
 import AppNavigator from './src/navigation/AppNavigator';
 import NoInternetScreen from './src/components/NoInternetscreen';
@@ -82,6 +82,8 @@ const App = () => {
                 )}
             </View>
             <Toast topOffset={60} />
+
+            <AppToast/>
         </Provider>
     );
 };

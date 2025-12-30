@@ -4,11 +4,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Animated,
   Dimensions,
   Modal,
@@ -19,19 +17,14 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
-  Image,
   PanResponder,
-  PermissionsAndroid,
 } from 'react-native';
-
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { WebView } from 'react-native-webview';
 import { colors } from '../../../styles/colors';
 import { useFocusEffect, useRoute, useNavigation, DrawerActions } from '@react-navigation/native';
-
 import { useDispatch, useSelector } from 'react-redux';
-
 import Menu from '../../../components/icons/Menu';
 import Phone from '../../../components/icons/Phone';
 import Edit from '../../../components/icons/Edit';
@@ -49,17 +42,16 @@ import Bell from '../../../components/icons/Bell';
 import FilterModal from '../../../components/FilterModal';
 import CloseCircle from '../../../components/icons/CloseCircle';
 import EyeOpen from '../../../components/icons/EyeOpen';
-import Document from '../../../components/icons/Document';
 import People from '../../../components/icons/People';
 import Refresh from '../../../components/icons/Refresh';
 import AlertCircle from '../../../components/icons/AlertCircle';
-import EditCustomer from '../../../components/icons/EditCustomer';
-import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModal';
 import RejectCustomerModal from '../../../components/modals/RejectCustomerModal';
+import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModal';
+
 import WorkflowTimelineModal from '../../../components/modals/WorkflowTimelineModal';
 import { customerAPI } from '../../../api/customer';
 import { SkeletonList } from '../../../components/SkeletonLoader';
-import { AppText, AppInput } from "../../../components"
+import { AppText } from "../../../components"
 import Toast from 'react-native-toast-message';
 import { checkStoragePermission, requestStoragePermission } from '../../../utils/permissions';
 import ReactNativeBlobUtil from 'react-native-blob-util';
@@ -67,7 +59,7 @@ import { handleOnboardCustomer } from '../../../utils/customerNavigationHelper';
 import PermissionWrapper from "../../../utils/RBAC/permissionWrapper"
 import PERMISSIONS from "../../../utils/RBAC/permissionENUM"
 import checkPermission from "../../../utils/RBAC/permissionHelper"
-
+import { AppToastService } from '../../../components/AppToast';
 
 const { width, height } = Dimensions.get('window');
 
@@ -89,24 +81,16 @@ import {
   selectTabCounts, // Import selectTabCounts selector
   clearShouldResetToAllTab, // Import clear flag action
 } from '../../../redux/slices/customerSlice';
-import ChevronLeft from '../../../components/icons/ChevronLeft';
 import ChevronRight from '../../../components/icons/ChevronRight';
-import FilterCheck from '../../../components/icons/FilterCheck';
-import CheckCircle from '../../../components/icons/CheckCircle';
 
 const CustomerList = ({ navigation: navigationProp }) => {
   const navigationHook = useNavigation();
   const navigation = navigationProp || navigationHook;
   const route = useRoute();
   const insets = useSafeAreaInsets();
-
   const dispatch = useDispatch();
-
   // Get customers from Redux instead of mock data
   const customers = useSelector(selectCustomers);
-
-
-
   const customerTypes = useSelector(selectCustomerTypes);
   const customerStatuses = useSelector(selectCustomerStatuses);
   const cities = useSelector(state => state.customer.cities);
@@ -390,33 +374,36 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
         let message = '';
         let type = 'success';
+        let label = "Approve"
 
         switch (pendingAction) {
-          case 'approve':
+          case 'APPROVE':
             message = 'Customer has been successfully approved!';
             type = 'success';
+            label = 'Approve'
             break;
-          case 'reject':
+          case 'REJECT':
             message = 'Customer has been rejected!';
             type = 'error';
+             label = 'Reject'
             break;
           case 'verify':
             message = 'Customer has been successfully verified!';
             type = 'success';
+            label = 'Verify'
             break;
           case 'sendBack':
             message = 'Customer form has been sent back!';
             type = 'warning';
+            label = 'Send Back'
             break;
           default:
             break;
         }
 
         if (message) {
-          setTimeout(() => {
-            showToast(message, type);
+            AppToastService.show(message, type, label);
             parentNav.setParams({ pendingCustomerAction: undefined });
-          }, 600);
         }
       } catch (error) {
         console.error('Error checking parent navigation params:', error);
@@ -4767,60 +4754,7 @@ const styles = StyleSheet.create({
     color: '#333',
     fontWeight: '500',
   },
-  // Toast styles
-  toastContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 20,
-    right: 20,
-    alignItems: 'center',
-    zIndex: 9999,
-    elevation: 10,
-  },
-  toast: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 12,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  toastWarning: {
-    backgroundColor: '#E2C051',
-  },
-  toastError: {
-    backgroundColor: '#EF6B6B',
-  }, toastError: {
-    backgroundColor: '#EF6B6B',
-  },
-  toastHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  toastLabel: {
-    color: '#E8F5E9',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  toastOkButton: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  toastMessage: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'left',
-  },
+ 
   // Documents Modal Styles
   documentsModalContent: {
     flex: 1,

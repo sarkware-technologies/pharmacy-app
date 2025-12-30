@@ -63,7 +63,6 @@ import InvoiceDetails from '../screens/authorized/netrate/InvoiceDetails';
 
 // Customer Screens
 import CustomerSearch from '../screens/authorized/customer/CustomerSearch';
-import CustomerDetail from '../screens/authorized/customer/CustomerDetail';
 import CustomerDetails from '../screens/authorized/customer/customerDetails';
 
 
@@ -423,6 +422,7 @@ const AppNavigator = ({ navigationRef }) => {
   }
 
   return (
+
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
@@ -431,6 +431,7 @@ const AppNavigator = ({ navigationRef }) => {
           <Stack.Screen name="Main" component={MainStack} />
         )}
       </Stack.Navigator>
+      
     </NavigationContainer>
   );
 };

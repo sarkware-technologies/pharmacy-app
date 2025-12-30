@@ -170,8 +170,8 @@ export const customerAPI = {
     getCities: async (stateId) => {
         try {
             const endpoint = stateId
-                ? `/user-management/cities?stateId=${stateId}`
-                : '/user-management/cities';
+                ? `/user-management/cities?stateIds=${stateId}`
+                : '/user-management/cities?limit=100';
             const response = await apiClient.get(endpoint);
             return response;
         } catch (error) {

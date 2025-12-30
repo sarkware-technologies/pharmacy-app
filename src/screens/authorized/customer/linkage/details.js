@@ -85,6 +85,8 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
         }
     }, [customerData]);
 
+    
+
 
     const InfoRow = ({ label, value, icon, onPress }) => (
         <TouchableOpacity
@@ -196,7 +198,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
 
 
     return (
-        <View style={{ flex: 1, paddingBottom: 90 }}>
+        <View style={{ flex: 1, paddingBottom: 50 }}>
             <ScrollView
                 style={{
                     paddingVertical: 0,
@@ -567,7 +569,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                 visible={sendBackModalVisible}
                 onClose={() => setSendBackModalVisible(false)}
                 onConfirm={(comment) => {
-                    workflowAction("send_back", comment)
+                    workflowAction("sendBack", comment)
                     setSendBackModalVisible(false)
                 }
                 }

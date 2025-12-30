@@ -601,11 +601,11 @@ const Customerstyles = StyleSheet.create({
         backgroundColor: "#fff",
         paddingTop: 0,
         paddingVertical: 12,
-        elevation: 10, // Android shadow
-        shadowColor: "#000", // iOS shadow
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        // elevation: 10, // Android shadow
+        // shadowColor: "#000", // iOS shadow
+        // shadowOffset: { width: 0, height: -2 },
+        // shadowOpacity: 0.1,
+        // shadowRadius: 4,
     },
 
 });

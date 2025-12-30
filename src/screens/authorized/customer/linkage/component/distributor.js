@@ -7,7 +7,9 @@ import IconMaterial from 'react-native-vector-icons/MaterialIcons';
 import IconFeather from 'react-native-vector-icons/Feather';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import CommonTooltip from "../../../../../components/view/Tooltip"
-import { getPreferredDistributors } from "../../../../../api/distributor";
+import { getPreferredDistributors, getDistributorType } from "../../../../../api/distributor";
+import { customerAPI } from '../../../../../api/customer';
+
 import { useSelector } from "react-redux";
 import CommonStyle from "../../../../../styles/styles";
 import AnimatedContent from "../../../../../components/view/AnimatedContent";
@@ -15,6 +17,10 @@ import DistributorCard from "./DistributorCard"
 import Button from "../../../../../components/Button";
 import Customerstyles from "../style/style";
 import CloseCircle from "../../../../../components/icons/CloseCircle";
+import CustomDropdown from "../../../../../components/view/customDropdown";
+import { colors } from "../../../../../styles/colors";
+import { Fonts } from "../../../../../utils/fontHelper";
+import Svg, { Path } from "react-native-svg";
 
 
 const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setActiveSubTab, instance, permisions }) => {
@@ -54,11 +60,13 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
     }, [distributorTabs]);
 
     const [distributors, setDistributors] = useState([]);
+    const [distributorsType, setDistributorsType] = useState([]);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [loading, setLoading] = useState(false); // initial loader
-
+    const [statesList, setStatesList] = useState([]);
+    const [citiesList, setCitiesList] = useState([]);
 
     const [linkedDistributor, setLinkedDistributor] = useState([]);
 
@@ -66,16 +74,14 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
         setLinkedDistributor(customerData?.distributors ?? [])
     }, [customerData])
 
-
-
-
     const [distributorFilters, setDistributorFilters] = useState({
-        state: [],
-        city: [],
+        stateIds: [],
+        cityIds: [],
         stationCode: [stationCode],
         limit: 20,
         divisionIds: customerData?.divisions?.map(e => e.divisionId) || [],
-        search: ""
+        search: "",
+        type: null,
     });
 
 
@@ -94,6 +100,96 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
         }
     }, [distributorFilters, activeTabKey]);
 
+    useEffect(() => {
+
+
+        fetchDistributorTypes();
+
+        fetchStates();
+
+    }, []);
+
+    useEffect(() => {
+        if (distributorFilters.stateIds.length != 0) {
+            fetchCities(distributorFilters.stateIds[0]);
+        } else {
+            fetchCities();
+        }
+    }, [distributorFilters.stateIds]);
+
+
+
+
+
+
+
+    const fetchStates = async () => {
+
+        console.log("callinf");
+
+        try {
+
+            const response = await customerAPI.getStates(1, 50);
+
+            const states =
+                response?.data?.states?.map(state => ({
+                    label: state.stateName,
+                    value: state.id,
+                })) || [];
+
+            setStatesList(states);
+        } catch (e) {
+            setStatesList([]);
+        }
+    };
+
+
+    const fetchCities = async (stateId) => {
+
+        console.log(stateId, 997);
+
+
+        console.log("akdfusukdgfsudgf");
+
+        try {
+
+
+
+            const response = await customerAPI.getCities(stateId);
+
+            console.log(response, 997);
+
+
+            const cities =
+                response?.data?.cities?.map(city => ({
+                    label: city.cityName,
+                    value: city.id,
+                })) || [];
+
+            setCitiesList(cities);
+        } catch (e) {
+            console.error(e);
+            setCitiesList([]);
+        }
+    };
+
+
+
+    const fetchDistributorTypes = async () => {
+        try {
+            const response = await getDistributorType(1, 100);
+            setDistributorsType(
+                (response?.data?.defaultDistributors || []).map(item => ({
+                    label: item.distributorType, // text shown in dropdown
+                    value: item.distributorTypeId,   // id used internally
+                }))
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+
     const fetchDistributors = async (pageNo = 1, reset = false) => {
         if (loadingMore || (!hasMore && !reset)) return;
 
@@ -102,12 +198,19 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
         const finalFilter = {
             ...distributorFilters,
             page: pageNo,
-            ...(activeTabKey === "preferred" && {
-                stationCode: [stationCode],
-            }),
-
         };
 
+        if (activeTabKey === "preferred") {
+            finalFilter.stationCode = [stationCode];
+            if (distributorFilters.type) {
+                finalFilter.type = distributorFilters.type;
+            }
+            delete finalFilter.stateIds;
+            delete finalFilter.cityIds;
+        } else {
+            delete finalFilter.stationCode;
+            delete finalFilter.type;
+        }
         try {
             const response = await getPreferredDistributors(finalFilter);
             const list = response?.distributors || [];
@@ -137,10 +240,10 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
 
     const StockistTooltipContent = () => (
         <>
-            {data.map((item, i) => (
+            {customerData?.suggestedDistributors?.map((item, i) => (
                 <View key={i} style={{ marginBottom: 14 }}>
-                    <AppText style={{ fontSize: 16, fontWeight: "500" }}>
-                        {item.name}
+                    <AppText style={{ fontSize: 16, fontWeight: "400" }}>
+                        Stockist name: {item.distributorName}
                     </AppText>
                     <AppText style={{ fontSize: 14, color: "#888" }}>
                         {item.city}
@@ -149,6 +252,7 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
             ))}
         </>
     );
+
     const handleAddDistributor = useCallback((distributor) => {
         setLinkedDistributor((prev = []) =>
             prev.some((e) => e?.id == distributor?.id)
@@ -160,6 +264,7 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
     }, []);
 
     const handleFinish = () => {
+
         if (linkedDistributor?.length) {
             const latest = linkedDistributor?.map((e) => {
                 let error = null;
@@ -178,7 +283,6 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
             setLinkedDistributor(latest);
             if (latest.filter((e) => e.isActive != false).every((e) => e.error == null)) {
                 const distributorsWithoutError = latest.map(({ error, ...rest }) => rest);
-                console.log(distributorsWithoutError, 3495827)
                 saveDraft?.("distributors", { distributors: distributorsWithoutError }, isChild)
                 if (!isChild) {
                     setActiveSubTab("hierarchy")
@@ -233,7 +337,13 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
         () => linkedDistributor?.filter((e) => e?.isActive !== false) || [],
         [linkedDistributor]
     );
-
+    const EmptyDistributor = () => (
+        <View style={styles.emptyContainer}>
+            <AppText style={styles.emptyText}>
+                No distributors found
+            </AppText>
+        </View>
+    );
 
     return (
         <View style={Linkagestyles.accordionCardG}>
@@ -256,75 +366,163 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
                     </HorizontalSelector>
                     {/* Filters */}
 
-                    <View style={Linkagestyles.suggestedSection}>
-                        <AppText style={Linkagestyles.suggestedTitle}>
-                            Suggested Stockist by MR
-                        </AppText>
-                        <CommonTooltip
-                            content={<StockistTooltipContent />}
-                            style={Linkagestyles.infoIcon}
-                            verticalOffset={12}
-                            tooltipWidth={"90%"}
 
-                        >
-                            <Icon name="information-outline" size={20} color="#333" />
-                        </CommonTooltip>
-                    </View>
-                    {activeTabKey === "preferred" || activeTabKey === "all" && (
-                        <>
-                            <View style={Linkagestyles.filterRow}>
+                    {activeTabKey != "all" && (
+                        <View style={Linkagestyles.suggestedSection}>
+                            <AppText style={Linkagestyles.suggestedTitle}>
+                                Suggested Stockist by MR
+                            </AppText>
+                            <CommonTooltip
+                                content={<StockistTooltipContent />}
+                                style={Linkagestyles.infoIcon}
+                                verticalOffset={12}
+                                tooltipWidth={"90%"}
 
-                                <TouchableOpacity
-                                    style={Linkagestyles.filterIcon}
-                                // onPress={() => setShowFilterModal(true)}
+                            >
+                                <Icon name="information-outline" size={20} color="#333" />
+                            </CommonTooltip>
+                        </View>
+                    )}
+
+
+
+
+                    {activeTabKey === "all" && (
+                        <View style={Linkagestyles.filterRow}>
+
+                            <TouchableOpacity
+                                style={Linkagestyles.filterIcon}
+                            // onPress={() => setShowFilterModal(true)}
+                            >
+                                <Icon name="tune" size={20} color="#666" />
+                            </TouchableOpacity>
+
+                            <View style={{ flex: 1 }}>
+                                <CustomDropdown
+                                    data={statesList}
+                                    value={distributorFilters.stateIds[0]}
+                                    onChange={(value) => {
+                                        setDistributorFilters(prev => ({
+                                            ...prev,
+                                            stateIds: value ? [value] : []
+                                        }));
+                                    }}
                                 >
-                                    <Icon name="tune" size={20} color="#666" />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={Linkagestyles.filterDropdown}
-                                // onPress={() => setShowFilterModal(true)}
-                                >
-                                    <AppText style={Linkagestyles.filterText}>
-                                        {distributorFilters.state.length > 0 &&
-                                            !distributorFilters.state.includes('All')
-                                            ? `State (${distributorFilters.state.length})`
-                                            : 'State'}
-                                    </AppText>
-                                    <IconMaterial
-                                        name="keyboard-arrow-down"
-                                        size={20}
-                                        color="#666"
-                                    />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={Linkagestyles.filterDropdown}
-                                // onPress={() => setShowFilterModal(true)}
-                                >
-                                    <AppText style={Linkagestyles.filterText}>
-                                        {distributorFilters.city.length > 0 &&
-                                            !distributorFilters.city.includes('All')
-                                            ? `City (${distributorFilters.city.length})`
-                                            : 'City'}
-                                    </AppText>
-                                    <IconMaterial
-                                        name="keyboard-arrow-down"
-                                        size={20}
-                                        color="#666"
-                                    />
-                                </TouchableOpacity>
+                                    <View style={[styles.dropdown]}>
+                                        <AppText style={styles.dropdownText}>
+                                            {
+                                                distributorFilters.stateIds.length
+                                                    ? statesList.find(
+                                                        item => item.value === distributorFilters.stateIds[0]
+                                                    )?.label
+                                                    : 'State'
+                                            }
+                                        </AppText>
+
+                                        <Svg width="10" height="6" viewBox="0 0 10 6">
+                                            <Path
+                                                d="M0.5 0.5L4.875 4.875L9.25 0.5"
+                                                stroke="#909090"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </Svg>
+                                    </View>
+                                </CustomDropdown>
                             </View>
+
+                            <View style={{ flex: 1 }}>
+                                <CustomDropdown
+                                    data={citiesList}
+                                    value={distributorFilters.cityIds[0]}
+                                    onChange={(value) => {
+                                        setDistributorFilters(prev => ({
+                                            ...prev,
+                                            cityIds: value ? [value] : []
+                                        }));
+                                    }}
+                                >
+                                    <View style={styles.dropdown}>
+                                        <AppText style={styles.dropdownText}>
+                                            {
+                                                distributorFilters.cityIds.length
+                                                    ? citiesList.find(
+                                                        item => item.value === distributorFilters.cityIds[0]
+                                                    )?.label
+                                                    : 'City'
+                                            }
+                                        </AppText>
+
+                                        <Svg width="10" height="6" viewBox="0 0 10 6">
+                                            <Path
+                                                d="M0.5 0.5L4.875 4.875L9.25 0.5"
+                                                stroke="#909090"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </Svg>
+                                    </View>
+                                </CustomDropdown>
+                            </View>
+                        </View>
+                    )}
+                    {(activeTabKey === "preferred" || activeTabKey === "all") && (
+                        <>
+
 
                             {/* Search */}
-                            <View style={Linkagestyles.searchContainer}>
-                                <IconFeather name="search" size={20} color="#999" />
-                                <AppInput
-                                    style={Linkagestyles.searchInput}
-                                    placeholder="Search by distributor name & code"
-                                    placeholderTextColor="#999"
-                                    value={distributorFilters?.search}
-                                    onChangeText={(text) => { setDistributorFilters((prev) => ({ ...prev, search: text })) }}
-                                />
+
+                            <View style={styles.searchWrapper}>
+                                <View style={[Linkagestyles.searchContainer, styles.searchBox, { marginHorizontal: 0 }]}>
+                                    <IconFeather name="search" size={20} color="#999" />
+                                    <AppInput
+                                        style={Linkagestyles.searchInput}
+                                        placeholder="Search by distributor name & code"
+                                        placeholderTextColor="#999"
+                                        value={distributorFilters?.search}
+                                        onChangeText={(text) =>
+                                            setDistributorFilters((prev) => ({ ...prev, search: text }))
+                                        }
+                                    />
+                                </View>
+
+                                {activeTabKey === "preferred" && (
+                                    <View style={styles.dropdownWrapper}>
+                                        <CustomDropdown
+                                            data={distributorsType}
+                                            value={distributorFilters.type}
+                                            onChange={(value) => {
+                                                setDistributorFilters(prev => ({
+                                                    ...prev,
+                                                    type: value,
+                                                }));
+                                            }}>
+                                            <View style={styles.dropdown}>
+                                                <AppText style={styles.dropdownText}>{<AppText style={styles.dropdownText}>
+                                                    {
+                                                        distributorFilters.type
+                                                            ? distributorsType.find(
+                                                                item => item.value === distributorFilters.type
+                                                            )?.label
+                                                            : 'All Types'
+                                                    }
+                                                </AppText> || "All Types"}</AppText>
+                                                <Svg width="10" height="6" viewBox="0 0 10 6">
+                                                    <Path
+                                                        d="M0.5 0.5L4.875 4.875L9.25 0.5"
+                                                        stroke="#909090"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    />
+                                                </Svg>
+                                            </View>
+                                        </CustomDropdown>
+                                    </View>
+                                )}
+
+
                             </View>
+
 
                             {/* Table Header */}
                             <View style={Linkagestyles.tableHeader}>
@@ -373,6 +571,7 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
                                 keyExtractor={(item) => String(item.id)}
                                 renderItem={renderDistributor}
                                 showsVerticalScrollIndicator={false}
+                                ListEmptyComponent={!loading ? <EmptyDistributor /> : null}
                                 onEndReached={handleLoadMore}
                                 onEndReachedThreshold={0.4}
                                 ListFooterComponent={
@@ -408,11 +607,7 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
                         }} />)
                     }
                     {activeLinkedDistributors.length === 0 && (
-                        <View style={styles.emptyContainer}>
-                            <AppText style={styles.emptyText}>
-                                No distributors linked yet
-                            </AppText>
-                        </View>
+                        <EmptyDistributor />
                     )}
 
 
@@ -429,12 +624,12 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
                             {/* <Button style={[Customerstyles.rejectButton, { width: "48%" }]}   onPress={() => saveDraft("mapping", { isApproved: false }, true)}>Reject</Button> */}
 
                             <TouchableOpacity
-                                            style={Customerstyles.rejectButton}
-                                            onPress={() => saveDraft("mapping", { isApproved: false }, true)}
-                                        >
-                                            <CloseCircle color="#2B2B2B" />
-                                            <AppText style={Customerstyles.rejectButtonText}>Reject</AppText>
-                                        </TouchableOpacity>
+                                style={Customerstyles.rejectButton}
+                                onPress={() => saveDraft("mapping", { isApproved: false }, true)}
+                            >
+                                <CloseCircle color="#2B2B2B" />
+                                <AppText style={Customerstyles.rejectButtonText}>Reject</AppText>
+                            </TouchableOpacity>
                         </View>
                     )
                 ) : (
@@ -461,4 +656,44 @@ const styles = {
         fontSize: 14,
         color: "#999",
     },
+
+    searchWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        // marginTop: 10,
+        marginHorizontal: 20,
+        gap: 10
+    },
+
+    searchBox: {
+        flex: 1,
+    },
+
+    dropdownWrapper: {
+        width: '30%',
+    },
+
+    dropdown: {
+        height: 44,
+        borderWidth: 1,
+        borderColor: '#777777',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#fff',
+    },
+
+    dropdownText: {
+        fontSize: 12,
+        color: colors.primaryText,
+        fontFamily: Fonts.Regular,
+        fontWeight: 400
+    },
+    arrow: {
+        fontSize: 16,
+        color: "#888",
+    },
+
 };
