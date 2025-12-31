@@ -3,11 +3,9 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  TextInput,
   StatusBar,
   Animated,
   KeyboardAvoidingView,

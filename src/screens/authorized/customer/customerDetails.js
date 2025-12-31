@@ -16,7 +16,7 @@ import ChildLinkageDetails from "./childLinkage"
 import { customerAPI } from "../../../api/customer";
 import { findAndUpdate, transformCustomerData } from "./service/formatData";
 import Toast from "react-native-toast-message";
-import ScreenLoader from '../../../components/ScreenLoader';
+import { showLoader, hideLoader } from '../../../components/ScreenLoader';
 
 
 const CustomerDetails = () => {
@@ -43,7 +43,6 @@ const CustomerDetails = () => {
     const [loading, setLoading] = useState(true);
     const [active, setActiveTab] = useState(activeTab);
     const [childCustomer, setChildCustomer] = useState(null);
-    const [screenLoading, setScreenLoading] = useState(false);
 
     useEffect(() => {
         console.log(childCustomer, 3498273)
@@ -127,7 +126,7 @@ const CustomerDetails = () => {
 
     const workflowAction = async (action, comment = "") => {
         try {
-            setScreenLoading(true); // 🔵 START LOADER
+            showLoader();
 
             const instance = customerDetails?.instance;
 
@@ -186,7 +185,9 @@ const CustomerDetails = () => {
                 text2: error?.message || "Something went wrong",
             });
 
-            setScreenLoading(false); // ❗ keep screen visible
+        }
+        finally {
+            hideLoader();
         }
     };
 
@@ -281,7 +282,6 @@ const CustomerDetails = () => {
             </Modal>
 
 
-            <ScreenLoader visible={screenLoading} />
 
         </SafeAreaView>
     )

@@ -11,6 +11,7 @@ import SplashScreen from './src/components/SplashScreen';
 import { requestAllPermissions } from './src/utils/permissions';
 
 import './GlobalFont';
+import ScreenLoader from './src/components/ScreenLoader';
 
 const App = () => {
     const navigationRef = useRef(null);
@@ -84,6 +85,7 @@ const App = () => {
             <Toast topOffset={60} />
 
             <AppToast/>
+            <ScreenLoader/>
         </Provider>
     );
 };

@@ -194,7 +194,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
             </>
         )
     }
-    console.log(loading, 868);
+
 
 
     return (
@@ -485,9 +485,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                                             [Customerstyles.approveButton]
                                         }
                                         onPress={() => {
-                                            setActiveTab?.("linkaged");  
-                                            console.log("worjsiudfh");
-                                            
+                                            setActiveTab?.("linkaged");                                              
                                         }}
 
                                     >

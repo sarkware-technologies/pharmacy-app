@@ -411,6 +411,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
     }, [navigation])
   );
 
+  
+
 
   // Fetch tab counts and refresh list whenever the customer tab becomes active (screen is focused)
   useFocusEffect(
@@ -4206,7 +4208,7 @@ const renderCustomerAction = (item) => {
           />
         )}
 
-      </View>
+      </View>      
     </SafeAreaView>
   );
 };
