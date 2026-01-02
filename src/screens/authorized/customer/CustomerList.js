@@ -60,6 +60,7 @@ import PermissionWrapper from "../../../utils/RBAC/permissionWrapper"
 import PERMISSIONS from "../../../utils/RBAC/permissionENUM"
 import checkPermission from "../../../utils/RBAC/permissionHelper"
 import { AppToastService } from '../../../components/AppToast';
+import LinkIcon from '../../../components/icons/LinkIcon'
 
 const { width, height } = Dimensions.get('window');
 
@@ -82,6 +83,7 @@ import {
   clearShouldResetToAllTab, // Import clear flag action
 } from '../../../redux/slices/customerSlice';
 import ChevronRight from '../../../components/icons/ChevronRight';
+import CommonTooltip from '../../../components/view/Tooltip';
 
 const CustomerList = ({ navigation: navigationProp }) => {
   const navigationHook = useNavigation();
@@ -190,8 +192,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
   const [hasDoctorSupplyTabPermission, setHasDoctorSupplyTabPermission] = useState(true);
   const [hasDraftTabPermission, setHasDraftTabPermission] = useState(true);
   const [hasLinkDTAccess, setHasLinkDTAccess] = useState(true);
+  const [unverifiedEdit, setUnverifiedEdit] = useState(true);
 
-  
+
+
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -229,6 +233,20 @@ const CustomerList = ({ navigation: navigationProp }) => {
     return statusMap[tab] || [0];
   };
 
+
+      const editPermissionTabBased = {
+    all: [PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_EDIT, PERMISSIONS.ONBOARDING_WORKFLOW_EDIT],
+    waitingForApproval: [
+      PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_EDIT,
+      PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_REASSIGNED_EDIT,
+      PERMISSIONS.ONBOARDING_WORKFLOW_EDIT,
+    ],
+    notOnboarded: [],
+    unverified: [PERMISSIONS.ONBOARDING_LISTING_PAGE_UNVERIFIED_EDIT],
+    rejected: [PERMISSIONS.ONBOARDING_LISTING_PAGE_REJECTED_EDIT],
+    doctorSupply: [],
+    draft: [PERMISSIONS.ONBOARDING_LISTING_PAGE_DRAFT_EDIT_DELETE],
+  };
   // Map filter button to filter value for API
   const getFilterValue = (filterButton) => {
     const filterMap = {
@@ -240,7 +258,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
     return filterMap[filterButton] || null;
   };
 
-    console.log(activeFilterButton, 897);
 
 
   // Format dates to ISO string for API - ensures time is always 00:00:00Z
@@ -266,7 +283,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
         rejectedPermission,
         doctorSupplyPermission,
         draftPermission,
-        hasLinkDTAccess
+        hasLinkDTAccess,
+        unverifiedEdit
 
       ] = await Promise.all([
         checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_PAGE_VIEW),
@@ -276,7 +294,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
         checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_REJECTED_PAGE_VIEW),
         checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_DOCTOR_SUPPLY_PAGE_VIEW),
         checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_DRAFT_PAGE_VIEW),
-        checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_LINK_DT)
+        checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_LINK_DT),
+        checkPermission(PERMISSIONS.ONBOARDING_LISTING_PAGE_UNVERIFIED_EDIT)
       ]);
 
       setHasAllTabPermission(allPermission);
@@ -287,6 +306,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
       setHasDoctorSupplyTabPermission(doctorSupplyPermission);
       setHasDraftTabPermission(draftPermission);
       setHasLinkDTAccess(hasLinkDTAccess)
+      setUnverifiedEdit(unverifiedEdit)
     };
 
     checkTabPermissions();
@@ -385,7 +405,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           case 'REJECT':
             message = 'Customer has been rejected!';
             type = 'error';
-             label = 'Reject'
+            label = 'Reject'
             break;
           case 'verify':
             message = 'Customer has been successfully verified!';
@@ -402,8 +422,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
         }
 
         if (message) {
-            AppToastService.show(message, type, label);
-            parentNav.setParams({ pendingCustomerAction: undefined });
+          AppToastService.show(message, type, label);
+          parentNav.setParams({ pendingCustomerAction: undefined });
         }
       } catch (error) {
         console.error('Error checking parent navigation params:', error);
@@ -411,13 +431,12 @@ const CustomerList = ({ navigation: navigationProp }) => {
     }, [navigation])
   );
 
-  
+
 
 
   // Fetch tab counts and refresh list whenever the customer tab becomes active (screen is focused)
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🔄 Customer tab is active - fetching tab counts');
       dispatch(fetchTabCounts());
 
       // Don't close documents modal on focus - let user control it explicitly
@@ -548,7 +567,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
           sortDirection: 'ASC',
           isAll: true
         };
-        console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
         dispatch(fetchCustomersList(payload));
       } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
         // Waiting for Approval, Rejected, and Draft - staging endpoint
@@ -572,13 +590,11 @@ const CustomerList = ({ navigation: navigationProp }) => {
         // Add filter for waitingForApproval tab
         if (activeTab === 'waitingForApproval') {
           payload.filter = getFilterValue(activeFilterButton);
-          console.log(`🔍 Filter value for ${activeTab}:`, payload.filter, 'from button:', activeFilterButton);
         }
         // Add filter for draft tab
         if (activeTab === 'draft') {
           payload.filter = 'NEW';
         }
-        console.log(`🔍 ${activeTab} tab API payload (staging):`, JSON.stringify(payload, null, 2));
         dispatch(fetchCustomersList(payload));
       } else if (activeTab === 'doctorSupply') {
         // Doctor Supply - regular endpoint with statusIds and customerGroupId
@@ -600,7 +616,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
           sortDirection: 'ASC',
           customerGroupId: 1
         };
-        console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
         dispatch(fetchCustomersList(payload));
       } else {
         // Not Onboarded and Unverified - regular endpoint with statusIds
@@ -617,7 +632,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
           sortBy: '',
           sortDirection: 'ASC'
         };
-        console.log(`🔍 ${activeTab} tab API payload:`, JSON.stringify(payload, null, 2));
         dispatch(fetchCustomersList(payload));
       }
 
@@ -652,7 +666,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
   useFocusEffect(
     React.useCallback(() => {
       if (shouldResetToAllTab) {
-        console.log('🔄 Refresh triggered from CustomerSearch - preserving current tab:', activeTab);
 
         // Set hard refreshing flag to show loading and prevent stale data
         setIsHardRefreshing(true);
@@ -683,7 +696,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
             sortDirection: 'ASC',
             isAll: true
           };
-          console.log('🔄 Fetching "all" tab data with payload:', payload);
           dispatch(fetchCustomersList(payload));
         } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
           const statusIds = getStatusIdsForTab(activeTab);
@@ -700,7 +712,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
           if (activeTab === 'draft') {
             payload.filter = 'NEW';
           }
-          console.log(`🔄 Fetching "${activeTab}" tab data with payload:`, payload);
           dispatch(fetchCustomersList(payload));
         } else if (activeTab === 'doctorSupply') {
           const statusIds = getStatusIdsForTab(activeTab);
@@ -712,7 +723,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
             statusIds: statusIds,
             customerGroupId: 1
           };
-          console.log(`🔄 Fetching "${activeTab}" tab data with payload:`, payload);
           dispatch(fetchCustomersList(payload));
         } else {
           const statusIds = getStatusIdsForTab(activeTab);
@@ -722,7 +732,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
             isLoadMore: false,
             statusIds: statusIds
           };
-          console.log(`🔄 Fetching "${activeTab}" tab data with payload:`, payload);
           dispatch(fetchCustomersList(payload));
         }
       }
@@ -732,7 +741,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
   // Clear hard refreshing flag when loading completes
   useEffect(() => {
     if (isHardRefreshing && !listLoading) {
-      console.log('🔄 Hard refresh completed');
       setIsHardRefreshing(false);
     }
   }, [isHardRefreshing, listLoading]);
@@ -981,15 +989,12 @@ const CustomerList = ({ navigation: navigationProp }) => {
   // Handle workflow timeline - just open modal with customer info
   // The modal will fetch the data internally
   const handleViewWorkflowTimeline = (stageId, customerName, customerType) => {
-    console.log('🔍 handleViewWorkflowTimeline called with:', { stageId, customerName, customerType });
-    console.log('🔍 stageId type:', Array.isArray(stageId) ? 'array' : typeof stageId, 'value:', stageId);
     setSelectedCustomerForWorkflow({
       stageId,
       customerName,
       customerType
     });
     setWorkflowTimelineVisible(true);
-    console.log('✅ Modal visibility set to true, stageId[0] will be:', stageId?.[0]);
   };
 
   // Footer component for loading indicator
@@ -1092,7 +1097,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
     // Toggle logic
     const newActiveButton = isSameButton ? null : buttonName;
 
-    console.log(newActiveButton);
 
     setActiveFilterButton(newActiveButton);
 
@@ -1295,7 +1299,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
       if (Platform.OS === 'android') {
         let hasPermission = await checkStoragePermission();
         if (!hasPermission) {
-          console.log('Storage permission not granted, requesting...');
           hasPermission = await requestStoragePermission();
         }
 
@@ -1363,10 +1366,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
       const filePath = `${downloadPath}/${fileName}`;
 
-      console.log('📥 Starting download...');
-      console.log('📥 File:', fileName);
-      console.log('📥 Save path:', filePath);
-      console.log('📥 Signed URL:', signedUrl.substring(0, 100) + '...');
 
       // Show loading toast
       Toast.show({
@@ -1414,7 +1413,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
       const fileExists = await ReactNativeBlobUtil.fs.exists(savedPath);
       if (!fileExists) {
         // If file doesn't exist, try WebView fallback for release builds
-        console.log('File not found, trying WebView fallback...');
         const htmlContent = `
           <!DOCTYPE html>
           <html>
@@ -1459,7 +1457,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
       console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
 
       // Try WebView fallback on error (especially for release builds)
-      console.log('Trying WebView fallback due to error...');
       try {
         // Get signed URL again if not already available
         let fallbackSignedUrl = downloadSignedUrl;
@@ -1677,7 +1674,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
   const handleRejectConfirm = async (comment) => {
 
-    console.log(selectedCustomerForAction?.instaceId, 'selectedCustomerForAction?.instaceId')
 
     try {
       const workflowId = selectedCustomerForAction?.workflowId || selectedCustomerForAction?.stgCustomerId;
@@ -1994,7 +1990,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
   // Handle unblock customer
   const handleUnblockCustomer = async (customer) => {
-    console.log(loggedInUser)
     try {
       setBlockUnblockLoading(true);
       const customerId = customer?.stgCustomerId || customer?.customerId;
@@ -2222,7 +2217,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
       sortDirection: 'ASC',
     };
 
-    console.log('📅 Filter params with dates:', JSON.stringify(filterParams, null, 2));
     dispatch(setFilters(filterParams));
     if (activeTab === 'all') {
       const payload = {
@@ -2230,7 +2224,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
         isStaging: false,
         isAll: true
       };
-      console.log('📅 All tab payload with dates:', JSON.stringify(payload, null, 2));
       dispatch(fetchCustomersList(payload));
     } else if (activeTab === 'waitingForApproval' || activeTab === 'rejected' || activeTab === 'draft') {
       const tabStatusIds = getStatusIdsForTab(activeTab);
@@ -2268,323 +2261,151 @@ const CustomerList = ({ navigation: navigationProp }) => {
   };
 
 
-  // const getCustomerActionType = (item) => {
-  //   if (item.statusName === 'LOCKED') return 'UNBLOCK';
-
-  //   if (item.statusName === 'ACTIVE' || item.statusName === 'UN-VERIFIED')
-  //     return 'BLOCK';
-
-  //   if (item.statusName === 'PENDING' && item.action === 'LINK_DT')
-  //     return 'LINK_DT';
-
-  //   if (item.statusName === 'PENDING' && item.action === 'APPROVE')
-  //     return 'APPROVE';
-
-  //   if (
-  //     item.statusName === 'IN_PROGRESS' ||
-  //     (item.statusName === 'PENDING' && item.action === 'VERIFY')
-  //   )
-  //     return 'VERIFY';
-
-  //   if (item.statusName === 'NOT-ONBOARDED')
-  //     return 'ONBOARD';
-
-  //   return null;
-  // };
-
-
-  // const renderCustomerAction = (item) => {
-  //   const actionType = getCustomerActionType(item);
-
-  //   switch (actionType) {
-  //     case 'UNBLOCK':
-  //       return (
-  //         <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
-  //           <TouchableOpacity
-  //             style={styles.unlockButton}
-  //             onPress={() => handleUnblockCustomer(item)}
-  //             disabled={blockUnblockLoading}
-  //           >
-  //             <UnLocked fill="#EF4444" />
-  //             <AppText style={styles.unlockButtonText}>Unblock</AppText>
-  //           </TouchableOpacity>
-  //         </PermissionWrapper>
-  //       );
-
-  //     case 'BLOCK':
-  //       return (
-  //         <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
-  //           <TouchableOpacity
-  //             style={styles.blockButton}
-  //             onPress={() => handleBlockCustomer(item)}
-  //             disabled={blockUnblockLoading}
-  //           >
-  //             <Locked fill="#666" />
-  //             <AppText style={styles.blockButtonText}>Block</AppText>
-  //           </TouchableOpacity>
-  //         </PermissionWrapper>
-  //       );
-
-  //     case 'APPROVE':
-  //       return (
-  //         <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT}>
-  //           <View style={styles.pendingActions}>
-  //             <TouchableOpacity
-  //               style={styles.approveButton}
-  //               onPress={() => handleApprovePress(item)}
-  //             >
-  //               <View style={styles.approveButtonContent}>
-  //                 <Icon name="checkmark-outline" size={18} color="white" />
-  //                 <AppText style={styles.approveButtonText}>Approve</AppText>
-  //               </View>
-  //             </TouchableOpacity>
-
-  //             <TouchableOpacity
-  //               style={styles.rejectButton}
-  //               onPress={() => handleRejectPress(item)}
-  //             >
-  //               <CloseCircle color="#000" />
-  //             </TouchableOpacity>
-  //           </View>
-  //         </PermissionWrapper>
-  //       );
-
-  //     case 'VERIFY':
-  //       return (
-  //         <View style={styles.pendingActions}>
-  //           <TouchableOpacity
-  //             style={styles.approveButton}
-  //             onPress={() => handleVerifyClick(item)}
-  //             disabled={actionLoading}
-  //           >
-  //             <View style={styles.approveButtonContent}>
-  //               <Icon name="checkmark-outline" size={18} color="white" />
-  //               <AppText style={styles.approveButtonText}>
-  //                 {item?.instance?.stepInstances?.[0]?.approverType === 'ROLE'
-  //                   ? 'Verify'
-  //                   : 'Approve'}
-  //               </AppText>
-  //             </View>
-  //           </TouchableOpacity>
-
-  //           <TouchableOpacity
-  //             style={styles.rejectButton}
-  //             onPress={() => handleRejectPress(item)}
-  //             disabled={actionLoading}
-  //           >
-  //             <CloseCircle color="#000" />
-  //           </TouchableOpacity>
-  //         </View>
-  //       );
-
-
-  //     case 'LINK_DT':
-  //       return (
-  //         <View style={styles.pendingActions}>
-  //           <TouchableOpacity
-  //             style={styles.linkDtButton}
-  //             onPress={() => navigation.navigate('CustomerDetail', { customerId: item?.stgCustomerId ?? item?.customerId, isStaging: item?.stgCustomerId ? true : false, activeTab: "linkage" })}
-
-  //           >
-  //             <View style={styles.linkDtButtonContent}>
-  //               <AppText style={styles.linkDtButtonText}>LINK DT</AppText>
-  //             </View>
-  //           </TouchableOpacity>
-
-  //           <TouchableOpacity
-  //             style={styles.rejectButton}
-  //             onPress={() => handleRejectPress(item)}
-  //           >
-  //             <CloseCircle color="#000" />
-  //           </TouchableOpacity>
-  //         </View>
-  //       );
-
-  //     case 'ONBOARD':
-  //       return (
-  //         <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_ONBOARD}>
-  //           <TouchableOpacity
-  //             style={styles.onboardButton}
-  //             onPress={() => {
-  //               const customerId = item.customerId || item.stgCustomerId;
-  //               handleOnboardCustomer(
-  //                 navigation,
-  //                 customerId,
-  //                 false,
-  //                 customerAPI,
-  //                 (toastConfig) => Toast.show(toastConfig),
-  //                 item.statusName
-  //               );
-  //             }}
-  //           >
-  //             <AppText style={styles.onboardButtonText}>Onboard</AppText>
-  //           </TouchableOpacity>
-  //         </PermissionWrapper>
-  //       );
-
-  //     default:
-  //       return null;
-  //   }
-  // };
-
-
-const renderCustomerAction = (item) => {
-  // 1️⃣ BLOCK / UNBLOCK
-  if (item.statusName === 'LOCKED') {
-    return (
-      <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
-        <TouchableOpacity
-          style={styles.unlockButton}
-          onPress={() => handleUnblockCustomer(item)}
-          disabled={blockUnblockLoading}
-        >
-          <UnLocked fill="#EF4444" />
-          <AppText style={styles.unlockButtonText}>Unblock</AppText>
-        </TouchableOpacity>
-      </PermissionWrapper>
-    );
-  }
-
-  if (['ACTIVE', 'UN-VERIFIED'].includes(item.statusName)) {
-    return (
-      <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
-        <TouchableOpacity
-          style={styles.blockButton}
-          onPress={() => handleBlockCustomer(item)}
-          disabled={blockUnblockLoading}
-        >
-          <Locked fill="#666" />
-          <AppText style={styles.blockButtonText}>Block</AppText>
-        </TouchableOpacity>
-      </PermissionWrapper>
-    );
-  }
-
-  // 2️⃣ ONBOARD
-  if (item.statusName === 'NOT-ONBOARDED') {
-    return (
-      <PermissionWrapper permission={[
-            PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_ONBOARD,
-            PERMISSIONS.ONBOARDING_LISTING_PAGE_NOT_ONBOARDED_ONBOARD,
-          ]}>
-        <TouchableOpacity
-          style={styles.onboardButton}
-          onPress={() => {
-            const customerId = item.customerId || item.stgCustomerId;
-            handleOnboardCustomer(
-              navigation,
-              customerId,
-              false,
-              customerAPI,
-              (toastConfig) => Toast.show(toastConfig),
-              item.statusName
-            );
-          }}
-        >
-          <AppText style={styles.onboardButtonText}>Onboard</AppText>
-        </TouchableOpacity>
-      </PermissionWrapper>
-    );
-  }
-
-  // 3️⃣ INSTANCE BASED ACTIONS
-  const stepStatus =
-    item?.instance?.stepInstances?.[0]?.stepInstanceStatus;
-
-  const isInstance = ['PENDING', 'IN_PROGRESS'].includes(stepStatus);
-
-  const approverType = item?.instance?.stepInstances?.[0]?.approverType;
-
-  console.log(item);
-  console.log(hasLinkDTAccess);
-  console.log(approverType);
-  console.log(activeTab);
-  
-  console.log(isInstance);
-  
-  
-  
-  
-
-  
-
-  if (
-     (hasLinkDTAccess && activeTab == "all" && !item?.customerId && isInstance) ||
-        (hasLinkDTAccess &&
-          activeTab == "waitingForApproval" &&
-          activeFilterButton == "newCustomer" &&
-          !item?.customerId &&
-          isInstance)
-  ) {
-    return (
-      <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_LINK_DT}>
-        <View style={styles.pendingActions}>
+  const renderCustomerAction = (item) => {
+    // 1️⃣ BLOCK / UNBLOCK
+    if (item.statusName === 'LOCKED') {
+      return (
+        <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
           <TouchableOpacity
-            style={styles.linkDtButton}
-            onPress={() =>
-              navigation.navigate('CustomerDetail', {
-                customerId: item.stgCustomerId,
-                isStaging: true,
-                activeTab: 'linkaged',
-              })
-            }
+            style={styles.unlockButton}
+            onPress={() => handleUnblockCustomer(item)}
+            disabled={blockUnblockLoading}
           >
-            <View style={styles.linkDtButtonContent}>
-              <AppText style={styles.linkDtButtonText}>LINK DT</AppText>
-            </View>
+            <UnLocked fill="#EF4444" />
+            <AppText style={styles.unlockButtonText}>Unblock</AppText>
           </TouchableOpacity>
+        </PermissionWrapper>
+      );
+    }
 
+    if (['ACTIVE', 'UN-VERIFIED'].includes(item.statusName)) {
+      return (
+        <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_BLOCK_UNBLOCK}>
           <TouchableOpacity
-            style={styles.rejectButton}
-            onPress={() => handleRejectPress(item)}
+            style={styles.blockButton}
+            onPress={() => handleBlockCustomer(item)}
+            disabled={blockUnblockLoading}
           >
-            <CloseCircle color="#000" />
+            <Locked fill="#666" />
+            <AppText style={styles.blockButtonText}>Block</AppText>
           </TouchableOpacity>
-        </View>
-      </PermissionWrapper>
-    );
-  }else{
-  // 3B️⃣ APPROVE / VERIFY
-  return (
+        </PermissionWrapper>
+      );
+    }
 
-    isInstance ? (  <PermissionWrapper
-      permission={[
-        PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT,
-        PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_APPROVE_REJECT,
-      ]}
-    >
-      <View style={styles.pendingActions}>
-        <TouchableOpacity
-          style={styles.approveButton}
-          onPress={() => handleApprovePress(item)}
-          disabled={actionLoading}
-        >
-          <View style={styles.approveButtonContent}>
-            <Icon name="checkmark-outline" size={18} color="white" />
-            <AppText style={styles.approveButtonText}>
-              {approverType === 'ROLE' ? 'Verify' : 'Approve'}
-            </AppText>
+    // 2️⃣ ONBOARD
+    if (item.statusName === 'NOT-ONBOARDED') {
+      return (
+        <PermissionWrapper permission={[
+          PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_ONBOARD,
+          PERMISSIONS.ONBOARDING_LISTING_PAGE_NOT_ONBOARDED_ONBOARD,
+        ]}>
+          <TouchableOpacity
+            style={styles.onboardButton}
+            onPress={() => {
+              const customerId = item.customerId || item.stgCustomerId;
+              handleOnboardCustomer(
+                navigation,
+                customerId,
+                false,
+                customerAPI,
+                (toastConfig) => Toast.show(toastConfig),
+                item.statusName
+              );
+            }}
+          >
+            <AppText style={styles.onboardButtonText}>Onboard</AppText>
+          </TouchableOpacity>
+        </PermissionWrapper>
+      );
+    }
+
+    // 3️⃣ INSTANCE BASED ACTIONS
+    const stepStatus =
+      item?.instance?.stepInstances?.[0]?.stepInstanceStatus;
+
+    const isInstance = ['PENDING', 'IN_PROGRESS'].includes(stepStatus);
+
+    const approverType = item?.instance?.stepInstances?.[0]?.approverType;
+
+    if (
+      (hasLinkDTAccess && activeTab == "all" && !item?.customerId && isInstance) ||
+      (hasLinkDTAccess &&
+        activeTab == "waitingForApproval" &&
+        activeFilterButton == "newCustomer" &&
+        !item?.customerId &&
+        isInstance)
+    ) {
+      return (
+        <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_LINK_DT}>
+          <View style={styles.pendingActions}>
+            <TouchableOpacity
+              style={styles.linkDtButton}
+              onPress={() =>
+                navigation.navigate('CustomerDetail', {
+                  customerId: item?.stgCustomerId ?? item?.customerId,
+                  isStaging: !!item?.stgCustomerId,
+                  activeTab: 'linkaged',
+                })
+              }
+            >
+              <View style={styles.linkDtButtonContent}>
+                <AppText style={styles.linkDtButtonText}>LINK DT</AppText>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.rejectButton}
+              onPress={() => handleRejectPress(item)}
+            >
+              <CloseCircle color="#000" />
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </PermissionWrapper>
+      );
+    } else {
+      // 3B️⃣ APPROVE / VERIFY
+      return (
 
-        <TouchableOpacity
-          style={styles.rejectButton}
-          onPress={() => handleRejectPress(item)}
-          disabled={actionLoading}
+        isInstance ? (<PermissionWrapper
+          permission={[
+            PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_APPROVE_REJECT,
+            PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_APPROVE_REJECT,
+          ]}
         >
-          <CloseCircle color="#000" />
-        </TouchableOpacity>
-      </View>
-    </PermissionWrapper>) : null
-  
-  );
-  }
+          <View style={styles.pendingActions}>
+            <TouchableOpacity
+              style={styles.approveButton}
+              onPress={() => handleApprovePress(item)}
+              disabled={actionLoading}
+            >
+              <View style={styles.approveButtonContent}>
+                <Icon name="checkmark-outline" size={18} color="white" />
+                <AppText style={styles.approveButtonText}>
+                  {approverType === 'ROLE' ? 'Verify' : 'Approve'}
+                </AppText>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.rejectButton}
+              onPress={() => handleRejectPress(item)}
+              disabled={actionLoading}
+            >
+              <CloseCircle color="#000" />
+            </TouchableOpacity>
+          </View>
+        </PermissionWrapper>) : null
+
+      );
+    }
 
 
-};
+  };
 
 
   const renderCustomerItem = ({ item, index }) => {
+
     return (
       <Animated.View
         style={[
@@ -2603,10 +2424,15 @@ const renderCustomerAction = (item) => {
         ]}
       >
         <View style={styles.customerHeader}>
-          {/* Customer Name - Clickable to navigate to CustomerDetail */}
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => navigation.navigate('CustomerDetail', { customerId: item?.stgCustomerId ?? item?.customerId, isStaging: item?.stgCustomerId ? true : false, })}
+            onPress={() =>
+              navigation.navigate('CustomerDetail', {
+                customerId: item?.stgCustomerId ?? item?.customerId,
+                isStaging: !!item?.stgCustomerId,
+
+              })
+            }
             style={styles.customerNameRow}
           >
             <AppText
@@ -2624,56 +2450,61 @@ const renderCustomerAction = (item) => {
             />
           </TouchableOpacity>
           <View style={styles.actionsContainer}>
-
-     
+{console.log(unverifiedEdit, 54345345)
+}
 
             {(
+              item.statusName !== 'NOT-ONBOARDED' &&
               (
-                item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
-                  ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
-                    ? 'approved'
-                    : 'reassigned'
-                  : item.statusName?.toLowerCase()
-              ) &&
-              ['not-onboarded', 'approved', 'active', 'reassigned'].includes(
-                item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
-                  ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
-                    ? 'approved'
-                    : 'reassigned'
-                  : item.statusName?.toLowerCase()
-              )
-            ) && (
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => {
-                    const derivedStatus =
-                      item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
-                        ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
-                          ? 'approved'
-                          : 'reassigned'
-                        : item.statusName?.toLowerCase();
+                item.statusName === 'DRAFT' ||
+                !!item?.instance?.stepInstances?.length ||
+                (item?.customerId && !item?.stgCustomerId)
+              ) && (
+                
+                <PermissionWrapper   permission={editPermissionTabBased[activeTab]}>
+                  {
+                    (item.statusName === 'UNVERIFIED' && !unverifiedEdit) ||
+                      item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED' ||
+                      (item?.childStageId || []).length > 0 ? <></> :
 
-                    const customerId = item.customerId || item.stgCustomerId;
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => {
+                          const derivedStatus =
+                            item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
+                              ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
+                                ? 'approved'
+                                : 'reassigned'
+                              : item.statusName?.toLowerCase();
 
-                    const isStaging =
-                      derivedStatus === 'not-onboarded' || derivedStatus === 'reassigned'
-                        ? ['waitingForApproval', 'rejected', 'draft'].includes(activeTab)
-                        : false;
+                          const customerId = item.customerId || item.stgCustomerId;
 
-                    handleOnboardCustomer(
-                      navigation,
-                      customerId,
-                      isStaging,
-                      customerAPI,
-                      toastConfig => Toast.show(toastConfig),
-                      derivedStatus
-                    );
-                  }}
-                >
-                  <Edit color="#666" />
-                </TouchableOpacity>
-              )}
+                          const isStaging =
+                            derivedStatus === 'not-onboarded' ||
+                              derivedStatus === 'reassigned'
+                              ? ['waitingForApproval', 'rejected', 'draft'].includes(activeTab)
+                              : false;
 
+                          handleOnboardCustomer(
+                            navigation,
+                            customerId,
+                            isStaging,
+                            customerAPI,
+                            toastConfig => Toast.show(toastConfig),
+                            derivedStatus
+                          );
+                        }}
+                      >
+                        <Edit color="#666" />
+                      </TouchableOpacity>
+
+                  }
+
+
+
+                </PermissionWrapper>
+              ))
+            }
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => fetchCustomerDocuments(item)}
@@ -2685,48 +2516,77 @@ const renderCustomerAction = (item) => {
 
         <View style={styles.customerInfo}>
           <View style={styles.infoRow}>
+            {/* LEFT ICON */}
             <AddrLine color="#999" />
-            <AppText
-              style={[styles.infoText, { maxWidth: 80 }]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {item.customerCode || item.stgCustomerId}
-            </AppText>
-            <AppText style={styles.divider}>|</AppText>
-            {item.cityName && (
-              <>
-                <AppText
-                  style={[styles.infoText, { maxWidth: 100 }]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {item.cityName}
+
+            {/* FLEXIBLE INFO BLOCK */}
+            <View style={styles.flexInfo}>
+              <AppText style={styles.infoIdText} numberOfLines={1}>
+                {item.customerCode || item.stgCustomerId}
+              </AppText>
+
+              <AppText style={styles.divider}>|</AppText>
+
+              {item?.cityName && (
+                <>
+                  <AppText style={styles.infoText} numberOfLines={1}>
+                    {item.cityName}
+                  </AppText>
+                  <AppText style={styles.divider}>|</AppText>
+                </>
+              )}
+
+              <AppText style={styles.infoText} numberOfLines={1}>
+                {item.groupName}
+              </AppText>
+
+              <AppText style={styles.divider}>|</AppText>
+
+              {/* PROTECTED CUSTOMER TYPE */}
+              <View style={styles.customerTypeBox}>
+                <AppText style={styles.customerTypeText} numberOfLines={1}>
+                  {item.customerType}
                 </AppText>
-                <AppText style={styles.divider}>|</AppText>
-              </>
-            )}
 
-            <AppText
-              style={[styles.infoText, { maxWidth: 80 }]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {item.groupName}
-            </AppText>
-            <AppText style={styles.divider}>|</AppText>
-            <AppText
-              style={[styles.infoText, { flex: 1, maxWidth: 80 }]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {item.customerType}
-            </AppText>
+                {item.customerSubcategory && (
+                  <CommonTooltip
+                    content={
+                      <AppText style={styles.tooltipText}>
+                        {item.customerSubcategory}
+                      </AppText>
+                    }
+                    backgroundColor='#2b2b2b'
 
-            {item.customerType === 'Hospital' && (
-              <AlertFilled color="#999" style={styles.infoIcon} />
-            )}
+
+                    verticalOffset={8}
+                  >
+                    <View style={styles.alertIconWrap}>
+                      <AlertFilled color="#000" />
+                    </View>
+                  </CommonTooltip>
+                )}
+              </View>
+            </View>
+
+            {/* RIGHT — LINKAGE COUNT */}
+            <TouchableOpacity
+              style={styles.linkageBox}
+              activeOpacity={0.7}
+              onPress={() =>
+                navigation.navigate('CustomerDetail', {
+                  customerId: item?.stgCustomerId ?? item?.customerId,
+                  isStaging: !!item?.stgCustomerId,
+                  activeTab: 'linkaged',
+                })
+              }
+            >
+              <LinkIcon />
+              <AppText style={styles.linkageText}>
+                {item.linkageCount ?? 0}
+              </AppText>
+            </TouchableOpacity>
           </View>
+
           <View style={styles.contactRow}>
             <Phone color="#999" />
             <AppText style={{ ...styles.contactText, marginRight: 15 }}>{item.mobile}</AppText>
@@ -2750,7 +2610,6 @@ const renderCustomerAction = (item) => {
               const stageId = item.stageId && Array.isArray(item.stageId) ? item.stageId : [item.stgCustomerId];
 
 
-              console.log('🔍 Clicked status badge - stageId:', stageId, 'item:', item);
               if (stageId && stageId.length > 0) {
                 handleViewWorkflowTimeline(
                   stageId,
@@ -3134,7 +2993,6 @@ const renderCustomerAction = (item) => {
   };
 
 
-  console.log(filteredCustomers);
 
   // Zoomable Image Component - Using React Native built-in APIs only
   const ZoomableImage = ({ imageUri, containerWidth, containerHeight }) => {
@@ -3559,9 +3417,9 @@ const renderCustomerAction = (item) => {
             <TouchableOpacity>
               <Bell color="#333" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setDownloadModalVisible(true)}>
+            {/* <TouchableOpacity onPress={() => setDownloadModalVisible(true)}>
               <Download color="#333" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
 
@@ -3739,7 +3597,7 @@ const renderCustomerAction = (item) => {
             style={styles.searchBar}
             onPress={() => navigation.navigate('CustomerStack', {
               screen: 'CustomerSearchMain',
-              params: { activeTab: activeTab , activeFilterButton: activeFilterButton} // Pass current active tab to search screen
+              params: { activeTab: activeTab, activeFilterButton: activeFilterButton } // Pass current active tab to search screen
             })}
             activeOpacity={0.7}
           >
@@ -4144,9 +4002,7 @@ const renderCustomerAction = (item) => {
             style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
             onMessage={(event) => {
               const message = event.nativeEvent.data;
-              console.log('WebView message:', message);
               if (message === 'DOWNLOAD_STARTED') {
-                console.log('✅ Download started successfully');
                 Toast.show({
                   type: 'success',
                   text1: 'Download Started',
@@ -4168,7 +4024,6 @@ const renderCustomerAction = (item) => {
               }
             }}
             onShouldStartLoadWithRequest={(request) => {
-              console.log('WebView loading request:', request.url);
               // Allow navigation to download URL
               return true;
             }}
@@ -4189,9 +4044,7 @@ const renderCustomerAction = (item) => {
             }}
             // Android download handler - this triggers the download manager
             onFileDownload={(request) => {
-              // Download request received - Android will handle this automatically
-              console.log('✅ Download request received in onFileDownload');
-              console.log('Download URL:', request.url);
+
 
               // Show success message
               Toast.show({
@@ -4208,7 +4061,7 @@ const renderCustomerAction = (item) => {
           />
         )}
 
-      </View>      
+      </View>
     </SafeAreaView>
   );
 };
@@ -4417,24 +4270,67 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10
   },
+
+  flexInfo: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+
   infoText: {
-    fontSize: 13,
-    color: '#666',
-    marginLeft: 4,
+    fontSize: 12,
+    color: "#666",
+    maxWidth: 80,
     flexShrink: 1,
   },
-  divider: {
-    color: '#999',
-    marginHorizontal: 4,
+  infoIdText: {
+    fontSize: 12,
+    color: "#666",
+    maxWidth: 80,
+    flexShrink: 0,
   },
-  infoIcon: {
+  divider: {
+    marginHorizontal: 4,
+    color: "#999",
+  },
+
+  customerTypeBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 80,
+    maxWidth: 110,
+    flexShrink: 0,
+  },
+
+  customerTypeText: {
+    fontSize: 12,
+    color: "#666",
+  },
+
+  alertIconWrap: {
     marginLeft: 4,
   },
+
+  linkageBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    width: 40,
+    justifyContent: "flex-end",
+  },
+
+  linkageText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#F57C00",
+  },
+
   contactRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -4756,7 +4652,7 @@ const styles = StyleSheet.create({
     color: '#333',
     fontWeight: '500',
   },
- 
+
   // Documents Modal Styles
   documentsModalContent: {
     flex: 1,
@@ -5175,6 +5071,14 @@ const styles = StyleSheet.create({
   },
   applyButtonTextDisabled: {
     color: '#999',
+  },
+  tooltipText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "500",
+    backgroundColor: "#2B2B2B",
+    width: "100%",
+    textAlign: "center"
   },
 });
 

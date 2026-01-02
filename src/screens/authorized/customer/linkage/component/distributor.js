@@ -21,6 +21,7 @@ import CustomDropdown from "../../../../../components/view/customDropdown";
 import { colors } from "../../../../../styles/colors";
 import { Fonts } from "../../../../../utils/fontHelper";
 import Svg, { Path } from "react-native-svg";
+import { AppToastService } from "../../../../../components/AppToast";
 
 
 const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setActiveSubTab, instance, permisions }) => {
@@ -261,6 +262,8 @@ const DistributorLinkage = ({ customerData, isLoading, isChild, saveDraft, setAc
                 )
                 : [...prev, distributor]
         );
+
+        AppToastService.show("New Distributor Added to linked distributor", "success", "Added");
     }, []);
 
     const handleFinish = () => {

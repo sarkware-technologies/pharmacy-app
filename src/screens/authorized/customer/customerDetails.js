@@ -17,6 +17,7 @@ import { customerAPI } from "../../../api/customer";
 import { findAndUpdate, transformCustomerData } from "./service/formatData";
 import Toast from "react-native-toast-message";
 import { showLoader, hideLoader } from '../../../components/ScreenLoader';
+import { AppToastService } from "../../../components/AppToast"
 
 
 const CustomerDetails = () => {
@@ -38,6 +39,7 @@ const CustomerDetails = () => {
         isStaging: isStaging,
     });
 
+    
     const [customerDetails, setCustomerDetails] = useState();
     const [draftValue, setDraftValue] = useState();
     const [loading, setLoading] = useState(true);
@@ -61,68 +63,95 @@ const CustomerDetails = () => {
     }, [data, isLoading])
 
     const saveDraft = async (action, data) => {
-        console.log(customerDetails, 238942938)
-        if (customerDetails?.instance?.stepInstances) {
-            let filterData = data;
-            if (action == "distributors") {
-                filterData = { ...data, distributors: data?.distributors?.filter((e) => e.isActive == true) }
-            }
+        try {
+            if (customerDetails?.instance?.stepInstances) {
+                let filterData = data;
 
-            setCustomerDetails((prev) => ({ ...prev, ...filterData }));
-            const instance = customerDetails?.instance;
-            const draftEditPayload = {
-                stepOrder: instance?.stepInstances?.[0]?.stepOrder || 1,
-                parallelGroup: instance?.stepInstances?.[0]?.parallelGroup,
-                comments: '',
-                actorId: instance?.stepInstances?.[0]?.assignedUserId,
-                dataChanges: {
-                    ...draftValue,
-                    ...filterData
-                },
-            };
-            setDraftValue(draftEditPayload?.dataChanges)
-            await customerAPI.draftEdit(instance?.workflowInstance?.id, draftEditPayload);
-        }
-        else {
-            if (!customerDetails?.stgCustomerId && customerDetails?.customerId) {
-                setCustomerDetails((prev) => ({ ...prev, ...data }));
-                if (action == "divisions") {
-                    const divi = data?.divisions.map((e) => {
-                        return {
-                            divisionId: parseInt(e?.divisionId),
+                if (action === "distributors") {
+                    filterData = {
+                        ...data,
+                        distributors: data?.distributors?.filter(
+                            (e) => e.isActive === true
+                        ),
+                    };
+                }
+
+                setCustomerDetails((prev) => ({ ...prev, ...filterData }));
+
+                const instance = customerDetails?.instance;
+                const draftEditPayload = {
+                    stepOrder: instance?.stepInstances?.[0]?.stepOrder || 1,
+                    parallelGroup: instance?.stepInstances?.[0]?.parallelGroup,
+                    comments: '',
+                    actorId: instance?.stepInstances?.[0]?.assignedUserId,
+                    dataChanges: {
+                        ...draftValue,
+                        ...filterData,
+                    },
+                };
+
+                setDraftValue(draftEditPayload.dataChanges);
+
+                await customerAPI.draftEdit(
+                    instance?.workflowInstance?.id,
+                    draftEditPayload
+                );
+            } else {
+                if (!customerDetails?.stgCustomerId && customerDetails?.customerId) {
+                    setCustomerDetails((prev) => ({ ...prev, ...data }));
+
+                    if (action === "divisions") {
+                        const divi = data?.divisions.map((e) => ({
+                            divisionId: Number(e?.divisionId),
                             isActive: true,
-                        };
-                    });
-                    await customerAPI.linkDivisions(customerId, { divisions: divi });
-                } else if (action == "distributors") {
-                    const distributor = data?.distributors?.map((dist) => ({
-                        distributorId: Number(dist?.id),
-                        divisions:
-                            dist?.divisions?.map((div) => ({
-                                id: Number(div?.divisionId),
-                                isActive: true,
-                            })) ?? [],
-                        supplyModeId: Number(dist?.supplyMode ?? 3),
-                        margin: Number(dist?.margin ?? 0),
-                        isActive: dist?.isActive,
-                    }));
-                    await customerAPI.linkDistributorDivisions(customerId, { mappings: distributor })
-                } else if (action == "customerGroup") {
-                    const cleanedPayload = transformCustomerData(customerDetails);
-                    await customerAPI.updateCustomerGroup(customerId, { ...cleanedPayload, ...{ customerGroupId: data?.customerGroupId }, })
+                        }));
 
+                        await customerAPI.linkDivisions(customerId, {
+                            divisions: divi,
+                        });
+                    } else if (action === "distributors") {
+                        const distributor = data?.distributors?.map((dist) => ({
+                            distributorId: Number(dist?.id),
+                            divisions:
+                                dist?.divisions?.map((div) => ({
+                                    id: Number(div?.divisionId),
+                                    isActive: true,
+                                })) ?? [],
+                            supplyModeId: Number(dist?.supplyMode ?? 3),
+                            margin: Number(dist?.margin ?? 0),
+                            isActive: dist?.isActive,
+                        }));
+
+                        await customerAPI.linkDistributorDivisions(customerId, {
+                            mappings: distributor,
+                        });
+                    } else if (action === "customerGroup") {
+                        const cleanedPayload =
+                            transformCustomerData(customerDetails);
+
+                        await customerAPI.updateCustomerGroup(customerId, {
+                            ...cleanedPayload,
+                            customerGroupId: data?.customerGroupId,
+                        });
+                    }
+                } else {
+                    throw new Error("Task not assigned to you");
                 }
             }
-            else {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Task issue',
-                    text2: 'Task Not Assignt to you',
-                });
-            }
-        }
 
-    }
+            // ✅ SUCCESS
+            AppToastService.show("Draft Saved", "success", "Saved");
+
+            return true;
+        } catch (error) {
+            console.error(error);
+            AppToastService.show("Save failed", "error", "Failed");
+          
+
+            return false;
+        }
+    };
+
 
     const workflowAction = async (action, comment = "") => {
         try {

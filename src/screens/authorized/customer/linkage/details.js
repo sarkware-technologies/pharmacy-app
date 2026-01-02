@@ -45,6 +45,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
     const [rejectModalVisible, setRejectModalVisible] = useState(false);
     const [sendBackModalVisible, setSendBackModalVisible] = useState(false);
 
+    console.log(customerData);
 
     useEffect(() => {
         Animated.parallel([
@@ -85,7 +86,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
         }
     }, [customerData]);
 
-    
+
 
 
     const InfoRow = ({ label, value, icon, onPress }) => (
@@ -231,13 +232,45 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                         </AnimatedSection>
 
                         <AnimatedSection>
-                            <AppText style={Customerstyles.sectionTitle}>Address Details</AppText>
+                            <View style={Customerstyles.sectionHeader}>
+                                <AppText style={Customerstyles.sectionTitle}>
+                                    Address Details
+                                </AppText>
+
+                                {(() => {
+                                    const addressProof = customerData?.docType?.find(
+                                        doc => doc.doctypeName === 'ADDRESS PROOF'
+                                    );
+
+                                    if (!addressProof) return null;
+
+                                    return (
+                                        <View style={{ ...Customerstyles.fileLinkGroup, marginTop: 4 }}>
+
+
+                                            <View style={Customerstyles.valueWithIcons}>
+                                                {FindDoc(11, 0)}
+                                            </View>
+
+                                        </View>
+                                    );
+                                })()}
+                            </View>
                             <View style={Customerstyles.card}>
                                 <InfoRow label="Address" value={customerData?.generalDetails?.address1 + " " + customerData?.generalDetails?.address2 + " " + customerData?.generalDetails?.address3 + " " + customerData?.generalDetails?.address4} />
-                                <View style={{ flexDirection: "row", marginTop: 5 }}>
-                                    <InfoRow label="Pincode" value={customerData?.generalDetails?.pincode} />
-                                    <InfoRow label="City" value={customerData?.generalDetails?.city} />
-                                    <InfoRow label="State" value={customerData?.generalDetails?.state} />
+                                <View style={{ ...Customerstyles.rowContainer, marginTop: 5, paddingBottom: 10 }}>
+                                    <View style={[Customerstyles.halfRow, { marginRight: 8 }]}>
+                                        <AppText style={Customerstyles.infoLabel}>Pincode</AppText>
+                                        <AppText style={Customerstyles.infoValue}>{customerData?.generalDetails?.pincode}</AppText>
+                                    </View>
+                                    <View style={[Customerstyles.halfRow, { marginLeft: 8 }]}>
+                                        <AppText style={Customerstyles.infoLabel}>City</AppText>
+                                        <AppText style={Customerstyles.infoValue}>{customerData?.generalDetails?.cityName}</AppText>
+                                    </View>
+                                    <View style={[Customerstyles.halfRow, { marginLeft: 8 }]}>
+                                        <AppText style={Customerstyles.infoLabel}>State</AppText>
+                                        <AppText style={Customerstyles.infoValue}>{customerData?.generalDetails?.stateName}</AppText>
+                                    </View>
                                 </View>
                             </View>
                         </AnimatedSection>
@@ -255,7 +288,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                                                 </View>
                                                 <View style={Customerstyles.licenseExpiry}>
                                                     <AppText style={Customerstyles.infoLabel}>Expiry</AppText>
-                                                    <AppText style={Customerstyles.infoValue}>{license.licenceValidUpto}</AppText>
+                                                    <AppText style={Customerstyles.infoValue}>{new Date(license.licenceValidUpto).toLocaleDateString("en-GB").replace(/\//g, "-")}</AppText>
                                                 </View>
                                             </View>
                                             {customerData?.docType?.find((e) => e?.["doctypeId"] == license?.docTypeId) && (
@@ -293,6 +326,26 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                             </View>
                         </AnimatedSection>
 
+
+                        {(() => {
+                            const imageDoc = customerData?.docType?.find(
+                                doc => Number(doc.doctypeId) === 1   // 👈 CLINIC IMAGE
+                            );
+
+                            if (!imageDoc) return null;
+
+                            return (
+                                <AnimatedSection>
+                                    <AppText style={Customerstyles.sectionTitle}>Image</AppText>
+
+                                    <View style={Customerstyles.card}>
+                                        <View style={Customerstyles.valueWithIcons}>
+                                                {FindDoc(1, 0)}
+                                            </View>
+                                    </View>
+                                </AnimatedSection>
+                            );
+                        })()}
                         {customerData?.customerGroupId && (
                             <AnimatedSection  >
                                 <View style={Customerstyles.sectionHeaderRow}>
@@ -485,7 +538,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                                             [Customerstyles.approveButton]
                                         }
                                         onPress={() => {
-                                            setActiveTab?.("linkaged");                                              
+                                            setActiveTab?.("linkaged");
                                         }}
 
                                     >

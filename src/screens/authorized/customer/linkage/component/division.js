@@ -182,7 +182,7 @@ const DivisionLinkage = ({
 
                             {/* ---------------- Other ---------------- */}
                             {hasOtherDivisionPermission && (
-                                <View style={[Linkagestyles.accordionCardG, { width: "34%" }]}>
+                                <View style={[Linkagestyles.accordionCardG, { width: "35%" }]}>
                                     <View style={Linkagestyles.header}>
                                         {hasOtherDivisionPermission && (
                                             <AppText style={Linkagestyles.headerTitle}>Other</AppText>

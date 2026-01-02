@@ -69,7 +69,7 @@ const Fields = ({ customerData, isLoading, isChild, saveDraft }) => {
             {/* Header (FIXED) */}
             <View style={Linkagestyles.header}>
                 <>
-                    <View style={[Linkagestyles.flatheader,{marginTop:20}]}>
+                    <View style={[Linkagestyles.flatheader, { marginTop: 20 }]}>
                         <AppText style={Linkagestyles.flatheaderText}>Employee Name & Code</AppText>
                         <AppText style={Linkagestyles.flatheaderText}>Designation</AppText>
                     </View>
@@ -98,14 +98,61 @@ const Fields = ({ customerData, isLoading, isChild, saveDraft }) => {
                         keyExtractor={(item) => String(item.id)}
                         renderItem={({ item }) => {
                             return (
-                                <View style={[CommonStyle.SpaceBetween, { borderBottomColor: "#90909080", borderBottomWidth: 0.5, paddingHorizontal: 20, paddingVertical: 7 }]}>
-                                    <View style={{ gap: 7 }}>
-                                        <AppText style={[CommonStyle.secondaryText, { color: colors.primaryText, fontSize: 14 }]}>{item?.userName}</AppText>
-                                        <AppText style={[CommonStyle.secondaryText, { color: colors.secondaryText, fontSize: 12 }]}>{item?.stationCode}</AppText>
+                                <View
+                                    style={[
+                                        CommonStyle.SpaceBetween,
+                                        {
+                                            borderBottomColor: "#90909080",
+                                            borderBottomWidth: 0.5,
+                                            paddingHorizontal: 20,
+                                            paddingVertical: 7,
+                                            alignItems: "center",
+                                        },
+                                    ]}
+                                >
+                                    {/* LEFT COLUMN */}
+                                    <View style={{ gap: 6, flex: 1, marginRight: 10 }}>
+                                        <AppText
+                                            numberOfLines={1}
+                                            ellipsizeMode="tail"
+                                            style={[
+                                                CommonStyle.secondaryText,
+                                                { color: colors.primaryText, fontSize: 14 },
+                                            ]}
+                                        >
+                                            {item?.userName}
+                                        </AppText>
 
+                                        <AppText
+                                            numberOfLines={1}
+                                            ellipsizeMode="tail"
+                                            style={[
+                                                CommonStyle.secondaryText,
+                                                { color: colors.secondaryText, fontSize: 12 },
+                                            ]}
+                                        >
+                                            {item?.stationCode}
+                                        </AppText>
                                     </View>
-                                    <AppText style={[CommonStyle.secondaryText, { color: colors.secondaryText, fontSize: 14 }]}>{item?.designation}</AppText>
+
+                                    {/* RIGHT COLUMN */}
+                                    <AppText
+                                        numberOfLines={1}
+                                        ellipsizeMode="tail"
+                                        style={[
+                                            CommonStyle.secondaryText,
+                                            {
+                                                color: colors.secondaryText,
+                                                fontSize: 14,
+                                                maxWidth: "50%",
+                                                textAlign: "right",
+                                            },
+                                        ]}
+                                    >
+                                        {item?.designation}
+                                    </AppText>
                                 </View>
+
                             )
                         }}
                         showsVerticalScrollIndicator={false}

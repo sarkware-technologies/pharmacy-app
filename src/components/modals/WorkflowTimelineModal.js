@@ -29,7 +29,7 @@ const VerticalTimeline = ({ steps }) => {
         const isPending = step.status === 'PENDING' || step.status === 'pending';
         const isInProgress = step.status === 'IN_PROGRESS';
         const isOthers = step.status === 'NOT_ASSIGNED' || !step.status || step.status === 'SKIPPED';
-        const isReassigned = step.status === 'REASSIGN' || !step.status || step.status === 'reassign';
+        const isReassigned = step.status === 'REASSIGNED' || !step.status || step.status === 'reassigned';
 
         // Status indicator colors
         let indicatorColor = '#D1D5DB';
@@ -123,7 +123,7 @@ const VerticalTimeline = ({ steps }) => {
                       {step.status === 'submitted' ? 'SUBMITTED' :
                         step.status === 'approved' ? 'APPROVED' :
                           step.status === 'rejected' ? 'REJECTED' :
-                          step.status === 'REASSIGN' ? 'SENT BACK' :
+                          step.status === 'REASSIGNED' ? 'SENT BACK' :
                             step.status.toUpperCase()}
                     </AppText>
                   </View>

@@ -41,17 +41,27 @@ const DistributorCard = ({ distributor, setValue, disabled }) => {
     <View style={styles.card}>
       {/* Header */}
       <AppText style={styles.title}>{distributor?.name}</AppText>
-      <View style={CommonStyle.SpaceBetween}>
-        <View style={styles.subRow}>
-          <AppText style={styles.subText}>{distributor?.code ?? "-"}</AppText>
-          <AppText style={styles.separator}>|</AppText>
-          <AppText style={styles.subText}>{distributor?.cityName ?? "-"}</AppText>
-          <AppText style={styles.separator}>|</AppText>
-          <AppText style={styles.subText}>{distributor?.cityName ?? "-"}</AppText>
-        </View>
-        <AppText style={[styles.subText, { width: "25%" }]}>Margin</AppText>
-      </View>
+     <View style={CommonStyle.SpaceBetween}>
+  {/* LEFT INFO */}
+  <View style={styles.subRow}>
+    <AppText numberOfLines={1} style={styles.subText}>
+      {distributor?.code ?? "-"}
+    </AppText>
+    <AppText style={styles.separator}>|</AppText>
+    <AppText numberOfLines={1} style={styles.subText}>
+      {distributor?.cityName ?? "-"}
+    </AppText>
+    <AppText style={styles.separator}>|</AppText>
+    <AppText numberOfLines={1} style={styles.subText}>
+      {distributor?.cityName ?? "-"}
+    </AppText>
+  </View>
 
+  {/* RIGHT LABEL — MATCH INPUT WIDTH */}
+  <View style={styles.marginLabelBox}>
+    <AppText style={styles.subText}>Margin</AppText>
+  </View>
+</View>
       {/* Dropdowns + Margin */}
       <View style={styles.row}>
         <CustomDropdown
@@ -74,21 +84,29 @@ const DistributorCard = ({ distributor, setValue, disabled }) => {
             handleSetValue?.({ organizationCode: e })
           }}
         >
-          <View style={styles.dropdown}>
-            <AppText style={styles.dropdownText}>{distributor?.organizationCode ?? "SPLL"}</AppText>
+          <View style={[styles.dropdown, { flex: 1 }]}>
+            <AppText numberOfLines={1} style={styles.dropdownText}>{distributor?.organizationCode ?? "SPLL"}</AppText>
             <Svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
               <Path d="M0.5 0.5L4.875 4.875L9.25 0.5" stroke="#909090" strokeLinecap="round" strokeLinejoin="round" />
             </Svg>
           </View>
         </CustomDropdown>
 
-        <TouchableOpacity disabled={disabled} style={[styles.dropdown, { minWidth: "40%" }, distributor?.error == "division" && { borderWidth: 1, borderColor: "red" }]} onPress={() => setShowDiv(true)}>
+        <TouchableOpacity disabled={disabled} style={[
+          styles.dropdown,
+          { flex: 1 },
+          distributor?.error == "division" && { borderWidth: 1, borderColor: "red" }
+        ]}
+
+          onPress={() => setShowDiv(true)}>
           <AppText style={styles.dropdownText}>{"All Divisions"}</AppText>
           <Svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
             <Path d="M0.5 0.5L4.875 4.875L9.25 0.5" stroke="#909090" strokeLinecap="round" strokeLinejoin="round" />
           </Svg>
 
         </TouchableOpacity>
+
+
         <View style={[styles.marginBox, distributor?.error == "margin" && { borderWidth: 1, borderColor: "red" }]}>
           <AppInput
             style={[styles.marginInput]}
@@ -172,6 +190,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 16,
     gap: 12,
+    width: "100%",
   },
 
   dropdown: {
@@ -198,6 +217,10 @@ const styles = StyleSheet.create({
     color: "#888",
   },
 
+  marginLabelBox: {
+  width: 90,            
+  alignItems: "flex-start", 
+},
   marginBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -209,6 +232,7 @@ const styles = StyleSheet.create({
     height: 35,
     width: 90,
     justifyContent: "space-between",
+
   },
 
   marginInput: {

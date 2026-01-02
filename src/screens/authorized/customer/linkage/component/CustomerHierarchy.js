@@ -52,10 +52,19 @@ const CustomerHierarchy = ({ customerData, isLoading, isChild, saveDraft, setChi
         return tabs;
     }, [mapping]);
 
-    const tableHeaders = ["Pharmacy Details", "Doctor Details", "Hospital Details"];
+    const tableHeaderMap = {
+        pharmacy: "Pharmacy Details",
+        doctors: "Doctor Details",
+        hospitals: "Hospital Details",
+    };
     const childHeader = ["Pharmacy Details", "Doctor Details"];
 
     const activeTab = CustomerTabs?.[activeCustomerTab];
+
+
+
+
+
 
     const handleToggle = (id) => {
         if (expanded == id) {
@@ -131,7 +140,7 @@ const CustomerHierarchy = ({ customerData, isLoading, isChild, saveDraft, setChi
                 </HorizontalSelector>
                 {activeTab && activeTab?.data?.length != 0 && (
                     <View style={[Linkagestyles.flatheader, { marginTop: 15 }]}>
-                        <AppText style={[Linkagestyles.flatheaderText, { width: "65%" }]}>{tableHeaders[activeCustomerTab]}</AppText>
+                        <AppText style={[Linkagestyles.flatheaderText, { width: "65%" }]}> {tableHeaderMap[activeTab?.key]}</AppText>
                         <AppText style={[Linkagestyles.flatheaderText, { width: "35%" }]}>Action</AppText>
                     </View>
                 )}
