@@ -47,6 +47,7 @@ import Refresh from '../../../components/icons/Refresh';
 import AlertCircle from '../../../components/icons/AlertCircle';
 import RejectCustomerModal from '../../../components/modals/RejectCustomerModal';
 import ApproveCustomerModal from '../../../components/modals/ApproveCustomerModal';
+import { showLoader, hideLoader } from '../../../components/ScreenLoader';
 
 import WorkflowTimelineModal from '../../../components/modals/WorkflowTimelineModal';
 import { customerAPI } from '../../../api/customer';
@@ -1676,7 +1677,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
 
     try {
-      const workflowId = selectedCustomerForAction?.workflowId || selectedCustomerForAction?.stgCustomerId;
+       showLoader();
       const instanceId = selectedCustomerForAction?.instaceId || selectedCustomerForAction?.stgCustomerId;
       const actorId = loggedInUser?.userId || loggedInUser?.id;
       const parellGroupId = selectedCustomerForAction?.instance?.stepInstances[0]?.parallelGroup
@@ -1702,7 +1703,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
       const response = await customerAPI.workflowAction(instanceId, actionDataPyaload);
 
       setRejectModalVisible(false);
-      showToast('Customer has been rejected!', 'error');
+
+      AppToastService.show("Customer has been rejected!", "error", "Reject");
       setSelectedCustomerForAction(null);
 
       // Refresh the customer list after rejection
@@ -1757,7 +1759,9 @@ const CustomerList = ({ navigation: navigationProp }) => {
       setRejectModalVisible(false);
       showToast(`Failed to reject customer: ${error.message}`, 'error');
       setSelectedCustomerForAction(null);
-    }
+    }finally {
+            hideLoader();
+        }
   };
 
   // Handle verify button click - fetch latest draft first
@@ -2376,7 +2380,12 @@ const CustomerList = ({ navigation: navigationProp }) => {
           <View style={styles.pendingActions}>
             <TouchableOpacity
               style={styles.approveButton}
-              onPress={() => handleApprovePress(item)}
+               onPress={() =>
+                navigation.navigate('CustomerDetail', {
+                  customerId: item?.stgCustomerId ?? item?.customerId,
+                  isStaging: !!item?.stgCustomerId,
+                })
+              }
               disabled={actionLoading}
             >
               <View style={styles.approveButtonContent}>
