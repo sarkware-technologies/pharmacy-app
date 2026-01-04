@@ -91,6 +91,35 @@ export const getRCFilter = async () => {
 };
 
 
+export const AddProduct = async (rc = [], isCopiedForAllRC = true) => {
+  try {
+    const payload = {
+      isCopiedForAllRC,
+      rcDetails: rc?.map((e) => {
+        return {
+          "id": e?.id,
+          "productId": e?.productId,
+          "discount": e?.discount,
+          "specialPriceTypeId": e?.specialPriceTypeId,
+          "maxOrderQty": e?.maxOrderQty,
+          "specialPrice": e?.ptr,
+          "moqFrequencyId": e?.moqFrequencyId,
+          "isActive": e?.isActive,
+          "rateContractMasterId": e?.rateContractMasterId,
+          "supplyModeId": e?.supplyModeId,
+        }
+      })
+    }
+    const response = await apiClient.post(
+      "rate-contract/rc/add-new-product",
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 
 
 

@@ -58,9 +58,17 @@ const GroupUpdateScreen = () => {
     const [showRCselection, setShowRCselection] = useState(false);
     const [specialPriceType, setSpecialPriceType] = useState([]);
 
+    const [successModal, setSuccessModal] = useState(false);
+    const [discountModal, setDiscountModal] = useState(false);
+    const [linkDistributorModal, setLinkDistributorModal] = useState(false);
+    const [discountPreviousModal, setDiscountPreviousModal] = useState(false);
+
+
     const [buldkUpdate, setBuldkUpdate] = useState({ specialType: {} });
 
-
+    console.log(selectProduct, 34987893)
+    console.log(selectedCustomers, 34987893)
+    console.log(selectProductNew, 34987893)
     console.log(selectProductOld, 402389)
     const TITLE_MAP = {
         addNew: "Add Products",
@@ -79,9 +87,10 @@ const GroupUpdateScreen = () => {
     const [limit, setLimit] = useState(20);
     const [search, setSearch] = useState();
 
-    const [rcList, setRcList] = useState();
+    const [rcList, setRcList] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const getGroupDetails = useCallback(async () => {
+        setIsLoading(true);
         try {
             const response = await getRCFilter();
             setRcFilter(response);
@@ -94,20 +103,45 @@ const GroupUpdateScreen = () => {
                 setFilter({ specialPriceTypeIds: [specialPriceTypeId] });
             }
         } catch (error) {
+            setIsLoading(false);
             console.error("Error fetching RC filter:", error);
         }
     }, []);
 
     const getDistributorProduct = useCallback(async (pageNo, pageSize, filter, search) => {
-        setIsLoading(true);
         try {
+            let productIds = [selectProduct?.productId];
+            if (groupType == "Product Swapping") {
+                productIds = [selectProductNew?.productId, selectProductOld?.productId]
+            }
+
             const response = await getProductsByDistributorAndCustomer({
                 pageNo,
                 pageSize,
                 specialPriceTypeIds: filter?.specialPriceTypeIds || [],
-                search
+                search,
+                productIds
             });
-
+            const rcList = response?.rcDetails?.map((e) => {
+                return {
+                    customerName: e?.customerDetails?.customerName,
+                    customerCode: e?.customerDetails?.customerCode,
+                    cityName: e?.customerDetails?.cityName,
+                    rateContractNum: e?.rateContractNum,
+                    specialPriceTypeId: e?.specialPriceTypeId,
+                    discount: e?.discount,
+                    ptr: e?.productDetails?.ptr,
+                    moq: "",
+                    supplyModeId: e?.supplyModeId,
+                    specialPriceType: e?.specialPriceType,
+                    id: e?.id,
+                    customerId: e?.customerId,
+                    productId: e?.productId,
+                    rateContractMasterId: e?.rateContractMasterId,
+                    isActive: true
+                }
+            });
+            setRcList(rcList)
             console.log("Distributor products:", response);
         } catch (error) {
             console.error("Error fetching distributor products:", error);
@@ -177,6 +211,16 @@ const GroupUpdateScreen = () => {
             }));
         }
     }, [rcFilter]);
+
+    const addProducts = (action) => {
+        if (action == "yes") {
+
+        }
+        else {
+
+        }
+
+    }
 
 
 
@@ -255,11 +299,27 @@ const GroupUpdateScreen = () => {
                                 )}
 
                             </View>
-                            <RcItem multiSelect={groupType != 'addNew'} key={1} specialPriceType={specialPriceType} type={groupType == 'updateSupply' ? 2 : 1} />
-                            <RcItem multiSelect={groupType != 'addNew'} key={2} specialPriceType={specialPriceType} />
-                            <RcItem multiSelect={groupType != 'addNew'} key={3} specialPriceType={specialPriceType} />
-                            <RcItem multiSelect={groupType != 'addNew'} key={4} specialPriceType={specialPriceType} />
-                            <RcItem multiSelect={groupType != 'addNew'} key={5} specialPriceType={specialPriceType} />
+                            {rcList?.filter((e) => e?.isActive)?.map((e, i) =>
+                                <RcItem
+                                    product={e}
+                                    multiSelect={groupType != 'addNew'}
+                                    key={i + groupType}
+                                    specialPriceType={specialPriceType}
+                                    type={groupType == 'updateSupply' ? 2 : 1}
+                                    setValue={(value) =>
+                                        setRcList(prev =>
+                                            prev.map(rc =>
+                                                rc?.id === e?.id ? value : rc
+                                            )
+                                        )
+                                    }
+                                />)}
+
+                            {rcList?.filter((e) => e?.isActive)?.length == 0 && !isLoading && (
+                                <View style={{ alignItems: "center", marginTop: 100 }}>
+                                    <AppText>RC List is Empty</AppText>
+                                </View>
+                            )}
                         </View>
                     }
 
@@ -278,10 +338,11 @@ const GroupUpdateScreen = () => {
                 </View>
 
 
-                {/* <QuickApproval visible={quickApproval} onClose={() => setQuickApproval(false)} /> */}
-                {/* <SuccessModal visible={quickApproval} onClose={() => setQuickApproval(false)} onPress={() => setQuickApproval(false)} /> */}
-                {/* <DiscountModal visible={quickApproval} onClose={() => setQuickApproval(false)} onPress={() => setQuickApproval(false)} /> */}
-                <LinkDistributorModal visible={quickApproval} onClose={() => setQuickApproval(false)} onPress={() => setQuickApproval(false)} />
+                <QuickApproval visible={quickApproval} onClose={() => setQuickApproval(false)} />
+                <SuccessModal visible={successModal} onClose={() => setSuccessModal(false)} onPress={() => setSuccessModal(false)} />
+                <DiscountModal visible={discountModal} onClose={() => setDiscountModal(false)} onPress={() => setDiscountModal(false)} />
+                <LinkDistributorModal visible={linkDistributorModal} onClose={() => setLinkDistributorModal(false)} onPress={() => setLinkDistributorModal(false)} />
+                <DiscountPreviousModal onPress={(e) => addProducts(e)} visible={discountPreviousModal} onClose={() => setDiscountPreviousModal(false)} />
 
                 <SelectRC selected={selectedCustomerList} onSelectCustomer={(e) => setselectedCustomerList(e)} visible={showRCselection} onClose={() => { setShowRCselection(false) }} />
 

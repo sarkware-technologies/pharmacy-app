@@ -29,6 +29,8 @@ import PharmacyWholesalerRetailerForm from '../screens/authorized/registration/P
 import OnboardCustomer from '../screens/authorized/registration/OnboardCustomer';
 import CustomerList from '../screens/authorized/customer/CustomerList';
 
+import RegisterForm from "../screens/authorized/onboard/registerForm"
+
 // Pricing Screens
 import RateContractList from '../screens/authorized/pricing/RateContractList';
 import CreateRateContract from '../screens/authorized/pricing/CreateRateContract';
@@ -349,6 +351,9 @@ const MainStack = () => (
     <Stack.Screen name="PharmacySelector" component={PharmacySelector} />
     <Stack.Screen name="OnboardCustomer" component={OnboardCustomer} />
 
+
+    <Stack.Screen name="onboading" component={RegisterForm} />
+
     {/* Product Stack - opens without bottom tabs */}
     <Stack.Screen name="ProductStack" component={ProductStack} />
     {/* Distributor Stack - opens without bottom tabs */}
@@ -431,7 +436,7 @@ const AppNavigator = ({ navigationRef }) => {
           <Stack.Screen name="Main" component={MainStack} />
         )}
       </Stack.Navigator>
-      
+
     </NavigationContainer>
   );
 };

@@ -3,9 +3,9 @@ import AppText from "../AppText"
 import { Fonts } from "../../utils/fontHelper";
 import { colors } from "../../styles/colors";
 
-const RadioOption = ({ label, selected, onSelect,disabled }) => (
+const RadioOption = ({ label, selected, onSelect, disabled, width = 14, height = 14, borderWidth = 1, borderRadius = 9, borderColor = "#909090", }) => (
     <TouchableOpacity disabled={disabled} style={styles.radioOption} onPress={() => onSelect?.()}>
-        <View style={[styles.radio, selected && styles.radioSelected]}>
+        <View style={[styles.radio, { width, height, borderWidth, borderRadius, borderColor }, selected && styles.radioSelected]}>
             {selected && <View style={styles.radioInner} />}
         </View>
         <AppText style={[styles.radioText, selected && styles.radioSelectedText]}>
@@ -25,11 +25,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     radio: {
-        width: 14,
-        height: 14,
-        borderRadius: 9,
-        borderWidth: 1,
-        borderColor: "#909090",
+
         alignItems: 'center',
         justifyContent: 'center',
     },

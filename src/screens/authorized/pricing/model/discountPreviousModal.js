@@ -51,8 +51,8 @@ const DiscountPreviousModal = ({ visible, onClose, onPress }) => {
             visible={visible}
             footer={
                 <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 10 }}>
-                    <Button textStyle={CommonStyle.secondaryButtonText} style={[CommonStyle.secondaryButton, { width: "49%", paddingVertical: 15, }]} onPress={() => onPress?.()}>No</Button>
-                    <Button style={{ width: "49%", paddingVertical: 15 }} onPress={() => onPress?.()}>Yes</Button>
+                    <Button textStyle={CommonStyle.secondaryButtonText} style={[CommonStyle.secondaryButton, { width: "49%", paddingVertical: 15, }]} onPress={() => onPress?.("no")}>No</Button>
+                    <Button style={{ width: "49%", paddingVertical: 15 }} onPress={() => onPress?.("yes")}>Yes</Button>
                 </View>
             }
             footerStyle={{ borderTopWidth: 0 }}
@@ -76,12 +76,12 @@ const DiscountPreviousModal = ({ visible, onClose, onPress }) => {
                         {'\n'} created rate contract
                     </AppText>
                     <ScrollView>
-                        <View style={{paddingHorizontal:20,marginTop:30}}>
+                        <View style={{ paddingHorizontal: 20, marginTop: 30 }}>
                             <View style={styles.gridContainer}>
                                 {List.map((e, i) => renderCard(e, i))}
                             </View>
 
-                            <AppText  style={{ marginTop: 25,fontSize:16,marginBottom:10 }}>Discount (%)</AppText>
+                            <AppText style={{ marginTop: 25, fontSize: 16, marginBottom: 10 }}>Discount (%)</AppText>
 
                             <View style={styles.gridContainer}>
                                 {DiscountList.map((e, i) => renderCard(e, i))}
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     discountCard: {
         backgroundColor: '#eef4f9',
         paddingVertical: 13,
-        paddingHorizontal:10,
+        paddingHorizontal: 10,
         borderRadius: 12,
         gap: 7,
         width: '31%', // 👈 3 items per row

@@ -80,6 +80,7 @@ export const getProductsByDistributorAndCustomer = async ({
     customerIds = [],
     distributorIds = [],
     specialPriceTypeIds = [],
+    productIds = []
 }) => {
     try {
         const payload = {
@@ -94,6 +95,9 @@ export const getProductsByDistributorAndCustomer = async ({
 
         if (specialPriceTypeIds?.length > 0)
             payload.specialPriceTypeIds = specialPriceTypeIds;
+        if (productIds?.length > 0)
+            payload.productIds = productIds;
+
 
         const response = await apiClient.post(
             "/rate-contract/rc/products-by-distributor-and-customer",

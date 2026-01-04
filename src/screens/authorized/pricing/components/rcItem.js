@@ -13,7 +13,19 @@ import CustomCheckbox from "../../../../components/view/checkbox";
 import CustomDropdown from "../../../../components/view/customDropdown";
 import { useRef } from "react";
 
-const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = false }) => {
+const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = false, setValue }) => {
+
+    const handleSetValue = (key, value) => {
+        console.log(key, value, 23984278)
+        if (key == "specialPriceTypeId") {
+            setValue?.({ ...product, [key]: value?.value, specialPriceType: value?.label })
+        }
+        else {
+            setValue?.({ ...product, [key]: value })
+        }
+
+        // setValue
+    }
     return (
         <View style={styles.productCard}>
             <View style={[CommonStyle.SpaceBetween, { alignItems: "flex-start" }]}>
@@ -24,10 +36,10 @@ const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = f
                         </View>
                     )}
                     <View style={{ marginBottom: 6, }}>
-                        <AppText style={[styles.productName, { fontSize: 14 }]}>Agarwal Maternity General hospital</AppText>
+                        <AppText style={[styles.productName, { fontSize: 14 }]}>{product?.customerName}</AppText>
                     </View>
                 </View>
-                <TouchableOpacity onPress={() => { }}>
+                <TouchableOpacity onPress={() => { handleSetValue("isActive", false) }}>
                     <Svg width="13" height="15" viewBox="0 0 13 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <Path d="M11.5 2.83333L11.0867 9.51667C10.9813 11.224 10.9287 12.078 10.5 12.692C10.2884 12.9954 10.0159 13.2515 9.7 13.444C9.062 13.8333 8.20667 13.8333 6.496 13.8333C4.78267 13.8333 3.926 13.8333 3.28667 13.4433C2.97059 13.2505 2.69814 12.9939 2.48667 12.69C2.05867 12.0753 2.00667 11.22 1.904 9.51L1.5 2.83333M0.5 2.83333H12.5M9.204 2.83333L8.74867 1.89467C8.44667 1.27067 8.29533 0.959333 8.03467 0.764667C7.97676 0.721544 7.91545 0.683195 7.85133 0.65C7.56267 0.5 7.216 0.5 6.52333 0.5C5.81267 0.5 5.45733 0.5 5.16333 0.656C5.09834 0.690807 5.03635 0.730945 4.978 0.776C4.71467 0.978 4.56733 1.30133 4.27267 1.94733L3.86867 2.83333" stroke="#909090" strokeLinecap="round" strokeLinejoin="round" />
                     </Svg>
@@ -39,11 +51,11 @@ const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = f
                     <Svg width="11" height="10" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <Path d="M7.16667 1.16667H12.5M7.16667 3.83333H10.5M7.16667 7.83333H12.5M7.16667 10.5H10.5M0.5 1.16667C0.5 0.989856 0.570238 0.820287 0.695262 0.695262C0.820286 0.570238 0.989856 0.5 1.16667 0.5H3.83333C4.01014 0.5 4.17971 0.570238 4.30474 0.695262C4.42976 0.820287 4.5 0.989856 4.5 1.16667V3.83333C4.5 4.01014 4.42976 4.17971 4.30474 4.30474C4.17971 4.42976 4.01014 4.5 3.83333 4.5H1.16667C0.989856 4.5 0.820286 4.42976 0.695262 4.30474C0.570238 4.17971 0.5 4.01014 0.5 3.83333V1.16667ZM0.5 7.83333C0.5 7.65652 0.570238 7.48695 0.695262 7.36193C0.820286 7.2369 0.989856 7.16667 1.16667 7.16667H3.83333C4.01014 7.16667 4.17971 7.2369 4.30474 7.36193C4.42976 7.48695 4.5 7.65652 4.5 7.83333V10.5C4.5 10.6768 4.42976 10.8464 4.30474 10.9714C4.17971 11.0964 4.01014 11.1667 3.83333 11.1667H1.16667C0.989856 11.1667 0.820286 11.0964 0.695262 10.9714C0.570238 10.8464 0.5 10.6768 0.5 10.5V7.83333Z" stroke="#909090" strokeLinecap="round" strokeLinejoin="round" />
                     </Svg>
-                    <AppText style={styles.productcodeText}>2536</AppText>
+                    <AppText style={styles.productcodeText}>{product?.customerCode}</AppText>
                     <AppText style={styles.productcodeText}>|</AppText>
-                    <AppText style={styles.productcodeText}>Pune</AppText>
+                    <AppText style={styles.productcodeText}>{product?.cityName}</AppText>
                     <AppText style={styles.productcodeText}>|</AppText>
-                    <AppText style={styles.productcodeText}>SUNRC_1 (Count: 500)</AppText>
+                    <AppText style={styles.productcodeText}>{product?.rateContractNum}</AppText>
                 </View>
             </View>
             {type == 1 ? (
@@ -51,20 +63,21 @@ const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = f
 
                     <View style={styles.productInputRow}>
                         <View style={styles.inputGroup}>
-                            <AppText style={[styles.inputLabel]}>Special Price Type</AppText>
+                            <AppText style={[styles.inputLabel]}>Special Price Type {product?.specialPriceTypeId}</AppText>
                             <CustomDropdown
                                 dref={useRef(null)}
                                 data={specialPriceType}
-                                // value={value?.specialType?.value}
+                                value={product?.specialPriceTypeId}
                                 onChange={(e) => {
                                     const selected = specialPriceType.find(
                                         (s) => s.value === e
                                     );
-                                    // handleAction?.("specialType", selected);
+                                    console.log(selected, 23489072)
+                                    handleSetValue("specialPriceTypeId", selected)
                                 }}
                             >
                                 <View style={styles.dropdown}>
-                                    <AppText style={styles.dropdownText}>Discount on PTR</AppText>
+                                    <AppText style={styles.dropdownText}>{product?.specialPriceType}</AppText>
                                     <Icon name="arrow-drop-down" size={20} color={colors.text} />
                                 </View>
                             </CustomDropdown>
@@ -72,11 +85,12 @@ const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = f
 
                         <View style={styles.inputGroupSmall}>
                             <AppText style={styles.inputLabel}>Discount (%)</AppText>
-                            <View style={styles.discountInput}>
+                            <View style={[styles.discountInput, product?.specialPriceTypeId != 1 && { backgroundColor: "#E3E3E333" }]}>
                                 <AppInput
-                                    style={styles.discountValue}
+                                    style={[styles.discountValue, product?.specialPriceTypeId != 1 && { color: "#909090" }]}
                                     value={product?.discount}
-                                    editable={false}
+                                    editable={product?.specialPriceTypeId == 1}
+                                    onChangeText={(text) => handleSetValue("discount", text)}
                                 />
                                 <AppText style={styles.percentSign}>%</AppText>
                             </View>
@@ -86,22 +100,24 @@ const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = f
                     <View style={styles.productInputRow}>
                         <View style={styles.inputGroup}>
                             <AppText style={styles.inputLabel}>Special Price</AppText>
-                            <View style={styles.priceInputContainer}>
-                                <AppText style={styles.rupeeSign}>₹</AppText>
+                            <View style={[styles.priceInputContainer, product?.specialPriceTypeId == 1 && { backgroundColor: "#E3E3E333" }]}>
+                                <AppText style={[styles.rupeeSign, product?.specialPriceTypeId == 1 && { color: "#909090" }]}>₹</AppText>
                                 <AppInput
-                                    style={styles.priceInput}
-                                    value={"60.20"}
-                                    editable={true}
+                                    style={[styles.priceInput, product?.specialPriceTypeId == 1 && { color: "#909090" }]}
+                                    value={String(product?.ptr ?? '') }
+                                    editable={product?.specialPriceTypeId != 1}
+                                    onChangeText={(text) => handleSetValue("ptr", text)}
                                 />
                             </View>
                         </View>
                         <View style={styles.inputGroupSmall}>
                             <AppText style={styles.inputLabel}>MOQ(Monthly)</AppText>
-                            <View style={styles.discountInput}>
+                            <View style={[styles.discountInput]}>
                                 <AppInput
-                                    style={styles.discountValue}
-                                    value={product?.discount}
-                                    editable={true}
+                                    style={[styles.discountValue]}
+                                    value={product?.moq}
+                                    placeholder="Qty"
+                                    onChangeText={(text) => handleSetValue("moq", text)}
                                 />
                             </View>
                         </View>
@@ -109,9 +125,9 @@ const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = f
                     </View>
 
                     <View style={styles.supplyModeOptions}>
-                        <RadioOption label="Net Rate" selected />
-                        <RadioOption label="Chargeback" />
-                        <RadioOption label="Mixed" />
+                        <RadioOption onSelect={() => handleSetValue("supplyModeId", 1)} label="Net Rate" selected={product?.supplyModeId == 1} />
+                        <RadioOption onSelect={() => handleSetValue("supplyModeId", 2)} label="Chargeback" selected={product?.supplyModeId == 2} />
+                        {/* <RadioOption label="Mixed" /> */}
                     </View>
                 </>
 
@@ -243,7 +259,7 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
         borderRadius: 6,
         paddingHorizontal: 10,
-        paddingVertical: 8,
+        paddingVertical: 10,
     },
     discountValue: {
         flex: 1,
@@ -262,7 +278,7 @@ const styles = StyleSheet.create({
         borderColor: colors.border,
         borderRadius: 6,
         paddingHorizontal: 10,
-        paddingVertical: 8,
+        paddingVertical: 10,
     },
     rupeeSign: {
         fontSize: 13,

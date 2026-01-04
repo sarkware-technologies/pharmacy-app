@@ -36,9 +36,36 @@ const CommonStyle = StyleSheet.create({
         borderColor: "#909090",
         backgroundColor: "white",
         borderRadius: 10,
-        paddingHorizontal:20,
-        paddingVertical:15
-    }
+        paddingHorizontal: 20,
+        paddingVertical: 15
+    },
+    otpInputContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    otpInput: {
+        width: 50,
+        height: 50,
+        borderWidth: .5,
+        borderColor: "#2B2B2B",
+        borderRadius: 12,
+        textAlign: 'center',
+        fontSize: 18,
+        backgroundColor: '#fff',
+    },
+    otpFooter: {
+        alignItems: 'center',
+    },
+    otpTimer: {
+        fontSize: 13,
+        color: '#999',
+    },
+    resendText: {
+        fontSize: 14,
+        color: colors.primary,
+        fontWeight: '500',
+    },
 
 });
 

@@ -3419,7 +3419,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           <AppText style={styles.headerTitle}>Customers</AppText>
           <View style={styles.headerActions}>
             <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_CREATE_CUSTOMER}>
-              <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('RegistrationType')}>
+              <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('onboading')}>
                 <AppText style={styles.createButtonText}>CREATE</AppText>
               </TouchableOpacity>
             </PermissionWrapper>

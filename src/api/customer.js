@@ -287,6 +287,31 @@ export const customerAPI = {
             throw error;
         }
     },
+    documentVerify: async (data) => {
+        try {
+            const response = await apiClient.post(`/user-management/document-validator/verify`, data);
+            return response.data;
+        } catch (error) {
+            console.error('Error validating OTP:', error);
+            throw error;
+        }
+
+    },
+
+    // Upload documents (NEW)
+    documentUpload: async ({ file, docTypes, isStaging, isOcrRequired = false }) => {
+        try {
+            const formData = new FormData();
+            formData.append('files', file);
+            formData.append('docTypes', String(docTypes));
+
+            const response = await apiClient.post(`/user-management/customer/upload-docs?isOcrRequired=${isOcrRequired}&isStaging=${isStaging}`, formData, true);
+            return response.data;
+        } catch (error) {
+            console.error('Error uploading document:', error);
+            throw error;
+        }
+    },
 
     // Upload documents (NEW)
     uploadDocument: async (formData) => {
@@ -311,13 +336,23 @@ export const customerAPI = {
         }
     },
 
-    // Get license types based on type, category and subcategory
     getLicenseTypes: async (typeId, categoryId, subCategoryId) => {
         try {
-            const response = await apiClient.get(`/user-management/customer/licence-type?typeId=${typeId}&categoryId=${categoryId}&subCategoryId=${subCategoryId || 1}`);
+            const params = new URLSearchParams();
+
+            if (typeId != null) params.append("typeId", typeId);
+            if (categoryId != null) params.append("categoryId", categoryId);
+            if (subCategoryId != null) params.append("subCategoryId", subCategoryId);
+
+            const query = params.toString();
+            const url = query
+                ? `/user-management/customer/licence-type?${query}`
+                : `/user-management/customer/licence-type`;
+
+            const response = await apiClient.get(url);
             return response;
         } catch (error) {
-            console.error('Error fetching license types:', error);
+            console.error("Error fetching license types:", error);
             throw error;
         }
     },

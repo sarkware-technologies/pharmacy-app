@@ -36,6 +36,7 @@ const SearchableDropdownModal = ({
     );
   }, [searchText, data]);
 
+
   return (
     <Modal
       visible={visible}
@@ -49,7 +50,7 @@ const SearchableDropdownModal = ({
         <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.modalHeader}>
-            <AppText style={styles.modalTitle}>{title}</AppText>
+            <AppText style={styles.modalTitle}>Select {title}</AppText>
             <TouchableOpacity onPress={onClose}>
               <Icon name="close" size={24} color="#666" />
             </TouchableOpacity>
@@ -81,7 +82,7 @@ const SearchableDropdownModal = ({
           ) : filteredData.length > 0 ? (
             <FlatList
               data={filteredData}
-              keyExtractor={item => item.id?.toString()}
+              keyExtractor={(item, i) => i + item.id?.toString()}
               contentContainerStyle={styles.listContainer}
               renderItem={({ item }) => {
                 const isSelected = selectedId == item.id;
@@ -92,7 +93,7 @@ const SearchableDropdownModal = ({
                       isSelected && styles.listItemSelected,
                     ]}
                     onPress={() => {
-                      onSelect(item);
+                      onSelect?.(item);
                       onClose();
                     }}
                   >

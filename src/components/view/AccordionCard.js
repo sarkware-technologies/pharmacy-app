@@ -17,8 +17,9 @@ const AccordionCard = ({
     children,
     insideToggle = true,
     onToggle,
+    isOpen=false
 }) => {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(isOpen);
 
     const toggle = () => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
