@@ -206,7 +206,16 @@ export const initialFormData = {
         areaId: "",
         specialist: ""
     },
-    mapping: {},
+    mapping: {
+        activeRadio: "HOSPITAL",  
+        activeCheckbox: [],
+        entities: {
+            hospitals: [],
+            doctors: [],
+            pharmacy: [],
+            groupHospitals: [],
+        },
+    },
     securityDetails: {
         mobile: "",
         email: "",
