@@ -22,36 +22,36 @@ const ENTITY_CONFIG = {
     hospital: {
         title: 'Hospital',
         entityType: 'hospitals',
-        allowMultiple:false
+        allowMultiple: false
     },
 
     doctor: {
         title: 'Doctor',
         entityType: 'doctors',
-        allowMultiple:true
+        allowMultiple: true
     },
 
     pharmacy: {
         title: 'Pharmacy',
         entityType: 'pharmacy',
-        allowMultiple:true
+        allowMultiple: true
     },
 
     group_hospital: {
         title: 'Hospital',
         entityType: 'groupHospitals',
-        allowMultiple:false
+        allowMultiple: false
     },
 
     linked_hospital: {
         title: 'Hospital',
         entityType: 'hospitals',
-        allowMultiple:true
+        allowMultiple: true
     },
     linked_hospital_child: {
         title: 'Pharmacy',
         entityType: 'pharmacy',
-        allowMultiple:true
+        allowMultiple: true
     },
 };
 
@@ -109,6 +109,17 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
     const [activeSelector, setActiveSelector] = useState(null);
 
 
+    useEffect(() => {
+        if (!formData) return;
+        if ((formData?.typeId == 1 || formData?.typeId ==3)&& action === 'register') {
+            updateMapping(() => ({
+                hospitals: [],
+            }));
+        }
+    }, [formData?.typeId, action]);
+
+
+
     const handleToggle = useCallback(() => {
         setToggle(p => (p === "open" ? "close" : "open"));
     }, []);
@@ -157,7 +168,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
     const removeStockist = (index) => {
         handleSetValue(
             "suggestedDistributors",
-            formData.suggestedDistributors.filter((item, i) => i !== index)
+            formData?.suggestedDistributors?.filter((item, i) => i !== index)
         );
     };
 
@@ -166,7 +177,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
         handleSetValue(
             "suggestedDistributors",
-            formData.suggestedDistributors.map((item, i) =>
+            formData?.suggestedDistributors.map((item, i) =>
                 i === index ? { ...item, [key]: value } : item
             )
         );
@@ -182,107 +193,129 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
         }));
     };
 
-    const onSelectRadio = (value) => {
-        updateMapping(mapping => ({
-            ...mapping,
-            activeRadio: value,
-            entities: {
-                hospitals: [],
-                doctors: [],
-                pharmacies: [],
-                groupHospitals: [],
-            },
+    // const onSelectRadio = (value) => {
+    //     updateMapping(mapping => ({
+    //         ...mapping,
+    //         activeRadio: value,
+    //         entities: {
+    //             hospitals: [],
+    //             doctors: [],
+    //             pharmacies: [],
+    //             groupHospitals: [],
+    //         },
+    //     }));
+    // };
+
+
+    // const onToggleCheckbox = (value) => {
+    //     updateMapping(mapping => {
+    //         const exists = mapping.activeCheckbox.includes(value);
+
+    //         return {
+    //             ...mapping,
+    //             activeCheckbox: exists
+    //                 ? mapping.activeCheckbox.filter(v => v !== value)
+    //                 : [...mapping.activeCheckbox, value],
+    //         };
+    //     });
+    // };
+
+    const onSelectRadio = (selector) => {
+        const entityKey = ENTITY_CONFIG[selector]?.entityType;
+        if (!entityKey) return;
+
+        updateMapping(() => ({
+            [entityKey]: [],
         }));
     };
+    const onToggleCheckbox = (selector) => {
+        const entityKey = ENTITY_CONFIG[selector]?.entityType;
+        if (!entityKey) return;
 
+        updateMapping(prev => {
+            const updated = { ...prev };
 
-    const onToggleCheckbox = (value) => {
-        updateMapping(mapping => {
-            const exists = mapping.activeCheckbox.includes(value);
+            if (updated[entityKey]) {
+                delete updated[entityKey];   // uncheck
+            } else {
+                updated[entityKey] = [];     // check
+            }
 
-            return {
-                ...mapping,
-                activeCheckbox: exists
-                    ? mapping.activeCheckbox.filter(v => v !== value)
-                    : [...mapping.activeCheckbox, value],
-            };
+            return updated;
         });
     };
 
 
-const handleEntitySelect = ( entityType, items, parentHospitalId = null) => {
+    const handleEntitySelect = (entityType, items, parentHospitalId = null) => {
+        updateMapping(mapping => {
+            const updatedMapping = { ...mapping };
 
+            // 🔹 Pharmacy under a specific hospital
+            if (entityType === 'pharmacy' && parentHospitalId) {
+                updatedMapping.hospitals = (updatedMapping.hospitals || []).map(hospital => {
+                    if (hospital.id !== parentHospitalId) return hospital;
 
-    console.log(entityType);
-    console.log(items);
-    console.log(parentHospitalId);
-    
-  updateMapping(mapping => {
-    const entities = { ...mapping.entities };
+                    return {
+                        ...hospital,
+                        pharmacy: [
+                            ...(hospital.pharmacy || []),
+                            ...items.filter(
+                                p => !(hospital.pharmacy || []).some(e => e.id === p.id)
+                            ),
+                        ],
+                    };
+                });
 
-    if (entityType === 'pharmacy' && parentHospitalId) {
-      entities.hospitals = entities.hospitals.map(hospital => {
-        if (hospital.id !== parentHospitalId) return hospital;
+                return updatedMapping;
+            }
 
-        return {
-          ...hospital,
-          pharmacy: [
-            ...(hospital.pharmacy || []),
-            ...items.filter(
-              p => !(hospital.pharmacy || []).some(e => e.id === p.id)
-            ),
-          ],
-        };
-      });
+            // 🔹 Hospitals
+            if (entityType === 'hospitals') {
+                updatedMapping.hospitals = [
+                    ...(updatedMapping.hospitals || []),
+                    ...items.filter(
+                        item => !(updatedMapping.hospitals || []).some(h => h.id === item.id)
+                    ),
+                ];
+            }
 
-      return { ...mapping, entities };
-    }
+            // 🔹 Doctors
+            if (entityType === 'doctors') {
+                updatedMapping.doctors = [
+                    ...(updatedMapping.doctors || []),
+                    ...items.filter(
+                        item => !(updatedMapping.doctors || []).some(d => d.id === item.id)
+                    ),
+                ];
+            }
 
-    if (entityType === 'hospitals') {
-      entities.hospitals = [
-        ...entities.hospitals,
-        ...items.filter(
-          item => !entities.hospitals.some(h => h.id === item.id)
-        ),
-      ];
-    }
+            // 🔹 Pharmacy (standalone)
+            if (entityType === 'pharmacy' && !parentHospitalId) {
+                updatedMapping.pharmacy = [
+                    ...(updatedMapping.pharmacy || []),
+                    ...items.filter(
+                        item => !(updatedMapping.pharmacy || []).some(p => p.id === item.id)
+                    ),
+                ];
+            }
 
-    if (entityType === 'doctors') {
-      entities.doctors = [
-        ...(entities.doctors || []),
-        ...items.filter(
-          item => !(entities.doctors || []).some(d => d.id === item.id)
-        ),
-      ];
-    }
+            // 🔹 Group Hospitals
+            if (entityType === 'groupHospitals') {
+                updatedMapping.groupHospitals = [
+                    ...(updatedMapping.groupHospitals || []),
+                    ...items.filter(
+                        item =>
+                            !(updatedMapping.groupHospitals || []).some(g => g.id === item.id)
+                    ),
+                ];
+            }
 
-    if (entityType === 'pharmacy' && !parentHospitalId) {
-      entities.pharmacy = [
-        ...(entities.pharmacy || []),
-        ...items.filter(
-          item => !(entities.pharmacy || []).some(p => p.id === item.id)
-        ),
-      ];
-    }
+            return updatedMapping;
+        });
 
-    if (entityType === 'groupHospitals') {
-      entities.groupHospitals = [
-        ...(entities.groupHospitals || []),
-        ...items.filter(
-          item =>
-            !(entities.groupHospitals || []).some(g => g.id === item.id)
-        ),
-      ];
-    }
-
-    return {
-      ...mapping,
-      entities,
+        setActiveSelector(null);
     };
-  });
 
-  setActiveSelector(null);
-};
 
 
 
@@ -334,7 +367,7 @@ const handleEntitySelect = ( entityType, items, parentHospitalId = null) => {
                                     <TouchableOpacity
                                         style={[
                                             OnboardStyle.switch,
-                                            // formData.markAsBuyingEntity && OnboardStyle.switchActive,
+                                            // formData?.markAsBuyingEntity && OnboardStyle.switchActive,
                                         ]}
                                         onPress={() => { }
                                             // setFormData(prev => ({
@@ -347,7 +380,7 @@ const handleEntitySelect = ( entityType, items, parentHospitalId = null) => {
                                         <Animated.View
                                             style={[
                                                 OnboardStyle.switchThumb,
-                                                // formData.markAsBuyingEntity && styles.switchThumbActive,
+                                                // formData?.markAsBuyingEntity && styles.switchThumbActive,
                                             ]}
                                         />
                                     </TouchableOpacity>
@@ -382,7 +415,7 @@ const handleEntitySelect = ( entityType, items, parentHospitalId = null) => {
                                         </TouchableOpacity>
                                     </AppView>
                                 </AppView>
-                                <FloatingDropdown style={{ borderRadius: 12 }} label={"Search Hospital name/code"} onPress={() => setActiveSelector({key: 'linked_hospital'})} />
+                                <FloatingDropdown style={{ borderRadius: 12 }} label={"Search Hospital name/code"} onPress={() => setActiveSelector({ key: 'linked_hospital' })} />
                                 <View>
                                     <TextButton fontWeight={600} fontFamily="regular">+ Add New Hospital</TextButton>
                                 </View>
@@ -412,14 +445,14 @@ const handleEntitySelect = ( entityType, items, parentHospitalId = null) => {
                                                 </TouchableOpacity>
                                             </AppView>
                                         }
-                                        checked={formData.mapping.activeCheckbox.includes('GROUP_HOSPITAL')}
-                                        onChange={() => onToggleCheckbox('GROUP_HOSPITAL')}
+                                        checked={formData?.mapping?.groupHospitals}
+                                        onChange={() => onToggleCheckbox('group_hospital')}
 
                                     />
                                 </AppView>
-                                {formData?.mapping?.activeCheckbox.includes('GROUP_HOSPITAL') && (
+                                {formData?.mapping?.groupHospitals && (
                                     <>
-                                        <FloatingDropdown style={{ borderRadius: 12 }} label={"Search hospital name/code"} onPress={() => setActiveSelector({key: 'group_hospital'})}  />
+                                        <FloatingDropdown style={{ borderRadius: 12 }} label={"Search hospital name/code"} onPress={() => setActiveSelector({ key: 'group_hospital' })} />
                                         <View>
                                             <TextButton fontWeight={600} fontFamily="regular">+ Add Group Hospital</TextButton>
                                         </View>
@@ -434,36 +467,36 @@ const handleEntitySelect = ( entityType, items, parentHospitalId = null) => {
                         {(formData?.typeId == 1 || formData?.typeId == 3) && (
                             <AppView>
                                 <AppView marginTop={30} marginBottom={4} flexDirection={"row"} gap={30}>
-                                    <RadioOption width={15} height={15} label={<AppText fontSize={16} fontWeight={"bold"}>Hospital</AppText>} selected={formData.mapping.activeRadio === 'HOSPITAL'} onSelect={() => onSelectRadio('HOSPITAL')} />
+                                    <RadioOption width={15} height={15} label={<AppText fontSize={16} fontWeight={"bold"}>Hospital</AppText>} selected={formData?.mapping?.hospitals} onSelect={() => onSelectRadio('hospital')} />
                                     {formData?.typeId == 1 && (
-                                        <RadioOption width={15} height={15} label={<AppText fontSize={16} fontWeight={"bold"}>Doctor</AppText>} selected={formData.mapping.activeRadio === 'DOCTOR'} onSelect={() => onSelectRadio('DOCTOR')} />
+                                        <RadioOption width={15} height={15} label={<AppText fontSize={16} fontWeight={"bold"}>Doctor</AppText>} selected={formData?.mapping?.doctors} onSelect={() => onSelectRadio('doctor')} />
                                     )}
                                     {formData?.typeId == 3 && (
-                                        <RadioOption width={15} height={15} label={<AppText fontSize={16} fontWeight={"bold"}>Pharmacy</AppText>} selected={formData.mapping.activeRadio === 'PHARMACY'} onSelect={() => onSelectRadio('PHARMACY')} />
+                                        <RadioOption width={15} height={15} label={<AppText fontSize={16} fontWeight={"bold"}>Pharmacy</AppText>} selected={formData?.mapping?.pharmacy} onSelect={() => onSelectRadio('pharmacy')} />
                                     )}
                                 </AppView>
 
-                                {formData.mapping.activeRadio === 'HOSPITAL' && (
+                                {formData?.mapping?.hospitals && (
                                     <>
-                                        <FloatingDropdown style={{ borderRadius: 12 }} label={"Search hospital name/code"} onPress={() => setActiveSelector({key: 'hospital'})} />
+                                        <FloatingDropdown style={{ borderRadius: 12 }} label={"Search hospital name/code"} onPress={() => setActiveSelector({ key: 'hospital' })} />
                                         <View>
                                             <TextButton fontWeight={600} fontFamily="regular">+ Add New Hospital</TextButton>
                                         </View>
                                     </>
                                 )}
 
-                                {formData.mapping.activeRadio === 'DOCTOR' && (
+                                {formData?.mapping?.doctors && (
                                     <>
-                                        <FloatingDropdown style={{ borderRadius: 12 }} label={"Search doctor name/code"} onPress={() => setActiveSelector({key: 'doctor'})} />
+                                        <FloatingDropdown style={{ borderRadius: 12 }} label={"Search doctor name/code"} onPress={() => setActiveSelector({ key: 'doctor' })} />
                                         <View>
                                             <TextButton fontWeight={600} fontFamily="regular">+ Add New doctor</TextButton>
                                         </View>
                                     </>
                                 )}
 
-                                {formData.mapping.activeRadio === 'PHARMACY' && (
+                                {formData?.mapping?.pharmacy && (
                                     <>
-                                        <FloatingDropdown style={{ borderRadius: 12 }} label={"Search pharmacy name/code"} onPress={() => setActiveSelector({key: 'pharmacy'})} />
+                                        <FloatingDropdown style={{ borderRadius: 12 }} label={"Search pharmacy name/code"} onPress={() => setActiveSelector({ key: 'pharmacy' })} />
                                         <View>
                                             <TextButton fontWeight={600} fontFamily="regular">+ Add New Pharmacy</TextButton>
                                         </View>
@@ -498,13 +531,13 @@ const handleEntitySelect = ( entityType, items, parentHospitalId = null) => {
                                                 </TouchableOpacity>
                                             </AppView>
                                         }
-                                        checked={formData.mapping.activeCheckbox.includes('PHARMACY')}
-                                        onChange={() => onToggleCheckbox('PHARMACY')} />
+                                        checked={formData?.mapping.pharmacy}
+                                        onChange={() => onToggleCheckbox('pharmacy')} />
                                 </AppView>
 
-                                {formData.mapping.activeCheckbox.includes('PHARMACY') && (
+                                {formData?.mapping.pharmacy && (
                                     <>
-                                        <FloatingDropdown style={{ borderRadius: 12 }} label={"Search pharmacy name/code"} onPress={() => setActiveSelector({key: 'pharmacy'})} />
+                                        <FloatingDropdown style={{ borderRadius: 12 }} label={"Search pharmacy name/code"} onPress={() => setActiveSelector({ key: 'pharmacy' })} />
                                         <View>
                                             <TextButton fontWeight={600} fontFamily="regular">+ Add New Pharmacy</TextButton>
                                         </View>
@@ -594,7 +627,7 @@ const handleEntitySelect = ( entityType, items, parentHospitalId = null) => {
                     {...ENTITY_CONFIG[activeSelector?.key]}
                     formData={formData}
                     onSelect={handleEntitySelect}
-                    parentHospitalId = {activeSelector?.parentHospitalId}
+                    parentHospitalId={activeSelector?.parentHospitalId}
                     onClose={setActiveSelector}
                 />
 

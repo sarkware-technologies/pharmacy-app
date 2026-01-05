@@ -207,14 +207,6 @@ export const initialFormData = {
         specialist: ""
     },
     mapping: {
-        activeRadio: "HOSPITAL",  
-        activeCheckbox: [],
-        entities: {
-            hospitals: [],
-            doctors: [],
-            pharmacy: [],
-            groupHospitals: [],
-        },
     },
     securityDetails: {
         mobile: "",
