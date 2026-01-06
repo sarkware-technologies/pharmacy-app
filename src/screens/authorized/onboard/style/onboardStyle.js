@@ -87,7 +87,7 @@ const OnboardStyle = StyleSheet.create({
         justifyContent: 'space-between',
         backgroundColor: '#fbfbfb',
         padding: 16,
-        paddingVertical:14,
+        paddingVertical: 14,
         borderRadius: 12,
     },
     switchLabel: {
@@ -114,8 +114,117 @@ const OnboardStyle = StyleSheet.create({
     switchThumbActive: {
         transform: [{ translateX: 20 }],
     },
+    selectedItemChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#F5F5F6',
+        borderRadius: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        marginBottom: 6,
+        borderWidth: 1,
+        borderColor: '#ccc',
+    },
+    selectedItemText: {
+        fontSize: 13,
+        color: '#333',
+        fontWeight: '500',
+        flex: 1,
+    },
+    chipText: {
+        fontSize: 14,
+        color: '#333',
+        fontWeight: '500',
+    },
 
 
+    // Accordion Styles
+    hospitalsContainer: {
+        marginBottom: 16,
+    },
+    hospitalAccordion: {
+        marginBottom: 12,
+        borderRadius: 8,
+        backgroundColor: '#F9F9F9',
+        borderWidth: 1,
+        borderColor: '#E8E8E8',
+        overflow: 'hidden',
+    },
+    hospitalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 12,
+        paddingVertical: 14,
+        backgroundColor: '#FAFAFA',
+    },
+    hospitalHeaderContent: {
+        flex: 1,
+    },
+    hospitalName: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#333',
+    },
+    hospitalHeaderActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    removeButton: {
+        padding: 4,
+    },
+    chevron: {
+        marginLeft: 8,
+    },
+    hospitalContent: {
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        backgroundColor: '#fff',
+    },
+    pharmaciesSection: {
+        marginBottom: 0,
+    },
+    pharmaciesLabel: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#666',
+        marginBottom: 10,
+    },
+    pharmaciesTags: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginBottom: 12,
+    },
+    pharmacyTag: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        backgroundColor: '#F0F0F0',
+        borderRadius: 16,
+        gap: 6,
+    },
+    pharmacyTagText: {
+        fontSize: 13,
+        color: '#333',
+        fontWeight: '500',
+    },
+    pharmacyTagRemove: {
+        padding: 2,
+    },
+    addPharmacyLink: {
+        padding: 0,
+        margin: 0,
+    },
+    addPharmacyLinkText: {
+        fontSize: 13,
+        color: colors.primary,
+        fontWeight: '500',
+        textDecorationLine: 'underline',
+    },
 });
 
 

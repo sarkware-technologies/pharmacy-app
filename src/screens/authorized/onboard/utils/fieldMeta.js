@@ -188,7 +188,7 @@ export const initialFormData = {
     },
     customerDocs: [],
     isBuyer: "",
-    customerGroupId: "",
+    customerGroupId: "3",
     stationCode: "",
     generalDetails: {
         name: "",

@@ -1,16 +1,10 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import {
     View,
-    Text,
     StyleSheet,
     TouchableOpacity,
-    TextInput,
-    ScrollView,
-    StatusBar,
-    Animated,
     FlatList,
     ActivityIndicator,
-    Pressable,
 } from 'react-native';
 import { buildEntityPayload } from '../utils/buildEntityPayload'
 import { colors } from '../../../../styles/colors';
@@ -19,9 +13,20 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { customerAPI } from '../../../../api/customer';
 import PhamacySearchNotFound from '../../../../components/icons/PhamacySearchNotFound';
 import { AppText, AppInput } from "../../../../components"
+import FilterModal from '../../../../components/FilterModal';
+import FilterFilled from "../../../../components/icons/FilterFilled"
+import XCircle from '../../../../components/icons/XCircle';
+import Svg, { Path } from 'react-native-svg';
+// import AddNewDoctorModal from './AddNewDoctorModal';
+// import AddNewHospitalModal from './AddNewHospitalModal';
+// import AddNewPharmacyModal from './AddNewPharmacyModal';
 
-const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parentHospitalId = null, enableLocationFilter = true, allowMultiple = true }) => {
+const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parentHospitalId = null, enableLocationFilter = true, allowMultiple = true, maxSelection }) => {
 
+    console.log(entityType);
+
+
+    const [filterSections, setFilterSections] = useState([]);
     const lastRequestedPageRef = useRef(1);
     const [searchText, setSearchText] = useState('');
     const [entitiesData, setEntitiesData] = useState([]);
@@ -30,36 +35,64 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [isLoadMore, setIsLoadMore] = useState(false);
-    const [selectedItems, setSelectedItems] = useState(
-        formData?.mapping?.entities?.[entityType] || []
-    ); const [showStateDropdown, setShowStateDropdown] = useState(false);
-    const [showCityDropdown, setShowCityDropdown] = useState(false);
-    const [statesList, setStatesList] = useState([]);
-    const [citiesList, setCitiesList] = useState([]);
-    const [statesLoading, setStatesLoading] = useState(false);
-    const [citiesLoading, setCitiesLoading] = useState(false);
-
-    const [selectedStates, setSelectedStates] = useState(() =>
-        formData?.stateId
-            ? [{ id: Number(stateId) }]
-            : []
+    const [selectedItems, setSelectedItems] = useState(() =>
+        (formData?.mapping?.[entityType] || []).map(item => ({
+            ...item,
+            isActive: item?.isActive ?? true,
+        }))
+    );
+    const activeItems = selectedItems.filter(item => item?.isActive);
+    const [selectedStates, setSelectedStates] = useState(
+        formData?.stateId ? [{ id: Number(formData.stateId) }] : []
     );
     const [selectedCities, setSelectedCities] = useState(() =>
         formData?.cityId
-            ? [{ id: Number(cityId) }]
+            ? [{ id: Number(formData.cityId) }]
             : []
     );
+    const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
+    const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
+    const [showAddPharmacyModal, setShowAddPharmacyModal] = useState(false);
+
 
 
     const payload = useMemo(() => {
         return buildEntityPayload({
-            selector: title,
-            formData,
+            typeId: formData?.typeId,
+            categoryId: formData?.categoryId,
+            subCategoryId: formData?.subCategoryId,
+            entity: entityType,
+            customerGroupId: formData?.customerGroupId,
             page: 1,
             limit: 20,
-            enableLocationFilter: enableLocationFilter
         });
-    }, [title, formData]);
+    }, [formData, entityType]);
+
+    useEffect(() => {
+        // Debounce the API call to avoid too many requests
+        setPage(1);
+        setHasMore(true);
+        const timer = setTimeout(() => {
+            fetchEntities(1);
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [selectedStates, selectedCities, searchText]);
+
+    const loadMoreEntities = () => {
+        if (loading || isLoadMore || !hasMore) return;
+
+        const nextPage = page + 1;
+
+        // 🚫 Prevent duplicate calls for same page
+        if (lastRequestedPageRef.current === nextPage) {
+            return;
+        }
+
+        lastRequestedPageRef.current = nextPage;
+        fetchEntities(nextPage, true);
+    };
+
 
     const fetchEntities = async (pageNumber = 1, loadMore = false) => {
         try {
@@ -90,9 +123,9 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
 
             const mapped = customers.map(c => ({
                 id: c.customerId,
-                name: c.customerName,
-                code: c.customerCode || c.sapCode || c.customerId,
-                city: c.cityName || 'N/A',
+                customerName: c.customerName,
+                customerCode: c.customerCode || c.sapCode || c.customerId,
+                cityName: c.cityName || 'N/A',
             }));
 
             setEntitiesData(prev =>
@@ -110,45 +143,10 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
     };
 
 
-
-    useEffect(() => {
-        // Debounce the API call to avoid too many requests
-        setPage(1);
-        setHasMore(true);
-        const timer = setTimeout(() => {
-            fetchEntities(1);
-        }, 300);
-
-        return () => clearTimeout(timer);
-    }, [selectedStates, selectedCities, searchText]);
-
-
-    useEffect(() => {
-        if (!enableLocationFilter) return;
-
-        fetchStates();
-        fetchCities();
-    }, [enableLocationFilter]);
-
-
-
-    const loadMoreEntities = () => {
-        if (loading || isLoadMore || !hasMore) return;
-
-        const nextPage = page + 1;
-
-        // 🚫 Prevent duplicate calls for same page
-        if (lastRequestedPageRef.current === nextPage) {
-            return;
-        }
-
-        lastRequestedPageRef.current = nextPage;
-        fetchEntities(nextPage, true);
-    };
-
     const renderEntitiesData = ({ item }) => {
-        const isSelected = selectedItems.some(entity => entity.id === item.id);
-
+        const isSelected = selectedItems.some(
+            entity => entity?.id === item?.id && entity?.isActive
+        );
         return (
             <TouchableOpacity
                 style={styles.entityItem}
@@ -157,17 +155,17 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
             >
                 <View style={styles.checkboxContainer}>
                     {!allowMultiple ? (
-                        // 🔘 RADIO
-                       <View
-                                     style={[
-                                       styles.radioCircle,
-                                       isSelected && styles.radioCircleSelected,
-                                     ]}
-                                   >
-                                     {isSelected && <View style={styles.radioInner} />}
-                                   </View>
+
+                        <View
+                            style={[
+                                styles.radioCircle,
+                                isSelected && styles.radioCircleSelected,
+                            ]}
+                        >
+                            {isSelected && <View style={styles.radioInner} />}
+                        </View>
                     ) : (
-                        // ☑️ CHECKBOX
+
                         <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
                             {isSelected && <Icon name="check" size={16} color="#fff" />}
                         </View>
@@ -175,136 +173,95 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 </View>
 
                 <View style={styles.entityInfo}>
-                    <AppText style={styles.entityName}>{item.name}</AppText>
+                    <AppText style={styles.entityName}>{item.customerName}</AppText>
                     <View style={styles.entityDetails}>
-                        <AppText style={styles.entityCode}>{item.code}</AppText>
-                        <AppText style={styles.entitySpeciality}>{item.speciality}</AppText>
+                        <AppText style={styles.entityCode}>{item.customerCode}</AppText>
                     </View>
-                    <AppText style={styles.entityContact}>{item.mobile}</AppText>
                 </View>
 
-                <AppText style={styles.entityCity}>{item.city}</AppText>
+                <AppText style={styles.entityCity}>{item.cityName}</AppText>
             </TouchableOpacity>
         );
     };
 
-
-    const handleStateToggle = (state) => {
-        const isSelected = selectedStates.some(s => s.id === state.id);
-        if (isSelected) {
-            setSelectedStates(selectedStates.filter(s => s.id !== state.id));
-        } else {
-            setSelectedStates([...selectedStates, state]);
-        }
-    };
-
-    const handleCityToggle = (city) => {
-        const isSelected = selectedCities.some(c => c.id === city.id);
-        if (isSelected) {
-            setSelectedCities(selectedCities.filter(c => c.id !== city.id));
-        } else {
-            setSelectedCities([...selectedCities, city]);
-        }
-    };
-
-
-    const MAX_SELECTION = 4;
-
     const handleToggleEnity = (entity) => {
-        setSelectedItems(prevItems => {
-            const isSelected = prevItems.some(item => item.id === entity.id);
 
+
+
+        setSelectedItems(prevItems => {
+            const isSelected = prevItems.some(
+                item => item?.id === entity?.id && item?.isActive
+            );
             // 🔘 SINGLE SELECT (default)
             if (!allowMultiple) {
-                if (isSelected) return prevItems;
+                console.log("worir");
 
                 return [
                     {
                         ...entity,
                         isNew: false,
+                        isActive: true
                     },
                 ];
             }
 
             // ☑️ MULTI SELECT
             if (isSelected) {
-                return prevItems.filter(item => item.id !== entity.id);
+                return prevItems.map(item =>
+                    item?.id === entity?.id
+                        ? { ...item, isActive: false }
+                        : item
+                );
             }
 
-            if (prevItems.length >= MAX_SELECTION) {
+            const activeCount = prevItems.filter(item => item?.isActive).length;
+
+
+            if (maxSelection && activeCount >= maxSelection) {
                 return prevItems;
             }
+
+
 
             return [
                 ...prevItems,
                 {
                     ...entity,
                     isNew: false,
+                    isActive: true,
                 },
             ];
         });
     };
 
-
-
-    const fetchStates = async () => {
-        try {
-            setStatesLoading(true)
-            const response = await customerAPI.getStatesList(1, 20);
-
-            if (response?.data?.states && Array.isArray(response.data.states)) {
-                // Transform state response
-                const transformedStates = response.data.states.map(state => ({
-                    id: state.id,
-                    name: state.stateName,
-                }));
-                setStatesList(transformedStates);
-            } else {
-                setStatesList([]);
-            }
-        } catch (err) {
-            setStatesList([]);
-        } finally {
-            setStatesLoading(false)
-        }
-    };
-
-
-
-    const fetchCities = async () => {
-        try {
-            setCitiesLoading(true)
-            const response = await customerAPI.getCities();
-
-            if (response?.data?.cities && Array.isArray(response.data.cities)) {
-                // Transform state response
-                const transformedCities = response.data.cities.map(city => ({
-                    id: city.id,
-                    name: city.cityName,
-                }));
-
-
-                setCitiesList(transformedCities);
-            } else {
-                setCitiesList([]);
-            }
-        } catch (err) {
-            setCitiesList([]);
-        } finally {
-            setCitiesLoading(false)
-        }
-    };
     const handleContinue = () => {
+        console.log(selectedItems);
+
         if (onSelect) {
-            console.log(entityType);
-            console.log(selectedItems);
-
-
-            onSelect(entityType, selectedItems, parentHospitalId);
+            onSelect(entityType, selectedItems, parentHospitalId, allowMultiple);
         }
     };
 
+    const handleAddNewEntity = () => {
+        // open correct modal
+        switch (entityType) {
+            case 'doctors':
+                setShowAddDoctorModal(true);
+                break;
 
+            case 'hospitals':
+            case 'groupHospitals':
+                setShowAddHospitalModal(true);
+                break;
+
+            case 'pharmacy':
+                setShowAddPharmacyModal(true);
+                break;
+
+            default:
+                break;
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -315,151 +272,59 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                     onPress={() => onClose(null)}
                     style={styles.closeButton}
                 >
-                    <Icon name="close" size={24} color="#333" />
+                    <XCircle color="#2b2b2b" />
                 </TouchableOpacity>
-                <AppText style={styles.headerTitle}>Select {title}</AppText>
+                <AppText style={styles.headerTitle}>Select {title} <AppText style={styles.optionalText}>{maxSelection && <>(Max {maxSelection})</>}</AppText></AppText>
+
             </View>
-
-
             {enableLocationFilter && (
                 <>
                     {/* Filter buttons */}
                     <View style={styles.filterContainer}>
-                        <TouchableOpacity
-                            style={styles.filterDropdown}
-                            onPress={() => setShowStateDropdown(!showStateDropdown)}
-                        >
-                            <AppText style={styles.filterDropdownText}>
-                                {selectedStates.length
-                                    ? `${selectedStates.length} State`
-                                    : 'Select State'}
-                            </AppText>
-                            <Icon
-                                name={showStateDropdown ? 'keyboard-arrow-down' : 'keyboard-arrow-down'}
-                                size={16}
-                                color="#666"
-                            />
+                        {/* Filter Icon */}
+                        <TouchableOpacity onPress={() => setFilterSections(["state", "city"])}
+                            activeOpacity={0.8}>
+                            <FilterFilled />
+
                         </TouchableOpacity>
 
+                        {/* State Dropdown */}
                         <TouchableOpacity
-                            style={styles.filterDropdown}
-                            onPress={() => setShowCityDropdown(!showCityDropdown)}
+                            style={styles.filterPill}
+                            onPress={() => setFilterSections(["state", "city"])}
+                            activeOpacity={0.8}
                         >
-                            <AppText style={styles.filterDropdownText}>
-                                {selectedCities.length
-                                    ? `${selectedCities.length} City`
-                                    : 'Select City'}
+                            <AppText style={styles.filterText}>
+                                {selectedStates.length
+                                    ? `${selectedStates.length} States`
+                                    : 'State'}
                             </AppText>
-                            <Icon
-                                name={showStateDropdown ? 'keyboar-arrow-up' : 'keyboard-arrow-down'}
-                                size={16}
-                                color="#666"
-                            />
+                            <Svg width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <Path d="M1.00198 0C0.111077 0 -0.335089 1.07714 0.294875 1.70711L2.88066 4.29289C3.27119 4.68342 3.90435 4.68342 4.29488 4.29289L6.88066 1.70711C7.51063 1.07714 7.06446 0 6.17355 0L1.00198 0Z" fill="#2B2B2B" />
+                            </Svg>
+                        </TouchableOpacity>
+
+                        {/* City Dropdown */}
+                        <TouchableOpacity
+                            style={styles.filterPill}
+                            onPress={() => setFilterSections(["city", "state"])}
+                            activeOpacity={0.8}
+                        >
+                            <AppText style={styles.filterText}>
+                                {selectedCities.length
+                                    ? `${selectedCities.length} Cities`
+                                    : 'City'}
+                            </AppText>
+                            <Svg width="8" height="5" viewBox="0 0 8 5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <Path d="M1.00198 0C0.111077 0 -0.335089 1.07714 0.294875 1.70711L2.88066 4.29289C3.27119 4.68342 3.90435 4.68342 4.29488 4.29289L6.88066 1.70711C7.51063 1.07714 7.06446 0 6.17355 0L1.00198 0Z" fill="#2B2B2B" />
+                            </Svg>
                         </TouchableOpacity>
                     </View>
 
-                    {/* Overlay */}
-                    {(showStateDropdown || showCityDropdown) && (
-                        <Pressable
-                            style={styles.overlay}
-                            onPress={() => {
-                                setShowStateDropdown(false);
-                                setShowCityDropdown(false);
-                            }}
-                        />
-                    )}
 
-                    {/* State Dropdown */}
-                    {showStateDropdown && (
-                        <View style={[styles.dropdownMenu, styles.stateDropdownMenu]}>
-                            {statesLoading ? (
-                                <View style={styles.dropdownLoading}>
-                                    <ActivityIndicator size="small" color={colors.primary} />
-                                </View>
-                            ) : statesList.length > 0 ? (
-                                <ScrollView style={styles.dropdownScroll}>
-                                    {statesList.map(state => {
-                                        const isSelected = selectedStates.some(s => s.id === state.id);
-                                        return (
-                                            <TouchableOpacity
-                                                key={state.id}
-                                                style={styles.dropdownItem}
-                                                onPress={() => handleStateToggle(state)}
-                                            >
-                                                <View
-                                                    style={[
-                                                        styles.checkboxSmall,
-                                                        isSelected && styles.checkboxSmallSelected,
-                                                    ]}
-                                                >
-                                                    {isSelected && (
-                                                        <Icon name="check" size={14} color="#fff" />
-                                                    )}
-                                                </View>
-                                                <AppText style={styles.dropdownItemText}>
-                                                    {state.name}
-                                                </AppText>
-                                            </TouchableOpacity>
-                                        );
-                                    })}
-                                </ScrollView>
-                            ) : (
-                                <View style={styles.dropdownEmptyContainer}>
-                                    <AppText style={styles.dropdownEmptyText}>
-                                        No states available
-                                    </AppText>
-                                </View>
-                            )}
-                        </View>
-                    )}
 
-                    {/* City Dropdown */}
-                    {showCityDropdown && (
-                        <View style={[styles.dropdownMenu, styles.cityDropdownMenu]}>
-                            {citiesLoading ? (
-                                <View style={styles.dropdownLoading}>
-                                    <ActivityIndicator size="small" color={colors.primary} />
-                                </View>
-                            ) : citiesList.length > 0 ? (
-                                <ScrollView style={styles.dropdownScroll}>
-                                    {citiesList.map(city => {
-                                        const isSelected = selectedCities.some(c => c.id === city.id);
-                                        return (
-                                            <TouchableOpacity
-                                                key={city.id}
-                                                style={styles.dropdownItem}
-                                                onPress={() => handleCityToggle(city)}
-                                            >
-                                                <View
-                                                    style={[
-                                                        styles.checkboxSmall,
-                                                        isSelected && styles.checkboxSmallSelected,
-                                                    ]}
-                                                >
-                                                    {isSelected && (
-                                                        <Icon name="check" size={14} color="#fff" />
-                                                    )}
-                                                </View>
-                                                <AppText style={styles.dropdownItemText}>
-                                                    {city.name}
-                                                </AppText>
-                                            </TouchableOpacity>
-                                        );
-                                    })}
-                                </ScrollView>
-                            ) : (
-                                <View style={styles.dropdownEmptyContainer}>
-                                    <AppText style={styles.dropdownEmptyText}>
-                                        No cities available
-                                    </AppText>
-                                </View>
-                            )}
-                        </View>
-                    )}
                 </>
             )}
-
-
 
 
             {/* Search Bar */}
@@ -467,7 +332,8 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
                 <AppInput
                     style={styles.searchInput}
-                    placeholder="Search by entity name/code"
+                    placeholder={`Search by ${title} name/code`}
+
                     value={searchText}
                     onChangeText={setSearchText}
                     // onSubmitEditing={handleSearch}
@@ -535,14 +401,24 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                                 <PhamacySearchNotFound width={40} height={40} color="#999" />
                                 <AppText style={styles.emptyTitle}>{title} Not Found</AppText>
                                 <AppText style={styles.emptySubtitle}>
-                                    {title} not found. You can add a new {title} to continue
+
+                                    {entityType != "groupHospitals" ? <>
+                                        {title} not found. You can add a new {title} to continue
+                                    </> : <>
+                                        Hospital not found. You can add group hospital to continue. Else try to search different hospital
+                                    </>}
+
                                 </AppText>
                                 <TouchableOpacity
                                     style={styles.addNewPharmacyButtonEmpty}
-                                // onPress={handleAddNewDoctor}
+                                    onPress={handleAddNewEntity}
                                 >
                                     <AppText style={styles.addNewPharmacyTextEmpty}>
-                                        +Add New Doctor
+                                        +Add New {entityType != "groupHospitals" ? <>
+                                            {title}
+                                        </> : <>
+                                            Group Hospital
+                                        </>}
                                     </AppText>
                                 </TouchableOpacity>
                             </View>
@@ -553,23 +429,63 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
             )}
 
             {/* Bottom Button */}
-            {selectedItems.length > 0 && (
+            {activeItems.length > 0 && (
                 <View style={styles.bottomContainer}>
                     <TouchableOpacity
                         style={styles.continueButton}
                         onPress={handleContinue}
                     >
                         <AppText style={styles.continueButtonText}>
-                            Continue ({selectedItems.length} selected)
+                            Continue ({activeItems.length} selected)
                         </AppText>
                     </TouchableOpacity>
                 </View>
             )}
-            {/* <AddNewDoctorModal
-                visible={showAddDoctorModal}
-                onClose={() => setShowAddDoctorModal(false)}
-                onSubmit={handleDoctorSubmit}
-            /> */}
+        
+
+
+            <FilterModal visible={filterSections.length > 0}
+                sections={filterSections}
+                onClose={() => setFilterSections([])}
+                onApply={(filters) => {
+                    setSelectedStates(
+                        (filters.state || []).map(id => ({ id: Number(id) }))
+                    );
+
+                    setSelectedCities(
+                        (filters.city || []).map(id => ({ id: Number(id) }))
+                    );
+
+                    setFilterSections([]);
+                }} />
+
+
+            {/* {showAddDoctorModal && (
+                <AddNewDoctorModal
+                    visible={showAddDoctorModal}
+                    onClose={() => setShowAddDoctorModal(false)}
+                />
+            )}
+
+            {showAddHospitalModal && (
+                <>               { console.log("workinginggg")}
+                
+                <AddNewHospitalModal
+                    visible={showAddHospitalModal}
+                    onClose={() => setShowAddHospitalModal(false)}
+                />
+                </>
+
+            )}
+
+            {showAddPharmacyModal && (
+                <AddNewPharmacyModal
+                    visible={showAddPharmacyModal}
+                    onClose={() => setShowAddPharmacyModal(false)}
+                />
+            )} */}
+
+
         </SafeAreaView>
 
 
@@ -598,119 +514,13 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#333',
     },
-    overlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 9998,
-    },
-    filterContainer: {
-        flexDirection: 'row',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
-        gap: 12,
-        zIndex: 100,
-    },
-    filterDropdown: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        borderWidth: 1.5,
-        borderColor: '#999',
-    },
-    filterDropdownText: {
-        fontSize: 16,
-        color: '#333',
-        fontWeight: '500',
-        flex: 1,
-    },
-    dropdownMenu: {
-        position: 'absolute',
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
-        maxHeight: 250,
-        zIndex: 9999,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 20,
-    },
-    stateDropdownMenu: {
-        top: 100,
-        left: 16,
-        right: 'auto',
-        width: '45%',
-    },
-    cityDropdownMenu: {
-        top: 100,
-        right: 16,
-        left: 'auto',
-        width: '45%',
-    },
-    dropdownScroll: {
-        maxHeight: 250,
-    },
-    dropdownLoading: {
-        paddingVertical: 12,
-        alignItems: 'center',
-    },
-    dropdownItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
-    },
-    checkboxSmall: {
-        width: 18,
-        height: 18,
-        borderRadius: 3,
-        borderWidth: 1.5,
-        borderColor: '#DDD',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 10,
-        backgroundColor: '#fff',
-    },
-    checkboxSmallSelected: {
-        backgroundColor: colors.primary,
-        borderColor: colors.primary,
-    },
-    dropdownItemText: {
-        fontSize: 14,
-        color: '#333',
-        flex: 1,
-    },
-    dropdownEmptyContainer: {
-        paddingVertical: 20,
-        paddingHorizontal: 12,
-        alignItems: 'center',
-    },
-    dropdownEmptyText: {
-        fontSize: 14,
-        color: '#999',
-        textAlign: 'center',
-    },
+
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-
-        paddingHorizontal: 20,
-        paddingVertical: 8,
-        backgroundColor: '#F8F8F8',
+        paddingHorizontal: 16,
+        paddingVertical: 6,
+        backgroundColor: '#f8f8f8',
         marginHorizontal: 16,
         marginVertical: 12,
         borderRadius: 8,
@@ -720,15 +530,14 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     closeIcon: {
-
         backgroundColor: '#EDEDED',
         borderRadius: 50,
         padding: 2
     },
     searchInput: {
         flex: 1,
-        fontSize: 16,
-        color: '#333',
+        fontSize: 15,
+        color: '#777',
     },
     listContent: {
         paddingBottom: 100,
@@ -776,15 +585,7 @@ const styles = StyleSheet.create({
         color: '#666',
         fontWeight: '500',
     },
-    entitySpeciality: {
-        fontSize: 12,
-        color: '#999',
-    },
-    entityContact: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 4,
-    },
+
     entityCity: {
         fontSize: 12,
         color: '#666',
@@ -831,31 +632,9 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
 
-    emptyText: {
-        fontSize: 16,
-        color: '#666',
-        marginTop: 12,
-    },
-    noResultsContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 40,
-    },
-    noResultsTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#333',
-        marginTop: 16,
-        marginBottom: 12,
-    },
-    noResultsText: {
-        fontSize: 14,
-        color: '#666',
-        textAlign: 'center',
-        lineHeight: 20,
-        marginBottom: 24,
-    },
+
+
+
     addNewButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -934,9 +713,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#F8F8F8',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
+        backgroundColor: '#fbfbfb',
     },
     headerRadioSpace: {
         width: 34,
@@ -959,24 +736,51 @@ const styles = StyleSheet.create({
         fontWeight: '400',
         color: '#999',
     },
-      radioCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: '#DDD',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioCircleSelected: {
-    borderColor: colors.primary,
-  },
+    radioCircle: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        borderWidth: 2,
+        borderColor: '#DDD',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    radioCircleSelected: {
+        borderColor: colors.primary,
+    },
     radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.primary,
-  },
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: colors.primary,
+    },
+    filterContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingBottom: 8,
+        paddingTop: 20,
+        gap: 10,
+    },
+
+
+    filterPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        height: 40,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: '#DDD',
+        backgroundColor: '#FFF',
+        gap: 6,
+    },
+
+    filterText: {
+        fontSize: 14,
+        color: '#222',
+        fontWeight: '500',
+    },
 });
 
 export default EntitySelector;

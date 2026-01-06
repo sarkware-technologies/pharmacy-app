@@ -1,100 +1,91 @@
+const ENTITY_TYPE_CODE = {
+  hospitals: "HOSP",
+  groupHospitals: "HOSP",
+  doctors: "DOCT",
+  pharmacy: "PCM",
+};
+
+
+
 export const buildEntityPayload = ({
-  selector,     // 'hospital' | 'doctor' | 'pharmacy'
-  formData,     // full formData
+  typeId,
+  categoryId,
+  subCategoryId,
+  entity,
+  customerGroupId,
   page = 1,
   limit = 20,
-  enableLocationFilter
 }) => {
-  const ENTITY_TYPE_MAP = {
-    Hospital: 'HOSP',
-    Doctor: 'DOCT',
-    Pharmacy: 'PCM',
+
+
+  const payload = {
+    typeCode: [ENTITY_TYPE_CODE[entity]],
+    statusIds: [7, 2],
+    page,
+    limit,
   };
-
-  const CATEGORY_CODE_MAP = {
-    4: ['OR', 'RCW', 'OW', 'PRI'],
-    5: ['GOV'],
-  };
-
-  const SUB_CATEGORY_CODE_MAP = {
-    1: ['PGH'],
-    2: ['PGH'],
-  };
-
-  console.log(selector, '');
-  
-
-  const entityType = ENTITY_TYPE_MAP[selector];
-
-  const {
-    typeId,
-    categoryId,
-    subCategoryId,
-    customerGroupId,
-    stateId,
-    cityId,
-  } = formData;
-
-  let mappingFor = 'HOSP'; // safe default
-
-
-  
-  
 
   if (typeId == 1) {
-    mappingFor = 'PCM';
+    payload.mappingFor = "PCM";
+    if (customerGroupId) payload.customerGroupId = customerGroupId;
+    return payload;
   }
 
+
+
   if (typeId == 2) {
+
     if (categoryId == 4) {
+
       if (subCategoryId == 1 || subCategoryId == 2) {
-        mappingFor = 'HOSP';
+        if (entity == "groupHospitals") {
+          payload.subCategoryCode = ["PGH"];
+          payload.mappingFor = "HOSP";
+          return payload;
+        }
+
+        if (entity == "pharmacy") {
+          payload.mappingFor = "HOSP";
+          payload.customerGroupId = customerGroupId;
+          return payload;
+        }
       }
+
       if (subCategoryId == 3) {
-        mappingFor = 'PGH';
+        if (entity == "hospitals") {
+          payload.categoryCode = ["OR", "RCW", "OW", "PRI"];
+          payload.mappingFor = "PGH";
+          return payload;
+        }
+
+        if (entity == "pharmacy") {
+          payload.mappingFor = "PGH";
+          payload.customerGroupId = customerGroupId;
+          return payload;
+        }
       }
     }
 
     if (categoryId == 5) {
-      mappingFor = 'GOV';
+      payload.categoryCode = ["GOV"];
+      payload.mappingFor = "GOV";
+      return payload;
     }
   }
 
   if (typeId == 3) {
-    if (entityType == 'HOSP') mappingFor = 'HOSP';
-    if (entityType == 'PCM') mappingFor = 'DOCT';
+    if (entity == "hospitals") {
+      payload.mappingFor = "HOSP";
+      return payload;
+    }
+
+    if (entity == "pharmacy") {
+      payload.mappingFor = "DOCT";
+      payload.customerGroupId = customerGroupId;
+      return payload;
+    }
   }
 
-  const payload = {
-    typeCode: [entityType],
-    statusIds: [7, 2],
-    page,
-    limit,
-    mappingFor,
-  };
-
-
-  if(enableLocationFilter){
-  if (stateId) payload.stateIds = [stateId];
-  if (cityId) payload.cityIds = [cityId];
-  }
-
-
-
-  if (CATEGORY_CODE_MAP[categoryId]) {
-    payload.categoryCode = CATEGORY_CODE_MAP[categoryId];
-  }
-
-  if (SUB_CATEGORY_CODE_MAP[subCategoryId]) {
-    payload.subCategoryCode = SUB_CATEGORY_CODE_MAP[subCategoryId];
-  }
-
-  if (
-    customerGroupId &&
-    (entityType == 'PCM' || mappingFor == 'PCM' || mappingFor == 'DOCT')
-  ) {
-    payload.customerGroupId = customerGroupId;
-  }
-
+  console.warn("Invalid payload combination", payload);
   return payload;
 };
