@@ -188,7 +188,7 @@ export const initialFormData = {
     },
     customerDocs: [],
     isBuyer: "",
-    customerGroupId: "3",
+    customerGroupId: "",
     stationCode: "",
     generalDetails: {
         name: "",
@@ -233,3 +233,45 @@ export const staticDOCcode = {
     PAN: 7,
     GST: 2
 }
+
+
+
+export const SELECTOR_ENTITY_CONFIG = {
+    hospital: {
+        title: 'Hospital',
+        entityType: 'hospitals',
+        allowMultiple: false
+    },
+
+    doctor: {
+        title: 'Doctor',
+        entityType: 'doctors',
+        allowMultiple: true,
+        maxSelection: 4
+    },
+
+    pharmacy: {
+        title: 'Pharmacy',
+        entityType: 'pharmacy',
+        allowMultiple: true
+    },
+
+    group_hospital: {
+        title: 'Hospital',
+        entityType: 'groupHospitals',
+        allowMultiple: false
+    },
+
+    linked_hospital: {
+        title: 'Hospital',
+        entityType: 'hospitals',
+        allowMultiple: true
+    },
+    linked_hospital_child: {
+        title: 'Pharmacy',
+        entityType: 'pharmacy',
+        allowMultiple: true
+    },
+};
+
+

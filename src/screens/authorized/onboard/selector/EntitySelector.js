@@ -17,11 +17,8 @@ import FilterModal from '../../../../components/FilterModal';
 import FilterFilled from "../../../../components/icons/FilterFilled"
 import XCircle from '../../../../components/icons/XCircle';
 import Svg, { Path } from 'react-native-svg';
-// import AddNewDoctorModal from './AddNewDoctorModal';
-// import AddNewHospitalModal from './AddNewHospitalModal';
-// import AddNewPharmacyModal from './AddNewPharmacyModal';
 
-const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parentHospitalId = null, enableLocationFilter = true, allowMultiple = true, maxSelection }) => {
+const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parentHospitalId = null, enableLocationFilter = true, allowMultiple = true, maxSelection, onAddNew }) => {
 
     console.log(entityType);
 
@@ -35,12 +32,25 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [isLoadMore, setIsLoadMore] = useState(false);
-    const [selectedItems, setSelectedItems] = useState(() =>
-        (formData?.mapping?.[entityType] || []).map(item => ({
-            ...item,
-            isActive: item?.isActive ?? true,
-        }))
+    const [selectedItems, setSelectedItems] = useState(() => {
+  // CASE 1: Pharmacy inside Hospital
+  if (parentHospitalId && entityType === 'pharmacy') {
+    const hospital = formData?.mapping?.hospitals?.find(
+      h => h.id === parentHospitalId
     );
+
+    return (hospital?.pharmacy || []).map(item => ({
+      ...item,
+      isActive: item?.isActive ?? true,
+    }));
+  }
+
+  // CASE 2: Normal flow
+  return (formData?.mapping?.[entityType] || []).map(item => ({
+    ...item,
+    isActive: item?.isActive ?? true,
+  }));
+});
     const activeItems = selectedItems.filter(item => item?.isActive);
     const [selectedStates, setSelectedStates] = useState(
         formData?.stateId ? [{ id: Number(formData.stateId) }] : []
@@ -50,9 +60,7 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
             ? [{ id: Number(formData.cityId) }]
             : []
     );
-    const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
-    const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
-    const [showAddPharmacyModal, setShowAddPharmacyModal] = useState(false);
+
 
 
 
@@ -126,7 +134,9 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 customerName: c.customerName,
                 customerCode: c.customerCode || c.sapCode || c.customerId,
                 cityName: c.cityName || 'N/A',
+                isNew: false
             }));
+
 
             setEntitiesData(prev =>
                 pageNumber === 1 ? mapped : [...prev, ...mapped]
@@ -185,21 +195,15 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
     };
 
     const handleToggleEnity = (entity) => {
-
-
-
         setSelectedItems(prevItems => {
             const isSelected = prevItems.some(
                 item => item?.id === entity?.id && item?.isActive
             );
             // 🔘 SINGLE SELECT (default)
             if (!allowMultiple) {
-                console.log("worir");
-
                 return [
                     {
                         ...entity,
-                        isNew: false,
                         isActive: true
                     },
                 ];
@@ -227,7 +231,6 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 ...prevItems,
                 {
                     ...entity,
-                    isNew: false,
                     isActive: true,
                 },
             ];
@@ -242,26 +245,11 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
         }
     };
 
-    const handleAddNewEntity = () => {
-        // open correct modal
-        switch (entityType) {
-            case 'doctors':
-                setShowAddDoctorModal(true);
-                break;
-
-            case 'hospitals':
-            case 'groupHospitals':
-                setShowAddHospitalModal(true);
-                break;
-
-            case 'pharmacy':
-                setShowAddPharmacyModal(true);
-                break;
-
-            default:
-                break;
-        }
+    const handleReset = () => {
+        setSelectedItems([])
     };
+
+
 
     return (
         <SafeAreaView style={styles.container}>
@@ -411,7 +399,10 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                                 </AppText>
                                 <TouchableOpacity
                                     style={styles.addNewPharmacyButtonEmpty}
-                                    onPress={handleAddNewEntity}
+                                    onPress={() => {
+                                        onAddNew?.(entityType, parentHospitalId);
+                                        onClose?.()
+                                    }}
                                 >
                                     <AppText style={styles.addNewPharmacyTextEmpty}>
                                         +Add New {entityType != "groupHospitals" ? <>
@@ -429,19 +420,48 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
             )}
 
             {/* Bottom Button */}
-            {activeItems.length > 0 && (
-                <View style={styles.bottomContainer}>
-                    <TouchableOpacity
-                        style={styles.continueButton}
-                        onPress={handleContinue}
+
+            {entitiesData.length > 0 && <View style={styles.bottomContainer}>
+                <View style={styles.bottomRow}>
+
+                    {parentHospitalId && <TouchableOpacity
+                        style={styles.resetButton}
+                        onPress={() => {
+                            onAddNew?.(entityType, parentHospitalId);
+                            onClose?.()
+                        }}
                     >
-                        <AppText style={styles.continueButtonText}>
-                            Continue ({activeItems.length} selected)
+                        <AppText style={styles.resetButtonText}>
+                            +Add New Pharmacy
                         </AppText>
                     </TouchableOpacity>
+
+                    }
+                    {activeItems.length > 0 && (
+                        <>
+
+                            {!parentHospitalId && <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+                                <AppText style={styles.resetButtonText}>Reset</AppText>
+                            </TouchableOpacity>
+                            }
+
+
+
+                            <TouchableOpacity
+                                style={styles.continueButton}
+                                onPress={handleContinue}
+                            >
+                                <AppText style={styles.continueButtonText}>
+                                    Continue ({activeItems.length} selected)
+                                </AppText>
+                            </TouchableOpacity>
+                        </>
+                    )}
                 </View>
-            )}
-        
+            </View>}
+
+
+
 
 
             <FilterModal visible={filterSections.length > 0}
@@ -460,30 +480,7 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 }} />
 
 
-            {/* {showAddDoctorModal && (
-                <AddNewDoctorModal
-                    visible={showAddDoctorModal}
-                    onClose={() => setShowAddDoctorModal(false)}
-                />
-            )}
-
-            {showAddHospitalModal && (
-                <>               { console.log("workinginggg")}
-                
-                <AddNewHospitalModal
-                    visible={showAddHospitalModal}
-                    onClose={() => setShowAddHospitalModal(false)}
-                />
-                </>
-
-            )}
-
-            {showAddPharmacyModal && (
-                <AddNewPharmacyModal
-                    visible={showAddPharmacyModal}
-                    onClose={() => setShowAddPharmacyModal(false)}
-                />
-            )} */}
+          
 
 
         </SafeAreaView>
@@ -660,17 +657,7 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
     },
-    continueButton: {
-        backgroundColor: colors.primary,
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-    },
-    continueButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
+
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -781,6 +768,48 @@ const styles = StyleSheet.create({
         color: '#222',
         fontWeight: '500',
     },
+
+
+    continueButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+
+
+    resetButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#E58A28', // orange text
+    },
+
+
+    continueButton: {
+        flex: 1,
+        backgroundColor: colors.primary,
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+
+    resetButton: {
+        flex: 1,
+        paddingVertical: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E58A28',
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    bottomRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,          // spacing handled here
+    },
+
+
 });
 
 export default EntitySelector;

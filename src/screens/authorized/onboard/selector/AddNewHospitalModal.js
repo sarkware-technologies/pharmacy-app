@@ -20,9 +20,10 @@ import CustomInput from '../../../../components/CustomInput';
 import { AppText, AppInput } from "../../../../components"
 import { usePincodeLookup } from '../../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../../components/FloatingDateInput';
-import { validateField,  createFilteredInputHandler, filterForField } from '../../../../utils/formValidation';
+import { validateField, createFilteredInputHandler, filterForField } from '../../../../utils/formValidation';
 import { useSelector } from 'react-redux';
 import SearchableDropdownModal from '../../../../components/modals/SearchableDropdownModal';
+import { resolveCategoryLabel } from '../utils/helper'
 
 const DOC_TYPES = {
   REGISTRATION_CERTIFICATE: 8,
@@ -32,20 +33,14 @@ const DOC_TYPES = {
 };
 
 
-const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, categoryId, subCategoryId, mappingName, mappingLabel, titleName = null }) => {
+const AddNewHospitalModal = ({ visible, onClose, onSubmit, formData, entityType, allowMultiple = true, parentHospitalId = null }) => {
 
-
-  console.log("working");
-  
-
-
-
+console.log(visible);
 
   const loggedInUser = useSelector(state => state.auth.user);
-
   const [hospitalForm, setHospitalForm] = useState({
     category: 'Private',
-    subCategory: '',
+    subCategory: 'Clinic',
     registrationCertificate: '',
     registrationNumber: '',
     registrationDate: '',
@@ -93,12 +88,12 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
   const [uploadedDocs, setUploadedDocs] = useState([]);
 
 
-    // States and cities data
-    const [areas, setAreas] = useState([]);
-    const [states, setStates] = useState([]);
-    const [cities, setCities] = useState([]);
-    const [searchCities, setSearchCities] = useState(null);
-    const [uploadedAreas, setUploadedAreas] = useState([]); // [{ id, name }]
+  // States and cities data
+  const [areas, setAreas] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [searchCities, setSearchCities] = useState(null);
+  const [uploadedAreas, setUploadedAreas] = useState([]); // [{ id, name }]
 
   // Pincode lookup hook
   const {
@@ -128,7 +123,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
   // useeffect section start/////////////////////////////////////////////////////
 
-   // Sync pincode lookup results → local lists (states, cities, areas) and auto-select first matches.
+  // Sync pincode lookup results → local lists (states, cities, areas) and auto-select first matches.
   useEffect(() => {
     // Map pincodeCities → cities
     if (Array.isArray(pincodeCities) && pincodeCities.length > 0) {
@@ -138,7 +133,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       }));
       setCities(mappedCities);
 
-      
+
       // Auto-select the first city if none selected or cityId is falsy
       const firstCity = mappedCities[0];
       setHospitalForm(prev => ({
@@ -209,10 +204,20 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
   const loadInitialData = async () => {
     // Note: States and cities are now loaded via pincode lookup only
     // Load license types from API
+
+    let subCategoryId = 2; // default: Individual Hospital
+
+    if (entityType === "groupHospitals") {
+      subCategoryId = 3;
+    } else if (hospitalForm?.subCategory === "Clinic") {
+      subCategoryId = 1;
+    }
+
+
     try {
-      const response = await customerAPI.getLicenseTypes(2, 4, titleName ? 3 : 1); // typeId: 1 (pharmacy), categoryId: 1 (Only Retailer)
+      const response = await customerAPI.getLicenseTypes(2, 4, subCategoryId);
       if (response.success && response.data) {
-        console.log(response);
+  
 
         const licenseData = {};
         response.data.forEach(license => {
@@ -235,7 +240,6 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
       }
     } catch (error) {
       console.error('Error fetching license types:', error);
-      // Keep default values if API fails
     }
   };
 
@@ -249,7 +253,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
   // funtion section start//////////////////////////////////////////////
 
 
-// Handle pincode change and trigger lookup
+  // Handle pincode change and trigger lookup
   const handlePincodeChange = async text => {
     // Filter pincode input to only allow digits
     const filtered = createFilteredInputHandler('pincode', null, 6)(text);
@@ -258,7 +262,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
     setHospitalForm(prev => ({ ...prev, pincode: filtered }));
     setHospitalErrors(prev => ({ ...prev, pincode: null }));
-    
+
 
     // If user is editing pincode manually, clear any OCR/upload-derived area list
     if (uploadedAreas && uploadedAreas.length > 0) {
@@ -328,70 +332,70 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     }
   };
 
-    const handleCitySearch = async (text) => {
-      try {
-        const response = await customerAPI.getCitiesList({
-          page: 1,
-          limit: 50,
-          search: text,
-        });
-        const cityList = response?.data?.cities || [];
-        const formattedCities = cityList.map(city => ({
-          id: Number(city.id),
-          name: city.cityName,
-        }));
-  
-        setSearchCities(formattedCities);
-      } catch (error) {
-        console.error('Error fetching cities:', error);
-      }
-    };
-  
-    const addNewCity = async (cityName) => {
-      if (!hospitalForm.stateId) {
+  const handleCitySearch = async (text) => {
+    try {
+      const response = await customerAPI.getCitiesList({
+        page: 1,
+        limit: 50,
+        search: text,
+      });
+      const cityList = response?.data?.cities || [];
+      const formattedCities = cityList.map(city => ({
+        id: Number(city.id),
+        name: city.cityName,
+      }));
+
+      setSearchCities(formattedCities);
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+    }
+  };
+
+  const addNewCity = async (cityName) => {
+    if (!hospitalForm.stateId) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: `Please select state to create city`,
+        position: 'top',
+      });
+    }
+    try {
+      const response = await customerAPI.createCity({
+        name: cityName,
+        stateId: hospitalForm?.stateId, // based on PIN/state
+      });
+
+      if (response?.success) {
         Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: `Please select state to create city`,
+          type: 'success',
+          text1: 'City Created',
+          text2: `City created successfully`,
           position: 'top',
-        }); 
-      }
-      try {
-        const response = await customerAPI.createCity({
-          name: cityName,
-          stateId: hospitalForm?.stateId, // based on PIN/state
         });
-  
-        if (response?.success) {
-          Toast.show({
-            type: 'success',
-            text1: 'City Created',
-            text2: `City created successfully`,
-            position: 'top',
-          });
-        }
-        const newCity = {
-          id: Number(response?.data?.cities[0]?.id),
-          name: response?.data?.cities[0]?.cityName,
-        };
-        setCities(prev => [newCity, ...prev]);
-        setHospitalForm(prev => ({
-          ...prev,
-          cityId: newCity.id,
-          city: newCity.name,
-        }));
-        setSearchCities(null)
-  
-        setShowCityModal(false);
-      } catch (e) {
-        console.error('Add city failed', e);
       }
-    };
+      const newCity = {
+        id: Number(response?.data?.cities[0]?.id),
+        name: response?.data?.cities[0]?.cityName,
+      };
+      setCities(prev => [newCity, ...prev]);
+      setHospitalForm(prev => ({
+        ...prev,
+        cityId: newCity.id,
+        city: newCity.name,
+      }));
+      setSearchCities(null)
+
+      setShowCityModal(false);
+    } catch (e) {
+      console.error('Add city failed', e);
+    }
+  };
 
   const resetForm = () => {
     setHospitalForm({
       category: 'Private',
-      subCategory: 'Individual Hospital',
+      subCategory: '',
       registrationCertificate: '',
       registrationNumber: '',
       registrationDate: '',
@@ -629,7 +633,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     );
   };
 
-  const handleFileUpload = async(field, file) => {
+  const handleFileUpload = async (field, file) => {
     if (file && file.id) {
       setDocumentIds(prev => ({ ...prev, [field]: file.id }));
 
@@ -869,7 +873,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
   const handleClose = () => {
     resetForm();
-    onClose();
+    onClose?.();
   };
 
   const handleSubmit = async () => {
@@ -979,13 +983,19 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
     try {
       // Determine subCategoryId based on sub category
-      const subCatId = hospitalForm.subCategory === 'Clinic' ? 1 : 2;
+      let subCategoryId = 2; // default: Individual Hospital
+
+      if (entityType === "groupHospitals") {
+        subCategoryId = 3;
+      } else if (hospitalForm?.subCategory === "Clinic") {
+        subCategoryId = 1;
+      }
 
       // Prepare registration payload matching the API structure
       const registrationData = {
-        typeId: typeId || 2,
-        categoryId: categoryId || 4,
-        subCategoryId: Number(subCategoryId) || subCatId,
+        typeId: 2,
+        categoryId: 4,
+        subCategoryId: subCategoryId,
         isMobileVerified: verificationStatus.mobile,
         isEmailVerified: verificationStatus.email,
         isExisting: false,
@@ -993,7 +1003,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           registrationDate: new Date().toISOString(),
           licence: [
             {
-              licenceTypeId: licenseTypes.REGISTRATION?.id || 7,
+              licenceTypeId: licenseTypes.REGISTRATION?.id || 8,
               licenceNo: hospitalForm.registrationNumber,
               licenceValidUpto: formatDateForAPI(hospitalForm.registrationDate),
             }
@@ -1035,18 +1045,10 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
         isChildCustomer: true
       };
 
-      console.log('Hospital registration payload:', registrationData);
 
       const response = await customerAPI.createCustomer(registrationData);
 
-
-
       if (response?.success) {
-
-
-
-
-
         Toast.show({
           type: 'success',
           text1: 'Hospital Added',
@@ -1054,22 +1056,18 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
           position: 'top',
         });
 
+        console.log(response);
+        
+
         // Pass the created hospital data back to parent
-        const newHospital = {
-          id: response.data?.id || Date.now(),
-          name: hospitalForm.hospitalName,
-          code: response.data?.code || hospitalForm.shortName,
-          ...hospitalForm,
-          customerId: response.data?.id,
-        };
+        const newHospital = [{
+          id: response?.data?.data?.stgCustomerId,
+          customerName: response?.data?.data?.generalDetails?.name,
+          isNew: true,
+          isActive: true
+        }];
 
-        // Call onAdd callback if provided (for PharmacyWholesaler integration)
-        if (onAdd) {
-          onAdd(newHospital);
-        } else if (onSubmit) {
-          onSubmit(newHospital);
-        }
-
+        onSubmit(entityType, newHospital, parentHospitalId, allowMultiple);
         // Reset and close
         resetForm();
         onClose();
@@ -1100,7 +1098,7 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
     <Modal
       visible={visible}
       animationType="slide"
-      transparent={false}
+      transparent={true}
       onRequestClose={handleClose}
     >
       <SafeAreaView style={styles.modalContainer}>
@@ -1112,13 +1110,13 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
 
 
-          <AppText style={styles.modalTitle}>Add {titleName ? titleName : "Hospital"} account</AppText>
+          <AppText style={styles.modalTitle}>
+            Add {entityType === 'groupHospitals' ? 'Group Hospital' : 'Hospital'} account
+          </AppText>
         </View>
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
           {/* Category Section */}
-          {!subCategoryId &&
-
-
+          {entityType === 'hospitals' &&
             <>
               <AppText style={styles.categoryLabel}>Category <AppText style={styles.categoryPlaceholder}>(Select Any One)</AppText></AppText>
 
@@ -1141,7 +1139,9 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
                   </View>
                   <AppText style={styles.radioLabel}>Private-Individual Hospital</AppText>
                 </TouchableOpacity>
-              </View></>}
+              </View>
+            </>
+          }
 
 
           <AppText style={[styles.modalSectionLabel, styles.modalSectionTopspacing]}>License Details<AppText style={styles.mandatory}>*</AppText></AppText>
@@ -1815,9 +1815,19 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
           {/* Mapping Section */}
           <AppText style={styles.modalSectionLabel}>Mapping</AppText>
-          <AppText style={styles.modalFieldLabel}>{mappingLabel || "Hospital"}</AppText>
+
+
+
+
+          <AppText style={styles.modalFieldLabel}>  {resolveCategoryLabel({
+            typeId: formData?.typeId,
+            categoryId: formData?.categoryId,
+            subCategoryId: formData?.subCategoryId,
+          })}</AppText>
+
+
           <View style={[styles.mappingPharmacyBox, { marginBottom: 20 }]}>
-            <AppText style={styles.mappingPharmacyText}>{mappingName}</AppText>
+            <AppText style={styles.mappingPharmacyText}>{formData?.generalDetails?.name}</AppText>
           </View>
 
           {/* Add Stockist Section (Optional) */}
@@ -1864,93 +1874,93 @@ const AddNewHospitalModal = ({ visible, onClose, onSubmit, onAdd, typeId, catego
 
         {/* start dropdown modal section////////////////////////////////////////// */}
 
-      <SearchableDropdownModal
-        visible={showStationModal}
-        onClose={() => setShowStationModal(false)}
-        title="Select Station Code"
-        data={
-          loggedInUser?.userDetails?.stationCodes?.map((item) => ({
-            id: item.stationCode,
-            name: item.stationCode,
-          }))
-        }
-        selectedId={hospitalForm.stationCode}
-        onSelect={item => {
-          setHospitalForm(prev => ({
-            ...prev,
-            stationCode: item.name,
-          }));
-          setHospitalErrors(prev => ({ ...prev, stationCode: null }));
-        }}
-        loading={false}
-      />
+        <SearchableDropdownModal
+          visible={showStationModal}
+          onClose={() => setShowStationModal(false)}
+          title="Select Station Code"
+          data={
+            loggedInUser?.userDetails?.stationCodes?.map((item) => ({
+              id: item.stationCode,
+              name: item.stationCode,
+            }))
+          }
+          selectedId={hospitalForm.stationCode}
+          onSelect={item => {
+            setHospitalForm(prev => ({
+              ...prev,
+              stationCode: item.name,
+            }));
+            setHospitalErrors(prev => ({ ...prev, stationCode: null }));
+          }}
+          loading={false}
+        />
 
-      <SearchableDropdownModal
-        visible={showAreaModal}
-        onClose={() => setShowAreaModal(false)}
-        title="Select Area"
-        data={uploadedAreas && uploadedAreas.length > 0
-          ? uploadedAreas
-          : Array.isArray(areas)
-            ? areas.map(area => ({ id: area.id, name: area.name }))
-            : []}
-        selectedId={hospitalForm.areaId}
-        onSelect={item => {
-          setHospitalForm(prev => ({
-            ...prev,
-            areaId: item.id,
-            area: item.name,
-          }));
-          setHospitalErrors(prev => ({ ...prev, area: null }));
-        }}
-        loading={false}
-      />
+        <SearchableDropdownModal
+          visible={showAreaModal}
+          onClose={() => setShowAreaModal(false)}
+          title="Select Area"
+          data={uploadedAreas && uploadedAreas.length > 0
+            ? uploadedAreas
+            : Array.isArray(areas)
+              ? areas.map(area => ({ id: area.id, name: area.name }))
+              : []}
+          selectedId={hospitalForm.areaId}
+          onSelect={item => {
+            setHospitalForm(prev => ({
+              ...prev,
+              areaId: item.id,
+              area: item.name,
+            }));
+            setHospitalErrors(prev => ({ ...prev, area: null }));
+          }}
+          loading={false}
+        />
 
-      <SearchableDropdownModal
-        visible={showStateModal}
-        onClose={() => setShowStateModal(false)}
-        title="Select State"
-        data={states}
-        selectedId={hospitalForm.stateId}
-        onSelect={item => {
-          setHospitalForm(prev => ({
-            ...prev,
-            stateId: item.id,
-            state: item.name,
-          }));
-          setHospitalErrors(prev => ({ ...prev, stateId: null }));
-        }}
-        loading={false}
-      />
+        <SearchableDropdownModal
+          visible={showStateModal}
+          onClose={() => setShowStateModal(false)}
+          title="Select State"
+          data={states}
+          selectedId={hospitalForm.stateId}
+          onSelect={item => {
+            setHospitalForm(prev => ({
+              ...prev,
+              stateId: item.id,
+              state: item.name,
+            }));
+            setHospitalErrors(prev => ({ ...prev, stateId: null }));
+          }}
+          loading={false}
+        />
 
-      <SearchableDropdownModal
-        visible={showCityModal}
-        onClose={() => {
-          setShowCityModal(false)
-          setSearchCities(null)
-        }}
-        title="Select City"
-        data={searchCities ? searchCities : cities}
-        selectedId={hospitalForm.cityId}
-        onSelect={item => {
-          setHospitalForm(prev => ({
-            ...prev,
-            cityId: item.id,
-            city: item.name,
-          }));
-          setHospitalErrors(prev => ({ ...prev, cityId: null }));
-          setCities(prevCities => {
-            const exists = prevCities.some(c => c.id === item.id);
-            if (exists) return prevCities;
+        <SearchableDropdownModal
+          visible={showCityModal}
+          onClose={() => {
+            setShowCityModal(false)
+            setSearchCities(null)
+          }}
+          title="Select City"
+          data={searchCities ? searchCities : cities}
+          selectedId={hospitalForm.cityId}
+          onSelect={item => {
+            setHospitalForm(prev => ({
+              ...prev,
+              cityId: item.id,
+              city: item.name,
+            }));
+            setHospitalErrors(prev => ({ ...prev, cityId: null }));
+            setCities(prevCities => {
+              const exists = prevCities.some(c => c.id === item.id);
+              if (exists) return prevCities;
 
-            return [item, ...prevCities]; // add on top
-          });
-        }}
-        loading={false}
-        onSearch={handleCitySearch}
-        onAddNew={addNewCity}
-      />
-      {/* start dropdown modal section////////////////////////////////////////// */}
+              return [item, ...prevCities]; // add on top
+            });
+          }}
+          loading={false}
+          onSearch={handleCitySearch}
+          onAddNew={addNewCity}
+        />
+        {/* start dropdown modal section////////////////////////////////////////// */}
       </SafeAreaView>
     </Modal>
   );

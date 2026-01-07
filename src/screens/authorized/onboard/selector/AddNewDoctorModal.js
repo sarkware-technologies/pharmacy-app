@@ -23,6 +23,7 @@ import FloatingDateInput from '../../../../components/FloatingDateInput';
 import { validateField, createFilteredInputHandler, filterForField } from '../../../../utils/formValidation';
 import { useSelector } from 'react-redux';
 import SearchableDropdownModal from '../../../../components/modals/SearchableDropdownModal';
+import { resolveCategoryLabel } from '../utils/helper'
 
 
 const DOC_TYPES = {
@@ -34,7 +35,7 @@ const DOC_TYPES = {
   GST: 2,
 };
 
-const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, mappingLabel }) => {
+const AddNewDoctorModal = ({ visible, onClose, onSubmit, formData, entityType, allowMultiple = true, parentHospitalId = null }) => {
 
 
   const loggedInUser = useSelector(state => state.auth.user);
@@ -126,9 +127,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
 
 
   // useeffect section start/////////////////////////////
+console.log("wprking");
 
   useEffect(() => {
     if (visible) {
+      console.log("working");
+      
       loadInitialData();
     }
   }, [visible]);
@@ -217,19 +221,23 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
     // Note: States and cities are now loaded via pincode lookup only
     // Load license types from API
     try {
-      const licenseResponse = await customerAPI.getLicenseTypes(1, 1); // typeId: 1 (pharmacy), categoryId: 1 (Only Retailer)
+
+      
+      const licenseResponse = await customerAPI.getLicenseTypes(3); // typeId: 1 (pharmacy), categoryId: 1 (Only Retailer)
+      console.log(licenseResponse);
+      
 
       if (licenseResponse.success && licenseResponse.data) {
         const licenseData = {};
         licenseResponse.data.forEach(license => {
-          if (license.code === 'CLINIC_REG' || license.id === 7) {
+          if (license.code === 'REG' || license.id === 10) {
             licenseData.CLINIC_REGISTRATION = {
               id: license.id,
               docTypeId: license.docTypeId,
               name: license.name,
               code: license.code,
             };
-          } else if (license.code === 'PRACTICE_LIC' || license.id === 6) {
+          } else if (license.code === 'PRLIC' || license.id === 10) {
             licenseData.PRACTICE_LICENSE = {
               id: license.id,
               docTypeId: license.docTypeId,
@@ -1195,12 +1203,12 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           registrationDate: new Date().toISOString(),
           licence: [
             {
-              licenceTypeId: licenseTypes.CLINIC_REGISTRATION?.id || 7,
+              licenceTypeId: licenseTypes.CLINIC_REGISTRATION?.id || 8,
               licenceNo: doctorForm.clinicRegistrationNumber,
               licenceValidUpto: formatDateForAPI(doctorForm.clinicRegistrationExpiryDate),
             },
             {
-              licenceTypeId: licenseTypes.PRACTICE_LICENSE?.id || 6,
+              licenceTypeId: licenseTypes.PRACTICE_LICENSE?.id || 10,
               licenceNo: doctorForm.practiceLicenseNumber,
               licenceValidUpto: formatDateForAPI(doctorForm.practiceLicenseExpiryDate),
             }
@@ -1253,29 +1261,19 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
           text2: response.message || 'Doctor registered successfully',
         });
 
-        // Pass the created doctor data back to parent
-        const newDoctor = {
-          id: response.data?.id || Date.now(),
-          name: doctorForm.doctorName,
-          code: response.data?.code,
-          customerId: response.data?.id,
-          stateId: doctorForm.stateId,
-          cityId: doctorForm.cityId,
-          area: doctorForm.area,
-          city: doctorForm.city,
-          state: doctorForm.state,
-          mobileNumber: doctorForm.mobileNumber,
-          emailAddress: doctorForm.emailAddress,
-          isNew: true,
-          ...response.data,
-        };
+        console.log(response);
+        
 
-        // Call onAdd callback if provided, otherwise onSubmit
-        if (onAdd) {
-          onAdd(newDoctor);
-        } else if (onSubmit) {
-          onSubmit(newDoctor);
-        }
+      
+
+          const newDoctor = [{
+          id: response?.data?.data?.stgCustomerId,
+          customerName: response?.data?.data?.generalDetails?.name,
+          isNew: true,
+          isActive: true
+        }];
+
+        onSubmit(entityType, newDoctor, parentHospitalId, allowMultiple);
 
         // Reset and close
         resetForm();
@@ -1302,7 +1300,7 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
     <Modal
       visible={visible}
       animationType="slide"
-      transparent={false}
+      transparent={true}
       onRequestClose={handleClose}
     >
       <SafeAreaView style={styles.modalContainer}>
@@ -1938,9 +1936,13 @@ const AddNewDoctorModal = ({ visible, onClose, onSubmit, onAdd, mappingName, map
 
           {/* Mapping Section */}
           <AppText style={styles.modalSectionLabel}>Mapping</AppText>
-          <AppText style={styles.modalFieldLabel}>{mappingLabel || "Hospital"}</AppText>
+          <AppText style={styles.modalFieldLabel}><AppText style={styles.modalFieldLabel}>  {resolveCategoryLabel({
+                      typeId: formData?.typeId,
+                      categoryId: formData?.categoryId,
+                      subCategoryId: formData?.subCategoryId,
+                    })}</AppText></AppText>
           <View style={[styles.mappingPharmacyBox, { marginBottom: 20 }]}>
-            <AppText style={styles.mappingPharmacyText}>{mappingName || 'Pharmacy name will appear here'}</AppText>
+            <AppText style={styles.mappingPharmacyText}>{formData?.generalDetails?.name}</AppText>
           </View>
 
           {/* Action Buttons */}

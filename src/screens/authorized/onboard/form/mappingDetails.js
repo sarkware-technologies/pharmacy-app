@@ -22,44 +22,9 @@ import AddNewHospitalModal from '../selector/AddNewHospitalModal';
 import AddNewPharmacyModal from '../selector/AddNewPharmacyModal';
 import LabeledSelector from '../../../../components/form/labeledSelector'
 import DoctorDeleteIcon from "../../../../components/icons/DoctorDeleteIcon";
+import {SELECTOR_ENTITY_CONFIG} from "../utils/fieldMeta"
 
-const ENTITY_CONFIG = {
-    hospital: {
-        title: 'Hospital',
-        entityType: 'hospitals',
-        allowMultiple: false
-    },
 
-    doctor: {
-        title: 'Doctor',
-        entityType: 'doctors',
-        allowMultiple: true,
-        maxSelection: 4
-    },
-
-    pharmacy: {
-        title: 'Pharmacy',
-        entityType: 'pharmacy',
-        allowMultiple: true
-    },
-
-    group_hospital: {
-        title: 'Hospital',
-        entityType: 'groupHospitals',
-        allowMultiple: false
-    },
-
-    linked_hospital: {
-        title: 'Hospital',
-        entityType: 'hospitals',
-        allowMultiple: true
-    },
-    linked_hospital_child: {
-        title: 'Pharmacy',
-        entityType: 'pharmacy',
-        allowMultiple: true
-    },
-};
 
 const RenderStockist = memo(({
     index,
@@ -114,8 +79,10 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
     const [customerOption, setCustomerOption] = useState([]);
     const [activeSelector, setActiveSelector] = useState(null);
     const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
-    const [showAddHospitalModal, setShowAddHospitalModal] = useState(false);
+    const [showAddHospitalModal, setShowAddHospitalModal] = useState(null);
     const [showAddPharmacyModal, setShowAddPharmacyModal] = useState(false);
+
+console.log(SELECTOR_ENTITY_CONFIG, 456456);
 
 
     useEffect(() => {
@@ -190,7 +157,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
 
     const onSelectRadio = (selector) => {
-        const entityKey = ENTITY_CONFIG[selector]?.entityType;
+        const entityKey = SELECTOR_ENTITY_CONFIG[selector]?.entityType;
         if (!entityKey) return;
 
         updateMapping(() => ({
@@ -200,7 +167,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
 
     const onToggleCheckbox = (selector) => {
-        const entityKey = ENTITY_CONFIG[selector]?.entityType;
+        const entityKey = SELECTOR_ENTITY_CONFIG[selector]?.entityType;
         if (!entityKey) return;
 
         updateMapping(prev => {
@@ -428,9 +395,10 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                     </View>
                                 )}
 
-                                   <TextButton fontWeight={600} fontFamily="regular" onPress={() => {setActiveSelector({ key: 'linked_hospital_child',parentHospitalId:hospital?.id});
+                                <TextButton fontWeight={600} fontFamily="regular" onPress={() => {
+                                    setActiveSelector({ key: 'linked_hospital_child', parentHospitalId: hospital?.id });
                                     console.log("worihsdf");
-                                    }}>+ Add Pharmacy</TextButton>
+                                }}>+ Add Pharmacy</TextButton>
 
                             </View>
                         </View>
@@ -439,6 +407,33 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
             </View>
         );
     };
+
+
+const handleAddNewEntity = (entityType, parentHospitalId = null) => {
+  switch (entityType) {
+    case 'doctors':
+      setShowAddDoctorModal({ key: 'doctor' });
+      break;
+
+    case 'pharmacy':
+      setShowAddPharmacyModal({
+        key: 'pharmacy',
+        ...(parentHospitalId && { parentHospitalId }),
+      });
+      break;
+
+    case 'hospitals':
+      setShowAddHospitalModal({ key: 'hospital' });
+      break;
+
+    case 'groupHospitals':
+      setShowAddHospitalModal({ key: 'group_hospital' });
+      break;
+
+    default:
+      break;
+  }
+};
 
     // helper end
 
@@ -535,23 +530,23 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                         </TouchableOpacity>
                                     </AppView>
                                 </AppView>
-                       
 
-                                 <LabeledSelector
-                                            value={
-                                                formData?.mapping?.hospitals?.length
-                                                    ? `${formData.mapping.hospitals.length} Hospitals selected`
-                                                    : ""
-                                            }
-                                            placeholder="Search Hospital name/code"
-                                            onPress={() => setActiveSelector({ key: 'linked_hospital' })}
-                                        />
 
-                                        {formData?.mapping?.hospitals?.length > 0 && renderLinkedHospitals()}
+                                <LabeledSelector
+                                    value={
+                                        formData?.mapping?.hospitals?.length
+                                            ? `${formData.mapping.hospitals.length} Hospitals selected`
+                                            : ""
+                                    }
+                                    placeholder="Search Hospital name/code"
+                                    onPress={() => setActiveSelector({ key: 'linked_hospital' })}
+                                />
+
+                                {formData?.mapping?.hospitals?.length > 0 && renderLinkedHospitals()}
 
 
                                 <View>
-                                    <TextButton fontWeight={600} fontFamily="regular">+ Add New Hospital</TextButton>
+                                    <TextButton fontWeight={600} fontFamily="regular" onPress={()=>setShowAddHospitalModal({key:'linked_hospital'})}>+ Add New Hospital</TextButton>
                                 </View>
                             </AppView>
                         )}
@@ -596,7 +591,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
 
                                         <View>
-                                            <TextButton fontWeight={600} fontFamily="regular">+ Add Group Hospital</TextButton>
+                                            <TextButton fontWeight={600} fontFamily="regular" onPress={()=>setShowAddHospitalModal({key:'group_hospital'})}>+ Add Group Hospital</TextButton>
                                         </View>
                                     </>
                                 )}
@@ -626,7 +621,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                             onPress={() => setActiveSelector({ key: 'hospital' })}
                                         />
                                         <View>
-                                            <TextButton fontWeight={600} fontFamily="regular">+ Add New Hospital</TextButton>
+                                            <TextButton fontWeight={600} fontFamily="regular" onPress={()=>setShowAddHospitalModal({key:'hospital'})}>+ Add New Hospital</TextButton>
                                         </View>
                                     </>
                                 )}
@@ -660,7 +655,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
 
                                         <View>
-                                            <TextButton fontWeight={600} fontFamily="regular">+ Add New doctor</TextButton>
+                                            <TextButton fontWeight={600} fontFamily="regular" onPress={()=>setShowAddDoctorModal({key:'doctor'})}>+ Add New doctor</TextButton>
                                         </View>
                                     </>
                                 )}
@@ -696,7 +691,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
 
                                         <View>
-                                            <TextButton fontWeight={600} fontFamily="regular">+ Add New Pharmacy</TextButton>
+                                            <TextButton fontWeight={600} fontFamily="regular" onPress={()=>setShowAddPharmacyModal({key:'pharmacy'})}>+ Add New Pharmacy</TextButton>
                                         </View>
                                     </>
                                 )}
@@ -760,7 +755,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                             },
                                         })}
                                         <View>
-                                            <TextButton fontWeight={600} fontFamily="regular">+ Add New Pharmacy</TextButton>
+                                            <TextButton fontWeight={600} fontFamily="regular" onPress={()=>setShowAddPharmacyModal({key:'pharmacy'})}>+ Add New Pharmacy</TextButton>
                                         </View>
                                     </>
                                 )}
@@ -830,6 +825,8 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                     </AppView>
                 </AccordionCard>
             </AppView>
+
+
             <Modal
                 visible={!!activeSelector}
                 animationType="slide"
@@ -838,16 +835,56 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
             >
 
                 <EntitySelector
-                    {...ENTITY_CONFIG[activeSelector?.key]}
+                    {...SELECTOR_ENTITY_CONFIG[activeSelector?.key]}
                     formData={formData}
                     onSelect={handleEntitySelect}
                     parentHospitalId={activeSelector?.parentHospitalId}
                     onClose={setActiveSelector}
+                    onAddNew={handleAddNewEntity}
                 />
 
 
 
             </Modal>
+
+
+
+              {showAddDoctorModal && (
+                <AddNewDoctorModal
+                  {...SELECTOR_ENTITY_CONFIG[showAddDoctorModal?.key]}
+                    formData={formData}
+                    visible={!!showAddDoctorModal?.key}
+                    onSubmit={handleEntitySelect}
+                    parentHospitalId={showAddDoctorModal?.parentHospitalId}
+                    onClose={() => setShowAddDoctorModal(false)}
+                />
+            )}
+
+            {showAddHospitalModal && (
+                <>        
+                
+                <AddNewHospitalModal
+                    {...SELECTOR_ENTITY_CONFIG[showAddHospitalModal?.key]}
+                    visible={!!showAddHospitalModal?.key}
+                    formData={formData}
+                    onSubmit={handleEntitySelect}
+                    parentHospitalId={showAddHospitalModal?.parentHospitalId}
+                    onClose={() => setShowAddHospitalModal(false)}
+                />
+                </>
+
+            )}
+
+            {showAddPharmacyModal && (
+                <AddNewPharmacyModal
+                     {...SELECTOR_ENTITY_CONFIG[showAddPharmacyModal?.key]}
+                    visible={!!showAddPharmacyModal?.key}
+                    formData={formData}
+                    onSubmit={handleEntitySelect}
+                    parentHospitalId={showAddPharmacyModal?.parentHospitalId}
+                    onClose={() => setShowAddPharmacyModal(false)}
+                />
+            )}
         </>
     );
 };

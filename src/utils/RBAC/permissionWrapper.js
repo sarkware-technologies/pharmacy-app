@@ -3,7 +3,6 @@ import checkPermission from "./permissionHelper";
 
 const PermissionWrapper = ({ permission, Component, children }) => {
 
-    console.log(permission, 454545);
     
     const [allowed, setAllowed] = useState(permission ? false : true);
 

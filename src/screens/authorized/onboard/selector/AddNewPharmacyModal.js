@@ -19,9 +19,10 @@ import CustomInput from '../../../../components/CustomInput';
 import { AppText, AppInput } from "../../../../components";
 import { usePincodeLookup } from '../../../../hooks/usePincodeLookup';
 import FloatingDateInput from '../../../../components/FloatingDateInput';
-import { validateField,createFilteredInputHandler, filterForField } from '../../../../utils/formValidation';
+import { validateField, createFilteredInputHandler, filterForField } from '../../../../utils/formValidation';
 import { useSelector } from 'react-redux';
 import SearchableDropdownModal from '../../../../components/modals/SearchableDropdownModal';
+import { resolveCategoryLabel } from '../utils/helper'
 
 const DOC_TYPES = {
   PHARMACY_IMAGE: 1,
@@ -30,7 +31,7 @@ const DOC_TYPES = {
 };
 
 
-const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingLabel, parentHospitalName = null }) => {
+const AddNewPharmacyModal = ({ visible, onClose, onSubmit, formData, entityType, allowMultiple = true, parentHospitalId = null }) => {
 
   const loggedInUser = useSelector(state => state.auth.user);
 
@@ -150,7 +151,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
       }));
     }
 
-    
+
 
     // Map pincodeStates → states
     if (Array.isArray(pincodeStates) && pincodeStates.length > 0) {
@@ -265,7 +266,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
     }
   };
 
- const handleCitySearch = async (text) => {
+  const handleCitySearch = async (text) => {
     try {
       const response = await customerAPI.getCitiesList({
         page: 1,
@@ -334,7 +335,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
 
     setPharmacyForm(prev => ({ ...prev, pincode: filtered }));
     setPharmacyErrors(prev => ({ ...prev, pincode: null }));
-    
+
 
     // If user is editing pincode manually, clear any OCR/upload-derived area list
     if (uploadedAreas && uploadedAreas.length > 0) {
@@ -1316,16 +1317,21 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           position: 'top',
         });
 
-        // Pass the created pharmacy data back to parent
-        const newPharmacy = {
-          id: response.data?.id || Date.now(),
-          name: pharmacyForm.pharmacyName,
-          code: response.data?.code || pharmacyForm.shortName,
-          ...pharmacyForm,
-          customerId: response.data?.id,
-        };
 
-        onSubmit(newPharmacy);
+
+
+        console.log(response);
+
+
+        // Pass the created hospital data back to parent
+        const newPharmacy = [{
+          id: response?.data?.data?.stgCustomerId,
+          customerName: response?.data?.data?.generalDetails?.name,
+          isNew: true,
+          isActive: true
+        }];
+
+        onSubmit(entityType, newPharmacy, parentHospitalId, allowMultiple);
 
         // Reset and close
         resetForm();
@@ -1358,7 +1364,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
     <Modal
       visible={visible}
       animationType="slide"
-      transparent={false}
+      transparent={true}
       onRequestClose={handleClose}
     >
       <SafeAreaView style={styles.modalContainer}>
@@ -1366,7 +1372,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <Icon name="close" size={24} color="#333" />
           </TouchableOpacity>
-          <AppText style={styles.modalTitle}>Add Pharmacy Account</AppText>
+          <AppText style={styles.modalTitle}>Add Pharmacy Account {parentHospitalId && <AppText>(Link Hospital)</AppText>}</AppText>
         </View>
 
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
@@ -2090,22 +2096,28 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
           {/* Mapping Section */}
           <AppText style={styles.modalSectionLabel}>Mapping</AppText>
 
-          {parentHospitalName &&
+          {parentHospitalId &&
             <>
               <AppText style={styles.modalFieldLabel}>{'Parent Group Hospital'}</AppText>
               <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
-                <AppText style={styles.mappingNameText}>{parentHospitalName}</AppText>
+                <AppText style={styles.mappingNameText}>{formData?.mapping?.hospitals?.find((h) => h.id == parentHospitalId)?.customerName}</AppText>
               </View></>
           }
-          <AppText style={styles.modalFieldLabel}>{mappingLabel || "Hospital"}</AppText>
+          <AppText style={styles.modalFieldLabel}>  {resolveCategoryLabel({
+            typeId: formData?.typeId,
+            categoryId: formData?.categoryId,
+            subCategoryId: formData?.subCategoryId,
+          })}</AppText>
+
+
           <View style={[styles.mappingNameBox, { marginBottom: 20 }]}>
-            <AppText style={styles.mappingNameText}>{mappingName}</AppText>
+            <AppText style={styles.mappingNameText}>{formData?.generalDetails?.name}</AppText>
           </View>
 
 
           {/* Add Stockist Section (Optional) */}
 
-          {parentHospitalName &&
+          {parentHospitalId &&
             <><AppText style={styles.modalSectionLabel2}> Stockist Suggestions <AppText style={styles.optionalText}> (Optional)</AppText></AppText>
               <CustomInput
                 placeholder="Name of the Stockist"
@@ -2160,7 +2172,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, mappingName, mappingL
             }))
           }
 
-          
+
           selectedId={pharmacyForm.stationCode}
           onSelect={item => {
             setPharmacyForm(prev => ({
@@ -2416,7 +2428,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
- 
+
   floatingLabel: {
     position: 'absolute',
     top: -10,
