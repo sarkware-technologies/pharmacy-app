@@ -1,0 +1,683 @@
+{
+    "licenseDetails": {
+        "license": [
+            [
+                {
+                    "attributeId": 1,
+                    "attributeKey": "isFileUploaded",
+                    "attributeName": "Clinic Registration Image",
+                    "attributeType": "file",
+                    "section": "licenseDetails",
+                    "isMandatory": true,
+                    "isEnabled": true,
+                    "displayOrder": 1,
+                    "visibilityCondition": {
+                        "type": [
+                            "DOCT"
+                        ]
+                    },
+                    "validationRules": [
+                        {
+                            "ruleId": 1,
+                            "ruleType": "required",
+                            "errorMessage": "Clinic Registration Image is required",
+                            "ruleOrder": 1
+                        },
+                        {
+                            "ruleId": 2,
+                            "ruleType": "file",
+                            "errorMessage": "Please upload a valid image file",
+                            "ruleOrder": 2
+                        }
+                    ]
+                },
+                {
+                    "attributeId": 2,
+                    "attributeKey": "licenceNo",
+                    "attributeName": "Clinic Registration Number",
+                    "attributeType": "string",
+                    "section": "licenseDetails",
+                    "isMandatory": true,
+                    "isEnabled": true,
+                    "displayOrder": 2,
+                    "visibilityCondition": {
+                        "type": [
+                            "DOCT"
+                        ]
+                    },
+                    "validationRules": [
+                        {
+                            "ruleId": 3,
+                            "ruleType": "required",
+                            "errorMessage": "Clinic Registration Number is required",
+                            "ruleOrder": 1
+                        },
+                        {
+                            "ruleId": 4,
+                            "ruleType": "minLength",
+                            "ruleValue": "3",
+                            "errorMessage": "Registration number must be at least 3 characters",
+                            "ruleOrder": 2
+                        },
+                        {
+                            "ruleId": 5,
+                            "ruleType": "maxLength",
+                            "ruleValue": "50",
+                            "errorMessage": "Registration number cannot exceed 50 characters",
+                            "ruleOrder": 3
+                        }
+                    ]
+                },
+                {
+                    "attributeId": 3,
+                    "attributeKey": "licenceValidUpto",
+                    "attributeName": "Clinic Registration Expiry Date",
+                    "attributeType": "date",
+                    "section": "licenseDetails",
+                    "isMandatory": true,
+                    "isEnabled": true,
+                    "displayOrder": 3,
+                    "visibilityCondition": {
+                        "type": [
+                            "DOCT"
+                        ]
+                    },
+                    "validationRules": [
+                        {
+                            "ruleId": 40,
+                            "ruleType": "required",
+                            "errorMessage": "Clinic Registration Expiry Date is required",
+                            "ruleOrder": 1
+                        },
+                        {
+                            "ruleId": 52,
+                            "ruleType": "date",
+                            "errorMessage": "Please enter a valid date",
+                            "ruleOrder": 2
+                        }
+                    ]
+                }
+            ],
+            [
+                {
+                    "attributeId": 1,
+                    "attributeKey": "isFileUploaded",
+                    "attributeName": "Practice License Image",
+                    "attributeType": "file",
+                    "section": "licenseDetails",
+                    "isMandatory": true,
+                    "isEnabled": true,
+                    "displayOrder": 4,
+                    "visibilityCondition": {
+                        "type": [
+                            "DOCT"
+                        ]
+                    },
+                    "validationRules": [
+                        {
+                            "ruleId": 22,
+                            "ruleType": "required",
+                            "errorMessage": "Practice License Image is required",
+                            "ruleOrder": 1
+                        }
+                    ]
+                },
+                {
+                    "attributeId": 2,
+                    "attributeKey": "licenceNo",
+                    "attributeName": "Practice License Number",
+                    "attributeType": "string",
+                    "section": "licenseDetails",
+                    "isMandatory": true,
+                    "isEnabled": true,
+                    "displayOrder": 5,
+                    "visibilityCondition": {
+                        "type": [
+                            "DOCT"
+                        ]
+                    },
+                    "validationRules": [
+                        {
+                            "ruleId": 64,
+                            "ruleType": "required",
+                            "errorMessage": "Practice License Number is required",
+                            "ruleOrder": 1
+                        },
+                        {
+                            "ruleId": 75,
+                            "ruleType": "minLength",
+                            "ruleValue": "5",
+                            "errorMessage": "Practice License Number must be at least 5 characters",
+                            "ruleOrder": 2
+                        },
+                        {
+                            "ruleId": 88,
+                            "ruleType": "maxLength",
+                            "ruleValue": "50",
+                            "errorMessage": "Practice License Number cannot exceed 50 characters",
+                            "ruleOrder": 3
+                        }
+                    ]
+                },
+                {
+                    "attributeId": 3,
+                    "attributeKey": "licenceValidUpto",
+                    "attributeName": "Practice License Expiry Date",
+                    "attributeType": "date",
+                    "section": "licenseDetails",
+                    "isMandatory": true,
+                    "isEnabled": true,
+                    "displayOrder": 6,
+                    "visibilityCondition": {
+                        "type": [
+                            "DOCT"
+                        ]
+                    },
+                    "validationRules": [
+                        {
+                            "ruleId": 41,
+                            "ruleType": "required",
+                            "errorMessage": "Practice License Expiry Date is required",
+                            "ruleOrder": 1
+                        },
+                        {
+                            "ruleId": 53,
+                            "ruleType": "date",
+                            "errorMessage": "Please enter a valid date",
+                            "ruleOrder": 2
+                        }
+                    ]
+                }
+            ]
+        ]
+    },
+    "generalDetails": [
+        {
+            "attributeId": 44,
+            "attributeKey": "name",
+            "attributeName": "Name",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 1,
+            "visibilityCondition": null,
+            "validationRules": [
+                {
+                    "ruleId": 6,
+                    "ruleType": "required",
+                    "errorMessage": "Name is required",
+                    "ruleOrder": 1
+                },
+                {
+                    "ruleId": 7,
+                    "ruleType": "minLength",
+                    "ruleValue": "3",
+                    "errorMessage": "Name must be at least 3 characters",
+                    "ruleOrder": 2
+                },
+                {
+                    "ruleId": 8,
+                    "ruleType": "maxLength",
+                    "ruleValue": "100",
+                    "errorMessage": "Name cannot exceed 100 characters",
+                    "ruleOrder": 3
+                }
+            ]
+        },
+        {
+            "attributeId": 55,
+            "attributeKey": "specialist",
+            "attributeName": "Speciality Name",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 2,
+            "visibilityCondition": {
+                "type": [
+                    "DOCT"
+                ]
+            },
+            "validationRules": []
+        },
+        {
+            "attributeId": 56,
+            "attributeKey": "clinicName",
+            "attributeName": "Clinic Name",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 3,
+            "visibilityCondition": {
+                "type": [
+                    "DOCT"
+                ]
+            },
+            "validationRules": []
+        },
+        {
+            "attributeId": 45,
+            "attributeKey": "shortName",
+            "attributeName": "Short Name",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": false,
+            "isEnabled": true,
+            "displayOrder": 5,
+            "visibilityCondition": null,
+            "validationRules": []
+        },
+        {
+            "attributeId": 47,
+            "attributeKey": "address1",
+            "attributeName": "Address Line 1",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 6,
+            "visibilityCondition": null,
+            "validationRules": []
+        },
+        {
+            "attributeId": 48,
+            "attributeKey": "address2",
+            "attributeName": "Address Line 2",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": false,
+            "isEnabled": true,
+            "displayOrder": 7,
+            "visibilityCondition": null,
+            "validationRules": []
+        },
+        {
+            "attributeId": 49,
+            "attributeKey": "address3",
+            "attributeName": "Address Line 3",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": false,
+            "isEnabled": true,
+            "displayOrder": 8,
+            "visibilityCondition": null,
+            "validationRules": []
+        },
+        {
+            "attributeId": 50,
+            "attributeKey": "address4",
+            "attributeName": "Address Line 4",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": false,
+            "isEnabled": true,
+            "displayOrder": 9,
+            "visibilityCondition": null,
+            "validationRules": []
+        },
+        {
+            "attributeId": 51,
+            "attributeKey": "pincode",
+            "attributeName": "Pincode",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 10,
+            "visibilityCondition": null,
+            "validationRules": [
+                {
+                    "ruleId": 18,
+                    "ruleType": "required",
+                    "errorMessage": "Pincode is required",
+                    "ruleOrder": 1
+                },
+                {
+                    "ruleId": 19,
+                    "ruleType": "pattern",
+                    "ruleValue": "^[0-9]{6}$",
+                    "errorMessage": "Pincode must be exactly 6 digits",
+                    "ruleOrder": 2
+                }
+            ]
+        },
+        {
+            "attributeId": 52,
+            "attributeKey": "areaId",
+            "attributeName": "Area",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 11,
+            "visibilityCondition": null,
+            "validationRules": []
+        },
+        {
+            "attributeId": 53,
+            "attributeKey": "cityId",
+            "attributeName": "City",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 12,
+            "visibilityCondition": null,
+            "validationRules": []
+        },
+        {
+            "attributeId": 54,
+            "attributeKey": "stateId",
+            "attributeName": "State",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 13,
+            "visibilityCondition": null,
+            "validationRules": []
+        }
+    ],
+    "securityDetails": [
+        {
+            "attributeId": 57,
+            "attributeKey": "mobileNumber",
+            "attributeName": "Mobile Number",
+            "attributeType": "phone",
+            "section": "securityDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 1,
+            "visibilityCondition": null,
+            "validationRules": [
+                {
+                    "ruleId": 9,
+                    "ruleType": "required",
+                    "errorMessage": "Mobile Number is required",
+                    "ruleOrder": 1
+                },
+                {
+                    "ruleId": 10,
+                    "ruleType": "phone",
+                    "errorMessage": "Please enter a valid 10-digit mobile number",
+                    "ruleOrder": 2
+                },
+                {
+                    "ruleId": 11,
+                    "ruleType": "pattern",
+                    "ruleValue": "^[0-9]{10}$",
+                    "errorMessage": "Mobile number must be exactly 10 digits",
+                    "ruleOrder": 3
+                }
+            ]
+        },
+        {
+            "attributeId": 58,
+            "attributeKey": "email",
+            "attributeName": "Email",
+            "attributeType": "email",
+            "section": "securityDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 2,
+            "visibilityCondition": null,
+            "validationRules": [
+                {
+                    "ruleId": 12,
+                    "ruleType": "required",
+                    "errorMessage": "Email is required",
+                    "ruleOrder": 1
+                },
+                {
+                    "ruleId": 13,
+                    "ruleType": "email",
+                    "errorMessage": "Please enter a valid email address",
+                    "ruleOrder": 2
+                }
+            ]
+        },
+        {
+            "attributeId": 59,
+            "attributeKey": "isPanUpload",
+            "attributeName": "PAN Image",
+            "attributeType": "file",
+            "section": "securityDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 3,
+            "visibilityCondition": null,
+            "validationRules": [
+                {
+                    "ruleId": 39,
+                    "ruleType": "required",
+                    "errorMessage": "PAN Image is required",
+                    "ruleOrder": 1
+                }
+            ]
+        },
+        {
+            "attributeId": 60,
+            "attributeKey": "panNumber",
+            "attributeName": "PAN Number",
+            "attributeType": "string",
+            "section": "securityDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 4,
+            "visibilityCondition": null,
+            "validationRules": [
+                {
+                    "ruleId": 14,
+                    "ruleType": "required",
+                    "errorMessage": "PAN Number is required",
+                    "ruleOrder": 1
+                },
+                {
+                    "ruleId": 86,
+                    "ruleType": "minLength",
+                    "ruleValue": "5",
+                    "errorMessage": "PAN Number must be at least 5 characters",
+                    "ruleOrder": 2
+                },
+                {
+                    "ruleId": 15,
+                    "ruleType": "pattern",
+                    "ruleValue": "^[A-Z]{5}[0-9]{4}[A-Z]{1}$",
+                    "errorMessage": "Please enter a valid PAN number (e.g., ABCDE1234F)",
+                    "ruleOrder": 2
+                },
+                {
+                    "ruleId": 99,
+                    "ruleType": "maxLength",
+                    "ruleValue": "50",
+                    "errorMessage": "PAN Number cannot exceed 50 characters",
+                    "ruleOrder": 3
+                }
+            ]
+        },
+        {
+            "attributeId": 61,
+            "attributeKey": "gstImage",
+            "attributeName": "GST Image",
+            "attributeType": "file",
+            "section": "securityDetails",
+            "isMandatory": false,
+            "isEnabled": true,
+            "displayOrder": 5,
+            "visibilityCondition": null,
+            "validationRules": []
+        },
+        {
+            "attributeId": 62,
+            "attributeKey": "gstNumber",
+            "attributeName": "GST Number",
+            "attributeType": "string",
+            "section": "securityDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 6,
+            "visibilityCondition": null,
+            "validationRules": [
+                {
+                    "ruleId": 16,
+                    "ruleType": "required",
+                    "errorMessage": "GST Number is required",
+                    "ruleOrder": 1
+                },
+                {
+                    "ruleId": 87,
+                    "ruleType": "minLength",
+                    "ruleValue": "5",
+                    "errorMessage": "GST Number must be at least 5 characters",
+                    "ruleOrder": 2
+                },
+                {
+                    "ruleId": 100,
+                    "ruleType": "maxLength",
+                    "ruleValue": "50",
+                    "errorMessage": "GST Number cannot exceed 50 characters",
+                    "ruleOrder": 3
+                },
+                {
+                    "ruleId": 100,
+                    "ruleType": "gst"
+                }
+            ]
+        }
+    ],
+    "mapping": [
+        {
+            "attributeId": 63,
+            "attributeKey": "customerGroupId",
+            "attributeName": "Customer Group ID",
+            "attributeType": "number",
+            "section": "mapping",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 1,
+            "visibilityCondition": null,
+            "validationRules": [
+                {
+                    "ruleId": 20,
+                    "ruleType": "required",
+                    "errorMessage": "Customer Group ID is required",
+                    "ruleOrder": 1
+                },
+                {
+                    "ruleId": 21,
+                    "ruleType": "min",
+                    "ruleValue": "1",
+                    "errorMessage": "Customer Group ID must be greater than 0",
+                    "ruleOrder": 2
+                }
+            ]
+        }
+    ],
+    "suggestedDistributor": [
+        {
+            "attributeId": 64,
+            "attributeKey": "stockistName",
+            "attributeName": "Stockist Name",
+            "attributeType": "string",
+            "section": "suggestedDistributor",
+            "isMandatory": false,
+            "isEnabled": true,
+            "displayOrder": 1,
+            "visibilityCondition": null,
+            "validationRules": []
+        },
+        {
+            "attributeId": 65,
+            "attributeKey": "stockistCode",
+            "attributeName": "Stockist Code",
+            "attributeType": "string",
+            "section": "suggestedDistributor",
+            "isMandatory": false,
+            "isEnabled": true,
+            "displayOrder": 2,
+            "visibilityCondition": null,
+            "validationRules": []
+        },
+        {
+            "attributeId": 66,
+            "attributeKey": "stockistCity",
+            "attributeName": "Stockist City",
+            "attributeType": "string",
+            "section": "suggestedDistributor",
+            "isMandatory": false,
+            "isEnabled": true,
+            "displayOrder": 3,
+            "visibilityCondition": null,
+            "validationRules": []
+        }
+    ],
+    "default": [
+        {
+            "attributeId": 7,
+            "attributeKey": "isAddressProofUploaded",
+            "attributeName": "Address Proof Image",
+            "attributeType": "file",
+            "section": "default",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 1,
+            "visibilityCondition": {
+                "type": [
+                    "DOCT"
+                ]
+            },
+            "validationRules": [
+                {
+                    "ruleId": 23,
+                    "ruleType": "required",
+                    "errorMessage": "Address Proof Image is required",
+                    "ruleOrder": 1
+                }
+            ]
+        },
+        {
+            "attributeId": 8,
+            "attributeKey": "isImageUpload",
+            "attributeName": "Clinic Image",
+            "attributeType": "file",
+            "section": "default",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 2,
+            "visibilityCondition": {
+                "type": [
+                    "DOCT"
+                ]
+            },
+            "validationRules": [
+                {
+                    "ruleId": 24,
+                    "ruleType": "required",
+                    "errorMessage": "Clinic Image is required",
+                    "ruleOrder": 1
+                }
+            ]
+        },
+        {
+            "attributeId": 46,
+            "attributeKey": "stationCode",
+            "attributeName": "Station Code",
+            "attributeType": "string",
+            "section": "generalDetails",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 4,
+            "visibilityCondition": null,
+            "validationRules": [
+                {
+                    "ruleId": 24,
+                    "ruleType": "required",
+                    "errorMessage": "Station Code is required",
+                    "ruleOrder": 1
+                }
+            ]
+        }
+    ]
+}

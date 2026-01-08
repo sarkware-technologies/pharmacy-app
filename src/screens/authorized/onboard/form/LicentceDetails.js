@@ -87,7 +87,7 @@ const RenderLicense = memo(
 
 
 
-const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licenseList }) => {
+const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licenseList, error }) => {
     const uniqueLicenses = licenseList.reduce((acc, cur) => {
         if (!acc.some(e => e.code === cur.code)) {
             acc.push({
@@ -332,7 +332,7 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
     }), []);
 
 
-    
+
     const prevLicenceDetails = formData?.licenceDetails ?? {};
     const license = prevLicenceDetails?.licence;
     const renderLicenseByCode = useCallback((code) => {

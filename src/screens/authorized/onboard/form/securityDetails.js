@@ -150,7 +150,7 @@ const OTPForm = ({ onComplete, onResend, autoFill, dummy = false }) => {
 
 
 
-const SecurityDetails = ({ setValue, isAccordion = false, formData, action }) => {
+const SecurityDetails = ({ setValue, isAccordion = false, formData, action, error }) => {
     const [toggle, setToggle] = useState("open");
     const [otpInProgress, setOtpInProgress] = useState("");
 

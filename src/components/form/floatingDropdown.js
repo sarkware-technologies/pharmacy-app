@@ -11,6 +11,7 @@ import AppInput from "../AppInput";
 import { colors } from "../../styles/colors";
 import Downarrow from "../icons/downArrow";
 import SearchableDropdownModal from "../modals/SearchableDropdownModal";
+import AppView from "../AppView";
 
 const FloatingDropdown = ({
     label,
@@ -67,11 +68,9 @@ const FloatingDropdown = ({
         }),
         color: disabled
             ? "#bdbdbd"
-            : error
-                ? "#d32f2f"
-                : isFocused
-                    ? colors.primary
-                    : "#999",
+            : isFocused
+                ? colors.primary
+                : "#999",
         backgroundColor: "white",
         paddingLeft: 5,
         paddingRight: 0,
@@ -79,26 +78,30 @@ const FloatingDropdown = ({
     };
 
     return (
-        <View>
-            <TouchableOpacity
-                onPress={() => onPress ? onPress?.() : setVisible(true)}
-                style={[
-                    styles.container,
-                    isFocused && !disabled && !error && styles.focusedContainer,
-                    error && styles.errorContainer,
-                    style,
-                ]}
-            >
-                <Animated.Text style={[LocallabelStyle, labelStyle]}>{label} {isRequired && (<AppText style={[OnboardStyle.requiredIcon, { fontSize: 12 }]}>*</AppText>)}  </Animated.Text>
-                <AppText style={{ paddingLeft: 20 }}>{value?.name}</AppText>
-                <View style={{ paddingHorizontal: 20, transform: [{ rotate: !visible ? "0deg" : "180deg" }] }} >
-                    <Downarrow />
-                </View>
+        <AppView marginVertical={10}>
+            <View>
+                <TouchableOpacity
+                    onPress={() => onPress ? onPress?.() : setVisible(true)}
+                    style={[
+                        styles.container,
+                        isFocused && !disabled && !error && styles.focusedContainer,
+                        error && styles.errorContainer,
+                        style,
+                    ]}
+                >
+                    <Animated.Text style={[LocallabelStyle, labelStyle]}>{label} {isRequired && (<AppText style={[OnboardStyle.requiredIcon, { fontSize: 12 }]}>*</AppText>)}  </Animated.Text>
+                    <AppText style={{ paddingLeft: 20 }}>{value?.name}</AppText>
+                    <View style={{ paddingHorizontal: 20, transform: [{ rotate: !visible ? "0deg" : "180deg" }] }} >
+                        <Downarrow />
+                    </View>
 
 
-            </TouchableOpacity>
-            <SearchableDropdownModal onAddNew={onAddNew} selectedId={selected} onSearch={onSearch} onSelect={onSelect} visible={visible} onClose={() => setVisible(false)} data={options} title={searchTitle} />
-        </View>
+                </TouchableOpacity>
+                <SearchableDropdownModal onAddNew={onAddNew} selectedId={selected} onSearch={onSearch} onSelect={onSelect} visible={visible} onClose={() => setVisible(false)} data={options} title={searchTitle} />
+            </View>
+            {error && <AppText style={{ marginTop: 5, paddingLeft: 15 }} fontFamily="regular" fontWeight={400} color="red" >{error}</AppText>}
+
+        </AppView>
     );
 };
 
@@ -107,7 +110,6 @@ export default FloatingDropdown;
 
 const styles = StyleSheet.create({
     container: {
-        marginVertical: 10,
         borderWidth: 1.5,
         borderColor: "#E3E3E3",
         borderRadius: 12,
@@ -139,5 +141,9 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
         fontWeight: 600
     },
+    errorContainer: {
+        borderColor: "red",
+        borderWidth: 1
+    }
 });
 

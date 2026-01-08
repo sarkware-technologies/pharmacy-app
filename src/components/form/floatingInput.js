@@ -8,6 +8,7 @@ import OnboardStyle from "../../screens/authorized/onboard/style/onboardStyle";
 import AppText from "../AppText";
 import AppInput from "../AppInput";
 import { colors } from "../../styles/colors";
+import AppView from "../AppView";
 
 const FloatingInput = ({
     label,
@@ -74,11 +75,9 @@ const FloatingInput = ({
         }),
         color: disabled
             ? "#bdbdbd"
-            : error
-                ? "#d32f2f"
-                : isFocused
-                    ? colors.primary   // 👈 focused label color
-                    : "#999",
+            : isFocused
+                ? colors.primary   // 👈 focused label color
+                : "#999",
         backgroundColor: "white",
         paddingLeft: 5,
         paddingRight: 0,
@@ -86,44 +85,48 @@ const FloatingInput = ({
     };
 
     return (
-        <View
-            style={[
-                styles.container,
-                isFocused && !disabled && !error && styles.focusedContainer,
-                error && styles.errorContainer,
-                style,
-            ]}
-        >
+        <AppView marginVertical={10}>
+            <View
+                style={[
+                    styles.container,
+                    isFocused && !disabled && !error && styles.focusedContainer,
+                    error && styles.errorContainer,
+                    style,
+                ]}
+            >
 
-            {prefix && (
-                <View style={{ paddingHorizontal: 5 }} >
-                    {prefix}
+                {prefix && (
+                    <View style={{ paddingHorizontal: 5 }} >
+                        {prefix}
+                    </View>
+                )}
+                <View style={styles.input}>
+                    <Animated.Text style={[LocallabelStyle, labelStyle]}>{label} {isRequired && (<AppText style={[OnboardStyle.requiredIcon, { fontSize: 12 }]}>*</AppText>)}  </Animated.Text>
+                    <AppInput
+                        value={value}
+                        editable={!disabled}
+                        selectTextOnFocus={!disabled}
+                        style={[
+                            styles.inputStyle,
+                            disabled && { ...styles.disabledInput, backgroundColor: disabledColor },
+                            error && !disabled && styles.errorInput,
+                            inputStyle,
+                        ]}
+                        onFocus={onFocus}
+                        onBlur={onBlur}
+                        {...props}
+                    />
                 </View>
-            )}
-            <View style={styles.input}>
-                <Animated.Text style={[LocallabelStyle, labelStyle]}>{label} {isRequired && (<AppText style={[OnboardStyle.requiredIcon, { fontSize: 12 }]}>*</AppText>)}  </Animated.Text>
-                <AppInput
-                    value={value}
-                    editable={!disabled}
-                    selectTextOnFocus={!disabled}
-                    style={[
-                        styles.inputStyle,
-                        disabled && { ...styles.disabledInput, backgroundColor: disabledColor },
-                        error && !disabled && styles.errorInput,
-                        inputStyle,
-                    ]}
-                    onFocus={onFocus}
-                    onBlur={onBlur}
-                    {...props}
-                />
+                {suffix && (
+                    <View style={{ paddingHorizontal: 5 }} >
+                        {suffix}
+                    </View>
+                )}
+
             </View>
-            {suffix && (
-                <View style={{ paddingHorizontal: 5 }} >
-                    {suffix}
-                </View>
-            )}
+            {error && <AppText fontFamily="regular" style={{ marginTop: 5, paddingLeft: 15 }} fontWeight={400} color="red" >{error}</AppText>}
 
-        </View>
+        </AppView>
     );
 };
 
@@ -132,7 +135,6 @@ export default FloatingInput;
 
 const styles = StyleSheet.create({
     container: {
-        marginVertical: 10,
         borderWidth: 1.5,
         borderColor: "#E3E3E3",
         borderRadius: 12,
@@ -161,5 +163,9 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
         fontWeight: 600
     },
+    errorContainer: {
+        borderColor: "red",
+        borderWidth: 1
+    }
 });
 

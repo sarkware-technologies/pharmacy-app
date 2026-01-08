@@ -1,5 +1,5 @@
 import { AppText } from "../../../../components";
-import { TouchableOpacity, View, Modal } from "react-native";
+import { TouchableOpacity, View, Modal ,Animated} from "react-native";
 import AccordionCard from "../../../../components/view/AccordionCard";
 import FloatingInput from "../../../../components/form/floatingInput";
 import FloatingDropdown from "../../../../components/form/floatingDropdown";
@@ -9,7 +9,6 @@ import Downarrow from "../../../../components/icons/downArrow";
 import CommonStyle from "../../../../styles/styles";
 import { colors } from "../../../../styles/colors";
 import FilePicker from "../../../../components/form/fileUpload"
-import Animated from "react-native-reanimated";
 import AppView from "../../../../components/AppView"
 import CustomCheckbox from "../../../../components/view/checkbox";
 import Svg, { Path } from "react-native-svg";
@@ -74,7 +73,7 @@ const RenderStockist = memo(({
     );
 });
 
-const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection }) => {
+const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection,error }) => {
     const [toggle, setToggle] = useState("open");
     const [customerOption, setCustomerOption] = useState([]);
     const [activeSelector, setActiveSelector] = useState(null);

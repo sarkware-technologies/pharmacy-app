@@ -1,139 +1,5 @@
 
 
-const FIELD_META_LICENSE_DETAILS = {
-
-    LIC20: [
-        {
-            type: "file",
-            placeHolder: "Upload 20 license",
-            required: true,
-        },
-        {
-            type: "text",
-            placeHolder: "Drug license number",
-            required: true,
-        },
-        {
-            type: "date",
-            placeHolder: "Expiry date",
-            required: true,
-        },
-    ],
-
-    LIC21: [
-        {
-            type: "file",
-            placeHolder: "Upload 21 license",
-            required: true,
-        },
-        {
-            type: "text",
-            placeHolder: "Drug license number",
-            required: true,
-        },
-        {
-            type: "date",
-            placeHolder: "Expiry date",
-            required: true,
-        },
-    ],
-
-    LIC20B: [
-        {
-            type: "file",
-            placeHolder: "Upload 20B license",
-            required: true,
-        },
-        {
-            type: "text",
-            placeHolder: "Drug license number",
-            required: true,
-        },
-        {
-            type: "data",
-            placeHolder: "Expiry date",
-            required: true,
-        },
-    ],
-
-    LIC21B: [
-        {
-            type: "file",
-            placeHolder: "Upload 21B license",
-            required: true,
-        },
-        {
-            type: "text",
-            placeHolder: "Drug license number",
-            required: true,
-        },
-        {
-            type: "data",
-            placeHolder: "Expiry date",
-            required: true,
-        },
-    ],
-
-    REG: (key) => [
-        {
-            type: "file",
-            placeHolder: REGISTRATION_PLACEHOLDER[key].placeHolder,
-            label: REGISTRATION_PLACEHOLDER[key].label,
-            required: true,
-        },
-        {
-            type: "text",
-            placeHolder: "Drug license number",
-            required: true,
-        },
-        {
-            type: "data",
-            placeHolder: "Expiry date",
-            required: true,
-        },
-    ],
-
-    PRLIC: [
-        {
-            type: "file",
-            placeHolder: "Upload 21B license",
-            required: true,
-        },
-        {
-            type: "text",
-            placeHolder: "Drug license number",
-            required: true,
-        },
-        {
-            type: "data",
-            placeHolder: "Expiry date",
-            required: true,
-        },
-    ],
-};
-
-const REGISTRATION_PLACEHOLDER = {
-    category_4: {
-        label_file: "Registration Certificate",
-        placeHolder_file: "Upload registration certificate",
-        label_text: "Registration Certificate",
-        placeHolder_text: "Upload registration certificate",
-        label_data: "Registration Certificate",
-        placeHolder_data: "Upload registration certificate",
-    },
-    category_5: {
-        label: "",
-        placeHolder: "Upload Govt. Establishment Order",
-    },
-    type_3: {
-        label: "Clinic Registration",
-        placeHolder: "Upload Certificate",
-
-
-    }
-
-};
-
 export const orderBy = ["LIC20", "LIC21", "LIC20B", "LIC21B", "REG", "PRLIC"];
 
 export const sortByLicenseCode = (data = []) => {
@@ -272,6 +138,180 @@ export const SELECTOR_ENTITY_CONFIG = {
         entityType: 'pharmacy',
         allowMultiple: true
     },
+};
+
+
+export const converScheme = (
+    validateScheme,
+    typeId,
+    categoryId,
+    subCategoryId
+) => {
+    const scheme = {};
+
+    if (validateScheme?.generalDetails) {
+        scheme.generalDetails = validateScheme.generalDetails.filter((field) => {
+            if (
+                field?.attributeKey === "specialist" ||
+                field?.attributeKey === "clinicName"
+            ) {
+                return typeId === 3;
+            }
+            return true;
+        })?.map((e) => ({ ...e, localKey: e?.attributeKey }));
+    }
+
+    if (validateScheme?.default) {
+        scheme.default = validateScheme.default.filter((field) => field?.attributeKey === "stationCode")?.map((e) => ({ ...e, localKey: e?.attributeKey }));;
+    }
+    if (validateScheme?.securityDetails) {
+        scheme.securityDetails = validateScheme.securityDetails.map((e) => {
+            return e;
+        })
+    }
+
+    console.log(scheme, 'scheme');
+    return scheme;
+};
+
+
+
+const validateValue = (value, field) => {
+    const rules = field?.validationRules || [];
+
+    const isEmpty =
+        value === undefined ||
+        value === null ||
+        value === "";
+
+    for (let i = 0; i < rules.length; i++) {
+        const rule = rules[i];
+
+        switch (rule.ruleType) {
+            case "required":
+                if (isEmpty) return rule.errorMessage;
+                break;
+
+            case "minLength":
+                if (!isEmpty && value.length < Number(rule.ruleValue)) {
+                    return rule.errorMessage;
+                }
+                break;
+
+            case "maxLength":
+                if (!isEmpty && value.length > Number(rule.ruleValue)) {
+                    return rule.errorMessage;
+                }
+                break;
+
+            case "pattern":
+                if (!isEmpty && !new RegExp(rule.ruleValue).test(value)) {
+                    return rule.errorMessage;
+                }
+                break;
+
+            case "email":
+                if (
+                    !isEmpty &&
+                    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+                ) {
+                    return rule.errorMessage;
+                }
+                break;
+
+            case "phone":
+                if (!isEmpty && !/^[0-9]{10}$/.test(value)) {
+                    return rule.errorMessage;
+                }
+                break;
+
+            case "date":
+                if (!isEmpty && isNaN(Date.parse(value))) {
+                    return rule.errorMessage;
+                }
+                break;
+
+            case "file":
+                if (isEmpty) return rule.errorMessage;
+                break;
+
+            case "min":
+                if (!isEmpty && Number(value) < Number(rule.ruleValue)) {
+                    return rule.errorMessage;
+                }
+                break;
+
+            case "gst":
+                if (
+                    !isEmpty &&
+                    !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
+                        value
+                    )
+                ) {
+                    return "Invalid GST number";
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    // fallback mandatory (when no rule provided)
+    if (field?.isMandatory && isEmpty) {
+        return `${field.attributeName} is required`;
+    }
+
+    return null;
+};
+
+const setDeep = (obj, path, value) => {
+    let current = obj;
+    path.forEach((key, index) => {
+        if (index === path.length - 1) {
+            current[key] = value;
+        } else {
+            current[key] = current[key] || {};
+            current = current[key];
+        }
+    });
+};
+
+
+export const validateForm = async (payload, scheme) => {
+    const errors = {};
+
+    /* ---------- GENERAL DETAILS ---------- */
+    const generalFields = scheme?.generalDetails || [];
+
+    generalFields.forEach((field) => {
+        const value = payload?.generalDetails?.[field.localKey];
+        const error = validateValue(value, field);
+
+        if (error) {
+            setDeep(errors, ["generalDetails", field.localKey], error);
+        }
+    });
+
+    /* ---------- ROOT LEVEL (DEFAULT) ---------- */
+    const defaultFields = scheme?.default || [];
+
+    defaultFields.forEach((field) => {
+        const value = payload?.[field.localKey];
+        const error = validateValue(value, field);
+
+        if (error) {
+            setDeep(errors, [field.localKey], error);
+        }
+    });
+
+    /* ---------- GLOBAL VALIDITY ---------- */
+    const isValid = Object.keys(errors).length === 0;
+
+    return {
+        isValid,
+        errors
+    };
 };
 
 

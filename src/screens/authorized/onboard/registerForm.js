@@ -16,10 +16,15 @@ import AnimatedContent from "../../../components/view/AnimatedContent";
 import AppView from "../../../components/AppView";
 import Button from "../../../components/Button";
 import { ErrorMessage } from "../../../components/view/error";
-import { initialFormData } from "./utils/fieldMeta";
+import { validateForm, converScheme, initialFormData } from "./utils/fieldMeta";
+import validateScheme from "./utils/validateScheme.json";
+
 const RegisterForm = () => {
     const navigation = useNavigation();
     const route = useRoute();
+
+    const [rawScheme, setRawScheme] = useState(validateScheme);
+
     // onboard
     const {
         customerId,
@@ -27,7 +32,11 @@ const RegisterForm = () => {
         action = "register",
     } = route.params || {};
 
-    const [formData, setFormData] = useState(initialFormData)
+    const [formData, setFormData] = useState(initialFormData);
+    const [isFormSubmited, setIsFormSubmited] = useState(true);
+
+    const [error, setError] = useState({});
+    const [isFormValid, setIsFormValid] = useState(false);
 
     useEffect(() => {
         fetchCustomerType();
@@ -161,6 +170,9 @@ const RegisterForm = () => {
     }
     useEffect(() => {
         setLicenseList([]);
+        setIsFormSubmited(false);
+        setError({});
+        setIsFormValid(false);
         if (formData?.typeId && customerType) {
             builLicense(customerType, formData);
         }
@@ -168,22 +180,52 @@ const RegisterForm = () => {
             setLicenseList([]);
         }
 
-
     }, [customerType, formData?.typeId, formData?.categoryId, formData?.subCategoryId])
 
 
+    const scheme = useMemo(() => {
+        if (!rawScheme) return null;
+        return converScheme(rawScheme, formData?.typeId, formData?.categoryId, formData?.subCategoryId);
+    }, [rawScheme, formData?.typeId, formData?.categoryId, formData?.subCategoryId]);
 
+
+
+    const runValidation = async (submitted) => {
+        const result = await validateForm(formData, scheme);
+        setIsFormValid(result.isValid);
+        if (submitted) {
+            setError(result.errors);
+        }
+        else {
+            setError({});
+        }
+    };
 
     useEffect(() => {
-        console.log(formData, 2398423)
-    }, [formData])
+        runValidation(isFormSubmited);
+    }, [formData, scheme, isFormSubmited]);
+
+    const handleRegister = async () => {
+        setIsFormSubmited(true);
+        const result = await validateForm(formData, scheme);
+        setIsFormValid(result.isValid);
+        setError(result.errors);
+        if (!result.isValid) return;
+
+    };
+
+
+    useEffect((e) => {
+        console.log(error, 3249823468)
+    }, [error])
+
 
 
     const renderForm = [
-        { key: "license", component: <LicenseDetails scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 1 },
-        { key: "general", component: <GeneralDetails scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 2 },
-        { key: "security", component: <MappingDetails scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 4 },
-        { key: "mapping", component: <SecurityDetails scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 3 },
+        // { key: "license", component: <LicenseDetails error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 1 },
+        { key: "general", component: <GeneralDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 2 },
+        // { key: "security", component: <MappingDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 4 },
+        // { key: "mapping", component: <SecurityDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 3 },
     ]
 
 
@@ -192,6 +234,8 @@ const RegisterForm = () => {
             .filter(item => item.show)
             .sort((a, b) => a.order - b.order);
     }, [renderForm]);
+
+
 
     return (
         <SafeAreaView style={OnboardStyle.container} edges={['top', 'bottom']}>
@@ -243,7 +287,7 @@ const RegisterForm = () => {
                 <Button style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E" }}>
                     Cancel
                 </Button>
-                <Button style={{ flex: 1, borderColor: "#F7941E", borderWidth: 0, backgroundColor: "#D3D4D6", paddingVertical: 12 }} textStyle={{ color: "white" }}>
+                <Button onPress={() => handleRegister()} style={!isFormValid ? { flex: 1, backgroundColor: "#D3D4D6", paddingVertical: 12 } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white" }}>
                     Register
                 </Button>
             </AppView>

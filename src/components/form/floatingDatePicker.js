@@ -10,12 +10,13 @@ import AppText from "../AppText";
 import { colors } from "../../styles/colors";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import CalendarIcon from "../icons/Calendar";
+import AppView from "../AppView";
 
 const FloatingDatePicker = ({
   label,
   value,
   isRequired = false,
-  error = null, 
+  error = null,
   minimumDate = null,
   maximumDate = null,
   disabled = false,
@@ -77,8 +78,6 @@ const FloatingDatePicker = ({
     }),
     color: disabled
       ? "#bdbdbd"
-      : error
-      ? "#d32f2f"
       : "#999",
     backgroundColor: "white",
     paddingLeft: 5,
@@ -97,44 +96,47 @@ const FloatingDatePicker = ({
   };
 
   return (
-    <View>
-      <TouchableOpacity
-        onPress={() => !disabled && setVisible(true)}
-        style={[
-          styles.container,
-          error && styles.errorContainer,
-          style,
-        ]}
-      >
-        <Animated.Text style={[LocallabelStyle, labelStyle]}>
-          {label}{" "}
-          {isRequired && (
-            <AppText style={[OnboardStyle.requiredIcon, { fontSize: 12 }]}>
-              *
-            </AppText>
-          )}
-        </Animated.Text>
+    <AppView>
+      <View>
+        <TouchableOpacity
+          onPress={() => !disabled && setVisible(true)}
+          style={[
+            styles.container,
+            error && styles.errorContainer,
+            style,
+          ]}
+        >
+          <Animated.Text style={[LocallabelStyle, labelStyle]}>
+            {label}{" "}
+            {isRequired && (
+              <AppText style={[OnboardStyle.requiredIcon, { fontSize: 12 }]}>
+                *
+              </AppText>
+            )}
+          </Animated.Text>
 
-        <AppText style={{ paddingLeft: 20 }}>
-          {formatDisplayDate(value)}
-        </AppText>
+          <AppText style={{ paddingLeft: 20 }}>
+            {formatDisplayDate(value)}
+          </AppText>
 
-        <View style={{ paddingHorizontal: 20 }}>
-          <CalendarIcon />
-        </View>
-      </TouchableOpacity>
+          <View style={{ paddingHorizontal: 20 }}>
+            <CalendarIcon />
+          </View>
+        </TouchableOpacity>
 
-      {visible && (
-        <DateTimePicker
-          value={parseToDate(value)}
-          mode="date"
-          display="default"
-          minimumDate={minimumDate}
-          maximumDate={maximumDate}
-          onChange={handleDateChange}
-        />
-      )}
-    </View>
+        {visible && (
+          <DateTimePicker
+            value={parseToDate(value)}
+            mode="date"
+            display="default"
+            minimumDate={minimumDate}
+            maximumDate={maximumDate}
+            onChange={handleDateChange}
+          />
+        )}
+      </View>
+      {error && <AppText style={{ marginTop: 5, paddingLeft: 15 }} fontFamily="regular" fontWeight={400} color="red" >{error}</AppText>}
+    </AppView>
   );
 };
 
@@ -173,4 +175,8 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     fontWeight: 600
   },
+  errorContainer: {
+    borderColor: "red",
+    borderWidth: 1
+  }
 });

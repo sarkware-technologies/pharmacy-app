@@ -9,13 +9,13 @@ import {
   TouchableWithoutFeedback,
   Modal,
   FlatList,
+  Animated
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { AppText, AppInput } from "../../../components"
 import { colors } from '../../../styles/colors';
 import { Fonts } from '../../../utils/fontHelper';
-import Animated from 'react-native-reanimated';
 import CustomCheckbox from '../../../components/view/checkbox';
 import AddToCartWidget from "../../../components/addToCart"
 import BackButton from "../../../components/view/backButton"

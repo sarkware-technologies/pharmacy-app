@@ -14,7 +14,6 @@ import DocumentUploadModal from './DocumentUploadModal';
 import CloseCircle from '../icons/CloseCircle';
 import { colors } from '../../styles/colors';
 import Upload from '../icons/Upload';
-import { RollInLeft } from 'react-native-reanimated';
 import AppText from "../AppText"
 
 // Custom CheckBox Component

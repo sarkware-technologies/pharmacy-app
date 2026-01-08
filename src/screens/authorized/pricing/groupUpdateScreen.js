@@ -134,6 +134,7 @@ const GroupUpdateScreen = () => {
                     moq: "",
                     supplyModeId: e?.supplyModeId,
                     specialPriceType: e?.specialPriceType,
+                    specialPrice: e?.specialPrice,
                     id: e?.id,
                     customerId: e?.customerId,
                     productId: e?.productId,

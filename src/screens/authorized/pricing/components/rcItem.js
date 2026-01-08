@@ -12,11 +12,11 @@ import RadioOption from "../../../../components/view/RadioOption";
 import CustomCheckbox from "../../../../components/view/checkbox";
 import CustomDropdown from "../../../../components/view/customDropdown";
 import { useRef } from "react";
+import { toNumber } from "../../../../utils/utils"
 
 const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = false, setValue }) => {
 
     const handleSetValue = (key, value) => {
-        console.log(key, value, 23984278)
         if (key == "specialPriceTypeId") {
             setValue?.({ ...product, [key]: value?.value, specialPriceType: value?.label })
         }
@@ -26,6 +26,71 @@ const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = f
 
         // setValue
     }
+
+    const handleSpecialPice = (text) => {
+        let specialPrice = toNumber(text);
+        const ptr = toNumber(product?.ptr);
+
+        // Validation
+        if (specialPrice > ptr) specialPrice = ptr;
+        if (specialPrice < 0) specialPrice = 0;
+
+        const discount =
+            ptr > 0 ? +(((ptr - specialPrice) / ptr) * 100).toFixed(2) : 0;
+        console.log(discount)
+        setValue?.({
+            ...product,
+            specialPrice,
+            discount,
+        });
+    };
+
+    const handleDiscount = (text) => {
+        // Allow empty input
+        if (text === '') {
+            setValue?.({ ...product, discount: '', specialPrice: '' });
+            return;
+        }
+
+        const discount = toNumber(text);
+
+        // ❌ If greater than 100 → IGNORE last input
+        if (discount > 100) {
+            return;
+        }
+
+        const ptr = toNumber(product?.ptr);
+
+        const specialPrice =
+            ptr > 0 ? +(ptr - (ptr * discount) / 100).toFixed(2) : 0;
+
+        setValue?.({
+            ...product,
+            discount,
+            specialPrice,
+        });
+    };
+
+    const handleMoq = (text) => {
+        // Allow empty
+        if (text === '') {
+            setValue?.({ ...product, moq: '' });
+            return;
+        }
+
+        // Only digits allowed
+        if (!/^\d+$/.test(text)) {
+            return; // ❌ ignore last input
+        }
+
+        setValue?.({
+            ...product,
+            moq: text,
+        });
+    };
+
+
+
     return (
         <View style={styles.productCard}>
             <View style={[CommonStyle.SpaceBetween, { alignItems: "flex-start" }]}>
@@ -88,9 +153,11 @@ const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = f
                             <View style={[styles.discountInput, product?.specialPriceTypeId != 1 && { backgroundColor: "#E3E3E333" }]}>
                                 <AppInput
                                     style={[styles.discountValue, product?.specialPriceTypeId != 1 && { color: "#909090" }]}
-                                    value={product?.discount}
+                                    value={String(product?.discount)}
                                     editable={product?.specialPriceTypeId == 1}
-                                    onChangeText={(text) => handleSetValue("discount", text)}
+                                    keyboardType="numeric"
+                                    onChangeText={(t) => handleDiscount(t.replace(/[^0-9.]/g, ''))}
+                                    maxLength={10}
                                 />
                                 <AppText style={styles.percentSign}>%</AppText>
                             </View>
@@ -104,9 +171,10 @@ const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = f
                                 <AppText style={[styles.rupeeSign, product?.specialPriceTypeId == 1 && { color: "#909090" }]}>₹</AppText>
                                 <AppInput
                                     style={[styles.priceInput, product?.specialPriceTypeId == 1 && { color: "#909090" }]}
-                                    value={String(product?.ptr ?? '') }
+                                    value={String(product?.specialPrice ?? '')}
                                     editable={product?.specialPriceTypeId != 1}
-                                    onChangeText={(text) => handleSetValue("ptr", text)}
+                                    keyboardType="numeric"
+                                    onChangeText={(text) => handleSpecialPice(text)}
                                 />
                             </View>
                         </View>
@@ -117,7 +185,8 @@ const RcItem = ({ product = {}, type = 1, specialPriceType = [], multiSelect = f
                                     style={[styles.discountValue]}
                                     value={product?.moq}
                                     placeholder="Qty"
-                                    onChangeText={(text) => handleSetValue("moq", text)}
+                                    onChangeText={(t) => handleMoq(t)}
+                                    keyboardType="number-pad"
                                 />
                             </View>
                         </View>
