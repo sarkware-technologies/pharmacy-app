@@ -160,7 +160,10 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
 
         scheme.customerDocs = [
             ...(scheme.customerDocs ?? []),
-            ...validateScheme.default.filter((field) => field?.attributeType == "file"),
+            ...validateScheme.default.filter(field =>
+                field?.attributeType === "file" &&
+                (typeId == 3 || field?.fieldAttributeKey == 1)
+            ),
         ];
 
 
