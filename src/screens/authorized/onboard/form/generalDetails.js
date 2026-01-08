@@ -180,7 +180,7 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                     </AppView>
                     {formData?.typeId != 3 && (
                         <AppView>
-                            <FloatingInput error={error?.generalDetails?.shortName} value={formData?.generalDetails?.shortName} onChangeText={(text) => handleSetValue("shortName", text)} label={getPlaceholder("shortName")} isRequired={true} />
+                            <FloatingInput error={error?.generalDetails?.shortName} value={formData?.generalDetails?.shortName} onChangeText={(text) => handleSetValue("shortName", text)} label={getPlaceholder("shortName")}  />
                         </AppView>
                     )}
                     {formData?.typeId == 3 && (
@@ -198,7 +198,7 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                         <FloatingDropdown
                             error={error?.stationCode}
                             selected={formData?.stationCode}
-                            label="Station"
+                            label="Station code"
                             isRequired={true}
                             searchTitle="Station Code"
                             onSelect={(e) => setValue?.((prev) => {
@@ -221,13 +221,13 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                         />
                     </AppView>
                     <AppView>
-                        <FloatingInput error={error?.generalDetails?.address2} value={formData?.generalDetails?.address2} onChangeText={(text) => handleSetValue("address2", text)} label="Address 2" isRequired={true} />
+                        <FloatingInput error={error?.generalDetails?.address2} value={formData?.generalDetails?.address2} onChangeText={(text) => handleSetValue("address2", text)} label="Address 2"  />
                     </AppView>
                     <AppView>
-                        <FloatingInput error={error?.generalDetails?.address3} value={formData?.generalDetails?.address3} onChangeText={(text) => handleSetValue("address3", text)} label="Address 3" isRequired={true} />
+                        <FloatingInput error={error?.generalDetails?.address3} value={formData?.generalDetails?.address3} onChangeText={(text) => handleSetValue("address3", text)} label="Address 3"  />
                     </AppView>
                     <AppView>
-                        <FloatingInput error={error?.generalDetails?.address4} value={formData?.generalDetails?.address4} onChangeText={(text) => handleSetValue("address4", text)} label="Address 4" isRequired={true} />
+                        <FloatingInput error={error?.generalDetails?.address4} value={formData?.generalDetails?.address4} onChangeText={(text) => handleSetValue("address4", text)} label="Address 4"  />
                     </AppView>
                     <AppView>
                         <FloatingInput error={error?.generalDetails?.pincode} keyboardType="number-pad" maxLength={6} value={String(formData?.generalDetails?.pincode)} onChangeText={(text) => handleSetValue("pincode", text)} label="Pincode" isRequired={true} />

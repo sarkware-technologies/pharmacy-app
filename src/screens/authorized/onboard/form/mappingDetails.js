@@ -1,9 +1,9 @@
 import { AppText } from "../../../../components";
-import { TouchableOpacity, View, Modal ,Animated} from "react-native";
+import { TouchableOpacity, View, Modal, Animated } from "react-native";
 import AccordionCard from "../../../../components/view/AccordionCard";
 import FloatingInput from "../../../../components/form/floatingInput";
 import FloatingDropdown from "../../../../components/form/floatingDropdown";
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState, useMemo } from "react";
 import OnboardStyle from "../style/onboardStyle";
 import Downarrow from "../../../../components/icons/downArrow";
 import CommonStyle from "../../../../styles/styles";
@@ -21,7 +21,7 @@ import AddNewHospitalModal from '../selector/AddNewHospitalModal';
 import AddNewPharmacyModal from '../selector/AddNewPharmacyModal';
 import LabeledSelector from '../../../../components/form/labeledSelector'
 import DoctorDeleteIcon from "../../../../components/icons/DoctorDeleteIcon";
-import {SELECTOR_ENTITY_CONFIG} from "../utils/fieldMeta"
+import { SELECTOR_ENTITY_CONFIG } from "../utils/fieldMeta"
 
 
 
@@ -73,7 +73,7 @@ const RenderStockist = memo(({
     );
 });
 
-const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection,error }) => {
+const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection, error }) => {
     const [toggle, setToggle] = useState("open");
     const [customerOption, setCustomerOption] = useState([]);
     const [activeSelector, setActiveSelector] = useState(null);
@@ -81,7 +81,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
     const [showAddHospitalModal, setShowAddHospitalModal] = useState(null);
     const [showAddPharmacyModal, setShowAddPharmacyModal] = useState(false);
 
-console.log(SELECTOR_ENTITY_CONFIG, 456456);
+    console.log(SELECTOR_ENTITY_CONFIG, 456456);
 
 
     useEffect(() => {
@@ -91,7 +91,39 @@ console.log(SELECTOR_ENTITY_CONFIG, 456456);
                 hospitals: [],
             }));
         }
+
     }, [formData?.typeId, action]);
+
+
+    useEffect(() => {
+        if (formData?.customerGroupId) return;
+
+        setValue(prev => ({
+            ...prev,
+            customerGroupId: allowedCustomerGroupIds[0],
+        }));
+    }, [allowedCustomerGroupIds]);
+
+
+
+    const allowedCustomerGroupIds = useMemo(() => {
+        if (formData?.subCategoryId === 3) {
+            return [3, 2];
+        }
+
+        if (formData?.categoryId === 5) {
+            return [4];
+        }
+
+        return [1];
+    }, [
+        formData?.subCategoryId,
+        formData?.categoryId,
+    ]);
+
+
+
+
 
 
 
@@ -408,31 +440,31 @@ console.log(SELECTOR_ENTITY_CONFIG, 456456);
     };
 
 
-const handleAddNewEntity = (entityType, parentHospitalId = null) => {
-  switch (entityType) {
-    case 'doctors':
-      setShowAddDoctorModal({ key: 'doctor' });
-      break;
+    const handleAddNewEntity = (entityType, parentHospitalId = null) => {
+        switch (entityType) {
+            case 'doctors':
+                setShowAddDoctorModal({ key: 'doctor' });
+                break;
 
-    case 'pharmacy':
-      setShowAddPharmacyModal({
-        key: 'pharmacy',
-        ...(parentHospitalId && { parentHospitalId }),
-      });
-      break;
+            case 'pharmacy':
+                setShowAddPharmacyModal({
+                    key: 'pharmacy',
+                    ...(parentHospitalId && { parentHospitalId }),
+                });
+                break;
 
-    case 'hospitals':
-      setShowAddHospitalModal({ key: 'hospital' });
-      break;
+            case 'hospitals':
+                setShowAddHospitalModal({ key: 'hospital' });
+                break;
 
-    case 'groupHospitals':
-      setShowAddHospitalModal({ key: 'group_hospital' });
-      break;
+            case 'groupHospitals':
+                setShowAddHospitalModal({ key: 'group_hospital' });
+                break;
 
-    default:
-      break;
-  }
-};
+            default:
+                break;
+        }
+    };
 
     // helper end
 
@@ -481,20 +513,20 @@ const handleAddNewEntity = (entityType, parentHospitalId = null) => {
                                     <TouchableOpacity
                                         style={[
                                             OnboardStyle.switch,
-                                            // formData?.markAsBuyingEntity && OnboardStyle.switchActive,
+                                            formData?.isBuyer && OnboardStyle.switchActive,
                                         ]}
-                                        onPress={() => { }
-                                            // setFormData(prev => ({
-                                            //     ...prev,
-                                            //     // markAsBuyingEntity: !prev.markAsBuyingEntity,
-                                            // }))
-                                        }
+                                        onPress={() => {
+                                            setValue(prev => ({
+                                                ...prev,
+                                                isBuyer: !prev.isBuyer,
+                                            }));
+                                        }}
                                         activeOpacity={0.8}
                                     >
                                         <Animated.View
                                             style={[
                                                 OnboardStyle.switchThumb,
-                                                // formData?.markAsBuyingEntity && styles.switchThumbActive,
+                                                formData?.isBuyer && OnboardStyle.switchThumbActive,
                                             ]}
                                         />
                                     </TouchableOpacity>
@@ -545,7 +577,7 @@ const handleAddNewEntity = (entityType, parentHospitalId = null) => {
 
 
                                 <View>
-                                    <TextButton fontWeight={600} fontFamily="regular" onPress={()=>setShowAddHospitalModal({key:'linked_hospital'})}>+ Add New Hospital</TextButton>
+                                    <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddHospitalModal({ key: 'linked_hospital' })}>+ Add New Hospital</TextButton>
                                 </View>
                             </AppView>
                         )}
@@ -590,7 +622,7 @@ const handleAddNewEntity = (entityType, parentHospitalId = null) => {
 
 
                                         <View>
-                                            <TextButton fontWeight={600} fontFamily="regular" onPress={()=>setShowAddHospitalModal({key:'group_hospital'})}>+ Add Group Hospital</TextButton>
+                                            <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddHospitalModal({ key: 'group_hospital' })}>+ Add Group Hospital</TextButton>
                                         </View>
                                     </>
                                 )}
@@ -620,7 +652,7 @@ const handleAddNewEntity = (entityType, parentHospitalId = null) => {
                                             onPress={() => setActiveSelector({ key: 'hospital' })}
                                         />
                                         <View>
-                                            <TextButton fontWeight={600} fontFamily="regular" onPress={()=>setShowAddHospitalModal({key:'hospital'})}>+ Add New Hospital</TextButton>
+                                            <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddHospitalModal({ key: 'hospital' })}>+ Add New Hospital</TextButton>
                                         </View>
                                     </>
                                 )}
@@ -654,7 +686,7 @@ const handleAddNewEntity = (entityType, parentHospitalId = null) => {
 
 
                                         <View>
-                                            <TextButton fontWeight={600} fontFamily="regular" onPress={()=>setShowAddDoctorModal({key:'doctor'})}>+ Add New doctor</TextButton>
+                                            <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddDoctorModal({ key: 'doctor' })}>+ Add New doctor</TextButton>
                                         </View>
                                     </>
                                 )}
@@ -690,7 +722,7 @@ const handleAddNewEntity = (entityType, parentHospitalId = null) => {
 
 
                                         <View>
-                                            <TextButton fontWeight={600} fontFamily="regular" onPress={()=>setShowAddPharmacyModal({key:'pharmacy'})}>+ Add New Pharmacy</TextButton>
+                                            <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddPharmacyModal({ key: 'pharmacy' })}>+ Add New Pharmacy</TextButton>
                                         </View>
                                     </>
                                 )}
@@ -754,7 +786,7 @@ const handleAddNewEntity = (entityType, parentHospitalId = null) => {
                                             },
                                         })}
                                         <View>
-                                            <TextButton fontWeight={600} fontFamily="regular" onPress={()=>setShowAddPharmacyModal({key:'pharmacy'})}>+ Add New Pharmacy</TextButton>
+                                            <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddPharmacyModal({ key: 'pharmacy' })}>+ Add New Pharmacy</TextButton>
                                         </View>
                                     </>
                                 )}
@@ -771,11 +803,31 @@ const handleAddNewEntity = (entityType, parentHospitalId = null) => {
                                 Customer group
                             </AppText>
                             <AppView flexDirection={"row"} paddingLeft={5} flexWrap="wrap">
-                                {customerOption?.map((e, i) => (
-                                    <AppView width={"50%"} marginTop={15} key={e?.customerGroupId + i}>
-                                        <RadioOption selected={e?.customerGroupId == formData?.customerGroupId} onSelect={() => handleSetValue("customerGroupId", e?.customerGroupId)} label={e?.customerGroupName} />
-                                    </AppView>
-                                ))}
+                                {customerOption.map(e => {
+
+                                    console.log(allowedCustomerGroupIds, "sfsdfsd");
+
+                                    const isAllowed = allowedCustomerGroupIds.includes(e.customerGroupId);
+
+                                    return (
+                                        <AppView
+                                            key={e.customerGroupId}
+                                            width="50%"
+                                            marginTop={15}
+                                            opacity={isAllowed ? 1 : 0.4}
+                                        >
+                                            <RadioOption
+                                                label={e.customerGroupName}
+                                                selected={e.customerGroupId === formData?.customerGroupId}
+                                                disabled={!isAllowed}
+                                                onSelect={() => {
+                                                    if (!isAllowed) return;
+                                                    handleSetValue("customerGroupId", e.customerGroupId);
+                                                }}
+                                            />
+                                        </AppView>
+                                    );
+                                })}
 
                             </AppView>
                         </AppView>
@@ -848,9 +900,9 @@ const handleAddNewEntity = (entityType, parentHospitalId = null) => {
 
 
 
-              {showAddDoctorModal && (
+            {showAddDoctorModal && (
                 <AddNewDoctorModal
-                  {...SELECTOR_ENTITY_CONFIG[showAddDoctorModal?.key]}
+                    {...SELECTOR_ENTITY_CONFIG[showAddDoctorModal?.key]}
                     formData={formData}
                     visible={!!showAddDoctorModal?.key}
                     onSubmit={handleEntitySelect}
@@ -860,23 +912,23 @@ const handleAddNewEntity = (entityType, parentHospitalId = null) => {
             )}
 
             {showAddHospitalModal && (
-                <>        
-                
-                <AddNewHospitalModal
-                    {...SELECTOR_ENTITY_CONFIG[showAddHospitalModal?.key]}
-                    visible={!!showAddHospitalModal?.key}
-                    formData={formData}
-                    onSubmit={handleEntitySelect}
-                    parentHospitalId={showAddHospitalModal?.parentHospitalId}
-                    onClose={() => setShowAddHospitalModal(false)}
-                />
+                <>
+
+                    <AddNewHospitalModal
+                        {...SELECTOR_ENTITY_CONFIG[showAddHospitalModal?.key]}
+                        visible={!!showAddHospitalModal?.key}
+                        formData={formData}
+                        onSubmit={handleEntitySelect}
+                        parentHospitalId={showAddHospitalModal?.parentHospitalId}
+                        onClose={() => setShowAddHospitalModal(false)}
+                    />
                 </>
 
             )}
 
             {showAddPharmacyModal && (
                 <AddNewPharmacyModal
-                     {...SELECTOR_ENTITY_CONFIG[showAddPharmacyModal?.key]}
+                    {...SELECTOR_ENTITY_CONFIG[showAddPharmacyModal?.key]}
                     visible={!!showAddPharmacyModal?.key}
                     formData={formData}
                     onSubmit={handleEntitySelect}

@@ -50,6 +50,10 @@ const FilterModal = ({
   },
 }) => {
 
+
+  console.log(selected, 456456);
+  
+
   const dispatch = useDispatch();
 
   const customerTypes = useSelector(selectCustomerTypes) || [];

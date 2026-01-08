@@ -47,7 +47,7 @@ export const initialFormData = {
         ]
     },
     customerDocs: [],
-    isBuyer: "",
+    isBuyer: true,
     customerGroupId: "",
     stationCode: "",
     generalDetails: {

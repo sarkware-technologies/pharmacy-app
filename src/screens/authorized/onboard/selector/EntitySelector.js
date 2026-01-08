@@ -33,36 +33,33 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
     const [hasMore, setHasMore] = useState(true);
     const [isLoadMore, setIsLoadMore] = useState(false);
     const [selectedItems, setSelectedItems] = useState(() => {
-  // CASE 1: Pharmacy inside Hospital
-  if (parentHospitalId && entityType === 'pharmacy') {
-    const hospital = formData?.mapping?.hospitals?.find(
-      h => h.id === parentHospitalId
-    );
+        // CASE 1: Pharmacy inside Hospital
+        if (parentHospitalId && entityType === 'pharmacy') {
+            const hospital = formData?.mapping?.hospitals?.find(
+                h => h.id === parentHospitalId
+            );
 
-    return (hospital?.pharmacy || []).map(item => ({
-      ...item,
-      isActive: item?.isActive ?? true,
-    }));
-  }
+            return (hospital?.pharmacy || []).map(item => ({
+                ...item,
+                isActive: item?.isActive ?? true,
+            }));
+        }
 
-  // CASE 2: Normal flow
-  return (formData?.mapping?.[entityType] || []).map(item => ({
-    ...item,
-    isActive: item?.isActive ?? true,
-  }));
-});
+        // CASE 2: Normal flow
+        return (formData?.mapping?.[entityType] || []).map(item => ({
+            ...item,
+            isActive: item?.isActive ?? true,
+        }));
+    });
     const activeItems = selectedItems.filter(item => item?.isActive);
     const [selectedStates, setSelectedStates] = useState(
-        formData?.stateId ? [{ id: Number(formData.stateId) }] : []
+        formData?.generalDetails?.stateId ? [{ id: Number(formData.generalDetails?.stateId) }] : []
     );
     const [selectedCities, setSelectedCities] = useState(() =>
-        formData?.cityId
-            ? [{ id: Number(formData.cityId) }]
+        formData?.generalDetails?.cityId
+            ? [{ id: Number(formData.generalDetails?.cityId) }]
             : []
     );
-
-
-
 
     const payload = useMemo(() => {
         return buildEntityPayload({
@@ -467,6 +464,10 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
             <FilterModal visible={filterSections.length > 0}
                 sections={filterSections}
                 onClose={() => setFilterSections([])}
+                selected={{
+                    state: selectedStates.map(item => String(item.id)),
+                    city: selectedCities.map(item => String(item.id)),
+                }}
                 onApply={(filters) => {
                     setSelectedStates(
                         (filters.state || []).map(id => ({ id: Number(id) }))
@@ -480,7 +481,7 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 }} />
 
 
-          
+
 
 
         </SafeAreaView>
