@@ -144,7 +144,7 @@ export default FloatingDatePicker;
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 10,
+    marginTop: 10,
     borderWidth: 1.5,
     borderColor: "#E3E3E3",
     borderRadius: 12,

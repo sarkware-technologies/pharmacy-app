@@ -157,6 +157,13 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
         scheme.default = validateScheme.default.filter(
             (field) => ['isMobileVerified', 'isEmailVerified', 'stationCode', 'isPanVerified'].includes(field?.fieldAttributeKey)
         );
+
+        scheme.customerDocs = [
+            ...(scheme.customerDocs ?? []),
+            ...validateScheme.default.filter((field) => field?.attributeType == "file"),
+        ];
+
+
     }
 
     // ---------- SECURITY DETAILS + CUSTOMER DOCS ----------

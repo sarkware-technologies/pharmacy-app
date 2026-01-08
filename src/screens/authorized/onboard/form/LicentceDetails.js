@@ -463,7 +463,7 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                                             isLoading: uploading === "officialLetter",
                                             uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
                                             handleDelete: () => remove_Document(staticDOCcode.IMAGE),
-                                            // error: error?.licenceDetails?.[licenseMap.REG.docTypeId]?.licenceValidUpto,
+                                            error: error?.customerDocs?.[staticDOCcode.IMAGE]
 
                                         },
                                     }
@@ -482,7 +482,8 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                                 onSelectFile: (file) => handleFileUpload(file, "ADDRESS_PROOF", staticDOCcode.ADDRESS_PROOF, false),
                                 isLoading: uploading == "ADDRESS_PROOF",
                                 uploadedFile: findADDRESS_PROOF && { name: findADDRESS_PROOF?.fileName, url: findADDRESS_PROOF?.s3Path, view: true, remove: true },
-                                handleDelete: () => remove_Document(staticDOCcode.ADDRESS_PROOF)
+                                handleDelete: () => remove_Document(staticDOCcode.ADDRESS_PROOF),
+                                error: error?.customerDocs?.[staticDOCcode.ADDRESS_PROOF]
                             }}
                         />
                     )}
@@ -496,7 +497,8 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                                 onSelectFile: (file) => handleFileUpload(file, "CLINIC_IMAGE", staticDOCcode.IMAGE, false),
                                 isLoading: uploading == "CLINIC_IMAGE",
                                 uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
-                                handleDelete: () => remove_Document(staticDOCcode.IMAGE)
+                                handleDelete: () => remove_Document(staticDOCcode.IMAGE),
+                                error: error?.customerDocs?.[staticDOCcode.IMAGE]
                             }}
                         />
                     )}
@@ -511,7 +513,8 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                                 onSelectFile: (file) => handleFileUpload(file, "PHARMACY_IMAGE", staticDOCcode.IMAGE, false),
                                 isLoading: uploading == "PHARMACY_IMAGE",
                                 uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
-                                handleDelete: () => remove_Document(staticDOCcode.IMAGE)
+                                handleDelete: () => remove_Document(staticDOCcode.IMAGE),
+                                error: error?.customerDocs?.[staticDOCcode.IMAGE]
                             }}
                         />
                     )}
@@ -525,7 +528,8 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                                 onSelectFile: (file) => handleFileUpload(file, "IMAGE", staticDOCcode.IMAGE, false),
                                 isLoading: uploading == "IMAGE",
                                 uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
-                                handleDelete: () => remove_Document(staticDOCcode.IMAGE)
+                                handleDelete: () => remove_Document(staticDOCcode.IMAGE),
+                                error: error?.customerDocs?.[staticDOCcode.IMAGE]
 
                             }}
                         />

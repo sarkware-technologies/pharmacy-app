@@ -224,9 +224,9 @@ const RegisterForm = () => {
 
     const renderForm = [
         { key: "license", component: <LicenseDetails error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 1 },
-        // { key: "general", component: <GeneralDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 2 },
-        // { key: "mapping", component: <MappingDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 4 },
-        // { key: "security", component: <SecurityDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 3 },
+        { key: "general", component: <GeneralDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 2 },
+        { key: "mapping", component: <MappingDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 4 },
+        { key: "security", component: <SecurityDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 3 },
     ]
 
 
