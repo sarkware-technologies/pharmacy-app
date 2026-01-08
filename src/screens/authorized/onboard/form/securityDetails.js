@@ -236,6 +236,7 @@ const SecurityDetails = ({ setValue, isAccordion = false, formData, action, erro
                                 onPress={() => !formData?.isMobileVerified && secutiryVerfiy("mobile")}
                                 style={{ paddingRight: 10 }}><AppText style={{ color: colors.primary }}>{formData?.isMobileVerified ? 'Verified' : 'Verify'} {!formData?.isMobileVerified && <AppText style={[OnboardStyle.requiredIcon, { fontSize: 14 }]}>*</AppText>}</AppText></TouchableOpacity>}
                             maxLength={10}
+                            error={error?.securityDetails?.mobile ?? error?.isMobileVerified}
                         />
                         {otpInProgress?.type == 'mobile' && (
                             <AnimatedContent>
@@ -246,7 +247,7 @@ const SecurityDetails = ({ setValue, isAccordion = false, formData, action, erro
                     <AppView>
                         <FloatingInput
                             disabledColor="white"
-
+                            error={error?.securityDetails?.email ?? error?.isEmailVerified}
                             disabled={formData?.isEmailVerified} value={formData?.securityDetails?.email} onChangeText={(text) => handleSetValue("email", text)} label="Email address" isRequired={true}
                             suffix={<TouchableOpacity
                                 onPress={() => !formData?.isEmailVerified && secutiryVerfiy("email")}
@@ -259,7 +260,7 @@ const SecurityDetails = ({ setValue, isAccordion = false, formData, action, erro
                         )}
                     </AppView>
                     {action != 'onboard' && (
-                        <PanAndGST formData={formData} setValue={setValue} action={action} />
+                        <PanAndGST error={error} formData={formData} setValue={setValue} action={action} />
                     )}
                 </AppView>
             </AccordionCard>

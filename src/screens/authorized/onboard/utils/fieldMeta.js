@@ -44,12 +44,6 @@ export const initialFormData = {
     licenceDetails: {
         registrationDate: "",
         licence: [
-            {
-                licenceTypeId: 6,
-                docTypeId: 10,
-                licenceNo: "34534",
-                licenceValidUpto: "2026-01-04T15:17:00.000Z",
-            }
         ]
     },
     customerDocs: [],
@@ -141,43 +135,91 @@ export const SELECTOR_ENTITY_CONFIG = {
 };
 
 
-export const converScheme = (
-    validateScheme,
-    typeId,
-    categoryId,
-    subCategoryId
-) => {
+export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, licenceDetails) => {
     const scheme = {};
 
+    // ---------- GENERAL DETAILS ----------
     if (validateScheme?.generalDetails) {
         scheme.generalDetails = validateScheme.generalDetails.filter((field) => {
             if (
                 field?.attributeKey === "specialist" ||
                 field?.attributeKey === "clinicName"
             ) {
-                return typeId === 3;
+                return typeId === 3; // show only when typeId = 3
             }
             return true;
-        })?.map((e) => ({ ...e, localKey: e?.attributeKey }));
+        });
     }
+
+    // ---------- DEFAULT (only stationCode) ----------
 
     if (validateScheme?.default) {
-        scheme.default = validateScheme.default.filter((field) => field?.attributeKey === "stationCode")?.map((e) => ({ ...e, localKey: e?.attributeKey }));;
-    }
-    if (validateScheme?.securityDetails) {
-        scheme.securityDetails = validateScheme.securityDetails.map((e) => {
-            return e;
-        })
+        scheme.default = validateScheme.default.filter(
+            (field) => ['isMobileVerified', 'isEmailVerified', 'stationCode', 'isPanVerified'].includes(field?.fieldAttributeKey)
+        );
     }
 
-    console.log(scheme, 'scheme');
+    // ---------- SECURITY DETAILS + CUSTOMER DOCS ----------
+    if (validateScheme?.securityDetails) {
+        const requiredKeys = ["mobile", "email", "panNumber", "gstNumber"];
+
+        scheme.securityDetails = validateScheme.securityDetails.filter((e) =>
+            requiredKeys.includes(e?.fieldAttributeKey)
+        );
+
+        scheme.customerDocs = [
+            ...(scheme.customerDocs ?? []),
+            ...validateScheme.securityDetails.filter(
+                (e) => !requiredKeys.includes(e?.fieldAttributeKey)
+            ),
+        ];
+    }
+
+    // ---------- LICENCE DETAILS + CUSTOMER DOCS ----------
+    if (licenceDetails?.licence?.length) {
+        const customerDocs = [];
+
+        const licenceDocs = licenceDetails.licence.map((licence) => {
+            const docObj = { documentName: licence?.code };
+
+            const matchedDoc =
+                validateScheme?.licenseDetails?.license?.find(
+                    (doc) => doc?.documentName === licence?.code
+                );
+
+            matchedDoc?.fields?.forEach((field) => {
+                if (field?.attributeType !== "file") {
+                    docObj[field.fieldAttributeKey] = field;
+                } else {
+                    customerDocs.push({
+                        ...field,
+                        fieldAttributeKey: licence?.docTypeId,
+                        documentName: licence?.code,
+                    });
+                }
+            });
+
+            return docObj;
+        });
+
+        scheme.licenceDetails = licenceDocs;
+        scheme.customerDocs = [
+            ...(scheme.customerDocs ?? []),
+            ...customerDocs,
+        ];
+    }
+
+
+    console.log("scheme", scheme);
     return scheme;
 };
 
 
 
+
 const validateValue = (value, field) => {
     const rules = field?.validationRules || [];
+    const isBooleanField = field?.attributeType === "boolean";
 
     const isEmpty =
         value === undefined ||
@@ -189,7 +231,12 @@ const validateValue = (value, field) => {
 
         switch (rule.ruleType) {
             case "required":
-                if (isEmpty) return rule.errorMessage;
+                // ✅ Boolean must be TRUE
+                if (isBooleanField) {
+                    if (value !== true) return rule.errorMessage;
+                } else {
+                    if (isEmpty) return rule.errorMessage;
+                }
                 break;
 
             case "minLength":
@@ -257,13 +304,15 @@ const validateValue = (value, field) => {
         }
     }
 
-    // fallback mandatory (when no rule provided)
-    if (field?.isMandatory && isEmpty) {
+    // fallback mandatory (for non-boolean fields)
+    if (field?.isMandatory && !isBooleanField && isEmpty) {
         return `${field.attributeName} is required`;
     }
 
     return null;
 };
+
+
 
 const setDeep = (obj, path, value) => {
     let current = obj;
@@ -285,11 +334,11 @@ export const validateForm = async (payload, scheme) => {
     const generalFields = scheme?.generalDetails || [];
 
     generalFields.forEach((field) => {
-        const value = payload?.generalDetails?.[field.localKey];
+        const value = payload?.generalDetails?.[field.fieldAttributeKey];
         const error = validateValue(value, field);
 
         if (error) {
-            setDeep(errors, ["generalDetails", field.localKey], error);
+            setDeep(errors, ["generalDetails", field.fieldAttributeKey], error);
         }
     });
 
@@ -297,13 +346,63 @@ export const validateForm = async (payload, scheme) => {
     const defaultFields = scheme?.default || [];
 
     defaultFields.forEach((field) => {
-        const value = payload?.[field.localKey];
+        const value = payload?.[field.fieldAttributeKey];
         const error = validateValue(value, field);
+        console.log(value, error, 2389236)
 
         if (error) {
-            setDeep(errors, [field.localKey], error);
+            setDeep(errors, [field.fieldAttributeKey], error);
         }
     });
+
+    const securityFields = scheme?.securityDetails || [];
+
+    securityFields.forEach((field) => {
+        const value = payload?.securityDetails?.[field.fieldAttributeKey];
+        const error = validateValue(value, field);
+        if (error) {
+            setDeep(errors, ["securityDetails", field.fieldAttributeKey], error);
+        }
+    });
+
+    const customerDocsFields = scheme?.customerDocs || [];
+
+    customerDocsFields.forEach((field) => {
+        const value = payload?.customerDocs?.find((e) => e?.docTypeId == field?.fieldAttributeKey);
+        const error = validateValue(value, field);
+        if (error) {
+            setDeep(errors, ["customerDocs", field.fieldAttributeKey], error);
+        }
+    });
+
+
+    const licenseFields = scheme?.licenceDetails || [];
+
+    licenseFields.forEach((docSchema) => {
+        const licenceValue =
+            payload?.licenceDetails?.licence?.find(
+                (e) => e?.code == docSchema?.documentName
+            );
+        const localError = {};
+
+        Object.entries(docSchema).forEach(([key, fieldConfig]) => {
+            if (key === "documentName") return;
+
+            const fieldValue = licenceValue?.[key] ?? null;
+
+            const error = validateValue(fieldValue, fieldConfig);
+
+            if (error) {
+                localError[key] = error;
+            }
+        });
+
+        console.log(localError, docSchema, 2390482034)
+        if (Object.keys(localError).length) {
+            setDeep(errors, ["licenceDetails", licenceValue?.docTypeId], localError);
+        }
+    });
+
 
     /* ---------- GLOBAL VALIDITY ---------- */
     const isValid = Object.keys(errors).length === 0;

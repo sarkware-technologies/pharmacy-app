@@ -25,7 +25,8 @@ const FilePicker = ({
     style,
     uploadedFile,
     handleDelete,
-    isLoading = false
+    isLoading = false,
+    error
 }) => {
 
     const [signedUrl, setSignedUrl] = useState(null)
@@ -176,63 +177,66 @@ const FilePicker = ({
 
 
     return (
-        <View>{
-            uploadedFile != null ?
-                <View style={[styles.container, { borderWidth: 0, backgroundColor: "#F7941E0D" }]}>
-                    <AppText style={[styles.text, { maxWidth: "75%" }]} numberOfLines={1} ellipsizeMode="tail" >
-                        {uploadedFile?.name}
-                    </AppText>
-                    <View style={[CommonStyle.SpaceBetween, { gap: 15 }]}>
-                        {uploadedFile?.view && (
-                            <TouchableOpacity
-                                onPress={handlePreview}
-                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            >
-                                <EyeOpen color={colors.primary} />
-                            </TouchableOpacity>
-                        )}
+        <AppView marginVertical={10}>
+            <View>{
+                uploadedFile != null ?
+                    <View style={[styles.container, { borderWidth: 0, backgroundColor: "#F7941E0D" }]}>
+                        <AppText style={[styles.text, { maxWidth: "75%" }]} numberOfLines={1} ellipsizeMode="tail" >
+                            {uploadedFile?.name}
+                        </AppText>
+                        <View style={[CommonStyle.SpaceBetween, { gap: 15 }]}>
+                            {uploadedFile?.view && (
+                                <TouchableOpacity
+                                    onPress={handlePreview}
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                >
+                                    <EyeOpen color={colors.primary} />
+                                </TouchableOpacity>
+                            )}
 
-                        {uploadedFile?.remove && (
-                            <TouchableOpacity
-                                onPress={() => handleDelete?.()}
-                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            >
-                                <ModalClose width={20} />
-                            </TouchableOpacity>
-                        )}
+                            {uploadedFile?.remove && (
+                                <TouchableOpacity
+                                    onPress={() => handleDelete?.()}
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                >
+                                    <ModalClose width={20} />
+                                </TouchableOpacity>
+                            )}
 
+                        </View>
                     </View>
-                </View>
-                : (
-                    isLoading ?
-                        <AppView style={[styles.container, { justifyContent: "center" }, style, disabled && styles.disabled]} gap={10} alignItems={"center"} flexDirection={"row"}>
-                            <AppText>
-                                Uploading...
-                            </AppText>
-                            <ActivityIndicator size="small" color="#F7941E" />
-                        </AppView> :
-                        <TouchableOpacity
-                            style={[styles.container, style, disabled && styles.disabled]}
-                            onPress={openFilePicker}
-                            activeOpacity={0.7}
-                        >
-                            {isLoading ? <AppView>
-
+                    : (
+                        isLoading ?
+                            <AppView style={[styles.container, { justifyContent: "center" }, style, disabled && styles.disabled]} gap={10} alignItems={"center"} flexDirection={"row"}>
+                                <AppText>
+                                    Uploading...
+                                </AppText>
+                                <ActivityIndicator size="small" color="#F7941E" />
                             </AppView> :
-                                <AppView>
+                            <TouchableOpacity
+                                style={[styles.container, error && styles?.errorContainer, style, disabled && styles.disabled]}
+                                onPress={openFilePicker}
+                                activeOpacity={0.7}
+                            >
+                                {isLoading ? <AppView>
 
-                                </AppView>
-                            }
-                            <AppText fontFamily='regular' style={styles.text}>
-                                {placeholder}
-                                {isRequired && <AppText style={styles.asterisk}> *</AppText>}
-                            </AppText>
-                            <Upload color={colors.primary} />
-                        </TouchableOpacity>
-                )
-        }
-            <DocumentModal />
-        </View>
+                                </AppView> :
+                                    <AppView>
+
+                                    </AppView>
+                                }
+                                <AppText fontFamily='regular' style={styles.text}>
+                                    {placeholder}
+                                    {isRequired && <AppText style={styles.asterisk}> *</AppText>}
+                                </AppText>
+                                <Upload color={colors.primary} />
+                            </TouchableOpacity>
+                    )
+            }
+                <DocumentModal />
+            </View>
+            {error && <AppText style={{ marginTop: 5, paddingLeft: 15 }} fontFamily="regular" fontWeight={400} color="red" >{error}</AppText>}
+        </AppView>
     );
 };
 
@@ -249,7 +253,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginVertical: 10,
     },
     text: {
         fontSize: 14,
@@ -325,4 +328,9 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginLeft: 8,
     },
+    errorContainer: {
+        borderColor: "red",
+        borderWidth: 1.5,
+
+    }
 });

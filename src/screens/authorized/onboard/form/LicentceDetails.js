@@ -358,19 +358,22 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                     isRequired: ui.isRequired,
                     isLoading: uploading === lic.code,
                     uploadedFile: findFile && { name: findFile?.fileName, url: findFile?.s3Path, view: true, remove: true },
-                    handleDelete: () => remove_Document(lic.docTypeId)
+                    handleDelete: () => remove_Document(lic.docTypeId),
+                    error: error?.customerDocs?.[lic.docTypeId]
                 }}
                 code={{
                     label: ui.codeLabel,
                     isRequired: ui.isRequired,
                     onChangeText: (text) => handleUpdate(text, lic.code, lic.docTypeId, 'licenceNo'),
-                    value: findData?.licenceNo ?? ''
+                    value: findData?.licenceNo ?? '',
+                    error: error?.licenceDetails?.[lic.docTypeId]?.licenceNo,
                 }}
                 date={{
                     label: ui.dateLabel,
                     isRequired: ui.isRequired,
                     onChange: (date) => handleUpdate(date, lic.code, lic.docTypeId, 'licenceValidUpto'),
-                    value: findData?.licenceValidUpto ?? ''
+                    value: findData?.licenceValidUpto ?? '',
+                    error: error?.licenceDetails?.[lic.docTypeId]?.licenceValidUpto,
                 }}
             />
         );
@@ -427,17 +430,20 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                                     handleFileUpload(file, "REG", licenseMap.REG.docTypeId),
                                 isLoading: uploading === "REG",
                                 uploadedFile: findREG && { name: findREG?.fileName, url: findREG?.s3Path, view: true, remove: true },
-                                handleDelete: () => remove_Document(lic.docTypeId)
+                                handleDelete: () => remove_Document(lic.docTypeId),
+                                error: error?.customerDocs?.[licenseMap.REG.docTypeId]
                             }}
                             code={{
                                 label: getPlaceholder("code"),
-                                onChangeText: (text) => handleUpdate(text, licenseMap.REG.code, licenseMap.REG.docTypeId, 'hospitalCode'),
-                                value: findLicense(license, licenseMap.REG?.licenceTypeId)?.hospitalCode
+                                onChangeText: (text) => handleUpdate(text, licenseMap.REG.code, licenseMap.REG.docTypeId, [2].includes(formData?.typeId) && [5].includes(formData?.categoryId) ? 'hospitalCode' : "licenceNo"),
+                                value: [2].includes(formData?.typeId) && [5].includes(formData?.categoryId) ? findLicense(license, licenseMap.REG?.licenceTypeId)?.hospitalCode : findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo,
+                                error: [2].includes(formData?.typeId) && [5].includes(formData?.categoryId) ? error?.licenceDetails?.[licenseMap.REG.docTypeId]?.hospitalCode : error?.licenceDetails?.[licenseMap.REG.docTypeId]?.licenceNo,
                             }}
                             date={{
                                 label: getPlaceholder("date"),
                                 onChange: (date) => handleUpdate(date, licenseMap.REG.code, licenseMap.REG.docTypeId, 'licenceValidUpto'),
-                                value: findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceValidUpto
+                                value: findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceValidUpto,
+                                error: error?.licenceDetails?.[licenseMap.REG.docTypeId]?.licenceValidUpto,
 
                             }}
                             {...(
@@ -447,7 +453,8 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                                         nin: {
                                             label: "NIN (National Identification Number)",
                                             onChangeText: (text) => handleUpdate(text, licenseMap.REG.code, licenseMap.REG.docTypeId, 'licenceNo'),
-                                            value: findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo
+                                            value: findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo,
+                                            error: error?.licenceDetails?.[licenseMap.REG.docTypeId]?.licenceNo,
                                         },
                                         officialLetter: {
                                             placeholder: "Official Letter on Dept. Letterhead",
@@ -455,7 +462,9 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                                                 handleFileUpload(file, "officialLetter", staticDOCcode.IMAGE),
                                             isLoading: uploading === "officialLetter",
                                             uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
-                                            handleDelete: () => remove_Document(staticDOCcode.IMAGE)
+                                            handleDelete: () => remove_Document(staticDOCcode.IMAGE),
+                                            // error: error?.licenceDetails?.[licenseMap.REG.docTypeId]?.licenceValidUpto,
+
                                         },
                                     }
                                     : {}

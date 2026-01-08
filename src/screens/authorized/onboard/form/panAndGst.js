@@ -11,7 +11,7 @@ import { colors } from "../../../../styles/colors";
 import OnboardStyle from "../style/onboardStyle";
 import { ErrorMessage } from "../../../../components/view/error";
 
-const PanAndGST = ({ setValue, formData, action }) => {
+const PanAndGST = ({ setValue, formData, action, error }) => {
 
     const handleSetValue = (key, value) => {
         setValue?.((prev) => {
@@ -140,10 +140,12 @@ const PanAndGST = ({ setValue, formData, action }) => {
                             };
                         });
                     }}
+                    error={error?.customerDocs?.[7]}
                 />
             </AppView>
             <AppView>
                 <FloatingInput
+                    error={error?.securityDetails?.panNumber ?? error?.isPanVerified}
                     disabled={formData?.isPanVerified}
                     disabledColor={"white"}
                     value={formData?.securityDetails?.panNumber} onChangeText={(text) => handleSetValue("panNumber", text)} label="PAN number" isRequired={true}
@@ -158,6 +160,7 @@ const PanAndGST = ({ setValue, formData, action }) => {
             </AppView>
             <AppView >
                 <FilePicker
+                    error={error?.securityDetails?.gstFile}
                     accept={[]}
                     uploadedFile={fineGST && {
                         name: fineGST?.fileName,
@@ -180,6 +183,7 @@ const PanAndGST = ({ setValue, formData, action }) => {
             </AppView>
             <AppView>
                 <FloatingDropdown
+                    error={error?.securityDetails?.gstNumber}
                     selected={formData?.securityDetails?.gstNumber}
                     label="GST number"
                     searchTitle="GST number"

@@ -1,200 +1,631 @@
 {
     "licenseDetails": {
         "license": [
-            [
-                {
-                    "attributeId": 1,
-                    "attributeKey": "isFileUploaded",
-                    "attributeName": "Clinic Registration Image",
-                    "attributeType": "file",
-                    "section": "licenseDetails",
-                    "isMandatory": true,
-                    "isEnabled": true,
-                    "displayOrder": 1,
-                    "visibilityCondition": {
-                        "type": [
-                            "DOCT"
+            {
+                "documentName": "LIC20",
+                "fields": [
+                    {
+                        "attributeId": 1,
+                        "attributeKey": "isFileUploaded",
+                        "fieldAttributeKey": "isFileUploaded",
+                        "attributeName": "Clinic Registration Image",
+                        "attributeType": "file",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 1,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
+                        },
+                        "validationRules": [
+                            {
+                                "ruleId": 1,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Image is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 2,
+                                "ruleType": "file",
+                                "errorMessage": "Please upload a valid image file",
+                                "ruleOrder": 2
+                            }
                         ]
                     },
-                    "validationRules": [
-                        {
-                            "ruleId": 1,
-                            "ruleType": "required",
-                            "errorMessage": "Clinic Registration Image is required",
-                            "ruleOrder": 1
+                    {
+                        "attributeId": 2,
+                        "attributeKey": "licenceNo",
+                        "fieldAttributeKey": "licenceNo",
+                        "attributeName": "Clinic Registration Number",
+                        "attributeType": "string",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 2,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
                         },
-                        {
-                            "ruleId": 2,
-                            "ruleType": "file",
-                            "errorMessage": "Please upload a valid image file",
-                            "ruleOrder": 2
-                        }
-                    ]
-                },
-                {
-                    "attributeId": 2,
-                    "attributeKey": "licenceNo",
-                    "attributeName": "Clinic Registration Number",
-                    "attributeType": "string",
-                    "section": "licenseDetails",
-                    "isMandatory": true,
-                    "isEnabled": true,
-                    "displayOrder": 2,
-                    "visibilityCondition": {
-                        "type": [
-                            "DOCT"
+                        "validationRules": [
+                            {
+                                "ruleId": 3,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Number is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 4,
+                                "ruleType": "minLength",
+                                "ruleValue": "3",
+                                "errorMessage": "Registration number must be at least 3 characters",
+                                "ruleOrder": 2
+                            },
+                            {
+                                "ruleId": 5,
+                                "ruleType": "maxLength",
+                                "ruleValue": "50",
+                                "errorMessage": "Registration number cannot exceed 50 characters",
+                                "ruleOrder": 3
+                            }
                         ]
                     },
-                    "validationRules": [
-                        {
-                            "ruleId": 3,
-                            "ruleType": "required",
-                            "errorMessage": "Clinic Registration Number is required",
-                            "ruleOrder": 1
+                    {
+                        "attributeId": 3,
+                        "attributeKey": "licenceValidUpto",
+                        "fieldAttributeKey": "licenceValidUpto",
+                        "attributeName": "Clinic Registration Expiry Date",
+                        "attributeType": "date",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 3,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
                         },
-                        {
-                            "ruleId": 4,
-                            "ruleType": "minLength",
-                            "ruleValue": "3",
-                            "errorMessage": "Registration number must be at least 3 characters",
-                            "ruleOrder": 2
+                        "validationRules": [
+                            {
+                                "ruleId": 40,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Expiry Date is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 52,
+                                "ruleType": "date",
+                                "errorMessage": "Please enter a valid date",
+                                "ruleOrder": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "documentName": "LIC21",
+                "fields": [
+                    {
+                        "attributeId": 1,
+                        "attributeKey": "isFileUploaded",
+                        "fieldAttributeKey": "isFileUploaded",
+                        "attributeName": "Clinic Registration Image",
+                        "attributeType": "file",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 1,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
                         },
-                        {
-                            "ruleId": 5,
-                            "ruleType": "maxLength",
-                            "ruleValue": "50",
-                            "errorMessage": "Registration number cannot exceed 50 characters",
-                            "ruleOrder": 3
-                        }
-                    ]
-                },
-                {
-                    "attributeId": 3,
-                    "attributeKey": "licenceValidUpto",
-                    "attributeName": "Clinic Registration Expiry Date",
-                    "attributeType": "date",
-                    "section": "licenseDetails",
-                    "isMandatory": true,
-                    "isEnabled": true,
-                    "displayOrder": 3,
-                    "visibilityCondition": {
-                        "type": [
-                            "DOCT"
+                        "validationRules": [
+                            {
+                                "ruleId": 1,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Image is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 2,
+                                "ruleType": "file",
+                                "errorMessage": "Please upload a valid image file",
+                                "ruleOrder": 2
+                            }
                         ]
                     },
-                    "validationRules": [
-                        {
-                            "ruleId": 40,
-                            "ruleType": "required",
-                            "errorMessage": "Clinic Registration Expiry Date is required",
-                            "ruleOrder": 1
+                    {
+                        "attributeId": 2,
+                        "attributeKey": "licenceNo",
+                        "fieldAttributeKey": "licenceNo",
+                        "attributeName": "Clinic Registration Number",
+                        "attributeType": "string",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 2,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
                         },
-                        {
-                            "ruleId": 52,
-                            "ruleType": "date",
-                            "errorMessage": "Please enter a valid date",
-                            "ruleOrder": 2
-                        }
-                    ]
-                }
-            ],
-            [
-                {
-                    "attributeId": 1,
-                    "attributeKey": "isFileUploaded",
-                    "attributeName": "Practice License Image",
-                    "attributeType": "file",
-                    "section": "licenseDetails",
-                    "isMandatory": true,
-                    "isEnabled": true,
-                    "displayOrder": 4,
-                    "visibilityCondition": {
-                        "type": [
-                            "DOCT"
+                        "validationRules": [
+                            {
+                                "ruleId": 3,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Number is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 4,
+                                "ruleType": "minLength",
+                                "ruleValue": "3",
+                                "errorMessage": "Registration number must be at least 3 characters",
+                                "ruleOrder": 2
+                            },
+                            {
+                                "ruleId": 5,
+                                "ruleType": "maxLength",
+                                "ruleValue": "50",
+                                "errorMessage": "Registration number cannot exceed 50 characters",
+                                "ruleOrder": 3
+                            }
                         ]
                     },
-                    "validationRules": [
-                        {
-                            "ruleId": 22,
-                            "ruleType": "required",
-                            "errorMessage": "Practice License Image is required",
-                            "ruleOrder": 1
-                        }
-                    ]
-                },
-                {
-                    "attributeId": 2,
-                    "attributeKey": "licenceNo",
-                    "attributeName": "Practice License Number",
-                    "attributeType": "string",
-                    "section": "licenseDetails",
-                    "isMandatory": true,
-                    "isEnabled": true,
-                    "displayOrder": 5,
-                    "visibilityCondition": {
-                        "type": [
-                            "DOCT"
+                    {
+                        "attributeId": 3,
+                        "attributeKey": "licenceValidUpto",
+                        "fieldAttributeKey": "licenceValidUpto",
+                        "attributeName": "Clinic Registration Expiry Date",
+                        "attributeType": "date",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 3,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
+                        },
+                        "validationRules": [
+                            {
+                                "ruleId": 40,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Expiry Date is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 52,
+                                "ruleType": "date",
+                                "errorMessage": "Please enter a valid date",
+                                "ruleOrder": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "documentName": "LIC20B",
+                "fields": [
+                    {
+                        "attributeId": 1,
+                        "attributeKey": "isFileUploaded",
+                        "fieldAttributeKey": "isFileUploaded",
+                        "attributeName": "Clinic Registration Image",
+                        "attributeType": "file",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 1,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
+                        },
+                        "validationRules": [
+                            {
+                                "ruleId": 1,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Image is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 2,
+                                "ruleType": "file",
+                                "errorMessage": "Please upload a valid image file",
+                                "ruleOrder": 2
+                            }
                         ]
                     },
-                    "validationRules": [
-                        {
-                            "ruleId": 64,
-                            "ruleType": "required",
-                            "errorMessage": "Practice License Number is required",
-                            "ruleOrder": 1
+                    {
+                        "attributeId": 2,
+                        "attributeKey": "licenceNo",
+                        "fieldAttributeKey": "licenceNo",
+                        "attributeName": "Clinic Registration Number",
+                        "attributeType": "string",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 2,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
                         },
-                        {
-                            "ruleId": 75,
-                            "ruleType": "minLength",
-                            "ruleValue": "5",
-                            "errorMessage": "Practice License Number must be at least 5 characters",
-                            "ruleOrder": 2
-                        },
-                        {
-                            "ruleId": 88,
-                            "ruleType": "maxLength",
-                            "ruleValue": "50",
-                            "errorMessage": "Practice License Number cannot exceed 50 characters",
-                            "ruleOrder": 3
-                        }
-                    ]
-                },
-                {
-                    "attributeId": 3,
-                    "attributeKey": "licenceValidUpto",
-                    "attributeName": "Practice License Expiry Date",
-                    "attributeType": "date",
-                    "section": "licenseDetails",
-                    "isMandatory": true,
-                    "isEnabled": true,
-                    "displayOrder": 6,
-                    "visibilityCondition": {
-                        "type": [
-                            "DOCT"
+                        "validationRules": [
+                            {
+                                "ruleId": 3,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Number is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 4,
+                                "ruleType": "minLength",
+                                "ruleValue": "3",
+                                "errorMessage": "Registration number must be at least 3 characters",
+                                "ruleOrder": 2
+                            },
+                            {
+                                "ruleId": 5,
+                                "ruleType": "maxLength",
+                                "ruleValue": "50",
+                                "errorMessage": "Registration number cannot exceed 50 characters",
+                                "ruleOrder": 3
+                            }
                         ]
                     },
-                    "validationRules": [
-                        {
-                            "ruleId": 41,
-                            "ruleType": "required",
-                            "errorMessage": "Practice License Expiry Date is required",
-                            "ruleOrder": 1
+                    {
+                        "attributeId": 3,
+                        "attributeKey": "licenceValidUpto",
+                        "fieldAttributeKey": "licenceValidUpto",
+                        "attributeName": "Clinic Registration Expiry Date",
+                        "attributeType": "date",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 3,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
                         },
-                        {
-                            "ruleId": 53,
-                            "ruleType": "date",
-                            "errorMessage": "Please enter a valid date",
-                            "ruleOrder": 2
-                        }
-                    ]
-                }
-            ]
+                        "validationRules": [
+                            {
+                                "ruleId": 40,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Expiry Date is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 52,
+                                "ruleType": "date",
+                                "errorMessage": "Please enter a valid date",
+                                "ruleOrder": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "documentName": "LIC21B",
+                "fields": [
+                    {
+                        "attributeId": 1,
+                        "attributeKey": "isFileUploaded",
+                        "fieldAttributeKey": "isFileUploaded",
+                        "attributeName": "Clinic Registration Image",
+                        "attributeType": "file",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 1,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
+                        },
+                        "validationRules": [
+                            {
+                                "ruleId": 1,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Image is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 2,
+                                "ruleType": "file",
+                                "errorMessage": "Please upload a valid image file",
+                                "ruleOrder": 2
+                            }
+                        ]
+                    },
+                    {
+                        "attributeId": 2,
+                        "attributeKey": "licenceNo",
+                        "fieldAttributeKey": "licenceNo",
+                        "attributeName": "Clinic Registration Number",
+                        "attributeType": "string",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 2,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
+                        },
+                        "validationRules": [
+                            {
+                                "ruleId": 3,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Number is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 4,
+                                "ruleType": "minLength",
+                                "ruleValue": "3",
+                                "errorMessage": "Registration number must be at least 3 characters",
+                                "ruleOrder": 2
+                            },
+                            {
+                                "ruleId": 5,
+                                "ruleType": "maxLength",
+                                "ruleValue": "50",
+                                "errorMessage": "Registration number cannot exceed 50 characters",
+                                "ruleOrder": 3
+                            }
+                        ]
+                    },
+                    {
+                        "attributeId": 3,
+                        "attributeKey": "licenceValidUpto",
+                        "fieldAttributeKey": "licenceValidUpto",
+                        "attributeName": "Clinic Registration Expiry Date",
+                        "attributeType": "date",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 3,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
+                        },
+                        "validationRules": [
+                            {
+                                "ruleId": 40,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Expiry Date is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 52,
+                                "ruleType": "date",
+                                "errorMessage": "Please enter a valid date",
+                                "ruleOrder": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "documentName": "PRLIC",
+                "fields": [
+                    {
+                        "attributeId": 1,
+                        "attributeKey": "isFileUploaded",
+                        "fieldAttributeKey": "isFileUploaded",
+                        "attributeName": "Clinic Registration Image",
+                        "attributeType": "file",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 1,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
+                        },
+                        "validationRules": [
+                            {
+                                "ruleId": 1,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Image is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 2,
+                                "ruleType": "file",
+                                "errorMessage": "Please upload a valid image file",
+                                "ruleOrder": 2
+                            }
+                        ]
+                    },
+                    {
+                        "attributeId": 2,
+                        "attributeKey": "licenceNo",
+                        "fieldAttributeKey": "licenceNo",
+                        "attributeName": "Clinic Registration Number",
+                        "attributeType": "string",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 2,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
+                        },
+                        "validationRules": [
+                            {
+                                "ruleId": 3,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Number is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 4,
+                                "ruleType": "minLength",
+                                "ruleValue": "3",
+                                "errorMessage": "Registration number must be at least 3 characters",
+                                "ruleOrder": 2
+                            },
+                            {
+                                "ruleId": 5,
+                                "ruleType": "maxLength",
+                                "ruleValue": "50",
+                                "errorMessage": "Registration number cannot exceed 50 characters",
+                                "ruleOrder": 3
+                            }
+                        ]
+                    },
+                    {
+                        "attributeId": 3,
+                        "attributeKey": "licenceValidUpto",
+                        "fieldAttributeKey": "licenceValidUpto",
+                        "attributeName": "Clinic Registration Expiry Date",
+                        "attributeType": "date",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 3,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
+                        },
+                        "validationRules": [
+                            {
+                                "ruleId": 40,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Expiry Date is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 52,
+                                "ruleType": "date",
+                                "errorMessage": "Please enter a valid date",
+                                "ruleOrder": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "documentName": "REG",
+                "fields": [
+                    {
+                        "attributeId": 1,
+                        "attributeKey": "isFileUploaded",
+                        "fieldAttributeKey": "isFileUploaded",
+                        "attributeName": "Clinic Registration Image",
+                        "attributeType": "file",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 1,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
+                        },
+                        "validationRules": [
+                            {
+                                "ruleId": 1,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Image is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 2,
+                                "ruleType": "file",
+                                "errorMessage": "Please upload a valid image file",
+                                "ruleOrder": 2
+                            }
+                        ]
+                    },
+                    {
+                        "attributeId": 2,
+                        "attributeKey": "licenceNo",
+                        "fieldAttributeKey": "licenceNo",
+                        "attributeName": "Clinic Registration Number",
+                        "attributeType": "string",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 2,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
+                        },
+                        "validationRules": [
+                            {
+                                "ruleId": 3,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Number is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 4,
+                                "ruleType": "minLength",
+                                "ruleValue": "3",
+                                "errorMessage": "Registration number must be at least 3 characters",
+                                "ruleOrder": 2
+                            },
+                            {
+                                "ruleId": 5,
+                                "ruleType": "maxLength",
+                                "ruleValue": "50",
+                                "errorMessage": "Registration number cannot exceed 50 characters",
+                                "ruleOrder": 3
+                            }
+                        ]
+                    },
+                    {
+                        "attributeId": 3,
+                        "attributeKey": "licenceValidUpto",
+                        "fieldAttributeKey": "licenceValidUpto",
+                        "attributeName": "Clinic Registration Expiry Date",
+                        "attributeType": "date",
+                        "section": "licenseDetails",
+                        "isMandatory": true,
+                        "isEnabled": true,
+                        "displayOrder": 3,
+                        "visibilityCondition": {
+                            "type": [
+                                "DOCT"
+                            ]
+                        },
+                        "validationRules": [
+                            {
+                                "ruleId": 40,
+                                "ruleType": "required",
+                                "errorMessage": "Clinic Registration Expiry Date is required",
+                                "ruleOrder": 1
+                            },
+                            {
+                                "ruleId": 52,
+                                "ruleType": "date",
+                                "errorMessage": "Please enter a valid date",
+                                "ruleOrder": 2
+                            }
+                        ]
+                    }
+                ]
+            }
         ]
     },
     "generalDetails": [
         {
             "attributeId": 44,
             "attributeKey": "name",
+            "fieldAttributeKey": "name",
             "attributeName": "Name",
             "attributeType": "string",
             "section": "generalDetails",
@@ -228,6 +659,7 @@
         {
             "attributeId": 55,
             "attributeKey": "specialist",
+            "fieldAttributeKey": "specialist",
             "attributeName": "Speciality Name",
             "attributeType": "string",
             "section": "generalDetails",
@@ -244,6 +676,7 @@
         {
             "attributeId": 56,
             "attributeKey": "clinicName",
+            "fieldAttributeKey": "clinicName",
             "attributeName": "Clinic Name",
             "attributeType": "string",
             "section": "generalDetails",
@@ -260,6 +693,7 @@
         {
             "attributeId": 45,
             "attributeKey": "shortName",
+            "fieldAttributeKey": "shortName",
             "attributeName": "Short Name",
             "attributeType": "string",
             "section": "generalDetails",
@@ -272,6 +706,7 @@
         {
             "attributeId": 47,
             "attributeKey": "address1",
+            "fieldAttributeKey": "address1",
             "attributeName": "Address Line 1",
             "attributeType": "string",
             "section": "generalDetails",
@@ -284,6 +719,7 @@
         {
             "attributeId": 48,
             "attributeKey": "address2",
+            "fieldAttributeKey": "address2",
             "attributeName": "Address Line 2",
             "attributeType": "string",
             "section": "generalDetails",
@@ -296,6 +732,7 @@
         {
             "attributeId": 49,
             "attributeKey": "address3",
+            "fieldAttributeKey": "address3",
             "attributeName": "Address Line 3",
             "attributeType": "string",
             "section": "generalDetails",
@@ -308,6 +745,7 @@
         {
             "attributeId": 50,
             "attributeKey": "address4",
+            "fieldAttributeKey": "address4",
             "attributeName": "Address Line 4",
             "attributeType": "string",
             "section": "generalDetails",
@@ -320,6 +758,7 @@
         {
             "attributeId": 51,
             "attributeKey": "pincode",
+            "fieldAttributeKey": "pincode",
             "attributeName": "Pincode",
             "attributeType": "string",
             "section": "generalDetails",
@@ -346,6 +785,7 @@
         {
             "attributeId": 52,
             "attributeKey": "areaId",
+            "fieldAttributeKey": "areaId",
             "attributeName": "Area",
             "attributeType": "string",
             "section": "generalDetails",
@@ -358,6 +798,7 @@
         {
             "attributeId": 53,
             "attributeKey": "cityId",
+            "fieldAttributeKey": "cityId",
             "attributeName": "City",
             "attributeType": "string",
             "section": "generalDetails",
@@ -370,6 +811,7 @@
         {
             "attributeId": 54,
             "attributeKey": "stateId",
+            "fieldAttributeKey": "stateId",
             "attributeName": "State",
             "attributeType": "string",
             "section": "generalDetails",
@@ -384,6 +826,7 @@
         {
             "attributeId": 57,
             "attributeKey": "mobileNumber",
+            "fieldAttributeKey": "mobile",
             "attributeName": "Mobile Number",
             "attributeType": "phone",
             "section": "securityDetails",
@@ -416,6 +859,7 @@
         {
             "attributeId": 58,
             "attributeKey": "email",
+            "fieldAttributeKey": "email",
             "attributeName": "Email",
             "attributeType": "email",
             "section": "securityDetails",
@@ -441,6 +885,7 @@
         {
             "attributeId": 59,
             "attributeKey": "isPanUpload",
+            "fieldAttributeKey": 7,
             "attributeName": "PAN Image",
             "attributeType": "file",
             "section": "securityDetails",
@@ -460,6 +905,7 @@
         {
             "attributeId": 60,
             "attributeKey": "panNumber",
+            "fieldAttributeKey": "panNumber",
             "attributeName": "PAN Number",
             "attributeType": "string",
             "section": "securityDetails",
@@ -469,9 +915,9 @@
             "visibilityCondition": null,
             "validationRules": [
                 {
-                    "ruleId": 14,
+                    "ruleId": 39,
                     "ruleType": "required",
-                    "errorMessage": "PAN Number is required",
+                    "errorMessage": "PAN number is required",
                     "ruleOrder": 1
                 },
                 {
@@ -500,6 +946,7 @@
         {
             "attributeId": 61,
             "attributeKey": "gstImage",
+            "fieldAttributeKey": 2,
             "attributeName": "GST Image",
             "attributeType": "file",
             "section": "securityDetails",
@@ -512,20 +959,15 @@
         {
             "attributeId": 62,
             "attributeKey": "gstNumber",
+            "fieldAttributeKey": "gstNumber",
             "attributeName": "GST Number",
             "attributeType": "string",
             "section": "securityDetails",
-            "isMandatory": true,
+            "isMandatory": false,
             "isEnabled": true,
             "displayOrder": 6,
             "visibilityCondition": null,
             "validationRules": [
-                {
-                    "ruleId": 16,
-                    "ruleType": "required",
-                    "errorMessage": "GST Number is required",
-                    "ruleOrder": 1
-                },
                 {
                     "ruleId": 87,
                     "ruleType": "minLength",
@@ -618,6 +1060,7 @@
             "attributeId": 7,
             "attributeKey": "isAddressProofUploaded",
             "attributeName": "Address Proof Image",
+            "fieldAttributeKey": 11,
             "attributeType": "file",
             "section": "default",
             "isMandatory": true,
@@ -641,6 +1084,7 @@
             "attributeId": 8,
             "attributeKey": "isImageUpload",
             "attributeName": "Clinic Image",
+            "fieldAttributeKey": 1,
             "attributeType": "file",
             "section": "default",
             "isMandatory": true,
@@ -663,6 +1107,7 @@
         {
             "attributeId": 46,
             "attributeKey": "stationCode",
+            "fieldAttributeKey": "stationCode",
             "attributeName": "Station Code",
             "attributeType": "string",
             "section": "generalDetails",
@@ -675,6 +1120,66 @@
                     "ruleId": 24,
                     "ruleType": "required",
                     "errorMessage": "Station Code is required",
+                    "ruleOrder": 1
+                }
+            ]
+        },
+        {
+            "attributeId": 46,
+            "attributeKey": "isMobileVerified",
+            "fieldAttributeKey": "isMobileVerified",
+            "attributeName": "Mobile Verification",
+            "attributeType": "boolean",
+            "section": "default",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 4,
+            "visibilityCondition": null,
+            "validationRules": [
+                {
+                    "ruleId": 24,
+                    "ruleType": "required",
+                    "errorMessage": "Mobile Verification is required",
+                    "ruleOrder": 1
+                }
+            ]
+        },
+        {
+            "attributeId": 46,
+            "attributeKey": "isEmailVerified",
+            "fieldAttributeKey": "isEmailVerified",
+            "attributeName": "Email Verification",
+            "attributeType": "boolean",
+            "section": "default",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 4,
+            "visibilityCondition": null,
+            "validationRules": [
+                {
+                    "ruleId": 24,
+                    "ruleType": "required",
+                    "errorMessage": "Email Verification is required",
+                    "ruleOrder": 1
+                }
+            ]
+        },
+        {
+            "attributeId": 46,
+            "attributeKey": "isPanVerified",
+            "fieldAttributeKey": "isPanVerified",
+            "attributeName": "Pan Verification",
+            "attributeType": "boolean",
+            "section": "default",
+            "isMandatory": true,
+            "isEnabled": true,
+            "displayOrder": 4,
+            "visibilityCondition": null,
+            "validationRules": [
+                {
+                    "ruleId": 24,
+                    "ruleType": "required",
+                    "errorMessage": "Pan Verification is required",
                     "ruleOrder": 1
                 }
             ]
