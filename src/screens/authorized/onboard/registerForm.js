@@ -16,8 +16,9 @@ import AnimatedContent from "../../../components/view/AnimatedContent";
 import AppView from "../../../components/AppView";
 import Button from "../../../components/Button";
 import { ErrorMessage } from "../../../components/view/error";
-import { validateForm, converScheme, initialFormData } from "./utils/fieldMeta";
+import { validateForm, converScheme, initialFormData, buildCreatePayload, buildDraftPayload } from "./utils/fieldMeta";
 import validateScheme from "./utils/validateScheme.json";
+import { AppToastService } from '../../../components/AppToast';
 
 const RegisterForm = () => {
     const navigation = useNavigation();
@@ -52,6 +53,7 @@ const RegisterForm = () => {
         mapping: useRef(null),
         security: useRef(null),
     };
+    console.log(formData);
 
 
     const fetchCustomerType = async () => {
@@ -206,12 +208,61 @@ const RegisterForm = () => {
         runValidation(isFormSubmited);
     }, [formData, scheme, isFormSubmited]);
 
+
+
+
     const handleRegister = async () => {
         setIsFormSubmited(true);
         const result = await validateForm(formData, scheme);
         setIsFormValid(result.isValid);
         setError(result.errors);
         if (!result.isValid) return;
+
+        const payload = buildCreatePayload(formData);
+
+
+        try {
+            const response = await customerAPI.createCustomer(payload);
+            if (response?.success) {
+                AppToastService.show(response?.message, "success", "created");
+                navigation.navigate('RegistrationSuccess', {});
+
+            }
+
+        } catch (err) {
+            AppToastService.show(err?.message ?? "Error while creationg customer", "error", "Error");
+
+        }
+
+
+
+
+    };
+
+
+    const handleSaveDraft = async () => {
+        const payload = buildDraftPayload(formData);
+
+        try {
+            const response = await customerAPI.saveCustomerDraft(payload);
+            if (response?.success) {
+                AppToastService.show(response?.message, "success", "Draft Saved");
+
+
+                setFormData(prev => ({
+                    ...prev,
+                    stgCustomerId: response?.data?.data?.stgCustomerId,
+                }));
+
+            }
+
+        } catch (err) {
+            AppToastService.show(err?.message, "error", "Error");
+
+        }
+
+
+
 
     };
 
@@ -226,7 +277,7 @@ const RegisterForm = () => {
         { key: "license", component: <LicenseDetails error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 1 },
         { key: "general", component: <GeneralDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 2 },
         { key: "mapping", component: <MappingDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 4 },
-        { key: "security", component: <SecurityDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 3 },
+        { key: "security", component: <SecurityDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} handleSaveDraft={handleSaveDraft} />, show: true, order: 3 },
     ]
 
 
@@ -250,15 +301,19 @@ const RegisterForm = () => {
                     <ChevronLeft />
                 </TouchableOpacity>
                 <AppText style={OnboardStyle.headerTitle}>Registration</AppText>
-                <TouchableOpacity
-                    style={OnboardStyle.saveDraftButton}
-                >
-                    {/* {savingDraft ? (
-                        <ActivityIndicator size="small" color={colors.primary} />
-                    ) : ( */}
-                    <AppText style={OnboardStyle.saveDraftButtonText}>Save as Draft</AppText>
-                    {/* )} */}
-                </TouchableOpacity>
+
+
+                {formData?.licenceDetails?.licence?.length > 0 &&
+                    <TouchableOpacity
+                        style={OnboardStyle.saveDraftButton}
+                        onPress={handleSaveDraft}
+                    >
+
+                        <AppText style={OnboardStyle.saveDraftButtonText}>Save as Draft</AppText>
+
+                    </TouchableOpacity>
+                }
+
             </AppView>
 
             {/* Selection Section - Always visible at top */}
@@ -284,14 +339,18 @@ const RegisterForm = () => {
 
                 )}
             </ScrollView>
-            <AppView flexDirection={"row"} gap={20} paddingHorizontal={25} paddingVertical={10}>
-                <Button style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E" }}>
-                    Cancel
-                </Button>
-                <Button onPress={() => handleRegister()} style={!isFormValid ? { flex: 1, backgroundColor: "#D3D4D6", paddingVertical: 12 } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white" }}>
-                    Register
-                </Button>
-            </AppView>
+
+            {formData?.licenceDetails?.licence?.length > 0 &&
+                <AppView flexDirection={"row"} gap={20} paddingHorizontal={25} paddingVertical={10}>
+                    <Button style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E" }}>
+                        Cancel
+                    </Button>
+                    <Button onPress={() => handleRegister()} style={!isFormValid ? { flex: 1, backgroundColor: "#D3D4D6", paddingVertical: 12 } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white" }}>
+                        Register
+                    </Button>
+                </AppView>
+            }
+
         </SafeAreaView>
     )
 

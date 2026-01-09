@@ -33,6 +33,12 @@ const DOC_TYPES = {
   CLINIC_IMAGE: 1,
   PAN: 7,
   GST: 2,
+  clinicRegistrationCertificate:8,
+  practiceLicense:10,
+  addressProof:11,
+  clinicImage:1,
+  pan:7,
+  gst:2,
 };
 
 const AddNewDoctorModal = ({ visible, onClose, onSubmit, formData, entityType, allowMultiple = true, parentHospitalId = null }) => {
@@ -630,7 +636,7 @@ console.log("wprking");
       // Add complete document object to uploaded list with docTypeId
       const docObject = {
         s3Path: file.s3Path || file.uri,
-        docTypeId: file.docTypeId,
+        docTypeId: DOC_TYPES[field],
         fileName: file.fileName || file.name,
         id: file.id
       };

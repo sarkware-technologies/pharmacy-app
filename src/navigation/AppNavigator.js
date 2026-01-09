@@ -19,7 +19,9 @@ import PrivateRegistrationForm from '../screens/authorized/registration/PrivateR
 import DoctorRegistrationForm from '../screens/authorized/registration/DoctorRegistrationForm';
 import GroupHospitalRegistrationForm from '../screens/authorized/registration/GroupHospitalRegistrationForm';
 import GovtHospitalRegistrationForm from '../screens/authorized/registration/GovtHospitalRegistrationForm';
-import RegistrationSuccess from '../screens/authorized/registration/RegistrationSuccess';
+// import RegistrationSuccess from '../screens/authorized/registration/RegistrationSuccess';
+import RegistrationSuccess from '../screens/authorized/onboard/RegistrationSuccess';
+
 import HospitalSelector from '../screens/authorized/registration/HospitalSelector';
 import DoctorSelector from '../screens/authorized/registration/DoctorSelector';
 import PharmacySelector from '../screens/authorized/registration/PharmacySelector';

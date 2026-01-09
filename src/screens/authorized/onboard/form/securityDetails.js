@@ -3,7 +3,7 @@ import { Platform, TouchableOpacity, View } from "react-native";
 import AccordionCard from "../../../../components/view/AccordionCard";
 import FloatingInput from "../../../../components/form/floatingInput";
 import FloatingDropdown from "../../../../components/form/floatingDropdown";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { act, useCallback, useEffect, useRef, useState } from "react";
 import OnboardStyle from "../style/onboardStyle";
 import Downarrow from "../../../../components/icons/downArrow";
 import CommonStyle from "../../../../styles/styles";
@@ -150,13 +150,28 @@ const OTPForm = ({ onComplete, onResend, autoFill, dummy = false }) => {
 
 
 
-const SecurityDetails = ({ setValue, isAccordion = false, formData, action, error }) => {
+const SecurityDetails = ({ setValue, isAccordion = false, formData, action, error, handleSaveDraft }) => {
     const [toggle, setToggle] = useState("open");
     const [otpInProgress, setOtpInProgress] = useState("");
 
     const handleToggle = useCallback(() => {
         setToggle(p => (p === "open" ? "close" : "open"));
     }, []);
+
+
+    useEffect(() => {
+        if (
+            action !== "edit" &&
+            (formData?.isEmailVerified === true ||
+            formData?.isMobileVerified === true)
+        ) {
+            handleSaveDraft?.();
+        }
+    }, [
+        formData?.isEmailVerified,
+        formData?.isMobileVerified,
+        action
+    ]);
 
     const handleSetValue = (key, value) => {
         setValue?.((prev) => {
@@ -189,6 +204,7 @@ const SecurityDetails = ({ setValue, isAccordion = false, formData, action, erro
             setValue?.((prev) => {
                 return { ...prev, [verify]: true }
             })
+
         }
         catch (error) {
             console.log(error);

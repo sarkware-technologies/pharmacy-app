@@ -28,6 +28,13 @@ const DOC_TYPES = {
   PHARMACY_IMAGE: 1,
   PAN: 7,
   GST: 2,
+  license20:3,
+  license21:5,
+  license20b:4,
+  license21b:6,
+  pharmacyImage:1,
+  pan:7,
+  gst:2
 };
 
 
@@ -632,7 +639,7 @@ const AddNewPharmacyModal = ({ visible, onClose, onSubmit, formData, entityType,
       // Add complete document object to uploaded list with docTypeId
       const docObject = {
         s3Path: file.s3Path || file.uri,
-        docTypeId: DOC_TYPES[field.toUpperCase()],
+        docTypeId: DOC_TYPES[field],
         fileName: file.fileName || file.name,
         id: file.id
       };

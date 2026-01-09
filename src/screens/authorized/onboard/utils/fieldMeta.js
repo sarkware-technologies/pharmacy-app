@@ -40,7 +40,7 @@ export const initialFormData = {
     isMobileVerified: false,
     isEmailVerified: false,
     isPanVerified: false,
-    isExisting: "",
+    isExisting: false,
     licenceDetails: {
         registrationDate: "",
         licence: [
@@ -82,8 +82,9 @@ export const initialFormData = {
             customerId: "",
         }
     ],
-    isChildCustomer: "",
+    isChildCustomer: false,
     customerId: "",
+    stgCustomerId: "",
 };
 
 
@@ -199,6 +200,12 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
 
             matchedDoc?.fields?.forEach((field) => {
                 if (field?.attributeType !== "file") {
+                    if (
+                        field.fieldAttributeKey === "hospitalCode" &&
+                        categoryId != 5
+                    ) {
+                        return; // skip this field
+                    }
                     docObj[field.fieldAttributeKey] = field;
                 } else {
                     customerDocs.push({
@@ -423,4 +430,293 @@ export const validateForm = async (payload, scheme) => {
     };
 };
 
+const cleanMapping = (arr = []) =>
+    arr
+        .filter(item => item?.id)
+        .map(item => ({
+            id: Number(item.id),
+            isNew: Boolean(item.isNew),
 
+            ...(item.pharmacy?.length
+                ? {
+                    pharmacy: item.pharmacy
+                        .filter(p => p?.id)
+                        .map(p => ({
+                            id: Number(p.id),
+                            isNew: Boolean(p.isNew),
+                        })),
+                }
+                : {}),
+        }));
+
+
+
+export const buildCreatePayload = (formData) => {
+
+    const doctors = cleanMapping(formData.mapping?.doctors);
+    const hospitals = cleanMapping(formData.mapping?.hospitals);
+    const pharmacy = cleanMapping(formData.mapping?.pharmacy);
+    const groupHospitals = cleanMapping(formData.mapping?.groupHospitals);
+
+
+    return {
+        typeId: formData.typeId,
+        categoryId: formData.categoryId ?? 0,
+        subCategoryId: formData.subCategoryId ?? 0,
+        isBuyer: Boolean(formData.isBuyer),
+        isExisting: Boolean(formData.isExisting),
+        isChildCustomer: Boolean(formData.isChildCustomer),
+        isMobileVerified: Boolean(formData.isMobileVerified),
+        isEmailVerified: Boolean(formData.isEmailVerified),
+        customerGroupId: formData.customerGroupId,
+        stationCode: formData.stationCode,
+        ...(formData.customerId
+            ? { customerId: Number(formData.customerId) }
+            : {}),
+        stgCustomerId: Number(formData.stgCustomerId) || "",
+        licenceDetails: {
+            registrationDate: formData.licenceDetails?.registrationDate
+                ? new Date(formData.licenceDetails.registrationDate)
+                : null,
+
+            licence: (formData.licenceDetails?.licence || [])
+                .filter(l =>
+                    l?.licenceNo &&                // must exist
+                    l?.licenceValidUpto            // must exist
+                )
+                .map(l => ({
+                    licenceTypeId: l.licenceTypeId,
+                    licenceNo: l.licenceNo,
+                    licenceValidUpto: new Date(l.licenceValidUpto),
+                    ...(l.hospitalCode ? { hospitalCode: l.hospitalCode } : {}),
+                })),
+        },
+
+        // ---------------- DOCUMENTS ----------------
+        customerDocs: (formData.customerDocs || []).map(d => ({
+            s3Path: d.s3Path,
+            docTypeId: d.docTypeId,
+            fileName: d.fileName,
+            id: d.id,
+        })),
+
+        // ---------------- GENERAL DETAILS ----------------
+        generalDetails: {
+            ...formData.generalDetails,
+
+            pincode: formData.generalDetails?.pincode
+                ? Number(formData.generalDetails.pincode)
+                : undefined,
+        },
+
+        // ---------------- SECURITY DETAILS ----------------
+        securityDetails: {
+            mobile: formData.securityDetails.mobile,
+            email: formData.securityDetails.email,
+            panNumber: formData.securityDetails.panNumber,
+            gstNumber:
+                formData.securityDetails.gstNumber ||
+                null,
+        },
+
+        // ---------------- OPTIONAL ----------------
+        ...(
+            doctors.length ||
+                hospitals.length ||
+                pharmacy.length ||
+                groupHospitals.length
+                ? {
+                    mapping: {
+                        ...(doctors.length ? { doctors } : {}),
+                        ...(hospitals.length ? { hospitals } : {}),
+                        ...(pharmacy.length ? { pharmacy } : {}),
+                        ...(groupHospitals.length ? { groupHospitals } : {}),
+                    },
+                }
+                : {}
+        ),
+        ...(formData.suggestedDistributors?.length
+            ? {
+                suggestedDistributors: formData.suggestedDistributors.filter(
+                    d =>
+                        d?.distributorCode ||
+                        d?.distributorName ||
+                        d?.city ||
+                        d?.customerId
+                ),
+            }
+            : {}),
+    };
+};
+
+
+
+export const buildDraftPayload = (formData) => {
+    const doctors = cleanMapping(formData.mapping?.doctors);
+    const hospitals = cleanMapping(formData.mapping?.hospitals);
+    const pharmacy = cleanMapping(formData.mapping?.pharmacy);
+    const groupHospitals = cleanMapping(formData.mapping?.groupHospitals);
+
+    return {
+        // ---------- BASIC ----------
+        typeId: formData.typeId,
+        categoryId: formData.categoryId ?? 0,
+        subCategoryId: formData.subCategoryId ?? 0,
+
+        ...(formData.customerId
+            ? { customerId: Number(formData.customerId) }
+            : {}),
+        ...(formData.stgCustomerId
+            ? { stgCustomerId: Number(formData.stgCustomerId) }
+            : {}),
+
+        // ---------- FLAGS ----------
+        isBuyer: Boolean(formData.isBuyer),
+        isExisting: Boolean(formData.isExisting),
+        isChildCustomer: Boolean(formData.isChildCustomer),
+        isMobileVerified: Boolean(formData.isMobileVerified),
+        isEmailVerified: Boolean(formData.isEmailVerified),
+
+        ...(formData.customerGroupId
+            ? { customerGroupId: formData.customerGroupId }
+            : {}),
+
+        ...(formData.stationCode
+            ? { stationCode: formData.stationCode }
+            : {}),
+
+        // ---------- LICENCE ----------
+        ...(formData.licenceDetails?.registrationDate
+            ? {
+                licenceDetails: {
+                    registrationDate: new Date(
+                        formData.licenceDetails.registrationDate
+                    ),
+                },
+            }
+            : {}),
+
+        ...(formData.licenceDetails?.licence?.some(
+            l => l?.licenceNo && l?.licenceValidUpto
+        )
+            ? {
+                licenceDetails: {
+                    ...(
+                        formData.licenceDetails?.registrationDate
+                            ? {
+                                registrationDate: new Date(
+                                    formData.licenceDetails.registrationDate
+                                ),
+                            }
+                            : {}
+                    ),
+                    licence: formData.licenceDetails.licence
+                        .filter(l => l?.licenceNo && l?.licenceValidUpto)
+                        .map(l => ({
+                            licenceTypeId: l.licenceTypeId,
+                            licenceNo: l.licenceNo,
+                            licenceValidUpto: new Date(l.licenceValidUpto),
+                            ...(l.hospitalCode
+                                ? { hospitalCode: l.hospitalCode }
+                                : {}),
+                        })),
+                },
+            }
+            : {}),
+
+        // ---------- DOCUMENTS ----------
+        ...(formData.customerDocs?.length
+            ? {
+                customerDocs: formData.customerDocs.map(d => ({
+                    s3Path: d.s3Path,
+                    docTypeId: d.docTypeId,
+                    fileName: d.fileName,
+                    id: d.id,
+                })),
+            }
+            : {}),
+
+        // ---------- GENERAL DETAILS ----------
+        ...(Object.values(formData.generalDetails || {}).some(v => v)
+            ? {
+                generalDetails: {
+                    ...(formData.generalDetails.name
+                        ? { name: formData.generalDetails.name }
+                        : {}),
+                    ...(formData.generalDetails.address1
+                        ? { address1: formData.generalDetails.address1 }
+                        : {}),
+                    ...(formData.generalDetails.address2
+                        ? { address2: formData.generalDetails.address2 }
+                        : {}),
+                    ...(formData.generalDetails.address3
+                        ? { address3: formData.generalDetails.address3 }
+                        : {}),
+                    ...(formData.generalDetails.address4
+                        ? { address4: formData.generalDetails.address4 }
+                        : {}),
+                    ...(formData.generalDetails.pincode
+                        ? { pincode: Number(formData.generalDetails.pincode) }
+                        : {}),
+                    ...(formData.generalDetails.cityId
+                        ? { cityId: Number(formData.generalDetails.cityId) }
+                        : {}),
+                    ...(formData.generalDetails.stateId
+                        ? { stateId: Number(formData.generalDetails.stateId) }
+                        : {}),
+                    ...(formData.generalDetails.areaId
+                        ? { areaId: Number(formData.generalDetails.areaId) }
+                        : {}),
+                },
+            }
+            : {}),
+
+        // ---------- SECURITY ----------
+        ...(Object.values(formData.securityDetails || {}).some(v => v)
+            ? {
+                securityDetails: {
+                    ...(formData.securityDetails.mobile
+                        ? { mobile: formData.securityDetails.mobile }
+                        : {}),
+                    ...(formData.securityDetails.email
+                        ? { email: formData.securityDetails.email }
+                        : {}),
+                    ...(formData.securityDetails.panNumber
+                        ? { panNumber: formData.securityDetails.panNumber }
+                        : {}),
+                    ...(formData.securityDetails.gstNumber
+                        ? { gstNumber: formData.securityDetails.gstNumber }
+                        : {}),
+                },
+            }
+            : {}),
+
+        // ---------- MAPPING ----------
+        ...(doctors.length ||
+            hospitals.length ||
+            pharmacy.length ||
+            groupHospitals.length
+            ? {
+                mapping: {
+                    ...(doctors.length ? { doctors } : {}),
+                    ...(hospitals.length ? { hospitals } : {}),
+                    ...(pharmacy.length ? { pharmacy } : {}),
+                    ...(groupHospitals.length
+                        ? { groupHospitals }
+                        : {}),
+                },
+            }
+            : {}),
+        ...(formData.suggestedDistributors?.length
+            ? {
+                suggestedDistributors: formData.suggestedDistributors.filter(
+                    d =>
+                        d?.distributorCode ||
+                        d?.distributorName ||
+                        d?.city ||
+                        d?.customerId
+                ),
+            }
+            : {}),
+    };
+};

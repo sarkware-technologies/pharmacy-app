@@ -81,9 +81,6 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
     const [showAddHospitalModal, setShowAddHospitalModal] = useState(null);
     const [showAddPharmacyModal, setShowAddPharmacyModal] = useState(false);
 
-    console.log(SELECTOR_ENTITY_CONFIG, 456456);
-
-
     useEffect(() => {
         if (!formData) return;
         if ((formData?.typeId == 1 || formData?.typeId == 3) && action === 'register') {
@@ -428,7 +425,6 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
                                 <TextButton fontWeight={600} fontFamily="regular" onPress={() => {
                                     setActiveSelector({ key: 'linked_hospital_child', parentHospitalId: hospital?.id });
-                                    console.log("worihsdf");
                                 }}>+ Add Pharmacy</TextButton>
 
                             </View>
@@ -804,11 +800,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                             </AppText>
                             <AppView flexDirection={"row"} paddingLeft={5} flexWrap="wrap">
                                 {customerOption.map(e => {
-
-                                    console.log(allowedCustomerGroupIds, "sfsdfsd");
-
                                     const isAllowed = allowedCustomerGroupIds.includes(e.customerGroupId);
-
                                     return (
                                         <AppView
                                             key={e.customerGroupId}

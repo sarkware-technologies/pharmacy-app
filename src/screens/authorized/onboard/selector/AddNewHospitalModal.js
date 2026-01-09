@@ -30,6 +30,8 @@ const DOC_TYPES = {
   HOSPITAL_IMAGE: 1,
   PAN: 7,
   GST: 2,
+  registrationCertificate:8,
+  image:1
 };
 
 
@@ -637,10 +639,12 @@ console.log(visible);
     if (file && file.id) {
       setDocumentIds(prev => ({ ...prev, [field]: file.id }));
 
+      
+
       // Add complete document object to uploaded list with docTypeId
       const docObject = {
         s3Path: file.s3Path || file.uri,
-        docTypeId: file.docTypeId,
+        docTypeId: DOC_TYPES[field],
         fileName: file.fileName || file.name,
         id: file.id
       };

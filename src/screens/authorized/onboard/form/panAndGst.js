@@ -154,7 +154,7 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
                             <ActivityIndicator size="large" color={colors.primary} /> :
                             <TouchableOpacity
                                 onPress={() => !formData?.isPanVerified && panVerfiy()}
-                                style={{ paddingRight: 10 }}><AppText style={{ color: colors.primary }}>{formData?.isPanVerified ? 'Verified' : 'Verify'} {!formData?.isMobileVerified && <AppText style={[OnboardStyle.requiredIcon, { fontSize: 14 }]}>*</AppText>}</AppText></TouchableOpacity>
+                                style={{ paddingRight: 10 }}><AppText style={{ color: colors.primary }}>{formData?.isPanVerified ? 'Verified' : 'Verify'} {!formData?.isPanVerified && <AppText style={[OnboardStyle.requiredIcon, { fontSize: 14 }]}>*</AppText>}</AppText></TouchableOpacity>
                     }
                     maxLength={10} />
             </AppView>

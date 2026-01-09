@@ -4,10 +4,6 @@ export const resolveCategoryLabel = ({
   subCategoryId,
 }) => {
 
-    console.log(typeId);
-    console.log(categoryId);
-    console.log(subCategoryId);
-
     
   if (typeId == 3) return 'Doctor';
 
