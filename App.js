@@ -81,10 +81,12 @@ const App = () => {
                         <NoInternetScreen onRetry={() => NetInfo.fetch().then(state => setIsConnected(state.isConnected))} />
                     </View>
                 )}
-            </View>
-            <Toast topOffset={60} />
+
+                 <Toast topOffset={60} />
 
             <AppToast/>
+            </View>
+           
             <ScreenLoader/>
         </Provider>
     );

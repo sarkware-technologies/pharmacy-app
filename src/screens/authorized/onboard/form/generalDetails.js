@@ -15,6 +15,7 @@ import { customerAPI } from "../../../../api/customer";
 import LeafletMapModal from "../../../../components/LeafletMapModal";
 import { useSelector } from "react-redux";
 import { ErrorMessage } from "../../../../components/view/error";
+import { AppToastService } from '../../../../components/AppToast';
 
 const GeneralDetails = ({ License, setValue, isAccordion = false, formData, action, error, setTransferData, transferData }) => {
     const [toggle, setToggle] = useState("open");
@@ -34,7 +35,6 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
     const [areaOptions, setAreaOptions] = useState([]);
     const [cityOptions, setCityOptions] = useState([]);
     const [stateOptions, setStateOptions] = useState([]);
-
     const [leafletMapModal, setLeafletMapModal] = useState(false);
 
     const [stationCodeOptions, setStationCodeOptions] = useState([]);
@@ -73,7 +73,7 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                 return { ...prev, generalDetails: { ...prev?.generalDetails, area: area?.[0]?.name, areaId: area?.[0]?.id, stateId: state?.[0]?.id } }
             })
             setAreaOptions(area)
-            setCityOptions(city)
+            // setCityOptions(city)
             setStateOptions(state)
         }
         catch (error) {
@@ -154,6 +154,59 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
     useEffect(() => {
         setCityOptions(transferData?.cityOptions ?? [])
     }, [transferData?.cityOptions])
+
+
+    const handleCitySearch = async (text) => {
+        try {
+            const response = await customerAPI.getCitiesList({
+                page: 1,
+                limit: 50,
+                search: text,
+            });
+            const cityList = response?.data?.cities || [];
+            const formattedCities = cityList.map(city => ({
+                id: Number(city.id),
+                name: city.cityName,
+            }));
+
+            setCityOptions(formattedCities);
+        } catch (error) {
+            console.error('Error fetching cities:', error);
+        }
+    };
+
+    const addNewCity = async (cityName) => {
+        if (!formData?.generalDetails?.stateId) {
+            AppToastService.show('Please select state to create city', 'error', 'Select State');
+            return
+        }
+        try {
+            const response = await customerAPI.createCity({
+                name: cityName,
+                stateId: formData?.generalDetails?.stateId, // based on PIN/state
+            });
+
+            if (response?.success) {
+                AppToastService.show('City created successfully', 'success', 'City Created');
+            }
+            const newCity = {
+                id: Number(response?.data?.cities[0]?.id),
+                name: response?.data?.cities[0]?.cityName,
+            };
+            setCityOptions(prev => [newCity, ...prev]);
+            setValue(prev => ({
+                ...prev,
+                generalDetails: {
+                    ...prev.generalDetails,
+                    cityId: newCity.id,
+                    city: newCity.name,
+                },
+            }));
+            // setSearchCities(null)
+        } catch (e) {
+            console.error('Add city failed', e);
+        }
+    };
 
 
     return (
@@ -247,12 +300,14 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                             label="Area"
                             isRequired={true}
                             searchTitle="Area"
+
                             onSelect={(e) => {
                                 setValue?.((prev) => {
                                     return { ...prev, generalDetails: { ...prev?.generalDetails, areaId: e?.id, area: e?.name } }
                                 })
                             }}
                             options={areaOptions}
+
                         />
                     </AppView>
                     <AppView>
@@ -264,7 +319,8 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                             searchTitle="City"
                             onSelect={(e) => handleSetValue("cityId", e?.id)}
                             options={cityOptions}
-                            onAddNew={() => { }}
+                            onAddNew={addNewCity}
+                            onSearch={handleCitySearch}
                         />
                     </AppView>
                     <AppView>

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Modal,Text } from 'react-native';
 import AppText from './AppText';
+
 
 let showToastRef = null;
 
@@ -18,6 +19,7 @@ const getDefaultLabel = (type) => {
 };
 
 const AppToast = () => {
+ 
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState('');
   const [type, setType] = useState('success');
@@ -56,38 +58,51 @@ const AppToast = () => {
 
   if (!visible) return null;
 
-  return (
-    <View style={styles.container}>
-      <View
-        style={[
-          styles.toast,
-          type === 'success'
-            ? styles.success
-            : type === 'warning'
-            ? styles.warning
-            : styles.error,
-        ]}
-      >
-        {/* HEADER */}
-        <View style={styles.header}>
-          <AppText style={styles.label}>{label}</AppText>
+ return (
+  <Modal
+    transparent
+    visible={visible}
+    animationType="fade"
+    statusBarTranslucent
+  >
+    {visible && (
+      <View style={styles.overlay}>
+        <View style={styles.container}>
+          <View
+            style={[
+              styles.toast,
+              type === 'success'
+                ? styles.success
+                : type === 'warning'
+                ? styles.warning
+                : styles.error,
+            ]}
+          >
+            <View style={styles.header}>
+              <AppText style={styles.label}>{label}</AppText>
 
-          <TouchableOpacity onPress={() => setVisible(false)}>
-            <AppText style={styles.ok}>OK</AppText>
-          </TouchableOpacity>
+              <TouchableOpacity onPress={() => setVisible(false)}>
+                <AppText style={styles.ok}>OK</AppText>
+              </TouchableOpacity>
+            </View>
+
+            <AppText style={styles.message}>{message}</AppText>
+          </View>
         </View>
-
-        {/* MESSAGE */}
-        <AppText style={styles.message}>{message}</AppText>
       </View>
-    </View>
-  );
+    )}
+  </Modal>
+);
+
 };
 
 /**
  * 🔥 Global Toast API
  */
 export const AppToastService = {
+  
+  
+  
   show: (
     message,
     type = 'success',
@@ -98,15 +113,14 @@ export const AppToastService = {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 90,
-    left: 20,
-    right: 20,
-    zIndex: 9999,
-    elevation: 9999,
-  },
-
+  overlay: {
+  flex: 1,
+  justifyContent: 'flex-end',
+},
+container: {
+  marginBottom: 90,
+  marginHorizontal: 20,
+},
   toast: {
     paddingHorizontal: 20,
     paddingVertical: 16,
