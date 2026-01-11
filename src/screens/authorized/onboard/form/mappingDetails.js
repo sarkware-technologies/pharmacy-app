@@ -285,7 +285,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
         let updated = [...prev];
 
         items.forEach(item => {
-            const index = updated.findIndex(p => p.id === item.id);
+            const index = updated.findIndex(p => p.id == item.id);
 
             if (index > -1) {
                 if (item.isActive) {
@@ -402,7 +402,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                                                     hIndex === index
                                                                         ? {
                                                                             ...hospital,
-                                                                            pharmacy: hospital.pharmacy.filter(
+                                                                            pharmacy: hospital?.pharmacy.filter(
                                                                                 (_, pIdx) => pIdx !== pIndex
                                                                             ),
                                                                         }
@@ -707,7 +707,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                                     ...prev,
                                                     mapping: {
                                                         ...prev.mapping,
-                                                        pharmacy: prev.mapping.pharmacy.filter(
+                                                        pharmacy: prev?.mapping?.pharmacy.filter(
                                                             (_, i) => i !== index
                                                         ),
                                                     },
@@ -751,11 +751,11 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                                 </TouchableOpacity>
                                             </AppView>
                                         }
-                                        checked={formData?.mapping.pharmacy}
+                                        checked={formData?.mapping?.pharmacy}
                                         onChange={() => onToggleCheckbox('pharmacy')} />
                                 </AppView>
 
-                                {formData?.mapping.pharmacy && (
+                                {formData?.mapping?.pharmacy && (
                                     <>
                                         <LabeledSelector
                                             value={
@@ -774,7 +774,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                                     ...prev,
                                                     mapping: {
                                                         ...prev.mapping,
-                                                        pharmacy: prev.mapping.pharmacy.filter(
+                                                        pharmacy: prev?.mapping?.pharmacy.filter(
                                                             (_, i) => i !== index
                                                         ),
                                                     },

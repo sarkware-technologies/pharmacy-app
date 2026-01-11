@@ -77,15 +77,16 @@ export const useCustomerLinkage = ({
               customerData,
               draftResponse.data.draftEdits
             );
+            console.log(merged,23894287)
 
             const updated = applyMappingApproval(
               merged,
               draftResponse.data.draftEdits?.mapping,
               draftResponse.data.draftEdits?.divisions,
               draftResponse.data.draftEdits?.distributors,
-              draftResponse.data.draftEdits?.customerGroupId
+              draftResponse.data.draftEdits?.customerGroupId,
             );
-
+            console.log(updated,2398728)
             setFinalData(updated);
             return; // stop normal flow
           }

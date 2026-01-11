@@ -22,12 +22,22 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
     const [gstOptions, setGstOptions] = useState([]);
 
 
-    const [uploading, setUploading] = useState("");
+    const [uploading, setUploading] = useState({});
     const [verifyPan, setVerifyPan] = useState(false)
+
+
+    const startUpload = (key) =>
+        setUploading(p => ({ ...p, [key]: true }));
+
+    const stopUpload = (key) =>
+        setUploading(p => ({ ...p, [key]: false }));
+
+
+
 
     const handleFileUpload = async (file, type, docTypes) => {
         try {
-            setUploading(type);
+            startUpload(type);
             const response = await customerAPI.documentUpload({
                 file,
                 docTypes,
@@ -82,7 +92,7 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
             }
         }
         finally {
-            setUploading("");
+            stopUpload(type);
         }
     };
 
@@ -131,7 +141,7 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
                     accept={[]}
                     onSelectFile={(file) => handleFileUpload(file, 'pan', staticDOCcode.PAN)}
                     isRequired={true} placeholder="Upload PAN"
-                    isLoading={uploading == 'pan'}
+                    isLoading={uploading?.['pan']}
                     handleDelete={() => {
                         setValue?.((prev) => {
                             return {
@@ -170,7 +180,7 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
                     }}
                     placeholder="Upload GST"
                     onSelectFile={(file) => handleFileUpload(file, 'gst', staticDOCcode.GST)}
-                    isLoading={uploading == 'gst'}
+                    isLoading={uploading?.['gst']}
                     handleDelete={() => {
                         setValue?.((prev) => {
                             return {

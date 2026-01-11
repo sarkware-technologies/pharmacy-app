@@ -36,7 +36,7 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
         // CASE 1: Pharmacy inside Hospital
         if (parentHospitalId && entityType === 'pharmacy') {
             const hospital = formData?.mapping?.hospitals?.find(
-                h => h.id === parentHospitalId
+                h => h.id == parentHospitalId
             );
 
             return (hospital?.pharmacy || []).map(item => ({
@@ -152,7 +152,7 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
 
     const renderEntitiesData = ({ item }) => {
         const isSelected = selectedItems.some(
-            entity => entity?.id === item?.id && entity?.isActive
+            entity => entity?.id == item?.id && entity?.isActive
         );
         return (
             <TouchableOpacity
@@ -194,7 +194,7 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
     const handleToggleEnity = (entity) => {
         setSelectedItems(prevItems => {
             const isSelected = prevItems.some(
-                item => item?.id === entity?.id && item?.isActive
+                item => item?.id == entity?.id && item?.isActive
             );
             // 🔘 SINGLE SELECT (default)
             if (!allowMultiple) {
@@ -209,7 +209,7 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
             // ☑️ MULTI SELECT
             if (isSelected) {
                 return prevItems.map(item =>
-                    item?.id === entity?.id
+                    item?.id == entity?.id
                         ? { ...item, isActive: false }
                         : item
                 );

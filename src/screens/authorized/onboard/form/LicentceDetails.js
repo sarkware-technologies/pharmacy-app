@@ -87,7 +87,7 @@ const RenderLicense = memo(
 
 
 
-const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licenseList, error }) => {
+const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData, action, licenseList, error, setTransferData }) => {
     const uniqueLicenses = licenseList.reduce((acc, cur) => {
         if (!acc.some(e => e.code === cur.code)) {
             acc.push({
@@ -101,7 +101,14 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
     }, [])
 
     const [toggle, setToggle] = useState("open");
-    const [uploading, setUploading] = useState("");
+    const [uploading, setUploading] = useState({});
+
+    const startUpload = (key) =>
+        setUploading(p => ({ ...p, [key]: true }));
+
+    const stopUpload = (key) =>
+        setUploading(p => ({ ...p, [key]: false }));
+
 
     const handleToggle = useCallback(() => {
         setToggle(p => (p === "open" ? "close" : "open"));
@@ -117,8 +124,7 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
 
     const handleFileUpload = useCallback(async (file, type, docTypes, isOcrRequired = true) => {
         try {
-            setUploading(type);
-
+            startUpload(type);
             const response = await customerAPI.documentUpload({
                 file,
                 docTypes,
@@ -138,123 +144,133 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                 id: uploadFile?.id,
             };
 
-            // ✅ Always clone state
-            let updatedForm = { ...formData };
 
-            // ✅ OCR-based auto fill
-            if (uploadFile?.docTypeId && uploadFile?.extractedData) {
-                const extractedData = uploadFile.extractedData;
+            setValue(prev => {
 
-                // Licence number auto-fill
-                if (extractedData?.LicenseNumber) {
-                    updatedForm = updateValue(
-                        extractedData.LicenseNumber,
-                        type,
-                        docTypes,
-                        "licenceNo",
-                        updatedForm
-                    );
-                }
 
-                // Licence expiry date auto-fill (DD-MM-YYYY → YYYY-MM-DD)
-                const rawDate =
-                    updatedForm?.categoryId == 4
-                        ? (extractedData?.RegistrationDate || extractedData?.ExpiryDate)
-                        : extractedData?.ExpiryDate;
+                // ✅ Always clone state
+                let updatedForm = prev;
 
-                if (rawDate) {
-                    const [dd, mm, yyyy] = rawDate.split('-');
+                // ✅ OCR-based auto fill
+                if (uploadFile?.docTypeId && uploadFile?.extractedData) {
+                    const extractedData = uploadFile.extractedData;
 
-                    if (dd && mm && yyyy) {
+                    // Licence number auto-fill
+                    if (extractedData?.LicenseNumber) {
                         updatedForm = updateValue(
-                            `${yyyy}-${mm}-${dd}`,
+                            extractedData.LicenseNumber,
                             type,
                             docTypes,
-                            "licenceValidUpto",
+                            "licenceNo",
                             updatedForm
                         );
                     }
-                }
+
+                    // Licence expiry date auto-fill (DD-MM-YYYY → YYYY-MM-DD)
+                    const rawDate =
+                        updatedForm?.categoryId == 4
+                            ? (extractedData?.RegistrationDate || extractedData?.ExpiryDate)
+                            : extractedData?.ExpiryDate;
+
+                    if (rawDate) {
+                        const [dd, mm, yyyy] = rawDate.split('-');
+
+                        if (dd && mm && yyyy) {
+                            updatedForm = updateValue(
+                                `${yyyy}-${mm}-${dd}`,
+                                type,
+                                docTypes,
+                                "licenceValidUpto",
+                                updatedForm
+                            );
+                        }
+                    }
 
 
-                const rawAddress =
-                    extractedData?.address ||
-                    extractedData?.PharmacyAddress ||
-                    extractedData?.HospitalAddress ||
-                    extractedData?.Address ||
-                    null;
+                    const rawAddress =
+                        extractedData?.address ||
+                        extractedData?.PharmacyAddress ||
+                        extractedData?.HospitalAddress ||
+                        extractedData?.Address ||
+                        null;
 
 
 
-                let addressParts = null;
+                    let addressParts = null;
 
-                if (rawAddress) {
-                    const parts = rawAddress.split(',').map(p => p.trim()).filter(Boolean);
+                    if (rawAddress) {
+                        const parts = rawAddress.split(',').map(p => p.trim()).filter(Boolean);
 
-                    addressParts = {
-                        address1: parts[0] || "",
-                        address2: parts[1] || "",
-                        address3: parts[2] || "",
-                        address4: parts.slice(3).join(', ') || "",
+                        addressParts = {
+                            address1: parts[0] || "",
+                            address2: parts[1] || "",
+                            address3: parts[2] || "",
+                            address4: parts.slice(3).join(', ') || "",
+                        };
+                    }
+                    if (uploadFile?.cityId && uploadFile?.City) {
+                        setTransferData((prev) => ({ ...prev, cityOptions: [{ id: uploadFile?.cityId, name: uploadFile?.City }] }))
+                    }
+                    // General details auto-fill (SAFE merge)
+                    updatedForm = {
+                        ...updatedForm,
+                        generalDetails: {
+                            ...updatedForm?.generalDetails,
+                            ...(extractedData?.PharmacyName || extractedData?.hospitalName || extractedData?.Name
+                                ? {
+                                    name:
+                                        extractedData.PharmacyName ??
+                                        extractedData.hospitalName ??
+                                        extractedData.Name,
+
+                                }
+                                : {}),
+                            ...(extractedData?.Pincode || extractedData?.pincode
+                                ? { pincode: String(extractedData.Pincode) ?? String(extractedData.pincode) }
+                                : {}),
+
+                            ...(addressParts?.address1 && !updatedForm?.generalDetails?.address1
+                                ? { address1: addressParts.address1.trim().slice(0, 40) }
+                                : {}),
+
+                            ...(addressParts?.address2 && !updatedForm?.generalDetails?.address2
+                                ? { address2: addressParts.address2.trim().slice(0, 40) }
+                                : {}),
+
+                            ...(addressParts?.address3 && !updatedForm?.generalDetails?.address3
+                                ? { address3: addressParts.address3.trim().slice(0, 60) }
+                                : {}),
+
+                            ...(addressParts?.address4 && !updatedForm?.generalDetails?.address4
+                                ? { address4: addressParts.address4.trim().slice(0, 60) }
+                                : {}),
+                            ...(uploadFile?.cityId && { cityId: uploadFile?.cityId })
+
+                        },
                     };
                 }
 
 
-                // General details auto-fill (SAFE merge)
-                updatedForm = {
+
+                const customerDocs = prev?.customerDocs ?? [];
+                const existingIndex = customerDocs.findIndex(
+                    (e) => e?.docTypeId == uploadFile?.docTypeId
+                );
+
+                const updatedDocs =
+                    existingIndex != -1
+                        ? customerDocs.map((doc, idx) =>
+                            idx === existingIndex ? docObject : doc
+                        )
+                        : [...customerDocs, docObject];
+
+                return {
+                    ...prev,
                     ...updatedForm,
-                    generalDetails: {
-                        ...updatedForm?.generalDetails,
-                        ...(extractedData?.PharmacyName || extractedData?.hospitalName || extractedData?.Name
-                            ? {
-                                name:
-                                    extractedData.PharmacyName ??
-                                    extractedData.hospitalName ??
-                                    extractedData.Name,
-
-                            }
-                            : {}),
-                        ...(extractedData?.Pincode ||extractedData?.pincode
-                            ? { pincode: String(extractedData.Pincode) ??  String(extractedData.pincode)}
-                            : {}),
-
-
-                        ...(addressParts?.address1 && !updatedForm?.generalDetails?.address1
-                            ? { address1: addressParts.address1.trim().slice(0, 40) }
-                            : {}),
-
-                        ...(addressParts?.address2 && !updatedForm?.generalDetails?.address2
-                            ? { address2: addressParts.address2.trim().slice(0, 40) }
-                            : {}),
-
-                        ...(addressParts?.address3 && !updatedForm?.generalDetails?.address3
-                            ? { address3: addressParts.address3.trim().slice(0, 60) }
-                            : {}),
-
-                        ...(addressParts?.address4 && !updatedForm?.generalDetails?.address4
-                            ? { address4: addressParts.address4.trim().slice(0, 60) }
-                            : {}),
-                    },
+                    customerDocs: updatedDocs,
                 };
-            }
-
-            const customerDocs = updatedForm?.customerDocs ?? [];
-
-            const existingIndex = customerDocs.findIndex(
-                (e) => e?.docTypeId == uploadFile?.docTypeId
-            );
-
-            const updatedDocs =
-                existingIndex !== -1
-                    ? customerDocs.map((doc, idx) =>
-                        idx === existingIndex ? docObject : doc
-                    )
-                    : [...customerDocs, docObject];
-
-            setValue({
-                ...updatedForm,
-                customerDocs: updatedDocs,
             });
+
 
         } catch (error) {
             console.log(error);
@@ -262,7 +278,7 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                 ErrorMessage(error);
             }
         } finally {
-            setUploading("");
+            stopUpload(type)
         }
     }, [formData, licenseMap]);
 
@@ -286,13 +302,13 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
         if (existingIndex > -1) {
             updatedLicences = prevLicences.map((l, idx) =>
                 idx === existingIndex
-                    ? { ...l, docTypeId, [key]: value }
+                    ? { ...l, [key]: value, docTypeId, }
                     : l
             );
         } else {
             updatedLicences = [
                 ...prevLicences,
-                { licenceTypeId, docTypeId, [key]: value },
+                { [key]: value, licenceTypeId, docTypeId, },
             ];
         }
 
@@ -422,7 +438,7 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                     placeholder: ui.filePlaceholder,
                     onSelectFile: (file) => handleFileUpload(file, lic.code, lic.docTypeId),
                     isRequired: ui.isRequired,
-                    isLoading: uploading === lic.code,
+                    isLoading: uploading?.[lic.code],
                     uploadedFile: findFile && { name: findFile?.fileName, url: findFile?.s3Path, view: true, remove: true },
                     handleDelete: () => remove_Document(lic.docTypeId),
                     error: error?.customerDocs?.[lic.docTypeId]
@@ -491,7 +507,7 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                                 placeholder: getPlaceholder("file"),
                                 onSelectFile: (file) =>
                                     handleFileUpload(file, "REG", licenseMap.REG.docTypeId),
-                                isLoading: uploading === "REG",
+                                isLoading: uploading?.['REG'],
                                 uploadedFile: findREG && { name: findREG?.fileName, url: findREG?.s3Path, view: true, remove: true },
                                 handleDelete: () => remove_Document(licenseMap.REG.docTypeId),
                                 isRequired: true,
@@ -527,7 +543,7 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                                             placeholder: "Official Letter on Dept. Letterhead",
                                             onSelectFile: (file) =>
                                                 handleFileUpload(file, "officialLetter", staticDOCcode.IMAGE),
-                                            isLoading: uploading === "officialLetter",
+                                            isLoading: uploading?.['officialLetter'],
                                             uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
                                             isRequired: true,
                                             handleDelete: () => remove_Document(staticDOCcode.IMAGE),
@@ -551,7 +567,7 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                             file={{
                                 placeholder: "Upload Electricity/Telephone bill",
                                 onSelectFile: (file) => handleFileUpload(file, "ADDRESS_PROOF", staticDOCcode.ADDRESS_PROOF, false),
-                                isLoading: uploading == "ADDRESS_PROOF",
+                                isLoading: uploading?.['ADDRESS_PROOF'],
                                 uploadedFile: findADDRESS_PROOF && { name: findADDRESS_PROOF?.fileName, url: findADDRESS_PROOF?.s3Path, view: true, remove: true },
                                 isRequired: true,
                                 handleDelete: () => remove_Document(staticDOCcode.ADDRESS_PROOF),
@@ -567,7 +583,7 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                             file={{
                                 placeholder: "Upload License",
                                 onSelectFile: (file) => handleFileUpload(file, "CLINIC_IMAGE", staticDOCcode.IMAGE, false),
-                                isLoading: uploading == "CLINIC_IMAGE",
+                                isLoading: uploading?.['CLINIC_IMAGE'],
                                 uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true }, isRequired: true,
                                 handleDelete: () => remove_Document(staticDOCcode.IMAGE),
                                 error: error?.customerDocs?.[staticDOCcode.IMAGE]
@@ -583,7 +599,7 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                             file={{
                                 placeholder: "Upload",
                                 onSelectFile: (file) => handleFileUpload(file, "PHARMACY_IMAGE", staticDOCcode.IMAGE, false),
-                                isLoading: uploading == "PHARMACY_IMAGE",
+                                isLoading: uploading?.['PHARMACY_IMAGE'],
                                 uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
                                 isRequired: true,
                                 handleDelete: () => remove_Document(staticDOCcode.IMAGE),
@@ -599,7 +615,7 @@ const LicenseDetails = ({ setValue, isAccordion = false, formData, action, licen
                             file={{
                                 placeholder: "Upload",
                                 onSelectFile: (file) => handleFileUpload(file, "IMAGE", staticDOCcode.IMAGE, false),
-                                isLoading: uploading == "IMAGE",
+                                isLoading: uploading?.['IMAGE'],
                                 uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
                                 isRequired: true,
                                 handleDelete: () => remove_Document(staticDOCcode.IMAGE),

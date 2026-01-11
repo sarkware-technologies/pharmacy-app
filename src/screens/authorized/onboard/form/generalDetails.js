@@ -16,7 +16,7 @@ import LeafletMapModal from "../../../../components/LeafletMapModal";
 import { useSelector } from "react-redux";
 import { ErrorMessage } from "../../../../components/view/error";
 
-const GeneralDetails = ({ License, setValue, isAccordion = false, formData, action, error }) => {
+const GeneralDetails = ({ License, setValue, isAccordion = false, formData, action, error, setTransferData, transferData }) => {
     const [toggle, setToggle] = useState("open");
     const loggedInUser = useSelector(state => state.auth.user);
 
@@ -54,10 +54,10 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
         }
         else {
             setAreaOptions([]);
-            setCityOptions([]);
+            // setCityOptions([]);
             setStateOptions([]);
             setValue?.((prev) => {
-                return { ...prev, generalDetails: { ...prev?.generalDetails, area: "", areaId: "", stateId: "", cityId: "" } }
+                return { ...prev, generalDetails: { ...prev?.generalDetails, area: "", areaId: "", stateId: "" } }
             })
         }
     }, [formData?.generalDetails?.pincode])
@@ -83,6 +83,8 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
             }
         }
     }
+
+
 
     const handleLocationSelect = async (value) => {
         try {
@@ -149,6 +151,10 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
     );
 
 
+    useEffect(() => {
+        setCityOptions(transferData?.cityOptions ?? [])
+    }, [transferData?.cityOptions])
+
 
     return (
         <AppView style={{ marginTop: 20 }}>
@@ -180,7 +186,7 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                     </AppView>
                     {formData?.typeId != 3 && (
                         <AppView>
-                            <FloatingInput error={error?.generalDetails?.shortName} value={formData?.generalDetails?.shortName} onChangeText={(text) => handleSetValue("shortName", text)} label={getPlaceholder("shortName")}  />
+                            <FloatingInput error={error?.generalDetails?.shortName} value={formData?.generalDetails?.shortName} onChangeText={(text) => handleSetValue("shortName", text)} label={getPlaceholder("shortName")} />
                         </AppView>
                     )}
                     {formData?.typeId == 3 && (
@@ -221,13 +227,13 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                         />
                     </AppView>
                     <AppView>
-                        <FloatingInput error={error?.generalDetails?.address2} value={formData?.generalDetails?.address2} onChangeText={(text) => handleSetValue("address2", text)} label="Address 2"  />
+                        <FloatingInput error={error?.generalDetails?.address2} value={formData?.generalDetails?.address2} onChangeText={(text) => handleSetValue("address2", text)} label="Address 2" />
                     </AppView>
                     <AppView>
-                        <FloatingInput error={error?.generalDetails?.address3} value={formData?.generalDetails?.address3} onChangeText={(text) => handleSetValue("address3", text)} label="Address 3"  />
+                        <FloatingInput error={error?.generalDetails?.address3} value={formData?.generalDetails?.address3} onChangeText={(text) => handleSetValue("address3", text)} label="Address 3" />
                     </AppView>
                     <AppView>
-                        <FloatingInput error={error?.generalDetails?.address4} value={formData?.generalDetails?.address4} onChangeText={(text) => handleSetValue("address4", text)} label="Address 4"  />
+                        <FloatingInput error={error?.generalDetails?.address4} value={formData?.generalDetails?.address4} onChangeText={(text) => handleSetValue("address4", text)} label="Address 4" />
                     </AppView>
                     <AppView>
                         <FloatingInput error={error?.generalDetails?.pincode} keyboardType="number-pad" maxLength={6} value={String(formData?.generalDetails?.pincode)} onChangeText={(text) => handleSetValue("pincode", text)} label="Pincode" isRequired={true} />

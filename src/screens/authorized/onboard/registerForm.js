@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { customerAPI } from "../../../api/customer";
 import { AppText } from "../../../components";
 import LicenseDetails from "./form/LicentceDetails"
@@ -10,15 +10,26 @@ import OnboardStyle from "./style/onboardStyle"
 import { colors } from "../../../styles/colors";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ScrollView, StatusBar, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, StatusBar, TouchableOpacity, View } from "react-native";
 import ChevronLeft from "../../../components/icons/ChevronLeft";
 import AnimatedContent from "../../../components/view/AnimatedContent";
 import AppView from "../../../components/AppView";
 import Button from "../../../components/Button";
 import { ErrorMessage } from "../../../components/view/error";
-import { validateForm, converScheme, initialFormData, buildCreatePayload, buildDraftPayload } from "./utils/fieldMeta";
+import { validateForm, converScheme, initialFormData, buildCreatePayload, buildDraftPayload, updateFormData, getChangedValues } from "./utils/fieldMeta";
 import validateScheme from "./utils/validateScheme.json";
 import { AppToastService } from '../../../components/AppToast';
+import { useCustomerLinkage } from "../customer/service/useCustomerLinkage";
+
+
+const Loading = memo(({ height = "minHeight" }) => {
+    return (
+        <AppView style={{ [height]: "100%" }} paddingTop={height == 'minHeight' ? 0 : 150} alignItems={"center"} justifyContent={"center"}>
+            <ActivityIndicator size={30} color="#F7941E" />
+        </AppView>
+    )
+})
+
 
 const RegisterForm = () => {
     const navigation = useNavigation();
@@ -33,8 +44,44 @@ const RegisterForm = () => {
         action = "register",
     } = route.params || {};
 
+    const [transferData, setTransferData] = useState({});
+
+
+
     const [formData, setFormData] = useState(initialFormData);
     const [isFormSubmited, setIsFormSubmited] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [customerApiresponse, setCustomerApiresponse] = useState({});
+    const [customerDetails, setCustomerDetails] = useState({});
+    const [draftValue, setDraftValue] = useState({});
+
+
+
+    const {
+        data,
+        draft,
+        hasDraft,
+        isLoading,
+    } = useCustomerLinkage({
+        customerId,
+        isStaging,
+    });
+    useEffect(() => {
+        if (data && !isLoading) {
+            setCustomerApiresponse(data);
+            setTransferData((prev) => ({ ...prev, cityOptions: [{ id: data?.generalDetails?.cityId, name: data?.generalDetails?.cityName }] }))
+            setCustomerDetails(updateFormData(data, action));
+        }
+        setDraftValue(draft ?? {});
+        console.log(data, draft, hasDraft, isLoading, 2938749283)
+    }, [data, isLoading])
+
+
+    useEffect(() => {
+        if (customerDetails) {
+            setFormData(customerDetails);
+        }
+    }, [customerDetails])
 
     const [error, setError] = useState({});
     const [isFormValid, setIsFormValid] = useState(false);
@@ -53,11 +100,11 @@ const RegisterForm = () => {
         mapping: useRef(null),
         security: useRef(null),
     };
-    console.log(formData);
 
 
     const fetchCustomerType = async () => {
         try {
+            setLoading(true);
             const response = await customerAPI.getCustomerTypes();
             setCustomerType(response?.data?.customerType);
         }
@@ -66,6 +113,9 @@ const RegisterForm = () => {
             if (error?.status == 400) {
                 ErrorMessage(error);
             }
+        }
+        finally {
+            setLoading(false)
         }
     };
 
@@ -101,6 +151,7 @@ const RegisterForm = () => {
 
     const builLicense = async (customerType, formData) => {
         try {
+            setLoading(true);
             const payload = {}
             let fetch = true
             const findType = customerType?.find((e) => e.id == formData?.typeId);
@@ -142,12 +193,12 @@ const RegisterForm = () => {
                                 );
 
                                 return {
-                                    licenceTypeId: item.id,
-                                    docTypeId: item.docTypeId,
                                     code: item?.code,
-                                    licenceNo: existingLicence?.licenceNo || "",
-                                    licenceValidUpto: existingLicence?.licenceValidUpto || "",
+                                    docTypeId: item.docTypeId,
                                     hospitalCode: existingLicence?.hospitalCode || "",
+                                    licenceNo: existingLicence?.licenceNo || "",
+                                    licenceTypeId: item.id,
+                                    licenceValidUpto: existingLicence?.licenceValidUpto || "",
                                 };
                             }),
                         },
@@ -169,6 +220,9 @@ const RegisterForm = () => {
             if (error?.status == 400) {
                 ErrorMessage(error);
             }
+        }
+        finally {
+            setLoading(false)
         }
     }
     useEffect(() => {
@@ -209,29 +263,78 @@ const RegisterForm = () => {
     }, [formData, scheme, isFormSubmited]);
 
 
-
+    useEffect(() => {
+        console.log(formData, "*****formData")
+        console.log(customerDetails, "*****customerDetails")
+        console.log(getChangedValues(customerDetails ?? {}, formData), 928347293)
+    }, [formData, customerDetails])
 
     const handleRegister = async () => {
         setIsFormSubmited(true);
         const result = await validateForm(formData, scheme);
         setIsFormValid(result.isValid);
         setError(result.errors);
+        console.log(result.errors, 2348023)
+        if (result?.errors && !result.isValid) {
+            if (result?.errors?.licenceDetails) {
+                scrollToSection("license")
+            }
+            else if (result?.errors?.generalDetails) {
+                scrollToSection("general")
+            }
+            else if (result?.errors?.securityDetails || result?.errors?.isPanVerified || result?.errors?.isMobileVerified || result?.errors?.isEmailVerified) {
+                scrollToSection("security")
+            }
+            else {
+                scrollToSection("top")
+            }
+
+        }
         if (!result.isValid) return;
 
         const payload = buildCreatePayload(formData);
 
 
         try {
-            const response = await customerAPI.createCustomer(payload);
-            if (response?.success) {
-                AppToastService.show(response?.message, "success", "created");
-                navigation.navigate('RegistrationSuccess', {});
-
+            if (customerApiresponse?.instance?.stepInstances) {
+                const step = customerApiresponse?.instance?.stepInstances?.[0];
+                if (step?.approverType == "INITIATOR") {
+                    await customerAPI?.workflowAction(customerApiresponse?.instance?.workflowInstance?.id, {
+                        action: "MODIFY",
+                        parallelGroup: step?.parallelGroup,
+                        stepOrder: step?.stepOrder,
+                        actorId: Number(step?.assignedUserId),
+                        dataChanges: { ...draftValue, ...getChangedValues(customerDetails, formData) },
+                    })
+                    AppToastService.show("Customer Edit Success", "success", "Edited");
+                    navigation.goBack();
+                }
+                else {
+                    const draftEditPayload = {
+                        stepOrder: step?.stepOrder || 1,
+                        parallelGroup: step?.parallelGroup,
+                        comments: '',
+                        actorId: step?.assignedUserId,
+                        dataChanges: { ...draftValue, ...getChangedValues(customerDetails, formData) },
+                    };
+                    const saveDraft = await customerAPI.draftEdit(
+                        customerApiresponse?.instance?.workflowInstance?.id,
+                        draftEditPayload
+                    );
+                    AppToastService.show("Customer Edit Success", "success", "Edited");
+                    navigation.goBack();
+                }
             }
+            else {
+                const response = await customerAPI.createCustomer(payload);
+                if (response?.success) {
+                    AppToastService.show(response?.message, "success", "created");
+                    navigation.navigate('RegistrationSuccess', {});
 
+                }
+            }
         } catch (err) {
             AppToastService.show(err?.message ?? "Error while creationg customer", "error", "Error");
-
         }
 
 
@@ -274,10 +377,10 @@ const RegisterForm = () => {
 
 
     const renderForm = [
-        { key: "license", component: <LicenseDetails error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 1 },
-        { key: "general", component: <GeneralDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 2 },
-        { key: "mapping", component: <MappingDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 4 },
-        { key: "security", component: <SecurityDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} handleSaveDraft={handleSaveDraft} />, show: true, order: 3 },
+        { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 1 },
+        { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 2 },
+        { key: "mapping", component: <MappingDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} />, show: true, order: 4 },
+        { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={false} handleSaveDraft={handleSaveDraft} />, show: true, order: 3 },
     ]
 
 
@@ -286,6 +389,23 @@ const RegisterForm = () => {
             .filter(item => item.show)
             .sort((a, b) => a.order - b.order);
     }, [renderForm]);
+
+
+    const title = useMemo(() => {
+        switch (action) {
+            case "register":
+                return "Registration";
+            case "edit":
+                return "Edit";
+            case "onboard":
+                return "Registration-Existing";
+            default:
+                return "Registration";
+        }
+    }, [action]);
+
+
+    const isDirty = useMemo(() => Object.entries(getChangedValues(customerDetails ?? {}, formData) ?? {}).length == 0)
 
 
 
@@ -300,10 +420,12 @@ const RegisterForm = () => {
                 >
                     <ChevronLeft />
                 </TouchableOpacity>
-                <AppText style={OnboardStyle.headerTitle}>Registration</AppText>
+                <AppText style={OnboardStyle.headerTitle}>
+                    {title}
+                </AppText>
 
 
-                {formData?.licenceDetails?.licence?.length > 0 &&
+                {(licenseList?.length > 0 && !isLoading && !customerApiresponse?.instance?.stepInstances) &&
                     <TouchableOpacity
                         style={OnboardStyle.saveDraftButton}
                         onPress={handleSaveDraft}
@@ -322,31 +444,41 @@ const RegisterForm = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={OnboardStyle.scrollContent}
             >
-                {customerType != null && action != 'edit' && (
-                    <AnimatedContent >
-                        <CustomerType action={action} setFormData={setFormData} formData={formData} customerType={customerType} />
-                    </AnimatedContent>
+                {isLoading && (
+                    <Loading />
                 )}
-                {customerType != null && licenseList && licenseList.length != 0 && (
-                    sortedForms.map((e) => (
-                        <AnimatedContent key={e.order}>
-                            <View ref={sectionRefs[e.key]}>
-                                {e.component}
-                            </View>
-                        </AnimatedContent>
-                    ))
+                {!isLoading && (
+                    <>
+                        {customerType != null && action != 'edit' && (
+                            <AnimatedContent >
+                                <CustomerType action={action} setFormData={setFormData} formData={formData} customerType={customerType} />
+                            </AnimatedContent>
+                        )}
+                        {loading && (
+                            <Loading height={!customerType || action == 'edit' ? 'minHeight' : 'maxHeight'} />
+                        )}
+                        {customerType != null && licenseList && licenseList.length != 0 && (
+                            sortedForms.map((e) => (
+                                <AnimatedContent key={e.order}>
+                                    <View ref={sectionRefs[e.key]}>
+                                        {e.component}
+                                    </View>
+                                </AnimatedContent>
+                            ))
 
 
+                        )}
+                    </>
                 )}
             </ScrollView>
 
-            {formData?.licenceDetails?.licence?.length > 0 &&
+            {(licenseList?.length > 0 && !isLoading) &&
                 <AppView flexDirection={"row"} gap={20} paddingHorizontal={25} paddingVertical={10}>
                     <Button style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E" }}>
                         Cancel
                     </Button>
-                    <Button onPress={() => handleRegister()} style={!isFormValid ? { flex: 1, backgroundColor: "#D3D4D6", paddingVertical: 12 } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white" }}>
-                        Register
+                    <Button onPress={() => handleRegister()} style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6", paddingVertical: 12 } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white" }}>
+                        {action == 'register' ? 'Register' : 'Update'}
                     </Button>
                 </AppView>
             }

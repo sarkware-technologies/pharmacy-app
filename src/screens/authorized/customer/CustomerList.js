@@ -235,7 +235,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
   };
 
 
-      const editPermissionTabBased = {
+  const editPermissionTabBased = {
     all: [PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_EDIT, PERMISSIONS.ONBOARDING_WORKFLOW_EDIT],
     waitingForApproval: [
       PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_EDIT,
@@ -1677,7 +1677,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
 
 
     try {
-       showLoader();
+      showLoader();
       const instanceId = selectedCustomerForAction?.instaceId || selectedCustomerForAction?.stgCustomerId;
       const actorId = loggedInUser?.userId || loggedInUser?.id;
       const parellGroupId = selectedCustomerForAction?.instance?.stepInstances[0]?.parallelGroup
@@ -1759,9 +1759,9 @@ const CustomerList = ({ navigation: navigationProp }) => {
       setRejectModalVisible(false);
       showToast(`Failed to reject customer: ${error.message}`, 'error');
       setSelectedCustomerForAction(null);
-    }finally {
-            hideLoader();
-        }
+    } finally {
+      hideLoader();
+    }
   };
 
   // Handle verify button click - fetch latest draft first
@@ -2380,7 +2380,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           <View style={styles.pendingActions}>
             <TouchableOpacity
               style={styles.approveButton}
-               onPress={() =>
+              onPress={() =>
                 navigation.navigate('CustomerDetail', {
                   customerId: item?.stgCustomerId ?? item?.customerId,
                   isStaging: !!item?.stgCustomerId,
@@ -2459,8 +2459,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
             />
           </TouchableOpacity>
           <View style={styles.actionsContainer}>
-{console.log(unverifiedEdit, 54345345)
-}
+            {console.log(unverifiedEdit, 54345345)
+            }
 
             {(
               item.statusName !== 'NOT-ONBOARDED' &&
@@ -2469,8 +2469,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
                 !!item?.instance?.stepInstances?.length ||
                 (item?.customerId && !item?.stgCustomerId)
               ) && (
-                
-                <PermissionWrapper   permission={editPermissionTabBased[activeTab]}>
+
+                <PermissionWrapper permission={editPermissionTabBased[activeTab]}>
                   {
                     (item.statusName === 'UNVERIFIED' && !unverifiedEdit) ||
                       item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED' ||
@@ -2486,22 +2486,19 @@ const CustomerList = ({ navigation: navigationProp }) => {
                                 : 'reassigned'
                               : item.statusName?.toLowerCase();
 
-                          const customerId = item.customerId || item.stgCustomerId;
+                          const customerId = item.stgCustomerId || item.customerId;
 
-                          const isStaging =
-                            derivedStatus === 'not-onboarded' ||
-                              derivedStatus === 'reassigned'
-                              ? ['waitingForApproval', 'rejected', 'draft'].includes(activeTab)
-                              : false;
+                          const isStaging = item.stgCustomerId != null;
 
-                          handleOnboardCustomer(
-                            navigation,
-                            customerId,
-                            isStaging,
-                            customerAPI,
-                            toastConfig => Toast.show(toastConfig),
-                            derivedStatus
-                          );
+                          navigation.navigate('onboading', { isStaging, customerId, action: "edit" })
+                          // handleOnboardCustomer(
+                          //   navigation,
+                          //   customerId,
+                          //   isStaging,
+                          //   customerAPI,
+                          //   toastConfig => Toast.show(toastConfig),
+                          //   derivedStatus
+                          // );
                         }}
                       >
                         <Edit color="#666" />

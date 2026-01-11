@@ -365,7 +365,6 @@ export const validateForm = async (payload, scheme) => {
     defaultFields.forEach((field) => {
         const value = payload?.[field.fieldAttributeKey];
         const error = validateValue(value, field);
-        console.log(value, error, 2389236)
 
         if (error) {
             setDeep(errors, [field.fieldAttributeKey], error);
@@ -414,7 +413,6 @@ export const validateForm = async (payload, scheme) => {
             }
         });
 
-        console.log(localError, docSchema, 2390482034)
         if (Object.keys(localError).length) {
             setDeep(errors, ["licenceDetails", licenceValue?.docTypeId], localError);
         }
@@ -720,3 +718,128 @@ export const buildDraftPayload = (formData) => {
             : {}),
     };
 };
+
+
+
+
+export const updateFormData = (payload, action) => {
+    return {
+        typeId: payload?.typeId,
+        categoryId: payload?.categoryId,
+        subCategoryId: payload?.subCategoryId,
+        isMobileVerified: payload?.isMobileVerified,
+        isEmailVerified: payload?.isEmailVerified,
+        isPanVerified: action == 'edit' ? true : false,
+        isExisting: payload?.isExisting,
+        licenceDetails: {
+            registrationDate: payload?.licenceDetails?.registrationDate,
+            licence: payload?.licenceDetails?.licence ?? [],
+        },
+        customerDocs: payload?.docType?.map((e) => ({
+            s3Path: e?.s3Path,
+            docTypeId: e?.doctypeId,
+            fileName: e?.fileName,
+            customerId: payload?.customerId,
+            id: e?.docId,
+        })) ?? [],
+        isBuyer: payload?.isBuyer,
+        customerGroupId: payload?.customerGroupId,
+        stationCode: payload?.stationCode,
+        generalDetails: {
+            name: payload?.generalDetails?.name ?? payload?.generalDetails?.customerName,
+            shortName: payload?.generalDetails?.shortName,
+            address1: payload?.generalDetails?.address1,
+            address2: payload?.generalDetails?.address2,
+            address3: payload?.generalDetails?.address3,
+            address4: payload?.generalDetails?.address4,
+            pincode: payload?.generalDetails?.pincode,
+            area: payload?.generalDetails?.area,
+            cityId: payload?.generalDetails?.cityId,
+            stateId: payload?.generalDetails?.stateId,
+            ownerName: payload?.generalDetails?.ownerName,
+            clinicName: payload?.generalDetails?.clinicName,
+            areaId: payload?.generalDetails?.areaId,
+            specialist: payload?.generalDetails?.specialist
+        },
+        mapping: payload?.mapping,
+        securityDetails: payload?.securityDetails,
+        suggestedDistributors: payload?.suggestedDistributors,
+        isChildCustomer: payload?.isChildCustomer,
+        customerId: payload?.customerId,
+        stgCustomerId: payload?.stgCustomerId,
+    }
+
+}
+
+
+export function getChangedValues(original, updated) {
+
+  function isObject(val) {
+    return val && typeof val === "object" && !Array.isArray(val);
+  }
+
+  function normalize(value) {
+    // Normalize object key order
+    if (isObject(value)) {
+      return Object.keys(value)
+        .sort()
+        .reduce((acc, key) => {
+          acc[key] = normalize(value[key]);
+          return acc;
+        }, {});
+    }
+
+    // Normalize array order (by stable string representation)
+    if (Array.isArray(value)) {
+      return value
+        .map(normalize)
+        .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+    }
+
+    return value;
+  }
+
+  function isEqual(a, b) {
+    return JSON.stringify(normalize(a)) === JSON.stringify(normalize(b));
+  }
+
+  function diff(orig, curr) {
+    let hasChanges = false;
+    const result = {};
+
+    for (const key in curr) {
+      const origVal = orig?.[key];
+      const currVal = curr[key];
+
+      // Arrays
+      if (Array.isArray(currVal)) {
+        if (!isEqual(origVal, currVal)) {
+          result[key] = currVal;
+          hasChanges = true;
+        }
+      }
+
+      // Objects
+      else if (isObject(currVal)) {
+        const childChanged = diff(origVal || {}, currVal);
+
+        if (childChanged !== null) {
+          result[key] = currVal; // return full object
+          hasChanges = true;
+        }
+      }
+
+      // Primitive
+      else {
+        if (origVal !== currVal) {
+          result[key] = currVal;
+          hasChanges = true;
+        }
+      }
+    }
+
+    return hasChanges ? result : null;
+  }
+
+  return diff(original, updated) || {};
+}

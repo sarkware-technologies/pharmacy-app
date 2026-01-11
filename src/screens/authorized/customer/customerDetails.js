@@ -248,7 +248,7 @@ const CustomerDetails = () => {
                         ellipsizeMode="tail"
                     >
 
-                        {customerDetails?.generalDetails?.customerName}
+                        {customerDetails?.generalDetails?.name??customerDetails?.generalDetails?.customerName}
                     </AppText>
                 </View>
 
