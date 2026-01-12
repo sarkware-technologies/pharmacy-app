@@ -40,7 +40,6 @@ const AppToast = () => {
       setMessage(msg);
       setType(toastType);
 
-      // 🔥 Set dynamic label
       setLabel(customLabel || getDefaultLabel(toastType));
 
       setVisible(true);
@@ -56,43 +55,37 @@ const AppToast = () => {
     };
   }, []);
 
-  if (!visible) return null;
+if (!visible) return null;
 
- return (
-  <Modal
-    transparent
-    visible={visible}
-    animationType="fade"
-    statusBarTranslucent
-  >
-    {visible && (
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <View
-            style={[
-              styles.toast,
-              type === 'success'
-                ? styles.success
-                : type === 'warning'
-                ? styles.warning
-                : styles.error,
-            ]}
-          >
-            <View style={styles.header}>
-              <AppText style={styles.label}>{label}</AppText>
+return (
+  <View style={styles.root} pointerEvents="box-none">
+    <View style={styles.overlay} pointerEvents="box-none">
+      <View style={styles.container} pointerEvents="auto">
+        <View
+          style={[
+            styles.toast,
+            type === 'success'
+              ? styles.success
+              : type === 'warning'
+              ? styles.warning
+              : styles.error,
+          ]}
+        >
+          <View style={styles.header}>
+            <AppText style={styles.label}>{label}</AppText>
 
-              <TouchableOpacity onPress={() => setVisible(false)}>
-                <AppText style={styles.ok}>OK</AppText>
-              </TouchableOpacity>
-            </View>
-
-            <AppText style={styles.message}>{message}</AppText>
+            <TouchableOpacity onPress={() => setVisible(false)}>
+              <AppText style={styles.ok}>OK</AppText>
+            </TouchableOpacity>
           </View>
+
+          <AppText style={styles.message}>{message}</AppText>
         </View>
       </View>
-    )}
-  </Modal>
+    </View>
+  </View>
 );
+
 
 };
 
@@ -113,10 +106,20 @@ export const AppToastService = {
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+root: {
+  position: 'absolute',
+  left: 0,
+  right: 0,
+  top: 0,
+  bottom: 0,
+  zIndex: 9999,
+  elevation: 9999,
+},
+overlay: {
   flex: 1,
   justifyContent: 'flex-end',
 },
+
 container: {
   marginBottom: 90,
   marginHorizontal: 20,
