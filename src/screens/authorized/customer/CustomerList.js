@@ -2475,7 +2475,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
                         onPress={() => {
                           const customerId = item.stgCustomerId || item.customerId;
                           const isStaging = item.stgCustomerId != null;
-                          navigation.navigate('onboading', { isStaging, customerId, action: "edit" })
+                          navigation.navigate('onboading', { isStaging, customerId, action: item.statusName === 'DRAFT' ?"register":"edit" })
                           // handleOnboardCustomer(
                           //   navigation,
                           //   customerId,
