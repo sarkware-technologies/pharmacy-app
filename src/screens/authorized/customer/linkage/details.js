@@ -625,7 +625,8 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                 }
                 }
                 title={"Are you sure you want to send\nthis request back to the MR?"}
-                confirmColor="#777777"
+                iconColor="#777777"
+                confirmColor={colors.primary}
             />
 
         </View >

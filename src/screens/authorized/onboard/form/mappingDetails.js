@@ -311,9 +311,20 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
     const renderSelectedCustomers = ({
         data = [],
-        onDelete
+        keyName,
+        setValue,
     }) => {
         if (!data.length) return null;
+
+        const handleDelete = (index) => {
+            setValue(prev => ({
+                ...prev,
+                mapping: {
+                    ...prev.mapping,
+                    [keyName]: prev.mapping[keyName].filter((_, i) => i !== index),
+                },
+            }));
+        };
 
         return (
             <View style={OnboardStyle.selectedItemsContainer}>
@@ -326,7 +337,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                             {item.customerName}
                         </AppText>
 
-                        <TouchableOpacity onPress={() => onDelete(index, item)}>
+                        <TouchableOpacity onPress={() => handleDelete(index)}>
                             <DoctorDeleteIcon />
                         </TouchableOpacity>
                     </View>
@@ -334,6 +345,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
             </View>
         );
     };
+
 
     const renderLinkedHospitals = () => {
         return (
@@ -664,20 +676,12 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                             onPress={() => setActiveSelector({ key: 'doctor' })}
                                         />
 
-                                        {formData?.mapping?.doctors?.length > 0 && renderSelectedCustomers({
-                                            data: formData?.mapping?.doctors,
-                                            onDelete: (index) => {
-                                                setValue(prev => ({
-                                                    ...prev,
-                                                    mapping: {
-                                                        ...prev.mapping,
-                                                        doctors: prev.mapping.doctors.filter(
-                                                            (_, i) => i !== index
-                                                        ),
-                                                    },
-                                                }));
-                                            },
-                                        })}
+                                        {formData?.mapping?.doctors?.length > 0 &&
+                                            renderSelectedCustomers({
+                                                data: formData.mapping.doctors,
+                                                keyName: 'doctors',
+                                                setValue,
+                                            })}
 
 
 
@@ -700,20 +704,12 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                             onPress={() => setActiveSelector({ key: 'pharmacy' })}
                                         />
 
-                                        {formData?.mapping?.pharmacy?.length > 0 && renderSelectedCustomers({
-                                            data: formData?.mapping?.pharmacy,
-                                            onDelete: (index) => {
-                                                setValue(prev => ({
-                                                    ...prev,
-                                                    mapping: {
-                                                        ...prev.mapping,
-                                                        pharmacy: prev?.mapping?.pharmacy.filter(
-                                                            (_, i) => i !== index
-                                                        ),
-                                                    },
-                                                }));
-                                            },
-                                        })}
+                                        {formData?.mapping?.pharmacy?.length > 0 &&
+                                            renderSelectedCustomers({
+                                                data: formData.mapping.pharmacy,
+                                                keyName: 'pharmacy',
+                                                setValue,
+                                            })}
 
 
 
@@ -767,20 +763,13 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                             onPress={() => setActiveSelector({ key: 'pharmacy' })}
                                         />
 
-                                        {formData?.mapping?.pharmacy?.length > 0 && renderSelectedCustomers({
-                                            data: formData?.mapping?.pharmacy,
-                                            onDelete: (index) => {
-                                                setValue(prev => ({
-                                                    ...prev,
-                                                    mapping: {
-                                                        ...prev.mapping,
-                                                        pharmacy: prev?.mapping?.pharmacy.filter(
-                                                            (_, i) => i !== index
-                                                        ),
-                                                    },
-                                                }));
-                                            },
-                                        })}
+                                        {formData?.mapping?.pharmacy?.length > 0 &&
+                                            renderSelectedCustomers({
+                                                data: formData.mapping.pharmacy,
+                                                keyName: 'pharmacy',
+                                                setValue,
+                                            })}
+                                            
                                         <View>
                                             <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddPharmacyModal({ key: 'pharmacy' })}>+ Add New Pharmacy</TextButton>
                                         </View>

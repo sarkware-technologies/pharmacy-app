@@ -26,6 +26,7 @@ const ConfirmActionModal = ({
     checkboxLabel = "I have verified all details and documents",
     requireComment = true,
     loading = false,
+    iconColor
 }) => {
     const [comment, setComment] = useState("");
     const [checked, setChecked] = useState(false);
@@ -60,8 +61,8 @@ const ConfirmActionModal = ({
                     <TouchableWithoutFeedback>
                         <View style={styles.modalContainer}>
                             {/* Icon */}
-                            <View style={styles.iconOuter(confirmColor)}>
-                                <View style={styles.iconInner(confirmColor)}>
+                            <View style={styles.iconOuter(iconColor ?? confirmColor)}>
+                                <View style={styles.iconInner(iconColor ?? confirmColor)}>
                                     <AppText style={styles.iconText}>!</AppText>
                                 </View>
                             </View>
