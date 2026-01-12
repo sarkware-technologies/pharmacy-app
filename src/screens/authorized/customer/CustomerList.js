@@ -2307,15 +2307,9 @@ const CustomerList = ({ navigation: navigationProp }) => {
           <TouchableOpacity
             style={styles.onboardButton}
             onPress={() => {
-              const customerId = item.customerId || item.stgCustomerId;
-              handleOnboardCustomer(
-                navigation,
-                customerId,
-                false,
-                customerAPI,
-                (toastConfig) => Toast.show(toastConfig),
-                item.statusName
-              );
+              const customerId = item.stgCustomerId || item.customerId;
+              const isStaging = item.stgCustomerId != null;
+              navigation.navigate('onboading', { isStaging, customerId, action: "onboard" })
             }}
           >
             <AppText style={styles.onboardButtonText}>Onboard</AppText>
@@ -2479,17 +2473,8 @@ const CustomerList = ({ navigation: navigationProp }) => {
                       <TouchableOpacity
                         style={styles.actionButton}
                         onPress={() => {
-                          const derivedStatus =
-                            item?.instance?.stepInstances?.[0]?.approverType === 'INITIATOR'
-                              ? item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED'
-                                ? 'approved'
-                                : 'reassigned'
-                              : item.statusName?.toLowerCase();
-
                           const customerId = item.stgCustomerId || item.customerId;
-
                           const isStaging = item.stgCustomerId != null;
-
                           navigation.navigate('onboading', { isStaging, customerId, action: "edit" })
                           // handleOnboardCustomer(
                           //   navigation,

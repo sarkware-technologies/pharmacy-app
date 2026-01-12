@@ -159,20 +159,6 @@ const SecurityDetails = ({ setValue, isAccordion = false, formData, action, erro
     }, []);
 
 
-    useEffect(() => {
-        if (
-            action !== "edit" &&
-            (formData?.isEmailVerified === true ||
-            formData?.isMobileVerified === true)
-        ) {
-            handleSaveDraft?.();
-        }
-    }, [
-        formData?.isEmailVerified,
-        formData?.isMobileVerified,
-        action
-    ]);
-
     const handleSetValue = (key, value) => {
         setValue?.((prev) => {
             return { ...prev, securityDetails: { ...prev?.securityDetails, [key]: value } }
@@ -183,7 +169,7 @@ const SecurityDetails = ({ setValue, isAccordion = false, formData, action, erro
         if (!formData?.securityDetails?.[type] || formData?.securityDetails?.[type] == "") return;
         try {
             setOtpInProgress({ type })
-            const response = await customerAPI.generateOTP({ [type]: formData?.securityDetails?.[type] });
+            const response = await customerAPI.generateOTP({ [type]: formData?.securityDetails?.[type], ...(formData?.customerId != "" && formData?.customerId != null && { customerId: Number(formData?.customerId) }) });
             setOtpInProgress({ type, otp: response?.data?.otp })
         }
         catch (error) {
@@ -199,12 +185,15 @@ const SecurityDetails = ({ setValue, isAccordion = false, formData, action, erro
 
     const onComplete = async (otp, type, verify) => {
         try {
-            const response = await customerAPI.validateOTP(otp, { [type]: formData?.securityDetails?.[type], customerId: formData?.customerId != "" ? formData?.customerId : 1 });
+            const response = await customerAPI.validateOTP(otp, { [type]: formData?.securityDetails?.[type], customerId: formData?.customerId != "" ? Number(formData?.customerId) : 1 });
             setOtpInProgress({})
             setValue?.((prev) => {
-                return { ...prev, [verify]: true }
+                const response = { ...prev, [verify]: true };
+                if (action == "register") {
+                    handleSaveDraft?.(response);
+                }
+                return response;
             })
-
         }
         catch (error) {
             console.log(error);

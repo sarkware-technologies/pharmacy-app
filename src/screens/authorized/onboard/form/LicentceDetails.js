@@ -626,7 +626,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                     )}
 
                     {action == 'onboard' && (
-                        <PanAndGST formData={formData} setValue={setValue} action={action} />
+                        <PanAndGST formData={formData} setValue={setValue} action={action} error={error} />
                     )}
 
 
