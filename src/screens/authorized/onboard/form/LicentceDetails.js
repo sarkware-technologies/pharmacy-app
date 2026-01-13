@@ -474,7 +474,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
 
 
     return (
-        <AppView style={{ marginTop: 30 }}>
+        <AppView style={{ marginTop: 20 }}>
             <AccordionCard
                 title={
                     <TouchableOpacity

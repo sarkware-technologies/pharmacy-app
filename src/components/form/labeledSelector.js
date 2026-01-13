@@ -9,6 +9,7 @@ const labeledSelector = ({
   onPress,
   style,
   disabled = false,
+  sufix=true
 }) => {
   return (
     <TouchableOpacity
@@ -32,7 +33,9 @@ const labeledSelector = ({
         {value || placeholder}
       </AppText>
 
-      <Downarrow />
+      {sufix && <Downarrow /> }
+
+     
     </TouchableOpacity>
   );
 };
@@ -64,5 +67,6 @@ const styles = StyleSheet.create({
 
   disabled: {
     opacity: 0.6,
+     backgroundColor: '#F5F5F5',
   },
 });
