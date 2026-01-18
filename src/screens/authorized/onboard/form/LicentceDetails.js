@@ -100,6 +100,8 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
         return acc
     }, [])
 
+    console.log(licenseList);
+
     const [toggle, setToggle] = useState("open");
     const [uploading, setUploading] = useState({});
 
@@ -124,6 +126,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
 
     const handleFileUpload = useCallback(async (file, type, docTypes, isOcrRequired = true) => {
         try {
+
             startUpload(type);
             const response = await customerAPI.documentUpload({
                 file,
@@ -131,10 +134,27 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                 isStaging: true,
                 isOcrRequired,
             });
-
             if (!response?.length) return;
 
             const uploadFile = response[0];
+
+            const isLicenceAlreadyExist = uploadFile?.statusCode == 203;
+
+            if (isLicenceAlreadyExist) {
+                updateConflicts(setTransferData, {
+                    removeBy: { docTypeId: uploadFile?.docTypeId },
+                    add: {
+                        docTypeId: uploadFile?.docTypeId,
+                        code: null,
+                        existingCustomerId: uploadFile?.customerId ?? null,
+                        isStaging: uploadFile?.isStaging ?? null,
+                        ...(uploadFile?.isOwnDraft !== undefined && {
+                            isOwnDraft: uploadFile.isOwnDraft
+                        })
+                    }
+                });
+            }
+
 
             const docObject = {
                 s3Path: uploadFile?.s3Path,
@@ -273,7 +293,20 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
 
 
         } catch (error) {
-            console.log(error);
+            if ((error?.response?.statusCode === 302) && ((error?.response?.data?.statusId === 7) || (error?.response?.data?.statusId === 2))) {
+                const customerId = error?.response?.data?.customerId ?? null;
+                if (customerId) {
+                    updateConflicts(setTransferData, {
+                        removeBy: { docTypeId: null },
+                        add: {
+                            docTypeId: null,
+                            existingCustomerId: customerId,
+                            code: null
+                        }
+                    });
+                }
+            }
+
             if (error?.status == 400) {
                 ErrorMessage(error);
             }
@@ -363,15 +396,119 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
         [formData]
     );
 
+    const handleValidateLicense = async (licenseNumber, code) => {
+        try {
+            const response = await customerAPI.validateLicense({ licenseNumber: licenseNumber })
+            if (response?.success) {
+                updateConflicts(setTransferData, {
+                    removeBy: { code },
+                    removeDocType: true,
+                    licenseList
+                });
+            }
+        } catch (error) {
+            if ((error?.response?.statusCode === 302)) {
+                const data = error?.response?.existingLicenceDetails?.data;
+
+                const isLicenceAlreadyExist = data?.statusCode == 203;
+
+                if (isLicenceAlreadyExist) {
+
+                    updateConflicts(setTransferData, {
+                        removeBy: { code },
+                        add: {
+                            code: code,
+                            docTypeId: null,
+                            existingCustomerId: data?.customerId ?? null,
+                            isStaging: data?.isStaging ?? null,
+                            ...(data?.isOwnDraft !== undefined && {
+                                isOwnDraft: data.isOwnDraft
+                            })
+                        }
+                    });
 
 
+
+                }
+
+
+
+            }
+
+
+        }
+
+    }
 
     const remove_Document = useCallback((docTypeId) => {
         setValue(prev => ({
             ...prev,
             customerDocs: removeDocument(prev?.customerDocs, docTypeId),
         }));
+        setTransferData(prev => {
+            return {
+                ...prev,
+                licenseResponse: {
+                    ...prev.licenseResponse,
+                    conflicts: [
+                        ...(prev?.licenseResponse?.conflicts || []).filter(
+                            c => c.docTypeId != docTypeId
+                        ),
+
+                    ]
+                }
+            };
+        });
+
     }, [setValue]);
+
+
+    const updateConflicts = (
+        setTransferData,
+        {
+            removeBy = {},
+            add = null,
+            licenseList = [],
+            removeDocType = false
+        }
+    ) => {
+        setTransferData(prev => {
+            let conflicts = prev?.licenseResponse?.conflicts || [];
+
+            let derivedRemoveBy = { ...removeBy };
+
+            if (removeDocType && removeBy.code) {
+                const matched = licenseList.find(
+                    d => d.code == removeBy.code
+                );
+
+                if (matched?.docTypeId) {
+                    derivedRemoveBy.docTypeId = matched.docTypeId;
+                }
+            }
+
+            conflicts = conflicts.filter(c =>
+                !Object.entries(derivedRemoveBy).some(
+                    ([key, value]) =>
+                        value !== undefined && c?.[key] === value
+                )
+            );
+
+            // 🔹 Add new conflict if needed
+            if (add) {
+                conflicts = [...conflicts, add];
+            }
+
+            return {
+                ...prev,
+                licenseResponse: {
+                    ...prev.licenseResponse,
+                    conflicts
+                }
+            };
+        });
+    };
+
 
 
     const LICENSE_UI_CONFIG = useMemo(() => ({
@@ -449,6 +586,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                     onChangeText: (text) => handleUpdate(text, lic.code, lic.docTypeId, 'licenceNo'),
                     value: findData?.licenceNo ?? '',
                     error: error?.licenceDetails?.[lic.docTypeId]?.licenceNo,
+                    onBlur: () => handleValidateLicense(findData?.licenceNo, lic.code),
                 }}
                 date={{
                     label: ui.dateLabel,
@@ -516,7 +654,13 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                             code={{
                                 label: getPlaceholder("code"),
                                 onChangeText: (text) => handleUpdate(text, licenseMap.REG.code, licenseMap.REG.docTypeId, [2].includes(formData?.typeId) && [5].includes(formData?.categoryId) ? 'hospitalCode' : "licenceNo"),
+
+
                                 value: [2].includes(formData?.typeId) && [5].includes(formData?.categoryId) ? findLicense(license, licenseMap.REG?.licenceTypeId)?.hospitalCode : findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo,
+
+                                onBlur: () => handleValidateLicense([2].includes(formData?.typeId) && [5].includes(formData?.categoryId) ? findLicense(license, licenseMap.REG?.licenceTypeId)?.hospitalCode : findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo, licenseMap.REG.code),
+
+
                                 isRequired: true,
                                 error: [2].includes(formData?.typeId) && [5].includes(formData?.categoryId) ? error?.licenceDetails?.[licenseMap.REG.docTypeId]?.hospitalCode : error?.licenceDetails?.[licenseMap.REG.docTypeId]?.licenceNo,
                             }}
@@ -537,6 +681,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                                             onChangeText: (text) => handleUpdate(text, licenseMap.REG.code, licenseMap.REG.docTypeId, 'licenceNo'),
                                             isRequired: true,
                                             value: findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo,
+                                            onBlur: () => handleValidateLicense(findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo, licenseMap.REG.code),
                                             error: error?.licenceDetails?.[licenseMap.REG.docTypeId]?.licenceNo,
                                         },
                                         officialLetter: {

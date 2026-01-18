@@ -767,4 +767,30 @@ export const customerAPI = {
         }
     },
 
+
+    sendRequest: async (customerId, isStaging) => {
+        try {
+            const response = await apiClient.put(
+                `/user-management/customer/division-mapping-request/${customerId}?isStaging=${isStaging}`
+            );
+            return response;
+        } catch (error) {
+            console.error( 'Error sending division mapping request:', error );
+            throw error;
+        }
+    },
+
+       validateLicense: async (payload) => {
+        
+        try {
+            const response = await apiClient.post(`/user-management/customer/validate-license`, payload);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+
+
+
 };

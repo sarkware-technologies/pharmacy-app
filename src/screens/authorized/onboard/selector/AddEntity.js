@@ -375,7 +375,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
         console.log(error, 3249823468)
     }, [error])
 
-    console.log(formData, 90465);
+    console.log(transferData, 90465);
 
 
 
