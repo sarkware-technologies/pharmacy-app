@@ -16,7 +16,7 @@ import AppView from "../../../../components/AppView";
 import PanAndGST from "./panAndGst"
 import { customerAPI } from "../../../../api/customer";
 import { findDocument, findLicense, removeDocument, staticDOCcode } from "../utils/fieldMeta";
-
+import { getSelectedTypeByFormData } from '../utils/helper';
 
 const RenderLicense = memo(
     ({
@@ -87,7 +87,7 @@ const RenderLicense = memo(
 
 
 
-const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData, action, licenseList, error, setTransferData }) => {
+const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData, action, licenseList, error, setTransferData, formType = null }) => {
     const uniqueLicenses = licenseList.reduce((acc, cur) => {
         if (!acc.some(e => e.code === cur.code)) {
             acc.push({
@@ -100,7 +100,6 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
         return acc
     }, [])
 
-    console.log(licenseList);
 
     const [toggle, setToggle] = useState("open");
     const [uploading, setUploading] = useState({});
@@ -126,13 +125,20 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
 
     const handleFileUpload = useCallback(async (file, type, docTypes, isOcrRequired = true) => {
         try {
-
+            const selectedType = getSelectedTypeByFormData(formData);
             startUpload(type);
             const response = await customerAPI.documentUpload({
                 file,
                 docTypes,
                 isStaging: true,
                 isOcrRequired,
+                ...(formType === 'child' && selectedType && {
+                    selectedType
+                }),
+                ...(action === 'edit' &&
+                    (formData?.stgCustomerId || formData?.customerId) && {
+                    customerId: formData?.stgCustomerId || formData?.customerId
+                })
             });
             if (!response?.length) return;
 
@@ -141,20 +147,36 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
             const isLicenceAlreadyExist = uploadFile?.statusCode == 203;
 
             if (isLicenceAlreadyExist) {
+                const codeByDocTypeId = licenseList.find(l => l.docTypeId == uploadFile?.docTypeId)
                 updateConflicts(setTransferData, {
-                    removeBy: { docTypeId: uploadFile?.docTypeId },
+                    code: codeByDocTypeId?.code,
+                    fieldType: 'licenceNo',
                     add: {
-                        docTypeId: uploadFile?.docTypeId,
-                        code: null,
+                        code: codeByDocTypeId?.code,
+                        fieldType: 'licenceNo',   // IMPORTANT: must be stored
                         existingCustomerId: uploadFile?.customerId ?? null,
                         isStaging: uploadFile?.isStaging ?? null,
-                        ...(uploadFile?.isOwnDraft !== undefined && {
-                            isOwnDraft: uploadFile.isOwnDraft
-                        })
+                        statusCode: uploadFile?.statusCode ?? null
+
                     }
                 });
             }
+            const isOwnDraft = uploadFile?.statusCode == 302;
+            if (isOwnDraft) {
+                const codeByDocTypeId = licenseList.find(l => l.docTypeId == uploadFile?.docTypeId)
+                updateConflicts(setTransferData, {
+                    code: codeByDocTypeId?.code,
+                    fieldType: 'licenceNo',
+                    add: {
+                        code: codeByDocTypeId?.code,
+                        fieldType: 'licenceNo',
+                        existingCustomerId: uploadFile?.customerId ?? null,
+                        isOwnDraft: uploadFile?.isOwnDraft ?? null,
 
+                    }
+                });
+
+            }
 
             const docObject = {
                 s3Path: uploadFile?.s3Path,
@@ -293,15 +315,17 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
 
 
         } catch (error) {
-            if ((error?.response?.statusCode === 302) && ((error?.response?.data?.statusId === 7) || (error?.response?.data?.statusId === 2))) {
+            if ((error?.response?.statusCode === 302)) {
                 const customerId = error?.response?.data?.customerId ?? null;
                 if (customerId) {
                     updateConflicts(setTransferData, {
-                        removeBy: { docTypeId: null },
+                        code: null,
+                        fieldType: null,
                         add: {
-                            docTypeId: null,
                             existingCustomerId: customerId,
-                            code: null
+                            code: null,
+                            fieldType: null,
+                            isStaging: error?.response?.data?.isStaging ?? false,
                         }
                     });
                 }
@@ -396,46 +420,72 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
         [formData]
     );
 
-    const handleValidateLicense = async (licenseNumber, code) => {
+    const handleValidateLicense = async (licenseNumber, code, fieldType) => {
+
         try {
-            const response = await customerAPI.validateLicense({ licenseNumber: licenseNumber })
+            const selectedType = getSelectedTypeByFormData(formData);
+            console.log(selectedType, 667);
+
+
+            const payload = {
+                licenseNumber,
+                ...(formType === 'child' && selectedType && {
+                    selectedType
+                }),
+                ...(action === 'edit' &&
+                    (formData?.stgCustomerId || formData?.customerId) && {
+                    customerId: formData?.stgCustomerId || formData?.customerId
+                })
+            };
+
+            const response = await customerAPI.validateLicense(payload);
             if (response?.success) {
                 updateConflicts(setTransferData, {
-                    removeBy: { code },
-                    removeDocType: true,
+                    code: code,
+                    fieldType: fieldType,
                     licenseList
                 });
             }
         } catch (error) {
             if ((error?.response?.statusCode === 302)) {
-                const data = error?.response?.existingLicenceDetails?.data;
 
-                const isLicenceAlreadyExist = data?.statusCode == 203;
+                const data = error?.response?.existingLicenceDetails?.data || error?.response?.data;
+
+                console.log(error?.response);
+
+
+                const isLicenceAlreadyExist = (data?.statusCode == 203 || data?.customerId);
+
+                //sometimes status code not available that time need to check customerid
 
                 if (isLicenceAlreadyExist) {
 
                     updateConflicts(setTransferData, {
-                        removeBy: { code },
+                        code: code,
+                        fieldType: fieldType,
                         add: {
                             code: code,
-                            docTypeId: null,
+                            fieldType: fieldType,
                             existingCustomerId: data?.customerId ?? null,
-                            isStaging: data?.isStaging ?? null,
-                            ...(data?.isOwnDraft !== undefined && {
-                                isOwnDraft: data.isOwnDraft
-                            })
+                            isStaging: data?.isStaging ?? false,
+                            statusCode: data?.statusCode ?? null
                         }
                     });
-
-
-
                 }
-
-
-
+                const isOwnDraft = data?.statusCode == 302;
+                if (isOwnDraft) {
+                    updateConflicts(setTransferData, {
+                        code: code,
+                        fieldType: fieldType,
+                        add: {
+                            code: code,
+                            fieldType: fieldType,
+                            existingCustomerId: data?.customerId ?? null,
+                            isOwnDraft: data?.isOwnDraft ?? null
+                        }
+                    });
+                }
             }
-
-
         }
 
     }
@@ -445,58 +495,44 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
             ...prev,
             customerDocs: removeDocument(prev?.customerDocs, docTypeId),
         }));
-        setTransferData(prev => {
-            return {
-                ...prev,
-                licenseResponse: {
-                    ...prev.licenseResponse,
-                    conflicts: [
-                        ...(prev?.licenseResponse?.conflicts || []).filter(
-                            c => c.docTypeId != docTypeId
-                        ),
-
-                    ]
-                }
-            };
-        });
 
     }, [setValue]);
 
 
     const updateConflicts = (
         setTransferData,
-        {
-            removeBy = {},
-            add = null,
-            licenseList = [],
-            removeDocType = false
-        }
+        { code = null, fieldType = null, add = null }
     ) => {
         setTransferData(prev => {
             let conflicts = prev?.licenseResponse?.conflicts || [];
 
-            let derivedRemoveBy = { ...removeBy };
-
-            if (removeDocType && removeBy.code) {
-                const matched = licenseList.find(
-                    d => d.code == removeBy.code
+            // 🔹 ADD / UPDATE
+            if (add) {
+                conflicts = conflicts.filter(
+                    c =>
+                        !(
+                            c?.code == add.code &&
+                            (fieldType ? c?.fieldType == fieldType : true)
+                        )
                 );
 
-                if (matched?.docTypeId) {
-                    derivedRemoveBy.docTypeId = matched.docTypeId;
-                }
+                conflicts = [
+                    ...conflicts,
+                    {
+                        ...add,
+                        fieldType // ensure fieldType is stored
+                    }
+                ];
             }
-
-            conflicts = conflicts.filter(c =>
-                !Object.entries(derivedRemoveBy).some(
-                    ([key, value]) =>
-                        value !== undefined && c?.[key] === value
-                )
-            );
-
-            // 🔹 Add new conflict if needed
-            if (add) {
-                conflicts = [...conflicts, add];
+            // 🔹 REMOVE
+            else if (code) {
+                conflicts = conflicts.filter(
+                    c =>
+                        !(
+                            c?.code == code &&
+                            (fieldType ? c?.fieldType == fieldType : true)
+                        )
+                );
             }
 
             return {
@@ -586,7 +622,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                     onChangeText: (text) => handleUpdate(text, lic.code, lic.docTypeId, 'licenceNo'),
                     value: findData?.licenceNo ?? '',
                     error: error?.licenceDetails?.[lic.docTypeId]?.licenceNo,
-                    onBlur: () => handleValidateLicense(findData?.licenceNo, lic.code),
+                    onBlur: () => handleValidateLicense(findData?.licenceNo, lic.code, 'licenceNo'),
                 }}
                 date={{
                     label: ui.dateLabel,
@@ -651,19 +687,56 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                                 isRequired: true,
                                 error: error?.customerDocs?.[licenseMap.REG.docTypeId]
                             }}
-                            code={{
-                                label: getPlaceholder("code"),
-                                onChangeText: (text) => handleUpdate(text, licenseMap.REG.code, licenseMap.REG.docTypeId, [2].includes(formData?.typeId) && [5].includes(formData?.categoryId) ? 'hospitalCode' : "licenceNo"),
+                            code={(() => {
+                                const isHospitalCase =
+                                    [2].includes(formData?.typeId) &&
+                                    [5].includes(formData?.categoryId);
 
+                                const licenseData = findLicense(
+                                    license,
+                                    licenseMap.REG?.licenceTypeId
+                                );
 
-                                value: [2].includes(formData?.typeId) && [5].includes(formData?.categoryId) ? findLicense(license, licenseMap.REG?.licenceTypeId)?.hospitalCode : findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo,
+                                const fieldType = isHospitalCase
+                                    ? 'hospitalCode'
+                                    : 'licenceNo';
 
-                                onBlur: () => handleValidateLicense([2].includes(formData?.typeId) && [5].includes(formData?.categoryId) ? findLicense(license, licenseMap.REG?.licenceTypeId)?.hospitalCode : findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo, licenseMap.REG.code),
+                                const licenseValue = isHospitalCase
+                                    ? licenseData?.hospitalCode
+                                    : licenseData?.licenceNo;
 
+                                const fieldError = isHospitalCase
+                                    ? error?.licenceDetails?.[licenseMap.REG.docTypeId]?.hospitalCode
+                                    : error?.licenceDetails?.[licenseMap.REG.docTypeId]?.licenceNo;
 
-                                isRequired: true,
-                                error: [2].includes(formData?.typeId) && [5].includes(formData?.categoryId) ? error?.licenceDetails?.[licenseMap.REG.docTypeId]?.hospitalCode : error?.licenceDetails?.[licenseMap.REG.docTypeId]?.licenceNo,
-                            }}
+                                return {
+                                    label: getPlaceholder("code"),
+
+                                    onChangeText: (text) =>
+                                        handleUpdate(
+                                            text,
+                                            licenseMap.REG.code,
+                                            licenseMap.REG.docTypeId,
+                                            fieldType
+                                        ),
+
+                                    value: licenseValue,
+
+                                    onBlur: () => {
+                                        if (!licenseValue) return;
+
+                                        handleValidateLicense(
+                                            licenseValue,
+                                            licenseMap.REG.code,
+                                            fieldType
+                                        );
+                                    },
+
+                                    isRequired: true,
+                                    error: fieldError
+                                };
+                            })()}
+
                             date={{
                                 label: getPlaceholder("date"),
                                 onChange: (date) => handleUpdate(date, licenseMap.REG.code, licenseMap.REG.docTypeId, 'licenceValidUpto'),
@@ -681,7 +754,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                                             onChangeText: (text) => handleUpdate(text, licenseMap.REG.code, licenseMap.REG.docTypeId, 'licenceNo'),
                                             isRequired: true,
                                             value: findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo,
-                                            onBlur: () => handleValidateLicense(findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo, licenseMap.REG.code),
+                                            onBlur: () => handleValidateLicense(findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo, licenseMap.REG.code, 'licenceNo'),
                                             error: error?.licenceDetails?.[licenseMap.REG.docTypeId]?.licenceNo,
                                         },
                                         officialLetter: {

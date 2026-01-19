@@ -21,3 +21,41 @@ export const resolveCategoryLabel = ({
 
   return '';
 };
+
+
+export const getSelectedTypeByFormData = (formData) => {
+  console.log("worknafuhsduif");
+  
+    const { typeId, categoryId, subCategoryId } = formData || {};
+
+    // Type 3 → DOCT
+    if (typeId == 3) {
+        return 'DOCT';
+    }
+
+    // Type 1 → HOSP
+    if (typeId == 1) {
+        return 'HOSP';
+    }
+
+    // Type 2 cases
+    if (typeId == 2) {
+        // GOV
+        if (categoryId === 5) {
+            return 'GOV';
+        }
+
+        // Category 4 cases
+        if (categoryId == 4) {
+            if (subCategoryId == 3) {
+                return 'PGH';
+            }
+
+            if ([1, 2].includes(subCategoryId)) {
+                return 'HOSP';
+            }
+        }
+    }
+
+    return null; // fallback (important)
+};

@@ -20,6 +20,7 @@ import { validateForm, converScheme, initialFormData, buildCreatePayload, buildD
 import validateScheme from "./utils/validateScheme.json";
 import { AppToastService } from '../../../components/AppToast';
 import { useCustomerLinkage } from "../customer/service/useCustomerLinkage";
+import DraftExistsModal from '../../../components/modals/DraftExistsModal'
 
 import Svg, { Path } from "react-native-svg";
 
@@ -46,7 +47,7 @@ const RegisterForm = () => {
     } = route.params || {};
 
     const [transferData, setTransferData] = useState({});
-
+    const [showDraftModal, setShowDraftModal] = useState(false);
 
 
     const [formData, setFormData] = useState(initialFormData);
@@ -334,8 +335,6 @@ const RegisterForm = () => {
         }
     };
 
-
-
     const handleuploadDocument = async () => {
         setIsFormSubmited(true);
         const result = await validateForm(formData, scheme);
@@ -370,6 +369,8 @@ const RegisterForm = () => {
 
     }
     const handleSaveDraft = async (data) => {
+        console.log(data);
+        
         const payload = buildDraftPayload(data);
 
         try {
@@ -389,22 +390,60 @@ const RegisterForm = () => {
     };
 
     const handleSendRequest = async () => {
-        if (transferData?.licenseResponse?.conflicts?.length == 0) {
-            return
+        const customerData = transferData?.licenseResponse?.conflicts?.find(
+            c =>
+                c?.existingCustomerId &&
+                c?.statusCode == 203
+        );
+
+        if (!customerData) {
+            return;
         }
 
-        const customerData = transferData?.licenseResponse?.conflicts?.[0]
         try {
-            const response = await customerAPI.sendRequest(customerData?.existingCustomerId, customerData?.isStaging,);
-            console.log(response);
+            const response = await customerAPI.sendRequest(
+                customerData.existingCustomerId,
+                customerData.isStaging // true or false
+            );
 
             if (response?.success) {
-                AppToastService.show("Your request for adding customer sent successfully!", "success", "Request Sent");
+                AppToastService.show(
+                    "Your request for adding customer sent successfully!",
+                    "success",
+                    "Request Sent"
+                );
                 navigation.goBack();
             }
-
         } catch (err) {
-            console.log(err)
+            console.log(err);
+        }
+    };
+
+    const handleDeleteDraft = async () => {
+        const draftCustomer =
+            transferData?.licenseResponse?.conflicts?.find(
+                c => c?.existingCustomerId && c?.isOwnDraft === true
+            );
+
+        if (!draftCustomer?.existingCustomerId) {
+            return;
+        }
+
+        try {
+            const response = await customerAPI.deleteDraft({
+                customerId: draftCustomer.existingCustomerId,
+            });
+
+            if (response?.success) {
+                AppToastService.show(
+                    response?.data?.message,
+                    "success",
+                    "Draft Delete"
+                );
+                setShowDraftModal(false);
+            }
+        } catch (err) {
+            console.log(err);
         }
     };
 
@@ -451,15 +490,29 @@ const RegisterForm = () => {
 
     const isDirty = useMemo(() => Object.entries(getChangedValues(customerDetails ?? {}, formData) ?? {}).length == 0)
 
-    const conflicts = transferData?.licenseResponse?.conflicts ?? [];
 
+    // send request button visibility check
     const showSendRequest =
-        conflicts.some(
+        action === 'register' &&
+        transferData?.licenseResponse?.conflicts.some(
             c =>
-                c.existingCustomerId &&
-                c.isStaging !== undefined
-        ) &&
-        !conflicts.some(c => c.isOwnDraft);
+                c?.existingCustomerId &&
+                c?.statusCode == 203
+        );
+    // owndraft popup visibility check
+    const hasOwnDraftConflict =
+        transferData?.licenseResponse?.conflicts?.some(
+            c => c?.existingCustomerId && c?.isOwnDraft === true
+        );
+
+    useEffect(() => {
+        if (hasOwnDraftConflict) {
+            setShowDraftModal(true);
+        }
+    }, [hasOwnDraftConflict]);
+
+
+
 
     return (
         <SafeAreaView style={OnboardStyle.container} edges={['top', 'bottom']}>
@@ -553,32 +606,27 @@ const RegisterForm = () => {
                             </Button>
 
 
-                            {showSendRequest ? (
-                                <Button
-                                    onPress={handleSendRequest}
-                                    style={{
-                                        flex: 1,
-                                        backgroundColor: "#F7941E",
-                                        paddingVertical: 12
-                                    }}
-                                    textStyle={{ color: "white" }}
-                                >
-                                    Send Request
-                                </Button>
-                            ) : (
-                                <Button
-                                    onPress={handleRegister}
-                                    style={{
-                                        flex: 1,
-                                        backgroundColor:
-                                            !isFormValid || isDirty ? "#D3D4D6" : "#F7941E",
-                                        paddingVertical: 12
-                                    }}
-                                    textStyle={{ color: "white" }}
-                                >
-                                    {action === 'register' ? 'Register' : 'Update'}
-                                </Button>
-                            )}
+                            <Button
+                                onPress={showSendRequest ? handleSendRequest : handleRegister}
+                                style={{
+                                    flex: 1,
+                                    backgroundColor: showSendRequest
+                                        ? "#F7941E"
+                                        : (!isFormValid || isDirty)
+                                            ? "#D3D4D6"
+                                            : "#F7941E",
+                                    paddingVertical: 12
+                                }}
+                                textStyle={{ color: "white" }}
+                                disabled={!showSendRequest && (!isFormValid || isDirty)}
+                            >
+                                {showSendRequest
+                                    ? "Send Request"
+                                    : action === "register"
+                                        ? "Register"
+                                        : "Update"}
+                            </Button>
+
 
 
 
@@ -588,6 +636,15 @@ const RegisterForm = () => {
                 </AppView>
             }
 
+
+            <DraftExistsModal
+                visible={showDraftModal}
+                onConfirm={() => handleDeleteDraft()}
+                onClose={() => {
+                    setShowDraftModal(false)
+                    navigation.goBack();
+                }}
+            />
         </SafeAreaView>
     )
 

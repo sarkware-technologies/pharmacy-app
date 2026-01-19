@@ -173,7 +173,7 @@ class ApiClient {
             throw new Error("Session expired");
         }
         if (!response.ok || data?.success === false) {
-            const error = new Error(data?.message || "API Error");
+            const error = new Error(data?.message || data?.existingLicenceDetails?.message|| "API Error");
             error.status = response.status;
             error.response = data;
 

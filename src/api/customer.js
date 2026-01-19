@@ -775,13 +775,13 @@ export const customerAPI = {
             );
             return response;
         } catch (error) {
-            console.error( 'Error sending division mapping request:', error );
+            console.error('Error sending division mapping request:', error);
             throw error;
         }
     },
 
-       validateLicense: async (payload) => {
-        
+    validateLicense: async (payload) => {
+
         try {
             const response = await apiClient.post(`/user-management/customer/validate-license`, payload);
             return response;
@@ -791,6 +791,18 @@ export const customerAPI = {
     },
 
 
+    deleteDraft: async (payload) => {
+        try {
+            const response = await apiClient.put(
+                '/user-management/customer/draft-delete',
+                payload
+            );
+            return response;
+        } catch (error) {
+            console.error('Error deleting draft:', error);
+            throw error;
+        }
+    },
 
 
 };

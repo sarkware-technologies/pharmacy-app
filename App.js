@@ -82,7 +82,7 @@ const App = () => {
                     </View>
                 )}
 
-                 <Toast topOffset={60} />
+                 <Toast topOffset={60}  />
 
             <AppToast/>
             </View>

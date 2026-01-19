@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ActivityIndicator, ScrollView, StatusBar, TouchableOpacity, View, Modal } from "react-native";
 import ChevronLeft from "../../../../components/icons/ChevronLeft";
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { buildEntityPayload } from '../utils/buildEntityPayload'
 
 import AnimatedContent from "../../../../components/view/AnimatedContent";
 import AppView from "../../../../components/AppView";
@@ -24,7 +25,7 @@ import { AppToastService } from '../../../../components/AppToast';
 import { useCustomerLinkage } from "../../customer/service/useCustomerLinkage";
 import XCircle from "../../../../components/icons/XCircle";
 import OnboardStyle from "../style/onboardStyle";
-
+import DraftExistsModal from '../../../../components/modals/DraftExistsModal'
 
 const Loading = memo(({ height = "minHeight" }) => {
     return (
@@ -40,19 +41,22 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
     const [rawScheme, setRawScheme] = useState(validateScheme);
 
     // onboard
-    const {
-        customerId,
-        isStaging,
-        action = "register",
-    } = route.params || {};
+    // const {
+    //     customerId,
+    //     isStaging,
+    //     action = "register",
+    // } = route.params || {};
+
+    const action = "register"
 
     const [transferData, setTransferData] = useState({});
     const [formData, setFormData] = useState(initialFormData);
     const [isFormSubmited, setIsFormSubmited] = useState(true);
     const [loading, setLoading] = useState(false);
     const [customerDetails, setCustomerDetails] = useState({});
-
+    const [showDraftModal, setShowDraftModal] = useState(false);
     const [uploadDocument, setUploadDocument] = useState(action != 'onboard');
+    const [selectedCustomers, setSelectedCustomers] = useState(null);
 
 
 
@@ -370,18 +374,115 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
         }
     };
 
+     const handleDeleteDraft = async () => {
+        const draftCustomer =
+            transferData?.licenseResponse?.conflicts?.find(
+                c => c?.existingCustomerId && c?.isOwnDraft === true
+            );
+
+        if (!draftCustomer?.existingCustomerId) {
+            return;
+        }
+
+        try {
+            const response = await customerAPI.deleteDraft({
+                customerId: draftCustomer.existingCustomerId,
+            });
+
+            if (response?.success) {
+                AppToastService.show(
+                    response?.data?.message,
+                    "success",
+                    "Draft Delete"
+                );
+                setShowDraftModal(false);
+            }
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
+
 
     useEffect((e) => {
         console.log(error, 3249823468)
     }, [error])
 
-    console.log(transferData, 90465);
+    useEffect(() => {
+        setTransferData({})
+    }, [formData.typeId, formData.categoryId, formData.subCategoryId])
+
+
+    useEffect(() => {
+        const fetchCustomerMapping = async () => {
+            console.log(transferData, 90465);
+            console.log(parentData);
+            console.log(entityType);
+
+            const customerData =
+                transferData?.licenseResponse?.conflicts?.find(
+                    c =>
+                        c?.existingCustomerId &&
+                        c?.isStaging !== undefined &&
+                        !c?.isOwnDraft
+                );
+
+            if (!customerData) return;
+
+            const payload = buildEntityPayload({
+                typeId: parentData?.typeId,
+                categoryId: parentData?.categoryId,
+                subCategoryId: parentData?.subCategoryId,
+                entity: entityType,
+                customerIds: [customerData.existingCustomerId]
+            });
+
+            try {
+                const res = await customerAPI.getCustomersListMapping(payload);
+                const customers = res?.customers || [];
+
+                if (customers.length !== 0) {
+
+                    setSelectedCustomers(customers[0]);
+
+                }
+
+
+
+
+
+            } catch (err) {
+                console.log("Customer mapping API failed", err);
+            }
+        };
+
+        fetchCustomerMapping();
+    }, [transferData?.licenseResponse]);
+
+    const handleSelectCustomer = () => {
+        const newEntity = [
+            {
+                id: selectedCustomers?.stgCustomerId ?? selectedCustomers?.customerId,
+                customerName: selectedCustomers?.customerName,
+                isNew: false,
+                isActive: true
+            }
+        ];
+
+        onSubmit(entityType, newEntity, parentHospitalId, allowMultiple);
+        AppToastService.show("Customer Selected", "success", "Selected");
+        onClose?.();
+    };
+
+
+
+    console.log(transferData, 909090);
 
 
 
 
     const renderForm = [
-        { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: uploadDocument, order: 1 },
+        { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} formType={"child"} />, show: uploadDocument, order: 1 },
         { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: true, order: 2 },
         { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: true, order: 3 },
         { key: "mapping", component: <MappingDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} parentData={parentData} parentHospitalId={parentHospitalId} />, show: true, order: 4 },
@@ -394,20 +495,19 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
             .sort((a, b) => a.order - b.order);
     }, [renderForm]);
 
-
-
-
-
     const isDirty = useMemo(() => Object.entries(getChangedValues(customerDetails ?? {}, formData) ?? {}).length == 0);
 
-    console.log(customerType);
+      // owndraft popup visibility check
+    const hasOwnDraftConflict =
+        transferData?.licenseResponse?.conflicts?.some(
+            c => c?.existingCustomerId && c?.isOwnDraft === true
+        );
 
-    console.log(formData);
-
-    console.log(licenseList);
-
-
-
+    useEffect(() => {
+        if (hasOwnDraftConflict) {
+            setShowDraftModal(true);
+        }
+    }, [hasOwnDraftConflict]);
 
 
     return (
@@ -467,18 +567,58 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                             <Button onPress={() => onClose?.()} style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E" }}>
                                 Cancel
                             </Button>
-                            <Button onPress={() => handleRegister()} style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6", paddingVertical: 12 } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white" }}>
+                            {/* <Button onPress={() => handleRegister()} style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6", paddingVertical: 12 } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white" }}>
                                 {action == 'register' ? 'Submit' : 'Update'}
+                            </Button> */}
+
+                            <Button
+                                onPress={() => {
+                                    if (selectedCustomers) {
+                                        handleSelectCustomer();
+                                    } else {
+                                        handleRegister();
+                                    }
+                                }}
+                                style={{
+                                    flex: 1,
+                                    backgroundColor: selectedCustomers
+                                        ? "#F7941E" 
+                                        : (!isFormValid || isDirty)
+                                            ? "#D3D4D6"
+                                            : "#F7941E",
+                                    paddingVertical: 12
+                                }}
+                                textStyle={{ color: "white" }}
+                                disabled={
+                                    selectedCustomers
+                                        ? false
+                                        : (!isFormValid || isDirty)
+                                }
+                            >
+                                {selectedCustomers
+                                    ? "Select"
+                                    : action === "register"
+                                        ? "Submit"
+                                        : "Update"}
                             </Button>
+
+
                         </AppView>
 
                     </AppView>
                 )}
 
+                 <DraftExistsModal
+                visible={showDraftModal}
+                onConfirm={() => handleDeleteDraft()}
+                onClose={() => {
+                    setShowDraftModal(false)
+                    onClose?.();
+                }}
+            />
+
 
             </SafeAreaView>
-
-
 
         </Modal>
     )

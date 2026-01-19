@@ -15,6 +15,7 @@ export const buildEntityPayload = ({
   customerGroupId,
   page = 1,
   limit = 20,
+  customerIds = []
 }) => {
 
 
@@ -23,6 +24,7 @@ export const buildEntityPayload = ({
     statusIds: [7, 2],
     page,
     limit,
+    ...(customerIds?.length > 0 && { customerIds })
   };
 
   if (typeId == 1) {
@@ -46,7 +48,7 @@ export const buildEntityPayload = ({
 
         if (entity == "pharmacy") {
           payload.mappingFor = "HOSP";
-          payload.customerGroupId = customerGroupId;
+          if (customerGroupId) payload.customerGroupId = customerGroupId;
           return payload;
         }
       }
@@ -60,7 +62,7 @@ export const buildEntityPayload = ({
 
         if (entity == "pharmacy") {
           payload.mappingFor = "PGH";
-          payload.customerGroupId = customerGroupId;
+          if (customerGroupId) payload.customerGroupId = customerGroupId;
           return payload;
         }
       }
@@ -81,7 +83,8 @@ export const buildEntityPayload = ({
 
     if (entity == "pharmacy") {
       payload.mappingFor = "DOCT";
-      payload.customerGroupId = customerGroupId;
+      if (customerGroupId) payload.customerGroupId = customerGroupId;
+
       return payload;
     }
   }

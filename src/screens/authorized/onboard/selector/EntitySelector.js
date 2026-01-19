@@ -181,9 +181,13 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
 
                 <View style={styles.entityInfo}>
                     <AppText style={styles.entityName}>{item.customerName}</AppText>
+
+                    {item?.customerCode && 
                     <View style={styles.entityDetails}>
                         <AppText style={styles.entityCode}>{item.customerCode}</AppText>
                     </View>
+                    }
+                    
                 </View>
 
                 <AppText style={styles.entityCity}>{item.cityName}</AppText>
@@ -361,11 +365,8 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 <FlatList
                     data={entitiesData}
                     renderItem={renderEntitiesData}
-                    keyExtractor={item => item.id.toString()}
-                    contentContainerStyle={[
-                        styles.listContent,
-                        entitiesData.length === 0 && styles.emptyListContent,
-                    ]}
+                    keyExtractor={item => item?.stgCustomerId?.toString() ??item?.customerId?.toString() }
+                    contentContainerStyle={[ styles.listContent]}
                     showsVerticalScrollIndicator={false}
 
                     // 🔽 LOAD MORE

@@ -595,44 +595,26 @@ export const buildDraftPayload = (formData) => {
             ? { stationCode: formData.stationCode }
             : {}),
 
-        // ---------- LICENCE ----------
-        ...(formData.licenceDetails?.registrationDate
-            ? {
-                licenceDetails: {
-                    registrationDate: new Date(
-                        formData.licenceDetails.registrationDate
-                    ),
-                },
-            }
-            : {}),
-
         ...(formData.licenceDetails?.licence?.some(
-            l => l?.licenceNo && l?.licenceValidUpto
+            l => l?.licenceNo
         )
             ? {
                 licenceDetails: {
-                    ...(
-                        formData.licenceDetails?.registrationDate
-                            ? {
-                                registrationDate: new Date(
-                                    formData.licenceDetails.registrationDate
-                                ),
-                            }
-                            : {}
-                    ),
+                    ...(formData.licenceDetails?.registrationDate && {
+                        registrationDate: new Date(
+                            formData.licenceDetails.registrationDate
+                        ),
+                    }),
                     licence: formData.licenceDetails.licence
-                        .filter(l => l?.licenceNo && l?.licenceValidUpto)
+                        .filter(l => l?.licenceNo)
                         .map(l => ({
                             licenceTypeId: l.licenceTypeId,
                             licenceNo: l.licenceNo,
-                            licenceValidUpto: new Date(l.licenceValidUpto),
-                            ...(l.hospitalCode
-                                ? { hospitalCode: l.hospitalCode }
-                                : {}),
                         })),
                 },
             }
             : {}),
+
 
         // ---------- DOCUMENTS ----------
         ...(formData.customerDocs?.length
