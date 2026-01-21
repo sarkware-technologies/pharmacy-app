@@ -85,6 +85,7 @@ import {
 } from '../../../redux/slices/customerSlice';
 import ChevronRight from '../../../components/icons/ChevronRight';
 import CommonTooltip from '../../../components/view/Tooltip';
+import { logger } from 'react-native-reanimated/lib/typescript/common';
 
 const CustomerList = ({ navigation: navigationProp }) => {
   const navigationHook = useNavigation();
@@ -117,7 +118,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
     const loadCustomerGroups = async () => {
       try {
         const response = await customerAPI.getCustomerGroups();
-        if (response.success && response.data) {
+          if (response.success && response.data) {
           setCustomerGroups(response.data || []);
         }
       } catch (error) {
@@ -127,8 +128,14 @@ const CustomerList = ({ navigation: navigationProp }) => {
     loadCustomerGroups();
   }, []);
 
+  console.log(loggedInUser);
+  
 
-  const [activeTab, setActiveTab] = useState('all');
+  
+
+  
+
+  const [activeTab, setActiveTab] = useState(loggedInUser?.subRoleName == 'MR' ? 'all':"waitingForApproval");
   const [activeFilterButton, setActiveFilterButton] = useState('newCustomer');
   const [searchText, setSearchText] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -2309,7 +2316,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
             onPress={() => {
               const customerId = item.stgCustomerId || item.customerId;
               const isStaging = item.stgCustomerId != null;
-              navigation.navigate('onboading', { isStaging, customerId, action: "onboard" })
+              navigation.navigate('onboading', { isStaging, customerId, action: "onboard", documentUpload:false })
             }}
           >
             <AppText style={styles.onboardButtonText}>Onboard</AppText>
@@ -2475,7 +2482,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
                         onPress={() => {
                           const customerId = item.stgCustomerId || item.customerId;
                           const isStaging = item.stgCustomerId != null;
-                          navigation.navigate('onboading', { isStaging, customerId, action: item.statusName === 'DRAFT' ?"register":"edit" })
+                          navigation.navigate('onboading', { isStaging, customerId, action: item.statusName === 'DRAFT' ?"register":"edit",  })
                           // handleOnboardCustomer(
                           //   navigation,
                           //   customerId,

@@ -15,12 +15,16 @@ import { colors } from '../../../styles/colors';
 import AppText from "../../../components/AppText"
 import SunLogo from '../../../components/icons/SunLogo';
 import SuccessRegistrationIcon from '../../../components/icons/SuccessRegistrationIcon';
+import{updateUploadCustomerDocs} from '../../../redux/slices/authSlice'
+import { useDispatch } from 'react-redux';
 
 const { width } = Dimensions.get('window');
 
 const RegistrationSuccess = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const dispatch = useDispatch();
+
   const {
     customerCode,
     registrationCode,
@@ -126,16 +130,28 @@ const RegistrationSuccess = () => {
   }, []);
 
   const handleOkay = () => {
-    navigation.navigate('DrawerMain', {
-      screen: 'MainTabs',
-      params: {
-        screen: 'Customers',
-        params: {
-          screen: 'CustomerList'
-        }
-      }
+     dispatch(updateUploadCustomerDocs(false));
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'Main',
+          state: {
+            routes: [
+              {
+                name: 'MainTabs',
+                state: {
+                  routes: [{ name: 'Orders' }],
+                },
+              },
+            ],
+          },
+        },
+      ],
     });
+
   };
+
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],

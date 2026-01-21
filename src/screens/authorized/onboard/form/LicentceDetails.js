@@ -424,9 +424,6 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
 
         try {
             const selectedType = getSelectedTypeByFormData(formData);
-            console.log(selectedType, 667);
-
-
             const payload = {
                 licenseNumber,
                 ...(formType === 'child' && selectedType && {
@@ -448,12 +445,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
             }
         } catch (error) {
             if ((error?.response?.statusCode === 302)) {
-
                 const data = error?.response?.existingLicenceDetails?.data || error?.response?.data;
-
-                console.log(error?.response);
-
-
                 const isLicenceAlreadyExist = (data?.statusCode == 203 || data?.customerId);
 
                 //sometimes status code not available that time need to check customerid
@@ -578,9 +570,9 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
             isRequired: true,
         },
         PRLIC: {
-            title: "Practice license",
+            title: "MCI Registration",
             filePlaceholder: "Upload",
-            codeLabel: "Practice license number",
+            codeLabel: "MCI Registration number",
             dateLabel: "Expiry date",
             isRequired: true,
         },

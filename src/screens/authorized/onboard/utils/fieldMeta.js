@@ -659,6 +659,23 @@ export const buildDraftPayload = (formData) => {
                     ...(formData.generalDetails.areaId
                         ? { areaId: Number(formData.generalDetails.areaId) }
                         : {}),
+
+                    ...(formData.generalDetails.clinicName && {
+                        clinicName: formData.generalDetails.clinicName
+                    }),
+
+                    ...(formData.generalDetails.specialist && {
+                        specialist: formData.generalDetails.specialist
+                    }),
+
+                    ...(formData.generalDetails.shortName && {
+                        shortName: formData.generalDetails.shortName
+                    }),
+
+                    ...(formData.generalDetails.ownerName && {
+                        ownerName: formData.generalDetails.ownerName
+                    }),
+
                 },
             }
             : {}),

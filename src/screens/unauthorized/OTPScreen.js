@@ -48,6 +48,9 @@ const OTPScreen = () => {
     otpVerificationError 
   } = useSelector((state) => state.auth);
 
+  console.log(developmentOtp, 'developmentOtp');
+  
+
   // Animation values
   const headerSlideAnim = useRef(new Animated.Value(-250)).current;
   const headerFadeAnim = useRef(new Animated.Value(0)).current;

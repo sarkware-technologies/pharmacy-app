@@ -131,7 +131,9 @@ const Fields = ({ customerData, isLoading, isChild, saveDraft }) => {
                                                 { color: colors.secondaryText, fontSize: 12 },
                                             ]}
                                         >
-                                            {item?.stationCode}
+
+                                            
+                                            {item?.userCode}
                                         </AppText>
                                     </View>
 

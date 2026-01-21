@@ -70,8 +70,9 @@ export const resendOTP = createAsyncThunk(
 
 export const requestPasswordReset = createAsyncThunk(
   'auth/requestPasswordReset',
-  async (mobileNumber) => {
-    const response = await authAPI.requestPasswordReset(mobileNumber);
+
+  async (userName) => {
+    const response = await authAPI.requestPasswordReset(userName);
     return response;
   }
 );
@@ -86,9 +87,17 @@ export const verifyResetOTP = createAsyncThunk(
 
 export const resetPassword = createAsyncThunk(
   'auth/resetPassword',
-  async ({ resetToken, newPassword }) => {
-    const response = await authAPI.resetPassword(resetToken, newPassword);
-    return response;
+  async ({ username, authChannel, newPassword }, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.resetPassword({
+        username,
+        authChannel,
+        newPassword
+      });
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
   }
 );
 
@@ -138,6 +147,7 @@ export const logout = createAsyncThunk(
 
 const initialState = {
   isAuthenticated: false,
+  authInitialized: false,
   user: null,
   token: null,
   sessionId: null,
@@ -191,9 +201,30 @@ const authSlice = createSlice({
       // Restore credentials from saved state (on error)
       // This is handled in the component, but we keep the state available
     },
+    // updateUploadCustomerDocs: (state, action) => {
+    //   const value = action.payload;
+    //   // ✅ Update ONLY for Customer role (roleId === 5)
+    //   if (
+    //     state.user?.roleId == 5 &&
+    //     state.user?.userDetails?.uploadCustomerDocs
+    //   ) {
+    //     state.user?.userDetails?.uploadCustomerDocs = value;
+    //   }
+    // },
+
+    updateUploadCustomerDocs: (state, action) => {
+  if (state.user?.roleId != 5) return;
+
+  const details = state.user?.userDetails;
+  if (!details) return;
+
+  details.uploadCustomerDocs = action.payload;
+},
+
   },
   extraReducers: (builder) => {
     // Login
+
     builder
       .addCase(login.pending, (state) => {
         state.loading = true;
@@ -201,6 +232,8 @@ const authSlice = createSlice({
         state.developmentOtp = null; // Clear any previous OTP
       })
       .addCase(login.fulfilled, (state, action) => {
+        console.log(action?.payload, 'loginpayload');
+
         state.loading = false;
         state.sessionId = action.payload.data.sessionId;
         state.phoneOrEmail = action.payload.phoneOrEmail; // Store the phone/email
@@ -222,6 +255,7 @@ const authSlice = createSlice({
       .addCase(verifyOTP.fulfilled, (state, action) => {
         state.otpVerificationLoading = false;
         state.isAuthenticated = true;
+        state.authInitialized = true;
         state.token = action.payload.data.token;
         state.user = action.payload.data.user;
         state.sessionId = null; // Clear session after successful verification
@@ -262,10 +296,11 @@ const authSlice = createSlice({
       })
       .addCase(requestPasswordReset.fulfilled, (state, action) => {
         state.loading = false;
-        state.resetSessionId = action.payload.data.resetSessionId;
-        state.phoneOrEmail = action.payload.data.phoneNumber; // Store for forgot password flow
-        state.developmentOtp = action.payload.data.developmentOtp; // Store OTP for development
+        state.resetSessionId = action?.payload?.data?.resetSessionId;
+        state.phoneOrEmail = action?.payload?.data?.phoneNumber;
+        state.developmentOtp = action?.payload?.data?.developmentOtp ?? null;
       })
+
       .addCase(requestPasswordReset.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
@@ -280,7 +315,9 @@ const authSlice = createSlice({
       })
       .addCase(verifyResetOTP.fulfilled, (state, action) => {
         state.otpVerificationLoading = false;
-        state.resetToken = action.payload.data.resetToken;
+        state.resetToken = action?.payload?.data?.resetToken;
+        state.verifyAuthChannel = action?.payload?.data?.authChannel;
+        state.verifyUsername = action?.payload?.data?.username;
         state.resetSessionId = null; // Clear session after successful verification
         state.developmentOtp = null; // Clear OTP after successful verification
       })
@@ -330,6 +367,7 @@ const authSlice = createSlice({
       .addCase(checkAuthStatus.fulfilled, (state, action) => {
         state.loading = false;
         state.isAuthenticated = action.payload.isAuthenticated;
+        state.authInitialized = true;
         state.token = action.payload.token || null;
         state.user = action.payload.user || null;
       })
@@ -354,5 +392,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, clearSession, clearDevelopmentOtp, saveLoginCredentials, clearLoginCredentials, restoreLoginCredentials } = authSlice.actions;
+export const { clearError, clearSession, clearDevelopmentOtp, saveLoginCredentials, clearLoginCredentials, restoreLoginCredentials, updateUploadCustomerDocs } = authSlice.actions;
 export default authSlice.reducer;

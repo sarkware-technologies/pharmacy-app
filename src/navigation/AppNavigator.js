@@ -410,7 +410,15 @@ const DrawerNavigator = () => (
 );
 
 const LoadingScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+  <View style={{ position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,}}>
     <ActivityIndicator size="large" color="#FF9A3E" />
   </View>
 );
@@ -418,28 +426,30 @@ const LoadingScreen = () => (
 const AppNavigator = ({ navigationRef }) => {
   const dispatch = useDispatch();
 
-  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, authInitialized  } = useSelector((state) => state.auth);
 
   useEffect(() => {
     dispatch(checkAuthStatus());
   }, [dispatch]);
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
+if (!authInitialized) {
+  return <LoadingScreen />; // ✅ ONLY allowed here
+}
 
   return (
+    <>
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {!isAuthenticated ? (
+            <Stack.Screen name="Auth" component={AuthStack} />
+          ) : (
+            <Stack.Screen name="Main" component={MainStack} />
+          )}
+        </Stack.Navigator>
 
-    <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!isAuthenticated ? (
-          <Stack.Screen name="Auth" component={AuthStack} />
-        ) : (
-          <Stack.Screen name="Main" component={MainStack} />
-        )}
-      </Stack.Navigator>
-
-    </NavigationContainer>
+      </NavigationContainer>
+      {loading && <LoadingScreen />}
+      </>
   );
 };
 

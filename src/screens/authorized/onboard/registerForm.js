@@ -21,6 +21,7 @@ import validateScheme from "./utils/validateScheme.json";
 import { AppToastService } from '../../../components/AppToast';
 import { useCustomerLinkage } from "../customer/service/useCustomerLinkage";
 import DraftExistsModal from '../../../components/modals/DraftExistsModal'
+import { useSelector } from 'react-redux';
 
 import Svg, { Path } from "react-native-svg";
 
@@ -36,6 +37,7 @@ const Loading = memo(({ height = "minHeight" }) => {
 const RegisterForm = () => {
     const navigation = useNavigation();
     const route = useRoute();
+    const { user } = useSelector(state => state.auth);
 
     const [rawScheme, setRawScheme] = useState(validateScheme);
 
@@ -44,6 +46,7 @@ const RegisterForm = () => {
         customerId,
         isStaging,
         action = "register",
+        documentUpload = true
     } = route.params || {};
 
     const [transferData, setTransferData] = useState({});
@@ -56,10 +59,7 @@ const RegisterForm = () => {
     const [customerApiresponse, setCustomerApiresponse] = useState({});
     const [customerDetails, setCustomerDetails] = useState({});
     const [draftValue, setDraftValue] = useState({});
-
-    const [uploadDocument, setUploadDocument] = useState(action != 'onboard');
-
-
+    const [uploadDocument, setUploadDocument] = useState(documentUpload);
     const {
         data,
         draft,
@@ -71,6 +71,9 @@ const RegisterForm = () => {
     });
     useEffect(() => {
         if (data && !isLoading) {
+            console.log(data, 'from effect');
+
+
             setCustomerApiresponse(data);
             setTransferData((prev) => ({ ...prev, ...(data?.generalDetails?.cityId && { cityOptions: [{ id: data?.generalDetails?.cityId, name: data?.generalDetails?.cityName }] }) }))
             setCustomerDetails(updateFormData(data, action));
@@ -368,9 +371,56 @@ const RegisterForm = () => {
 
 
     }
+    const handleAssignToCustomer = async () => {
+        setIsFormSubmited(true);
+
+        const result = await validateForm(formData, scheme);
+
+        console.log(formData);
+
+
+
+        const payload = {
+            ...buildDraftPayload(formData),
+            isAssignedToCustomer: true
+        };
+
+        console.log(payload);
+
+
+        setIsFormValid(result.isValid);
+        setError(result.errors);
+        if (result?.errors && !result.isValid) {
+            if (result?.errors?.generalDetails) {
+                scrollToSection("general");
+            } else if (
+                result?.errors?.securityDetails ||
+                result?.errors?.isPanVerified ||
+                result?.errors?.isMobileVerified ||
+                result?.errors?.isEmailVerified
+            ) {
+                scrollToSection("security");
+            } else {
+                scrollToSection("top");
+            }
+        }
+
+        if (!result.isValid) return;
+
+        try {
+            const response = await customerAPI.createCustomer(payload);
+            if (response?.success) {
+                AppToastService.show("Customer registered successfully", "success", "Assign to Customer");
+                navigation.goBack();
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     const handleSaveDraft = async (data) => {
         console.log(data);
-        
+
         const payload = buildDraftPayload(data);
 
         try {
@@ -452,15 +502,21 @@ const RegisterForm = () => {
         console.log(error, 3249823468)
     }, [error])
 
-    useEffect(() => {
-        setTransferData({})
-    }, [formData.typeId, formData.categoryId, formData.subCategoryId])
 
+    // type or category or sub category change remove licenseresponse for send request
+    useEffect(() => {
+        setTransferData(prev => {
+            if (!prev) return prev;
+
+            const { licenseResponse, ...rest } = prev;
+            return rest;
+        });
+    }, [formData.typeId, formData.categoryId, formData.subCategoryId]);
 
 
     console.log(transferData, 67676767);
     const renderForm = [
-        { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: uploadDocument, order: action == 'onboard' ? 5 : 1 },
+        { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: uploadDocument, order: (action == 'onboard' || action == 'assigntocustomer') ? 5 : 1 },
         { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: true, order: 2 },
         { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSaveDraft={handleSaveDraft} />, show: true, order: 3 },
         { key: "mapping", component: <MappingDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: true, order: 4 },
@@ -536,7 +592,9 @@ const RegisterForm = () => {
                         onPress={() => handleSaveDraft(formData)}
                     >
 
-                        <AppText style={OnboardStyle.saveDraftButtonText}>Save as Draft</AppText>
+                        {(action != 'onboard' || action != 'assigntocustomer') && <AppText style={OnboardStyle.saveDraftButtonText}>Save as Draft</AppText>}
+
+
 
                     </TouchableOpacity>
                 }
@@ -591,19 +649,25 @@ const RegisterForm = () => {
 
             {(licenseList?.length > 0 && !isLoading) &&
                 <AppView>
-                    {action == 'onboard' ?
+                    {(action == 'onboard') ?
                         (<AppView flexDirection={"row"} gap={20} paddingHorizontal={25} paddingVertical={10}>
-                            <Button style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E", fontSize: 15 }}>
+
+
+                            <Button onPress={() => handleAssignToCustomer()} style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E", fontSize: 15 }}>
                                 Assign to Customer
                             </Button>
-                            <Button onPress={() => handleuploadDocument()} style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6", paddingVertical: 6 } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white", fontSize: 15 }}>
+
+                            <Button onPress={() => handleuploadDocument()} style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6" } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white", fontSize: 15 }}>
                                 {uploadDocument ? 'Register' : 'Upload Dcouments'}
                             </Button>
                         </AppView>) :
                         (<AppView flexDirection={"row"} gap={20} paddingHorizontal={25} paddingVertical={10}>
-                            <Button style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E" }}>
-                                Cancel
-                            </Button>
+
+                            {user?.roleName != 'Customer' &&
+                                <Button style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E" }}>
+                                    Cancel
+                                </Button>
+                            }
 
 
                             <Button
@@ -622,9 +686,9 @@ const RegisterForm = () => {
                             >
                                 {showSendRequest
                                     ? "Send Request"
-                                    : action === "register"
-                                        ? "Register"
-                                        : "Update"}
+                                    : action === "edit"
+                                        ? "Update"
+                                        : "Register"}
                             </Button>
 
 

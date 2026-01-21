@@ -17,7 +17,7 @@ const { width, height } = Dimensions.get('window');
 
 const PasswordSuccessScreen = () => {
     const navigation = useNavigation();
-    
+
     // Animation values
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const logoScale = useRef(new Animated.Value(0)).current;
@@ -28,7 +28,7 @@ const PasswordSuccessScreen = () => {
     const particleAnim2 = useRef(new Animated.Value(0)).current;
     const particleAnim3 = useRef(new Animated.Value(0)).current;
     const particleAnim4 = useRef(new Animated.Value(0)).current;
-    
+
     useEffect(() => {
         // Sequential animations
         Animated.sequence([
@@ -67,8 +67,8 @@ const PasswordSuccessScreen = () => {
                 duration: 200,
                 useNativeDriver: true,
             }),
-        ]).start();        
-        
+        ]).start();
+
         // Particle animations (decorative elements)
         Animated.loop(
             Animated.parallel([
@@ -125,21 +125,24 @@ const PasswordSuccessScreen = () => {
                 ]),
             ])
         ).start();
-        
+
         // Auto navigate to login after 3 seconds
-        // const timer = setTimeout(() => {
-        //     Animated.timing(fadeAnim, {
-        //         toValue: 0,
-        //         duration: 300,
-        //         useNativeDriver: true,
-        //     }).start(() => {
-        //         navigation.navigate('Login');
-        //     });
-        // }, 5000);
-        
-        // return () => clearTimeout(timer);
+        const timer = setTimeout(() => {
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+            }).start(() => {
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'Login' }],
+                });
+            });
+        }, 3000);
+
+        return () => clearTimeout(timer);
     }, []);
-    
+
     const renderParticle = (animValue, style, content) => (
         <Animated.View
             style={[
@@ -166,7 +169,7 @@ const PasswordSuccessScreen = () => {
             <AppText style={styles.particleText}>{content}</AppText>
         </Animated.View>
     );
-    
+
     return (
         <View style={styles.container}>
             <Animated.View
@@ -174,7 +177,7 @@ const PasswordSuccessScreen = () => {
                     styles.content,
                     { opacity: fadeAnim }
                 ]}>
-                
+
                 {/* Logo */}
                 <Animated.View
                     style={[
@@ -183,7 +186,7 @@ const PasswordSuccessScreen = () => {
                     ]}>
                     <SunLogo />
                 </Animated.View>
-                
+
                 {/* Success Animation Container */}
                 <View style={styles.successContainer}>
                     {/* Decorative Particles */}
@@ -191,21 +194,21 @@ const PasswordSuccessScreen = () => {
                     {renderParticle(particleAnim2, { top: -5, right: -5 }, '○')}
                     {renderParticle(particleAnim3, { bottom: -10, left: 10 }, '+')}
                     {renderParticle(particleAnim4, { bottom: -5, right: 5 }, '×')}
-                    
+
                     {/* Shield with layers */}
                     <Animated.View
                         style={[
                             styles.shieldContainer,
                             { transform: [{ scale: shieldScale }] }
                         ]}>
-                        
-                            <Shield color={colors.primary} />
-                            
-                           
-                        
+
+                        <Shield color={colors.primary} />
+
+
+
                     </Animated.View>
                 </View>
-                
+
                 {/* Success Text */}
                 <Animated.View
                     style={[
@@ -236,7 +239,7 @@ const styles = StyleSheet.create({
         marginTop: 100
     },
     logoContainer: {
-        marginBottom: 40,        
+        marginBottom: 40,
     },
     successContainer: {
         width: 200,

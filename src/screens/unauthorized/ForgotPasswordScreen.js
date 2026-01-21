@@ -17,9 +17,10 @@ import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import { colors } from '../../styles/colors';
 import SunLogo from '../../components/icons/SunLogo';
-import InputPhone from '../../components/icons/InputPhone';
+import InputUser from '../../components/icons/InputUser';
 import { requestPasswordReset } from '../../redux/slices/authSlice';
 import AppText from "../../components/AppText"
+import { authAPI } from '../../api/auth';
 
 const { width, height } = Dimensions.get('window');
 
@@ -32,20 +33,20 @@ const scrollOffset = isSmallScreen ? 30 : isMediumScreen ? 45 : 60;
 
 const ForgotPasswordScreen = () => {
     const scrollViewRef = useRef(null);
-    const [mobileNumber, setMobileNumber] = useState('');
+    const [userName, setUserName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
-    
+
     const navigation = useNavigation();
     const dispatch = useDispatch();
-    
+
     // Animation values
     const logoScale = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideUpAnim = useRef(new Animated.Value(50)).current;
     const buttonSlideAnim = useRef(new Animated.Value(100)).current;
     const backLinkOpacity = useRef(new Animated.Value(1)).current;
-    
+
     useEffect(() => {
         // Entrance animations
         Animated.parallel([
@@ -73,7 +74,7 @@ const ForgotPasswordScreen = () => {
             }),
         ]).start();
     }, []);
-    
+
     // Keyboard handling
     useEffect(() => {
         const keyboardWillShow = Keyboard.addListener(
@@ -81,14 +82,14 @@ const ForgotPasswordScreen = () => {
             (event) => {
                 const keyboardHeight = event.endCoordinates.height;
                 setKeyboardHeight(keyboardHeight);
-                
+
                 // Fade out the back link
                 Animated.timing(backLinkOpacity, {
                     toValue: 0,
                     duration: 200,
                     useNativeDriver: true,
                 }).start();
-                
+
                 // Scroll to show the form
                 setTimeout(() => {
                     scrollViewRef.current?.scrollTo({
@@ -103,14 +104,14 @@ const ForgotPasswordScreen = () => {
             Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
             () => {
                 setKeyboardHeight(0);
-                
+
                 // Fade in the back link
                 Animated.timing(backLinkOpacity, {
                     toValue: 1,
                     duration: 200,
                     useNativeDriver: true,
                 }).start();
-                
+
                 // Scroll back to top
                 scrollViewRef.current?.scrollTo({
                     y: 0,
@@ -124,34 +125,39 @@ const ForgotPasswordScreen = () => {
             keyboardWillHide.remove();
         };
     }, []);
-    
+
+    const isValidInput = (value) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const mobileRegex = /^[0-9]{10}$/;
+        return emailRegex.test(value) || mobileRegex.test(value);
+    };
+
     const handleGetOTP = async () => {
-        if (mobileNumber.length >= 10) {
-            setIsLoading(true);
-            
-            // Animate out before navigation
-            Animated.parallel([
-                Animated.timing(fadeAnim, {
-                    toValue: 0,
-                    duration: 200,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(slideUpAnim, {
-                    toValue: -30,
-                    duration: 200,
-                    useNativeDriver: true,
-                }),
-            ]).start(() => {
-                // Mock API call
-                setTimeout(() => {
-                    setIsLoading(false);
-                    dispatch(requestPasswordReset({ mobileNumber }));
-                    navigation.navigate('SetNewPassword', { mobileNumber });
-                }, 500);
-            });
+        if (!isValidInput(userName)) {
+            // show error: "Enter valid email or mobile number"
+            return;
+        }
+        setIsLoading(true);
+        try {
+            // ✅ WAIT for the thunk result
+            const resultAction = await dispatch(
+                requestPasswordReset(userName)
+            );
+
+            // ✅ Navigate ONLY if API succeeded
+            if (requestPasswordReset.fulfilled.match(resultAction)) {
+
+                navigation.navigate('ForgotPasswordOTP');
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsLoading(false);
         }
     };
-    
+
+
+
     const handleBackToLogin = () => {
         Animated.timing(fadeAnim, {
             toValue: 0,
@@ -161,14 +167,14 @@ const ForgotPasswordScreen = () => {
             navigation.goBack();
         });
     };
-    
+
     return (
         <View style={styles.container}>
-                <ScrollView 
+            <ScrollView
                 ref={scrollViewRef}
                 contentContainerStyle={[
                     styles.scrollContainer,
-                    { 
+                    {
                         paddingBottom: keyboardHeight > 0 ? keyboardHeight + 100 : 40,
                         minHeight: height + (keyboardHeight || 0),
                         paddingTop: topPadding
@@ -177,7 +183,7 @@ const ForgotPasswordScreen = () => {
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
                 bounces={false}>
-                
+
                 <Animated.View
                     style={[
                         styles.contentWrapper,
@@ -186,7 +192,7 @@ const ForgotPasswordScreen = () => {
                             transform: [{ translateY: slideUpAnim }]
                         }
                     ]}>
-                    
+
                     {/* Logo */}
                     <Animated.View
                         style={[
@@ -195,7 +201,7 @@ const ForgotPasswordScreen = () => {
                         ]}>
                         <SunLogo width={logoSize} height={logoSize} />
                     </Animated.View>
-                    
+
                     {/* Title */}
                     <AppText style={[styles.title, isSmallScreen && styles.titleSmall]}>
                         Forgot Password?
@@ -204,19 +210,19 @@ const ForgotPasswordScreen = () => {
                         Please enter registered mobile number,{'\n'}
                         we will send you a 4 digit code
                     </AppText>
-                    
+
                     {/* Input */}
                     <View style={[styles.inputContainer, isSmallScreen && styles.inputContainerSmall]}>
                         <CustomInput
-                            value={mobileNumber}
-                            onChangeText={setMobileNumber}
-                            placeholder="Mobile number"
-                            icon={<InputPhone />}
-                            keyboardType="numeric"
-                            maxLength={10}
+                            value={userName}
+                            onChangeText={setUserName}
+                            placeholder="Mobile number or Email address"
+                            icon={<InputUser />}
+                            keyboardType="default"
+                            autoCapitalize="none"
                         />
                     </View>
-                    
+
                     {/* Back to login link */}
                     <Animated.View
                         style={[
@@ -236,7 +242,7 @@ const ForgotPasswordScreen = () => {
                             <AppText style={styles.backToLoginText}>Back to login</AppText>
                         </TouchableOpacity>
                     </Animated.View>
-                    
+
                     {/* Get OTP Button */}
                     <Animated.View
                         style={[
@@ -252,7 +258,7 @@ const ForgotPasswordScreen = () => {
                             title="Get OTP"
                             onPress={handleGetOTP}
                             loading={isLoading}
-                            disabled={mobileNumber.length < 10}
+                            disabled={!isValidInput(userName)}
                         />
                     </Animated.View>
                 </Animated.View>

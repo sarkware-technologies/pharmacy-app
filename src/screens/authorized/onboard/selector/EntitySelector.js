@@ -20,8 +20,6 @@ import Svg, { Path } from 'react-native-svg';
 
 const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parentHospitalId = null, enableLocationFilter = true, allowMultiple = true, maxSelection, onAddNew }) => {
 
-    console.log(entityType);
-
 
     const [filterSections, setFilterSections] = useState([]);
     const lastRequestedPageRef = useRef(1);
@@ -118,20 +116,15 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 page: pageNumber,
             };
 
-            console.log('FINAL PAYLOAD 👉', finalPayload);
-
             const res = await customerAPI.getCustomersListMapping(finalPayload);
             const customers = res?.customers || [];
 
-            console.log(res);
-
-
             const mapped = customers.map(c => ({
-                id: c.customerId,
+                id: c.stgCustomerId ?? c.customerId,
                 customerName: c.customerName,
                 customerCode: c.customerCode || c.sapCode || c.customerId,
                 cityName: c.cityName || 'N/A',
-                isNew: false
+                isNew: !!c.stgCustomerId
             }));
 
 
@@ -195,7 +188,7 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
         );
     };
 
-    const handleToggleEnity = (entity) => {
+    const handleToggleEnity = (entity) => {        
         setSelectedItems(prevItems => {
             const isSelected = prevItems.some(
                 item => item?.id == entity?.id && item?.isActive
@@ -239,8 +232,6 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
     };
 
     const handleContinue = () => {
-        console.log(selectedItems);
-
         if (onSelect) {
             onSelect(entityType, selectedItems, parentHospitalId, allowMultiple);
         }
@@ -365,7 +356,7 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 <FlatList
                     data={entitiesData}
                     renderItem={renderEntitiesData}
-                    keyExtractor={item => item?.stgCustomerId?.toString() ??item?.customerId?.toString() }
+                    keyExtractor={item => item?.stgCustomerId?.toString() ?? item?.customerId?.toString() }
                     contentContainerStyle={[ styles.listContent]}
                     showsVerticalScrollIndicator={false}
 

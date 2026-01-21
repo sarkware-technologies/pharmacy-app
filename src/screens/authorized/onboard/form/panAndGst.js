@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { customerAPI } from "../../../../api/customer";
 import AppView from "../../../../components/AppView";
+import TextButton from "../../../../components/view/textButton"
 import FilePicker from "../../../../components/form/fileUpload";
 import FloatingDropdown from "../../../../components/form/floatingDropdown";
 import FloatingInput from "../../../../components/form/floatingInput";
@@ -10,30 +11,41 @@ import { AppText } from "../../../../components";
 import { colors } from "../../../../styles/colors";
 import OnboardStyle from "../style/onboardStyle";
 import { ErrorMessage } from "../../../../components/view/error";
+import FetchGst from '../../../../components/icons/FetchGst';
+import { AppToastService } from '../../../../components/AppToast';
 
 const PanAndGST = ({ setValue, formData, action, error }) => {
 
-    const handleSetValue = (key, value) => {
-        setValue?.((prev) => {
-            return { ...prev, securityDetails: { ...prev?.securityDetails, [key]: value } }
-        })
-    }
+    const handleSetValue = (key, value, extra = {}) => {
+        setValue?.(prev => {
+            const prevPan = prev?.securityDetails?.panNumber;
+
+            return {
+                ...prev,
+                securityDetails: {
+                    ...prev?.securityDetails,
+                    [key]: value,
+                },
+                ...(key === "panNumber" &&
+                    prev?.isPanVerified &&
+                    prevPan !== value && {
+                    isPanVerified: false,
+                }),
+                ...extra,
+            };
+        });
+    };
+
 
     const [gstOptions, setGstOptions] = useState([]);
-
-
     const [uploading, setUploading] = useState({});
     const [verifyPan, setVerifyPan] = useState(false)
-
+    const [fetchGst, setFetchGst] = useState(false)
 
     const startUpload = (key) =>
         setUploading(p => ({ ...p, [key]: true }));
-
     const stopUpload = (key) =>
         setUploading(p => ({ ...p, [key]: false }));
-
-
-
 
     const handleFileUpload = async (file, type, docTypes) => {
         try {
@@ -48,9 +60,42 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
             if (!response?.length) return;
 
             const uploadFile = response[0];
-            if (type == 'pan') {
-                handleSetValue("panNumber", uploadFile?.extractedData?.PANNumber)
-                UpdateOCR(uploadFile?.verificationData);
+
+
+            if (type === "pan") {
+                // UpdateOCR(uploadFile?.verificationData);
+                handleSetValue(
+                    "panNumber",
+                    uploadFile?.extractedData?.PANNumber
+
+                );
+                panVerfiy(uploadFile?.extractedData?.PANNumber)
+            }
+
+
+            if (type === "gst") {
+                // UpdateOCR(uploadFile?.verificationData);
+                handleSetValue(
+                    "gstNumber",
+                    uploadFile?.GSTNumber
+                );
+
+
+
+                if (uploadFile?.GSTNumber && uploadFile?.verificationData) {
+                    setGstOptions(prev => [
+                        ...prev,
+                        {
+                            id: uploadFile?.GSTNumber,
+                            name: uploadFile?.GSTNumber,
+                            status: uploadFile?.verificationData?.active ? 'Active' : 'Inactive',
+                            type: uploadFile?.verificationData?.type,
+                        },
+                    ]);
+                }
+
+
+
             }
 
             const docObject = {
@@ -96,24 +141,32 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
         }
     };
 
-
     const UpdateOCR = (verificationData) => {
         setGstOptions(verificationData?.gstByPan?.records?.map((e) => ({
             id: e?.gstin,
             name: e?.gstin,
+            status: e?.active ? 'Active' : 'Inactive',
+            type: e?.type,
+
         })));
     }
 
 
-    const panVerfiy = async () => {
+
+    const panVerfiy = async (panNumber = null) => {
         try {
             setVerifyPan(true)
-            const response = await customerAPI.documentVerify({ docTypeId: staticDOCcode.PAN, panNumber: formData?.securityDetails?.panNumber });
+            const response = await customerAPI.documentVerify({ docTypeId: staticDOCcode.PAN, panNumber: panNumber ?? formData?.securityDetails?.panNumber });
             setVerifyPan(false)
-            UpdateOCR(response?.data?.verificationData);
-            setValue?.((prev) => {
-                return { ...prev, isPanVerified: true }
-            })
+            UpdateOCR(response?.verificationData);
+            setValue?.(prev => ({
+                ...prev,
+                isPanVerified: true,
+                securityDetails: {
+                    ...prev?.securityDetails,
+                    gstNumber: "",
+                },
+            }));
         }
         catch (error) {
             console.log(error);
@@ -125,9 +178,37 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
             setVerifyPan(false)
         }
     }
+    const handleFetchGST = () => {
+        if (!formData?.securityDetails?.panNumber) {
+            AppToastService.show(
+                "Enter PAN number to fetch GST",
+                "warning",
+                "PAN required"
+            );
+            return;
+        }
+
+        if (!formData?.isPanVerified) {
+            AppToastService.show(
+                "Verify PAN number to fetch GST",
+                "warning",
+                "PAN not verified"
+            );
+            return;
+        }
+
+        // ✅ Both conditions satisfied
+        setFetchGst(true);
+    };
+
 
     const fineGST = findDocument(formData?.customerDocs, staticDOCcode.GST);
     const finePAN = findDocument(formData?.customerDocs, staticDOCcode.PAN);
+
+    const selectedGst = gstOptions?.find(
+        e => e.id === formData?.securityDetails?.gstNumber
+    );
+
     return (
         <AppView>
             <AppView >
@@ -156,9 +237,14 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
             <AppView>
                 <FloatingInput
                     error={error?.securityDetails?.panNumber ?? error?.isPanVerified}
-                    disabled={formData?.isPanVerified}
+                    // disabled={formData?.isPanVerified}
                     disabledColor={"white"}
-                    value={formData?.securityDetails?.panNumber} onChangeText={(text) => handleSetValue("panNumber", text)} label="PAN number" isRequired={true}
+                    value={formData?.securityDetails?.panNumber} onChangeText={(text) => {
+                        handleSetValue("panNumber", text);
+                        if (fetchGst) {
+                            setFetchGst(false)
+                        }
+                    }} label="PAN number" isRequired={true}
                     suffix={
                         verifyPan ?
                             <ActivityIndicator size="large" color={colors.primary} /> :
@@ -167,6 +253,23 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
                                 style={{ paddingRight: 10 }}><AppText style={{ color: colors.primary }}>{formData?.isPanVerified ? 'Verified' : 'Verify'} {!formData?.isPanVerified && <AppText style={[OnboardStyle.requiredIcon, { fontSize: 14 }]}>*</AppText>}</AppText></TouchableOpacity>
                     }
                     maxLength={10} />
+
+
+                {!fetchGst && <TouchableOpacity
+                    onPress={handleFetchGST}
+                    style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        paddingBottom: 16
+                    }}
+                >
+                    <FetchGst width={16} height={16} />
+                    <AppText style={{ marginLeft: 2 }} color={colors.primary} fontWeight={600} >
+                        Fetch GST from PAN
+                    </AppText>
+                </TouchableOpacity>}
+
+
             </AppView>
             <AppView >
                 <FilePicker
@@ -195,11 +298,34 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
                 <FloatingDropdown
                     error={error?.securityDetails?.gstNumber}
                     selected={formData?.securityDetails?.gstNumber}
+                    disabled={!fetchGst}
                     label="GST number"
                     searchTitle="GST number"
                     onSelect={(e) => handleSetValue("gstNumber", e?.id)}
                     options={gstOptions}
                 />
+
+                {selectedGst && (
+                    <AppView style={{ marginTop: 4, marginLeft: 2 }}>
+                        <AppText >
+                            GST Status:{" "}
+                            <AppText
+                                color={selectedGst?.status == "Active" ? "green" : "red"}
+                                fontWeight="400" fontFamily="normal"
+                            >
+                                {selectedGst?.status?.replace(/^./, c => c.toUpperCase())}
+
+                            </AppText>
+                        </AppText>
+
+                        <AppText style={{ marginTop: 4 }}>
+                            GST Type:{" "}
+                            <AppText fontFamily="normal" fontWeight="400">
+                                {selectedGst?.type}
+                            </AppText>
+                        </AppText>
+                    </AppView>
+                )}
             </AppView>
         </AppView>
 

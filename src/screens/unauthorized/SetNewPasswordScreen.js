@@ -23,6 +23,8 @@ import ArrowLeft from '../../components/icons/ArrowLeft';
 import CheckCircle from '../../components/icons/CheckCircle';
 import XCircle from '../../components/icons/XCircle';
 import AppText from "../../components/AppText"
+import { useDispatch, useSelector } from 'react-redux';
+import { resetPassword } from '../../redux/slices/authSlice';
 
 const { width, height } = Dimensions.get('window');
 
@@ -34,9 +36,14 @@ const SetNewPasswordScreen = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
-    
+
     const navigation = useNavigation();
-    
+    const dispatch = useDispatch();
+    const {
+        verifyAuthChannel,
+        verifyUsername,
+
+    } = useSelector(state => state.auth);
     // Animation values
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideUpAnim = useRef(new Animated.Value(30)).current;
@@ -44,7 +51,7 @@ const SetNewPasswordScreen = () => {
     const checkAnim2 = useRef(new Animated.Value(0)).current;
     const checkAnim3 = useRef(new Animated.Value(0)).current;
     const checkAnim4 = useRef(new Animated.Value(0)).current;
-    
+
     // Password validation
     const validations = {
         minLength: password.length >= 8,
@@ -52,7 +59,7 @@ const SetNewPasswordScreen = () => {
         hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
         noSpaces: password.length > 0 && !password.startsWith(' ') && !password.endsWith(' ')
     };
-    
+
     useEffect(() => {
         // Entrance animations
         Animated.parallel([
@@ -69,7 +76,7 @@ const SetNewPasswordScreen = () => {
             }),
         ]).start();
     }, []);
-    
+
     // Keyboard handling
     useEffect(() => {
         const keyboardWillShow = Keyboard.addListener(
@@ -77,7 +84,7 @@ const SetNewPasswordScreen = () => {
             (event) => {
                 const keyboardHeight = event.endCoordinates.height;
                 setKeyboardHeight(keyboardHeight);
-                
+
                 // Scroll to show the form
                 setTimeout(() => {
                     scrollViewRef.current?.scrollTo({
@@ -92,7 +99,7 @@ const SetNewPasswordScreen = () => {
             Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
             () => {
                 setKeyboardHeight(0);
-                
+
                 // Scroll back to top
                 scrollViewRef.current?.scrollTo({
                     y: 0,
@@ -106,7 +113,7 @@ const SetNewPasswordScreen = () => {
             keyboardWillHide.remove();
         };
     }, []);
-    
+
     // Animate validation checks
     useEffect(() => {
         Animated.timing(checkAnim1, {
@@ -115,7 +122,7 @@ const SetNewPasswordScreen = () => {
             useNativeDriver: true,
         }).start();
     }, [validations.minLength]);
-    
+
     useEffect(() => {
         Animated.timing(checkAnim2, {
             toValue: validations.hasUpperLowerNumber ? 1 : 0,
@@ -123,7 +130,7 @@ const SetNewPasswordScreen = () => {
             useNativeDriver: true,
         }).start();
     }, [validations.hasUpperLowerNumber]);
-    
+
     useEffect(() => {
         Animated.timing(checkAnim3, {
             toValue: validations.hasSpecial ? 1 : 0,
@@ -131,7 +138,7 @@ const SetNewPasswordScreen = () => {
             useNativeDriver: true,
         }).start();
     }, [validations.hasSpecial]);
-    
+
     useEffect(() => {
         Animated.timing(checkAnim4, {
             toValue: validations.noSpaces ? 1 : 0,
@@ -139,32 +146,44 @@ const SetNewPasswordScreen = () => {
             useNativeDriver: true,
         }).start();
     }, [validations.noSpaces]);
-    
+
     const isFormValid = () => {
-        return Object.values(validations).every(v => v === true) && 
-               password === confirmPassword && 
-               confirmPassword.length > 0;
+        return Object.values(validations).every(v => v === true) &&
+            password === confirmPassword &&
+            confirmPassword.length > 0;
     };
-    
-    const handleSubmit = () => {
-        if (isFormValid()) {
-            setIsLoading(true);
-            
-            // Animate out
-            Animated.timing(fadeAnim, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
-            }).start(() => {
-                // Mock API call
-                setTimeout(() => {
-                    setIsLoading(false);
+    const handleSubmit = async () => {
+        if (!isFormValid()) return;
+
+        setIsLoading(true);
+        Keyboard.dismiss();
+
+        try {
+            const resultAction = await dispatch(
+                resetPassword({
+                    username: verifyUsername,
+                    authChannel: verifyAuthChannel,
+                    newPassword: password
+                })
+            );
+
+            if (resetPassword.fulfilled.match(resultAction)) {
+                // Animate out only on success
+                Animated.timing(fadeAnim, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                }).start(() => {
                     navigation.navigate('PasswordSuccess');
-                }, 500);
-            });
+                });
+            }
+        } catch (error) {
+            console.error('Reset password failed:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
-    
+
     const handleBack = () => {
         Animated.timing(fadeAnim, {
             toValue: 0,
@@ -174,7 +193,7 @@ const SetNewPasswordScreen = () => {
             navigation.goBack();
         });
     };
-    
+
     const ValidationItem = ({ isValid, text, animValue }) => (
         <View style={styles.validationItem}>
             <Animated.View
@@ -204,30 +223,30 @@ const SetNewPasswordScreen = () => {
             </AppText>
         </View>
     );
-    
+
     return (
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            
+
             {/* Header */}
-            <Animated.View 
+            <Animated.View
                 style={[
                     styles.header,
                     { opacity: fadeAnim }
                 ]}>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.backButton}
                     onPress={handleBack}>
                     <ArrowLeft width={24} height={24} color={colors.text} />
                 </TouchableOpacity>
             </Animated.View>
-            
-            <ScrollView 
+
+            <ScrollView
                 contentContainerStyle={styles.scrollContainer}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled">
-                
+
                 <Animated.View
                     style={[
                         styles.content,
@@ -236,15 +255,15 @@ const SetNewPasswordScreen = () => {
                             transform: [{ translateY: slideUpAnim }]
                         }
                     ]}>
-                    
+
                     {/* Logo */}
                     <View style={styles.logoContainer}>
                         <SunLogo width={80} height={80} />
                     </View>
-                    
+
                     {/* Title */}
                     <AppText style={styles.title}>Set New Password</AppText>
-                    
+
                     {/* Password Inputs */}
                     <View style={styles.inputsContainer}>
                         <CustomInput
@@ -255,14 +274,14 @@ const SetNewPasswordScreen = () => {
                             secureTextEntry={!showPassword}
                             rightIcon={
                                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                                    {showPassword ? 
-                                        <EyeOpen width={20} height={20} color={colors.textSecondary} /> : 
+                                    {showPassword ?
+                                        <EyeOpen width={20} height={20} color={colors.textSecondary} /> :
                                         <EyeClosed width={20} height={20} color={colors.textSecondary} />
                                     }
                                 </TouchableOpacity>
                             }
                         />
-                        
+
                         <CustomInput
                             value={confirmPassword}
                             onChangeText={setConfirmPassword}
@@ -271,44 +290,44 @@ const SetNewPasswordScreen = () => {
                             secureTextEntry={!showConfirmPassword}
                             rightIcon={
                                 <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                                    {showConfirmPassword ? 
-                                        <EyeOpen width={20} height={20} color={colors.textSecondary} /> : 
+                                    {showConfirmPassword ?
+                                        <EyeOpen width={20} height={20} color={colors.textSecondary} /> :
                                         <EyeClosed width={20} height={20} color={colors.textSecondary} />
                                     }
                                 </TouchableOpacity>
                             }
                         />
                     </View>
-                    
+
                     {/* Validation Checklist */}
                     <View style={styles.validationContainer}>
                         <AppText style={styles.validationTitle}>Your password must contain</AppText>
-                        
+
                         <ValidationItem
                             isValid={validations.minLength}
                             text="At least 8 letters"
                             animValue={checkAnim1}
                         />
-                        
+
                         <ValidationItem
                             isValid={validations.hasUpperLowerNumber}
                             text="At least a number, an uppercase & a lowercase letter"
                             animValue={checkAnim2}
                         />
-                        
+
                         <ValidationItem
                             isValid={validations.hasSpecial}
                             text="At least one special character (For ex: @, - , _ . .)"
                             animValue={checkAnim3}
                         />
-                        
+
                         <ValidationItem
                             isValid={validations.noSpaces}
                             text="No space at the start or end"
                             animValue={checkAnim4}
                         />
                     </View>
-                    
+
                     {/* Submit Button */}
                     <View style={styles.buttonContainer}>
                         <CustomButton

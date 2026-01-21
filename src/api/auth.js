@@ -3,8 +3,13 @@ import apiClient from './apiClient';
 
 // Helper function to determine auth channel
 const getAuthChannel = (username) => {
-    // Check if username contains @ for email, otherwise treat as mobile
-    return username.includes('@') ? 'email' : 'mobile';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const mobileRegex = /^[0-9]{10}$/;
+
+    if (emailRegex.test(username)) return 'email';
+    if (mobileRegex.test(username)) return 'mobile';
+
+    return null; // invalid input
 };
 
 export const authAPI = {
@@ -73,9 +78,12 @@ export const authAPI = {
                         mobile: response.data?.mobile,
                         roleId: response.data?.roleId,
                         subroleId: response.data?.subroleId,
+                        stationCode: response.data?.stationCode,
                         isFirstLogin: response.data?.isFirstLogin,
                         userDetails: response.data?.userDetails?.[0],
-                        userPermissions: response.data?.userPermissions
+                        userPermissions: response.data?.userPermissions,
+                        roleName: response.data?.roleName,
+                        subRoleName:response.data?.subRoleName ?? null
                     }
                 }
             };
@@ -150,6 +158,10 @@ export const authAPI = {
 
     // Forgot Password implementations
     requestPasswordReset: async (phoneOrEmail) => {
+
+        console.log(phoneOrEmail);
+
+
         try {
             const authChannel = getAuthChannel(phoneOrEmail);
 
@@ -176,6 +188,7 @@ export const authAPI = {
     },
 
     verifyResetOTP: async (resetSessionId, otp) => {
+
         try {
             // Extract username from resetSessionId
             const username = resetSessionId.replace('reset-', '').split('-').slice(0, -1).join('-');
@@ -192,6 +205,8 @@ export const authAPI = {
                 success: response.success,
                 data: {
                     resetToken: response.data?.resetToken || `reset-token-${Date.now()}`,
+                    authChannel: response?.data?.authChannel || null,
+                    username: response?.data?.username || null,
                 }
             };
         } catch (error) {
@@ -202,24 +217,30 @@ export const authAPI = {
         }
     },
 
-    resetPassword: async (resetToken, newPassword) => {
+    resetPassword: async ({ username, authChannel, newPassword }) => {
         try {
-            // Note: The actual endpoint for password reset is not provided in the curls
-            // This is a placeholder implementation
-            const response = await apiClient.post('/user-management/reset-password', {
-                resetToken: resetToken,
-                newPassword: newPassword
-            });
+            const response = await apiClient.post(
+                '/user-management/reset-password',
+                {
+                    username,
+                    authChannel,
+                    newPassword
+                }
+            );
 
             return {
-                success: response.success,
-                message: response.message || 'Password reset successfully',
-                data: {}
+                success: response?.success,
+                message: response?.message || 'Password reset successfully',
+                data: response?.data || {}
             };
         } catch (error) {
-            throw new Error('Failed to reset password. Please try again.');
+            throw new Error(
+                error?.response?.data?.message ||
+                'Failed to reset password. Please try again.'
+            );
         }
     },
+
 
     resendResetOTP: async (resetSessionId) => {
         try {
@@ -244,6 +265,16 @@ export const authAPI = {
                 message: 'Reset OTP resent successfully'
             };
         }
-    }
+    },
+
+       getUserDetails: async () => {
+            try {
+                const response = await apiClient.get('/user-management/users/details');
+                return response;
+            } catch (error) {
+                console.error('Error fetching customer types:', error);
+                throw error;
+            }
+        },
 
 };

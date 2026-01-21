@@ -40,15 +40,31 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
     const [stationCodeOptions, setStationCodeOptions] = useState([]);
 
     useEffect(() => {
-        setStationCodeOptions(loggedInUser?.userDetails?.stationCodes?.map((item) => ({
-            id: item.stationCode,
-            name: item.stationCode,
-        })) ?? [])
-    }, [loggedInUser])
+        const stationCodesArray =
+            loggedInUser?.userDetails?.stationCodes?.length
+                ? loggedInUser.userDetails.stationCodes.map(item => ({
+                    id: item.stationCode,
+                    name: item.stationCode,
+                }))
+                : loggedInUser?.stationCode
+                    ? [
+                        {
+                            id: loggedInUser.stationCode,
+                            name: loggedInUser.stationCode,
+                        },
+                    ]
+                    : formData?.stationCode
+                        ? [
+                            {
+                                id: formData.stationCode,
+                                name: formData.stationCode,
+                            },
+                        ]
+                        : [];
 
-
+        setStationCodeOptions(stationCodesArray);
+    }, [loggedInUser, formData?.stationCode]);
     useEffect(() => {
-        console.log(formData?.generalDetails?.pincode, 293746236)
         if (formData?.generalDetails?.pincode && String(formData?.generalDetails?.pincode)?.length == 6) {
             fetchCitybyPincode(String(formData?.generalDetails?.pincode))
         }

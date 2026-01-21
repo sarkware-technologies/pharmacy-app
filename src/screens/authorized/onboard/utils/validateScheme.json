@@ -450,7 +450,7 @@
                         "attributeId": 2,
                         "attributeKey": "licenceNo",
                         "fieldAttributeKey": "licenceNo",
-                        "attributeName": "Practice License Number",
+                        "attributeName": "MCI Registration Number",
                         "attributeType": "string",
                         "section": "licenseDetails",
                         "isMandatory": true,

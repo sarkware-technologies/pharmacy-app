@@ -17,6 +17,9 @@ import { colors } from '../../styles/colors';
 import SunLogo from '../../components/icons/SunLogo';
 import ArrowLeft from '../../components/icons/ArrowLeft';
 import AppText from "../../components/AppText"
+import { useDispatch, useSelector } from 'react-redux';
+import { verifyResetOTP, resendResetOTP, clearDevelopmentOtp }
+    from '../../redux/slices/authSlice';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,17 +30,22 @@ const ForgotPasswordOTPScreen = () => {
     const [countdown, setCountdown] = useState(55);
     const [canResend, setCanResend] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
-    
+    const dispatch = useDispatch();
+    const {
+        resetSessionId,
+        developmentOtp,
+    } = useSelector(state => state.auth);
+
     const navigation = useNavigation();
     const route = useRoute();
-    const { mobileNumber } = route.params;
-    
+    // const { mobileNumber } = route.params;
+
     // Animation values
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideUpAnim = useRef(new Animated.Value(30)).current;
     const logoRotate = useRef(new Animated.Value(0)).current;
     const countdownScale = useRef(new Animated.Value(1)).current;
-    
+
     useEffect(() => {
         // Entrance animations
         Animated.parallel([
@@ -61,7 +69,14 @@ const ForgotPasswordOTPScreen = () => {
             ),
         ]).start();
     }, []);
-    
+    useEffect(() => {
+        if (developmentOtp) {
+            setOtp(developmentOtp.toString());
+            dispatch(clearDevelopmentOtp());
+        }
+    }, [developmentOtp, dispatch]);
+
+
     // Keyboard handling
     useEffect(() => {
         const keyboardWillShow = Keyboard.addListener(
@@ -69,7 +84,7 @@ const ForgotPasswordOTPScreen = () => {
             (event) => {
                 const keyboardHeight = event.endCoordinates.height;
                 setKeyboardHeight(keyboardHeight);
-                
+
                 // Scroll to show the form
                 setTimeout(() => {
                     scrollViewRef.current?.scrollTo({
@@ -84,7 +99,7 @@ const ForgotPasswordOTPScreen = () => {
             Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
             () => {
                 setKeyboardHeight(0);
-                
+
                 // Scroll back to top
                 scrollViewRef.current?.scrollTo({
                     y: 0,
@@ -98,55 +113,52 @@ const ForgotPasswordOTPScreen = () => {
             keyboardWillHide.remove();
         };
     }, []);
-    
+
     // Countdown timer
     useEffect(() => {
-        if (countdown > 0) {
-            const timer = setTimeout(() => {
-                setCountdown(countdown - 0.1);
-                
-                // Pulse animation at specific intervals
-                if (countdown % 1 === 0) {
-                    Animated.sequence([
-                        Animated.timing(countdownScale, {
-                            toValue: 1.1,
-                            duration: 100,
-                            useNativeDriver: true,
-                        }),
-                        Animated.timing(countdownScale, {
-                            toValue: 1,
-                            duration: 100,
-                            useNativeDriver: true,
-                        }),
-                    ]).start();
-                }
-            }, 100);
-            return () => clearTimeout(timer);
-        } else {
+        if (countdown <= 0) {
             setCanResend(true);
+            return;
         }
+
+        const timer = setTimeout(() => {
+            setCountdown(prev => prev - 1);
+        }, 1000);
+
+        return () => clearTimeout(timer);
     }, [countdown]);
-    
-    const handleVerify = () => {
-        if (otp.length === 4) {
-            setIsLoading(true);
-            Keyboard.dismiss();
-            
-            // Animate out
-            Animated.timing(fadeAnim, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
-            }).start(() => {
-                // Mock verification
-                setTimeout(() => {
-                    setIsLoading(false);
-                    navigation.navigate('SetNewPassword');
-                }, 500);
-            });
+
+    useEffect(() => {
+    if (otp.length === 4) {
+        handleVerify();
+    }
+}, [otp]);
+
+const handleVerify = async () => {
+    if (otp.length !== 4 || isLoading) return;
+
+    Keyboard.dismiss();
+    setIsLoading(true);
+
+    try {
+        const resultAction = await dispatch(
+            verifyResetOTP({
+                resetSessionId,
+                otp
+            })
+        );
+
+        if (verifyResetOTP.fulfilled.match(resultAction)) {
+            navigation.navigate('SetNewPassword');
         }
-    };
-    
+    } catch (error) {
+        console.error('Verify reset OTP failed:', error);
+    } finally {
+        setIsLoading(false);
+    }
+};
+
+
     const handleResendCode = () => {
         if (canResend) {
             setCountdown(55);
@@ -155,7 +167,7 @@ const ForgotPasswordOTPScreen = () => {
             console.log('Resending OTP...');
         }
     };
-    
+
     const handleBack = () => {
         Animated.timing(fadeAnim, {
             toValue: 0,
@@ -165,27 +177,27 @@ const ForgotPasswordOTPScreen = () => {
             navigation.goBack();
         });
     };
-    
+
     const logoSpin = logoRotate.interpolate({
         inputRange: [0, 1],
         outputRange: ['0deg', '360deg']
     });
-    
+
     return (
         <View style={styles.container}>
             {/* Header */}
-            <Animated.View 
+            <Animated.View
                 style={[
                     styles.header,
                     { opacity: fadeAnim }
                 ]}>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.backButton}
                     onPress={handleBack}>
                     <ArrowLeft width={24} height={24} color={colors.text} />
                 </TouchableOpacity>
             </Animated.View>
-            
+
             <Animated.View
                 style={[
                     styles.content,
@@ -194,7 +206,7 @@ const ForgotPasswordOTPScreen = () => {
                         transform: [{ translateY: slideUpAnim }]
                     }
                 ]}>
-                
+
                 {/* Logo */}
                 <Animated.View
                     style={[
@@ -203,14 +215,14 @@ const ForgotPasswordOTPScreen = () => {
                     ]}>
                     <SunLogo width={80} height={80} />
                 </Animated.View>
-                
+
                 {/* Title */}
                 <AppText style={styles.title}>OTP Verification</AppText>
                 <AppText style={styles.subtitle}>
                     We have sent a verification code to on your{'\n'}
                     registered mobile number
                 </AppText>
-                
+
                 {/* OTP Input */}
                 <View style={styles.otpContainer}>
                     <OTPInput
@@ -219,14 +231,14 @@ const ForgotPasswordOTPScreen = () => {
                         autoFocus={true}
                     />
                 </View>
-                
+
                 {/* Resend Section */}
                 <View style={styles.resendContainer}>
                     <AppText style={styles.resendText}>Didn't get the code?</AppText>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={handleResendCode}
                         disabled={!canResend}>
-                        <Animated.Text 
+                        <Animated.Text
                             style={[
                                 styles.resendButton,
                                 !canResend && styles.resendDisabled,
@@ -234,13 +246,13 @@ const ForgotPasswordOTPScreen = () => {
                             ]}>
                             Resend Code {!canResend && (
                                 <AppText style={styles.countdown}>
-                                    in {Math.ceil(countdown / 10).toFixed(1)} Sec
+                                    in {countdown} Sec
                                 </AppText>
                             )}
                         </Animated.Text>
                     </TouchableOpacity>
                 </View>
-                
+
                 {/* Verify Button */}
                 <View style={styles.buttonContainer}>
                     <CustomButton

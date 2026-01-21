@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { use, useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -13,7 +13,7 @@ import Customer from '../components/icons/menu/Customer';
 import Orders from '../components/icons/menu/Orders';
 import Pricing from '../components/icons/menu/Pricing';
 import More from '../components/icons/menu/More';
-
+import { useSelector } from 'react-redux';
 // Import screens
 import CustomerList from '../screens/authorized/customer/CustomerList';
 import CustomerDetails from '../screens/authorized/customer/customerDetails';
@@ -39,6 +39,7 @@ import NetRateListing from '../screens/authorized/netrate/NetRateListing';
 import MoreMenu from "../components/MoreMenu"
 import PermissionWrapper from '../utils/RBAC/permissionWrapper';
 import PERMISSIONS from '../utils/RBAC/permissionENUM';
+
 
 
 // Placeholder screens for other tabs
@@ -254,8 +255,37 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
 
 // Main Bottom Tab Navigator
 const BottomTabNavigator = () => {
+  const navigation = useNavigation();
+  const redirectedRef = useRef(false);
+
+  const { user } = useSelector(state => state.auth);
+
+  console.log(user, 'role');
+
+
+  const initialRoute =
+    user?.roleId == 5
+      ? 'Orders'
+      : 'Customers';
+
+  useEffect(() => {
+    if (
+      (user?.userDetails?.uploadCustomerDocs) &&
+      !redirectedRef.current
+    ) {
+      redirectedRef.current = true;
+
+      navigation.navigate('onboading', {
+        customerId: user?.userDetails?.stgCustomerId,
+        isStaging: true,
+        action: 'assigntocustomer',
+      });
+    }
+  }, [user, navigation]);
+
   return (
     <Tab.Navigator
+      initialRouteName={initialRoute}
       tabBar={props => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
@@ -322,9 +352,9 @@ const BottomTabNavigator = () => {
           tabBarButton: () => null, // Hide this tab from the tab bar
         }}
       />
-     
+
     </Tab.Navigator>
-    
+
   );
 };
 

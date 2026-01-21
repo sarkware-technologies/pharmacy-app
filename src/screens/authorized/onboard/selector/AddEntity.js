@@ -238,9 +238,6 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                 payload.subCategoryId
             );
 
-            console.log(getLicense, 90465);
-
-
             setFormData(prev => {
                 const prevLicenceDetails = prev?.licenceDetails ?? {};
                 const prevLicences = prevLicenceDetails?.licence ?? [];
@@ -415,10 +412,6 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
 
     useEffect(() => {
         const fetchCustomerMapping = async () => {
-            console.log(transferData, 90465);
-            console.log(parentData);
-            console.log(entityType);
-
             const customerData =
                 transferData?.licenseResponse?.conflicts?.find(
                     c =>
@@ -442,14 +435,8 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                 const customers = res?.customers || [];
 
                 if (customers.length !== 0) {
-
                     setSelectedCustomers(customers[0]);
-
                 }
-
-
-
-
 
             } catch (err) {
                 console.log("Customer mapping API failed", err);
@@ -473,13 +460,6 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
         AppToastService.show("Customer Selected", "success", "Selected");
         onClose?.();
     };
-
-
-
-    console.log(transferData, 909090);
-
-
-
 
     const renderForm = [
         { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} formType={"child"} />, show: uploadDocument, order: 1 },

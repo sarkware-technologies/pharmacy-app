@@ -1,7 +1,6 @@
 import { AppText } from "../../../../components";
 import { TouchableOpacity, View, Modal, Animated } from "react-native";
 import AccordionCard from "../../../../components/view/AccordionCard";
-import FloatingInput from "../../../../components/form/floatingInput";
 import { memo, useCallback, useEffect, useState, useMemo } from "react";
 import OnboardStyle from "../style/onboardStyle";
 import Downarrow from "../../../../components/icons/downArrow";
@@ -16,63 +15,18 @@ import EntitySelector from "../selector/EntitySelector";
 import LabeledSelector from '../../../../components/form/labeledSelector'
 import DoctorDeleteIcon from "../../../../components/icons/DoctorDeleteIcon";
 import { SELECTOR_ENTITY_CONFIG } from "../utils/fieldMeta"
+import StockistSection from './StockistSection'
 
 import AddEntity from '../selector/AddEntity';
 
 
-const RenderStockist = memo(({
-    index,
-    Namestockist,
-    distributorCode,
-    City,
-    onRemove,
-}) => {
-    return (
-        <AppView>
-            <AppView
-                marginTop={15}
-                flexDirection={"row"}
-                justifyContent={"space-between"}
-                paddingHorizontal={10}
-            >
-                <AppText fontSize={14}>Stockist {index}</AppText>
-
-                <TouchableOpacity onPress={onRemove}>
-                    <Svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 12 13"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <Path
-                            d="M10.125 2.54167L9.76333 8.38958C9.67117 9.8835 9.62508 10.6308 9.25 11.168C9.06483 11.4335 8.82645 11.6576 8.55 11.826C7.99175 12.1667 7.24333 12.1667 5.7465 12.1667C4.24733 12.1667 3.49775 12.1667 2.93833 11.8254C2.66177 11.6567 2.42337 11.4322 2.23833 11.1663C1.86383 10.6284 1.81833 9.88 1.7285 8.38375L1.375 2.54167M0.5 2.54167H11"
-                            stroke="#909090"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                    </Svg>
-                </TouchableOpacity>
-            </AppView>
-
-            <AppView>
-                <FloatingInput {...Namestockist} />
-            </AppView>
-            <AppView marginTop={5}>
-                <FloatingInput {...distributorCode} />
-            </AppView>
-            <AppView marginTop={5}>
-                <FloatingInput {...City} />
-            </AppView>
-        </AppView>
-    );
-});
 
 const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection, error }) => {
     const [toggle, setToggle] = useState("open");
     const [customerOption, setCustomerOption] = useState([]);
     const [activeSelector, setActiveSelector] = useState(null);
     const [showAddEntity, setShowAddEntity] = useState(false);
+
 
     useEffect(() => {
         if (!formData) return;
@@ -158,23 +112,6 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
         });
     };
 
-    const removeStockist = (index) => {
-        handleSetValue(
-            "suggestedDistributors",
-            formData?.suggestedDistributors?.filter((item, i) => i !== index)
-        );
-    };
-
-
-    const updateStockist = (index, key, value) => {
-
-        handleSetValue(
-            "suggestedDistributors",
-            formData?.suggestedDistributors.map((item, i) =>
-                i === index ? { ...item, [key]: value } : item
-            )
-        );
-    };
 
 
     const onSelectRadio = (selector) => {
@@ -441,16 +378,16 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
     };
 
 
-const handleAddNewEntity = (key, parentHospitalId = null) => {
-  const config = SELECTOR_ENTITY_CONFIG[key];
+    const handleAddNewEntity = (key, parentHospitalId = null) => {
+        const config = SELECTOR_ENTITY_CONFIG[key];
 
-  if (!config) return;
+        if (!config) return;
 
-  setShowAddEntity({
-    key,
-    ...(parentHospitalId && { parentHospitalId }),
-  });
-};
+        setShowAddEntity({
+            key,
+            ...(parentHospitalId && { parentHospitalId }),
+        });
+    };
 
     // helper end
 
@@ -747,7 +684,7 @@ const handleAddNewEntity = (key, parentHospitalId = null) => {
                                                 keyName: 'pharmacy',
                                                 setValue,
                                             })}
-                                            
+
                                         <View>
                                             <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddEntity({ key: 'pharmacy' })}>+ Add New Pharmacy</TextButton>
                                         </View>
@@ -790,8 +727,7 @@ const handleAddNewEntity = (key, parentHospitalId = null) => {
 
                             </AppView>
                         </AppView>
-
-
+                      
 
                         {/* Stockist Suggestions */}
                         <AppView>
@@ -799,33 +735,13 @@ const handleAddNewEntity = (key, parentHospitalId = null) => {
                                 <AppText fontSize={18}>Stockist Suggestions</AppText>
                                 <AppText fontSize={14} color="#909090" fontFamily="regular" fontWeight={400}>(Optional)</AppText>
                             </AppView>
-                            {formData?.suggestedDistributors?.map((e, i) => (
-                                <RenderStockist
-                                    key={i}
-                                    index={i + 1}
-                                    Namestockist={{
-                                        label: `Name of the Stockist ${i + 1}`,
-                                        value: e.distributorName,
-                                        onChangeText: (text) =>
-                                            updateStockist(i, "distributorName", text),
-                                    }}
-                                    distributorCode={{
-                                        label: "Distributor Code",
-                                        value: e.distributorCode,
-                                        onChangeText: (text) =>
-                                            updateStockist(i, "distributorCode", text),
-                                    }}
-                                    City={{
-                                        label: "City",
-                                        value: e.city,
-                                        onChangeText: (text) =>
-                                            updateStockist(i, "city", text),
-                                    }}
-                                    onRemove={() => removeStockist(i)}
-                                />
-                            ))}
 
+                            <StockistSection
+                                formData={formData}
+                                setValue={setValue}
+                            />
 
+                            {/* ))} */}
                             {formData?.suggestedDistributors?.length != 4 && (
                                 <AppText marginTop={10} marginBottom={20} >
                                     <TextButton onPress={() => addMoreStockiest()} fontWeight={600} fontFamily="regular">+ Add More Stockist</TextButton>
@@ -856,9 +772,9 @@ const handleAddNewEntity = (key, parentHospitalId = null) => {
 
             </Modal>
 
-      
 
-             {showAddEntity && (
+
+            {showAddEntity && (
                 <AddEntity
                     {...SELECTOR_ENTITY_CONFIG[showAddEntity?.key]}
                     visible={!!showAddEntity?.key}
@@ -867,10 +783,10 @@ const handleAddNewEntity = (key, parentHospitalId = null) => {
                     onSubmit={handleEntitySelect}
                     parentHospitalId={showAddEntity?.parentHospitalId}
 
-               
+
                 />
             )}
-        
+
 
 
 

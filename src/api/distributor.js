@@ -1,12 +1,23 @@
 import apiClient from './apiClient';
 
 // Get list of distributors with pagination
-export const getDistributors = async (page = 1, limit = 10, search = '') => {
+export const getDistributors = async (page = 1, limit = 10, search = '', stationCode = '', divisionIds = []) => {
     try {
         let endpoint = `/user-management/distributor/list?page=${page}&limit=${limit}`;
         if (search) {
             endpoint += `&search=${search}`;
         }
+        if (stationCode) {
+            endpoint += `&stationCode=${stationCode}`;
+        }
+
+        if (divisionIds && divisionIds.length > 0) {
+            divisionIds.forEach(divId => {
+                endpoint += `&divisionIds=${divId}`;
+            });
+        }
+
+
         const response = await apiClient.get(endpoint);
 
         // Return the data in a consistent format

@@ -13,6 +13,10 @@ export const customerAPI = {
         }
     },
 
+    
+
+
+    
     // Get customer status options (for filters)
     getCustomerStatuses: async () => {
         try {

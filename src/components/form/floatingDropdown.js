@@ -28,6 +28,7 @@ const FloatingDropdown = ({
     onSearch,
     onAddNew,
     onPress,
+    rightIcon=true,
     ...props
 }) => {
     const isFirstRender = useRef(true);
@@ -82,6 +83,7 @@ const FloatingDropdown = ({
             <View>
                 <TouchableOpacity
                     onPress={() => onPress ? onPress?.() : setVisible(true)}
+                    disabled={disabled}
                     style={[
                         styles.container,
                         isFocused && !disabled && !error && styles.focusedContainer,
@@ -91,13 +93,19 @@ const FloatingDropdown = ({
                 >
                     <Animated.Text style={[LocallabelStyle, labelStyle]}>{label} {isRequired && (<AppText style={[OnboardStyle.requiredIcon, { fontSize: 12 }]}>*</AppText>)}  </Animated.Text>
                     <AppText style={{ paddingLeft: 20 }}>{value?.name}</AppText>
+
+                    {rightIcon &&
                     <View style={{ paddingHorizontal: 20, transform: [{ rotate: !visible ? "0deg" : "180deg" }] }} >
                         <Downarrow />
                     </View>
+                    }
+                    
 
 
                 </TouchableOpacity>
-                <SearchableDropdownModal onAddNew={onAddNew} selectedId={selected} onSearch={onSearch} onSelect={onSelect} visible={visible} onClose={() => setVisible(false)} data={options} title={searchTitle} />
+                
+                     <SearchableDropdownModal onAddNew={onAddNew} selectedId={selected} onSearch={onSearch} onSelect={onSelect} visible={visible} onClose={() => setVisible(false)} data={options} title={searchTitle} />
+           
             </View>
             {error && <AppText style={{ marginTop: 5, paddingLeft: 15 }} fontFamily="regular" fontWeight={400} color="red" >{error}</AppText>}
 
