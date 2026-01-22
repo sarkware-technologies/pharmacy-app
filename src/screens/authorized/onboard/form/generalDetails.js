@@ -86,7 +86,7 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
             const city = data?.cities?.map((e) => ({ id: e?.value, name: e?.label }));
             const state = data?.states?.map((e) => ({ id: e?.value, name: e?.label }));
             setValue?.((prev) => {
-                return { ...prev, generalDetails: { ...prev?.generalDetails, area: area?.[0]?.name, areaId: area?.[0]?.id, stateId: state?.[0]?.id } }
+                return { ...prev, generalDetails: { ...prev?.generalDetails, area: area?.[0]?.name, areaId: area?.[0]?.id, stateId: state?.[0]?.id, stateName: state?.[0]?.name } }
             })
             setAreaOptions(area)
             // setCityOptions(city)
@@ -333,7 +333,13 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                             label="City"
                             isRequired={true}
                             searchTitle="City"
-                            onSelect={(e) => handleSetValue("cityId", e?.id)}
+                            // onSelect={(e) => handleSetValue("cityId", e?.id)}
+
+                            onSelect={(e) => {
+                                setValue?.((prev) => {
+                                    return { ...prev, generalDetails: { ...prev?.generalDetails, cityId: e?.id, cityName: e?.name } }
+                                })
+                            }}
                             options={cityOptions}
                             onAddNew={addNewCity}
                             onSearch={handleCitySearch}
@@ -346,7 +352,12 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                             label="State"
                             isRequired={true}
                             searchTitle="State"
-                            onSelect={(e) => handleSetValue("stateId", e?.id)}
+                            // onSelect={(e) => handleSetValue("stateId", e?.id)}
+                             onSelect={(e) => {
+                                setValue?.((prev) => {
+                                    return { ...prev, generalDetails: { ...prev?.generalDetails, stateId: e?.id, stateName: e?.name } }
+                                })
+                            }}
                             options={stateOptions}
                         />
                     </AppView>

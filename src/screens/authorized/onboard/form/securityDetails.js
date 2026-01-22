@@ -150,7 +150,10 @@ const OTPForm = ({ onComplete, onResend, autoFill, dummy = false }) => {
 
 
 
-const SecurityDetails = ({ setValue, isAccordion = false, formData, action, error, handleSaveDraft }) => {
+const SecurityDetails = ({ setValue, isAccordion = false, formData, action, error, handleSaveDraft, transferData }) => {
+
+    console.log(transferData, 'transferData');
+    
     const [toggle, setToggle] = useState("open");
     const [otpInProgress, setOtpInProgress] = useState("");
 
@@ -264,8 +267,8 @@ const SecurityDetails = ({ setValue, isAccordion = false, formData, action, erro
                             </AnimatedContent>
                         )}
                     </AppView>
-                    {action != 'onboard' && (
-                        <PanAndGST error={error} formData={formData} setValue={setValue} action={action} />
+                    {((action != 'onboard')&&(action != "assigntocustomer")) && (
+                        <PanAndGST error={error} formData={formData} setValue={setValue} action={action} transferData={transferData}/>
                     )}
                 </AppView>
             </AccordionCard>

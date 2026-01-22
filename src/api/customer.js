@@ -821,6 +821,29 @@ export const customerAPI = {
         }
     },
 
+    saveExistingCustomerDraft: async (draftData) => {
+        try {
+            const response = await apiClient.post('/user-management/customer/existing-customer/draft', draftData);
+            return response;
+        } catch (error) {
+            console.error('Error saving customer draft:', error);
+            throw error;
+        }
+    },
+
+    getExistingCustomerDraft: async (customerId) => {
+        try {
+            const response = await apiClient.get(`/user-management/customer/get-existing-customer?customerId=${customerId}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching existing customer draft:', error);
+            throw error;
+        }
+    },
+
+
+
+
 
 
 

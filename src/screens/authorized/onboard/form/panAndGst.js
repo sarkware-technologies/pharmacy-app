@@ -14,7 +14,10 @@ import { ErrorMessage } from "../../../../components/view/error";
 import FetchGst from '../../../../components/icons/FetchGst';
 import { AppToastService } from '../../../../components/AppToast';
 
-const PanAndGST = ({ setValue, formData, action, error }) => {
+const PanAndGST = ({ setValue, formData, action, error, transferData }) => {
+
+    console.log(transferData, 'pantransferData');
+    
 
     const handleSetValue = (key, value, extra = {}) => {
         setValue?.(prev => {
@@ -153,6 +156,12 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
 
 
 
+    console.log(gstOptions, 'gstoptions');
+
+    console.log(transferData);
+    
+    
+
     const panVerfiy = async (panNumber = null) => {
         try {
             setVerifyPan(true)
@@ -209,6 +218,10 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
         e => e.id === formData?.securityDetails?.gstNumber
     );
 
+
+        useEffect(() => {
+            setGstOptions(transferData?.gstOptions ?? [])
+        }, [transferData?.gstOptions])
     return (
         <AppView>
             <AppView >
@@ -306,26 +319,34 @@ const PanAndGST = ({ setValue, formData, action, error }) => {
                 />
 
                 {selectedGst && (
-                    <AppView style={{ marginTop: 4, marginLeft: 2 }}>
-                        <AppText >
-                            GST Status:{" "}
-                            <AppText
-                                color={selectedGst?.status == "Active" ? "green" : "red"}
-                                fontWeight="400" fontFamily="normal"
-                            >
-                                {selectedGst?.status?.replace(/^./, c => c.toUpperCase())}
+  <AppView style={{ marginTop: 4, marginLeft: 2 }}>
 
-                            </AppText>
-                        </AppText>
+    {selectedGst?.status && (
+      <AppText>
+        GST Status:{" "}
+        <AppText
+          color={selectedGst.status.toLowerCase() === "active" ? "green" : "red"}
+          fontWeight="400"
+          fontFamily="normal"
+        >
+          {selectedGst.status.charAt(0).toUpperCase() +
+            selectedGst.status.slice(1)}
+        </AppText>
+      </AppText>
+    )}
 
-                        <AppText style={{ marginTop: 4 }}>
-                            GST Type:{" "}
-                            <AppText fontFamily="normal" fontWeight="400">
-                                {selectedGst?.type}
-                            </AppText>
-                        </AppText>
-                    </AppView>
-                )}
+    {selectedGst?.type && (
+      <AppText style={{ marginTop: 4 }}>
+        GST Type:{" "}
+        <AppText fontFamily="normal" fontWeight="400">
+          {selectedGst.type}
+        </AppText>
+      </AppText>
+    )}
+
+  </AppView>
+)}
+
             </AppView>
         </AppView>
 

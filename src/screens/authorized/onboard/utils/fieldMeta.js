@@ -60,11 +60,13 @@ export const initialFormData = {
         pincode: "",
         area: "",
         cityId: "",
+        cityName: "",
         stateId: "",
         ownerName: "",
         clinicName: "",
         areaId: "",
-        specialist: ""
+        specialist: "",
+        stateName: ""
     },
     mapping: {
     },
@@ -511,13 +513,15 @@ export const buildCreatePayload = (formData) => {
         })),
 
         // ---------------- GENERAL DETAILS ----------------
-        generalDetails: {
-            ...formData.generalDetails,
+        generalDetails: (() => {
+            const { cityName, stateName, ...rest } =
+                formData.generalDetails || {};
 
-            pincode: formData.generalDetails?.pincode
-                ? Number(formData.generalDetails.pincode)
-                : undefined,
-        },
+            return {
+                ...rest,
+                pincode: rest?.pincode ? Number(rest.pincode) : undefined,
+            };
+        })(),
 
         // ---------------- SECURITY DETAILS ----------------
         securityDetails: {

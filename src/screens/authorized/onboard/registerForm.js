@@ -70,22 +70,85 @@ const RegisterForm = () => {
         isStaging,
     });
 
+    // useEffect(() => {
+    //     if (data && !isLoading) {
+    //         setCustomerApiresponse(data);
+    //         setTransferData((prev) => ({ ...prev, ...(data?.generalDetails?.cityId && { cityOptions: [{ id: data?.generalDetails?.cityId, name: data?.generalDetails?.cityName }] }) }))
+    //         setCustomerDetails(updateFormData(data, action));
+    //         setFormData(updateFormData(data, action));
+    //     }
+    //     setDraftValue(draft ?? {});
+
+    // }, [data, isLoading])
 
 
     useEffect(() => {
-        if (data && !isLoading) {
-            setCustomerApiresponse(data);
-            setTransferData((prev) => ({ ...prev, ...(data?.generalDetails?.cityId && { cityOptions: [{ id: data?.generalDetails?.cityId, name: data?.generalDetails?.cityName }] }) }))
-            setCustomerDetails(updateFormData(data, action));
-            console.log(data, 'data check');
-            console.log(updateFormData(data, action), 'data check updated');
+        const initData = async () => {
+            if (!data || isLoading) return;
+            let finalData = data;
+            let isDraft = false;
+            // Only for onboard / assign-to-customer
+            if (action === 'onboard' || action === 'assigntocustomer') {
+                try {
+                    const draftResponse =
+                        await customerAPI.getExistingCustomerDraft(data?.customerId);
+                    const draftData = draftResponse?.data;
+                    // ✅ Draft validation based on your payload structure
+                    const isValidDraft =
+                        draftData &&
+                        typeof draftData === 'object' && draftData.customerId;
+                    if (isValidDraft) {
+                        finalData = draftData; // ✅ override with draft
+                        isDraft = true;
 
-            setFormData(updateFormData(data, action));
-        }
-        setDraftValue(draft ?? {});
-        console.log(data, draft, hasDraft, isLoading, 2938749283)
+                    }
+                } catch (err) {
+                    console.log('Draft not available, using normal data');
+                }
+            }
+            // ✅ Common state updates
+            console.log(finalData, 'finalDatas');
 
-    }, [data, isLoading])
+            setCustomerApiresponse(finalData);
+            setTransferData(prev => ({
+                ...prev,
+                ...(finalData?.generalDetails?.cityId && {
+                    cityOptions: [
+                        {
+                            id: finalData.generalDetails.cityId,
+                            name: finalData.generalDetails.cityName,
+                        },
+                    ],
+                }),
+
+                ...(finalData?.securityDetails?.gstNumber && {
+                    gstOptions: [
+                        {
+                            id: finalData?.securityDetails?.gstNumber,
+                            name: finalData?.securityDetails?.gstNumber,
+                        },
+                    ],
+                }),
+            }));
+
+            if (isDraft) {
+                setFormData(finalData);
+                let validationdata = await validateForm(finalData, scheme);
+                if (validationdata?.isValid) {
+                    setUploadDocument(true)
+                }
+
+            } else {
+                setFormData(updateFormData(finalData, action));
+            }
+            setCustomerDetails(updateFormData(finalData, action));
+
+            setDraftValue(draft ?? {});
+        };
+
+        initData();
+    }, [data, isLoading, action]);
+
 
     const [error, setError] = useState({});
     const [isFormValid, setIsFormValid] = useState(false);
@@ -104,9 +167,6 @@ const RegisterForm = () => {
         mapping: useRef(null),
         security: useRef(null),
     };
-
-
-    console.log(formData, 'formDataformDataformData');
 
 
     const fetchCustomerType = async () => {
@@ -270,11 +330,11 @@ const RegisterForm = () => {
     }, [formData, scheme, isFormSubmited]);
 
 
-    useEffect(() => {
-        console.log(formData, "*****formData")
-        console.log(customerDetails, "*****customerDetails")
-        console.log(getChangedValues(customerDetails ?? {}, formData), 928347293)
-    }, [formData, customerDetails])
+    // useEffect(() => {
+    //     console.log(formData, "*****formData")
+    //     console.log(customerDetails, "*****customerDetails")
+    //     console.log(getChangedValues(customerDetails ?? {}, formData), 928347293)
+    // }, [formData, customerDetails])
 
     const handleRegister = async () => {
         setIsFormSubmited(true);
@@ -430,8 +490,6 @@ const RegisterForm = () => {
     };
 
     const handleSaveDraft = async (data) => {
-        console.log(data);
-
         const payload = buildDraftPayload(data);
 
         try {
@@ -443,6 +501,20 @@ const RegisterForm = () => {
                     ...prev,
                     stgCustomerId: response?.data?.data?.stgCustomerId,
                 }));
+            }
+
+        } catch (err) {
+            AppToastService.show(err?.message, "error", "Error");
+        }
+    };
+
+
+    const handleSave = async (data) => {
+        // const payload = buildCreatePayload(data);
+        try {
+            const response = await customerAPI.saveExistingCustomerDraft(data);
+            if (response?.success) {
+                AppToastService.show(response?.message, "success", "Draft Saved");
             }
 
         } catch (err) {
@@ -524,13 +596,11 @@ const RegisterForm = () => {
         });
     }, [formData.typeId, formData.categoryId, formData.subCategoryId]);
 
-
-    console.log(transferData, 67676767);
     const renderForm = [
         { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: uploadDocument, order: (action == 'onboard' || action == 'assigntocustomer') ? 5 : 1 },
         { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: true, order: 2 },
         { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSaveDraft={handleSaveDraft} />, show: true, order: 3 },
-        { key: "mapping", component: <MappingDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: true, order: 4 },
+        { key: "mapping", component: <MappingDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSave={handleSave} />, show: true, order: 4 },
     ]
 
 
@@ -556,7 +626,7 @@ const RegisterForm = () => {
 
 
     const isDirty = useMemo(() => Object.entries(getChangedValues(customerDetails ?? {}, formData) ?? {}).length == 0)
-
+    // const isDirty = false;
 
     // send request button visibility check
     const showSendRequest =
@@ -580,6 +650,9 @@ const RegisterForm = () => {
 
 
 
+    console.log(formData, 'formdata');
+
+
 
     return (
         <SafeAreaView style={OnboardStyle.container} edges={['top', 'bottom']}>
@@ -600,10 +673,19 @@ const RegisterForm = () => {
                 {(licenseList?.length > 0 && !isLoading && !customerApiresponse?.instance?.stepInstances) &&
                     <TouchableOpacity
                         style={OnboardStyle.saveDraftButton}
-                        onPress={() => handleSaveDraft(formData)}
+                        onPress={() =>
+                            (action === 'onboard' || action === 'assigntocustomer')
+                                ? handleSave(formData)
+                                : handleSaveDraft(formData)
+                        }
                     >
 
-                        {(action != 'onboard' || action != 'assigntocustomer') && <AppText style={OnboardStyle.saveDraftButtonText}>Save as Draft</AppText>}
+
+                        <AppText style={OnboardStyle.saveDraftButtonText}>
+                            {(action == 'onboard' || action == 'assigntocustomer')
+                                ? 'Save'
+                                : 'Save as Draft'}
+                        </AppText>
 
 
 

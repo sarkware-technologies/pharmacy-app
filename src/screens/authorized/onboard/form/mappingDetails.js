@@ -21,7 +21,7 @@ import AddEntity from '../selector/AddEntity';
 
 
 
-const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection, error }) => {
+const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection, error, handleSave }) => {
     const [toggle, setToggle] = useState("open");
     const [customerOption, setCustomerOption] = useState([]);
     const [activeSelector, setActiveSelector] = useState(null);
@@ -64,11 +64,6 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
         formData?.subCategoryId,
         formData?.categoryId,
     ]);
-
-
-
-
-
 
 
     const handleToggle = useCallback(() => {
@@ -203,6 +198,10 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
         // Close selector after selection
         setActiveSelector(null);
+
+        if((action == 'onboard' || action == 'assigntocustomer')){
+            handleSave(formData)
+        }
     };
 
     // helper start
