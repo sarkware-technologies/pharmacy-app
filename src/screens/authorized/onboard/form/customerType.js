@@ -40,18 +40,54 @@ const RenderItem = React.memo(({ data = [], formKey, formData, onPress }) => {
 
 const CustomerType = ({ customerType, formData, setFormData, action }) => {
 
-    const handleClick = useCallback((key, id) => {
-        setFormData(prev => {
-            if (key === "typeId") {
-                return { ...initialFormData, typeId: id, categoryId: null, subCategoryId: null };
+    // const handleClick = useCallback((key, id) => {
+    //     setFormData(prev => {
+    //         if (key === "typeId") {
+    //             return { ...initialFormData, typeId: id, categoryId: null, subCategoryId: null };
 
-            }
-            if (key === "categoryId") {
-                return { ...initialFormData, typeId: prev?.typeId, categoryId: id, subCategoryId: null };
-            }
-            return { ...initialFormData, typeId: prev?.typeId, categoryId: prev?.categoryId, subCategoryId: id };
-        });
-    }, [setFormData]);
+    //         }
+    //         if (key === "categoryId") {
+    //             return { ...initialFormData, typeId: prev?.typeId, categoryId: id, subCategoryId: null };
+    //         }
+    //         return { ...initialFormData, typeId: prev?.typeId, categoryId: prev?.categoryId, subCategoryId: id };
+    //     });
+    // }, [setFormData]);
+
+    const handleClick = useCallback((key, id) => {
+    setFormData(prev => {
+        const shouldReset =
+            action !== 'onboard' && action !== 'assigntocustomer';
+
+        // Base object
+        const base = shouldReset ? initialFormData : prev;
+
+        if (key === "typeId") {
+            return {
+                ...base,
+                typeId: id,
+                categoryId: null,
+                subCategoryId: null,
+            };
+        }
+
+        if (key === "categoryId") {
+            return {
+                ...base,
+                typeId: prev?.typeId,
+                categoryId: id,
+                subCategoryId: null,
+            };
+        }
+
+        return {
+            ...base,
+            typeId: prev?.typeId,
+            categoryId: prev?.categoryId,
+            subCategoryId: id,
+        };
+    });
+}, [action]);
+
 
     const category = useMemo(() => {
         return (

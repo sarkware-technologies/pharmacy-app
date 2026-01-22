@@ -69,14 +69,17 @@ const RegisterForm = () => {
         customerId,
         isStaging,
     });
+
+
+
     useEffect(() => {
         if (data && !isLoading) {
-            console.log(data, 'from effect');
-
-
             setCustomerApiresponse(data);
             setTransferData((prev) => ({ ...prev, ...(data?.generalDetails?.cityId && { cityOptions: [{ id: data?.generalDetails?.cityId, name: data?.generalDetails?.cityName }] }) }))
             setCustomerDetails(updateFormData(data, action));
+            console.log(data, 'data check');
+            console.log(updateFormData(data, action), 'data check updated');
+
             setFormData(updateFormData(data, action));
         }
         setDraftValue(draft ?? {});
@@ -101,6 +104,9 @@ const RegisterForm = () => {
         mapping: useRef(null),
         security: useRef(null),
     };
+
+
+    console.log(formData, 'formDataformDataformData');
 
 
     const fetchCustomerType = async () => {
@@ -373,20 +379,11 @@ const RegisterForm = () => {
     }
     const handleAssignToCustomer = async () => {
         setIsFormSubmited(true);
-
         const result = await validateForm(formData, scheme);
-
-        console.log(formData);
-
-
-
         const payload = {
             ...buildDraftPayload(formData),
             isAssignedToCustomer: true
         };
-
-        console.log(payload);
-
 
         setIsFormValid(result.isValid);
         setError(result.errors);
@@ -412,6 +409,19 @@ const RegisterForm = () => {
             if (response?.success) {
                 AppToastService.show("Customer registered successfully", "success", "Assign to Customer");
                 navigation.goBack();
+
+                if (response?.data?.data) {
+                    const assignPayload = {
+                        customerId: response.data.data?.customerId,
+                        stgCustomerId: response.data.data?.stgCustomerId,
+                        isExisting: true
+                    };
+
+                    await customerAPI.createAssignedCustomer(assignPayload);
+                }
+
+
+
             }
         } catch (error) {
             console.error(error);

@@ -13,10 +13,10 @@ export const customerAPI = {
         }
     },
 
-    
 
 
-    
+
+
     // Get customer status options (for filters)
     getCustomerStatuses: async () => {
         try {
@@ -807,6 +807,22 @@ export const customerAPI = {
             throw error;
         }
     },
+
+    createAssignedCustomer: async (payload) => {
+        try {
+            const response = await apiClient.post(
+                '/user-management/registration/customer',
+                payload
+            );
+            return response;
+        } catch (error) {
+            console.error('Error Creating customer:', error);
+            throw error;
+        }
+    },
+
+
+
 
 
 };
