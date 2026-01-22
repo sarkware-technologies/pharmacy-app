@@ -423,8 +423,9 @@ const RegisterForm = () => {
 
 
             }
-        } catch (error) {
-            console.error(error);
+        } catch (err) {
+            console.error(err);
+            AppToastService.show(err?.message ?? "Error while creationg customer", "error", "Error");
         }
     };
 
