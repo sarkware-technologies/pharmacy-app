@@ -14,10 +14,7 @@ import { ErrorMessage } from "../../../../components/view/error";
 import FetchGst from '../../../../components/icons/FetchGst';
 import { AppToastService } from '../../../../components/AppToast';
 
-const PanAndGST = ({ setValue, formData, action, error, transferData }) => {
-
-    console.log(transferData, 'pantransferData');
-    
+const PanAndGST = ({ setValue, formData, action, error, transferData }) => {    
 
     const handleSetValue = (key, value, extra = {}) => {
         setValue?.(prev => {
@@ -153,14 +150,6 @@ const PanAndGST = ({ setValue, formData, action, error, transferData }) => {
 
         })));
     }
-
-
-
-    console.log(gstOptions, 'gstoptions');
-
-    console.log(transferData);
-    
-    
 
     const panVerfiy = async (panNumber = null) => {
         try {

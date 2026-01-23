@@ -188,8 +188,6 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
 
 
             setValue(prev => {
-
-
                 // ✅ Always clone state
                 let updatedForm = prev;
 
@@ -371,6 +369,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
 
         return {
             ...currentForm,
+            
             licenceDetails: {
                 ...prevLicenceDetails,
                 licence: updatedLicences,

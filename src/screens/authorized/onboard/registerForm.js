@@ -89,13 +89,11 @@ const RegisterForm = () => {
             if (!data || isLoading) return;
             let finalData = data;
             let isDraft = false;
-            // Only for onboard / assign-to-customer
-            if (action === 'onboard' || action === 'assigntocustomer') {
+            if (action == 'onboard' || action == 'assigntocustomer') {
                 try {
                     const draftResponse =
                         await customerAPI.getExistingCustomerDraft(data?.customerId);
                     const draftData = draftResponse?.data;
-                    // ✅ Draft validation based on your payload structure
                     const isValidDraft =
                         draftData &&
                         typeof draftData === 'object' && draftData.customerId;
@@ -111,6 +109,9 @@ const RegisterForm = () => {
                     console.log('Draft not available, using normal data');
                 }
             }
+
+            console.log(finalData, 'finaldata');
+
             setCustomerApiresponse(finalData);
             setTransferData(prev => ({
                 ...prev,
@@ -133,21 +134,22 @@ const RegisterForm = () => {
                 }),
             }));
             if (isDraft) {
-                setFormData(finalData);
                 let validationdata = await validateForm(finalData, scheme);
                 if (validationdata?.isValid) {
                     setUploadDocument(true)
                 }
-            } else {
-                setFormData(updateFormData(finalData, action));
             }
-            setCustomerDetails(updateFormData(finalData, action));
 
+            setFormData(updateFormData(finalData, action));
+            setCustomerDetails(updateFormData(finalData, action));
             setDraftValue(draft ?? {});
         };
 
         initData();
     }, [data, isLoading, action]);
+
+    console.log(data, 'data');
+
 
 
     const [error, setError] = useState({});
@@ -216,6 +218,13 @@ const RegisterForm = () => {
 
 
 
+
+
+    useEffect(() => {
+        console.log('city name chaning');
+
+    }, [formData?.generalDetails?.cityName])
+
     const builLicense = async (customerType, formData) => {
         try {
             setLoading(true);
@@ -255,8 +264,8 @@ const RegisterForm = () => {
                             licence: (getLicense?.data ?? []).map((item) => {
                                 const existingLicence = prevLicences.find(
                                     (lic) =>
-                                        lic.licenceTypeId === item.id &&
-                                        lic.docTypeId === item.docTypeId
+                                        lic.licenceTypeId === item.id
+                                    // &&  lic.docTypeId === item.docTypeId
                                 );
 
                                 return {
@@ -307,7 +316,6 @@ const RegisterForm = () => {
     }, [customerType, formData?.typeId, formData?.categoryId, formData?.subCategoryId])
 
 
-    console.log(rawScheme, 'rawScheme');
 
 
     const scheme = useMemo(() => {
@@ -485,7 +493,7 @@ const RegisterForm = () => {
             licenceDetails,
             customerDocs,
             ...restPayload
-        } = buildDraftPayload(formData);
+        } = buildCreatePayload(formData);
 
         const payload = {
             ...restPayload,
@@ -517,25 +525,18 @@ const RegisterForm = () => {
 
             const response = await customerAPI.createCustomer(payload);
             if (itsSaveExDraft) {
+                const {
+                    licenceDetails,
+                    customerDocs,
+                    ...restPayload
+                } = buildDraftPayload(formData, true);
 
-                const modifiedFormDataForSave = {
-                    ...formData,
-
-                    // rename customerDocs → existingDocs
-                    existingDocs: formData?.customerDocs ?? [],
-
-                    // reset customerDocs
-                    customerDocs: [],
-
-                    // enforce licenceDetails structure
-                    licenceDetails: {
-                        registrationDate: "",
-                        licence: [],
-                    },
+                const payload = {
+                    ...restPayload,
+                    isAssignedToCustomer: true,
                 };
 
-
-                handleSave(modifiedFormDataForSave)
+                handleSave(payload)
             }
             if (response?.success) {
                 AppToastService.show("Customer registered successfully", "success", "Assign to Customer");
@@ -561,7 +562,7 @@ const RegisterForm = () => {
     };
 
     const handleSaveDraft = async (data) => {
-        const payload = buildDraftPayload(data);
+        const payload = buildDraftPayload(data, false);
         try {
             const response = await customerAPI.saveCustomerDraft(payload);
             if (response?.success) {
@@ -580,7 +581,7 @@ const RegisterForm = () => {
 
 
     const handleSave = async (data) => {
-        const payload = buildDraftPayload(data);
+        const payload = buildDraftPayload(data, true);
         try {
             const response = await customerAPI.saveExistingCustomerDraft(payload);
             if (response?.success) {

@@ -147,13 +147,8 @@ const OTPForm = ({ onComplete, onResend, autoFill, dummy = false }) => {
 };
 
 
-
-
-
 const SecurityDetails = ({ setValue, isAccordion = false, formData, action, error, handleSaveDraft, transferData }) => {
 
-    console.log(transferData, 'transferData');
-    
     const [toggle, setToggle] = useState("open");
     const [otpInProgress, setOtpInProgress] = useState("");
 

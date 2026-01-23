@@ -26,6 +26,7 @@ import { useCustomerLinkage } from "../../customer/service/useCustomerLinkage";
 import XCircle from "../../../../components/icons/XCircle";
 import OnboardStyle from "../style/onboardStyle";
 import DraftExistsModal from '../../../../components/modals/DraftExistsModal'
+import AppToast from "../../../../components/AppToast"
 
 const Loading = memo(({ height = "minHeight" }) => {
     return (
@@ -497,6 +498,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
             transparent={true}
             onRequestClose={() => onClose()}
         >
+             <AppToast/>
 
             <SafeAreaView style={[EntityStyle.modalContainer]}
             >

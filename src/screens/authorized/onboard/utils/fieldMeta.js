@@ -194,9 +194,7 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
                 ),
             ];
         }
-    }
-    console.log(licenceDetails, uploadDocument, 23498238)
-    // ---------- LICENCE DETAILS + CUSTOMER DOCS ----------
+    }    // ---------- LICENCE DETAILS + CUSTOMER DOCS ----------
     if (licenceDetails && uploadDocument) {
         const customerDocs = [];
 
@@ -237,9 +235,6 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
             ];
         }
     }
-
-
-    console.log("scheme", scheme);
     return scheme;
 };
 
@@ -582,7 +577,10 @@ const cleanMappingDraft = (arr = []) =>
         }));
 
 
-export const buildDraftPayload = (formData) => {
+export const buildDraftPayload = (formData, isExistingDraft=false) => {
+
+    console.log(formData, 'ex');
+
     const doctors = cleanMappingDraft(formData.mapping?.doctors);
     const hospitals = cleanMappingDraft(formData.mapping?.hospitals);
     const pharmacy = cleanMappingDraft(formData.mapping?.pharmacy);
@@ -624,12 +622,16 @@ export const buildDraftPayload = (formData) => {
                             formData.licenceDetails.registrationDate
                         ),
                     }),
-                    licence: formData.licenceDetails.licence
-                        .filter(l => l?.licenceNo)
-                        .map(l => ({
-                            licenceTypeId: l.licenceTypeId,
-                            licenceNo: l.licenceNo,
-                        })),
+                  licence: formData.licenceDetails.licence
+    .filter(l => l?.licenceNo)
+    .map(l => ({
+        ...(l.licenceTypeId && { licenceTypeId: l.licenceTypeId }),
+        ...(l.licenceNo && { licenceNo: l.licenceNo }),
+        ...(isExistingDraft && l.code && { code: l.code }),
+        ...(isExistingDraft && l.docTypeId && { docTypeId: l.docTypeId }),
+        ...(l.hospitalCode && { hospitalCode: l.hospitalCode }),
+        ...(l.licenceValidUpto && { licenceValidUpto: l.licenceValidUpto }),
+    })),
                 },
             }
             : {}),
@@ -693,6 +695,23 @@ export const buildDraftPayload = (formData) => {
                         ownerName: formData.generalDetails.ownerName
                     }),
 
+                    ...(formData.generalDetails.area && {
+                        area: formData.generalDetails.area
+                    }),
+
+                    ...(formData.generalDetails.area && {
+                        area: formData.generalDetails.area
+                    }),
+
+                    ...(isExistingDraft && formData.generalDetails.cityName && {
+                        cityName: formData.generalDetails.cityName
+                    }),
+
+                    ...(isExistingDraft && formData.generalDetails.stateName && {
+                        stateName: formData.generalDetails.stateName
+                    }),
+
+
                 },
             }
             : {}),
@@ -745,14 +764,29 @@ export const buildDraftPayload = (formData) => {
     };
 };
 
-
-
-
 export const updateFormData = (payload, action) => {
 
-    console.log(payload?.mapping?.hospitals?.length);
-    console.log(payload?.mapping?.hospitals);
-      console.log("payload?.mapping?.hospitals");
+      const customerDocs =
+        action == 'onboard'
+            ? (payload?.customerDocs ?? []).map(e => ({
+          s3Path: e?.s3Path,
+                  docTypeId: e?.docTypeId,
+                  fileName: e?.fileName,
+                  customerId: payload?.customerId,
+                  id: e?.id,
+              }))
+            : (payload?.docType ?? []).map(e => ({
+                 
+
+                           s3Path: e?.s3Path,
+                  docTypeId: Number(e?.doctypeId),
+                  fileName: e?.fileName,
+                  customerId: payload?.customerId,
+                  id: Number(e?.docId),
+              }));
+
+          
+
     return {
         typeId: payload?.typeId,
         categoryId: payload?.categoryId,
@@ -765,13 +799,7 @@ export const updateFormData = (payload, action) => {
             registrationDate: payload?.licenceDetails?.registrationDate,
             licence: payload?.licenceDetails?.licence ?? [],
         },
-        customerDocs: payload?.docType?.map((e) => ({
-            s3Path: e?.s3Path,
-            docTypeId: e?.doctypeId,
-            fileName: e?.fileName,
-            customerId: payload?.customerId,
-            id: e?.docId,
-        })) ?? [],
+       customerDocs,
         isBuyer: payload?.isBuyer,
         customerGroupId: payload?.customerGroupId,
         stationCode: payload?.stationCode,
@@ -789,7 +817,8 @@ export const updateFormData = (payload, action) => {
             ownerName: payload?.generalDetails?.ownerName,
             clinicName: payload?.generalDetails?.clinicName,
             areaId: payload?.generalDetails?.areaId,
-            specialist: payload?.generalDetails?.specialist
+            specialist: payload?.generalDetails?.specialist,
+            cityName: payload?.generalDetails?.cityName ?? ""
         },
         // mapping: {
         //     ...(payload?.mapping?.doctors?.length != 0 && { doctors: payload?.mapping?.doctors }),
@@ -801,7 +830,7 @@ export const updateFormData = (payload, action) => {
         mapping: {
             ...(payload?.mapping?.doctors?.length != 0 && { doctors: payload?.mapping?.doctors }),
             ...(payload?.mapping?.groupHospitals?.length != 0 && { groupHospitals: payload?.mapping?.groupHospitals }),
-            ...((payload?.mapping?.hospitals?.length != 0 ) && { hospitals: payload?.mapping?.hospitals }),
+            ...((payload?.mapping?.hospitals?.length != 0) && { hospitals: payload?.mapping?.hospitals }),
             ...(payload?.mapping?.pharmacy?.length != 0 && { pharmacy: payload?.mapping?.pharmacy }),
         },
         securityDetails: payload?.securityDetails,
