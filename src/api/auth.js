@@ -158,10 +158,6 @@ export const authAPI = {
 
     // Forgot Password implementations
     requestPasswordReset: async (phoneOrEmail) => {
-
-        console.log(phoneOrEmail);
-
-
         try {
             const authChannel = getAuthChannel(phoneOrEmail);
 

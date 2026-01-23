@@ -181,7 +181,7 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
 
     // ---------- SECURITY DETAILS + CUSTOMER DOCS ----------
     if (validateScheme?.securityDetails) {
-        const requiredKeys = ["mobile", "email", ...(uploadDocument ? ['panNumber'] : []), "gstNumber"];
+        const requiredKeys = ["mobile", "email", ...(uploadDocument ? ['panNumber'] : []), ...(uploadDocument ? ['gstNumber'] : []),];
 
         scheme.securityDetails = validateScheme.securityDetails.filter((e) =>
             requiredKeys.includes(e?.fieldAttributeKey)
@@ -563,16 +563,32 @@ export const buildCreatePayload = (formData) => {
     };
 };
 
+const cleanMappingDraft = (arr = []) =>
+    arr
+        .filter(item => item?.id)
+        .map(({ isActive, pharmacy, ...rest }) => ({
+            ...rest,
+            id: Number(rest.id),
+            ...(pharmacy?.length
+                ? {
+                    pharmacy: pharmacy
+                        .filter(p => p?.id)
+                        .map(({ isActive, ...pRest }) => ({
+                            ...pRest,
+                            id: Number(pRest.id),
+                        })),
+                }
+                : {}),
+        }));
 
 
 export const buildDraftPayload = (formData) => {
-    const doctors = cleanMapping(formData.mapping?.doctors);
-    const hospitals = cleanMapping(formData.mapping?.hospitals);
-    const pharmacy = cleanMapping(formData.mapping?.pharmacy);
-    const groupHospitals = cleanMapping(formData.mapping?.groupHospitals);
+    const doctors = cleanMappingDraft(formData.mapping?.doctors);
+    const hospitals = cleanMappingDraft(formData.mapping?.hospitals);
+    const pharmacy = cleanMappingDraft(formData.mapping?.pharmacy);
+    const groupHospitals = cleanMappingDraft(formData.mapping?.groupHospitals);
 
     return {
-        // ---------- BASIC ----------
         typeId: formData.typeId,
         categoryId: formData.categoryId ?? 0,
         subCategoryId: formData.subCategoryId ?? 0,
@@ -584,7 +600,6 @@ export const buildDraftPayload = (formData) => {
             ? { stgCustomerId: Number(formData.stgCustomerId) }
             : {}),
 
-        // ---------- FLAGS ----------
         isBuyer: Boolean(formData.isBuyer),
         isExisting: Boolean(formData.isExisting),
         isChildCustomer: Boolean(formData.isChildCustomer),
@@ -620,7 +635,6 @@ export const buildDraftPayload = (formData) => {
             : {}),
 
 
-        // ---------- DOCUMENTS ----------
         ...(formData.customerDocs?.length
             ? {
                 customerDocs: formData.customerDocs.map(d => ({
@@ -632,7 +646,6 @@ export const buildDraftPayload = (formData) => {
             }
             : {}),
 
-        // ---------- GENERAL DETAILS ----------
         ...(Object.values(formData.generalDetails || {}).some(v => v)
             ? {
                 generalDetails: {
@@ -684,7 +697,6 @@ export const buildDraftPayload = (formData) => {
             }
             : {}),
 
-        // ---------- SECURITY ----------
         ...(Object.values(formData.securityDetails || {}).some(v => v)
             ? {
                 securityDetails: {
@@ -704,7 +716,6 @@ export const buildDraftPayload = (formData) => {
             }
             : {}),
 
-        // ---------- MAPPING ----------
         ...(doctors.length ||
             hospitals.length ||
             pharmacy.length ||
@@ -738,6 +749,10 @@ export const buildDraftPayload = (formData) => {
 
 
 export const updateFormData = (payload, action) => {
+
+    console.log(payload?.mapping?.hospitals?.length);
+    console.log(payload?.mapping?.hospitals);
+      console.log("payload?.mapping?.hospitals");
     return {
         typeId: payload?.typeId,
         categoryId: payload?.categoryId,
@@ -776,10 +791,17 @@ export const updateFormData = (payload, action) => {
             areaId: payload?.generalDetails?.areaId,
             specialist: payload?.generalDetails?.specialist
         },
+        // mapping: {
+        //     ...(payload?.mapping?.doctors?.length != 0 && { doctors: payload?.mapping?.doctors }),
+        //     ...(payload?.mapping?.groupHospitals?.length != 0 && { groupHospitals: payload?.mapping?.groupHospitals }),
+        //     ...((payload?.mapping?.hospitals?.length != 0 || payload?.mapping?.pharmacy?.length == 0) && { hospitals: payload?.mapping?.hospitals }),
+        //     ...(payload?.mapping?.pharmacy?.length != 0 && { pharmacy: payload?.mapping?.pharmacy }),
+        // },
+
         mapping: {
             ...(payload?.mapping?.doctors?.length != 0 && { doctors: payload?.mapping?.doctors }),
             ...(payload?.mapping?.groupHospitals?.length != 0 && { groupHospitals: payload?.mapping?.groupHospitals }),
-            ...((payload?.mapping?.hospitals?.length != 0 || payload?.mapping?.pharmacy?.length == 0) && { hospitals: payload?.mapping?.hospitals }),
+            ...((payload?.mapping?.hospitals?.length != 0 ) && { hospitals: payload?.mapping?.hospitals }),
             ...(payload?.mapping?.pharmacy?.length != 0 && { pharmacy: payload?.mapping?.pharmacy }),
         },
         securityDetails: payload?.securityDetails,

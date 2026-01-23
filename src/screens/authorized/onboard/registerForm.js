@@ -51,6 +51,7 @@ const RegisterForm = () => {
 
     const [transferData, setTransferData] = useState({});
     const [showDraftModal, setShowDraftModal] = useState(false);
+    const [itsSaveExDraft, setItsSaveExDraft] = useState(false);
 
 
     const [formData, setFormData] = useState(initialFormData);
@@ -69,6 +70,7 @@ const RegisterForm = () => {
         customerId,
         isStaging,
     });
+
 
     // useEffect(() => {
     //     if (data && !isLoading) {
@@ -98,17 +100,17 @@ const RegisterForm = () => {
                         draftData &&
                         typeof draftData === 'object' && draftData.customerId;
                     if (isValidDraft) {
-                        finalData = draftData; // ✅ override with draft
+                        finalData = {
+                            ...draftData,
+                            ...(data?.stgCustomerId && { stgCustomerId: data.stgCustomerId }),
+                        };
                         isDraft = true;
-
+                        setItsSaveExDraft(true)
                     }
                 } catch (err) {
                     console.log('Draft not available, using normal data');
                 }
             }
-            // ✅ Common state updates
-            console.log(finalData, 'finalDatas');
-
             setCustomerApiresponse(finalData);
             setTransferData(prev => ({
                 ...prev,
@@ -130,14 +132,12 @@ const RegisterForm = () => {
                     ],
                 }),
             }));
-
             if (isDraft) {
                 setFormData(finalData);
                 let validationdata = await validateForm(finalData, scheme);
                 if (validationdata?.isValid) {
                     setUploadDocument(true)
                 }
-
             } else {
                 setFormData(updateFormData(finalData, action));
             }
@@ -307,9 +307,15 @@ const RegisterForm = () => {
     }, [customerType, formData?.typeId, formData?.categoryId, formData?.subCategoryId])
 
 
+    console.log(rawScheme, 'rawScheme');
+
+
     const scheme = useMemo(() => {
+
         if (!rawScheme) return null;
         return converScheme(rawScheme, formData?.typeId, formData?.categoryId, formData?.subCategoryId, formData?.licenceDetails, uploadDocument);
+
+
     }, [rawScheme, formData?.typeId, formData?.categoryId, formData?.subCategoryId, formData?.licenceDetails, uploadDocument]);
 
 
@@ -330,79 +336,101 @@ const RegisterForm = () => {
     }, [formData, scheme, isFormSubmited]);
 
 
-    // useEffect(() => {
-    //     console.log(formData, "*****formData")
-    //     console.log(customerDetails, "*****customerDetails")
-    //     console.log(getChangedValues(customerDetails ?? {}, formData), 928347293)
-    // }, [formData, customerDetails])
+
 
     const handleRegister = async () => {
         setIsFormSubmited(true);
-        const result = await validateForm(formData, scheme);
-        setIsFormValid(result.isValid);
-        setError(result.errors);
-        if (result?.errors && !result.isValid) {
-            if (result?.errors?.licenceDetails) {
-                scrollToSection("license")
-            }
-            else if (result?.errors?.generalDetails) {
-                scrollToSection("general")
-            }
-            else if (result?.errors?.securityDetails || result?.errors?.isPanVerified || result?.errors?.isMobileVerified || result?.errors?.isEmailVerified) {
-                scrollToSection("security")
-            }
-            else {
-                scrollToSection("top")
+
+        const step = customerApiresponse?.instance?.stepInstances?.[0];
+
+        const shouldValidate = !(
+            step && step?.approverType !== "INITIATOR"
+        );
+
+        if (shouldValidate) {
+            const result = await validateForm(formData, scheme);
+            setIsFormValid(result.isValid);
+            setError(result.errors);
+
+            if (result?.errors && !result.isValid) {
+                if (result?.errors?.licenceDetails) {
+                    scrollToSection("license");
+                }
+                else if (result?.errors?.generalDetails) {
+                    scrollToSection("general");
+                }
+                else if (
+                    result?.errors?.securityDetails ||
+                    result?.errors?.isPanVerified ||
+                    result?.errors?.isMobileVerified ||
+                    result?.errors?.isEmailVerified
+                ) {
+                    scrollToSection("security");
+                }
+                else {
+                    scrollToSection("top");
+                }
             }
 
+            if (!result.isValid) return;
         }
-        if (!result.isValid) return;
 
         const payload = buildCreatePayload(formData);
 
-
         try {
-            if (customerApiresponse?.instance?.stepInstances) {
-                const step = customerApiresponse?.instance?.stepInstances?.[0];
-                if (step?.approverType == "INITIATOR") {
-                    await customerAPI?.workflowAction(customerApiresponse?.instance?.workflowInstance?.id, {
-                        action: "MODIFY",
-                        parallelGroup: step?.parallelGroup,
-                        stepOrder: step?.stepOrder,
-                        actorId: Number(step?.assignedUserId),
-                        dataChanges: { ...draftValue, ...getChangedValues(customerDetails, formData) },
-                    })
-                    AppToastService.show("Customer Edit Success", "success", "Edited");
-                    navigation.goBack();
-                }
-                else {
+            if (step) {
+                if (step?.approverType === "INITIATOR") {
+                    await customerAPI.workflowAction(
+                        customerApiresponse?.instance?.workflowInstance?.id,
+                        {
+                            action: "MODIFY",
+                            parallelGroup: step?.parallelGroup,
+                            stepOrder: step?.stepOrder,
+                            actorId: Number(step?.assignedUserId),
+                            dataChanges: {
+                                ...draftValue,
+                                ...getChangedValues(customerDetails, formData),
+                            },
+                        }
+                    );
+                } else {
                     const draftEditPayload = {
                         stepOrder: step?.stepOrder || 1,
                         parallelGroup: step?.parallelGroup,
-                        comments: '',
+                        comments: "",
                         actorId: step?.assignedUserId,
-                        dataChanges: { ...draftValue, ...getChangedValues(customerDetails, formData) },
+                        dataChanges: {
+                            ...draftValue,
+                            ...getChangedValues(customerDetails, formData),
+                        },
                     };
-                    const saveDraft = await customerAPI.draftEdit(
+
+                    await customerAPI.draftEdit(
                         customerApiresponse?.instance?.workflowInstance?.id,
                         draftEditPayload
                     );
-                    AppToastService.show("Customer Edit Success", "success", "Edited");
-                    navigation.goBack();
                 }
+
+                AppToastService.show("Customer Edit Success", "success", "Edited");
+                navigation.goBack();
             }
             else {
+                // ✅ CREATE FLOW → VALIDATION REQUIRED
                 const response = await customerAPI.createCustomer(payload);
                 if (response?.success) {
                     AppToastService.show(response?.message, "success", "created");
-                    navigation.navigate('RegistrationSuccess', {});
-
+                    navigation.navigate("RegistrationSuccess", {});
                 }
             }
         } catch (err) {
-            AppToastService.show(err?.message ?? "Error while creationg customer", "error", "Error");
+            AppToastService.show(
+                err?.message ?? "Error while creating customer",
+                "error",
+                "Error"
+            );
         }
     };
+
 
     const handleuploadDocument = async () => {
         setIsFormSubmited(true);
@@ -437,12 +465,31 @@ const RegisterForm = () => {
 
 
     }
+
+
+
     const handleAssignToCustomer = async () => {
         setIsFormSubmited(true);
-        const result = await validateForm(formData, scheme);
+        const assignScheme = converScheme(
+            rawScheme,
+            formData?.typeId,
+            formData?.categoryId,
+            formData?.subCategoryId,
+            formData?.licenceDetails,
+            false //  force value assigned customer no need to check license an other details
+        );
+
+        const result = await validateForm(formData, assignScheme);
+
+        const {
+            licenceDetails,
+            customerDocs,
+            ...restPayload
+        } = buildDraftPayload(formData);
+
         const payload = {
-            ...buildDraftPayload(formData),
-            isAssignedToCustomer: true
+            ...restPayload,
+            isAssignedToCustomer: true,
         };
 
         setIsFormValid(result.isValid);
@@ -465,7 +512,31 @@ const RegisterForm = () => {
         if (!result.isValid) return;
 
         try {
+
+
+
             const response = await customerAPI.createCustomer(payload);
+            if (itsSaveExDraft) {
+
+                const modifiedFormDataForSave = {
+                    ...formData,
+
+                    // rename customerDocs → existingDocs
+                    existingDocs: formData?.customerDocs ?? [],
+
+                    // reset customerDocs
+                    customerDocs: [],
+
+                    // enforce licenceDetails structure
+                    licenceDetails: {
+                        registrationDate: "",
+                        licence: [],
+                    },
+                };
+
+
+                handleSave(modifiedFormDataForSave)
+            }
             if (response?.success) {
                 AppToastService.show("Customer registered successfully", "success", "Assign to Customer");
                 navigation.goBack();
@@ -491,7 +562,6 @@ const RegisterForm = () => {
 
     const handleSaveDraft = async (data) => {
         const payload = buildDraftPayload(data);
-
         try {
             const response = await customerAPI.saveCustomerDraft(payload);
             if (response?.success) {
@@ -510,10 +580,11 @@ const RegisterForm = () => {
 
 
     const handleSave = async (data) => {
-        // const payload = buildCreatePayload(data);
+        const payload = buildDraftPayload(data);
         try {
-            const response = await customerAPI.saveExistingCustomerDraft(data);
+            const response = await customerAPI.saveExistingCustomerDraft(payload);
             if (response?.success) {
+                setItsSaveExDraft(true)
                 AppToastService.show(response?.message, "success", "Draft Saved");
             }
 
@@ -598,7 +669,7 @@ const RegisterForm = () => {
 
     const renderForm = [
         { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: uploadDocument, order: (action == 'onboard' || action == 'assigntocustomer') ? 5 : 1 },
-        { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: true, order: 2 },
+        { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} setCustomerDetails={setCustomerDetails} />, show: true, order: 2 },
         { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSaveDraft={handleSaveDraft} />, show: true, order: 3 },
         { key: "mapping", component: <MappingDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSave={handleSave} />, show: true, order: 4 },
     ]
@@ -618,6 +689,7 @@ const RegisterForm = () => {
             case "edit":
                 return "Edit";
             case "onboard":
+            case "assigntocustomer":
                 return "Registration-Existing";
             default:
                 return "Registration";
@@ -626,9 +698,6 @@ const RegisterForm = () => {
 
 
     const isDirty = useMemo(() => Object.entries(getChangedValues(customerDetails ?? {}, formData) ?? {}).length == 0)
-    // const isDirty = false;
-
-    // send request button visibility check
     const showSendRequest =
         action === 'register' &&
         transferData?.licenseResponse?.conflicts.some(
@@ -750,14 +819,14 @@ const RegisterForm = () => {
                                 Assign to Customer
                             </Button>
 
-                            <Button onPress={() => handleuploadDocument()} style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6" } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white", fontSize: 15 }}>
+                            <Button onPress={() => handleuploadDocument()} disabled={(!isFormValid || isDirty)} style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6" } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white", fontSize: 15 }}>
                                 {uploadDocument ? 'Register' : 'Upload Dcouments'}
                             </Button>
                         </AppView>) :
                         (<AppView flexDirection={"row"} gap={20} paddingHorizontal={25} paddingVertical={10}>
 
                             {user?.roleName != 'Customer' &&
-                                <Button style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E" }}>
+                                <Button onPress={() => navigation.goBack()} style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E" }}>
                                     Cancel
                                 </Button>
                             }
@@ -769,13 +838,22 @@ const RegisterForm = () => {
                                     flex: 1,
                                     backgroundColor: showSendRequest
                                         ? "#F7941E"
-                                        : (!isFormValid || isDirty)
-                                            ? "#D3D4D6"
-                                            : "#F7941E",
+                                        : action === "edit"
+                                            ? (!isDirty ? "#F7941E" : "#D3D4D6")
+                                            : (!isFormValid || isDirty)
+                                                ? "#D3D4D6"
+                                                : "#F7941E",
                                     paddingVertical: 12
                                 }}
                                 textStyle={{ color: "white" }}
-                                disabled={!showSendRequest && (!isFormValid || isDirty)}
+                                disabled={
+                                    !showSendRequest &&
+                                    (
+                                        action === "edit"
+                                            ? isDirty
+                                            : (!isFormValid || isDirty)
+                                    )
+                                }
                             >
                                 {showSendRequest
                                     ? "Send Request"
@@ -783,6 +861,7 @@ const RegisterForm = () => {
                                         ? "Update"
                                         : "Register"}
                             </Button>
+
 
 
 

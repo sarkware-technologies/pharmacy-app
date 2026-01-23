@@ -128,9 +128,8 @@ const FileUploadComponent = ({
   };
 
   const handleDocumentPicker = async () => {
-    console.log("handleDocumentPicker is called");
     try {
-      const [file] = await pick({ type: [types.allFiles] }); console.log(file);
+      const [file] = await pick({ type: [types.allFiles] });
 
       // Validate size
       if (file.size > maxSize) {
@@ -212,7 +211,6 @@ const FileUploadComponent = ({
   };
 
   const uploadFile = async (selectedFile) => {
-    console.log("uploadFile is called"); console.log(selectedFile);
 
     setLoading(true);
 
@@ -237,8 +235,6 @@ const FileUploadComponent = ({
         formData.append('customerId', customerId.toString());
       }
 
-      console.log(formData);
-
       // Make the API call with proper headers for multipart/form-data
       const token = await apiClient.getToken();
 
@@ -254,11 +250,9 @@ const FileUploadComponent = ({
 
 
       const responseData = await response.json();
-      console.log('API Response:', responseData);
 
       if (responseData.success && responseData.data && responseData.data.length > 0) {
         const uploadedFile = responseData.data[0];
-        console.log("OCR Data Received:", uploadedFile);
 
 
 

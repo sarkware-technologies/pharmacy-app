@@ -16,7 +16,6 @@ export const getDivisions = async (page = 1, limit = 10, search = '') => {
       `/user-management/divisions/list?${params.toString()}`
     );
     
-    console.log("response ", response.data);
 
     if (response.success) {
       return response.data;

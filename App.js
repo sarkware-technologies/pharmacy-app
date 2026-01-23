@@ -23,13 +23,9 @@ const App = () => {
         // Request permissions at app startup (sequentially)
         const requestPermissions = async () => {
             try {
-                // Show splash screen while requesting permissions
-                console.log('Starting permission requests...');
                 
                 // Request permissions one by one
                 const permissions = await requestAllPermissions();
-                
-                console.log('All permissions requested. Status:', permissions);
                 
                 // Wait a bit to ensure all permission dialogs are closed
                 await new Promise(resolve => setTimeout(resolve, 1000));
@@ -59,7 +55,6 @@ const App = () => {
         // This ensures the app doesn't freeze and all permission dialogs are closed
         if (permissionsRequested) {
             const timer = setTimeout(() => {
-                console.log('Hiding splash screen, starting app...');
                 setChecking(false);
             }, 1500);
             return () => clearTimeout(timer);

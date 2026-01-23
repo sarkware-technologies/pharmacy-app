@@ -27,16 +27,25 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
     const [activeSelector, setActiveSelector] = useState(null);
     const [showAddEntity, setShowAddEntity] = useState(false);
 
+useEffect(() => {
+    if (!formData) return;
 
-    useEffect(() => {
-        if (!formData) return;
-        if ((formData?.typeId == 1 || formData?.typeId == 3) && action === 'register') {
-            updateMapping(() => ({
-                hospitals: [],
-            }));
-        }
+    const hasMappingData =
+        formData?.mapping?.hospitals?.length ||
+        formData?.mapping?.doctors?.length ||
+        formData?.mapping?.pharmacy?.length ||
+        formData?.mapping?.groupHospitals?.length;
 
-    }, [formData?.typeId, action]);
+    if (
+        (formData?.typeId == 1 || formData?.typeId== 3) &&
+        !hasMappingData
+    ) {
+        updateMapping(() => ({
+            hospitals: [],
+        }));
+    }
+}, [formData?.typeId]);
+
 
 
     useEffect(() => {
@@ -192,16 +201,21 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                     allowMultiple
                 );
             }
+            const updatedFormData = {
+                ...formData,
+                mapping: updatedMapping,
+            };
 
+            if (action === 'onboard' || action === 'assigntocustomer') {
+                handleSave(updatedFormData);
+            }
             return updatedMapping;
         });
 
         // Close selector after selection
         setActiveSelector(null);
 
-        if((action == 'onboard' || action == 'assigntocustomer')){
-            handleSave(formData)
-        }
+
     };
 
     // helper start
@@ -726,7 +740,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
                             </AppView>
                         </AppView>
-                      
+
 
                         {/* Stockist Suggestions */}
                         <AppView>
