@@ -17,6 +17,7 @@ import DoctorDeleteIcon from "../../../../components/icons/DoctorDeleteIcon";
 import { SELECTOR_ENTITY_CONFIG } from "../utils/fieldMeta"
 import StockistSection from './StockistSection'
 import LinearGradient from 'react-native-linear-gradient';
+import ConfirmModal from "../../../../components/modals/ConfirmModal"
 
 import AddEntity from '../selector/AddEntity';
 import ChildLinkageDetails from "../../customer/childLinkage"
@@ -30,6 +31,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
     const [showAddEntity, setShowAddEntity] = useState(false);
     const [showLinkageModal, setShowLinkageModal] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [deleteDraftItem, setDeleteDraftItem] = useState(null);
 
 
     useEffect(() => {
@@ -288,13 +290,97 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                 action: "edit"
             });
 
-
-            // handleFalseCase(item);   // 🔴 only when explicitly false
         } else {
             setSelectedCustomer(item);
             setShowLinkageModal(true);
         }
     };
+
+
+    const removeItemFromMapping = ({ type, index, parentIndex, keyName }) => {
+        setValue(prev => {
+            // Selected customers (doctors / pharmacy / etc.)
+            if (type === 'list') {
+                return {
+                    ...prev,
+                    mapping: {
+                        ...prev.mapping,
+                        [keyName]: prev.mapping[keyName].filter((_, i) => i !== index),
+                    },
+                };
+            }
+
+            // Hospital
+            if (type === 'hospital') {
+                return {
+                    ...prev,
+                    mapping: {
+                        ...prev.mapping,
+                        hospitals: prev.mapping.hospitals.filter((_, i) => i !== index),
+                    },
+                };
+            }
+
+            // Pharmacy inside hospital
+            if (type === 'pharmacy') {
+                return {
+                    ...prev,
+                    mapping: {
+                        ...prev.mapping,
+                        hospitals: prev.mapping.hospitals.map((h, hIndex) =>
+                            hIndex === parentIndex
+                                ? {
+                                    ...h,
+                                    pharmacy: h.pharmacy.filter((_, pIdx) => pIdx !== index),
+                                }
+                                : h
+                        ),
+                    },
+                };
+            }
+
+            return prev;
+        });
+    };
+
+
+    const handleDeleteClick = ({ type, item, index, parentIndex, keyName }) => {
+        if (item?.isProcessed === false) {
+            // Draft → show modal
+            setDeleteDraftItem({ type, item, index, parentIndex, keyName });
+            return;
+        }
+
+        // Normal delete
+        removeItemFromMapping({ type, index, parentIndex, keyName });
+    };
+
+
+    const confirmDraftDelete = async () => {
+        if (!deleteDraftItem) return;
+
+        const { item, type, index, parentIndex, keyName } = deleteDraftItem;
+
+        try {
+            await customerAPI.removeMappingCustomer({
+                ids: [item.id], // or stgCustomerId
+            });
+
+            removeItemFromMapping({ type, index, parentIndex, keyName });
+        } catch (err) {
+            AppToastService.show(
+                err?.message ?? 'Failed to delete draft',
+                'error',
+                'Error'
+            );
+        } finally {
+            setDeleteDraftItem(null);
+        }
+    };
+
+
+
+
     const renderSelectedCustomers = ({
         data = [],
         keyName,
@@ -302,21 +388,13 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
     }) => {
         if (!data.length) return null;
 
-        const handleDelete = (index) => {
-            setValue(prev => ({
-                ...prev,
-                mapping: {
-                    ...prev.mapping,
-                    [keyName]: prev.mapping[keyName].filter((_, i) => i !== index),
-                },
-            }));
-        };
+
 
         return (
             <View style={OnboardStyle.selectedItemsContainer}>
                 {data.map((item, index) => (
                     <View
-                        key={item.id || index}
+                        key={item.id+index}
 
                     >
                         {/* CHIP PRESS */}
@@ -326,7 +404,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                         >
                             <LinearGradient
                                 colors={
-                                   item?.isProcessed === false || item?.allMandatoryDocsUploaded === false
+                                    item?.isProcessed === false || item?.allMandatoryDocsUploaded === false
                                         ? ['#F5F5F6', '#ffffff']
                                         : ['#D1FAE5', '#ffffff']
                                 }
@@ -336,7 +414,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                     OnboardStyle.selectedItemChip,
                                     {
                                         borderColor:
-                                           item?.isProcessed === false|| item?.allMandatoryDocsUploaded === false
+                                            item?.isProcessed === false || item?.allMandatoryDocsUploaded === false
                                                 ? '#D1D5DB'
                                                 : '#10B981',
                                     },
@@ -349,17 +427,24 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
                                     <AppText style={OnboardStyle.chipText}>
                                         {item?.customerName}
-                                       
-                                       
+
+
                                     </AppText>
-                                     {item?.isProcessed === false && <AppText style={{color:"#777"}}>{" "} (Draft)</AppText> }
+                                    {item?.isProcessed === false && <AppText style={{ color: "#777" }}>{" "} (Draft)</AppText>}
                                 </AppView>
 
-                                
+
 
                                 {/* DELETE ONLY */}
                                 <TouchableOpacity
-                                    onPress={() => handleDelete(index)}
+                                    onPress={() =>
+                                        handleDeleteClick({
+                                            type: 'list',
+                                            item,
+                                            index,
+                                            keyName,
+                                        })
+                                    }
                                     activeOpacity={0.7}
                                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                                 >
@@ -385,7 +470,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                     >
                         <LinearGradient
                             colors={
-                               hospital?.isProcessed === false || hospital?.allMandatoryDocsUploaded === false
+                                hospital?.isProcessed === false || hospital?.allMandatoryDocsUploaded === false
                                     ? ['#F5F5F6', '#ffffff']
                                     : ['#D1FAE5', '#ffffff']
                             }
@@ -395,7 +480,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                 OnboardStyle.hospitalAccordion,
                                 {
                                     borderColor:
-                                         hospital?.isProcessed === false ||hospital?.allMandatoryDocsUploaded === false
+                                        hospital?.isProcessed === false || hospital?.allMandatoryDocsUploaded === false
                                             ? '#D1D5DB'
                                             : '#10B981',
                                 },
@@ -405,32 +490,29 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
                             <View style={OnboardStyle.hospitalHeader}>
                                 <AppView style={[OnboardStyle.hospitalHeaderContent, { gap: 6 }]} flexDirection={"row"} alignItems={"center"}>
-                                    { hospital?.isProcessed !== false && hospital?.allMandatoryDocsUploaded !== false && (
+                                    {hospital?.isProcessed !== false && hospital?.allMandatoryDocsUploaded !== false && (
                                         <CheckCircle color="#169560" height={18} width={18} />
                                     )}
                                     <AppText style={OnboardStyle.hospitalName}>
 
                                         {hospital.customerName}
 
-                                       
+
                                     </AppText>
-                                     {hospital?.isProcessed === false && <AppText style={{color:"#777"}}>{" "} (Draft)</AppText> }
+                                    {hospital?.isProcessed === false && <AppText style={{ color: "#777" }}>{" "} (Draft)</AppText>}
                                 </AppView>
 
                                 <TouchableOpacity
                                     style={OnboardStyle.removeButton}
                                     activeOpacity={0.8}
-                                    onPress={() => {
-                                        setValue(prev => ({
-                                            ...prev,
-                                            mapping: {
-                                                ...prev.mapping,
-                                                hospitals: prev.mapping.hospitals.filter(
-                                                    (_, i) => i !== index
-                                                ),
-                                            },
-                                        }));
-                                    }}
+                                    onPress={() =>
+                                        handleDeleteClick({
+                                            type: 'hospital',
+                                            item: hospital,
+                                            index,
+                                        })
+                                    }
+
                                 >
                                     <DoctorDeleteIcon
                                         width={12}
@@ -460,38 +542,28 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
 
                                                     <AppView flexDirection={"row"} alignItems={"center"} style={{ flex: 1, gap: 6 }}>
-                                                        { pharmacy?.isProcessed === false && pharmacy?.allMandatoryDocsUploaded !== false && (
+                                                        {pharmacy?.isProcessed === false && pharmacy?.allMandatoryDocsUploaded !== false && (
                                                             <CheckCircle color="#169560" height={18} width={18} />
                                                         )}
                                                         <AppText style={OnboardStyle.pharmacyTagText} numberOfLines={1} ellipsizeMode="tail">
                                                             {pharmacy.customerName}
-                                                           
+
                                                         </AppText>
-                                                        {pharmacy?.isProcessed === false && <AppText style={{color:"#777"}}>{" "} (Draft)</AppText> }
+                                                        {pharmacy?.isProcessed === false && <AppText style={{ color: "#777" }}>{" "} (Draft)</AppText>}
                                                     </AppView>
 
 
                                                     <TouchableOpacity
                                                         activeOpacity={0.8}
                                                         style={OnboardStyle.pharmacyTagRemove}
-                                                        onPress={() => {
-                                                            setValue(prev => ({
-                                                                ...prev,
-                                                                mapping: {
-                                                                    ...prev.mapping,
-                                                                    hospitals: prev.mapping.hospitals.map((hospital, hIndex) =>
-                                                                        hIndex === index
-                                                                            ? {
-                                                                                ...hospital,
-                                                                                pharmacy: hospital?.pharmacy.filter(
-                                                                                    (_, pIdx) => pIdx !== pIndex
-                                                                                ),
-                                                                            }
-                                                                            : hospital
-                                                                    ),
-                                                                },
-                                                            }));
-                                                        }}
+                                                        onPress={() =>
+                                                            handleDeleteClick({
+                                                                type: 'pharmacy',
+                                                                item: pharmacy,
+                                                                index: pIndex,
+                                                                parentIndex: index,
+                                                            })
+                                                        }
                                                     >
                                                         <DoctorDeleteIcon
                                                             width={12}
@@ -990,7 +1062,20 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
             {/*  */}
 
 
+            <ConfirmModal
 
+
+                visible={!!deleteDraftItem}
+                onConfirm={confirmDraftDelete}
+                onClose={() => setDeleteDraftItem(null)}
+
+
+                title="Delete Draft"
+                message="Are you sure you want to delete this record? This action is permanent."
+                confirmText="Yes"
+                cancelText="No"
+
+            />
 
 
         </>

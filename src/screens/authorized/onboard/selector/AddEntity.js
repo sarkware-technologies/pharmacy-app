@@ -25,7 +25,7 @@ import { AppToastService } from '../../../../components/AppToast';
 import { useCustomerLinkage } from "../../customer/service/useCustomerLinkage";
 import XCircle from "../../../../components/icons/XCircle";
 import OnboardStyle from "../style/onboardStyle";
-import DraftExistsModal from '../../../../components/modals/DraftExistsModal'
+import ConfirmModal from "../../../../components/modals/ConfirmModal"
 import AppToast from "../../../../components/AppToast"
 
 const Loading = memo(({ height = "minHeight" }) => {
@@ -613,7 +613,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                         customerName: response?.data?.data?.generalDetails?.name ?? `Draft-${response?.data?.id}`,
                         isNew: true,
                         isActive: true,
-                        isProcessed: response?.data?.isProcessed,
+                        isProcessed: false,
                     }];
 
                     onSubmit(entityType, newEntity, parentHospitalId, allowMultiple);
@@ -756,9 +756,14 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                     </AppView>
                 )}
 
-                <DraftExistsModal
+
+                <ConfirmModal
                     visible={showDraftModal}
-                    onConfirm={() => handleDeleteDraft()}
+                    title="Delete Draft"
+                    message="Are you sure you want to delete this draft?"
+                    confirmText="Delete"
+                    cancelText="Cancel"
+                    onConfirm={handleDeleteDraft}
                     onClose={() => {
                         setShowDraftModal(false)
                         onClose?.();

@@ -20,7 +20,7 @@ import { validateForm, converScheme, initialFormData, buildCreatePayload, buildD
 import validateScheme from "./utils/validateScheme.json";
 import { AppToastService } from '../../../components/AppToast';
 import { useCustomerLinkage } from "../customer/service/useCustomerLinkage";
-import DraftExistsModal from '../../../components/modals/DraftExistsModal'
+import ConfirmModal from "../../../components/modals/ConfirmModal"
 import { useSelector } from 'react-redux';
 
 import Svg, { Path } from "react-native-svg";
@@ -49,8 +49,8 @@ const RegisterForm = () => {
         documentUpload = true
     } = route.params || {};
 
-    console.log(action,'action');
-    
+    console.log(action, 'action');
+
 
     const [transferData, setTransferData] = useState({});
     const [showDraftModal, setShowDraftModal] = useState(false);
@@ -572,7 +572,7 @@ const RegisterForm = () => {
         try {
             const response = await customerAPI.saveExistingCustomerDraft(payload);
             console.log(response);
-            
+
             if (response?.success) {
                 setItsSaveExDraft(true)
                 AppToastService.show(response?.message, "success", "Draft Saved");
@@ -863,9 +863,14 @@ const RegisterForm = () => {
             }
 
 
-            <DraftExistsModal
+
+            <ConfirmModal
                 visible={showDraftModal}
-                onConfirm={() => handleDeleteDraft()}
+                title="Delete Draft"
+                message="Are you sure you want to delete this draft?"
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={handleDeleteDraft}
                 onClose={() => {
                     setShowDraftModal(false)
                     navigation.goBack();

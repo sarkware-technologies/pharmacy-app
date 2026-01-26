@@ -5,13 +5,19 @@ import {
   Modal,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Dimensions,
 } from 'react-native';
 import { AppText } from '..';
 
-const { width } = Dimensions.get('window');
-
-const DraftExistsModal = ({ visible, onConfirm, onClose }) => {
+const ConfirmModal = ({
+  visible,
+  title,
+  message,
+  confirmText = 'Yes',
+  cancelText = 'No',
+  onConfirm,
+  onClose,
+  icon = '!',
+}) => {
   return (
     <Modal
       visible={visible}
@@ -23,38 +29,41 @@ const DraftExistsModal = ({ visible, onConfirm, onClose }) => {
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
             <View style={styles.modalContainer}>
+              
               {/* Icon */}
               <View style={styles.iconOuter}>
                 <View style={styles.iconInner}>
-                  <AppText style={styles.iconText}>!</AppText>
+                  <AppText style={styles.iconText}>{icon}</AppText>
                 </View>
               </View>
 
-              {/* Title */}
-              <AppText style={styles.title}>
-                Customer already exists{'\n'}
-                in Draft. Do you still want{'\n'}
-                to continue?
-              </AppText>
+              {/* Title / Message */}
+              {title && <AppText style={styles.title}>{title}</AppText>}
+              {message && <AppText style={styles.message}>{message}</AppText>}
 
               {/* Buttons */}
               <View style={styles.buttonRow}>
                 <TouchableOpacity
-                  style={styles.yesButton}
+                  style={styles.confirmButton}
                   onPress={onConfirm}
                   activeOpacity={0.8}
                 >
-                  <AppText style={styles.yesText}>Yes</AppText>
+                  <AppText style={styles.confirmText}>
+                    {confirmText}
+                  </AppText>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.noButton}
+                  style={styles.cancelButton}
                   onPress={onClose}
                   activeOpacity={0.8}
                 >
-                  <AppText style={styles.noText}>No</AppText>
+                  <AppText style={styles.cancelText}>
+                    {cancelText}
+                  </AppText>
                 </TouchableOpacity>
               </View>
+
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -63,23 +72,23 @@ const DraftExistsModal = ({ visible, onConfirm, onClose }) => {
   );
 };
 
-export default DraftExistsModal;
+export default ConfirmModal;
 const styles = StyleSheet.create({
   overlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0,0,0,0.45)',
-  justifyContent: 'flex-end',   
-},
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
 
- modalContainer: {
-  width: '100%',                
-  backgroundColor: '#fff',
-  borderTopLeftRadius: 20,
-  borderTopRightRadius: 20,
-  padding: 24,
-  paddingBottom: 32,
-  alignItems: 'center',
-},
+  modalContainer: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 32,
+    alignItems: 'center',
+  },
 
   iconOuter: {
     backgroundColor: '#FFE8D9',
@@ -109,6 +118,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#1F2937',
     lineHeight: 24,
+    marginBottom: 8,
+  },
+
+  message: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: '#4B5563',
+    lineHeight: 22,
     marginBottom: 24,
   },
 
@@ -118,7 +135,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 
-  yesButton: {
+  confirmButton: {
     flex: 1,
     height: 44,
     backgroundColor: '#F7941E',
@@ -127,13 +144,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  yesText: {
+  confirmText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
 
-  noButton: {
+  cancelButton: {
     flex: 1,
     height: 44,
     borderRadius: 8,
@@ -143,9 +160,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  noText: {
+  cancelText: {
     color: '#6B7280',
     fontSize: 16,
     fontWeight: '600',
   },
 });
+

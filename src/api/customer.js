@@ -870,6 +870,16 @@ export const customerAPI = {
     },
 
 
+      removeMappingCustomer: async (payload) => {
+        try {
+            const response = await apiClient.post('/user-management/customer/mapping-customer/remove', payload);
+            return response;
+        } catch (error) {
+            console.error('Error saving customer draft:', error);
+            throw error;
+        }
+    },
+
 
 
 
