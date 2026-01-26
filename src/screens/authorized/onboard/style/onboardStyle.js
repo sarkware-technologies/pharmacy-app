@@ -118,13 +118,18 @@ const OnboardStyle = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#F5F5F6',
-        borderRadius: 6,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        marginBottom: 6,
+        borderRadius: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        marginBottom: 10,
         borderWidth: 1,
-        borderColor: '#ccc',
+    },
+
+    chipText: {
+        fontSize: 14,
+        color: '#1F2937',
+        fontWeight: '600',
+        textDecorationLine: 'underline',
     },
     selectedItemText: {
         fontSize: 13,
@@ -132,11 +137,7 @@ const OnboardStyle = StyleSheet.create({
         fontWeight: '500',
         flex: 1,
     },
-    chipText: {
-        fontSize: 14,
-        color: '#333',
-        fontWeight: '500',
-    },
+
 
 
     // Accordion Styles
@@ -146,7 +147,7 @@ const OnboardStyle = StyleSheet.create({
     hospitalAccordion: {
         marginBottom: 12,
         borderRadius: 8,
-        backgroundColor: '#F9F9F9',
+        // backgroundColor: '#F9F9F9',
         borderWidth: 1,
         borderColor: '#E8E8E8',
         overflow: 'hidden',
@@ -157,7 +158,7 @@ const OnboardStyle = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 12,
         paddingVertical: 14,
-        backgroundColor: '#FAFAFA',
+        // backgroundColor: '#FAFAFA',
     },
     hospitalHeaderContent: {
         flex: 1,
@@ -181,7 +182,7 @@ const OnboardStyle = StyleSheet.create({
     hospitalContent: {
         paddingHorizontal: 12,
         paddingVertical: 12,
-        backgroundColor: '#fff',
+        // backgroundColor: '#fff',
     },
     pharmaciesSection: {
         marginBottom: 0,
@@ -193,8 +194,8 @@ const OnboardStyle = StyleSheet.create({
         marginBottom: 10,
     },
     pharmaciesTags: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
+        // flexDirection: 'row',
+        // flexWrap: 'wrap',
         gap: 8,
         marginBottom: 12,
     },
@@ -203,11 +204,15 @@ const OnboardStyle = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 12,
         paddingVertical: 6,
-        backgroundColor: '#F0F0F0',
+        backgroundColor: '#ffffff',
+        borderColor: "#e3e3e3",
+        borderWidth: 1,
         borderRadius: 16,
-        gap: 6,
+        gap: 8,          
     },
+
     pharmacyTagText: {
+        flex: 1,         
         fontSize: 13,
         color: '#333',
         fontWeight: '500',

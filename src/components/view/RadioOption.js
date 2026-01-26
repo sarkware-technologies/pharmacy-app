@@ -4,7 +4,10 @@ import { Fonts } from "../../utils/fontHelper";
 import { colors } from "../../styles/colors";
 
 const RadioOption = ({ label, selected, onSelect, disabled, width = 14, height = 14, borderWidth = 1, borderRadius = 9, borderColor = "#909090", }) => (
-    <TouchableOpacity disabled={disabled} style={styles.radioOption} onPress={() => onSelect?.()}>
+    <TouchableOpacity disabled={disabled} style={[
+        styles.radioOption,
+        disabled && styles.disabled
+    ]} onPress={() => onSelect?.()}>
         <View style={[styles.radio, { width, height, borderWidth, borderRadius, borderColor }, selected && styles.radioSelected]}>
             {selected && <View style={styles.radioInner} />}
         </View>
@@ -23,6 +26,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
+    },
+    disabled: {
+        opacity: 0.4,
     },
     radio: {
 

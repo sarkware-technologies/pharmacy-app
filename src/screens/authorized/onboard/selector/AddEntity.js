@@ -37,18 +37,11 @@ const Loading = memo(({ height = "minHeight" }) => {
 })
 
 
-const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, allowMultiple = true, parentHospitalId = null }) => {
+const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, allowMultiple = true, parentHospitalId = null, action = 'register', customerId, isStaging, parentAction }) => {
+
+    console.log(parentAction);
     const route = useRoute();
     const [rawScheme, setRawScheme] = useState(validateScheme);
-
-    // onboard
-    // const {
-    //     customerId,
-    //     isStaging,
-    //     action = "register",
-    // } = route.params || {};
-
-    const action = "register"
 
     const [transferData, setTransferData] = useState({});
     const [formData, setFormData] = useState(initialFormData);
@@ -72,6 +65,70 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
     const [licenseList, setLicenseList] = useState([]);
 
     const scrollRef = useRef(null);
+
+
+
+    useEffect(() => {
+        if (!visible) return;
+        if (action !== 'edit') return;
+        if (!customerId) return;
+
+        const fetchCustomerDetails = async () => {
+            try {
+                const response = await customerAPI.getCustomerDetails(
+                    customerId,
+                    isStaging
+                );
+
+                if (response?.success) {
+                    setFormData(prev => ({
+                        ...updateFormData(response?.data, action),
+                        isChildCustomer: true,
+                        isBuyer: true,
+                    }));
+
+                     setCustomerDetails(prev => ({
+                        ...updateFormData(response?.data, action),
+                        isChildCustomer: true,
+                        isBuyer: true,
+                    }));
+
+                      setTransferData(prev => ({
+                ...prev,
+                ...(response?.data?.generalDetails?.cityId && {
+                    cityOptions: [
+                        {
+                            id: response?.data.generalDetails.cityId,
+                            name: response?.data.generalDetails.cityName,
+                        },
+                    ],
+                }),
+
+                ...(response?.data?.securityDetails?.gstNumber && {
+                    gstOptions: [
+                        {
+                            id: response?.data?.securityDetails?.gstNumber,
+                            name: response?.data?.securityDetails?.gstNumber,
+                        },
+                    ],
+                }),
+            }));
+                }
+
+            } catch (error) {
+                console.error('Failed to fetch customer details', error);
+            }
+        };
+
+        fetchCustomerDetails();
+    }, [visible, action, customerId, isStaging]);
+
+
+
+
+    console.log(formData);
+
+
 
     const sectionRefs = {
         license: useRef(null),
@@ -363,7 +420,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                     isActive: true
                 }];
 
-                onSubmit(entityType, newEntity, parentHospitalId, allowMultiple);
+                onSubmit(entityType, newEntity, parentHospitalId, allowMultiple, customerId);
                 AppToastService.show(response?.message, "success", "created");
                 onClose?.();
             }
@@ -372,7 +429,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
         }
     };
 
-     const handleDeleteDraft = async () => {
+    const handleDeleteDraft = async () => {
         const draftCustomer =
             transferData?.licenseResponse?.conflicts?.find(
                 c => c?.existingCustomerId && c?.isOwnDraft === true
@@ -412,6 +469,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
 
 
     useEffect(() => {
+        setSelectedCustomers(null);
         const fetchCustomerMapping = async () => {
             const customerData =
                 transferData?.licenseResponse?.conflicts?.find(
@@ -478,7 +536,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
 
     const isDirty = useMemo(() => Object.entries(getChangedValues(customerDetails ?? {}, formData) ?? {}).length == 0);
 
-      // owndraft popup visibility check
+    // owndraft popup visibility check
     const hasOwnDraftConflict =
         transferData?.licenseResponse?.conflicts?.some(
             c => c?.existingCustomerId && c?.isOwnDraft === true
@@ -498,7 +556,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
             transparent={true}
             onRequestClose={() => onClose()}
         >
-             <AppToast/>
+            <AppToast />
 
             <SafeAreaView style={[EntityStyle.modalContainer]}
             >
@@ -564,7 +622,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                                 style={{
                                     flex: 1,
                                     backgroundColor: selectedCustomers
-                                        ? "#F7941E" 
+                                        ? "#F7941E"
                                         : (!isFormValid || isDirty)
                                             ? "#D3D4D6"
                                             : "#F7941E",
@@ -579,9 +637,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                             >
                                 {selectedCustomers
                                     ? "Select"
-                                    : action === "register"
-                                        ? "Submit"
-                                        : "Update"}
+                                    : "Submit"}
                             </Button>
 
 
@@ -590,14 +646,14 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                     </AppView>
                 )}
 
-                 <DraftExistsModal
-                visible={showDraftModal}
-                onConfirm={() => handleDeleteDraft()}
-                onClose={() => {
-                    setShowDraftModal(false)
-                    onClose?.();
-                }}
-            />
+                <DraftExistsModal
+                    visible={showDraftModal}
+                    onConfirm={() => handleDeleteDraft()}
+                    onClose={() => {
+                        setShowDraftModal(false)
+                        onClose?.();
+                    }}
+                />
 
 
             </SafeAreaView>

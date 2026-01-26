@@ -28,6 +28,7 @@ import CloseCircle from "../../../../components/icons/CloseCircle";
 import { isAllApprovedChecked } from "../service/formatData";
 import ConfirmActionModal from '../../../../components/modals/ConfirmActionModal';
 
+import { AppToastService } from "../../../../components/AppToast"
 
 
 const DetailsView = ({ loading = false, customerData, instance, isChild = false, saveDraft, workflowAction, setActiveTab }) => {
@@ -106,11 +107,8 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
 
     const handleDocAction = (licence, action) => {
         if (!licence?.s3Path) {
-            Toast.show({
-                type: "error",
-                text1: "Document not available",
-                position: "bottom",
-            });
+            
+            AppToastService("Document not available", "error", "Document Error")
             return;
         }
 

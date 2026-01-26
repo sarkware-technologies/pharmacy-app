@@ -16,35 +16,39 @@ import LabeledSelector from '../../../../components/form/labeledSelector'
 import DoctorDeleteIcon from "../../../../components/icons/DoctorDeleteIcon";
 import { SELECTOR_ENTITY_CONFIG } from "../utils/fieldMeta"
 import StockistSection from './StockistSection'
+import LinearGradient from 'react-native-linear-gradient';
 
 import AddEntity from '../selector/AddEntity';
-
-
+import ChildLinkageDetails from "../../customer/childLinkage"
+import CheckCircle from '../../../../components/icons/CheckCircle'
 
 const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection, error, handleSave }) => {
     const [toggle, setToggle] = useState("open");
     const [customerOption, setCustomerOption] = useState([]);
     const [activeSelector, setActiveSelector] = useState(null);
     const [showAddEntity, setShowAddEntity] = useState(false);
+    const [showLinkageModal, setShowLinkageModal] = useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-useEffect(() => {
-    if (!formData) return;
 
-    const hasMappingData =
-        formData?.mapping?.hospitals?.length ||
-        formData?.mapping?.doctors?.length ||
-        formData?.mapping?.pharmacy?.length ||
-        formData?.mapping?.groupHospitals?.length;
+    useEffect(() => {
+        if (!formData) return;
 
-    if (
-        (formData?.typeId == 1 || formData?.typeId== 3) &&
-        !hasMappingData
-    ) {
-        updateMapping(() => ({
-            hospitals: [],
-        }));
-    }
-}, [formData?.typeId]);
+        const hasMappingData =
+            formData?.mapping?.hospitals?.length ||
+            formData?.mapping?.doctors?.length ||
+            formData?.mapping?.pharmacy?.length ||
+            formData?.mapping?.groupHospitals?.length;
+
+        if (
+            (formData?.typeId == 1 || formData?.typeId == 3) &&
+            !hasMappingData
+        ) {
+            updateMapping(() => ({
+                hospitals: [],
+            }));
+        }
+    }, [formData?.typeId]);
 
 
 
@@ -146,11 +150,18 @@ useEffect(() => {
     };
 
 
+    const cleanList = (list = [], customerId, allowMultiple) =>
+        allowMultiple && customerId
+            ? list.filter(item => item?.id != customerId)
+            : list;
+
+
     const handleEntitySelect = (
         entityType,
         items,
         parentHospitalId = null,
-        allowMultiple = false
+        allowMultiple = false,
+        customerId = null
     ) => {
         updateMapping(prevMapping => {
             const updatedMapping = { ...prevMapping };
@@ -158,10 +169,11 @@ useEffect(() => {
                 updatedMapping.hospitals = (updatedMapping.hospitals || []).map(hospital => {
                     if (hospital.id !== parentHospitalId) return hospital;
 
+
                     return {
                         ...hospital,
                         pharmacy: updateEntityList(
-                            hospital.pharmacy,
+                            cleanList(hospital.pharmacy, customerId, allowMultiple),
                             items,
                             allowMultiple
                         ),
@@ -172,16 +184,24 @@ useEffect(() => {
             }
 
             if (entityType === 'hospitals') {
+
+
+
+
                 updatedMapping.hospitals = updateEntityList(
-                    updatedMapping.hospitals,
+                    cleanList(updatedMapping.hospitals, customerId, allowMultiple),
                     items,
                     allowMultiple
                 );
             }
 
             if (entityType === 'doctors') {
+
+
+
+
                 updatedMapping.doctors = updateEntityList(
-                    updatedMapping.doctors,
+                    cleanList(updatedMapping.doctors, customerId, allowMultiple),
                     items,
                     allowMultiple
                 );
@@ -189,14 +209,14 @@ useEffect(() => {
 
             if (entityType === 'pharmacy' && !parentHospitalId) {
                 updatedMapping.pharmacy = updateEntityList(
-                    updatedMapping.pharmacy,
+                    cleanList(updatedMapping.pharmacy, customerId, allowMultiple),
                     items,
                     allowMultiple
                 );
             }
             if (entityType === 'groupHospitals') {
                 updatedMapping.groupHospitals = updateEntityList(
-                    updatedMapping.groupHospitals,
+                    cleanList(updatedMapping.groupHospitals, customerId, allowMultiple),
                     items,
                     allowMultiple
                 );
@@ -252,6 +272,29 @@ useEffect(() => {
     };
 
 
+    console.log(showAddEntity);
+
+
+    const handleChipPress = (item, keyName, parentHospitalId = null) => {
+
+        if (item?.allMandatoryDocsUploaded === false) {
+
+
+            setShowAddEntity({
+                key: keyName,
+                parentHospitalId: parentHospitalId,
+                customerId: item.id,
+                isStaging: item.isNew,
+                action: "edit"
+            });
+
+
+            // handleFalseCase(item);   // 🔴 only when explicitly false
+        } else {
+            setSelectedCustomer(item);
+            setShowLinkageModal(true);
+        }
+    };
     const renderSelectedCustomers = ({
         data = [],
         keyName,
@@ -274,14 +317,50 @@ useEffect(() => {
                 {data.map((item, index) => (
                     <View
                         key={item.id || index}
-                        style={OnboardStyle.selectedItemChip}
-                    >
-                        <AppText style={OnboardStyle.chipText}>
-                            {item.customerName}
-                        </AppText>
 
-                        <TouchableOpacity onPress={() => handleDelete(index)}>
-                            <DoctorDeleteIcon />
+                    >
+                        {/* CHIP PRESS */}
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => handleChipPress(item, keyName)}
+                        >
+                            <LinearGradient
+                                colors={
+                                    item?.allMandatoryDocsUploaded === false
+                                        ? ['#F5F5F6', '#ffffff']
+                                        : ['#D1FAE5', '#ffffff']
+                                }
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={[
+                                    OnboardStyle.selectedItemChip,
+                                    {
+                                        borderColor:
+                                            item?.allMandatoryDocsUploaded === false
+                                                ? '#D1D5DB'
+                                                : '#10B981',
+                                    },
+                                ]}
+                            >
+                                <AppView flexDirection={"row"} alignItems={"center"} style={{ gap: 6 }}>
+                                    {item?.allMandatoryDocsUploaded !== false && (
+                                        <CheckCircle color="#169560" height={18} width={18} />
+                                    )}
+
+                                    <AppText style={OnboardStyle.chipText}>
+                                        {item.customerName}
+                                    </AppText>
+                                </AppView>
+
+                                {/* DELETE ONLY */}
+                                <TouchableOpacity
+                                    onPress={() => handleDelete(index)}
+                                    activeOpacity={0.7}
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                >
+                                    <DoctorDeleteIcon />
+                                </TouchableOpacity>
+                            </LinearGradient>
                         </TouchableOpacity>
                     </View>
                 ))}
@@ -290,101 +369,140 @@ useEffect(() => {
     };
 
 
+
     const renderLinkedHospitals = () => {
         return (
             <View style={OnboardStyle.hospitalsContainer}>
                 {formData?.mapping?.hospitals.map((hospital, index) => (
-                    <View
-                        key={hospital.id || index}
-                        style={OnboardStyle.hospitalAccordion}
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => handleChipPress(hospital, "linked_hospital")}
                     >
-                        <View style={OnboardStyle.hospitalHeader}>
-                            <View style={OnboardStyle.hospitalHeaderContent}>
-                                <AppText style={OnboardStyle.hospitalName}>
-                                    {hospital.customerName}
-                                </AppText>
-                            </View>
+                        <LinearGradient
+                            colors={
+                                hospital?.allMandatoryDocsUploaded === false
+                                    ? ['#F5F5F6', '#ffffff']
+                                    : ['#D1FAE5', '#ffffff']
+                            }
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={[
+                                OnboardStyle.hospitalAccordion,
+                                {
+                                    borderColor:
+                                        hospital?.allMandatoryDocsUploaded === false
+                                            ? '#D1D5DB'
+                                            : '#10B981',
+                                },
+                            ]}
+                        >
 
-                            <TouchableOpacity
-                                style={OnboardStyle.removeButton}
-                                onPress={() => {
-                                    setValue(prev => ({
-                                        ...prev,
-                                        mapping: {
-                                            ...prev.mapping,
-                                            hospitals: prev.mapping.hospitals.filter(
-                                                (_, i) => i !== index
-                                            ),
-                                        },
-                                    }));
-                                }}
-                            >
-                                <DoctorDeleteIcon
-                                    width={12}
-                                    height={12}
-                                    color="#999"
-                                />
-                            </TouchableOpacity>
-                        </View>
 
-                        <View style={OnboardStyle.hospitalContent}>
-                            <View style={OnboardStyle.pharmaciesSection}>
-                                {hospital?.pharmacy?.length > 0 && (
-                                    <AppText style={OnboardStyle.pharmaciesLabel}>
-                                        Pharmacies
+                            <View style={OnboardStyle.hospitalHeader}>
+                                <AppView style={[OnboardStyle.hospitalHeaderContent, { gap: 6 }]} flexDirection={"row"} alignItems={"center"}>
+                                    {hospital?.allMandatoryDocsUploaded !== false && (
+                                        <CheckCircle color="#169560" height={18} width={18} />
+                                    )}
+                                    <AppText style={OnboardStyle.hospitalName}>
+
+                                        {hospital.customerName}
                                     </AppText>
-                                )}
+                                </AppView>
 
-                                {hospital?.pharmacy?.length > 0 && (
-                                    <View style={OnboardStyle.pharmaciesTags}>
-                                        {hospital?.pharmacy.map((pharmacy, pIndex) => (
-                                            <View
-                                                key={pharmacy.id || pIndex}
-                                                style={OnboardStyle.pharmacyTag}
-                                            >
-                                                <AppText style={OnboardStyle.pharmacyTagText}>
-                                                    {pharmacy.customerName}
-                                                </AppText>
-
-                                                <TouchableOpacity
-                                                    style={OnboardStyle.pharmacyTagRemove}
-                                                    onPress={() => {
-                                                        setValue(prev => ({
-                                                            ...prev,
-                                                            mapping: {
-                                                                ...prev.mapping,
-                                                                hospitals: prev.mapping.hospitals.map((hospital, hIndex) =>
-                                                                    hIndex === index
-                                                                        ? {
-                                                                            ...hospital,
-                                                                            pharmacy: hospital?.pharmacy.filter(
-                                                                                (_, pIdx) => pIdx !== pIndex
-                                                                            ),
-                                                                        }
-                                                                        : hospital
-                                                                ),
-                                                            },
-                                                        }));
-                                                    }}
-                                                >
-                                                    <DoctorDeleteIcon
-                                                        width={12}
-                                                        height={12}
-                                                        color="#666"
-                                                    />
-                                                </TouchableOpacity>
-                                            </View>
-                                        ))}
-                                    </View>
-                                )}
-
-                                <TextButton fontWeight={600} fontFamily="regular" onPress={() => {
-                                    setActiveSelector({ key: 'linked_hospital_child', parentHospitalId: hospital?.id });
-                                }}>+ Add Pharmacy</TextButton>
-
+                                <TouchableOpacity
+                                    style={OnboardStyle.removeButton}
+                                    activeOpacity={0.8}
+                                    onPress={() => {
+                                        setValue(prev => ({
+                                            ...prev,
+                                            mapping: {
+                                                ...prev.mapping,
+                                                hospitals: prev.mapping.hospitals.filter(
+                                                    (_, i) => i !== index
+                                                ),
+                                            },
+                                        }));
+                                    }}
+                                >
+                                    <DoctorDeleteIcon
+                                        width={12}
+                                        height={12}
+                                        color="#999"
+                                    />
+                                </TouchableOpacity>
                             </View>
-                        </View>
-                    </View>
+
+                            <View style={OnboardStyle.hospitalContent}>
+                                <View style={OnboardStyle.pharmaciesSection}>
+                                    {hospital?.pharmacy?.length > 0 && (
+                                        <AppText style={OnboardStyle.pharmaciesLabel}>
+                                            Pharmacies
+                                        </AppText>
+                                    )}
+
+                                    {hospital?.pharmacy?.length > 0 && (
+                                        <View style={OnboardStyle.pharmaciesTags}>
+                                            {hospital?.pharmacy.map((pharmacy, pIndex) => (
+                                                <TouchableOpacity
+                                                    activeOpacity={0.8}
+                                                    key={pharmacy.id || pIndex}
+                                                    style={OnboardStyle.pharmacyTag}
+                                                    onPress={() => handleChipPress(pharmacy, 'linked_hospital_child', hospital?.id)}
+                                                >
+
+
+                                                    <AppView flexDirection={"row"} alignItems={"center"} style={{ flex: 1, gap: 6 }}>
+                                                        {pharmacy?.allMandatoryDocsUploaded !== false && (
+                                                            <CheckCircle color="#169560" height={18} width={18} />
+                                                        )}
+                                                        <AppText style={OnboardStyle.pharmacyTagText} numberOfLines={1} ellipsizeMode="tail">
+                                                            {pharmacy.customerName}
+                                                        </AppText>
+                                                    </AppView>
+
+
+                                                    <TouchableOpacity
+                                                        activeOpacity={0.8}
+                                                        style={OnboardStyle.pharmacyTagRemove}
+                                                        onPress={() => {
+                                                            setValue(prev => ({
+                                                                ...prev,
+                                                                mapping: {
+                                                                    ...prev.mapping,
+                                                                    hospitals: prev.mapping.hospitals.map((hospital, hIndex) =>
+                                                                        hIndex === index
+                                                                            ? {
+                                                                                ...hospital,
+                                                                                pharmacy: hospital?.pharmacy.filter(
+                                                                                    (_, pIdx) => pIdx !== pIndex
+                                                                                ),
+                                                                            }
+                                                                            : hospital
+                                                                    ),
+                                                                },
+                                                            }));
+                                                        }}
+                                                    >
+                                                        <DoctorDeleteIcon
+                                                            width={12}
+                                                            height={12}
+                                                            color="#666"
+                                                        />
+                                                    </TouchableOpacity>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    )}
+
+                                    <TextButton fontWeight={600} fontFamily="regular" onPress={() => {
+                                        setActiveSelector({ key: 'linked_hospital_child', parentHospitalId: hospital?.id });
+                                    }}>+ Add Pharmacy</TextButton>
+
+                                </View>
+                            </View>
+                        </LinearGradient>
+
+                    </TouchableOpacity>
                 ))}
             </View>
         );
@@ -403,6 +521,13 @@ useEffect(() => {
     };
 
     // helper end
+
+
+    let mappingRadioDisable = !!(
+        formData?.mapping?.hospitals?.length ||
+        formData?.mapping?.pharmacy?.length ||
+        formData?.mapping?.doctors?.length
+    );
 
     return (
         <>
@@ -542,7 +667,7 @@ useEffect(() => {
                                             </AppView>
                                         }
                                         checked={formData?.mapping?.groupHospitals}
-                                        onChange={() => onToggleCheckbox('group_hospital')}
+                                        onChange={() => onToggleCheckbox('groupHospitals')}
 
                                     />
                                 </AppView>
@@ -550,16 +675,28 @@ useEffect(() => {
                                     <>
 
                                         <LabeledSelector
-                                            value={formData?.mapping?.groupHospitals?.[0]?.customerName}
+                                            value={
+                                                formData?.mapping?.groupHospitals?.length
+                                                    ? `${formData.mapping.groupHospitals.length} Hospitals selected`
+                                                    : ""
+                                            }
                                             placeholder="Search hospital name/code"
-                                            onPress={() => setActiveSelector({ key: 'group_hospital' })}
+                                            onPress={() => setActiveSelector({ key: 'groupHospitals' })}
                                         />
+                                        {formData?.mapping?.groupHospitals?.length > 0 &&
+                                            renderSelectedCustomers({
+                                                data: formData.mapping.groupHospitals,
+                                                keyName: 'groupHospitals',
+                                                setValue,
+                                            })}
 
 
+                                        {!formData?.mapping?.groupHospitals?.length && (
+                                            <View>
+                                                <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddEntity({ key: 'groupHospitals' })}>+ Add Group Hospital</TextButton>
+                                            </View>
 
-                                        <View>
-                                            <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddEntity({ key: 'group_hospital' })}>+ Add Group Hospital</TextButton>
-                                        </View>
+                                        )}
                                     </>
                                 )}
 
@@ -571,25 +708,47 @@ useEffect(() => {
                         {(formData?.typeId == 1 || formData?.typeId == 3) && (
                             <AppView>
                                 <AppView marginTop={30} marginBottom={4} flexDirection={"row"} gap={30}>
-                                    <RadioOption width={15} height={15} label={<AppText fontSize={16} fontWeight={"bold"}>Hospital</AppText>} selected={formData?.mapping?.hospitals} onSelect={() => onSelectRadio('hospital')} />
+                                    <RadioOption disabled={mappingRadioDisable}
+                                        width={15} height={15} label={<AppText fontSize={16} fontWeight={"bold"}>Hospital</AppText>} selected={formData?.mapping?.hospitals} onSelect={() => onSelectRadio('hospitals')} />
                                     {formData?.typeId == 1 && (
-                                        <RadioOption width={15} height={15} label={<AppText fontSize={16} fontWeight={"bold"}>Doctor</AppText>} selected={formData?.mapping?.doctors} onSelect={() => onSelectRadio('doctor')} />
+                                        <RadioOption disabled={mappingRadioDisable} width={15} height={15} label={<AppText fontSize={16} fontWeight={"bold"}>Doctor</AppText>} selected={formData?.mapping?.doctors} onSelect={() => onSelectRadio('doctors')} />
                                     )}
                                     {formData?.typeId == 3 && (
-                                        <RadioOption width={15} height={15} label={<AppText fontSize={16} fontWeight={"bold"}>Pharmacy</AppText>} selected={formData?.mapping?.pharmacy} onSelect={() => onSelectRadio('pharmacy')} />
+                                        <RadioOption disabled={mappingRadioDisable} width={15} height={15} label={<AppText fontSize={16} fontWeight={"bold"}>Pharmacy</AppText>} selected={formData?.mapping?.pharmacy} onSelect={() => onSelectRadio('pharmacy')} />
                                     )}
                                 </AppView>
 
                                 {formData?.mapping?.hospitals && (
                                     <>
                                         <LabeledSelector
-                                            value={formData?.mapping?.hospitals?.[0]?.customerName}
+                                            value={
+                                                formData?.mapping?.hospitals?.length
+                                                    ? `${formData.mapping.hospitals.length} Hospitals selected`
+                                                    : ""
+                                            }
                                             placeholder="Search hospital name/code"
-                                            onPress={() => setActiveSelector({ key: 'hospital' })}
+                                            onPress={() => setActiveSelector({ key: 'hospitals' })}
                                         />
-                                        <View>
-                                            <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddEntity({ key: 'hospital' })}>+ Add New Hospital</TextButton>
-                                        </View>
+
+                                        {formData?.mapping?.hospitals?.length > 0 &&
+                                            renderSelectedCustomers({
+                                                data: formData.mapping.hospitals,
+                                                keyName: 'hospitals',
+                                                setValue,
+                                            })}
+
+                                        {!formData?.mapping?.hospitals?.length && (
+                                            <View>
+                                                <TextButton
+                                                    fontWeight={600}
+                                                    fontFamily="regular"
+                                                    onPress={() => setShowAddEntity({ key: 'hospitals' })}
+                                                >
+                                                    + Add New Hospital
+                                                </TextButton>
+                                            </View>
+                                        )}
+
                                     </>
                                 )}
 
@@ -601,7 +760,7 @@ useEffect(() => {
                                                     ? `${formData.mapping.doctors.length} Doctors selected`
                                                     : ""
                                             } placeholder="Search doctor name/code"
-                                            onPress={() => setActiveSelector({ key: 'doctor' })}
+                                            onPress={() => setActiveSelector({ key: 'doctors' })}
                                         />
 
                                         {formData?.mapping?.doctors?.length > 0 &&
@@ -614,8 +773,9 @@ useEffect(() => {
 
 
                                         <View>
-                                            <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddEntity({ key: 'doctor' })}>+ Add New doctor</TextButton>
+                                            <TextButton fontWeight={600} fontFamily="regular" onPress={() => setShowAddEntity({ key: 'doctors' })}>+ Add New doctor</TextButton>
                                         </View>
+
                                     </>
                                 )}
 
@@ -723,7 +883,7 @@ useEffect(() => {
                                             key={e.customerGroupId}
                                             width="50%"
                                             marginTop={15}
-                                            opacity={isAllowed ? 1 : 0.4}
+                                        // opacity={isAllowed ? 1 : 0.4}
                                         >
                                             <RadioOption
                                                 label={e.customerGroupName}
@@ -795,10 +955,30 @@ useEffect(() => {
                     parentData={formData}
                     onSubmit={handleEntitySelect}
                     parentHospitalId={showAddEntity?.parentHospitalId}
+                    action={showAddEntity?.action ?? 'register'}
+                    customerId={showAddEntity?.customerId ?? null}
+                    isStaging={showAddEntity?.isStaging ?? null}
+                    parentAction={action}
 
 
                 />
             )}
+
+            <Modal
+                visible={showLinkageModal}
+                animationType="slide"
+                transparent
+                onRequestClose={() => setShowLinkageModal(false)}
+            >
+                <ChildLinkageDetails
+                    customerId={selectedCustomer?.id}
+                    isStaging={selectedCustomer?.isNew}
+                    onClose={() => setShowLinkageModal(false)}
+                    activeTab={"details"}
+                />
+            </Modal>
+
+            {/*  */}
 
 
 

@@ -17,6 +17,7 @@ import PanAndGST from "./panAndGst"
 import { customerAPI } from "../../../../api/customer";
 import { findDocument, findLicense, removeDocument, staticDOCcode } from "../utils/fieldMeta";
 import { getSelectedTypeByFormData } from '../utils/helper';
+import { AppToastService } from '../../../../components/AppToast';
 
 const RenderLicense = memo(
     ({
@@ -140,9 +141,12 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                     customerId: formData?.stgCustomerId || formData?.customerId
                 })
             });
-            if (!response?.length) return;
 
-            const uploadFile = response[0];
+            if (response?.success) {
+                AppToastService.show(response?.message, "success", "File Upload");
+            }
+            if (!response?.data?.length) return;
+            const uploadFile = response?.data?.[0];
 
             const isLicenceAlreadyExist = uploadFile?.statusCode == 203;
 
@@ -369,7 +373,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
 
         return {
             ...currentForm,
-            
+
             licenceDetails: {
                 ...prevLicenceDetails,
                 licence: updatedLicences,

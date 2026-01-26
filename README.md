@@ -107,5 +107,3 @@ cd android
 ./gradlew assembleDevRelease
 ./gradlew assembleUatRelease
 ./gradlew assembleProdRelease
-
-

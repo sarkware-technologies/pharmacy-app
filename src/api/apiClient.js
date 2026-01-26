@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ErrorMessage } from '../components/view/error';
-import Toast from 'react-native-toast-message';
 import { authAPI } from './auth';
 import { saveToken } from '../redux/slices/authSlice';
 import { store } from "../redux/store";
 import { logout } from "../redux/slices/authSlice";
-
+import { AppToastService } from '../components/AppToast';
+   
 
 export const BASE_URL = 'https://pharmsupply-dev-api.pharmconnect.com';
 // export const BASE_URL = 'https://dev-specialrates-api.sunpharma.cloud';
@@ -43,12 +43,9 @@ class ApiClient {
     }
 
     async clearCachedToken() {
-        Toast.show({
-            type: "error",
-            text1: "Session Expired",
-            text2: "Please log in again",
-        });
 
+        AppToastService.show("Please log in again", "error", "Session Expired");
+        
         store.dispatch(logout());
 
         await new Promise(res => setTimeout(res, 300));
@@ -173,6 +170,9 @@ class ApiClient {
             throw new Error("Session expired");
         }
         if (!response.ok || data?.success === false) {
+
+            console.log("entering into our part", 456456);
+            
             const error = new Error(data?.message || data?.existingLicenceDetails?.message|| "API Error");
             error.status = response.status;
             error.response = data;

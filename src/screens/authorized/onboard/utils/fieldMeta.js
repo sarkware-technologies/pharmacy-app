@@ -100,13 +100,13 @@ export const staticDOCcode = {
 
 
 export const SELECTOR_ENTITY_CONFIG = {
-    hospital: {
+    hospitals: {
         title: 'Hospital',
         entityType: 'hospitals',
         allowMultiple: false
     },
 
-    doctor: {
+    doctors: {
         title: 'Doctor',
         entityType: 'doctors',
         allowMultiple: true,
@@ -119,7 +119,7 @@ export const SELECTOR_ENTITY_CONFIG = {
         allowMultiple: true
     },
 
-    group_hospital: {
+    groupHospitals: {
         title: 'Hospital',
         entityType: 'groupHospitals',
         allowMultiple: false
@@ -435,29 +435,18 @@ export const validateForm = async (payload, scheme) => {
     };
 };
 
+
 const cleanMapping = (arr = []) =>
     arr
         .filter(item => item?.id)
         .map(item => ({
             id: Number(item.id),
+            customerName: item.customerName,
+            cityName: item.cityName || 'N/A',
             isNew: Boolean(item.isNew),
-
-            ...(item.pharmacy?.length
-                ? {
-                    pharmacy: item.pharmacy
-                        .filter(p => p?.id)
-                        .map(p => ({
-                            id: Number(p.id),
-                            isNew: Boolean(p.isNew),
-                        })),
-                }
-                : {}),
         }));
 
-
-
 export const buildCreatePayload = (formData) => {
-
     const doctors = cleanMapping(formData.mapping?.doctors);
     const hospitals = cleanMapping(formData.mapping?.hospitals);
     const pharmacy = cleanMapping(formData.mapping?.pharmacy);
@@ -558,33 +547,17 @@ export const buildCreatePayload = (formData) => {
     };
 };
 
-const cleanMappingDraft = (arr = []) =>
-    arr
-        .filter(item => item?.id)
-        .map(({ isActive, pharmacy, ...rest }) => ({
-            ...rest,
-            id: Number(rest.id),
-            ...(pharmacy?.length
-                ? {
-                    pharmacy: pharmacy
-                        .filter(p => p?.id)
-                        .map(({ isActive, ...pRest }) => ({
-                            ...pRest,
-                            id: Number(pRest.id),
-                        })),
-                }
-                : {}),
-        }));
 
 
-export const buildDraftPayload = (formData, isExistingDraft=false) => {
+
+export const buildDraftPayload = (formData, isExistingDraft = false) => {
 
     console.log(formData, 'ex');
 
-    const doctors = cleanMappingDraft(formData.mapping?.doctors);
-    const hospitals = cleanMappingDraft(formData.mapping?.hospitals);
-    const pharmacy = cleanMappingDraft(formData.mapping?.pharmacy);
-    const groupHospitals = cleanMappingDraft(formData.mapping?.groupHospitals);
+    const doctors = cleanMapping(formData.mapping?.doctors);
+    const hospitals = cleanMapping(formData.mapping?.hospitals);
+    const pharmacy = cleanMapping(formData.mapping?.pharmacy);
+    const groupHospitals = cleanMapping(formData.mapping?.groupHospitals);
 
     return {
         typeId: formData.typeId,
@@ -622,16 +595,16 @@ export const buildDraftPayload = (formData, isExistingDraft=false) => {
                             formData.licenceDetails.registrationDate
                         ),
                     }),
-                  licence: formData.licenceDetails.licence
-    .filter(l => l?.licenceNo)
-    .map(l => ({
-        ...(l.licenceTypeId && { licenceTypeId: l.licenceTypeId }),
-        ...(l.licenceNo && { licenceNo: l.licenceNo }),
-        ...(isExistingDraft && l.code && { code: l.code }),
-        ...(isExistingDraft && l.docTypeId && { docTypeId: l.docTypeId }),
-        ...(l.hospitalCode && { hospitalCode: l.hospitalCode }),
-        ...(l.licenceValidUpto && { licenceValidUpto: l.licenceValidUpto }),
-    })),
+                    licence: formData.licenceDetails.licence
+                        .filter(l => l?.licenceNo)
+                        .map(l => ({
+                            ...(l.licenceTypeId && { licenceTypeId: l.licenceTypeId }),
+                            ...(l.licenceNo && { licenceNo: l.licenceNo }),
+                            ...(isExistingDraft && l.code && { code: l.code }),
+                            ...(isExistingDraft && l.docTypeId && { docTypeId: l.docTypeId }),
+                            ...(l.hospitalCode && { hospitalCode: l.hospitalCode }),
+                            ...(l.licenceValidUpto && { licenceValidUpto: l.licenceValidUpto }),
+                        })),
                 },
             }
             : {}),
@@ -766,26 +739,26 @@ export const buildDraftPayload = (formData, isExistingDraft=false) => {
 
 export const updateFormData = (payload, action) => {
 
-      const customerDocs =
+    const customerDocs =
         action == 'onboard'
             ? (payload?.customerDocs ?? []).map(e => ({
-          s3Path: e?.s3Path,
-                  docTypeId: e?.docTypeId,
-                  fileName: e?.fileName,
-                  customerId: payload?.customerId,
-                  id: e?.id,
-              }))
+                s3Path: e?.s3Path,
+                docTypeId: e?.docTypeId,
+                fileName: e?.fileName,
+                customerId: payload?.customerId,
+                id: e?.id,
+            }))
             : (payload?.docType ?? []).map(e => ({
-                 
 
-                           s3Path: e?.s3Path,
-                  docTypeId: Number(e?.doctypeId),
-                  fileName: e?.fileName,
-                  customerId: payload?.customerId,
-                  id: Number(e?.docId),
-              }));
 
-          
+                s3Path: e?.s3Path,
+                docTypeId: Number(e?.doctypeId),
+                fileName: e?.fileName,
+                customerId: payload?.customerId,
+                id: Number(e?.docId),
+            }));
+
+
 
     return {
         typeId: payload?.typeId,
@@ -799,7 +772,7 @@ export const updateFormData = (payload, action) => {
             registrationDate: payload?.licenceDetails?.registrationDate,
             licence: payload?.licenceDetails?.licence ?? [],
         },
-       customerDocs,
+        customerDocs,
         isBuyer: payload?.isBuyer,
         customerGroupId: payload?.customerGroupId,
         stationCode: payload?.stationCode,

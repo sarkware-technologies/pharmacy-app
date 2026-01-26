@@ -3,6 +3,8 @@
 // src/components/FileUploadComponent.js
 
 import React, { useState, useRef, useEffect } from 'react';
+import { AppToastService } from './AppToast';
+
 import {
   View,
   Text,
@@ -25,7 +27,6 @@ import CloseCircle from './icons/CloseCircle';
 import EyeOpen from './icons/EyeOpen';
 import apiClient, { BASE_URL } from '../api/apiClient';
 import AppText from "./AppText"
-import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 
@@ -253,15 +254,7 @@ const FileUploadComponent = ({
 
       if (responseData.success && responseData.data && responseData.data.length > 0) {
         const uploadedFile = responseData.data[0];
-
-
-
-        Toast.show({
-          type: 'success',
-          text1: "Upload document successful!",
-          text2: responseData.message,
-          position: 'top',
-        });
+        AppToastService.show(responseData.message, "success", "Upload document successful!");
         const fileData = {
           fileName: uploadedFile.fileName,
           s3Path: uploadedFile.s3Path,
@@ -373,6 +366,8 @@ const FileUploadComponent = ({
 
     } catch (error) {
       console.error('Upload error:', error);
+      
+      AppToastService.show(error?.message ?? "Error Uploading Document", "error", "Upload error");
       setError('Failed to upload file. Please try again.');
       Alert.alert('Upload Failed', error.message || 'Unable to upload file. Please try again.');
     } finally {

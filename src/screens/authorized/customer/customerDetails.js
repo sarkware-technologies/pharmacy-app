@@ -208,11 +208,9 @@ const CustomerDetails = () => {
         } catch (error) {
             console.error("workflowAction error:", error);
 
-            Toast.show({
-                type: "error",
-                text1: "Action failed",
-                text2: error?.message || "Something went wrong",
-            });
+            AppToastService(error?.message || "Something went wrong", "error", "Action failed")
+
+    
 
         }
         finally {

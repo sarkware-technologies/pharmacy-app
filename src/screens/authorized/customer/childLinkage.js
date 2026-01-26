@@ -18,6 +18,8 @@ import LinkageView from "./linkage/linkage"
 import { customerAPI } from "../../../api/customer";
 import { transformCustomerData } from "./service/formatData";
 import Toast from "react-native-toast-message";
+import { AppToastService } from "../../../components/AppToast"
+
 const ChildLinkageDetails = ({ customerId, isStaging, activeTab, onClose, setChildCustomer, parantCustomer, instance, saveDraftParent }) => {
     const {
         data,
@@ -88,11 +90,8 @@ const ChildLinkageDetails = ({ customerId, isStaging, activeTab, onClose, setChi
                 }
             }
             else {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Task issue',
-                    text2: 'Task Not Assignt to you',
-                });
+    
+                AppToastService.show("Task Not Assignt to you", "error", "Task issue");
             }
 
         }

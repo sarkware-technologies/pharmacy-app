@@ -122,9 +122,21 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
             const mapped = customers.map(c => ({
                 id: c.stgCustomerId ?? c.customerId,
                 customerName: c.customerName,
-                customerCode: c.customerCode || c.sapCode || c.customerId,
                 cityName: c.cityName || 'N/A',
-                isNew: !!c.stgCustomerId
+                isNew: !!c.stgCustomerId,
+                allMandatoryDocsUploaded: c.allMandatoryDocsUploaded,
+
+                ...(Array.isArray(c.pharmacy) && c.pharmacy.length
+                    ? {
+                        pharmacy: c.pharmacy.map(p => ({
+                            id: p.stgCustomerId ?? p.customerId,
+                            customerName: p.customerName,
+                            cityName: p.cityName || 'N/A',
+                            isNew: !!p.stgCustomerId,
+                            allMandatoryDocsUploaded: p.allMandatoryDocsUploaded,
+                        })),
+                    }
+                    : {}),
             }));
 
 
@@ -175,12 +187,12 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 <View style={styles.entityInfo}>
                     <AppText style={styles.entityName}>{item.customerName}</AppText>
 
-                    {item?.customerCode && 
-                    <View style={styles.entityDetails}>
-                        <AppText style={styles.entityCode}>{item.customerCode}</AppText>
-                    </View>
+                    {item?.customerCode &&
+                        <View style={styles.entityDetails}>
+                            <AppText style={styles.entityCode}>{item.customerCode}</AppText>
+                        </View>
                     }
-                    
+
                 </View>
 
                 <AppText style={styles.entityCity}>{item.cityName}</AppText>
@@ -188,12 +200,11 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
         );
     };
 
-    const handleToggleEnity = (entity) => {        
+    const handleToggleEnity = (entity) => {
         setSelectedItems(prevItems => {
             const isSelected = prevItems.some(
                 item => item?.id == entity?.id && item?.isActive
             );
-            // 🔘 SINGLE SELECT (default)
             if (!allowMultiple) {
                 return [
                     {
@@ -203,7 +214,6 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 ];
             }
 
-            // ☑️ MULTI SELECT
             if (isSelected) {
                 return prevItems.map(item =>
                     item?.id == entity?.id
@@ -240,8 +250,6 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
     const handleReset = () => {
         setSelectedItems([])
     };
-
-
 
     return (
         <SafeAreaView style={styles.container}>
@@ -356,8 +364,19 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 <FlatList
                     data={entitiesData}
                     renderItem={renderEntitiesData}
-                    keyExtractor={item => item?.stgCustomerId?.toString() ?? item?.customerId?.toString() }
-                    contentContainerStyle={[ styles.listContent]}
+                    keyExtractor={(item, index) => {
+                        if (item?.stgCustomerId) {
+                            return `stg-${item.stgCustomerId}`;
+                        }
+
+                        if (item?.customerId) {
+                            return `main-${item.customerId}`;
+                        }
+
+                        // absolute fallback (should never hit, but prevents crash)
+                        return `row-${index}`;
+                    }}
+                    contentContainerStyle={[styles.listContent]}
                     showsVerticalScrollIndicator={false}
 
                     // 🔽 LOAD MORE
@@ -477,8 +496,6 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
 
 
         </SafeAreaView>
-
-
     );
 };
 

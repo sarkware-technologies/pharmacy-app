@@ -109,9 +109,6 @@ const RegisterForm = () => {
                     console.log('Draft not available, using normal data');
                 }
             }
-
-            console.log(finalData, 'finaldata');
-
             setCustomerApiresponse(finalData);
             setTransferData(prev => ({
                 ...prev,
@@ -147,11 +144,6 @@ const RegisterForm = () => {
 
         initData();
     }, [data, isLoading, action]);
-
-    console.log(data, 'data');
-
-
-
     const [error, setError] = useState({});
     const [isFormValid, setIsFormValid] = useState(false);
 
@@ -215,15 +207,6 @@ const RegisterForm = () => {
             (error) => console.log("measure error", error)
         );
     };
-
-
-
-
-
-    useEffect(() => {
-        console.log('city name chaning');
-
-    }, [formData?.generalDetails?.cityName])
 
     const builLicense = async (customerType, formData) => {
         try {

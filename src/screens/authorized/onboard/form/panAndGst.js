@@ -57,9 +57,15 @@ const PanAndGST = ({ setValue, formData, action, error, transferData }) => {
                 isOcrRequired: true,
             });
 
-            if (!response?.length) return;
+             if(response?.success){
+                AppToastService.show(response?.message, "success", "File Upload");
+                
+            }
 
-            const uploadFile = response[0];
+            
+            if (!response?.data?.length) return;
+
+            const uploadFile = response?.data?.[0];
 
 
             if (type === "pan") {
@@ -93,9 +99,6 @@ const PanAndGST = ({ setValue, formData, action, error, transferData }) => {
                         },
                     ]);
                 }
-
-
-
             }
 
             const docObject = {

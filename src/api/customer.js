@@ -310,7 +310,7 @@ export const customerAPI = {
             formData.append('docTypes', String(docTypes));
 
             const response = await apiClient.post(`/user-management/customer/upload-docs?isOcrRequired=${isOcrRequired}&isStaging=${isStaging}`, formData, true);
-            return response.data;
+            return response;
         } catch (error) {
             console.error('Error uploading document:', error);
             throw error;
