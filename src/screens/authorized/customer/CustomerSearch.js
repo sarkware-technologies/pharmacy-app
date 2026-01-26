@@ -998,14 +998,15 @@ const CustomerSearch = ({ navigation, route }) => {
               onPress={() => {
                 const customerId = item.customerId || item.stgCustomerId;
                 const isStaging = false;
-                handleOnboardCustomer(
-                  navigation,
-                  customerId,
-                  isStaging,
-                  customerAPI,
-                  (toastConfig) => Toast.show(toastConfig),
-                  item.statusName
-                );
+                // handleOnboardCustomer(
+                //   navigation,
+                //   customerId,
+                //   isStaging,
+                //   customerAPI,
+                //   (toastConfig) => Toast.show(toastConfig),
+                //   item.statusName
+                // );
+                navigation.navigate('onboading', { isStaging, customerId, action: "onboard", documentUpload:false })
               }}>
               <AppText style={styles.onboardButtonText}>Onboard</AppText>
             </TouchableOpacity>

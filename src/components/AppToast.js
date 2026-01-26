@@ -100,7 +100,7 @@ export const AppToastService = {
     message,
     type = 'success',
     label // optional
-  ) => {
+  ) => {    
     showToastRef?.(message, type, label);
   },
 };

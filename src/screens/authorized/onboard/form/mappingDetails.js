@@ -21,6 +21,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import AddEntity from '../selector/AddEntity';
 import ChildLinkageDetails from "../../customer/childLinkage"
 import CheckCircle from '../../../../components/icons/CheckCircle'
+import { colors } from "../../../../styles/colors";
 
 const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection, error, handleSave }) => {
     const [toggle, setToggle] = useState("open");
@@ -277,14 +278,13 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
     const handleChipPress = (item, keyName, parentHospitalId = null) => {
 
-        if (item?.allMandatoryDocsUploaded === false) {
-
-
+        if (item?.isProcessed === false || item?.allMandatoryDocsUploaded === false) {
             setShowAddEntity({
                 key: keyName,
                 parentHospitalId: parentHospitalId,
                 customerId: item.id,
                 isStaging: item.isNew,
+                isProcessed: item.isProcessed,
                 action: "edit"
             });
 
@@ -326,7 +326,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                         >
                             <LinearGradient
                                 colors={
-                                    item?.allMandatoryDocsUploaded === false
+                                   item?.isProcessed === false || item?.allMandatoryDocsUploaded === false
                                         ? ['#F5F5F6', '#ffffff']
                                         : ['#D1FAE5', '#ffffff']
                                 }
@@ -336,21 +336,26 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                     OnboardStyle.selectedItemChip,
                                     {
                                         borderColor:
-                                            item?.allMandatoryDocsUploaded === false
+                                           item?.isProcessed === false|| item?.allMandatoryDocsUploaded === false
                                                 ? '#D1D5DB'
                                                 : '#10B981',
                                     },
                                 ]}
                             >
                                 <AppView flexDirection={"row"} alignItems={"center"} style={{ gap: 6 }}>
-                                    {item?.allMandatoryDocsUploaded !== false && (
+                                    {item?.isProcessed !== false && item?.allMandatoryDocsUploaded !== false && (
                                         <CheckCircle color="#169560" height={18} width={18} />
                                     )}
 
                                     <AppText style={OnboardStyle.chipText}>
-                                        {item.customerName}
+                                        {item?.customerName}
+                                       
+                                       
                                     </AppText>
+                                     {item?.isProcessed === false && <AppText style={{color:"#777"}}>{" "} (Draft)</AppText> }
                                 </AppView>
+
+                                
 
                                 {/* DELETE ONLY */}
                                 <TouchableOpacity
@@ -380,7 +385,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                     >
                         <LinearGradient
                             colors={
-                                hospital?.allMandatoryDocsUploaded === false
+                               hospital?.isProcessed === false || hospital?.allMandatoryDocsUploaded === false
                                     ? ['#F5F5F6', '#ffffff']
                                     : ['#D1FAE5', '#ffffff']
                             }
@@ -390,7 +395,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                 OnboardStyle.hospitalAccordion,
                                 {
                                     borderColor:
-                                        hospital?.allMandatoryDocsUploaded === false
+                                         hospital?.isProcessed === false ||hospital?.allMandatoryDocsUploaded === false
                                             ? '#D1D5DB'
                                             : '#10B981',
                                 },
@@ -400,13 +405,16 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
                             <View style={OnboardStyle.hospitalHeader}>
                                 <AppView style={[OnboardStyle.hospitalHeaderContent, { gap: 6 }]} flexDirection={"row"} alignItems={"center"}>
-                                    {hospital?.allMandatoryDocsUploaded !== false && (
+                                    { hospital?.isProcessed !== false && hospital?.allMandatoryDocsUploaded !== false && (
                                         <CheckCircle color="#169560" height={18} width={18} />
                                     )}
                                     <AppText style={OnboardStyle.hospitalName}>
 
                                         {hospital.customerName}
+
+                                       
                                     </AppText>
+                                     {hospital?.isProcessed === false && <AppText style={{color:"#777"}}>{" "} (Draft)</AppText> }
                                 </AppView>
 
                                 <TouchableOpacity
@@ -452,12 +460,14 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
 
                                                     <AppView flexDirection={"row"} alignItems={"center"} style={{ flex: 1, gap: 6 }}>
-                                                        {pharmacy?.allMandatoryDocsUploaded !== false && (
+                                                        { pharmacy?.isProcessed === false && pharmacy?.allMandatoryDocsUploaded !== false && (
                                                             <CheckCircle color="#169560" height={18} width={18} />
                                                         )}
                                                         <AppText style={OnboardStyle.pharmacyTagText} numberOfLines={1} ellipsizeMode="tail">
                                                             {pharmacy.customerName}
+                                                           
                                                         </AppText>
+                                                        {pharmacy?.isProcessed === false && <AppText style={{color:"#777"}}>{" "} (Draft)</AppText> }
                                                     </AppView>
 
 
@@ -958,9 +968,8 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                     action={showAddEntity?.action ?? 'register'}
                     customerId={showAddEntity?.customerId ?? null}
                     isStaging={showAddEntity?.isStaging ?? null}
+                    isProcessed={showAddEntity?.isProcessed ?? null}
                     parentAction={action}
-
-
                 />
             )}
 

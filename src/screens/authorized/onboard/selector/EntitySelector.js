@@ -125,6 +125,7 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                 cityName: c.cityName || 'N/A',
                 isNew: !!c.stgCustomerId,
                 allMandatoryDocsUploaded: c.allMandatoryDocsUploaded,
+                isProcessed:true,
 
                 ...(Array.isArray(c.pharmacy) && c.pharmacy.length
                     ? {
@@ -134,6 +135,7 @@ const EntitySelector = ({ title, entityType, formData, onSelect, onClose, parent
                             cityName: p.cityName || 'N/A',
                             isNew: !!p.stgCustomerId,
                             allMandatoryDocsUploaded: p.allMandatoryDocsUploaded,
+                            isProcessed:true,
                         })),
                     }
                     : {}),

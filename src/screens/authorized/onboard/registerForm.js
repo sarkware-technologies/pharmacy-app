@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { act, memo, useEffect, useMemo, useRef, useState } from "react";
 import { customerAPI } from "../../../api/customer";
 import { AppText } from "../../../components";
 import LicenseDetails from "./form/LicentceDetails"
@@ -48,6 +48,9 @@ const RegisterForm = () => {
         action = "register",
         documentUpload = true
     } = route.params || {};
+
+    console.log(action,'action');
+    
 
     const [transferData, setTransferData] = useState({});
     const [showDraftModal, setShowDraftModal] = useState(false);
@@ -99,8 +102,9 @@ const RegisterForm = () => {
                         typeof draftData === 'object' && draftData.customerId;
                     if (isValidDraft) {
                         finalData = {
+                            ...data,
                             ...draftData,
-                            ...(data?.stgCustomerId && { stgCustomerId: data.stgCustomerId }),
+                            // ...(data?.stgCustomerId && { stgCustomerId: data.stgCustomerId }),
                         };
                         isDraft = true;
                         setItsSaveExDraft(true)
@@ -567,6 +571,8 @@ const RegisterForm = () => {
         const payload = buildDraftPayload(data, true);
         try {
             const response = await customerAPI.saveExistingCustomerDraft(payload);
+            console.log(response);
+            
             if (response?.success) {
                 setItsSaveExDraft(true)
                 AppToastService.show(response?.message, "success", "Draft Saved");

@@ -843,6 +843,34 @@ export const customerAPI = {
 
 
 
+    saveMappingCustomer: async (draftData, id = null) => {
+  try {
+    const url = id
+      ? `/user-management/customer/mapping-customer/create?id=${id}`
+      : `/user-management/customer/mapping-customer/create`;
+
+    const response = await apiClient.post(url, draftData);
+    return response;
+  } catch (error) {
+    console.error('Error saving customer draft:', error);
+    throw error;
+  }
+},
+
+
+
+     getMappingCustomer: async (payload) => {
+        try {
+            const response = await apiClient.post('/user-management/customer/mapping-customer', payload);
+            return response;
+        } catch (error) {
+            console.error('Error saving customer draft:', error);
+            throw error;
+        }
+    },
+
+
+
 
 
 

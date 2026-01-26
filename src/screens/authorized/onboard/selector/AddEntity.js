@@ -37,17 +37,20 @@ const Loading = memo(({ height = "minHeight" }) => {
 })
 
 
-const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, allowMultiple = true, parentHospitalId = null, action = 'register', customerId, isStaging, parentAction }) => {
+const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, allowMultiple = true, parentHospitalId = null, action = 'register', customerId, isStaging, parentAction, isProcessed = null }) => {
 
-    console.log(parentAction);
+    console.log(parentAction, 'parentAction');
+    console.log(isProcessed, 'isProcessed');
+
     const route = useRoute();
     const [rawScheme, setRawScheme] = useState(validateScheme);
+    const [mappingDraftId, setMappingDraftId] = useState(null);
 
     const [transferData, setTransferData] = useState({});
     const [formData, setFormData] = useState(initialFormData);
     const [isFormSubmited, setIsFormSubmited] = useState(true);
     const [loading, setLoading] = useState(false);
-    const [customerDetails, setCustomerDetails] = useState({});
+    const [customerDetails, setCustomerDetails] = useState(initialFormData);
     const [showDraftModal, setShowDraftModal] = useState(false);
     const [uploadDocument, setUploadDocument] = useState(action != 'onboard');
     const [selectedCustomers, setSelectedCustomers] = useState(null);
@@ -67,7 +70,6 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
     const scrollRef = useRef(null);
 
 
-
     useEffect(() => {
         if (!visible) return;
         if (action !== 'edit') return;
@@ -75,45 +77,57 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
 
         const fetchCustomerDetails = async () => {
             try {
-                const response = await customerAPI.getCustomerDetails(
-                    customerId,
-                    isStaging
-                );
+                let response;
 
-                if (response?.success) {
-                    setFormData(prev => ({
-                        ...updateFormData(response?.data, action),
-                        isChildCustomer: true,
-                        isBuyer: true,
-                    }));
+                // 🔴 CASE 1: Not processed → mapping API ONLY
+                if (isProcessed === false) {
+                    response = await customerAPI.getMappingCustomer({ id: customerId });
+                    console.log(response);
 
-                     setCustomerDetails(prev => ({
-                        ...updateFormData(response?.data, action),
-                        isChildCustomer: true,
-                        isBuyer: true,
-                    }));
-
-                      setTransferData(prev => ({
-                ...prev,
-                ...(response?.data?.generalDetails?.cityId && {
-                    cityOptions: [
-                        {
-                            id: response?.data.generalDetails.cityId,
-                            name: response?.data.generalDetails.cityName,
-                        },
-                    ],
-                }),
-
-                ...(response?.data?.securityDetails?.gstNumber && {
-                    gstOptions: [
-                        {
-                            id: response?.data?.securityDetails?.gstNumber,
-                            name: response?.data?.securityDetails?.gstNumber,
-                        },
-                    ],
-                }),
-            }));
                 }
+                // 🟢 CASE 2: processed / null → details API
+                else {
+                    response = await customerAPI.getCustomerDetails(customerId, isStaging);
+                }
+
+                if (!response?.success) return;
+                if (response?.success) {
+                    const baseData =
+                        isProcessed === false
+                            ? response?.data?.[0]?.data
+                            : updateFormData(response?.data, action);
+
+                    const updated = {
+                        ...baseData,
+                        isChildCustomer: true,
+                        isBuyer: true,
+                    };
+
+                    setFormData(updated);
+                    setCustomerDetails(updated);
+                    setTransferData(prev => ({
+                        ...prev,
+                        ...(updated?.generalDetails?.cityId && {
+                            cityOptions: [
+                                {
+                                    id: updated?.generalDetails.cityId,
+                                    name: updated?.generalDetails.cityName,
+                                },
+                            ],
+                        }),
+
+
+                        ...(updated?.securityDetails?.gstNumber && {
+                            gstOptions: [
+                                {
+                                    id: updated?.securityDetails?.gstNumber,
+                                    name: updated?.securityDetails?.gstNumber,
+                                },
+                            ],
+                        }),
+                    }));
+                }
+
 
             } catch (error) {
                 console.error('Failed to fetch customer details', error);
@@ -127,6 +141,8 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
 
 
     console.log(formData);
+    console.log(transferData, 'transferData');
+
 
 
 
@@ -237,6 +253,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                     0,
             }));
 
+
         } catch (error) {
             if (error?.status === 400) {
                 ErrorMessage(error);
@@ -284,7 +301,6 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                 subCategoryId: formData?.subCategoryId || undefined,
             };
 
-            // ❌ If no typeId, do nothing
             if (!payload.typeId) {
                 setLicenseList([]);
                 return;
@@ -295,6 +311,10 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                 payload.categoryId,
                 payload.subCategoryId
             );
+
+
+            console.log(getLicense, 'getLicense');
+
 
             setFormData(prev => {
                 const prevLicenceDetails = prev?.licenceDetails ?? {};
@@ -309,8 +329,8 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                         licence: (getLicense?.data ?? []).map(item => {
                             const existingLicence = prevLicences.find(
                                 lic =>
-                                    lic.licenceTypeId === item.id &&
-                                    lic.docTypeId === item.docTypeId
+                                    Number(lic.licenceTypeId) === Number(item.id) &&
+                                    Number(lic.docTypeId) === Number(item.docTypeId)
                             );
 
                             return {
@@ -413,11 +433,21 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
         try {
             const response = await customerAPI.createCustomer(payload);
             if (response?.success) {
+
+
+
+                if (isProcessed === false) {
+                    const newFormdata = { ...formData, stgCustomerId: response?.data?.data?.stgCustomerId }
+                    handleSave(newFormdata, false)
+                }
+
+
                 const newEntity = [{
                     id: response?.data?.data?.stgCustomerId,
                     customerName: response?.data?.data?.generalDetails?.name,
                     isNew: true,
-                    isActive: true
+                    isActive: true,
+                    isProcessed: true,
                 }];
 
                 onSubmit(entityType, newEntity, parentHospitalId, allowMultiple, customerId);
@@ -464,8 +494,13 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
     }, [error])
 
     useEffect(() => {
-        setTransferData({})
-    }, [formData.typeId, formData.categoryId, formData.subCategoryId])
+        setTransferData(prev => {
+            if (!prev) return prev;
+
+            const { licenseResponse, ...rest } = prev;
+            return rest;
+        });
+    }, [formData.typeId, formData.categoryId, formData.subCategoryId]);
 
 
     useEffect(() => {
@@ -511,7 +546,8 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                 id: selectedCustomers?.stgCustomerId ?? selectedCustomers?.customerId,
                 customerName: selectedCustomers?.customerName,
                 isNew: false,
-                isActive: true
+                isActive: true,
+                isProcessed: true,
             }
         ];
 
@@ -522,7 +558,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
 
     const renderForm = [
         { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} formType={"child"} />, show: uploadDocument, order: 1 },
-        { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: true, order: 2 },
+        { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} calledFrom={'addEntity'} />, show: true, order: 2 },
         { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: true, order: 3 },
         { key: "mapping", component: <MappingDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} parentData={parentData} parentHospitalId={parentHospitalId} />, show: true, order: 4 },
     ]
@@ -549,6 +585,61 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
     }, [hasOwnDraftConflict]);
 
 
+    const handleSave = async (data, withupdate = true) => {
+        const payload = { ...buildDraftPayload(data, false), customerId: parentData?.customerId ?? parentData?.stgCustomerId }
+
+        const idForSave =
+            action === 'edit' && isProcessed === false
+                ? customerId
+                : action === 'register'
+                    ? mappingDraftId
+                    : null;
+
+
+        try {
+            const response = await customerAPI.saveMappingCustomer(payload, idForSave);
+            if (response?.success) {
+
+                const returnedId = response?.data?.id;
+
+                // 🔥 store id ONLY when first time (register flow)
+                if (!mappingDraftId && returnedId && action == 'register') {
+                    setMappingDraftId(returnedId);
+                }
+
+                if (withupdate) {
+                    const newEntity = [{
+                        id: response?.data?.id,
+                        customerName: response?.data?.data?.generalDetails?.name ?? `Draft-${response?.data?.id}`,
+                        isNew: true,
+                        isActive: true,
+                        isProcessed: response?.data?.isProcessed,
+                    }];
+
+                    onSubmit(entityType, newEntity, parentHospitalId, allowMultiple);
+
+                    AppToastService.show(response?.message, "success", "Draft Saved");
+                }
+
+
+
+
+
+                // setFormData(prev => ({
+                //     ...prev,
+                //     stgCustomerId: response?.data?.data?.stgCustomerId,
+                // }));
+            }
+
+        } catch (err) {
+            AppToastService.show(err?.message, "error", "Error");
+        }
+
+    }
+
+
+
+
     return (
         <Modal
             visible={visible}
@@ -560,12 +651,31 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
 
             <SafeAreaView style={[EntityStyle.modalContainer]}
             >
-                <View style={EntityStyle.modalHeader}>
+                <AppView style={EntityStyle.modalHeader}>
                     <TouchableOpacity onPress={() => onClose()} style={OnboardStyle.closeButton}>
                         <XCircle color="#2b2b2b" />
                     </TouchableOpacity>
                     <AppText style={EntityStyle.modalTitle}>Add {entityType == "groupHospitals" ? " Group Hospital" : title} Account {parentHospitalId && <AppText>(Link Hospital)</AppText>}</AppText>
-                </View>
+
+
+                    {((parentAction == 'onboard' || parentAction == 'assigntocustomer') && parentData?.typeId == 1) &&
+                        <TouchableOpacity
+                            style={OnboardStyle.saveDraftButton}
+                            onPress={() => handleSave(formData)}
+                            disabled={isDirty}
+                        >
+
+
+                            <AppText style={OnboardStyle.saveDraftButtonText}>
+                                Save
+                            </AppText>
+
+
+
+                        </TouchableOpacity>
+                    }
+
+                </AppView>
 
                 <ScrollView style={EntityStyle.modalContent} showsVerticalScrollIndicator={false}>
 
@@ -623,7 +733,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                                     flex: 1,
                                     backgroundColor: selectedCustomers
                                         ? "#F7941E"
-                                        : (!isFormValid || isDirty)
+                                        : (!isFormValid)
                                             ? "#D3D4D6"
                                             : "#F7941E",
                                     paddingVertical: 12
@@ -632,7 +742,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                                 disabled={
                                     selectedCustomers
                                         ? false
-                                        : (!isFormValid || isDirty)
+                                        : (!isFormValid)
                                 }
                             >
                                 {selectedCustomers

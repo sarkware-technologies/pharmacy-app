@@ -17,7 +17,7 @@ import { useSelector } from "react-redux";
 import { ErrorMessage } from "../../../../components/view/error";
 import { AppToastService } from '../../../../components/AppToast';
 
-const GeneralDetails = ({ License, setValue, isAccordion = false, formData, action, error, setTransferData, transferData, setCustomerDetails }) => {
+const GeneralDetails = ({ License, setValue, isAccordion = false, formData, action, error, setTransferData, transferData, setCustomerDetails, calledFrom=null }) => {
     const [toggle, setToggle] = useState("open");
     const loggedInUser = useSelector(state => state.auth.user);
 
@@ -70,6 +70,7 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
         }
         else {
             setAreaOptions([]);
+           
             // setCityOptions([]);
             setStateOptions([]);
             setValue?.((prev) => {
@@ -93,7 +94,11 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
             })
             
             setAreaOptions(area)
-            // setCityOptions(city)
+             if(calledFrom == 'addEntity'){
+                setCityOptions(city)
+                
+            }
+        
             setStateOptions(state)
         }
         catch (error) {

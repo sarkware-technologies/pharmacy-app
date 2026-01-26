@@ -444,6 +444,7 @@ const cleanMapping = (arr = []) =>
             customerName: item.customerName,
             cityName: item.cityName || 'N/A',
             isNew: Boolean(item.isNew),
+            isProcessed: Boolean(item.isProcessed),
         }));
 
 export const buildCreatePayload = (formData) => {
