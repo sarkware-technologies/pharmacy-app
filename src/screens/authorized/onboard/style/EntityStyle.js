@@ -23,6 +23,7 @@ const EntityStyle = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 16,
+    marginBottom:20
 
   },
   closeButton: {

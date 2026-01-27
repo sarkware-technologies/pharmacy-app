@@ -22,6 +22,7 @@ import { AppToastService } from '../../../components/AppToast';
 import { useCustomerLinkage } from "../customer/service/useCustomerLinkage";
 import ConfirmModal from "../../../components/modals/ConfirmModal"
 import { useSelector } from 'react-redux';
+import DocumentPreviewTopSheet from "../../../components/form/DocumentPreviewTopSheet"
 
 import Svg, { Path } from "react-native-svg";
 
@@ -38,7 +39,6 @@ const RegisterForm = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { user } = useSelector(state => state.auth);
-
     const [rawScheme, setRawScheme] = useState(validateScheme);
 
     // onboard
@@ -48,9 +48,6 @@ const RegisterForm = () => {
         action = "register",
         documentUpload = true
     } = route.params || {};
-
-    console.log(action, 'action');
-
 
     const [transferData, setTransferData] = useState({});
     const [showDraftModal, setShowDraftModal] = useState(false);
@@ -74,7 +71,57 @@ const RegisterForm = () => {
         isStaging,
     });
 
+    // Preview document states
+    const [signedUrl, setSignedUrl] = useState(null);
+    const [loadingDoc, setLoadingDoc] = useState(false);
+    const [previewFile, setPreviewFile] = useState(null);
 
+
+    const handlePreview = async (rawFile) => {
+        if (!rawFile) return;
+
+        // 🔹 Normalize here (inline)
+        const previewFile = {
+            id: rawFile?.id,
+            name: decodeURIComponent(
+                rawFile?.fileName || rawFile?.name || ''
+            ),
+            path: rawFile?.url || rawFile?.s3Path,
+        };
+
+        if (!previewFile?.path) return;
+
+        // 🔹 Open preview UI
+        setPreviewFile(previewFile);
+        setSignedUrl(null);
+        setLoadingDoc(true);
+
+        try {
+            const response = await customerAPI.getDocumentSignedUrl(
+                previewFile.path
+            );
+
+            if (response?.success && response?.data?.signedUrl) {
+                setSignedUrl(response.data.signedUrl);
+            } else {
+                throw new Error('Signed URL not available');
+            }
+        } catch (error) {
+            console.error(error);
+            // 🔹 Close preview on failure
+            setPreviewFile(null);
+        } finally {
+            setLoadingDoc(false);
+        }
+    };
+    const closePreview = () => {
+        setPreviewFile(null);
+        setSignedUrl(null);
+        setLoadingDoc(false);
+    };
+
+
+  
     // useEffect(() => {
     //     if (data && !isLoading) {
     //         setCustomerApiresponse(data);
@@ -658,9 +705,9 @@ const RegisterForm = () => {
     }, [formData.typeId, formData.categoryId, formData.subCategoryId]);
 
     const renderForm = [
-        { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: uploadDocument, order: (action == 'onboard' || action == 'assigntocustomer') ? 5 : 1 },
+        { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} onPreview={handlePreview} closePreview={closePreview} />, show: uploadDocument, order: (action == 'onboard' || action == 'assigntocustomer') ? 5 : 1 },
         { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} setCustomerDetails={setCustomerDetails} />, show: true, order: 2 },
-        { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSaveDraft={handleSaveDraft} />, show: true, order: 3 },
+        { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSaveDraft={handleSaveDraft} onPreview={handlePreview} closePreview={closePreview}/>, show: true, order: 3 },
         { key: "mapping", component: <MappingDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSave={handleSave} />, show: true, order: 4 },
     ]
 
@@ -752,6 +799,19 @@ const RegisterForm = () => {
                 }
 
             </AppView>
+
+            <DocumentPreviewTopSheet
+                visible={!!previewFile}
+
+                uploadedFile={{ name: previewFile?.name }}
+                signedUrl={signedUrl}
+                loading={loadingDoc}
+                onClose={() => {
+                    setSignedUrl(null);
+                    setPreviewFile(null);
+                }}
+            />
+
 
             {/* Selection Section - Always visible at top */}
             <ScrollView

@@ -88,7 +88,7 @@ const RenderLicense = memo(
 
 
 
-const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData, action, licenseList, error, setTransferData, formType = null }) => {
+const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData, action, licenseList, error, setTransferData, formType = null, onPreview, closePreview }) => {
     const uniqueLicenses = licenseList.reduce((acc, cur) => {
         if (!acc.some(e => e.code === cur.code)) {
             acc.push({
@@ -146,7 +146,13 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                 AppToastService.show(response?.message, "success", "File Upload");
             }
             if (!response?.data?.length) return;
+
+
             const uploadFile = response?.data?.[0];
+
+            if (uploadFile) {
+                 onPreview?.(uploadFile)
+            }
 
             const isLicenceAlreadyExist = uploadFile?.statusCode == 203;
 
@@ -490,6 +496,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
             ...prev,
             customerDocs: removeDocument(prev?.customerDocs, docTypeId),
         }));
+        closePreview?.()
 
     }, [setValue]);
 
@@ -609,7 +616,8 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                     isLoading: uploading?.[lic.code],
                     uploadedFile: findFile && { name: findFile?.fileName, url: findFile?.s3Path, view: true, remove: true },
                     handleDelete: () => remove_Document(lic.docTypeId),
-                    error: error?.customerDocs?.[lic.docTypeId]
+                    error: error?.customerDocs?.[lic.docTypeId],
+                    onPreview: onPreview
                 }}
                 code={{
                     label: ui.codeLabel,
@@ -680,7 +688,8 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                                 uploadedFile: findREG && { name: findREG?.fileName, url: findREG?.s3Path, view: true, remove: true },
                                 handleDelete: () => remove_Document(licenseMap.REG.docTypeId),
                                 isRequired: true,
-                                error: error?.customerDocs?.[licenseMap.REG.docTypeId]
+                                error: error?.customerDocs?.[licenseMap.REG.docTypeId],
+                                onPreview: onPreview
                             }}
                             code={(() => {
                                 const isHospitalCase =
@@ -784,7 +793,8 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                                 uploadedFile: findADDRESS_PROOF && { name: findADDRESS_PROOF?.fileName, url: findADDRESS_PROOF?.s3Path, view: true, remove: true },
                                 isRequired: true,
                                 handleDelete: () => remove_Document(staticDOCcode.ADDRESS_PROOF),
-                                error: error?.customerDocs?.[staticDOCcode.ADDRESS_PROOF]
+                                error: error?.customerDocs?.[staticDOCcode.ADDRESS_PROOF],
+                                onPreview: onPreview
                             }}
                         />
                     )}
@@ -799,7 +809,8 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                                 isLoading: uploading?.['CLINIC_IMAGE'],
                                 uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true }, isRequired: true,
                                 handleDelete: () => remove_Document(staticDOCcode.IMAGE),
-                                error: error?.customerDocs?.[staticDOCcode.IMAGE]
+                                error: error?.customerDocs?.[staticDOCcode.IMAGE],
+                                onPreview: onPreview
                             }}
                         />
                     )}
@@ -816,7 +827,8 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                                 uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
                                 isRequired: true,
                                 handleDelete: () => remove_Document(staticDOCcode.IMAGE),
-                                error: error?.customerDocs?.[staticDOCcode.IMAGE]
+                                error: error?.customerDocs?.[staticDOCcode.IMAGE],
+                                onPreview: onPreview
                             }}
                         />
                     )}
@@ -832,7 +844,8 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                                 uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
                                 isRequired: true,
                                 handleDelete: () => remove_Document(staticDOCcode.IMAGE),
-                                error: error?.customerDocs?.[staticDOCcode.IMAGE]
+                                error: error?.customerDocs?.[staticDOCcode.IMAGE],
+                                onPreview: onPreview
 
                             }}
                         />

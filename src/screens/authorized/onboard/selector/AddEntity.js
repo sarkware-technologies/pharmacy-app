@@ -27,6 +27,7 @@ import XCircle from "../../../../components/icons/XCircle";
 import OnboardStyle from "../style/onboardStyle";
 import ConfirmModal from "../../../../components/modals/ConfirmModal"
 import AppToast from "../../../../components/AppToast"
+import DocumentPreviewTopSheet from "../../../../components/form/DocumentPreviewTopSheet"
 
 const Loading = memo(({ height = "minHeight" }) => {
     return (
@@ -68,6 +69,57 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
     const [licenseList, setLicenseList] = useState([]);
 
     const scrollRef = useRef(null);
+
+    // Preview document states
+    const [signedUrl, setSignedUrl] = useState(null);
+    const [loadingDoc, setLoadingDoc] = useState(false);
+    const [previewFile, setPreviewFile] = useState(null);
+
+
+    const handlePreview = async (rawFile) => {
+        if (!rawFile) return;
+
+        // 🔹 Normalize here (inline)
+        const previewFile = {
+            id: rawFile?.id,
+            name: decodeURIComponent(
+                rawFile?.fileName || rawFile?.name || ''
+            ),
+            path: rawFile?.url || rawFile?.s3Path,
+        };
+
+        if (!previewFile?.path) return;
+
+        // 🔹 Open preview UI
+        setPreviewFile(previewFile);
+        setSignedUrl(null);
+        setLoadingDoc(true);
+
+        try {
+            const response = await customerAPI.getDocumentSignedUrl(
+                previewFile.path
+            );
+
+            if (response?.success && response?.data?.signedUrl) {
+                setSignedUrl(response.data.signedUrl);
+            } else {
+                throw new Error('Signed URL not available');
+            }
+        } catch (error) {
+            console.error(error);
+            // 🔹 Close preview on failure
+            setPreviewFile(null);
+        } finally {
+            setLoadingDoc(false);
+        }
+    };
+    const closePreview = () => {
+        setPreviewFile(null);
+        setSignedUrl(null);
+        setLoadingDoc(false);
+    };
+
+
 
 
     useEffect(() => {
@@ -557,9 +609,9 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
     };
 
     const renderForm = [
-        { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} formType={"child"} />, show: uploadDocument, order: 1 },
+        { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} formType={"child"} onPreview={handlePreview} closePreview={closePreview} />, show: uploadDocument, order: 1 },
         { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} calledFrom={'addEntity'} />, show: true, order: 2 },
-        { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} />, show: true, order: 3 },
+        { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} onPreview={handlePreview} closePreview={closePreview} />, show: true, order: 3 },
         { key: "mapping", component: <MappingDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} parentData={parentData} parentHospitalId={parentHospitalId} />, show: true, order: 4 },
     ]
 
@@ -676,6 +728,18 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                     }
 
                 </AppView>
+
+                <DocumentPreviewTopSheet
+                    visible={!!previewFile}
+
+                    uploadedFile={{ name: previewFile?.name }}
+                    signedUrl={signedUrl}
+                    loading={loadingDoc}
+                    onClose={() => {
+                        setSignedUrl(null);
+                        setPreviewFile(null);
+                    }}
+                />
 
                 <ScrollView style={EntityStyle.modalContent} showsVerticalScrollIndicator={false}>
 

@@ -14,7 +14,7 @@ import { ErrorMessage } from "../../../../components/view/error";
 import FetchGst from '../../../../components/icons/FetchGst';
 import { AppToastService } from '../../../../components/AppToast';
 
-const PanAndGST = ({ setValue, formData, action, error, transferData }) => {    
+const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview, closePreview }) => {    
 
     const handleSetValue = (key, value, extra = {}) => {
         setValue?.(prev => {
@@ -60,12 +60,17 @@ const PanAndGST = ({ setValue, formData, action, error, transferData }) => {
              if(response?.success){
                 AppToastService.show(response?.message, "success", "File Upload");
                 
+                
             }
 
             
             if (!response?.data?.length) return;
 
             const uploadFile = response?.data?.[0];
+
+            if (uploadFile) {
+                 onPreview?.(uploadFile)
+            }
 
 
             if (type === "pan") {
@@ -235,8 +240,10 @@ const PanAndGST = ({ setValue, formData, action, error, transferData }) => {
                                 customerDocs: removeDocument(formData?.customerDocs, staticDOCcode.PAN),
                             };
                         });
+                        closePreview?.()
                     }}
                     error={error?.customerDocs?.[7]}
+                    onPreview={onPreview}
                 />
             </AppView>
             <AppView>
@@ -296,7 +303,9 @@ const PanAndGST = ({ setValue, formData, action, error, transferData }) => {
                                 customerDocs: removeDocument(formData?.customerDocs, staticDOCcode.GST),
                             };
                         });
+                        closePreview?.()
                     }}
+                    onPreview={onPreview}
                 />
             </AppView>
             <AppView>

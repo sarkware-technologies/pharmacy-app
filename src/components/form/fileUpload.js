@@ -11,6 +11,7 @@ import ModalClose from '../icons/modalClose';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { customerAPI } from '../../api/customer';
 import AppView from '../AppView';
+import DocumentPreviewModal from "../modals/DocumentPreviewModal"
 
 
 const { width } = Dimensions.get('window');
@@ -26,12 +27,10 @@ const FilePicker = ({
     uploadedFile,
     handleDelete,
     isLoading = false,
-    error
+    error,
+    onPreview
 }) => {
 
-    const [signedUrl, setSignedUrl] = useState(null)
-    const [showDocumentModal, setShowDocumentModal] = useState(false);
-    const [loadingDoc, setLoadingDoc] = useState(false);
 
 
     const validateFile = ({ name, size }) => {
@@ -86,96 +85,6 @@ const FilePicker = ({
     };
 
 
-
-    const handlePreview = async () => {
-        if (!uploadedFile.url) return;
-
-        setShowDocumentModal(true);
-        setLoadingDoc(true);
-
-        try {
-            // Get signed URL for preview
-            const response = await customerAPI.getDocumentSignedUrl(uploadedFile.url);
-
-            if (response.success && response.data && response.data.signedUrl) {
-                setSignedUrl(response.data.signedUrl);
-            } else {
-                throw new Error('Failed to get preview URL');
-            }
-
-        } catch (error) {
-            console.error('Preview error:', error);
-            Alert.alert('Preview Failed', 'Unable to preview file. Please try again.');
-            setShowDocumentModal(false);
-        } finally {
-            setLoadingDoc(false);
-        }
-    };
-
-
-
-    const closeModal = () => {
-        setShowDocumentModal(false);
-        setSignedUrl(null);
-    };
-
-    const DocumentModal = () => {
-        return (
-            <Modal
-                visible={showDocumentModal}
-                transparent
-                animationType="fade"
-                onRequestClose={closeModal}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.documentModalContent}>
-                        <View style={styles.modalHeader}>
-                            <AppText style={styles.modalTitle}>
-                                {uploadedFile?.name || 'DOCUMENT'}
-                            </AppText>
-                            <TouchableOpacity onPress={closeModal}>
-                                <CloseCircle />
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.documentImageContainer}>
-                            {loadingDoc ? (
-                                <ActivityIndicator size="large" color={colors.primary} />
-                            ) : signedUrl && (uploadedFile?.name?.toLowerCase().endsWith('.jpg') ||
-                                uploadedFile?.name?.toLowerCase().endsWith('.jpeg') ||
-                                uploadedFile?.name?.toLowerCase().endsWith('.png')) ? (
-                                <Image
-                                    source={{ uri: signedUrl }}
-                                    style={{ width: '100%', height: 300 }}
-                                    resizeMode="contain"
-                                />
-                            ) : signedUrl ? (
-                                <View style={styles.dummyDocument}>
-                                    <Icon name="document-text" size={100} color="#999" />
-                                    <AppText style={styles.documentName}>{uploadedFile?.name}</AppText>
-                                    <TouchableOpacity
-                                        style={styles.downloadButton}
-                                        onPress={() => {
-                                            // Open the signed URL in browser for download
-                                            if (signedUrl) {
-                                                require('react-native/Libraries/Linking/Linking').openURL(signedUrl);
-                                            }
-                                        }}
-                                    >
-                                        <Icon name="download-outline" size={20} color="#fff" />
-                                        <AppText style={styles.downloadButtonText}>Download</AppText>
-                                    </TouchableOpacity>
-                                </View>
-                            ) : null}
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-        );
-    };
-
-
-
     return (
         <AppView marginVertical={10}>
             <View>{
@@ -187,7 +96,7 @@ const FilePicker = ({
                         <View style={[CommonStyle.SpaceBetween, { gap: 15 }]}>
                             {uploadedFile?.view && (
                                 <TouchableOpacity
-                                    onPress={handlePreview}
+                                     onPress={() => onPreview?.(uploadedFile)}
                                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                                 >
                                     <EyeOpen color={colors.primary} />
@@ -233,7 +142,11 @@ const FilePicker = ({
                             </TouchableOpacity>
                     )
             }
-                <DocumentModal />
+                {/* <DocumentModal /> */}
+
+
+                
+
             </View>
             {error && <AppText style={{ marginTop: 5, paddingLeft: 15 }} fontFamily="regular" fontWeight={400} color="red" >{error}</AppText>}
         </AppView>
@@ -267,67 +180,7 @@ const styles = StyleSheet.create({
     },
 
 
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    documentModalContent: {
-        width: width * 0.9,
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 20,
-        maxHeight: '80%',
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: colors.primary,
-        flex: 1,
-        marginRight: 12,
-    },
-    documentImageContainer: {
-        alignItems: 'center',
-        paddingVertical: 40,
-        backgroundColor: '#F8F9FA',
-        borderRadius: 12,
-        marginBottom: 20,
-        minHeight: 200,
-        justifyContent: 'center',
-    },
-    dummyDocument: {
-        alignItems: 'center',
-    },
-    documentName: {
-        marginTop: 16,
-        fontSize: 14,
-        color: '#666',
-        textAlign: 'center',
-        paddingHorizontal: 20,
-    },
-    downloadButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.primary,
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 25,
-        marginTop: 20,
-    },
-    downloadButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: '600',
-        marginLeft: 8,
-    },
+
     errorContainer: {
         borderColor: "red",
         borderWidth: 1.5,

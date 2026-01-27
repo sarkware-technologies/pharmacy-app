@@ -63,7 +63,7 @@ const CustomerType = ({ customerType = [], formData, setFormData }) => {
   }, [setFormData]);
 
   return (
-    <AppView style={[EntityStyle.customerType, {marginTop:20}]}>
+    <AppView style={[EntityStyle.customerType, {marginTop:0}]}>
       <AppText style={[CommonStyle.primaryText, { fontSize: 20, marginVertical: 7 }]}>
         Category{" "}
         <AppText style={[CommonStyle.secondaryText, { fontSize: 20 }]}>
