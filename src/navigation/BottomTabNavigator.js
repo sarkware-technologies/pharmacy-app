@@ -15,8 +15,8 @@ import Pricing from '../components/icons/menu/Pricing';
 import More from '../components/icons/menu/More';
 import { useSelector } from 'react-redux';
 // Import screens
-import CustomerList from '../screens/authorized/customer/CustomerList';
-import CustomerDetails from '../screens/authorized/customer/customerDetails';
+import CustomerList from '../screens/authorized/customer/list/customerList';
+import CustomerDetails from '../screens/authorized/customer/linkage/customerDetails';
 import CustomerSearch from '../screens/authorized/customer/CustomerSearch';
 
 // Import Pricing screens

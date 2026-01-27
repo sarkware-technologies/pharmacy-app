@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { mergeCustomerObjects, applyMappingApproval, removeKeyFromMapping } from "./formatData";
-import { customerAPI } from "../../../../api/customer";
+import { customerAPI } from "../../../../../api/customer";
 
 export const useCustomerLinkage = ({
   customerId,

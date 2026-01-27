@@ -1,24 +1,24 @@
 import { StatusBar, TouchableOpacity, View } from "react-native";
-import { AppText } from "../../../components";
+import { AppText } from "../../../../components";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useCustomerLinkage } from "./service/useCustomerLinkage"
 import { useEffect, useState } from "react";
-import Customerstyles from "./linkage/style/style"
+import Customerstyles from "./style/style"
 import { SafeAreaView } from "react-native-safe-area-context";
-import PermissionWrapper from "../../../utils/RBAC/permissionWrapper";
+import PermissionWrapper from "../../../../utils/RBAC/permissionWrapper";
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import ChevronLeft from "../../../components/icons/ChevronLeft";
-import PERMISSIONS from "../../../utils/RBAC/permissionENUM";
-import Details from "../../../components/icons/Details";
-import Linkage from "../../../components/icons/Linkage";
-import { colors } from "../../../styles/colors";
-import DetailsView from "./linkage/details"
-import LinkageView from "./linkage/linkage"
-import { customerAPI } from "../../../api/customer";
+import ChevronLeft from "../../../../components/icons/ChevronLeft";
+import PERMISSIONS from "../../../../utils/RBAC/permissionENUM";
+import Details from "../../../../components/icons/Details";
+import Linkage from "../../../../components/icons/Linkage";
+import { colors } from "../../../../styles/colors";
+import DetailsView from "./details"
+import LinkageView from "./linkage"
+import { customerAPI } from "../../../../api/customer";
 import { transformCustomerData } from "./service/formatData";
 import Toast from "react-native-toast-message";
-import { AppToastService } from "../../../components/AppToast"
+import { AppToastService } from "../../../../components/AppToast"
 
 const ChildLinkageDetails = ({ customerId, isStaging, activeTab, onClose, setChildCustomer, parantCustomer, instance, saveDraftParent }) => {
     const {

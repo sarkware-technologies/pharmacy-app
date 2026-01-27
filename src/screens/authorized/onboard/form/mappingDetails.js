@@ -20,9 +20,9 @@ import LinearGradient from 'react-native-linear-gradient';
 import ConfirmModal from "../../../../components/modals/ConfirmModal"
 
 import AddEntity from '../selector/AddEntity';
-import ChildLinkageDetails from "../../customer/childLinkage"
 import CheckCircle from '../../../../components/icons/CheckCircle'
 import { colors } from "../../../../styles/colors";
+import ChildLinkageDetails from "../../customer/linkage/childLinkage";
 
 const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection, error, handleSave }) => {
     const [toggle, setToggle] = useState("open");

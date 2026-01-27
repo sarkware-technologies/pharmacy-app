@@ -1,23 +1,24 @@
+
 import { Modal, StatusBar, TouchableOpacity, View } from "react-native";
-import { AppText } from "../../../components";
+import { AppText } from "../../../../components";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useCustomerLinkage } from "./service/useCustomerLinkage"
 import { useEffect, useState } from "react";
-import Customerstyles from "./linkage/style/style"
+import Customerstyles from "./style/style"
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import ChevronLeft from "../../../components/icons/ChevronLeft";
-import Details from "../../../components/icons/Details";
-import Linkage from "../../../components/icons/Linkage";
-import { colors } from "../../../styles/colors";
-import DetailsView from "./linkage/details"
-import LinkageView from "./linkage/linkage"
+import ChevronLeft from "../../../../components/icons/ChevronLeft";
+import Details from "../../../../components/icons/Details";
+import Linkage from "../../../../components/icons/Linkage";
+import { colors } from "../../../../styles/colors";
+import DetailsView from "./details"
+import LinkageView from "./linkage"
 import ChildLinkageDetails from "./childLinkage"
-import { customerAPI } from "../../../api/customer";
+import { customerAPI } from "../../../../api/customer";
 import { findAndUpdate, transformCustomerData } from "./service/formatData";
 import Toast from "react-native-toast-message";
-import { showLoader, hideLoader } from '../../../components/ScreenLoader';
-import { AppToastService } from "../../../components/AppToast"
+import { showLoader, hideLoader } from '../../../../components/ScreenLoader';
+import { AppToastService } from "../../../../components/AppToast"
 
 
 const CustomerDetails = () => {
@@ -39,7 +40,7 @@ const CustomerDetails = () => {
         isStaging: isStaging,
     });
 
-    
+
     const [customerDetails, setCustomerDetails] = useState();
     const [draftValue, setDraftValue] = useState();
     const [loading, setLoading] = useState(true);
@@ -146,7 +147,7 @@ const CustomerDetails = () => {
         } catch (error) {
             console.error(error);
             AppToastService.show("Save failed", "error", "Failed");
-          
+
 
             return false;
         }
@@ -210,7 +211,7 @@ const CustomerDetails = () => {
 
             AppToastService(error?.message || "Something went wrong", "error", "Action failed")
 
-    
+
 
         }
         finally {
@@ -246,7 +247,7 @@ const CustomerDetails = () => {
                         ellipsizeMode="tail"
                     >
 
-                        {customerDetails?.generalDetails?.name??customerDetails?.generalDetails?.customerName}
+                        {customerDetails?.generalDetails?.name ?? customerDetails?.generalDetails?.customerName}
                     </AppText>
                 </View>
 

@@ -9,13 +9,34 @@ function capitalize(text) {
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-const AppText = ({ style, children, fontFamily = 'Bold', fontSize, color = colors.primaryText, fontWeight,letterSpacing, ...props }) => {
+const AppText = ({
+    style,
+    children,
+    fontFamily = 'Bold',
+    fontSize,
+    color = colors.primaryText,
+    fontWeight,
+    letterSpacing,
+    numberOfLines,
+    ellipsizeMode = "tail",
+    ...props
+}) => {
     const findFont = Fonts?.[capitalize(fontFamily)] ?? Fonts.Bold;
+
     return (
-        <Text {...props} style={[{ fontFamily: findFont, color, fontSize, fontWeight,letterSpacing }, style]}>
+        <Text
+            {...props}
+            numberOfLines={numberOfLines}
+            ellipsizeMode={ellipsizeMode}
+            style={[
+                { fontFamily: findFont, color, fontSize, fontWeight, letterSpacing },
+                style,
+            ]}
+        >
             {children}
         </Text>
     );
 };
+
 
 export default AppText;

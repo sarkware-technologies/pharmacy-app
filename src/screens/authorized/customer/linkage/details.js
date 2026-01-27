@@ -25,10 +25,10 @@ import Reassigned from "../../../../components/icons/Reassigned";
 import { colors } from "../../../../styles/colors";
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import CloseCircle from "../../../../components/icons/CloseCircle";
-import { isAllApprovedChecked } from "../service/formatData";
 import ConfirmActionModal from '../../../../components/modals/ConfirmActionModal';
 
 import { AppToastService } from "../../../../components/AppToast"
+import { isAllApprovedChecked } from "./service/formatData";
 
 
 const DetailsView = ({ loading = false, customerData, instance, isChild = false, saveDraft, workflowAction, setActiveTab }) => {

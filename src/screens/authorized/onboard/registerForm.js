@@ -19,12 +19,12 @@ import { ErrorMessage } from "../../../components/view/error";
 import { validateForm, converScheme, initialFormData, buildCreatePayload, buildDraftPayload, updateFormData, getChangedValues } from "./utils/fieldMeta";
 import validateScheme from "./utils/validateScheme.json";
 import { AppToastService } from '../../../components/AppToast';
-import { useCustomerLinkage } from "../customer/service/useCustomerLinkage";
 import ConfirmModal from "../../../components/modals/ConfirmModal"
 import { useSelector } from 'react-redux';
 import DocumentPreviewTopSheet from "../../../components/form/DocumentPreviewTopSheet"
 
 import Svg, { Path } from "react-native-svg";
+import { useCustomerLinkage } from "../customer/linkage/service/useCustomerLinkage";
 
 const Loading = memo(({ height = "minHeight" }) => {
     return (

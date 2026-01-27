@@ -102,7 +102,7 @@ const VerticalTimeline = ({ steps }) => {
                 <View
                   style={[
                     styles.verticalLine,
-               
+
                     {
                       backgroundColor: isCompleted
                         ? '#000000'
@@ -123,8 +123,8 @@ const VerticalTimeline = ({ steps }) => {
                       {step.status === 'submitted' ? 'SUBMITTED' :
                         step.status === 'approved' ? 'APPROVED' :
                           step.status === 'rejected' ? 'REJECTED' :
-                          step.status === 'REASSIGNED' ? 'SENT BACK' :
-                            step.status.toUpperCase()}
+                            step.status === 'REASSIGNED' ? 'SENT BACK' :
+                              step.status.toUpperCase()}
                     </AppText>
                   </View>
 
@@ -184,7 +184,7 @@ const AccordionItem = ({ title, isExpanded, onToggle, children }) => {
   );
 };
 
-const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, customerType }) => {
+const WorkflowTimelineModal = ({ visible, onClose, customer }) => {
 
   const [expandedAccordion, setExpandedAccordion] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -250,9 +250,6 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
       const sortedStepOrders = Array.from(allStepOrders).sort((a, b) => a - b);
 
 
-
-      console.log(stepHeaderMap);
-      console.log(approverMap);
 
       // Build steps in order
       sortedStepOrders.forEach((stepOrder) => {
@@ -354,19 +351,19 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
 
   // Fetch workflow data when modal opens
   useEffect(() => {
-    if (visible && stageId) {
+    if (visible && customer) {
       fetchWorkflowData();
-    } else if (visible && !stageId) {
+    } else if (visible && !customer) {
       setLoading(false);
     } else {
       // Reset when modal closes
       setAccordionData([]);
       setExpandedAccordion(null);
     }
-  }, [visible, stageId]);
+  }, [visible, customer]);
 
   const fetchWorkflowData = async () => {
-    if (!stageId) {
+    if (!customer) {
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -378,24 +375,24 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
 
     try {
       setLoading(true);
-      console.log('🔍 Fetching workflow data for stageId:', stageId);
-      const response = await customerAPI.getWorkflowProgression([stageId]);
-      console.log('🔍 API Response:', JSON.stringify(response, null, 2));
+
+
+      let id = null;
+      if (customer?.stageId?.length) {
+        id = customer?.childStageId?.length ? [...customer.stageId] : customer.stageId;
+      }
+      else if (customer?.stgCustomerId) { id = customer.stgCustomerId; }
+      const response = await customerAPI.getWorkflowProgression(id);
 
       if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
         const workflow = response.data[0];
-        console.log('🔍 Workflow object:', workflow);
-        console.log('🔍 Progressions:', workflow.progressions?.length);
 
         const transformed = transformWorkflowData(response);
-        console.log('🔍 Transformed accordion data:', transformed);
-        console.log('🔍 Number of accordions:', transformed.length);
         setAccordionData(transformed);
 
         // Auto-expand first accordion if available
         if (transformed.length > 0) {
           setExpandedAccordion(transformed[0].id);
-          console.log('✅ Auto-expanded first accordion:', transformed[0].id);
         } else {
           Toast.show({
             type: 'info',
@@ -404,7 +401,6 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
           });
         }
       } else {
-        console.warn('⚠️ Invalid response structure:', response);
         Toast.show({
           type: 'info',
           text1: 'No Data',
@@ -413,7 +409,6 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
         setAccordionData([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching workflow progression:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -445,7 +440,7 @@ const WorkflowTimelineModal = ({ visible, onClose, stageId, customerName, custom
           {/* Header */}
           <View style={styles.header}>
             <AppText style={styles.title}>
-              {customerName + " | " + customerType || 'Workflow Timeline'}
+              {customer?.customerName + " | " + customer?.customerType || 'Workflow Timeline'}
             </AppText>
             <TouchableOpacity onPress={onClose}>
               <CloseCircle color="#666" />

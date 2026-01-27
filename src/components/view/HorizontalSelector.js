@@ -2,39 +2,44 @@ import React, { memo, useRef, useCallback, useEffect } from "react";
 import {
     FlatList,
     StyleSheet,
-    View,
     TouchableOpacity,
 } from "react-native";
 
-const ITEM_WIDTH = 100; // adjust if needed
-
-
-const HorizontalSelector = ({ children, items, itemGap = 8, onTabChange, style, activeIndex }) => {
+const HorizontalSelector = ({
+    children,
+    items,
+    itemGap = 8,
+    onTabChange,
+    style,
+    activeIndex,
+}) => {
     const listRef = useRef(null);
 
     const data = items ?? React.Children.toArray(children);
 
-    const handlePress = useCallback((index) => {
-        onTabChange?.(index);
-        if (activeIndex === undefined || activeIndex === null) {
-            listRef.current?.scrollToIndex({
-                index,
-                animated: true,
-                viewPosition: 0,
-            });
-        }
-    }, [onTabChange]);
+    const handlePress = useCallback(
+        (index) => {
+            onTabChange?.(index);
+        },
+        [onTabChange]
+    );
 
     useEffect(() => {
-        if (activeIndex !== undefined && activeIndex !== null) {
-            listRef.current?.scrollToIndex({
-                index: activeIndex,
-                animated: true,
-                viewPosition: 0,
+        if (
+            typeof activeIndex === "number" &&
+            activeIndex >= 0 &&
+            data.length > 0 &&
+            activeIndex < data.length
+        ) {
+            requestAnimationFrame(() => {
+                listRef.current?.scrollToIndex({
+                    index: activeIndex,
+                    animated: true,
+                    viewPosition: 0, // change to 0.5 if you want center scroll
+                });
             });
         }
-    }, [activeIndex]);
-
+    }, [activeIndex, data.length]);
 
     return (
         <FlatList
@@ -44,11 +49,16 @@ const HorizontalSelector = ({ children, items, itemGap = 8, onTabChange, style, 
             keyExtractor={(_, index) => index.toString()}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={[styles.container, style]}
-            getItemLayout={(_, index) => ({
-                length: ITEM_WIDTH,
-                offset: ITEM_WIDTH * index,
-                index,
-            })}
+            onScrollToIndexFailed={(info) => {
+                if (info.index >= 0 && data.length > 0) {
+                    setTimeout(() => {
+                        listRef.current?.scrollToIndex({
+                            index: Math.min(info.index, data.length - 1),
+                            animated: true,
+                        });
+                    }, 100);
+                }
+            }}
             renderItem={({ item, index }) => (
                 <TouchableOpacity
                     activeOpacity={0.8}

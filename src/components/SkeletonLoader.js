@@ -72,9 +72,9 @@ export const SkeletonDetailPage = () => {
   );
 };
 
-export const SkeletonListItem = () => {
+export const SkeletonListItem = ({ paddingHorizontal = 16, paddingVertical = 16, marginHorizontal = 16, marginVertical = 8 }) => {
   return (
-    <View style={styles.listItemSkeleton}>
+    <View style={[styles.listItemSkeleton, { paddingHorizontal: paddingHorizontal, paddingVertical: paddingVertical, marginHorizontal: marginHorizontal, marginVertical: marginVertical }]}>
       {/* Header Row: Title and Download Icon */}
       <View style={styles.headerRow}>
         <SkeletonLoader height={20} width="60%" borderRadius={4} />
@@ -148,14 +148,10 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   listItemSkeleton: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#f0f0f0',
-    marginHorizontal: 16,
-    marginVertical: 8,
   },
   listItemContent: {
     flex: 1,

@@ -5,7 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  TextInput,  
+  TextInput,
   StatusBar,
   ActivityIndicator,
   RefreshControl,
@@ -19,12 +19,12 @@ import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../../../styles/colors';
 import { getDistributors, inviteDistributor } from '../../../api/distributor';
-import { 
-  setDistributors, 
-  setLoading, 
+import {
+  setDistributors,
+  setLoading,
   setSelectedDistributor,
   setPagination,
-  setFilters 
+  setFilters
 } from '../../../redux/slices/distributorSlice';
 import Menu from '../../../components/icons/Menu';
 import Bell from '../../../components/icons/Bell';
@@ -33,13 +33,13 @@ import ChevronRight from '../../../components/icons/ChevronRight';
 import Phone from '../../../components/icons/Phone';
 import AddrLine from '../../../components/icons/AddrLine';
 import FilterModal from '../../../components/FilterModal';
-import {AppText,AppInput} from "../../../components"
+import { AppText, AppInput } from "../../../components"
 
 const DistributorList = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const { distributors = [], loading, pagination, filters } = useSelector(state => state.distributor || {});
-  
+
   const [searchText, setSearchText] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -49,18 +49,18 @@ const DistributorList = () => {
   const [hasMoreData, setHasMoreData] = useState(true);
   const [listError, setListError] = useState(null);
   const [allDistributors, setAllDistributors] = useState([]);
-  
+
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
-  
+
   // Debounce timer ref
   const searchTimer = useRef(null);
 
   useEffect(() => {
     loadInitialData();
-    
+
     // Animate list appearance
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -85,7 +85,7 @@ const DistributorList = () => {
     dispatch(setLoading(true));
     setListError(null);
     setAllDistributors([]);
-    
+
     try {
       const data = await getDistributors(1, 20, searchText);
       setAllDistributors(data.distributors || []);
@@ -95,7 +95,7 @@ const DistributorList = () => {
         limit: 20,
         total: data.total || 0
       }));
-      
+
       // Check if there's more data based on total count
       const totalLoaded = data.distributors?.length || 0;
       setHasMoreData(totalLoaded < data.total);
@@ -110,7 +110,7 @@ const DistributorList = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     setListError(null);
-    
+
     try {
       const data = await getDistributors(1, 20, searchText);
       setAllDistributors(data.distributors || []);
@@ -120,7 +120,7 @@ const DistributorList = () => {
         limit: 20,
         total: data.total || 0
       }));
-      
+
       // Check if there's more data based on total count
       const totalLoaded = data.distributors?.length || 0;
       setHasMoreData(totalLoaded < data.total);
@@ -135,20 +135,20 @@ const DistributorList = () => {
   const handleLoadMore = async () => {
     // Don't load more if already loading, no more data, or if we've loaded all items
     if (loadingMore || !hasMoreData || loading || refreshing) return;
-    
+
     // Check if we've already loaded all items
     if (allDistributors.length >= pagination.total) {
       setHasMoreData(false);
       return;
     }
-    
+
     setLoadingMore(true);
     const nextPage = pagination.page + 1;
-    
+
     try {
       const data = await getDistributors(nextPage, 20, searchText);
       const newDistributors = data.distributors || [];
-      
+
       if (newDistributors.length > 0) {
         const updatedList = [...allDistributors, ...newDistributors];
         setAllDistributors(updatedList);
@@ -158,7 +158,7 @@ const DistributorList = () => {
           limit: 20,
           total: data.total || 0
         }));
-        
+
         // Check if we've loaded all items
         setHasMoreData(updatedList.length < data.total);
       } else {
@@ -173,12 +173,12 @@ const DistributorList = () => {
 
   const handleSearch = (text) => {
     setSearchText(text);
-    
+
     // Clear existing timer
     if (searchTimer.current) {
       clearTimeout(searchTimer.current);
     }
-    
+
     // Set new timer for debounced search
     searchTimer.current = setTimeout(() => {
       dispatch(setFilters({ search: text }));
@@ -190,15 +190,15 @@ const DistributorList = () => {
     dispatch(setSelectedDistributor(distributor));
     //navigation.navigate('DistributorDetail', { distributor });
     navigation.getParent()?.navigate('DistributorStack', {
-        screen: 'DistributorDetail',
-        params: { distributor },
+      screen: 'DistributorDetail',
+      params: { distributor },
     });
   };
 
   const handleGroupUpdate = () => {
     //navigation.navigate('DistributorGroupUpdate');
     navigation.getParent()?.navigate('DistributorStack', {
-        screen: 'DistributorGroupUpdate'
+      screen: 'DistributorGroupUpdate'
     });
   };
 
@@ -237,7 +237,7 @@ const DistributorList = () => {
 
   const renderFooter = () => {
     if (!loadingMore) return null;
-    
+
     return (
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color={colors.primary} />
@@ -252,7 +252,7 @@ const DistributorList = () => {
 
   const renderEndReached = () => {
     if (hasMoreData || loadingMore || allDistributors.length === 0) return null;
-    
+
     return (
       <View style={styles.endReachedContainer}>
         <AppText style={styles.endReachedText}>You've reached the end</AppText>
@@ -266,29 +266,29 @@ const DistributorList = () => {
   };
 
   const renderDistributor = ({ item }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.distributorCard}
       onPress={() => handleDistributorPress(item)}
       activeOpacity={0.7}
     >
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.cardHeader}
         onPress={() => handleDistributorPress(item)}
         activeOpacity={0.7}
       >
         <View style={styles.nameRow}>
-          <AppText style={styles.distributorName}>{item.name} <ChevronRight color={colors.primary} height={12} /></AppText>          
+          <AppText style={styles.distributorName}>{item.name} <ChevronRight color={colors.primary} height={12} /></AppText>
           <View style={styles.statusBadge}>
-          <Icon 
-            name="check-circle" 
-            size={16} 
-            color={getStatusColor(item.inviteStatusName)}
-          />
-          <AppText style={[styles.statusText, { color: getStatusColor(item.inviteStatusName) }]}>
-            {item.inviteStatusName || 'Not Invited'}
-          </AppText>
+            <Icon
+              name="check-circle"
+              size={16}
+              color={getStatusColor(item.inviteStatusName)}
+            />
+            <AppText style={[styles.statusText, { color: getStatusColor(item.inviteStatusName) }]}>
+              {item.inviteStatusName || 'Not Invited'}
+            </AppText>
+          </View>
         </View>
-        </View>        
       </TouchableOpacity>
 
       <View style={styles.cardDetails}>
@@ -298,7 +298,7 @@ const DistributorList = () => {
             {item.code} | {item.distributorType || 'CFA-DT'} | {item.organizationCode || 'SPLL'}
           </AppText>
         </View>
-        
+
         <View style={styles.detailRow}>
           <Phone />
           <AppText style={styles.detailText}>{item.mobile1}</AppText>
@@ -312,8 +312,8 @@ const DistributorList = () => {
       <View style={styles.marginSection}>
         <AppText style={styles.marginTitle}>Supply Margin</AppText>
         <View style={styles.marginRow}>
-          <AppText style={styles.marginLabel}>Doctor : <AppText style={{color: '#222', fontWeight: '500'}}>{item.doctorSupplyMargin}%</AppText></AppText>
-          <AppText style={styles.marginLabel}>Hospital : <AppText style={{color: '#222', fontWeight: '500'}}>{item.hospitalSupplyMargin}%</AppText></AppText>
+          <AppText style={styles.marginLabel}>Doctor : <AppText style={{ color: '#222', fontWeight: '500' }}>{item.doctorSupplyMargin}%</AppText></AppText>
+          <AppText style={styles.marginLabel}>Hospital : <AppText style={{ color: '#222', fontWeight: '500' }}>{item.hospitalSupplyMargin}%</AppText></AppText>
         </View>
       </View>
 
@@ -323,7 +323,7 @@ const DistributorList = () => {
             {item.isActive ? 'UNBLOCKED' : 'BLOCKED'}
           </AppText>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.moreButton}
           onPress={() => handleInvite(item)}
         >
@@ -340,7 +340,7 @@ const DistributorList = () => {
       animationType="slide"
       onRequestClose={() => setShowInviteModal(false)}
     >
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.modalOverlay}
         activeOpacity={1}
         onPress={() => setShowInviteModal(false)}
@@ -352,8 +352,8 @@ const DistributorList = () => {
               <Icon name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.inviteButton}
             onPress={sendInvite}
           >
@@ -368,119 +368,119 @@ const DistributorList = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
 
-      <View style={{backgroundColor: '#F8F9FA', flex: 1}}>
+      <View style={{ backgroundColor: '#F8F9FA', flex: 1 }}>
 
-      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-      
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.openDrawer()}>
-          <Menu />
-        </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Distributors</AppText>
-        <View style={styles.headerRight}>
-          <TouchableOpacity 
-            style={styles.groupUpdateButton}
-            onPress={handleGroupUpdate}
-          >
-            <AppText style={styles.groupUpdateText}>GROUP UPDATE</AppText>
-            <Icon name="arrow-drop-down" size={20} color={colors.primary} />
+        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+            <Menu />
           </TouchableOpacity>
-          <TouchableOpacity>
-            <Bell />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Icon name="search" size={20} color="#999" />
-          <AppInput
-            style={styles.searchInput}
-            placeholder="Search by distributor name/code"
-            value={searchText}
-            onChangeText={handleSearch}
-            placeholderTextColor="#999"
-          />
-        </View>
-        <TouchableOpacity 
-          style={styles.filterButton}
-          onPress={() => setShowFilterModal(true)}
-        >
-          <Filter />
-        </TouchableOpacity>
-      </View>
-
-      <Animated.View
-        style={[
-          styles.listContainer,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-          },
-        ]}
-      >
-        {loading && allDistributors.length === 0 ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <AppText style={styles.loadingText}>Loading distributors...</AppText>
-          </View>
-        ) : listError && allDistributors.length === 0 ? (
-          <View style={styles.errorContainer}>
-            <Icon name="error-outline" size={60} color="#EF4444" />
-            <AppText style={styles.errorTitle}>Unable to Load Distributors</AppText>
-            <AppText style={styles.errorMessage}>
-              {listError === 'Network request failed' || listError.includes('Network')
-                ? 'Server is currently unavailable. Please check your connection and try again.'
-                : listError || 'Something went wrong. Please try again.'}
-            </AppText>
-            <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-              <Icon name="refresh" size={20} color="#fff" />
-              <AppText style={styles.retryButtonText}>Retry</AppText>
+          <AppText style={styles.headerTitle}>Distributors</AppText>
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.groupUpdateButton}
+              onPress={handleGroupUpdate}
+            >
+              <AppText style={styles.groupUpdateText}>GROUP UPDATE</AppText>
+              <Icon name="arrow-drop-down" size={20} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <Bell />
             </TouchableOpacity>
           </View>
-        ) : allDistributors.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Icon name="business" size={60} color="#9CA3AF" />
-            <AppText style={styles.emptyTitle}>No Distributors Found</AppText>
-            <AppText style={styles.emptyMessage}>
-              {searchText ? `No distributors match "${searchText}"` : 'No distributors available'}
-            </AppText>
+        </View>
+
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Icon name="search" size={20} color="#999" />
+            <AppInput
+              style={styles.searchInput}
+              placeholder="Search by distributor name/code"
+              value={searchText}
+              onChangeText={handleSearch}
+              placeholderTextColor="#999"
+            />
           </View>
-        ) : (
-          <FlatList
-            data={allDistributors}
-            renderItem={renderDistributor}
-            keyExtractor={keyExtractor}
-            contentContainerStyle={styles.listContent}
-            removeClippedSubviews={true}
-            maxToRenderPerBatch={20}
-            windowSize={20}
-            initialNumToRender={10}
-            updateCellsBatchingPeriod={50}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                colors={[colors.primary]}
-                tintColor={colors.primary}
-              />
-            }
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.3}
-            ListFooterComponent={
-              <>
-                {renderFooter()}
-                {renderEndReached()}
-              </>
-            }
-          />
-        )}
-      </Animated.View>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowFilterModal(true)}
+          >
+            <Filter />
+          </TouchableOpacity>
+        </View>
 
-      {renderInviteModal()}
+        <Animated.View
+          style={[
+            styles.listContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+            },
+          ]}
+        >
+          {loading && allDistributors.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <AppText style={styles.loadingText}>Loading distributors...</AppText>
+            </View>
+          ) : listError && allDistributors.length === 0 ? (
+            <View style={styles.errorContainer}>
+              <Icon name="error-outline" size={60} color="#EF4444" />
+              <AppText style={styles.errorTitle}>Unable to Load Distributors</AppText>
+              <AppText style={styles.errorMessage}>
+                {listError === 'Network request failed' || listError.includes('Network')
+                  ? 'Server is currently unavailable. Please check your connection and try again.'
+                  : listError || 'Something went wrong. Please try again.'}
+              </AppText>
+              <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+                <Icon name="refresh" size={20} color="#fff" />
+                <AppText style={styles.retryButtonText}>Retry</AppText>
+              </TouchableOpacity>
+            </View>
+          ) : allDistributors.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Icon name="business" size={60} color="#9CA3AF" />
+              <AppText style={styles.emptyTitle}>No Distributors Found</AppText>
+              <AppText style={styles.emptyMessage}>
+                {searchText ? `No distributors match "${searchText}"` : 'No distributors available'}
+              </AppText>
+            </View>
+          ) : (
+            <FlatList
+              data={allDistributors}
+              renderItem={renderDistributor}
+              keyExtractor={keyExtractor}
+              contentContainerStyle={styles.listContent}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={20}
+              windowSize={20}
+              initialNumToRender={10}
+              updateCellsBatchingPeriod={50}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                  colors={[colors.primary]}
+                  tintColor={colors.primary}
+                />
+              }
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.3}
+              ListFooterComponent={
+                <>
+                  {renderFooter()}
+                  {renderEndReached()}
+                </>
+              }
+            />
+          )}
+        </Animated.View>
 
-      <FilterModal 
+        {renderInviteModal()}
+
+        <FilterModal
           visible={showFilterModal}
           onClose={() => setShowFilterModal(false)}
           onApply={handleApplyFilters}
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     paddingHorizontal: 16,
-    paddingVertical: 12,    
+    paddingVertical: 12,
   },
   headerTitle: {
     fontSize: 20,
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     marginBottom: 12,
-    padding: 16,    
+    padding: 16,
   },
   cardHeader: {
     marginBottom: 12,
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
   },
   detailRow: {
     flexDirection: 'row',
-    alignItems: 'center',    
+    alignItems: 'center',
   },
   detailText: {
     fontSize: 12,
@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     marginRight: 8
   },
-  marginSection: {      
+  marginSection: {
     marginBottom: 6,
     flexDirection: 'row'
   },
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#222',
     fontWeight: '500',
-    marginRight: 10    
+    marginRight: 10
   },
   marginRow: {
     flexDirection: 'row',

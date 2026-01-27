@@ -12,7 +12,6 @@ const checkPermission = async (permission) => {
     } catch (e) {
         return false;
     }
-
     if (!Array.isArray(permissions)) return false;
 
     if (Array.isArray(permission)) {
@@ -23,3 +22,14 @@ const checkPermission = async (permission) => {
 };
 
 export default checkPermission;
+
+
+export const hasPermission = (userPermissions = [], required = []) => {
+    if (!Array.isArray(userPermissions)) return false;
+
+    if (Array.isArray(required)) {
+        return required.some(p => userPermissions.includes(p));
+    }
+
+    return userPermissions.includes(required);
+};

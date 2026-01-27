@@ -48,6 +48,7 @@ export const customerAPI = {
         startDate = null,
         endDate = null,
         isAll,
+        customerGroupIds = []
 
     } = {}) => {
         try {
@@ -62,7 +63,8 @@ export const customerAPI = {
                 startDate: startDate || null,
                 endDate: endDate || null,
                 sortBy: sortBy || '',
-                sortDirection: sortDirection || 'ASC'
+                sortDirection: sortDirection || 'ASC',
+                customerGroupIds
             };
 
             if (isAll === true) {
@@ -844,22 +846,22 @@ export const customerAPI = {
 
 
     saveMappingCustomer: async (draftData, id = null) => {
-  try {
-    const url = id
-      ? `/user-management/customer/mapping-customer/create?id=${id}`
-      : `/user-management/customer/mapping-customer/create`;
+        try {
+            const url = id
+                ? `/user-management/customer/mapping-customer/create?id=${id}`
+                : `/user-management/customer/mapping-customer/create`;
 
-    const response = await apiClient.post(url, draftData);
-    return response;
-  } catch (error) {
-    console.error('Error saving customer draft:', error);
-    throw error;
-  }
-},
+            const response = await apiClient.post(url, draftData);
+            return response;
+        } catch (error) {
+            console.error('Error saving customer draft:', error);
+            throw error;
+        }
+    },
 
 
 
-     getMappingCustomer: async (payload) => {
+    getMappingCustomer: async (payload) => {
         try {
             const response = await apiClient.post('/user-management/customer/mapping-customer', payload);
             return response;
@@ -870,7 +872,7 @@ export const customerAPI = {
     },
 
 
-      removeMappingCustomer: async (payload) => {
+    removeMappingCustomer: async (payload) => {
         try {
             const response = await apiClient.post('/user-management/customer/mapping-customer/remove', payload);
             return response;
@@ -880,9 +882,16 @@ export const customerAPI = {
         }
     },
 
-
-
-
+    // Get latest draft for workflow actions
+    getChildtask: async (ids) => {
+        try {
+            const response = await apiClient.post(`/user-management/customer/stg-customer-by-id`, { ids });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching latest draft:', error);
+            throw error;
+        }
+    },
 
 
 

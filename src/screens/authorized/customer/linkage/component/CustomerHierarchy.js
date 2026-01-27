@@ -21,7 +21,7 @@ const CustomerHierarchy = ({ customerData, isLoading, isChild, saveDraft, setChi
     const renderRef = useRef(false);
 
     useEffect(() => {
-        setMapping(customerData.mapping);
+        setMapping(customerData?.mapping);
     }, [customerData?.mapping]);
 
 
@@ -83,7 +83,7 @@ const CustomerHierarchy = ({ customerData, isLoading, isChild, saveDraft, setChi
         else {
             if (!customerData?.mapping || !tab || !customer?.id) return;
 
-            const mappedData = customerData.mapping;
+            const mappedData = customerData?.mapping;
 
             const updatedTabData = mappedData[tab]?.map((item) => {
                 // 👉 Child level update

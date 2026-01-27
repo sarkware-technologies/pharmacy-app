@@ -29,7 +29,7 @@ import PharmacyRetailerForm from '../screens/authorized/registration/PharmacyRet
 import PharmacyWholesalerForm from '../screens/authorized/registration/PharmacyWholesaler';
 import PharmacyWholesalerRetailerForm from '../screens/authorized/registration/PharmacyWholesalerRetailer';
 import OnboardCustomer from '../screens/authorized/registration/OnboardCustomer';
-import CustomerList from '../screens/authorized/customer/CustomerList';
+import CustomerList from '../screens/authorized/customer/list/customerList';
 
 import RegisterForm from "../screens/authorized/onboard/registerForm"
 
@@ -67,7 +67,7 @@ import InvoiceDetails from '../screens/authorized/netrate/InvoiceDetails';
 
 // Customer Screens
 import CustomerSearch from '../screens/authorized/customer/CustomerSearch';
-import CustomerDetails from '../screens/authorized/customer/customerDetails';
+import CustomerDetails from '../screens/authorized/customer/linkage/customerDetails';
 
 
 // Main Navigation
