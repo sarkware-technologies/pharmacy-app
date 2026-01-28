@@ -17,7 +17,7 @@ import { useSelector } from 'react-redux';
 // Import screens
 import CustomerList from '../screens/authorized/customer/list/customerList';
 import CustomerDetails from '../screens/authorized/customer/linkage/customerDetails';
-import CustomerSearch from '../screens/authorized/customer/CustomerSearch';
+import CustomerSearchPage from '../screens/authorized/customer/list/customerSearch';
 
 // Import Pricing screens
 import RateContractList from '../screens/authorized/pricing/RateContractList';
@@ -93,7 +93,7 @@ const CustomerStack = () => {
         tabBarStyle: { display: 'none' }
       }}
     />
-    <Stack.Screen name="CustomerSearch" component={CustomerSearch} />
+    <Stack.Screen name="CustomerSearch" component={CustomerSearchPage} />
   </Stack.Navigator>
 };
 

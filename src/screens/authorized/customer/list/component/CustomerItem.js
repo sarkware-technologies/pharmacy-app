@@ -282,14 +282,14 @@ const CustomerView = ({ item, primaryTab, secondaryTab, handleAction }) => {
 
                 <AppView flexDirection={"row"} gap={10} >
                     {canEnterEditFlow && canEditByPermission && !hideEdit && (
-                        <TouchableOpacity   onPress={() => handleAction("EDIT")} >
+                        <TouchableOpacity onPress={() => handleAction("EDIT")} >
                             <Edit width={15} height={15} />
                         </TouchableOpacity>
                     )}
                     {item?.statusName !== 'NOT-ONBOARDED' && (
 
-                          <TouchableOpacity   onPress={() => handleAction("DOWNLOAD")}>
-                        <Download width={15} height={15} />
+                        <TouchableOpacity onPress={() => handleAction("DOWNLOAD")}>
+                            <Download width={15} height={15} />
                         </TouchableOpacity>
                     )}
 
@@ -387,7 +387,7 @@ const CustomerItem = ({
             if (action === "MODIFIED") {
                 setExpandedChild((prev) => (prev === customerId ? null : customerId));
             }
-           
+
             else if (action == "APPROVE" || action == "linkaged" || action == 'details') {
                 navigation.navigate('CustomerDetail', {
                     customerId: item?.stgCustomerId ?? item?.customerId,
@@ -408,7 +408,7 @@ const CustomerItem = ({
                     customerId: item?.stgCustomerId ?? item?.customerId,
                     isStaging: !!item?.stgCustomerId,
                     action: finalAction,
-                 ...(action === "ONBOARD" && { documentUpload: false }),
+                    ...(action === "ONBOARD" && { documentUpload: false }),
                 });
             }
             else {

@@ -139,7 +139,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
                 isScroll={false}
                 header={
                     <AppView>
-                        <AppView backgroundColor={"#fff"}  style={{ paddingVertical: 12}}>
+                        <AppView backgroundColor={"#fff"} style={{ paddingVertical: 12 }}>
                             <AppView flexDirection="row" alignItems="center" paddingHorizontal={10} marginBottom={8}>
                                 <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
                                     <Menu />
@@ -192,7 +192,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
                             </HorizontalSelector>
                         </AppView>
                         {activeTabValue?.subMenu?.length > 0 && (
-                            <AppView marginTop={16} marginBottom={10} paddingHorizontal={10}>
+                            <AppView marginTop={14} marginBottom={0} paddingHorizontal={10}>
                                 <HorizontalSelector
                                     style={{ marginBottom: 1 }}
                                     onTabChange={(index) => {
@@ -222,8 +222,14 @@ const CustomerList = ({ navigation: navigationProp }) => {
                                 </HorizontalSelector>
                             </AppView>
                         )}
-                        <AppView marginTop={10} paddingHorizontal={15}>
-                            <CustomerSearch searchText={searchText} setSearchText={setSearchText} appliedFilter={appliedFilter} handleApplyFilters={(val) => handleApplyFilters(val)} />
+                        <AppView marginTop={5} paddingHorizontal={15}>
+                            <CustomerSearch
+                                handleFocus={() => navigation.navigate('CustomerStack', {
+                                    screen: 'CustomerSearchMain',
+                                    params: { activeTabValue, activeTabSubValue, filter: appliedFilter }
+                                })}
+                                searchText={searchText}
+                                setSearchText={setSearchText} appliedFilter={appliedFilter} handleApplyFilters={(val) => handleApplyFilters(val)} />
                         </AppView>
                     </AppView>
                 }

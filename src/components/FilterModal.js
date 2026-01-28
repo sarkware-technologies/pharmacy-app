@@ -55,7 +55,7 @@ const FilterModal = ({
 
   const customerTypes = useSelector(selectCustomerTypes) || [];
   const customerStatuses = useSelector(selectCustomerStatuses) || [];
-  
+
   // Customer groups from API (for customerGroup filter)
   const [customerGroups, setCustomerGroups] = useState([]);
   const [loadingCustomerGroups, setLoadingCustomerGroups] = useState(false);
@@ -203,21 +203,40 @@ const FilterModal = ({
   const getFilterData = () => {
     switch (activeSection) {
       case 'customerGroup':
-        // Use customer groups from API
-        return ['All', ...customerGroups.map(g => g.customerGroupName || g.name)];
+        return ['All', ...customerGroups.map(g => ({
+          id: g?.customerGroupId,
+          name: g.customerGroupName || g.name
+        }))];
+
       case 'status':
-        return ['All', ...customerStatuses.map(s => s.name)];
+        return ['All', ...customerStatuses.map(s => ({
+          id: s?.id,
+          name: s?.name
+        }))];
+
       case 'category':
-        // Use customer types (which were previously shown in customerGroup)
-        return ['All', ...customerTypes.map(t => t.name)];
+        return ['All', ...customerTypes.map(t => ({
+          id: t?.code,
+          name: t?.name
+        }))];
+
       case 'state':
-        return ['All', ...states.map(s => ({ id: s.id, name: s.stateName }))];
+        return ['All', ...states.map(s => ({
+          id: s.id,
+          name: s.stateName
+        }))];
+
       case 'city':
-        return ['All', ...availableCities.map(c => ({ id: c.id, name: c.cityName }))];
+        return ['All', ...availableCities.map(c => ({
+          id: c.id,
+          name: c.cityName
+        }))];
+
       default:
         return [];
     }
   };
+
 
   const rawList = getFilterData();
 
@@ -226,81 +245,48 @@ const FilterModal = ({
     return name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  /** TOGGLE FILTER LOGIC */
   const toggleFilter = (type, value) => {
-    const isState = type === "state";
-    const isCity = type === "city";
-
     const optionValue = typeof value === "string" ? value : value.id;
 
-    /** SELECT ALL */
     if (value === "All") {
       setFilters(prev => {
-        if (isState) {
+        if (type === "state") {
           const all = states.map(s => s.id);
-          return prev.state.length === all.length ? { ...prev, state: [] } : { ...prev, state: all };
+          return { ...prev, state: prev.state.length === all.length ? [] : all };
         }
 
-        if (isCity) {
+        if (type === "city") {
           const all = availableCities.map(c => c.id);
-          return prev.city.length === all.length ? { ...prev, city: [] } : { ...prev, city: all };
+          return { ...prev, city: prev.city.length === all.length ? [] : all };
         }
 
         if (type === "customerGroup") {
-          const all = customerGroups.map(g => g.customerGroupName || g.name);
-          return prev.customerGroup.length === all.length
-            ? { ...prev, customerGroup: [] }
-            : { ...prev, customerGroup: all };
+          const all = customerGroups.map(g => g.customerGroupId);
+          return { ...prev, customerGroup: prev.customerGroup.length === all.length ? [] : all };
         }
 
         if (type === "category") {
-          const all = customerTypes.map(t => t.name);
-          return prev.category.length === all.length
-            ? { ...prev, category: [] }
-            : { ...prev, category: all };
+          const all = customerTypes.map(t => t.code);
+          return { ...prev, category: prev.category.length === all.length ? [] : all };
         }
 
-        const all = getFilterData().filter(i => i !== "All");
-        return prev[type].length === all.length ? { ...prev, [type]: [] } : { ...prev, [type]: all };
+        if (type === "status") {
+          const all = customerStatuses.map(s => s.id);
+          return { ...prev, status: prev.status.length === all.length ? [] : all };
+        }
+
+        return prev;
       });
       return;
     }
 
-    /** NORMAL SELECT/UNSELECT */
     setFilters(prev => {
       const current = prev[type];
-      const exists = current.includes(optionValue);
-
-      let updated = exists
+      const updated = current.includes(optionValue)
         ? current.filter(i => i !== optionValue)
         : [...current, optionValue];
 
-      if (isState) {
-        const all = states.map(s => s.id);
-        return updated.length === all.length ? { ...prev, state: all } : { ...prev, state: updated };
-      }
-
-      if (isCity) {
-        const all = availableCities.map(c => c.id);
-        return updated.length === all.length ? { ...prev, city: all } : { ...prev, city: updated };
-      }
-
-      if (type === "customerGroup") {
-        const all = customerGroups.map(g => g.customerGroupName || g.name);
-        return updated.length === all.length
-          ? { ...prev, customerGroup: all }
-          : { ...prev, customerGroup: updated };
-      }
-
-      if (type === "category") {
-        const all = customerTypes.map(t => t.name);
-        return updated.length === all.length
-          ? { ...prev, category: all }
-          : { ...prev, category: updated };
-      }
-
-      const all = getFilterData().filter(i => i !== "All");
-      return updated.length === all.length ? { ...prev, [type]: all } : { ...prev, [type]: updated };
+      return { ...prev, [type]: updated };
     });
   };
 
@@ -351,9 +337,6 @@ const FilterModal = ({
     (arr) => !arr || arr.length === 0
   );
 
-  console.log( Object.values(filters || {}).every(
-    (arr) => !arr || arr.length === 0
-  ),987492387)
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
@@ -515,7 +498,7 @@ const FilterModal = ({
 
             {/* FOOTER */}
             <View style={styles.modalFooter}>
-              <TouchableOpacity disabled={isDisabledClear} style={[styles.clearButton,isDisabledClear&&{opacity:0.5}]} onPress={clearFilters}>
+              <TouchableOpacity disabled={isDisabledClear} style={[styles.clearButton, isDisabledClear && { opacity: 0.5 }]} onPress={clearFilters}>
                 <AppText style={styles.clearButtonText}>Clear filter</AppText>
               </TouchableOpacity>
 
