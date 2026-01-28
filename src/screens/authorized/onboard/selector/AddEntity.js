@@ -19,7 +19,7 @@ import AnimatedContent from "../../../../components/view/AnimatedContent";
 import AppView from "../../../../components/AppView";
 import Button from "../../../../components/Button";
 import { ErrorMessage } from "../../../../components/view/error";
-import { validateForm, converScheme, initialFormData, buildCreatePayload, buildDraftPayload, updateFormData, getChangedValues } from "../utils/fieldMeta";
+import { validateForm, converScheme, initialFormData, buildCreatePayload, buildDraftPayload, updateFormData, getChangedValues, getMetaById } from "../utils/fieldMeta";
 import validateScheme from "../utils/validateScheme.json";
 import { AppToastService } from '../../../../components/AppToast';
 import { useCustomerLinkage } from "../../customer/service/useCustomerLinkage";
@@ -118,6 +118,49 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
         setSignedUrl(null);
         setLoadingDoc(false);
     };
+
+
+
+
+
+     useEffect(() => {
+    
+            const fetchAttributes = async () => {
+    
+    
+                if (!formData?.typeId) return;
+                const { type, category, subCategory } = getMetaById(formData);
+    
+                const form = action === 'onboard' || action === 'assigntocustomer' ? 2 : 1;
+                try {
+                    setLoading(true);
+    
+                    const response = await customerAPI.getAttributes(
+                        type,
+                        category,
+                        subCategory,
+                        form
+                    );
+    
+                    if (response?.success && response?.data?.sections) {
+                        setRawScheme(response?.data?.sections);
+                    }
+                } catch (err) {
+                    console.log("Attribute fetch failed, using fallback scheme");
+                } finally {
+                    setLoading(false);
+                }
+            };
+    
+            fetchAttributes();
+        }, [
+            formData?.typeId,
+            formData?.categoryId,
+            formData?.subCategoryId,
+        ]);
+
+
+        
 
 
 
@@ -435,10 +478,12 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
 
     const scheme = useMemo(() => {
         if (!rawScheme) return null;
-        return converScheme(rawScheme, formData?.typeId, formData?.categoryId, formData?.subCategoryId, formData?.licenceDetails, uploadDocument);
+        return converScheme(rawScheme, formData?.typeId, formData?.categoryId, formData?.subCategoryId, formData?.licenceDetails, uploadDocument, false);
     }, [rawScheme, formData?.typeId, formData?.categoryId, formData?.subCategoryId, formData?.licenceDetails, uploadDocument]);
 
 
+    console.log(scheme, 'sc');
+    
 
     const runValidation = async (submitted) => {
         const result = await validateForm(formData, scheme);
@@ -803,11 +848,11 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                                     paddingVertical: 12
                                 }}
                                 textStyle={{ color: "white" }}
-                                disabled={
-                                    selectedCustomers
-                                        ? false
-                                        : (!isFormValid)
-                                }
+                                // disabled={
+                                //     selectedCustomers
+                                //         ? false
+                                //         : (!isFormValid)
+                                // }
                             >
                                 {selectedCustomers
                                     ? "Select"

@@ -162,7 +162,8 @@ export const SELECTOR_ENTITY_CONFIG = {
 };
 
 
-export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, licenceDetails, uploadDocument) => {
+export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, licenceDetails, uploadDocument, isFromRegistration=true) => {
+ 
     const scheme = {};
 
     // ---------- GENERAL DETAILS ----------
@@ -186,7 +187,8 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
                 'isMobileVerified',
                 'isEmailVerified',
                 'stationCode',
-                "isBuyer",
+            
+                 ...(isFromRegistration ? ['isBuyer'] : []),
                 ...(uploadDocument ? ['isPanVerified'] : []),
             ].includes(field?.attributeKey)
         );
@@ -225,6 +227,7 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
     if (licenceDetails && uploadDocument) {
         const customerDocs = [];
 
+
         const licenceDocs = licenceDetails.licence.map((licence) => {
             const docTypeId = licence?.docTypeId;
 
@@ -242,16 +245,8 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
             // ✅ iterate fields directly (NO .fields)
             matchedGroup?.forEach((field) => {
                 if (field?.attributeKey !== "isFileUploaded") {
-                    // if (
-                    //     field.attributeKey === "hospitalCode" &&
-                    //     categoryId != 5
-                    // ) {
-                    //     return;
-                    // }
-
-                    docObj[field.attributeKey] = field;
+                    docObj[field.attributeKey == 'registrationDate'? 'licenceValidUpto':field.attributeKey ] = field;
                 } else {
-                    // ✅ FILE FIELD — THIS WAS MISSING
                     customerDocs.push({
                         ...field,
                         fieldAttributeKey: docTypeId,

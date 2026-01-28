@@ -898,7 +898,9 @@ const RegisterForm = () => {
                                 Assign to Customer
                             </Button>
 
-                            <Button onPress={() => handleuploadDocument()} disabled={(!isFormValid || isDirty)} style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6" } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white", fontSize: 15 }}>
+                            <Button onPress={() => handleuploadDocument()} 
+                            // disabled={(!isFormValid || isDirty)}
+                             style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6" } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white", fontSize: 15 }}>
                                 {uploadDocument ? 'Register' : 'Upload Dcouments'}
                             </Button>
                         </AppView>) :
