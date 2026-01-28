@@ -404,7 +404,7 @@ const CustomerItem = ({
                             ? "register"
                             : "edit";
 
-                navigation.navigate("onboading", {
+                navigation.navigate("onboarding", {
                     customerId: item?.stgCustomerId ?? item?.customerId,
                     isStaging: !!item?.stgCustomerId,
                     action: finalAction,

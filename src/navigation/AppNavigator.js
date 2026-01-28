@@ -354,7 +354,7 @@ const MainStack = () => (
     <Stack.Screen name="OnboardCustomer" component={OnboardCustomer} />
 
 
-    <Stack.Screen name="onboading" component={RegisterForm} />
+    <Stack.Screen name="onboarding" component={RegisterForm} />
 
     {/* Product Stack - opens without bottom tabs */}
     <Stack.Screen name="ProductStack" component={ProductStack} />

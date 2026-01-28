@@ -16,7 +16,7 @@ import AnimatedContent from "../../../components/view/AnimatedContent";
 import AppView from "../../../components/AppView";
 import Button from "../../../components/Button";
 import { ErrorMessage } from "../../../components/view/error";
-import { validateForm, converScheme, initialFormData, buildCreatePayload, buildDraftPayload, updateFormData, getChangedValues } from "./utils/fieldMeta";
+import { validateForm, converScheme, initialFormData, buildCreatePayload, buildDraftPayload, updateFormData, getChangedValues, getMetaById } from "./utils/fieldMeta";
 import validateScheme from "./utils/validateScheme.json";
 import { AppToastService } from '../../../components/AppToast';
 import ConfirmModal from "../../../components/modals/ConfirmModal"
@@ -121,19 +121,6 @@ const RegisterForm = () => {
     };
 
 
-  
-    // useEffect(() => {
-    //     if (data && !isLoading) {
-    //         setCustomerApiresponse(data);
-    //         setTransferData((prev) => ({ ...prev, ...(data?.generalDetails?.cityId && { cityOptions: [{ id: data?.generalDetails?.cityId, name: data?.generalDetails?.cityName }] }) }))
-    //         setCustomerDetails(updateFormData(data, action));
-    //         setFormData(updateFormData(data, action));
-    //     }
-    //     setDraftValue(draft ?? {});
-
-    // }, [data, isLoading])
-
-
     useEffect(() => {
         const initData = async () => {
             if (!data || isLoading) return;
@@ -212,6 +199,44 @@ const RegisterForm = () => {
         mapping: useRef(null),
         security: useRef(null),
     };
+
+
+
+    useEffect(() => {
+        const fetchAttributes = async () => {
+            if (!formData?.typeId) return;
+            const { type, category, subCategory } = getMetaById();
+            const form = action === 'onboard' || action === 'assigntocustomer' ? 2 : 1;
+            try {
+                setLoading(true);
+
+                const response = await customerAPI.getAttributes(
+                    type,
+                    category,
+                    subCategory,
+                    form
+                );
+
+                if (response?.success && response?.data) {
+
+                    console.log(response?.data);
+                    
+                    // setRawScheme(response.data);
+                }
+            } catch (err) {
+                console.log("Attribute fetch failed, using fallback scheme");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAttributes();
+    }, [
+        formData?.typeId,
+        formData?.categoryId,
+        formData?.subCategoryId,
+    ]);
+
 
 
     const fetchCustomerType = async () => {
@@ -707,7 +732,7 @@ const RegisterForm = () => {
     const renderForm = [
         { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} onPreview={handlePreview} closePreview={closePreview} />, show: uploadDocument, order: (action == 'onboard' || action == 'assigntocustomer') ? 5 : 1 },
         { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} setCustomerDetails={setCustomerDetails} />, show: true, order: 2 },
-        { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSaveDraft={handleSaveDraft} onPreview={handlePreview} closePreview={closePreview}/>, show: true, order: 3 },
+        { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSaveDraft={handleSaveDraft} onPreview={handlePreview} closePreview={closePreview} />, show: true, order: 3 },
         { key: "mapping", component: <MappingDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSave={handleSave} />, show: true, order: 4 },
     ]
 

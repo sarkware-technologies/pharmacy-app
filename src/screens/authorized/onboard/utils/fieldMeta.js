@@ -1,7 +1,29 @@
 
 
 export const orderBy = ["LIC20", "LIC21", "LIC20B", "LIC21B", "REG", "PRLIC"];
+export const CUSTOMER_TYPE_MAP = {
+    1: "PCM",
+    2: "HOSP",
+    3: "DOCT",
+};
 
+export const CUSTOMER_CATEGORY_MAP = {
+    1: "OR",
+    2: "OW",
+    3: "RCW",
+};
+
+export const CUSTOMER_SUBCATEGORY_MAP = {
+    1: "PCL",
+    2: "PIH",
+    3: "PGH",
+};
+
+export const getMetaById = () => ({
+    type: CUSTOMER_TYPE_MAP[formData?.typeId],
+    category: CUSTOMER_CATEGORY_MAP[formData?.categoryId],
+    subCategory: CUSTOMER_SUBCATEGORY_MAP[formData?.subCategoryId],
+});
 export const sortByLicenseCode = (data = []) => {
     const orderMap = orderBy.reduce((acc, code, index) => {
         acc[code] = index;

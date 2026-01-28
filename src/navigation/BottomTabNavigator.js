@@ -275,7 +275,7 @@ const BottomTabNavigator = () => {
     ) {
       redirectedRef.current = true;
 
-      navigation.navigate('onboading', {
+      navigation.navigate('onboarding', {
         customerId: user?.userDetails?.stgCustomerId,
         isStaging: true,
         action: 'assigntocustomer',

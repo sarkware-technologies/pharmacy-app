@@ -1006,7 +1006,7 @@ const CustomerSearch = ({ navigation, route }) => {
                 //   (toastConfig) => Toast.show(toastConfig),
                 //   item.statusName
                 // );
-                navigation.navigate('onboading', { isStaging, customerId, action: "onboard", documentUpload:false })
+                navigation.navigate('onboarding', { isStaging, customerId, action: "onboard", documentUpload:false })
               }}>
               <AppText style={styles.onboardButtonText}>Onboard</AppText>
             </TouchableOpacity>

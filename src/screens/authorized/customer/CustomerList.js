@@ -2318,7 +2318,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
             onPress={() => {
               const customerId = item.stgCustomerId || item.customerId;
               const isStaging = item.stgCustomerId != null;
-              navigation.navigate('onboading', { isStaging, customerId, action: "onboard", documentUpload:false })
+              navigation.navigate('onboarding', { isStaging, customerId, action: "onboard", documentUpload:false })
             }}
           >
             <AppText style={styles.onboardButtonText}>Onboard</AppText>
@@ -2484,7 +2484,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
                         onPress={() => {
                           const customerId = item.stgCustomerId || item.customerId;
                           const isStaging = item.stgCustomerId != null;
-                          navigation.navigate('onboading', { isStaging, customerId, action: item.statusName === 'DRAFT' ?"register":"edit",  })
+                          navigation.navigate('onboarding', { isStaging, customerId, action: item.statusName === 'DRAFT' ?"register":"edit",  })
                           // handleOnboardCustomer(
                           //   navigation,
                           //   customerId,
@@ -3410,7 +3410,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
           <AppText style={styles.headerTitle}>Customers</AppText>
           <View style={styles.headerActions}>
             <PermissionWrapper permission={PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_CREATE_CUSTOMER}>
-              <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('onboading')}>
+              <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('onboarding')}>
                 <AppText style={styles.createButtonText}>CREATE</AppText>
               </TouchableOpacity>
             </PermissionWrapper>

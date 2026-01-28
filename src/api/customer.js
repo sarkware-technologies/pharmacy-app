@@ -905,5 +905,30 @@ export const customerAPI = {
     },
 
 
+      getAttributes: async (
+    type,
+    category,
+    subCategory,
+    form = 1
+) => {
+    try {
+         let endpoint = `/user-management/attribute-master/${form}/attributes?type=${type}`;
+   
+        if (category) {
+            endpoint += `&category=${category}`;
+        }
+        if (subCategory) {
+            endpoint += `&subCategory=${subCategory}`;
+        }
+        const response = await apiClient.get(endpoint);
+        return response;
+    } catch (error) {
+        console.error("Error fetching attributes:", error);
+        throw error;
+    }
+},
+
+
+
 
 };
