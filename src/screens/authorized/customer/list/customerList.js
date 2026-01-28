@@ -139,7 +139,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
                 isScroll={false}
                 header={
                     <AppView>
-                        <AppView backgroundColor={"#fff"}>
+                        <AppView backgroundColor={"#fff"}  style={{ paddingVertical: 12}}>
                             <AppView flexDirection="row" alignItems="center" paddingHorizontal={10} marginBottom={8}>
                                 <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
                                     <Menu />

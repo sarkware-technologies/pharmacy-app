@@ -13,13 +13,13 @@ import Email from "../../../../../components/icons/Email";
 import LinkIcon from "../../../../../components/icons/LinkIcon";
 import ExpandMore from "../../../../../components/icons/expandMore";
 import { useNavigation } from "@react-navigation/native";
-import checkPermission from "../../../../../utils/RBAC/permissionHelper";
 import PERMISSIONS from "../../../../../utils/RBAC/permissionENUM";
 import { Approve, Lock, Reject, UnLock } from "../../../../../components/icons/customerDetails";
 import { customerAPI } from "../../../../../api/customer";
 import AnimatedContent from "../../../../../components/view/AnimatedContent";
 import { SkeletonListItem } from "../../../../../components/SkeletonLoader";
 import usePermissions from "../../../../../utils/RBAC/usePermissions"
+
 /* -------------------- Safe Button -------------------- */
 const Button = ({
     title,
@@ -59,6 +59,47 @@ const Button = ({
 const CustomerView = ({ item, primaryTab, secondaryTab, handleAction }) => {
     const instanceData = item?.instance?.stepInstances?.[0];
     const { can } = usePermissions();
+
+    const editPermissionTabBased = {
+        all: [
+            PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_EDIT,
+            PERMISSIONS.ONBOARDING_WORKFLOW_EDIT,
+        ],
+        waitingForApproval: [
+            PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_EDIT,
+            PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_REASSIGNED_EDIT,
+            PERMISSIONS.ONBOARDING_WORKFLOW_EDIT,
+        ],
+        notOnboarded: [],
+        unverified: [
+            PERMISSIONS.ONBOARDING_LISTING_PAGE_UNVERIFIED_EDIT,
+        ],
+        rejected: [
+            PERMISSIONS.ONBOARDING_LISTING_PAGE_REJECTED_EDIT,
+        ],
+        doctorSupply: [],
+        draft: [
+            PERMISSIONS.ONBOARDING_LISTING_PAGE_DRAFT_EDIT_DELETE,
+        ],
+    };
+
+    const canEnterEditFlow =
+        item?.statusName !== 'NOT-ONBOARDED' &&
+        (
+            item?.statusName === 'DRAFT' ||
+            !!item?.instance?.stepInstances?.length ||
+            (item?.customerId && !item?.stgCustomerId)
+        );
+    const canEditByPermission = can(
+        editPermissionTabBased[primaryTab?.key] || []
+    );
+
+    const unverifiedEdit = can(PERMISSIONS.ONBOARDING_LISTING_PAGE_UNVERIFIED_EDIT);
+
+    const hideEdit =
+        (item?.statusName === 'UNVERIFIED' && !unverifiedEdit) ||
+        item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED' ||
+        (item?.childStageId || []).length > 0;
 
     const statusColor = useMemo(() => {
         const color = {
@@ -225,10 +266,7 @@ const CustomerView = ({ item, primaryTab, secondaryTab, handleAction }) => {
         item?.groupName,
         item?.customerCategory,
     ].filter(Boolean);
-
     const width = `${100 / visibleFields.length - 5}%`;
-
-
 
     return (
         <AppView>
@@ -241,10 +279,22 @@ const CustomerView = ({ item, primaryTab, secondaryTab, handleAction }) => {
                         </AppView>
                     </TextButton>
                 </AppView>
-                <AppView flexDirection={"row"} gap={10}>
-                    <Edit width={15} height={15}  />
-                    <Download width={15} height={15} />
+
+                <AppView flexDirection={"row"} gap={10} >
+                    {canEnterEditFlow && canEditByPermission && !hideEdit && (
+                        <TouchableOpacity   onPress={() => handleAction("EDIT")} >
+                            <Edit width={15} height={15} />
+                        </TouchableOpacity>
+                    )}
+                    {item?.statusName !== 'NOT-ONBOARDED' && (
+
+                          <TouchableOpacity   onPress={() => handleAction("DOWNLOAD")}>
+                        <Download width={15} height={15} />
+                        </TouchableOpacity>
+                    )}
+
                 </AppView>
+
             </AppView>
             <AppView marginTop={10} flexDirection={"row"} alignItems={"center"} justifyContent={"space-between"}>
                 <AppView maxWidth={"80%"} flexDirection={"row"} alignItems={"center"} gap={7}>
@@ -305,6 +355,8 @@ const CustomerView = ({ item, primaryTab, secondaryTab, handleAction }) => {
     )
 };
 
+
+
 /* -------------------- Parent -------------------- */
 const CustomerItem = ({
     item = {},
@@ -320,7 +372,6 @@ const CustomerItem = ({
     const [isLoading, setIsLoading] = useState(false);
 
     const fetchChildtask = useCallback(async () => {
-        console.log(3904429830,item?.childStageId)
         if (!item?.childStageId) return;
         try {
             setIsLoading(true);
@@ -336,6 +387,7 @@ const CustomerItem = ({
             if (action === "MODIFIED") {
                 setExpandedChild((prev) => (prev === customerId ? null : customerId));
             }
+           
             else if (action == "APPROVE" || action == "linkaged" || action == 'details') {
                 navigation.navigate('CustomerDetail', {
                     customerId: item?.stgCustomerId ?? item?.customerId,
@@ -343,6 +395,20 @@ const CustomerItem = ({
                     activeTab: action == 'APPROVE' ? 'linkaged' : action,
                     activeSubTab: action == 'details' ? 'divisions' : 'hierarchy',
                 })
+            }
+            else if (action === "ONBOARD" || action === "EDIT") {
+                const finalAction =
+                    action === "ONBOARD"
+                        ? "onboard"
+                        : item?.statusName === "DRAFT"
+                            ? "register"
+                            : "edit";
+
+                navigation.navigate("onboading", {
+                    customerId: item?.stgCustomerId ?? item?.customerId,
+                    isStaging: !!item?.stgCustomerId,
+                    action: finalAction,
+                });
             }
             else {
                 _handleAction?.(item, action);
@@ -366,6 +432,10 @@ const CustomerItem = ({
         if (expandedChild === customerId) fetchChildtask();
         else setChildTask([]);
     }, [expandedChild, customerId, fetchChildtask]);
+
+
+
+
 
     return (
         <AppView backgroundColor="white" marginBottom={16} marginHorizontal={10} borderRadius={16} padding={20}>

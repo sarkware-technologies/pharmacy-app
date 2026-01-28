@@ -56,6 +56,9 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
         }
     }, [search, primaryTab, secondaryTab, appliedFilter]);
 
+const refreshCurrentPage = useCallback(() => {
+  fetchCustomers(page, false);
+}, [fetchCustomers, page]);
     const loadMore = useCallback(() => {
         if (loading || !hasMore) return;
 
@@ -73,6 +76,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
                 secondaryTab={secondaryTab}
                 loading={loading}
                 searchText={search}
+                refreshCurrentPage={refreshCurrentPage}
             />
         </AppView>
     );

@@ -2,6 +2,7 @@
 /* eslint-disable react/no-unstable-nested-components */
 /* eslint-disable no-dupe-keys */
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+
 import {
   View,
   StyleSheet,
@@ -1681,8 +1682,6 @@ const CustomerList = ({ navigation: navigationProp }) => {
   };
 
   const handleRejectConfirm = async (comment) => {
-
-
     try {
       showLoader();
       const instanceId = selectedCustomerForAction?.instaceId || selectedCustomerForAction?.stgCustomerId;
@@ -1708,6 +1707,9 @@ const CustomerList = ({ navigation: navigationProp }) => {
       };
 
       const response = await customerAPI.workflowAction(instanceId, actionDataPyaload);
+
+      console.log(response);
+      
 
       setRejectModalVisible(false);
 

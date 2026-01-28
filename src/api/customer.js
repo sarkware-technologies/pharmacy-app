@@ -894,5 +894,16 @@ export const customerAPI = {
     },
 
 
+      getDocZip: async (customerId, isStaging) => {
+        try {
+            const response = await apiClient.get(`/user-management/customer/download-doc-zip?customerId=${customerId}&isStaging=${isStaging}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching latest draft:', error);
+            throw error;
+        }
+    },
+
+
 
 };

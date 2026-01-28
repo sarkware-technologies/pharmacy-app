@@ -239,8 +239,6 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
 };
 
 
-
-
 const validateValue = (value, field) => {
     const rules = field?.validationRules || [];
     const isBooleanField = field?.attributeType === "boolean";
