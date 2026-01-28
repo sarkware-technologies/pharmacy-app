@@ -27,8 +27,8 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
                     customerGroupIds: appliedFilter?.customerGroup ?? [],
                     stateIds: appliedFilter?.status ?? [],
                     categoryCode: appliedFilter?.category ?? [],
-                    stateIds:appliedFilter?.state?.map((e)=>Number(e))??[],
-                    cityIds:appliedFilter?.city?.map((e)=>Number(e))??[]
+                    stateIds: appliedFilter?.state?.map((e) => Number(e)) ?? [],
+                    cityIds: appliedFilter?.city?.map((e) => Number(e)) ?? []
                 });
 
                 const newData = result?.data?.customers || [];
@@ -56,9 +56,14 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
         }
     }, [search, primaryTab, secondaryTab, appliedFilter]);
 
-const refreshCurrentPage = useCallback(() => {
-  fetchCustomers(page, false);
-}, [fetchCustomers, page]);
+
+    
+    const refreshCurrentPage = useCallback(() => {
+        fetchCustomers(page, false);
+    }, [fetchCustomers, page]);
+
+
+
     const loadMore = useCallback(() => {
         if (loading || !hasMore) return;
 
