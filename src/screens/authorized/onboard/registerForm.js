@@ -203,9 +203,18 @@ const RegisterForm = () => {
 
 
     useEffect(() => {
+        console.log(4564564);
+
         const fetchAttributes = async () => {
+
+            console.log(formData, 657567);
+
             if (!formData?.typeId) return;
-            const { type, category, subCategory } = getMetaById();
+            const { type, category, subCategory } = getMetaById(formData);
+
+            console.log(type);
+            console.log(category);
+             console.log(subCategory);
             const form = action === 'onboard' || action === 'assigntocustomer' ? 2 : 1;
             try {
                 setLoading(true);
@@ -217,11 +226,8 @@ const RegisterForm = () => {
                     form
                 );
 
-                if (response?.success && response?.data) {
-
-                    console.log(response?.data);
-                    
-                    // setRawScheme(response.data);
+                if (response?.success && response?.data?.sections) {
+                    setRawScheme(response?.data?.sections);
                 }
             } catch (err) {
                 console.log("Attribute fetch failed, using fallback scheme");
@@ -386,6 +392,7 @@ const RegisterForm = () => {
     }, [rawScheme, formData?.typeId, formData?.categoryId, formData?.subCategoryId, formData?.licenceDetails, uploadDocument]);
 
 
+    console.log(scheme, 'scheme');
 
     const runValidation = async (submitted) => {
         const result = await validateForm(formData, scheme);
@@ -397,6 +404,9 @@ const RegisterForm = () => {
             setError({});
         }
     };
+
+    console.log(error);
+
 
     useEffect(() => {
         runValidation(isFormSubmited);
@@ -759,7 +769,8 @@ const RegisterForm = () => {
     }, [action]);
 
 
-    const isDirty = useMemo(() => Object.entries(getChangedValues(customerDetails ?? {}, formData) ?? {}).length == 0)
+    // const isDirty = useMemo(() => Object.entries(getChangedValues(customerDetails ?? {}, formData) ?? {}).length == 0)
+    const isDirty=false
     const showSendRequest =
         action === 'register' &&
         transferData?.licenseResponse?.conflicts.some(
@@ -782,6 +793,9 @@ const RegisterForm = () => {
 
 
     console.log(formData, 'formdata');
+
+    console.log(error, 'sc');
+    
 
 
 
@@ -921,14 +935,14 @@ const RegisterForm = () => {
                                     paddingVertical: 12
                                 }}
                                 textStyle={{ color: "white" }}
-                                disabled={
-                                    !showSendRequest &&
-                                    (
-                                        action === "edit"
-                                            ? isDirty
-                                            : (!isFormValid || isDirty)
-                                    )
-                                }
+                                // disabled={
+                                //     !showSendRequest &&
+                                //     (
+                                //         action === "edit"
+                                //             ? isDirty
+                                //             : (!isFormValid || isDirty)
+                                //     )
+                                // }
                             >
                                 {showSendRequest
                                     ? "Send Request"

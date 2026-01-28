@@ -408,6 +408,7 @@ const CustomerItem = ({
                     customerId: item?.stgCustomerId ?? item?.customerId,
                     isStaging: !!item?.stgCustomerId,
                     action: finalAction,
+                 ...(action === "ONBOARD" && { documentUpload: false }),
                 });
             }
             else {

@@ -912,7 +912,7 @@ export const customerAPI = {
     form = 1
 ) => {
     try {
-         let endpoint = `/user-management/attribute-master/${form}/attributes?type=${type}`;
+         let endpoint = `/user-management/attribute-master/forms/${form}/attributes?type=${type}`;
    
         if (category) {
             endpoint += `&category=${category}`;

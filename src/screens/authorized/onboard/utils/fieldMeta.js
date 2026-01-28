@@ -11,6 +11,8 @@ export const CUSTOMER_CATEGORY_MAP = {
     1: "OR",
     2: "OW",
     3: "RCW",
+    4: "PRI",
+    5: "GOV",
 };
 
 export const CUSTOMER_SUBCATEGORY_MAP = {
@@ -19,10 +21,10 @@ export const CUSTOMER_SUBCATEGORY_MAP = {
     3: "PGH",
 };
 
-export const getMetaById = () => ({
-    type: CUSTOMER_TYPE_MAP[formData?.typeId],
-    category: CUSTOMER_CATEGORY_MAP[formData?.categoryId],
-    subCategory: CUSTOMER_SUBCATEGORY_MAP[formData?.subCategoryId],
+export const getMetaById = (data) => ({
+    type: CUSTOMER_TYPE_MAP[data?.typeId],
+    category: CUSTOMER_CATEGORY_MAP[data?.categoryId],
+    subCategory: CUSTOMER_SUBCATEGORY_MAP[data?.subCategoryId],
 });
 export const sortByLicenseCode = (data = []) => {
     const orderMap = orderBy.reduce((acc, code, index) => {
@@ -165,15 +167,15 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
 
     // ---------- GENERAL DETAILS ----------
     if (validateScheme?.generalDetails) {
-        scheme.generalDetails = validateScheme.generalDetails.filter((field) => {
-            if (
-                field?.attributeKey === "specialist" ||
-                field?.attributeKey === "clinicName"
-            ) {
-                return typeId === 3; // show only when typeId = 3
-            }
-            return true;
-        });
+        scheme.generalDetails = validateScheme.generalDetails
+            .filter(
+                (field) =>
+                ((!Array.isArray(field?.validationRules) ||
+                    field.validationRules.length > 0) || field.isMandatory)
+            )
+            .map((field) => ({
+                ...field,
+            }));
     }
 
     // ---------- DEFAULT (only stationCode) ----------
@@ -185,15 +187,14 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
                 'isEmailVerified',
                 'stationCode',
                 ...(uploadDocument ? ['isPanVerified'] : []),
-            ].includes(field?.fieldAttributeKey)
+            ].includes(field?.attributeKey)
         );
 
         if (uploadDocument) {
             scheme.customerDocs = [
                 ...(scheme.customerDocs ?? []),
                 ...validateScheme.default.filter(field =>
-                    field?.attributeType === "file" &&
-                    (typeId == 3 || field?.fieldAttributeKey == 1)
+                    field?.typeId != 0
                 ),
             ];
         }
@@ -206,41 +207,54 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
         const requiredKeys = ["mobile", "email", ...(uploadDocument ? ['panNumber'] : []), ...(uploadDocument ? ['gstNumber'] : []),];
 
         scheme.securityDetails = validateScheme.securityDetails.filter((e) =>
-            requiredKeys.includes(e?.fieldAttributeKey)
+            requiredKeys.includes(e?.attributeKey)
         );
-        if (uploadDocument) {
-            scheme.customerDocs = [
-                ...(scheme.customerDocs ?? []),
-                ...validateScheme.securityDetails.filter(
-                    (e) => !requiredKeys.includes(e?.fieldAttributeKey)
-                ),
-            ];
-        }
+        // if (uploadDocument) {
+        //     scheme.customerDocs = [
+        //         ...(scheme.customerDocs ?? []),
+        //         ...validateScheme.securityDetails.filter(
+        //             (e) => !requiredKeys.includes(e?.attributeKey)
+        //         ),
+        //     ];
+        // }
     }    // ---------- LICENCE DETAILS + CUSTOMER DOCS ----------
+
+
+
     if (licenceDetails && uploadDocument) {
         const customerDocs = [];
 
         const licenceDocs = licenceDetails.licence.map((licence) => {
-            const docObj = { documentName: licence?.code };
+            const docTypeId = licence?.docTypeId;
 
-            const matchedDoc =
+            const docObj = {
+                docTypeId,
+                documentName: licence?.code, // optional (UI only)
+            };
+
+            // ✅ find correct license group
+            const matchedGroup =
                 validateScheme?.licenseDetails?.license?.find(
-                    (doc) => doc?.documentName === licence?.code
+                    (group) => group?.[0]?.typeId == docTypeId
                 );
 
-            matchedDoc?.fields?.forEach((field) => {
-                if (field?.attributeType !== "file") {
-                    if (
-                        field.fieldAttributeKey === "hospitalCode" &&
-                        categoryId != 5
-                    ) {
-                        return; // skip this field
-                    }
-                    docObj[field.fieldAttributeKey] = field;
+            // ✅ iterate fields directly (NO .fields)
+            matchedGroup?.forEach((field) => {
+                if (field?.attributeKey !== "isFileUploaded") {
+                    // if (
+                    //     field.attributeKey === "hospitalCode" &&
+                    //     categoryId != 5
+                    // ) {
+                    //     return;
+                    // }
+
+                    docObj[field.attributeKey] = field;
                 } else {
+                    // ✅ FILE FIELD — THIS WAS MISSING
                     customerDocs.push({
                         ...field,
-                        fieldAttributeKey: licence?.docTypeId,
+                        fieldAttributeKey: docTypeId,
+                        docTypeId,
                         documentName: licence?.code,
                     });
                 }
@@ -250,13 +264,18 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
         });
 
         scheme.licenceDetails = licenceDocs;
-        if (uploadDocument) {
-            scheme.customerDocs = [
-                ...(scheme.customerDocs ?? []),
-                ...customerDocs,
-            ];
-        }
+
+        scheme.customerDocs = [
+            ...(scheme.customerDocs ?? []),
+            ...customerDocs,
+        ];
     }
+
+
+
+
+
+
     return scheme;
 };
 
@@ -275,13 +294,19 @@ const validateValue = (value, field) => {
 
         switch (rule.ruleType) {
             case "required":
+            case "custom":
                 // ✅ Boolean must be TRUE
                 if (isBooleanField) {
+
+                    console.log(field, value, 'fromoefidfhiosebtd');
+
                     if (value !== true) return rule.errorMessage;
                 } else {
                     if (isEmpty) return rule.errorMessage;
                 }
                 break;
+
+
 
             case "minLength":
                 if (!isEmpty && value.length < Number(rule.ruleValue)) {
@@ -294,6 +319,7 @@ const validateValue = (value, field) => {
                     return rule.errorMessage;
                 }
                 break;
+
 
             case "pattern":
                 if (!isEmpty && !new RegExp(rule.ruleValue).test(value)) {
@@ -378,11 +404,11 @@ export const validateForm = async (payload, scheme) => {
     const generalFields = scheme?.generalDetails || [];
 
     generalFields.forEach((field) => {
-        const value = payload?.generalDetails?.[field.fieldAttributeKey];
+        const value = payload?.generalDetails?.[field.attributeKey];
         const error = validateValue(value, field);
 
         if (error) {
-            setDeep(errors, ["generalDetails", field.fieldAttributeKey], error);
+            setDeep(errors, ["generalDetails", field.attributeKey], error);
         }
     });
 
@@ -390,46 +416,50 @@ export const validateForm = async (payload, scheme) => {
     const defaultFields = scheme?.default || [];
 
     defaultFields.forEach((field) => {
-        const value = payload?.[field.fieldAttributeKey];
+        const value = payload?.[field.attributeKey];
         const error = validateValue(value, field);
 
         if (error) {
-            setDeep(errors, [field.fieldAttributeKey], error);
+            setDeep(errors, [field.attributeKey], error);
         }
     });
 
     const securityFields = scheme?.securityDetails || [];
 
     securityFields.forEach((field) => {
-        const value = payload?.securityDetails?.[field.fieldAttributeKey];
+        const value = payload?.securityDetails?.[field.attributeKey];
         const error = validateValue(value, field);
         if (error) {
-            setDeep(errors, ["securityDetails", field.fieldAttributeKey], error);
+            setDeep(errors, ["securityDetails", field.attributeKey], error);
         }
     });
 
     const customerDocsFields = scheme?.customerDocs || [];
 
     customerDocsFields.forEach((field) => {
-        const value = payload?.customerDocs?.find((e) => e?.docTypeId == field?.fieldAttributeKey);
-        const error = validateValue(value, field);
+        // Only customer docs (skip license fields)
+
+        const doc = payload?.customerDocs?.find(
+            (e) => e?.docTypeId == field.typeId
+        );
+
+        const error = validateValue(doc, field);
+
         if (error) {
-            setDeep(errors, ["customerDocs", field.fieldAttributeKey], error);
+            setDeep(errors, ["customerDocs", field.typeId], error);
         }
     });
-
-
     const licenseFields = scheme?.licenceDetails || [];
 
     licenseFields.forEach((docSchema) => {
         const licenceValue =
             payload?.licenceDetails?.licence?.find(
-                (e) => e?.code == docSchema?.documentName
+                (e) => e?.docTypeId == docSchema?.docTypeId
             );
         const localError = {};
 
         Object.entries(docSchema).forEach(([key, fieldConfig]) => {
-            if (key === "documentName") return;
+            if (key === "docTypeId") return;
 
             const fieldValue = licenceValue?.[key] ?? null;
 
