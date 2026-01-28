@@ -186,6 +186,7 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
                 'isMobileVerified',
                 'isEmailVerified',
                 'stationCode',
+                "isBuyer",
                 ...(uploadDocument ? ['isPanVerified'] : []),
             ].includes(field?.attributeKey)
         );
@@ -294,19 +295,20 @@ const validateValue = (value, field) => {
 
         switch (rule.ruleType) {
             case "required":
-            case "custom":
-                // ✅ Boolean must be TRUE
                 if (isBooleanField) {
-
-                    console.log(field, value, 'fromoefidfhiosebtd');
-
                     if (value !== true) return rule.errorMessage;
                 } else {
                     if (isEmpty) return rule.errorMessage;
                 }
                 break;
 
-
+            case "custom":
+                if (isBooleanField) {
+                    if (value !== true) return rule.errorMessage;
+                } else {
+                    if (isEmpty) return rule.errorMessage;
+                }
+                break;
 
             case "minLength":
                 if (!isEmpty && value.length < Number(rule.ruleValue)) {
@@ -416,11 +418,20 @@ export const validateForm = async (payload, scheme) => {
     const defaultFields = scheme?.default || [];
 
     defaultFields.forEach((field) => {
-        const value = payload?.[field.attributeKey];
-        const error = validateValue(value, field);
+        if (field.attributeKey != 'isBuyer') {
+            const value = payload?.[field.attributeKey];
+            const error = validateValue(value, field);
 
-        if (error) {
-            setDeep(errors, [field.attributeKey], error);
+            if (error) {
+                setDeep(errors, [field.attributeKey], error);
+            }
+        }
+        else {
+            if (!payload?.[field.attributeKey]) {
+                if (!payload?.mapping?.pharmacy?.length != 0) {
+                    setDeep(errors, [field.attributeKey], field?.validationRules?.[0]?.errorMessage);
+                }
+            }
         }
     });
 
@@ -435,22 +446,22 @@ export const validateForm = async (payload, scheme) => {
     });
 
     const customerDocsFields = scheme?.customerDocs || [];
-
+    console.log(customerDocsFields, payload?.customerDocs, 238497239)
     customerDocsFields.forEach((field) => {
         // Only customer docs (skip license fields)
-
         const doc = payload?.customerDocs?.find(
             (e) => e?.docTypeId == field.typeId
         );
-
-        const error = validateValue(doc, field);
-
+        if (doc) {
+            console.log(field, 23834340279)
+            console.log(doc?.fileName, 23840279)
+        }
+        const error = validateValue(doc?.fileName, field);
         if (error) {
             setDeep(errors, ["customerDocs", field.typeId], error);
         }
     });
     const licenseFields = scheme?.licenceDetails || [];
-
     licenseFields.forEach((docSchema) => {
         const licenceValue =
             payload?.licenceDetails?.licence?.find(
@@ -603,7 +614,6 @@ export const buildCreatePayload = (formData) => {
 
 export const buildDraftPayload = (formData, isExistingDraft = false) => {
 
-    console.log(formData, 'ex');
 
     const doctors = cleanMapping(formData.mapping?.doctors);
     const hospitals = cleanMapping(formData.mapping?.hospitals);

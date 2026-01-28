@@ -203,18 +203,13 @@ const RegisterForm = () => {
 
 
     useEffect(() => {
-        console.log(4564564);
 
         const fetchAttributes = async () => {
 
-            console.log(formData, 657567);
 
             if (!formData?.typeId) return;
             const { type, category, subCategory } = getMetaById(formData);
 
-            console.log(type);
-            console.log(category);
-             console.log(subCategory);
             const form = action === 'onboard' || action === 'assigntocustomer' ? 2 : 1;
             try {
                 setLoading(true);
@@ -653,8 +648,6 @@ const RegisterForm = () => {
         const payload = buildDraftPayload(data, true);
         try {
             const response = await customerAPI.saveExistingCustomerDraft(payload);
-            console.log(response);
-
             if (response?.success) {
                 setItsSaveExDraft(true)
                 AppToastService.show(response?.message, "success", "Draft Saved");
@@ -770,7 +763,7 @@ const RegisterForm = () => {
 
 
     // const isDirty = useMemo(() => Object.entries(getChangedValues(customerDetails ?? {}, formData) ?? {}).length == 0)
-    const isDirty=false
+    const isDirty = false
     const showSendRequest =
         action === 'register' &&
         transferData?.licenseResponse?.conflicts.some(
@@ -793,9 +786,6 @@ const RegisterForm = () => {
 
 
     console.log(formData, 'formdata');
-
-    console.log(error, 'sc');
-    
 
 
 
@@ -935,14 +925,14 @@ const RegisterForm = () => {
                                     paddingVertical: 12
                                 }}
                                 textStyle={{ color: "white" }}
-                                // disabled={
-                                //     !showSendRequest &&
-                                //     (
-                                //         action === "edit"
-                                //             ? isDirty
-                                //             : (!isFormValid || isDirty)
-                                //     )
-                                // }
+                            // disabled={
+                            //     !showSendRequest &&
+                            //     (
+                            //         action === "edit"
+                            //             ? isDirty
+                            //             : (!isFormValid || isDirty)
+                            //     )
+                            // }
                             >
                                 {showSendRequest
                                     ? "Send Request"

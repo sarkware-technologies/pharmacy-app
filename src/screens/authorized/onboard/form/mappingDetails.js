@@ -394,7 +394,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
             <View style={OnboardStyle.selectedItemsContainer}>
                 {data.map((item, index) => (
                     <View
-                        key={item.id+index}
+                        key={item.id + index}
 
                     >
                         {/* CHIP PRESS */}
@@ -948,8 +948,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
                             </AppView>
                         )}
-
-
+                        {error?.isBuyer && <AppText fontFamily="regular" style={{ marginTop: 10, paddingLeft: 0 }} fontWeight={400} color="red" >{error?.isBuyer}</AppText>}
 
                         {/* Customer Group */}
 
