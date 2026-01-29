@@ -43,7 +43,8 @@ const CustomerSearchPage = ({ }) => {
                 isScroll={false}
                 header={
                     <AppView backgroundColor={"white"} paddingHorizontal={15} paddingBottom={10}>
-                        <CustomerSearch searchRef={searchRef} backgroundColor={{ searchBar: "#EDEDED", searchContainer: '#fff' }} filterConfig={{ backButton: true, search: true, filter: true, calender: false }} searchText={searchText} setSearchText={setSearchText} appliedFilter={appliedFilter} handleApplyFilters={(val) => handleApplyFilters(val)} />
+                        <CustomerSearch searchRef={searchRef} backgroundColor={{ searchBar: "#EDEDED", searchContainer: '#fff' }}
+                            filterConfig={{ backButton: true, search: true, filter: true, calender: false }} searchText={searchText} setSearchText={setSearchText} appliedFilter={appliedFilter} handleApplyFilters={(val) => handleApplyFilters(val)} />
                     </AppView>
                 }
                 body={

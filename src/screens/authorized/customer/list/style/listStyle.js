@@ -110,7 +110,6 @@ const Liststyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         borderRadius: 12,
-        paddingHorizontal: 12,
         paddingVertical: 6,
     },
     searchInput: {

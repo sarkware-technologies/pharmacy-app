@@ -21,11 +21,11 @@ const CustomerSearch = ({ handleApplyFilters, appliedFilter, setSearchText, sear
     return (
         <AppView style={Liststyles.searchContainer} marginTop={7} backgroundColor={backgroundColor?.searchContainer} >
             {filterConfig?.search && (
-                <AppView style={Liststyles.searchBar} backgroundColor={backgroundColor?.searchBar}>
+                <AppView paddingRight={filterConfig?.backButton ? 12 : 0} paddingHorizontal={!filterConfig?.backButton ? 12 : 0} style={Liststyles.searchBar} backgroundColor={backgroundColor?.searchBar}>
                     {!filterConfig?.backButton ? (
                         <Search color="#999" />
                     ) : (
-                        <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={{ paddingRight: 1, paddingVertical: 10, paddingLeft: 18 }}>
                             <Svg width="8" height="14" viewBox="0 0 8 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <Path d="M6.625 1L1 6.625L6.625 12.25" stroke="#F7941E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </Svg>

@@ -1,4 +1,4 @@
-import { FlatList } from "react-native-gesture-handler";
+
 import { act, useCallback, useEffect, useMemo, useState } from "react";
 import CustomerItem from "./CustomerItem";
 import { SkeletonList } from "../../../../../components/SkeletonLoader";
@@ -7,7 +7,7 @@ import { AppText } from "../../../../../components";
 import Liststyles from "../style/listStyle";
 import People from '../../../../../components/icons/People';
 import WorkflowTimelineModal from "../../../../../components/modals/WorkflowTimelineModal";
-import { ActivityIndicator } from "react-native";
+import { ActivityIndicator, FlatList, RefreshControl } from "react-native";
 import DocumentsModal from '../../../../../components/modals/documents/DocumentsModal'
 import DocumentPreviewModal from '../../../../../components/modals/documents/DocumentPreviewModal'
 import { AppToastService } from '../../../../../components/AppToast';
@@ -20,7 +20,7 @@ import { showLoader, hideLoader } from '../../../../../components/ScreenLoader';
 import { useDispatch, useSelector } from 'react-redux';
 
 
-const CustomerListView = ({ customers = [], loadMore, primaryTab, secondaryTab, loading, searchText, refreshCurrentPage }) => {
+const CustomerListView = ({ customers = [], loadMore, primaryTab, secondaryTab, loading, searchText, refreshCurrentPage, refreshing }) => {
 
     const loggedInUser = useSelector(state => state.auth.user);
 
@@ -221,7 +221,7 @@ const CustomerListView = ({ customers = [], loadMore, primaryTab, secondaryTab, 
                 setRejectModalVisible(false);
                 AppToastService.show("Customer has been rejected!", "error", "Reject");
                 setActionCustomer(null);
-                refreshCurrentPage?.()
+                refreshCurrentPage?.(true)
             }
 
         } catch (error) {
@@ -259,7 +259,8 @@ const CustomerListView = ({ customers = [], loadMore, primaryTab, secondaryTab, 
                     maxToRenderPerBatch={10}
                     windowSize={5}
                     ListFooterComponent={renderFooter}
-
+                    refreshing={refreshing}
+                    onRefresh={refreshCurrentPage}
                 />
             )}
 

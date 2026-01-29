@@ -82,15 +82,17 @@ const FilterModal = ({
   });
 
   useEffect(() => {
-    setFilters({
-      customerGroup: selected?.customerGroup ?? [],
-      status: selected?.status ?? [],
-      type: selected?.type ?? [],
-      category: selected?.category ?? [],
-      subcategory: selected?.subcategory ?? [],
-      state: selected?.state ?? [],
-      city: selected?.city ?? [],
-    });
+    if ((selected?.customerGroup ?? [])?.length != 0 || (selected?.status ?? [])?.length != 0 || (selected?.type ?? [])?.length != 0 || (selected?.category ?? [])?.length != 0 || (selected?.subcategory ?? [])?.length != 0 || (selected?.state ?? [])?.length != 0 ||(selected?.city ?? [])?.length != 0 ) {
+      setFilters({
+        customerGroup: selected?.customerGroup ?? [],
+        status: selected?.status ?? [],
+        type: selected?.type ?? [],
+        category: selected?.category ?? [],
+        subcategory: selected?.subcategory ?? [],
+        state: selected?.state ?? [],
+        city: selected?.city ?? [],
+      });
+    }
   }, [selected]);
 
   useEffect(() => {
@@ -488,27 +490,21 @@ const FilterModal = ({
                   )}
 
                   {/* OPTIONS */}
-                  {/* OPTIONS */}
                   <ScrollView style={styles.optionsList} keyboardShouldPersistTaps="handled">
-                    {activeSection === "category" && filters.type.length === 0 && (
+                    {activeSection === "category" && filters.type.length === 0 ? (
                       <AppText style={styles.noResults}>Please select a type first</AppText>
-                    )}
-
-                    {activeSection === "subcategory" && filters.category.length === 0 && (
+                    ) : activeSection === "subcategory" && filters.category.length === 0 ? (
                       <AppText style={styles.noResults}>Please select a category first</AppText>
-                    )}
-
-                    {activeSection === "city" && filters.state.length === 0 ? (
+                    ) : activeSection === "city" && filters.state.length === 0 ? (
                       <AppText style={styles.noResults}>Please select a state first</AppText>
                     ) : filteredData.length === 0 || rawList.length <= 1 ? (
-                      // rawList.length <= 1 means only "All" exists (i.e. nothing to list)
                       <AppText style={styles.noResults}>No results found</AppText>
                     ) : (
                       <View style={{ gap: 16 }}>
                         {/*
-        Only filter out "All" when rawList indicates the list is empty.
-        Keep "All" when there are real items to select.
-      */}
+                        Only filter out "All" when rawList indicates the list is empty.
+                        Keep "All" when there are real items to select.
+                      */}
                         {filteredData
                           .filter(item => !(rawList.length <= 1 && item === "All"))
                           .map((item, index) => {

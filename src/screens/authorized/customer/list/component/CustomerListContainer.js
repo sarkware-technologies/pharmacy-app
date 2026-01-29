@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import CustomerListView from "./CustomerListView";
 import { customerAPI } from "../../../../../api/customer";
 import AppView from "../../../../../components/AppView";
@@ -8,16 +8,20 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
-
+    const loadingRef = useRef(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     const fetchCustomers = useCallback(
-        async (pageNo = 1, append = false) => {
-            if (loading) return;
-            try {
-                setLoading(true);
+        async ({ pageNo = 1, append = false, limit = 10 }) => {
+            if (loadingRef.current) return;
 
+            loadingRef.current = true;
+            setLoading(true);
+
+            try {
                 const result = await customerAPI.getCustomersList({
                     page: pageNo,
+                    limit,
                     searchText: search,
                     statusIds: primaryTab?.statusIds ?? [],
                     isStaging: primaryTab?.isStaging,
@@ -33,8 +37,8 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
                     subCategoryCode: appliedFilter?.subcategory ?? [],
                     ...((selectedDate?.startDate && selectedDate?.endDate) && { startDate: selectedDate?.startDate, endDate: selectedDate?.endDate }),
                 });
-
                 const newData = result?.data?.customers || [];
+
                 setCustomers(prev =>
                     append ? [...prev, ...newData] : newData
                 );
@@ -43,6 +47,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
             } catch (e) {
                 console.error("API error:", e);
             } finally {
+                loadingRef.current = false;
                 setLoading(false);
             }
         },
@@ -59,7 +64,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
             setPage(1);
             setHasMore(true);
             setCustomers([]);
-            fetchCustomers(1, false);
+            fetchCustomers({ pageNo: 1, append: false });
         }
         else {
             setCustomers([]);
@@ -68,9 +73,19 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
 
 
 
-
-    const refreshCurrentPage = useCallback(() => {
-        fetchCustomers(page, false);
+    const refreshCurrentPage = useCallback(async (reFetch = false) => {
+        let fetchPage = 1;
+        let limit = 10;
+        if (reFetch) {
+            fetchPage = page;
+            limit = 10 * page;
+        }
+        // setCustomers([]);
+        setRefreshing(true);
+        setPage(fetchPage);
+        setHasMore(true);
+        await fetchCustomers({ pageNo: 1, append: false, limit });
+        setRefreshing(false);
     }, [fetchCustomers, page]);
 
 
@@ -79,7 +94,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
         if (loading || !hasMore) return;
         const nextPage = page + 1;
         setPage(nextPage);
-        fetchCustomers(nextPage, true);
+        fetchCustomers({ pageNo: nextPage, append: true });
     }, [page, loading, hasMore, fetchCustomers]);
 
     return (
@@ -91,6 +106,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
                 secondaryTab={secondaryTab}
                 loading={loading}
                 searchText={search}
+                refreshing={refreshing}
                 refreshCurrentPage={refreshCurrentPage}
             />
         </AppView>
