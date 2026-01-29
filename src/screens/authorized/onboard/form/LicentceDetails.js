@@ -259,7 +259,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                         };
                     }
                     if (uploadFile?.cityId && uploadFile?.City) {
-                        setTransferData((prev) => ({ ...prev, cityOptions: [{ id: uploadFile?.cityId, name: uploadFile?.City }] }))
+                        setTransferData((prev) => ({ ...prev, cityOptions: [{ id: Number(uploadFile?.cityId), name: uploadFile?.City }] }))
                     }
                     // General details auto-fill (SAFE merge)
                     updatedForm = {

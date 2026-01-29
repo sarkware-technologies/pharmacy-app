@@ -477,10 +477,28 @@ const RegisterForm = () => {
                         },
                     };
 
-                    await customerAPI.draftEdit(
-                        customerApiresponse?.instance?.workflowInstance?.id,
-                        draftEditPayload
-                    );
+                    try {
+                        const response = await customerAPI.draftEdit(
+                            customerApiresponse?.instance?.workflowInstance?.id,
+                            draftEditPayload
+                        );
+
+                        if (response?.success) {
+                            AppToastService.show(
+                                response?.message || "Draft updated successfully",
+                                "success",
+                                "Draft Saved"
+                            );
+                        }
+                    } catch (error) {
+
+                        const errorMessage =
+                            error?.response?.data?.message ??
+                            error?.message ??
+                            "Something went wrong while saving draft";
+
+                        AppToastService.show(errorMessage, "error", 'Draft Error');
+                    }
                 }
 
                 AppToastService.show("Customer Edit Success", "success", "Edited");
@@ -488,10 +506,18 @@ const RegisterForm = () => {
             }
             else {
                 // ✅ CREATE FLOW → VALIDATION REQUIRED
-                const response = await customerAPI.createCustomer(payload);
-                if (response?.success) {
-                    AppToastService.show(response?.message, "success", "created");
-                    navigation.navigate("RegistrationSuccess", {});
+                try {
+                    // ✅ CREATE FLOW → VALIDATION REQUIRED
+                    const response = await customerAPI.createCustomer(payload);
+
+                    if (response?.success) {
+                        AppToastService.show(response?.message, "success", "created");
+                        navigation.navigate("RegistrationSuccess", {});
+                    }
+                } catch (error) {
+                    // Prefer backend error message if available
+                    const errorMessage = error?.message || "Something went wrong. Please try again.";
+                    AppToastService.show(errorMessage, "error", "Create Error");
                 }
             }
         } catch (err) {
@@ -584,9 +610,6 @@ const RegisterForm = () => {
         if (!result.isValid) return;
 
         try {
-
-
-
             const response = await customerAPI.createCustomer(payload);
             if (itsSaveExDraft) {
                 const {
@@ -613,10 +636,26 @@ const RegisterForm = () => {
                         isExisting: true
                     };
 
-                    await customerAPI.createAssignedCustomer(assignPayload);
+                    try {
+                        const response = await customerAPI.createAssignedCustomer(assignPayload);
+
+                        if (response?.success) {
+                            AppToastService.show(
+                                response?.message ?? "Customer assigned successfully",
+                                "success",
+                                "Assigned"
+                                
+                            );
+                        } 
+                    } catch (error) {
+                        const errorMessage =
+                            error?.response?.data?.message ??
+                            error?.message ??
+                            "Something went wrong while assigning customer";
+
+                        AppToastService.show(errorMessage, "error", 'Assign Error');
+                    }
                 }
-
-
 
             }
         } catch (err) {
@@ -664,11 +703,9 @@ const RegisterForm = () => {
                 c?.existingCustomerId &&
                 c?.statusCode == 203
         );
-
         if (!customerData) {
             return;
         }
-
         try {
             const response = await customerAPI.sendRequest(
                 customerData.existingCustomerId,
@@ -898,9 +935,9 @@ const RegisterForm = () => {
                                 Assign to Customer
                             </Button>
 
-                            <Button onPress={() => handleuploadDocument()} 
-                            // disabled={(!isFormValid || isDirty)}
-                             style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6" } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white", fontSize: 15 }}>
+                            <Button onPress={() => handleuploadDocument()}
+                                // disabled={(!isFormValid || isDirty)}
+                                style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6" } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white", fontSize: 15 }}>
                                 {uploadDocument ? 'Register' : 'Upload Dcouments'}
                             </Button>
                         </AppView>) :
