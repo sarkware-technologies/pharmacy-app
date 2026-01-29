@@ -400,8 +400,6 @@ const RegisterForm = () => {
         }
     };
 
-    console.log(error);
-
 
     useEffect(() => {
         runValidation(isFormSubmited);
@@ -644,9 +642,9 @@ const RegisterForm = () => {
                                 response?.message ?? "Customer assigned successfully",
                                 "success",
                                 "Assigned"
-                                
+
                             );
-                        } 
+                        }
                     } catch (error) {
                         const errorMessage =
                             error?.response?.data?.message ??
@@ -670,7 +668,6 @@ const RegisterForm = () => {
             const response = await customerAPI.saveCustomerDraft(payload);
             if (response?.success) {
                 AppToastService.show(response?.message, "success", "Draft Saved");
-
                 setFormData(prev => ({
                     ...prev,
                     stgCustomerId: response?.data?.data?.stgCustomerId,
@@ -755,7 +752,7 @@ const RegisterForm = () => {
 
 
     useEffect((e) => {
-        console.log(error, 3249823468)
+        console.log(error, "error")
     }, [error])
 
 

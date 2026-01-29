@@ -542,7 +542,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
 
                                                     <AppView flexDirection={"row"} alignItems={"center"} style={{ flex: 1, gap: 6 }}>
-                                                        {pharmacy?.isProcessed === false && pharmacy?.allMandatoryDocsUploaded !== false && (
+                                                        {pharmacy?.isProcessed !==  false && pharmacy?.allMandatoryDocsUploaded !== false && (
                                                             <CheckCircle color="#169560" height={18} width={18} />
                                                         )}
                                                         <AppText style={OnboardStyle.pharmacyTagText} numberOfLines={1} ellipsizeMode="tail">
@@ -949,6 +949,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                             </AppView>
                         )}
                         {error?.isBuyer && <AppText fontFamily="regular" style={{ marginTop: 10, paddingLeft: 0 }} fontWeight={400} color="red" >{error?.isBuyer}</AppText>}
+                        {error?.allMandatoryDocsUploaded && <AppText fontFamily="regular" style={{ marginTop: 10, paddingLeft: 0 }} fontWeight={400} color="red" >{error?.allMandatoryDocsUploaded}</AppText>}
 
                         {/* Customer Group */}
 
