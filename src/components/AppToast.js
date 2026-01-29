@@ -102,6 +102,9 @@ export const AppToastService = {
     label // optional
   ) => {    
     showToastRef?.(message, type, label);
+
+    console.log('triggeing');
+    
   },
 };
 
