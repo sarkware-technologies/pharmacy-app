@@ -2,14 +2,27 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import CustomerListView from "./CustomerListView";
 import { customerAPI } from "../../../../../api/customer";
 import AppView from "../../../../../components/AppView";
+import { useNavigation } from "@react-navigation/native";
 
 const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter, searchRequired, selectedDate }) => {
+    const navigation = useNavigation();
     const [customers, setCustomers] = useState([]);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const loadingRef = useRef(false);
     const [refreshing, setRefreshing] = useState(false);
+
+    useEffect(() => {
+        const unsubscribe = navigation.getParent()?.addListener("tabPress", e => {
+            setCustomers([]);
+            setPage(1);
+            setHasMore(true);
+            fetchCustomers({ pageNo: 1, append: false });
+        });
+        return unsubscribe;
+    }, [navigation]);
+
 
     const fetchCustomers = useCallback(
         async ({ pageNo = 1, append = false, limit = 10 }) => {
