@@ -162,8 +162,8 @@ export const SELECTOR_ENTITY_CONFIG = {
 };
 
 
-export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, licenceDetails, uploadDocument, isFromRegistration=true) => {
- 
+export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, licenceDetails, uploadDocument, isFromRegistration = true) => {
+
     const scheme = {};
 
     // ---------- GENERAL DETAILS ----------
@@ -187,12 +187,14 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
                 'isMobileVerified',
                 'isEmailVerified',
                 'stationCode',
-            
-                 ...(isFromRegistration ? ['isBuyer'] : []),
+                ...(isFromRegistration ? ['isBuyer'] : []),
                 ...(uploadDocument ? ['isPanVerified'] : []),
             ].includes(field?.attributeKey)
         );
 
+        if (isFromRegistration) {
+            scheme.default.push({ attributeKey: 'allMandatoryDocsUploaded' })
+        }
         if (uploadDocument) {
             scheme.customerDocs = [
                 ...(scheme.customerDocs ?? []),
@@ -201,8 +203,6 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
                 ),
             ];
         }
-
-
     }
 
     // ---------- SECURITY DETAILS + CUSTOMER DOCS ----------
@@ -212,25 +212,12 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
         scheme.securityDetails = validateScheme.securityDetails.filter((e) =>
             requiredKeys.includes(e?.attributeKey)
         );
-        // if (uploadDocument) {
-        //     scheme.customerDocs = [
-        //         ...(scheme.customerDocs ?? []),
-        //         ...validateScheme.securityDetails.filter(
-        //             (e) => !requiredKeys.includes(e?.attributeKey)
-        //         ),
-        //     ];
-        // }
     }    // ---------- LICENCE DETAILS + CUSTOMER DOCS ----------
-
-
 
     if (licenceDetails && uploadDocument) {
         const customerDocs = [];
-
-
         const licenceDocs = licenceDetails.licence.map((licence) => {
             const docTypeId = licence?.docTypeId;
-
             const docObj = {
                 docTypeId,
                 documentName: licence?.code, // optional (UI only)
@@ -245,7 +232,7 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
             // ✅ iterate fields directly (NO .fields)
             matchedGroup?.forEach((field) => {
                 if (field?.attributeKey !== "isFileUploaded") {
-                    docObj[field.attributeKey == 'registrationDate'? 'licenceValidUpto':field.attributeKey ] = field;
+                    docObj[field.attributeKey == 'registrationDate' ? 'licenceValidUpto' : field.attributeKey] = field;
                 } else {
                     customerDocs.push({
                         ...field,
@@ -258,20 +245,12 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
 
             return docObj;
         });
-
         scheme.licenceDetails = licenceDocs;
-
         scheme.customerDocs = [
             ...(scheme.customerDocs ?? []),
             ...customerDocs,
         ];
     }
-
-
-
-
-
-
     return scheme;
 };
 
@@ -413,25 +392,36 @@ export const validateForm = async (payload, scheme) => {
     const defaultFields = scheme?.default || [];
 
     defaultFields.forEach((field) => {
-        if (field.attributeKey != 'isBuyer') {
-            const value = payload?.[field.attributeKey];
-            const error = validateValue(value, field);
+        if (field.attributeKey == 'allMandatoryDocsUploaded') {
+            const hasMissingDocs =
+                [payload?.mapping?.groupHospitals ?? [],
+                payload?.mapping?.hospitals ?? [],
+                payload?.mapping?.pharmacy ?? [],
+                payload?.mapping?.doctors ?? [],
+                payload?.mapping?.hospitals?.flatMap(h => h?.pharmacy ?? []) ??[],
+                ].flat().some(item => item?.allMandatoryDocsUploaded === false);
 
-            if (error) {
-                setDeep(errors, [field.attributeKey], error);
+            if (hasMissingDocs) {
+                setDeep(errors, [field.attributeKey], "Mandatory fields are missing in mapped entities. Please complete or remove them.");
             }
-        }
-        else {
+
+        } else if (field.attributeKey == 'isBuyer') {
             if (!payload?.[field.attributeKey]) {
                 if (!payload?.mapping?.pharmacy?.length != 0) {
                     setDeep(errors, [field.attributeKey], field?.validationRules?.[0]?.errorMessage);
                 }
             }
+        } else {
+            const value = payload?.[field.attributeKey];
+            const error = validateValue(value, field);
+            if (error) {
+                setDeep(errors, [field.attributeKey], error);
+            }
         }
+
     });
 
     const securityFields = scheme?.securityDetails || [];
-
     securityFields.forEach((field) => {
         const value = payload?.securityDetails?.[field.attributeKey];
         const error = validateValue(value, field);
@@ -447,10 +437,6 @@ export const validateForm = async (payload, scheme) => {
         const doc = payload?.customerDocs?.find(
             (e) => e?.docTypeId == field.typeId
         );
-        if (doc) {
-            console.log(field, 23834340279)
-            console.log(doc?.fileName, 23840279)
-        }
         const error = validateValue(doc?.fileName, field);
         if (error) {
             setDeep(errors, ["customerDocs", field.typeId], error);
@@ -463,14 +449,10 @@ export const validateForm = async (payload, scheme) => {
                 (e) => e?.docTypeId == docSchema?.docTypeId
             );
         const localError = {};
-
         Object.entries(docSchema).forEach(([key, fieldConfig]) => {
             if (key === "docTypeId") return;
-
             const fieldValue = licenceValue?.[key] ?? null;
-
             const error = validateValue(fieldValue, fieldConfig);
-
             if (error) {
                 localError[key] = error;
             }
@@ -480,7 +462,6 @@ export const validateForm = async (payload, scheme) => {
             setDeep(errors, ["licenceDetails", licenceValue?.docTypeId], localError);
         }
     });
-
 
     /* ---------- GLOBAL VALIDITY ---------- */
     const isValid = Object.keys(errors).length === 0;
