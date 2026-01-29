@@ -1,7 +1,7 @@
 import { TouchableOpacity } from "react-native";
 import Search from '../../../../../components/icons/Search';
 import Filter from '../../../../../components/icons/Filter';
-import Calendar from '../../../../../components/icons/Calendar';
+import CalendarIcon from '../../../../../components/icons/Calendar';
 import AppView from "../../../../../components/AppView";
 import Liststyles from "../style/listStyle";
 import { AppInput } from "../../../../../components";
@@ -9,7 +9,7 @@ import FilterModal from "../../../../../components/FilterModal";
 import { useEffect, useState } from "react";
 import Svg, { Path } from "react-native-svg";
 import { useNavigation } from "@react-navigation/native";
-
+import DateRangePicker from "../../../../../components/view/dateRange"
 
 const CustomerSearch = ({ handleApplyFilters, appliedFilter, setSearchText, searchText, handleFocus, filterConfig = { backButton: false, search: true, filter: true, calender: true }, backgroundColor = { searchBar: "#fff", searchContainer: '#F8F9FA' }, searchRef }) => {
 
@@ -17,6 +17,7 @@ const CustomerSearch = ({ handleApplyFilters, appliedFilter, setSearchText, sear
 
 
     const [filterModalVisible, setFilterModalVisible] = useState(false);
+    const [dateRangeVisible, setDateRangeVisible] = useState(false);
     return (
         <AppView style={Liststyles.searchContainer} marginTop={7} backgroundColor={backgroundColor?.searchContainer} >
             {filterConfig?.search && (
@@ -36,7 +37,7 @@ const CustomerSearch = ({ handleApplyFilters, appliedFilter, setSearchText, sear
                         placeholder="Search customer name/code..."
                         value={searchText}
                         onChangeText={(text) => setSearchText?.(text)}
-                        placeholderTextColor="#777777" 
+                        placeholderTextColor="#777777"
                         onFocus={() => handleFocus?.()}
                         backgroundColor={backgroundColor?.searchBar}
                     />
@@ -51,8 +52,9 @@ const CustomerSearch = ({ handleApplyFilters, appliedFilter, setSearchText, sear
                 </TouchableOpacity>
             )}
             {filterConfig?.calender && (
-                <TouchableOpacity style={Liststyles.searchFilterButton}>
-                    <Calendar />
+
+                <TouchableOpacity style={Liststyles.searchFilterButton} onPress={() => setDateRangeVisible(true)}>
+                    <CalendarIcon />
                 </TouchableOpacity>
             )}
 
@@ -62,7 +64,7 @@ const CustomerSearch = ({ handleApplyFilters, appliedFilter, setSearchText, sear
                 onApply={(val) => handleApplyFilters?.(val)}
                 selected={appliedFilter}
             />
-
+            <DateRangePicker visible={dateRangeVisible} />
         </AppView>
     )
 }
