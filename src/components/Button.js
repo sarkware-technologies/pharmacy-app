@@ -6,6 +6,7 @@ const Button = ({
   children,
   onPress,
   loading = false,
+  backgroundColor = '#F7941E',
   disabled = false,
   style,
   textStyle,
@@ -17,7 +18,7 @@ const Button = ({
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={isDisabled ? null : onPress}
-      style={[styles.button, isDisabled && styles.disabled, style]}
+      style={[styles.button, isDisabled && styles.disabled, style, { backgroundColor }]}
       disabled={isDisabled}
       testID={testID}
     >
@@ -38,7 +39,6 @@ const Button = ({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#F7941E',
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 12,

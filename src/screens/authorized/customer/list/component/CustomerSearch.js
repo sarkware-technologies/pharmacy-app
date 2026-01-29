@@ -11,7 +11,7 @@ import Svg, { Path } from "react-native-svg";
 import { useNavigation } from "@react-navigation/native";
 import DateRangePicker from "../../../../../components/view/dateRange"
 
-const CustomerSearch = ({ handleApplyFilters, appliedFilter, setSearchText, searchText, handleFocus, filterConfig = { backButton: false, search: true, filter: true, calender: true }, backgroundColor = { searchBar: "#fff", searchContainer: '#F8F9FA' }, searchRef }) => {
+const CustomerSearch = ({ handleApplyFilters, appliedFilter, setSearchText, searchText, handleFocus, filterConfig = { backButton: false, search: true, filter: true, calender: true }, backgroundColor = { searchBar: "#fff", searchContainer: '#F8F9FA' }, searchRef, selectedDate, setSelectedDate, }) => {
 
     const navigation = useNavigation();
 
@@ -64,7 +64,9 @@ const CustomerSearch = ({ handleApplyFilters, appliedFilter, setSearchText, sear
                 onApply={(val) => handleApplyFilters?.(val)}
                 selected={appliedFilter}
             />
-            <DateRangePicker visible={dateRangeVisible} />
+            {dateRangeVisible && (
+                <DateRangePicker handleChange={(val) => setSelectedDate?.(val)} value={selectedDate} visible={dateRangeVisible} onClose={() => setDateRangeVisible(false)} />
+            )}
         </AppView>
     )
 }

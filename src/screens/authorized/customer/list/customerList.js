@@ -25,6 +25,9 @@ const CustomerList = ({ navigation: navigationProp }) => {
     const [activeSubTab, setActiveSubTab] = useState("newcustomer");
     const [appliedFilter, setAppliedFilter] = useState(null);
     const [searchText, setSearchText] = useState("");
+    const [selectedDate, setSelectedDate] = useState(null);
+
+
 
 
     const [tabs, setTabs] = useState([]);
@@ -224,12 +227,15 @@ const CustomerList = ({ navigation: navigationProp }) => {
                         )}
                         <AppView marginTop={5} paddingHorizontal={15}>
                             <CustomerSearch
+                                setSelectedDate={setSelectedDate}
+                                selectedDate={selectedDate}
                                 handleFocus={() => navigation.navigate('CustomerStack', {
                                     screen: 'CustomerSearchMain',
                                     params: { activeTabValue, activeTabSubValue, filter: appliedFilter }
                                 })}
                                 searchText={searchText}
-                                setSearchText={setSearchText} appliedFilter={appliedFilter} handleApplyFilters={(val) => handleApplyFilters(val)} />
+                                setSearchText={setSearchText}
+                                appliedFilter={appliedFilter} handleApplyFilters={(val) => handleApplyFilters(val)} />
                         </AppView>
                     </AppView>
                 }
@@ -239,6 +245,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
                         primaryTab={activeTabValue}
                         secondaryTab={activeTabSubValue}
                         appliedFilter={appliedFilter}
+                        selectedDate={selectedDate}
                     />
 
                 }
