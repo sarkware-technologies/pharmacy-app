@@ -165,6 +165,7 @@ export const SELECTOR_ENTITY_CONFIG = {
 export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, licenceDetails, uploadDocument, isFromRegistration = true) => {
 
     const scheme = {};
+    const mandatory = {};
 
     // ---------- GENERAL DETAILS ----------
     if (validateScheme?.generalDetails) {
@@ -263,12 +264,13 @@ const validateValue = (value, field) => {
         value === undefined ||
         value === null ||
         value === "";
-
+    if (!field?.isMandatory) return;
     for (let i = 0; i < rules.length; i++) {
         const rule = rules[i];
 
         switch (rule.ruleType) {
             case "required":
+
                 if (isBooleanField) {
                     if (value !== true) return rule.errorMessage;
                 } else {
@@ -398,7 +400,7 @@ export const validateForm = async (payload, scheme) => {
                 payload?.mapping?.hospitals ?? [],
                 payload?.mapping?.pharmacy ?? [],
                 payload?.mapping?.doctors ?? [],
-                payload?.mapping?.hospitals?.flatMap(h => h?.pharmacy ?? []) ??[],
+                payload?.mapping?.hospitals?.flatMap(h => h?.pharmacy ?? []) ?? [],
                 ].flat().some(item => item?.allMandatoryDocsUploaded === false);
 
             if (hasMissingDocs) {
@@ -406,10 +408,17 @@ export const validateForm = async (payload, scheme) => {
             }
 
         } else if (field.attributeKey == 'isBuyer') {
-            if (!payload?.[field.attributeKey]) {
+
+
+            if ((field?.validationRules?.[0].ruleValue == "mapping-false") && (!payload?.[field.attributeKey])) {
                 if (!payload?.mapping?.pharmacy?.length != 0) {
                     setDeep(errors, [field.attributeKey], field?.validationRules?.[0]?.errorMessage);
                 }
+            } else if (field?.validationRules?.[0].ruleValue == "mapping") {
+                if ((!payload?.mapping?.hospitals?.length != 0) && (!payload?.mapping?.doctors?.length != 0)) {
+                    setDeep(errors, [field.attributeKey], field?.validationRules?.[0]?.errorMessage);
+                }
+
             }
         } else {
             const value = payload?.[field.attributeKey];

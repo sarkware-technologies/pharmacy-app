@@ -123,44 +123,44 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
 
 
 
-     useEffect(() => {
-    
-            const fetchAttributes = async () => {
-    
-    
-                if (!formData?.typeId) return;
-                const { type, category, subCategory } = getMetaById(formData);
-    
-                const form = action === 'onboard' || action === 'assigntocustomer' ? 2 : 1;
-                try {
-                    setLoading(true);
-    
-                    const response = await customerAPI.getAttributes(
-                        type,
-                        category,
-                        subCategory,
-                        form
-                    );
-    
-                    if (response?.success && response?.data?.sections) {
-                        setRawScheme(response?.data?.sections);
-                    }
-                } catch (err) {
-                    console.log("Attribute fetch failed, using fallback scheme");
-                } finally {
-                    setLoading(false);
+    useEffect(() => {
+
+        const fetchAttributes = async () => {
+
+
+            if (!formData?.typeId) return;
+            const { type, category, subCategory } = getMetaById(formData);
+
+            const form = action === 'onboard' || action === 'assigntocustomer' ? 2 : 1;
+            try {
+                setLoading(true);
+
+                const response = await customerAPI.getAttributes(
+                    type,
+                    category,
+                    subCategory,
+                    form
+                );
+
+                if (response?.success && response?.data?.sections) {
+                    setRawScheme(response?.data?.sections);
                 }
-            };
-    
-            fetchAttributes();
-        }, [
-            formData?.typeId,
-            formData?.categoryId,
-            formData?.subCategoryId,
-        ]);
+            } catch (err) {
+                console.log("Attribute fetch failed, using fallback scheme");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAttributes();
+    }, [
+        formData?.typeId,
+        formData?.categoryId,
+        formData?.subCategoryId,
+    ]);
 
 
-        
+
 
 
 
@@ -483,7 +483,7 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
 
 
     console.log(scheme, 'sc');
-    
+
 
     const runValidation = async (submitted) => {
         const result = await validateForm(formData, scheme);
@@ -823,12 +823,9 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                     <AppView>
 
                         <AppView flexDirection={"row"} gap={20} paddingHorizontal={25} paddingVertical={10}>
-                            <Button onPress={() => onClose?.()} style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E" }}>
+                            <Button onPress={() => onClose?.()} style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, paddingVertical: 12 }} backgroundColor="white" textStyle={{ color: "#F7941E" }} >
                                 Cancel
                             </Button>
-                            {/* <Button onPress={() => handleRegister()} style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6", paddingVertical: 12 } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white" }}>
-                                {action == 'register' ? 'Submit' : 'Update'}
-                            </Button> */}
 
                             <Button
                                 onPress={() => {
@@ -838,21 +835,25 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                                         handleRegister();
                                     }
                                 }}
+
+
+                                backgroundColor={
+                                    selectedCustomers
+                                        ? "#F7941E"
+                                        : !isFormValid
+                                            ? "#D3D4D6"
+                                            : "#F7941E"
+                                }
                                 style={{
                                     flex: 1,
-                                    backgroundColor: selectedCustomers
-                                        ? "#F7941E"
-                                        : (!isFormValid)
-                                            ? "#D3D4D6"
-                                            : "#F7941E",
-                                    paddingVertical: 12
+                                    paddingVertical: 12,
                                 }}
                                 textStyle={{ color: "white" }}
-                                // disabled={
-                                //     selectedCustomers
-                                //         ? false
-                                //         : (!isFormValid)
-                                // }
+                            // disabled={
+                            //     selectedCustomers
+                            //         ? false
+                            //         : (!isFormValid)
+                            // }
                             >
                                 {selectedCustomers
                                     ? "Select"

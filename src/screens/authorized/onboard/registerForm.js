@@ -934,14 +934,19 @@ const RegisterForm = () => {
 
                             <Button onPress={() => handleuploadDocument()}
                                 // disabled={(!isFormValid || isDirty)}
-                                style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6" } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }} textStyle={{ color: "white", fontSize: 15 }}>
+                                // style={(!isFormValid || isDirty) ? { flex: 1, backgroundColor: "#D3D4D6" } : { flex: 1, backgroundColor: "#F7941E", paddingVertical: 12 }}
+
+                                backgroundColor={(!isFormValid || isDirty) ? "#D3D4D6" : "#F7941E"}
+                                style={{ flex: 1, paddingVertical: 12 }}
+
+                                textStyle={{ color: "white", fontSize: 15 }}>
                                 {uploadDocument ? 'Register' : 'Upload Dcouments'}
                             </Button>
                         </AppView>) :
                         (<AppView flexDirection={"row"} gap={20} paddingHorizontal={25} paddingVertical={10}>
 
                             {user?.roleName != 'Customer' &&
-                                <Button onPress={() => navigation.goBack()} style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E" }}>
+                                <Button onPress={() => navigation.goBack()} style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, paddingVertical: 12 }} backgroundColor="white" textStyle={{ color: "#F7941E" }}>
                                     Cancel
                                 </Button>
                             }
@@ -949,16 +954,30 @@ const RegisterForm = () => {
 
                             <Button
                                 onPress={showSendRequest ? handleSendRequest : handleRegister}
-                                style={{
-                                    flex: 1,
-                                    backgroundColor: showSendRequest
+                                // style={{
+                                //     flex: 1,
+                                //     backgroundColor: showSendRequest
+                                //         ? "#F7941E"
+                                //         : action === "edit"
+                                //             ? (!isDirty ? "#F7941E" : "#D3D4D6")
+                                //             : (!isFormValid || isDirty)
+                                //                 ? "#D3D4D6"
+                                //                 : "#F7941E",
+                                //     paddingVertical: 12
+                                // }}
+                                backgroundColor={
+                                    showSendRequest
                                         ? "#F7941E"
                                         : action === "edit"
                                             ? (!isDirty ? "#F7941E" : "#D3D4D6")
                                             : (!isFormValid || isDirty)
                                                 ? "#D3D4D6"
-                                                : "#F7941E",
-                                    paddingVertical: 12
+                                                : "#F7941E"
+                                }
+
+                                style={{
+                                    flex: 1,
+                                    paddingVertical: 12,
                                 }}
                                 textStyle={{ color: "white" }}
                             // disabled={
