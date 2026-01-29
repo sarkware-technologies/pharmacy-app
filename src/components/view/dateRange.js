@@ -96,6 +96,7 @@ const DateRangePicker = ({
               flexDirection: "row",
               justifyContent: "space-between",
               marginTop: 30,
+              marginBottom: 10,
             }}
           >
             {startDate && endDate ? (
