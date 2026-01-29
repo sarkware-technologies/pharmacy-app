@@ -39,12 +39,14 @@ const FilterModal = ({
   visible,
   onClose,
   onApply,
-  sections = ["customerGroup", "status", "category", "state", "city"],
-  searchable = ["state", "city"],
+  sections = ["customerGroup", "status", "type", "category", "subcategory", "state", "city"],
+  searchable = ["state", "city", "type", "category", "subcategory"],
   selected = {
     customerGroup: [],
     status: [],
+    type: [],
     category: [],
+    subcategory: [],
     state: [],
     city: [],
   },
@@ -59,6 +61,9 @@ const FilterModal = ({
   // Customer groups from API (for customerGroup filter)
   const [customerGroups, setCustomerGroups] = useState([]);
   const [loadingCustomerGroups, setLoadingCustomerGroups] = useState(false);
+  const [typeData, setTypeData] = useState([]);
+  const [availableCategories, setAvailableCategories] = useState([]);
+  const [availableSubcategories, setAvailableSubcategories] = useState([]);
 
   const slideAnim = useRef(new Animated.Value(height)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -69,20 +74,31 @@ const FilterModal = ({
   const [filters, setFilters] = useState({
     customerGroup: selected?.customerGroup ?? [],
     status: selected?.status ?? [],
+    type: selected?.type ?? [],
     category: selected?.category ?? [],
+    subcategory: selected?.subcategory ?? [],
     state: selected?.state ?? [],
     city: selected?.city ?? [],
   });
+
   useEffect(() => {
-    if (selected?.customerGroup?.length || selected?.status?.length || selected?.category?.length || selected?.state?.length || selected?.city?.length)
-      setFilters({
-        customerGroup: selected.customerGroup ?? [],
-        status: selected.status ?? [],
-        category: selected.category ?? [],
-        state: selected.state ?? [],
-        city: selected.city ?? [],
-      });
+    setFilters({
+      customerGroup: selected?.customerGroup ?? [],
+      status: selected?.status ?? [],
+      type: selected?.type ?? [],
+      category: selected?.category ?? [],
+      subcategory: selected?.subcategory ?? [],
+      state: selected?.state ?? [],
+      city: selected?.city ?? [],
+    });
   }, [selected]);
+
+  useEffect(() => {
+    if (customerTypes) {
+      setTypeData(customerTypes?.map(t => ({ customerCategories: t?.customerCategories, id: t?.code, name: t?.name })));
+    }
+  }, [customerTypes])
+
 
 
   const [states, setStates] = useState([]);
@@ -124,6 +140,36 @@ const FilterModal = ({
       hideSub.remove();
     };
   }, []);
+
+  useEffect(() => {
+    if (!filters.type.length) {
+      setAvailableCategories([]);
+      setFilters(prev => ({ ...prev, category: [], subcategory: [] }));
+      return;
+    }
+
+    const cats = typeData
+      .filter(t => filters.type.includes(t.id))
+      .flatMap(t => t.customerCategories || []);
+    console.log(cats, 2348927)
+    setAvailableCategories(cats?.map(t => ({ customerSubcategories: t?.customerSubcategories, id: t?.code, name: t?.name })));
+  }, [filters.type, typeData]);
+
+
+  useEffect(() => {
+    if (!filters.category.length) {
+      setAvailableSubcategories([]);
+      setFilters(prev => ({ ...prev, subcategory: [] }));
+      return;
+    }
+
+    const subs = availableCategories
+      .filter(c => filters.category.includes(c.id))
+      .flatMap(c => c.customerSubcategories || []);
+
+    setAvailableSubcategories(subs?.map(t => ({ id: t?.code, name: t?.name, })));
+  }, [filters.category, availableCategories]);
+
 
 
   /** FETCH CUSTOMER GROUPS FROM API */
@@ -213,13 +259,6 @@ const FilterModal = ({
           id: s?.id,
           name: s?.name
         }))];
-
-      case 'category':
-        return ['All', ...customerTypes.map(t => ({
-          id: t?.code,
-          name: t?.name
-        }))];
-
       case 'state':
         return ['All', ...states.map(s => ({
           id: s.id,
@@ -231,6 +270,24 @@ const FilterModal = ({
           id: c.id,
           name: c.cityName
         }))];
+      case 'type':
+        return ['All', ...typeData.map(t => ({
+          id: t.id,
+          name: t.name
+        }))];
+
+      case 'category':
+        return ['All', ...availableCategories.map(c => ({
+          id: c.id,
+          name: c.name
+        }))];
+
+      case 'subcategory':
+        return ['All', ...availableSubcategories.map(s => ({
+          id: s.id,
+          name: s.name
+        }))];
+
 
       default:
         return [];
@@ -264,11 +321,21 @@ const FilterModal = ({
           const all = customerGroups.map(g => g.customerGroupId);
           return { ...prev, customerGroup: prev.customerGroup.length === all.length ? [] : all };
         }
+        if (type === "type") {
+          const all = typeData.map(t => t.id);
+          return { ...prev, type: prev.type.length === all.length ? [] : all };
+        }
 
         if (type === "category") {
-          const all = customerTypes.map(t => t.code);
+          const all = availableCategories.map(c => c.id);
           return { ...prev, category: prev.category.length === all.length ? [] : all };
         }
+
+        if (type === "subcategory") {
+          const all = availableSubcategories.map(s => s.id);
+          return { ...prev, subcategory: prev.subcategory.length === all.length ? [] : all };
+        }
+
 
         if (type === "status") {
           const all = customerStatuses.map(s => s.id);
@@ -290,25 +357,22 @@ const FilterModal = ({
     });
   };
 
-  /** CLEAR FILTERS */
   const clearFilters = () => {
-    setFilters({
+    const cleared = {
       customerGroup: [],
-      category: [],
       status: [],
+      type: [],
+      category: [],
+      subcategory: [],
       state: [],
       city: [],
-    });
-    onApply({
-      customerGroup: [],
-      category: [],
-      status: [],
-      state: [],
-      city: [],
-    });
-    handleClose();
+    };
 
+    setFilters(cleared);
+    onApply(cleared);
+    handleClose();
   };
+
 
   /** APPLY FILTERS */
   const applyFilters = () => {
@@ -319,10 +383,13 @@ const FilterModal = ({
   const allSectionConfig = {
     customerGroup: { label: "Customer Group" },
     status: { label: "Status" },
+    type: { label: "Type" },
     category: { label: "Category" },
+    subcategory: { label: "Subcategory" },
     state: { label: "State" },
     city: { label: "City" },
   };
+
 
   const filterSections = sections.map((id) => ({
     id,
@@ -423,6 +490,14 @@ const FilterModal = ({
                   {/* OPTIONS */}
                   {/* OPTIONS */}
                   <ScrollView style={styles.optionsList} keyboardShouldPersistTaps="handled">
+                    {activeSection === "category" && filters.type.length === 0 && (
+                      <AppText style={styles.noResults}>Please select a type first</AppText>
+                    )}
+
+                    {activeSection === "subcategory" && filters.category.length === 0 && (
+                      <AppText style={styles.noResults}>Please select a category first</AppText>
+                    )}
+
                     {activeSection === "city" && filters.state.length === 0 ? (
                       <AppText style={styles.noResults}>Please select a state first</AppText>
                     ) : filteredData.length === 0 || rawList.length <= 1 ? (
@@ -449,11 +524,16 @@ const FilterModal = ({
                                       ? filters.city.length === availableCities.length
                                       : activeSection === "customerGroup"
                                         ? filters.customerGroup.length === customerGroups.length
-                                        : activeSection === "category"
-                                          ? filters.category.length === customerTypes.length
-                                          : filters[activeSection].length === (rawList.length - 1)
+                                        : activeSection === "type"
+                                          ? filters.type.length === typeData.length
+                                          : activeSection === "category"
+                                            ? filters.category.length === availableCategories.length
+                                            : activeSection === "subcategory"
+                                              ? filters.subcategory.length === availableSubcategories.length
+                                              : filters[activeSection].length === (rawList.length - 1)
                                 )
                                 : filters[activeSection].includes(val);
+
 
                             return (
                               <CustomCheckbox

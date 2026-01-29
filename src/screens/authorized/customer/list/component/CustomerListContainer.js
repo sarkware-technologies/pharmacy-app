@@ -28,6 +28,9 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
                     categoryCode: appliedFilter?.category ?? [],
                     stateIds: appliedFilter?.state?.map((e) => Number(e)) ?? [],
                     cityIds: appliedFilter?.city?.map((e) => Number(e)) ?? [],
+                    categoryCode: appliedFilter?.category ?? [],
+                    typeCode: appliedFilter?.type ?? [],
+                    subCategoryCode: appliedFilter?.subcategory ?? [],
                     ...((selectedDate?.startDate && selectedDate?.endDate) && { startDate: selectedDate?.startDate, endDate: selectedDate?.endDate }),
                 });
 
