@@ -3,7 +3,7 @@ import CustomerListView from "./CustomerListView";
 import { customerAPI } from "../../../../../api/customer";
 import AppView from "../../../../../components/AppView";
 
-const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter, searchRequired }) => {
+const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter, searchRequired, selectedDate }) => {
     const [customers, setCustomers] = useState([]);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -27,7 +27,8 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
                     stateIds: appliedFilter?.status ?? [],
                     categoryCode: appliedFilter?.category ?? [],
                     stateIds: appliedFilter?.state?.map((e) => Number(e)) ?? [],
-                    cityIds: appliedFilter?.city?.map((e) => Number(e)) ?? []
+                    cityIds: appliedFilter?.city?.map((e) => Number(e)) ?? [],
+                    ...((selectedDate?.startDate && selectedDate?.endDate) && { startDate: selectedDate?.startDate, endDate: selectedDate?.endDate }),
                 });
 
                 const newData = result?.data?.customers || [];
@@ -42,7 +43,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
                 setLoading(false);
             }
         },
-        [search, primaryTab, secondaryTab, appliedFilter]
+        [search, primaryTab, secondaryTab, appliedFilter, selectedDate]
     );
 
 
@@ -60,7 +61,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
         else {
             setCustomers([]);
         }
-    }, [search, primaryTab, secondaryTab, appliedFilter]);
+    }, [search, primaryTab, secondaryTab, appliedFilter, selectedDate]);
 
 
 
