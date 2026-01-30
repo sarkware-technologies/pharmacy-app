@@ -59,6 +59,22 @@ export const saveToken = async (data) => {
 };
 
 
+export const updateUserDetails = async (data) => {
+  console.log("Saving Token Data:", data);
+  try {
+    await AsyncStorage.setItem("userRole", String(data.roleName));
+    await AsyncStorage.setItem("subrolename", String(data.subrolename));
+    await AsyncStorage.setItem("userId", String(data.userId)); // ✅ FIXED
+    await AsyncStorage.setItem("permissions", JSON.stringify(data.permissions ?? []));
+    await AsyncStorage.setItem("userData", JSON.stringify(data.user ?? {}));
+
+    console.log("AsyncStorage Save → SUCCESS");
+  } catch (e) {
+    console.log("AsyncStorage Save → ERROR", e);
+  }
+};
+
+
 
 export const resendOTP = createAsyncThunk(
   'auth/resendOTP',
@@ -213,13 +229,13 @@ const authSlice = createSlice({
     // },
 
     updateUploadCustomerDocs: (state, action) => {
-  if (state.user?.roleId != 5) return;
+      if (state.user?.roleId != 5) return;
 
-  const details = state.user?.userDetails;
-  if (!details) return;
+      const details = state.user?.userDetails;
+      if (!details) return;
 
-  details.uploadCustomerDocs = action.payload;
-},
+      details.uploadCustomerDocs = action.payload;
+    },
 
   },
   extraReducers: (builder) => {
