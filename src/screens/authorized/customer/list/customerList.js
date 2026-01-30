@@ -11,11 +11,12 @@ import Bell from "../../../../components/icons/Bell";
 import HorizontalSelector from "../../../../components/view/HorizontalSelector";
 import AnimatedContent from "../../../../components/view/AnimatedContent";
 import Container from "../../../../components/view/container"
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import checkPermission from "../../../../utils/RBAC/permissionHelper";
 import CustomerListContainer from "./component/CustomerListContainer"
 import { customerAPI } from "../../../../api/customer";
 import CustomerSearch from "./component/CustomerSearch"
+import PagerView from 'react-native-pager-view';
 
 const CustomerList = ({ navigation: navigationProp }) => {
     const navigationHook = useNavigation();
@@ -27,6 +28,7 @@ const CustomerList = ({ navigation: navigationProp }) => {
     const [searchText, setSearchText] = useState("");
     const [selectedDate, setSelectedDate] = useState(null);
 
+    const pagerRef = useRef(null);
 
 
 
@@ -169,7 +171,10 @@ const CustomerList = ({ navigation: navigationProp }) => {
                             <HorizontalSelector
                                 onTabChange={(index) => {
                                     const selected = tabs[index];
-                                    if (selected) setActiveTab(selected.key);
+                                    if (selected) {
+                                        pagerRef.current?.setPageWithoutAnimation(index);
+                                        setActiveTab(selected.key);
+                                    }
                                 }}
 
                                 activeIndex={activeIndex}
@@ -240,14 +245,35 @@ const CustomerList = ({ navigation: navigationProp }) => {
                     </AppView>
                 }
                 body={
-                    <CustomerListContainer
-                        search={searchText}
-                        primaryTab={activeTabValue}
-                        secondaryTab={activeTabSubValue}
-                        appliedFilter={appliedFilter}
-                        selectedDate={selectedDate}
-                    />
-
+                    <PagerView
+                        ref={pagerRef}
+                        style={{ flex: 1 }}
+                        initialPage={activeIndex}
+                        onPageSelected={(e) => {
+                            const index = e.nativeEvent.position;
+                            const selectedTab = tabs[index];
+                            if (selectedTab) {
+                                setActiveTab(selectedTab.key);
+                            }
+                        }}
+                    >
+                        {tabs.map((tab, index) => (
+                            <View key={tab.key}>
+                                <CustomerListContainer
+                                    search={searchText}
+                                    primaryTab={tab}
+                                    isActive={activeIndex === index}  
+                                    secondaryTab={
+                                        tab.subMenu?.length
+                                            ? tab.subMenu.find(s => s.key === activeSubTab)
+                                            : null
+                                    }
+                                    appliedFilter={appliedFilter}
+                                    selectedDate={selectedDate}
+                                />
+                            </View>
+                        ))}
+                    </PagerView>
                 }
             />
         </SafeAreaView>

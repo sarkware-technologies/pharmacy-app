@@ -15,7 +15,6 @@ const CustomerSearch = ({ handleApplyFilters, appliedFilter, setSearchText, sear
 
     const navigation = useNavigation();
 
-
     const [filterModalVisible, setFilterModalVisible] = useState(false);
     const [dateRangeVisible, setDateRangeVisible] = useState(false);
     return (
@@ -38,7 +37,7 @@ const CustomerSearch = ({ handleApplyFilters, appliedFilter, setSearchText, sear
                         value={searchText}
                         onChangeText={(text) => setSearchText?.(text)}
                         placeholderTextColor="#777777"
-                        onFocus={() => handleFocus?.()}
+                        onPress={() => handleFocus?.()}
                         backgroundColor={backgroundColor?.searchBar}
                     />
                 </AppView>

@@ -50,6 +50,7 @@ const CustomerSearchPage = ({ }) => {
                 body={
                     <CustomerListContainer
                         search={searchText}
+                        isActive={true}
                         primaryTab={activeTabValue}
                         secondaryTab={activeTabSubValue}
                         appliedFilter={appliedFilter}
