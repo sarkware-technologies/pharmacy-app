@@ -4,7 +4,7 @@ import { customerAPI } from "../../../../../api/customer";
 import AppView from "../../../../../components/AppView";
 import { useNavigation } from "@react-navigation/native";
 
-const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter, searchRequired, selectedDate }) => {
+const CustomerListContainer = ({ isActive, search, primaryTab, secondaryTab, appliedFilter, searchRequired, selectedDate }) => {
     const navigation = useNavigation();
     const [customers, setCustomers] = useState([]);
     const [page, setPage] = useState(1);
@@ -14,16 +14,16 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
     const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
+        if (!isActive) return;
         const unsubscribe = navigation.getParent()?.addListener("tabPress", e => {
-            console.log(8947293472)
             setCustomers([]);
             setPage(1);
             setHasMore(true);
             fetchCustomers({ pageNo: 1, append: false });
         });
         return unsubscribe;
-    }, [navigation]);
- 
+    }, [navigation, isActive]);
+
 
     const fetchCustomers = useCallback(
         async ({ pageNo = 1, append = false, limit = 10 }) => {
@@ -70,6 +70,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
 
 
     useEffect(() => {
+        if (!isActive) return;
         const shouldFetch =
             (primaryTab && !searchRequired) ||
             (searchRequired && search?.length > 0);
@@ -83,12 +84,12 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
         else {
             setCustomers([]);
         }
-    }, [search, primaryTab, secondaryTab, appliedFilter, selectedDate]);
+    }, [search, primaryTab, secondaryTab, appliedFilter, selectedDate, isActive]);
 
 
 
     const refreshCurrentPage = useCallback(async (reFetch = false) => {
-        console.log(reFetch,2984273)
+        console.log(reFetch, 2984273)
         let fetchPage = 1;
         let limit = 10;
         if (reFetch) {
@@ -98,7 +99,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
         else {
             setCustomers([]);
         }
-        console.log(page,limit,fetchPage,2321312)
+        console.log(page, limit, fetchPage, 2321312)
         setRefreshing(true);
         setPage(fetchPage);
         setHasMore(true);
@@ -118,6 +119,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
     return (
         <AppView marginTop={5} style={{ flex: 1 }}>
             <CustomerListView
+                isActive={isActive}
                 customers={customers}
                 loadMore={loadMore}
                 primaryTab={primaryTab}

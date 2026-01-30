@@ -20,7 +20,7 @@ import { showLoader, hideLoader } from '../../../../../components/ScreenLoader';
 import { useDispatch, useSelector } from 'react-redux';
 
 
-const CustomerListView = ({ customers = [], loadMore, primaryTab, secondaryTab, loading, searchText, refreshCurrentPage, refreshing }) => {
+const CustomerListView = ({ isActive, customers = [], loadMore, primaryTab, secondaryTab, loading, searchText, refreshCurrentPage, refreshing }) => {
 
     const loggedInUser = useSelector(state => state.auth.user);
 
@@ -122,7 +122,7 @@ const CustomerListView = ({ customers = [], loadMore, primaryTab, secondaryTab, 
         }
     };
 
-    const handleAction = (customer, action) => {        
+    const handleAction = (customer, action) => {
         setActionCustomer(customer);
         setAction(action);
         if (action == 'DOWNLOAD') {
@@ -154,7 +154,7 @@ const CustomerListView = ({ customers = [], loadMore, primaryTab, secondaryTab, 
         loadMore?.();
     }, [loadMore]);
 
-    if (customers?.length === 0 && loading) {
+    if (customers?.length === 0 && loading || !isActive) {
         return <SkeletonList />;
     }
 

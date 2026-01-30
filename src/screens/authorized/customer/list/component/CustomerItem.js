@@ -125,7 +125,7 @@ const CustomerView = ({ item, primaryTab, secondaryTab, handleAction }) => {
                     ? "APPROVED"
                     : instanceData?.stepInstanceStatus ?? item?.statusName;
 
-        if (item?.childStageId?.length) status = "MODIFIED";
+        if (item?.childStageId?.length && primaryTab?.key != "unverified") status = "MODIFIED";
 
         return {
             ...(color[status] ?? color.ACTIVE),
@@ -195,7 +195,7 @@ const CustomerView = ({ item, primaryTab, secondaryTab, handleAction }) => {
             );
         }
 
-        if (action === "MODIFIED") {
+        if (action === "MODIFIED" && primaryTab?.key !='unverified') {
             return (
                 <TouchableOpacity onPress={() => handleAction("MODIFIED")}>
                     <AppView borderColor="#2B2B2B" borderWidth={0.5} padding={11} borderRadius={8}>
@@ -384,7 +384,7 @@ const CustomerItem = ({
         }
     }, [item?.childStageId]);
     const fetchCustomers = () => {
-            refreshCurrentPage?.(true)
+        refreshCurrentPage?.(true)
     }
 
     const handleAction = useCallback(
