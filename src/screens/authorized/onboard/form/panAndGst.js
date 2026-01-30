@@ -215,11 +215,13 @@ const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview,
         e => e.id === formData?.securityDetails?.gstNumber
     );
 
-
-    const isRequired = (attributeKey, key = "securityDetails") =>
-        !!scheme?.[key]?.find(
+    const isRequired = (attributeKey, key = "securityDetails") => {
+        return !!scheme?.[key]?.find(
             (e) => e?.attributeKey === attributeKey
         )?.isMandatory;
+
+    }
+
 
     useEffect(() => {
         setGstOptions(transferData?.gstOptions ?? [])
@@ -238,7 +240,7 @@ const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview,
                     }}
                     accept={[]}
                     onSelectFile={(file) => handleFileUpload(file, 'pan', staticDOCcode.PAN)}
-                    isRequired={true}
+                    isRequired={isRequired("isPanUpload", 'customerDocs')}
                     placeholder="Upload PAN"
                     isLoading={uploading?.['pan']}
                     handleDelete={() => {
@@ -303,6 +305,7 @@ const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview,
                         remove: true,
                     }}
                     placeholder="Upload GST"
+                    isRequired={isRequired("isGstUpload", 'customerDocs')}
                     onSelectFile={(file) => handleFileUpload(file, 'gst', staticDOCcode.GST)}
                     isLoading={uploading?.['gst']}
                     handleDelete={() => {
