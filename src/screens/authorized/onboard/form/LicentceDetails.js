@@ -294,7 +294,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                             ...(addressParts?.address4 && !updatedForm?.generalDetails?.address4
                                 ? { address4: addressParts.address4.trim().slice(0, 60) }
                                 : {}),
-                            ...(uploadFile?.cityId && { cityId: uploadFile?.cityId })
+                            ...(uploadFile?.cityId && { cityId: Number(uploadFile?.cityId) })
 
                         },
                     };

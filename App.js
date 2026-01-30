@@ -68,6 +68,7 @@ const App = () => {
 
     return (
         <Provider store={store}>
+            
             <View style={{ flex: 1 }}>
                 <AppNavigator navigationRef={navigationRef} />
 
@@ -76,13 +77,15 @@ const App = () => {
                         <NoInternetScreen onRetry={() => NetInfo.fetch().then(state => setIsConnected(state.isConnected))} />
                     </View>
                 )}
-                <AppToast />
-                <Toast topOffset={60} />
 
+                <AppToast />
+
+                {/* <Toast topOffset={60} /> */}
+                <ScreenLoader />
 
             </View>
 
-            <ScreenLoader />
+
         </Provider>
     );
 };

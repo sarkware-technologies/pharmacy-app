@@ -83,7 +83,7 @@ export const initialFormData = {
         address4: "",
         pincode: "",
         area: "",
-        cityId: "",
+        cityId: null,
         cityName: "",
         stateId: "",
         ownerName: "",
@@ -318,6 +318,7 @@ const validateValue = (value, field) => {
                 break;
 
             case "file":
+                 if (!field?.isMandatory) continue;
                 if (isEmpty) return rule.errorMessage;
                 break;
 
@@ -387,7 +388,6 @@ export const validateForm = async (payload, scheme) => {
     securityFields.forEach((field) => {
         const value = payload?.securityDetails?.[field.attributeKey];
         const error = validateValue(value, field);
-        console.log(field, error, 23894279)
         if (error) {
             setDeep(errors, ["securityDetails", field.attributeKey], error);
         }
@@ -457,7 +457,6 @@ export const validateForm = async (payload, scheme) => {
 
 
     const customerDocsFields = scheme?.customerDocs || [];
-    console.log(customerDocsFields, payload?.customerDocs, 238497239)
     customerDocsFields.forEach((field) => {
         // Only customer docs (skip license fields)
         const doc = payload?.customerDocs?.find(
@@ -541,7 +540,7 @@ export const buildCreatePayload = (formData) => {
 
             licence: (formData.licenceDetails?.licence || [])
                 .filter(l =>
-                    l?.licenceNo &&                // must exist
+                    l?.licenceNo ||                // must exist
                     l?.licenceValidUpto            // must exist
                 )
                 .map(l => ({

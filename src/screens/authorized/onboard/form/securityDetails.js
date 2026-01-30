@@ -242,7 +242,7 @@ const SecurityDetails = ({ setValue, isAccordion = false, formData, action, erro
                             value={formData?.securityDetails?.mobile} onChangeText={(text) => handleSetValue("mobile", text)} label="Mobile number" isRequired={isRequired("mobile")}
                             suffix={<TouchableOpacity
                                 onPress={() => !formData?.isMobileVerified && secutiryVerfiy("mobile")}
-                                style={{ paddingRight: 10 }}><AppText style={{ color: colors.primary }}>{formData?.isMobileVerified ? 'Verified' : 'Verify'} {!formData?.isMobileVerified && <AppText style={[OnboardStyle.requiredIcon, { fontSize: 14 }]}>*</AppText>}</AppText></TouchableOpacity>}
+                                style={{ paddingRight: 10 }}><AppText style={{ color: colors.primary }}>{formData?.isMobileVerified ? 'Verified' : 'Verify'} {(!formData?.isMobileVerified && isRequired("mobile")) && <AppText style={[OnboardStyle.requiredIcon, { fontSize: 14 }]}>*</AppText>}</AppText></TouchableOpacity>}
                             maxLength={10}
                             error={error?.securityDetails?.mobile ?? error?.isMobileVerified}
                         />
@@ -259,7 +259,7 @@ const SecurityDetails = ({ setValue, isAccordion = false, formData, action, erro
                             disabled={formData?.isEmailVerified} value={formData?.securityDetails?.email} onChangeText={(text) => handleSetValue("email", text)} label="Email address" isRequired={isRequired("email")}
                             suffix={<TouchableOpacity
                                 onPress={() => !formData?.isEmailVerified && secutiryVerfiy("email")}
-                                style={{ paddingRight: 10 }}><AppText style={{ color: colors.primary }}>{formData?.isEmailVerified ? 'Verified' : 'Verify'} {!formData?.isEmailVerified && <AppText style={[OnboardStyle.requiredIcon, { fontSize: 14 }]}>*</AppText>}</AppText></TouchableOpacity>}
+                                style={{ paddingRight: 10 }}><AppText style={{ color: colors.primary }}>{formData?.isEmailVerified ? 'Verified' : 'Verify'} {(!formData?.isEmailVerified && isRequired("email")) && <AppText style={[OnboardStyle.requiredIcon, { fontSize: 14 }]}>*</AppText>}</AppText></TouchableOpacity>}
                         />
                         {otpInProgress?.type == 'email' && (
                             <AnimatedContent>
