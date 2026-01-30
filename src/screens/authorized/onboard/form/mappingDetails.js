@@ -24,7 +24,7 @@ import CheckCircle from '../../../../components/icons/CheckCircle'
 import { colors } from "../../../../styles/colors";
 import ChildLinkageDetails from "../../customer/linkage/childLinkage";
 
-const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection, error, handleSave }) => {
+const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection, error, handleSave, scheme }) => {
     const [toggle, setToggle] = useState("open");
     const [customerOption, setCustomerOption] = useState([]);
     const [activeSelector, setActiveSelector] = useState(null);
@@ -171,8 +171,6 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
             if (entityType === 'pharmacy' && parentHospitalId) {
                 updatedMapping.hospitals = (updatedMapping.hospitals || []).map(hospital => {
                     if (hospital.id !== parentHospitalId) return hospital;
-
-
                     return {
                         ...hospital,
                         pharmacy: updateEntityList(
@@ -182,27 +180,17 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                         ),
                     };
                 });
-
                 return updatedMapping;
             }
 
             if (entityType === 'hospitals') {
-
-
-
-
                 updatedMapping.hospitals = updateEntityList(
                     cleanList(updatedMapping.hospitals, customerId, allowMultiple),
                     items,
                     allowMultiple
                 );
             }
-
             if (entityType === 'doctors') {
-
-
-
-
                 updatedMapping.doctors = updateEntityList(
                     cleanList(updatedMapping.doctors, customerId, allowMultiple),
                     items,
@@ -275,7 +263,6 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
     };
 
 
-    console.log(showAddEntity);
 
 
     const handleChipPress = (item, keyName, parentHospitalId = null) => {
@@ -387,8 +374,6 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
         setValue,
     }) => {
         if (!data.length) return null;
-
-
 
         return (
             <View style={OnboardStyle.selectedItemsContainer}>
@@ -542,7 +527,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
 
 
                                                     <AppView flexDirection={"row"} alignItems={"center"} style={{ flex: 1, gap: 6 }}>
-                                                        {pharmacy?.isProcessed !==  false && pharmacy?.allMandatoryDocsUploaded !== false && (
+                                                        {pharmacy?.isProcessed !== false && pharmacy?.allMandatoryDocsUploaded !== false && (
                                                             <CheckCircle color="#169560" height={18} width={18} />
                                                         )}
                                                         <AppText style={OnboardStyle.pharmacyTagText} numberOfLines={1} ellipsizeMode="tail">
@@ -611,6 +596,19 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
         formData?.mapping?.doctors?.length
     );
 
+    const isRequired = (attributeKey, key = "default") => {
+        const field = scheme?.[key]?.find(
+            (e) => e?.attributeKey === attributeKey
+        );
+        if (!field) return false;
+        if (attributeKey === 'isBuyer') {
+            const rule = field?.validationRules?.[0]?.ruleValue;
+            if (rule == 'mapping') return true;
+            if (rule == 'mapping-false') return !formData?.isBuyer;
+        }
+
+        return !!field?.isMandatory;
+    };
     return (
         <>
             <AppView style={{ marginTop: 20 }}>
@@ -624,7 +622,8 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                             <AppView gap={5} flexDirection={"row"} alignItems={"center"}>
                                 <AppText style={OnboardStyle.accordionTitle}>
                                     Mapping
-                                    {/* <AppText style={OnboardStyle.requiredIcon}>*</AppText> */}
+                                    {(isRequired('isBuyer')) && <AppText style={OnboardStyle.requiredIcon}> *</AppText>}
+
                                 </AppText>
                                 {(formData?.typeId == 3) && (
                                     <AppText fontSize={20} color="#909090" fontFamily="regular" fontWeight={400}>(Optional)</AppText>
@@ -696,7 +695,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                                 <AppView marginTop={20} marginBottom={4}>
                                     <AppView flexDirection={"row"} alignItems={"center"}>
                                         <AppText fontSize={16}>Link child hospital</AppText>
-                                        <AppText style={OnboardStyle.requiredIcon}>*</AppText>
+                                        {(isRequired('isBuyer')) && <AppText style={OnboardStyle.requiredIcon}> *</AppText>}
                                         <TouchableOpacity style={{ paddingLeft: 5 }}>
                                             <Svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <Path d="M6.66667 13.3333C2.98467 13.3333 0 10.3487 0 6.66667C0 2.98467 2.98467 0 6.66667 0C10.3487 0 13.3333 2.98467 13.3333 6.66667C13.3333 10.3487 10.3487 13.3333 6.66667 13.3333ZM6.66667 12C8.08115 12 9.43771 11.4381 10.4379 10.4379C11.4381 9.43771 12 8.08115 12 6.66667C12 5.25218 11.4381 3.89562 10.4379 2.89543C9.43771 1.89524 8.08115 1.33333 6.66667 1.33333C5.25218 1.33333 3.89562 1.89524 2.89543 2.89543C1.89524 3.89562 1.33333 5.25218 1.33333 6.66667C1.33333 8.08115 1.89524 9.43771 2.89543 10.4379C3.89562 11.4381 5.25218 12 6.66667 12ZM6.66667 5.33333C6.84348 5.33333 7.01305 5.40357 7.13807 5.5286C7.2631 5.65362 7.33333 5.82319 7.33333 6V9.33333C7.33333 9.51014 7.2631 9.67971 7.13807 9.80474C7.01305 9.92976 6.84348 10 6.66667 10C6.48986 10 6.32029 9.92976 6.19526 9.80474C6.07024 9.67971 6 9.51014 6 9.33333V6C6 5.82319 6.07024 5.65362 6.19526 5.5286C6.32029 5.40357 6.48986 5.33333 6.66667 5.33333ZM6.66667 4.66667C6.48986 4.66667 6.32029 4.59643 6.19526 4.4714C6.07024 4.34638 6 4.17681 6 4C6 3.82319 6.07024 3.65362 6.19526 3.5286C6.32029 3.40357 6.48986 3.33333 6.66667 3.33333C6.84348 3.33333 7.01305 3.40357 7.13807 3.5286C7.2631 3.65362 7.33333 3.82319 7.33333 4C7.33333 4.17681 7.2631 4.34638 7.13807 4.4714C7.01305 4.59643 6.84348 4.66667 6.66667 4.66667Z" fill="#777777" />

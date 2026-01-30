@@ -40,8 +40,6 @@ const Loading = memo(({ height = "minHeight" }) => {
 
 const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, allowMultiple = true, parentHospitalId = null, action = 'register', customerId, isStaging, parentAction, isProcessed = null }) => {
 
-    console.log(parentAction, 'parentAction');
-    console.log(isProcessed, 'isProcessed');
 
     const route = useRoute();
     const [rawScheme, setRawScheme] = useState(validateScheme);
@@ -123,41 +121,34 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
 
 
 
-    useEffect(() => {
 
-        const fetchAttributes = async () => {
+    const fetchAttributes = async () => {
 
 
-            if (!formData?.typeId) return;
-            const { type, category, subCategory } = getMetaById(formData);
+        if (!formData?.typeId) return;
+        const { type, category, subCategory } = getMetaById(formData);
 
-            const form = action === 'onboard' || action === 'assigntocustomer' ? 2 : 1;
-            try {
-                setLoading(true);
+        const form = action === 'onboard' || action === 'assigntocustomer' ? 2 : 1;
+        try {
+            setLoading(true);
 
-                const response = await customerAPI.getAttributes(
-                    type,
-                    category,
-                    subCategory,
-                    form
-                );
+            const response = await customerAPI.getAttributes(
+                type,
+                category,
+                subCategory,
+                form
+            );
 
-                if (response?.success && response?.data?.sections) {
-                    setRawScheme(response?.data?.sections);
-                }
-            } catch (err) {
-                console.log("Attribute fetch failed, using fallback scheme");
-            } finally {
-                setLoading(false);
+            if (response?.success && response?.data?.sections) {
+                setRawScheme(response?.data?.sections);
             }
-        };
+        } catch (err) {
+            console.log("Attribute fetch failed, using fallback scheme");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        fetchAttributes();
-    }, [
-        formData?.typeId,
-        formData?.categoryId,
-        formData?.subCategoryId,
-    ]);
 
 
 
@@ -177,8 +168,6 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                 // 🔴 CASE 1: Not processed → mapping API ONLY
                 if (isProcessed === false) {
                     response = await customerAPI.getMappingCustomer({ id: customerId });
-                    console.log(response);
-
                 }
                 // 🟢 CASE 2: processed / null → details API
                 else {
@@ -236,7 +225,9 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
 
 
     console.log(formData);
-    console.log(transferData, 'transferData');
+    console.log(error, 'error');
+    
+
 
 
 
@@ -400,15 +391,13 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
                 setLicenseList([]);
                 return;
             }
-
+            fetchAttributes();
             const getLicense = await customerAPI.getLicenseTypes(
                 payload.typeId,
                 payload.categoryId,
                 payload.subCategoryId
             );
 
-
-            console.log(getLicense, 'getLicense');
 
 
             setFormData(prev => {
@@ -654,10 +643,10 @@ const AddEntity = ({ visible, onClose, title, parentData, onSubmit, entityType, 
     };
 
     const renderForm = [
-        { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} formType={"child"} onPreview={handlePreview} closePreview={closePreview} />, show: uploadDocument, order: 1 },
-        { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} calledFrom={'addEntity'} />, show: true, order: 2 },
-        { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} onPreview={handlePreview} closePreview={closePreview} />, show: true, order: 3 },
-        { key: "mapping", component: <MappingDetails error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} parentData={parentData} parentHospitalId={parentHospitalId} />, show: true, order: 4 },
+        { key: "license", component: <LicenseDetails scheme={scheme} setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} formType={"child"} onPreview={handlePreview} closePreview={closePreview} />, show: uploadDocument, order: 1 },
+        { key: "general", component: <GeneralDetails scheme={scheme} setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} calledFrom={'addEntity'} />, show: true, order: 2 },
+        { key: "security", component: <SecurityDetails scheme={scheme} setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} onPreview={handlePreview} closePreview={closePreview} />, show: true, order: 3 },
+        { key: "mapping", component: <MappingDetails scheme={scheme} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} parentData={parentData} parentHospitalId={parentHospitalId} />, show: true, order: 4 },
     ]
 
 

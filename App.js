@@ -75,7 +75,6 @@ const App = () => {
             if (!await AsyncStorage.getItem('authToken')) return
             setFetchingCustomer(true);
             const response = await authAPI.getUserDetails();
-            console.log(response?.data, 23498237)
             if (response?.data) {
                 await updateUserDetails({
                     roleName: response.data?.roleName,
@@ -118,6 +117,7 @@ const App = () => {
 
     return (
         <Provider store={store}>
+
             <View style={{ flex: 1 }}>
                 <AppNavigator navigationRef={navigationRef} />
 
@@ -127,12 +127,14 @@ const App = () => {
                     </View>
                 )}
 
-                <Toast topOffset={60} />
-
                 <AppToast />
+
+                <Toast topOffset={60} />
+                <ScreenLoader />
+
             </View>
 
-            <ScreenLoader />
+
         </Provider>
     );
 };
