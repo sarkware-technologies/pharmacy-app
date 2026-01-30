@@ -93,7 +93,9 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
             fetchPage = page;
             limit = 10 * page;
         }
-        // setCustomers([]);
+        else {
+            setCustomers([]);
+        }
         setRefreshing(true);
         setPage(fetchPage);
         setHasMore(true);
