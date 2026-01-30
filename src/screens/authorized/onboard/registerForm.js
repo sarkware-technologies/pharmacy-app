@@ -202,8 +202,6 @@ const RegisterForm = () => {
 
 
     const fetchAttributes = async () => {
-
-
         if (!formData?.typeId) return;
         const { type, category, subCategory } = getMetaById(formData);
 
@@ -502,8 +500,12 @@ const RegisterForm = () => {
                         navigation.navigate("RegistrationSuccess", {});
                     }
                 } catch (error) {
+                    console.log(error);
+                    
                     // Prefer backend error message if available
                     const errorMessage = error?.message || "Something went wrong. Please try again.";
+                    console.log(errorMessage, 'errorMessage');
+                    
                     AppToastService.show(errorMessage, "error", "Create Error");
                 }
             }

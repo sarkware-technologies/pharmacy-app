@@ -23,13 +23,13 @@ const App = () => {
         // Request permissions at app startup (sequentially)
         const requestPermissions = async () => {
             try {
-                
+
                 // Request permissions one by one
                 const permissions = await requestAllPermissions();
-                
+
                 // Wait a bit to ensure all permission dialogs are closed
                 await new Promise(resolve => setTimeout(resolve, 1000));
-                
+
                 // Mark permissions as requested
                 setPermissionsRequested(true);
             } catch (error) {
@@ -76,13 +76,13 @@ const App = () => {
                         <NoInternetScreen onRetry={() => NetInfo.fetch().then(state => setIsConnected(state.isConnected))} />
                     </View>
                 )}
+                <AppToast />
+                <Toast topOffset={60} />
 
-                 <Toast topOffset={60}  />
 
-            <AppToast/>
             </View>
-           
-            <ScreenLoader/>
+
+            <ScreenLoader />
         </Provider>
     );
 };
