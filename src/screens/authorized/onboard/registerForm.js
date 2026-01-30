@@ -919,7 +919,7 @@ const RegisterForm = () => {
                         (<AppView flexDirection={"row"} gap={20} paddingHorizontal={25} paddingVertical={10}>
 
 
-                            <Button onPress={() => handleAssignToCustomer()} style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, backgroundColor: "white", paddingVertical: 12 }} textStyle={{ color: "#F7941E", fontSize: 15 }}>
+                            <Button onPress={() => handleAssignToCustomer()} style={{ flex: 1, borderColor: "#F7941E", borderWidth: 1, paddingVertical: 12 }} textStyle={{ color: "#F7941E", fontSize: 15 }} backgroundColor="white">
                                 Assign to Customer
                             </Button>
 
