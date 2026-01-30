@@ -169,15 +169,9 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
 
     // ---------- GENERAL DETAILS ----------
     if (validateScheme?.generalDetails) {
-        scheme.generalDetails = validateScheme.generalDetails
-            .filter(
-                (field) =>
-                ((!Array.isArray(field?.validationRules) ||
-                    field.validationRules.length > 0) || field.isMandatory)
-            )
-            .map((field) => ({
-                ...field,
-            }));
+        scheme.generalDetails = validateScheme.generalDetails.map((field) => ({
+            ...field,
+        }));
     }
 
     // ---------- DEFAULT (only stationCode) ----------
@@ -221,7 +215,7 @@ export const converScheme = (validateScheme, typeId, categoryId, subCategoryId, 
             const docTypeId = licence?.docTypeId;
             const docObj = {
                 docTypeId,
-                documentName: licence?.code, // optional (UI only)
+                documentName: licence?.code,
             };
 
             // ✅ find correct license group
@@ -264,13 +258,13 @@ const validateValue = (value, field) => {
         value === undefined ||
         value === null ||
         value === "";
-    if (!field?.isMandatory) return;
+
     for (let i = 0; i < rules.length; i++) {
         const rule = rules[i];
 
         switch (rule.ruleType) {
             case "required":
-
+                if (!field?.isMandatory) return;
                 if (isBooleanField) {
                     if (value !== true) return rule.errorMessage;
                 } else {
@@ -279,6 +273,7 @@ const validateValue = (value, field) => {
                 break;
 
             case "custom":
+                if (!field?.isMandatory) return;
                 if (isBooleanField) {
                     if (value !== true) return rule.errorMessage;
                 } else {
@@ -390,6 +385,19 @@ export const validateForm = async (payload, scheme) => {
         }
     });
 
+
+
+     const securityFields = scheme?.securityDetails || [];
+    securityFields.forEach((field) => {
+        const value = payload?.securityDetails?.[field.attributeKey];
+        const error = validateValue(value, field);
+        if (error) {
+            setDeep(errors, ["securityDetails", field.attributeKey], error);
+        }
+    });
+
+
+
     /* ---------- ROOT LEVEL (DEFAULT) ---------- */
     const defaultFields = scheme?.default || [];
 
@@ -408,8 +416,6 @@ export const validateForm = async (payload, scheme) => {
             }
 
         } else if (field.attributeKey == 'isBuyer') {
-
-
             if ((field?.validationRules?.[0].ruleValue == "mapping-false") && (!payload?.[field.attributeKey])) {
                 if (!payload?.mapping?.pharmacy?.length != 0) {
                     setDeep(errors, [field.attributeKey], field?.validationRules?.[0]?.errorMessage);
@@ -421,23 +427,25 @@ export const validateForm = async (payload, scheme) => {
 
             }
         } else {
+
+            if(!['isMobileVerified', 'isEmailVerified', 'isPanVerified'].includes(field.attributeKey)){
             const value = payload?.[field.attributeKey];
             const error = validateValue(value, field);
+
+            
             if (error) {
                 setDeep(errors, [field.attributeKey], error);
             }
+
+            }
+
+            
+
         }
 
     });
 
-    const securityFields = scheme?.securityDetails || [];
-    securityFields.forEach((field) => {
-        const value = payload?.securityDetails?.[field.attributeKey];
-        const error = validateValue(value, field);
-        if (error) {
-            setDeep(errors, ["securityDetails", field.attributeKey], error);
-        }
-    });
+   
 
     const customerDocsFields = scheme?.customerDocs || [];
     console.log(customerDocsFields, payload?.customerDocs, 238497239)
