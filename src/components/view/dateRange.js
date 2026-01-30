@@ -66,7 +66,7 @@ const DateRangePicker = ({
 
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal  visible={visible} transparent animationType="slide" onRequestClose={()=>onClose?.()}>
       <View
         style={{
           flex: 1,

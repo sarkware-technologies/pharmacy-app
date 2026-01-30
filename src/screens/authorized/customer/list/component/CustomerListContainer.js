@@ -89,7 +89,6 @@ const CustomerListContainer = ({ isActive, search, primaryTab, secondaryTab, app
 
 
     const refreshCurrentPage = useCallback(async (reFetch = false) => {
-        console.log(reFetch, 2984273)
         let fetchPage = 1;
         let limit = 10;
         if (reFetch) {
@@ -99,7 +98,6 @@ const CustomerListContainer = ({ isActive, search, primaryTab, secondaryTab, app
         else {
             setCustomers([]);
         }
-        console.log(page, limit, fetchPage, 2321312)
         setRefreshing(true);
         setPage(fetchPage);
         setHasMore(true);

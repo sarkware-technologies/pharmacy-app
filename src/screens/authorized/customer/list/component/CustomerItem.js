@@ -126,7 +126,6 @@ const CustomerView = ({ item, primaryTab, secondaryTab, handleAction }) => {
                     : instanceData?.stepInstanceStatus ?? item?.statusName;
 
         if (item?.childStageId?.length) status = "MODIFIED";
-        console.log(item?.childStageId,29827)
         return {
             ...(color[status] ?? color.ACTIVE),
             status,
