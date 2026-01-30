@@ -122,7 +122,7 @@ const CustomerListView = ({ customers = [], loadMore, primaryTab, secondaryTab, 
         }
     };
 
-    const handleAction = (customer, action) => {
+    const handleAction = (customer, action) => {        
         setActionCustomer(customer);
         setAction(action);
         if (action == 'DOWNLOAD') {

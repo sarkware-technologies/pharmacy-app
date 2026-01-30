@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AppText } from '../';
-import  AppView  from '../AppView';
+import AppView from '../AppView';
 import { colors } from '../../styles/colors';
 import CloseCircle from '../icons/CloseCircle';
 import { customerAPI } from '../../api/customer';
@@ -221,14 +221,14 @@ const renderLinkedCustomerDropdown = ({ selectedCustomer, linkedCustomers, isDro
           )}
 
 
-          <View style={{ paddingRight: 5, paddingLeft:10, transform: [{ rotate: !isDropdownOpen ? "0deg" : "180deg" }] }} >
+          <View style={{ paddingRight: 5, paddingLeft: 10, transform: [{ rotate: !isDropdownOpen ? "0deg" : "180deg" }] }} >
             <Downarrow />
           </View>
 
         </TouchableOpacity>
 
         {/* Floating list */}
-        {isDropdownOpen && (
+        {(isDropdownOpen && linkedCustomers?.length) && (
           <View style={styles.dropdownList}>
             <ScrollView nestedScrollEnabled>
               {linkedCustomers.map((item) => (
@@ -264,10 +264,10 @@ const renderLinkedCustomerDropdown = ({ selectedCustomer, linkedCustomers, isDro
         )}
       </View>
 
-        {selectedCustomer?.stageCustomerId &&
-                 <AppText style={styles.classification}>
-                    Classification: <AppText color='#2B2B2B'>{selectedCustomer?.customerType}</AppText>
-                  </AppText>}
+      {selectedCustomer?.stageCustomerId &&
+        <AppText style={styles.classification}>
+          Classification: <AppText color='#2B2B2B'>{selectedCustomer?.customerType}</AppText>
+        </AppText>}
     </View>
 
   );
@@ -279,7 +279,6 @@ const WorkflowTimelineModal = ({ visible, onClose, customer }) => {
   const [expandedAccordion, setExpandedAccordion] = useState(null);
   const [loading, setLoading] = useState(false);
   const [accordionData, setAccordionData] = useState([]);
-
   const [linkedCustomers, setLinkedCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -475,8 +474,6 @@ const WorkflowTimelineModal = ({ visible, onClose, customer }) => {
   }, [selectedCustomer]);
 
 
-  console.log(selectedCustomer, 'selectedCustomer');
-
 
 
   const fetchWorkflowData = async (cust) => {
@@ -524,8 +521,7 @@ const WorkflowTimelineModal = ({ visible, onClose, customer }) => {
       );
 
       if (Array.isArray(response?.data) && response.data.length > 0) {
-       const repeated = Array.from({ length: 10 }).flatMap(() => response.data);
-  setLinkedCustomers(repeated);
+        setLinkedCustomers(response?.data);
       }
     } catch (error) {
       Toast.show({
@@ -603,7 +599,7 @@ const WorkflowTimelineModal = ({ visible, onClose, customer }) => {
                   setSelectedCustomer
                 })}
 
-              
+
 
               </>
             )}
@@ -722,7 +718,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal:16,
+    paddingHorizontal: 16,
     paddingBottom: 40,
   },
   // Accordion Styles
@@ -852,12 +848,12 @@ const styles = StyleSheet.create({
 
   dropdownSection: {
     marginBottom: 16,
-   
+
   },
 
   dropdownWrapper: {
     position: 'relative',
-    
+
   },
   dropdownLabel: {
     fontSize: 13,
@@ -875,7 +871,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-     borderColor:"#909090",
+    borderColor: "#909090",
   },
 
   dropdownSelectedText: {
@@ -911,7 +907,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
-    paddingBottom:15
+    paddingBottom: 15
   },
 
   /* Left side text */
@@ -950,7 +946,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderColor:"#909090",
+    borderColor: "#909090",
 
   },
 

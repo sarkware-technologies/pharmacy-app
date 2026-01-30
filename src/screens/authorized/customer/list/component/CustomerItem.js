@@ -57,6 +57,7 @@ const Button = ({
 
 /* -------------------- CustomerView -------------------- */
 const CustomerView = ({ item, primaryTab, secondaryTab, handleAction }) => {
+
     const instanceData = item?.instance?.stepInstances?.[0];
     const { can } = usePermissions();
 
@@ -383,7 +384,7 @@ const CustomerItem = ({
     }, [item?.childStageId]);
 
     const handleAction = useCallback(
-        (action) => {
+        (action, customer) => {
             if (action === "MODIFIED") {
                 setExpandedChild((prev) => (prev === customerId ? null : customerId));
             }
@@ -412,7 +413,7 @@ const CustomerItem = ({
                 });
             }
             else {
-                _handleAction?.(item, action);
+                _handleAction?.(customer, action);
             }
 
             //UNBLOCK
@@ -441,7 +442,7 @@ const CustomerItem = ({
     return (
         <AppView backgroundColor="white" marginBottom={16} marginHorizontal={10} borderRadius={16} padding={20}>
             <CustomerView
-                handleAction={handleAction}
+                handleAction={(action) => handleAction(action, item)}
                 item={item}
                 primaryTab={primaryTab}
                 secondaryTab={secondaryTab}
@@ -459,7 +460,7 @@ const CustomerItem = ({
                     {childTask?.map((e) => (
                         <CustomerView
                             key={e?.id ?? e?.customerId}
-                            handleAction={handleAction}
+                            handleAction={(action) => handleAction(action, e)}
                             item={e}
                             primaryTab={primaryTab}
                             secondaryTab={secondaryTab}
