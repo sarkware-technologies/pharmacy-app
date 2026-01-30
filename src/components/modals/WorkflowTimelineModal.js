@@ -11,11 +11,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AppText } from '../';
+import  AppView  from '../AppView';
 import { colors } from '../../styles/colors';
 import CloseCircle from '../icons/CloseCircle';
 import { customerAPI } from '../../api/customer';
 import Toast from 'react-native-toast-message';
 import Reassigned from '../icons/Reassigned';
+import Downarrow from "../icons/downArrow";
 
 
 // Reusable Vertical Timeline Component
@@ -184,11 +186,103 @@ const AccordionItem = ({ title, isExpanded, onToggle, children }) => {
   );
 };
 
+const renderLinkedCustomerDropdown = ({ selectedCustomer, linkedCustomers, isDropdownOpen, setIsDropdownOpen, setSelectedCustomer }) => {
+
+
+  return (
+    <View style={styles.dropdownSection}>
+      <AppText style={[styles.title, { marginBottom: 5 }]}>Linkages</AppText>
+
+      {/* 👇 IMPORTANT: relative container */}
+      <View style={styles.dropdownWrapper}>
+        {/* Selected box */}
+        <TouchableOpacity
+          style={[
+            styles.dropdownSelector,
+            selectedCustomer?.parentCustomerId && styles.selectedCustomer
+          ]}
+          activeOpacity={0.8}
+          onPress={() => setIsDropdownOpen(prev => !prev)}
+        >
+
+          <AppText style={styles.dropdownSelectedText}>
+            {selectedCustomer?.parentCustomerId
+              ? selectedCustomer.customerName
+              : linkedCustomers.length > 0
+                ? `${linkedCustomers.length} linkage${linkedCustomers.length > 1 ? 's' : ''}`
+                : 'No linkage'}
+          </AppText>
+
+
+          {selectedCustomer?.stageCustomerId && (
+            <AppText style={styles.parentId}>
+              {selectedCustomer?.stageCustomerId}
+            </AppText>
+          )}
+
+
+          <View style={{ paddingRight: 5, paddingLeft:10, transform: [{ rotate: !isDropdownOpen ? "0deg" : "180deg" }] }} >
+            <Downarrow />
+          </View>
+
+        </TouchableOpacity>
+
+        {/* Floating list */}
+        {isDropdownOpen && (
+          <View style={styles.dropdownList}>
+            <ScrollView nestedScrollEnabled>
+              {linkedCustomers.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setSelectedCustomer(item);
+                    setIsDropdownOpen(false);
+                  }}
+                >
+                  <AppView>
+                    <AppView width={"100%"} flexDirection={"row"} justifyContent={"space-between"} alignItems={"center"}>
+                      <AppText style={styles.itemName}>{item.customerName}</AppText>
+                      <AppText style={styles.parentId}>
+                        {item?.stageCustomerId}
+                      </AppText>
+                    </AppView>
+
+
+                    <AppText style={styles.itemType}>
+                      {item.customerType || 'Doctor'}
+                    </AppText>
+                  </AppView>
+
+                  <AppText style={styles.itemId}>
+                    {item.customerCode || item.cityId}
+                  </AppText>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+
+        {selectedCustomer?.stageCustomerId &&
+                 <AppText style={styles.classification}>
+                    Classification: <AppText color='#2B2B2B'>{selectedCustomer?.customerType}</AppText>
+                  </AppText>}
+    </View>
+
+  );
+};
+
+
 const WorkflowTimelineModal = ({ visible, onClose, customer }) => {
 
   const [expandedAccordion, setExpandedAccordion] = useState(null);
   const [loading, setLoading] = useState(false);
   const [accordionData, setAccordionData] = useState([]);
+
+  const [linkedCustomers, setLinkedCustomers] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Format date to "DD/MM/YYYY | HH:MM:SS"
   const formatDateTime = (dateString) => {
@@ -349,74 +443,96 @@ const WorkflowTimelineModal = ({ visible, onClose, customer }) => {
     return accordions;
   };
 
-  // Fetch workflow data when modal opens
   useEffect(() => {
-    if (visible && customer) {
-      fetchWorkflowData();
-    } else if (visible && !customer) {
-      setLoading(false);
-    } else {
-      // Reset when modal closes
+    if (customer) {
+      setSelectedCustomer(customer);
+    }
+  }, [customer]);
+
+  useEffect(() => {
+    if (!visible) {
       setAccordionData([]);
       setExpandedAccordion(null);
-    }
-  }, [visible, customer]);
-
-  const fetchWorkflowData = async () => {
-    if (!customer) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Stage ID is required',
-      });
+      setLinkedCustomers([]);
+      setSelectedCustomer(null);
+      setIsDropdownOpen(false);
       setLoading(false);
       return;
     }
 
+    if (!customer) return;
+    setLoading(true);
+
+    if (customer?.isStaging) {
+      fetchLinkedCustomers();
+    }
+
+  }, [visible, customer]);
+  useEffect(() => {
+    if (selectedCustomer) {
+      fetchWorkflowData(selectedCustomer);
+    }
+  }, [selectedCustomer]);
+
+
+  console.log(selectedCustomer, 'selectedCustomer');
+
+
+
+  const fetchWorkflowData = async (cust) => {
+    if (!cust) return;
+
     try {
       setLoading(true);
-
-
       let id = null;
-      if (customer?.stageId?.length) {
-        id = customer?.childStageId?.length ? [...customer.stageId] : customer.stageId;
+      if (cust?.stageId?.length) {
+        id = cust?.childStageId?.length
+          ? [...cust.stageId]
+          : cust.stageId;
+      } else if (cust?.stgCustomerId) {
+        id = cust.stgCustomerId;
+      } else if (cust?.stageCustomerId) {
+        id = cust.stageCustomerId;
       }
-      else if (customer?.stgCustomerId) { id = customer.stgCustomerId; }
+
+
+
       const response = await customerAPI.getWorkflowProgression(id);
+      const transformed = transformWorkflowData(response);
 
-      if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
-        const workflow = response.data[0];
+      setAccordionData(transformed);
+      setExpandedAccordion(transformed?.[0]?.id ?? null);
 
-        const transformed = transformWorkflowData(response);
-        setAccordionData(transformed);
-
-        // Auto-expand first accordion if available
-        if (transformed.length > 0) {
-          setExpandedAccordion(transformed[0].id);
-        } else {
-          Toast.show({
-            type: 'info',
-            text1: 'No Timeline',
-            text2: 'No workflow progressions found',
-          });
-        }
-      } else {
-        Toast.show({
-          type: 'info',
-          text1: 'No Data',
-          text2: 'No workflow data available for this customer',
-        });
-        setAccordionData([]);
-      }
     } catch (error) {
+      setAccordionData([]);
       Toast.show({
         type: 'error',
         text1: 'Error',
         text2: error.message || 'Failed to fetch workflow progression',
       });
-      setAccordionData([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLinkedCustomers = async () => {
+    if (!customer?.stgCustomerId) return;
+
+    try {
+      const response = await customerAPI.getLinkedChildByParentId(
+        customer?.stgCustomerId
+      );
+
+      if (Array.isArray(response?.data) && response.data.length > 0) {
+       const repeated = Array.from({ length: 10 }).flatMap(() => response.data);
+  setLinkedCustomers(repeated);
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to fetch linked customers',
+      });
     }
   };
 
@@ -440,58 +556,111 @@ const WorkflowTimelineModal = ({ visible, onClose, customer }) => {
           {/* Header */}
           <View style={styles.header}>
             <AppText style={styles.title}>
-              {customer?.customerName + " | " + customer?.customerType || 'Workflow Timeline'}
+              {customer?.isStaging ? "Customer" : (customer?.customerName + " | " + customer?.customerType || 'Workflow Timeline')}
             </AppText>
             <TouchableOpacity onPress={onClose}>
               <CloseCircle color="#666" />
             </TouchableOpacity>
           </View>
 
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <AppText style={styles.loadingText}>Loading workflow timeline...</AppText>
-            </View>
-          ) : accordionData.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <AppText style={styles.emptyText}>No workflow data available</AppText>
-            </View>
-          ) : (
-            <ScrollView
-              style={styles.scrollView}
-              showsVerticalScrollIndicator={true}
-              contentContainerStyle={styles.scrollContent}
-            >
-              {/* Render Accordions for each progression */}
-              {accordionData && accordionData.length > 0 ? (
-                accordionData.map((accordion) => {
-                  if (!accordion || !accordion.id) {
-                    return null;
-                  }
-                  return (
-                    <AccordionItem
-                      key={accordion.id}
-                      title={accordion.title || 'Untitled'}
-                      isExpanded={expandedAccordion === accordion.id}
-                      onToggle={() => toggleAccordion(accordion.id)}
-                    >
-                      {accordion.steps && accordion.steps.length > 0 ? (
-                        <VerticalTimeline steps={accordion.steps} />
-                      ) : (
-                        <View style={styles.emptyContainer}>
-                          <AppText style={styles.emptyText}>No steps available</AppText>
-                        </View>
-                      )}
-                    </AccordionItem>
-                  );
-                })
-              ) : (
-                <View style={styles.emptyContainer}>
-                  <AppText style={styles.emptyText}>No workflow timeline data available</AppText>
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {customer?.isStaging && (
+              <>
+
+                <View style={styles.parentCustomerSection}>
+                  {/* Parent Customer Box */}
+                  <TouchableOpacity style={[
+                    styles.parentCustomerBox,
+                    !selectedCustomer?.parentCustomerId && styles.selectedCustomer
+                  ]} onPress={() => { setSelectedCustomer(customer) }}>
+                    <AppText style={styles.parentName}>
+                      {customer?.customerName}
+                    </AppText>
+                    <AppText style={styles.parentId}>
+                      {customer?.stgCustomerId ?? customer?.customerId}
+                    </AppText>
+
+
+                  </TouchableOpacity>
+
+                  <AppText style={styles.classification}>
+                    Classification: <AppText color='#2B2B2B'>{customer?.customerType}</AppText>
+                  </AppText>
+
                 </View>
-              )}
-            </ScrollView>
-          )}
+
+
+                {renderLinkedCustomerDropdown({
+
+                  selectedCustomer,
+                  linkedCustomers,
+                  isDropdownOpen,
+                  setIsDropdownOpen,
+                  setSelectedCustomer
+                })}
+
+              
+
+              </>
+            )}
+
+
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <AppText style={styles.loadingText}>Loading workflow timeline...</AppText>
+              </View>
+            ) : accordionData.length > 0 ? (
+
+
+              <View>
+
+
+
+
+
+
+                {/* Render Accordions for each progression */}
+                {accordionData && accordionData.length > 0 ? (
+                  accordionData.map((accordion) => {
+                    if (!accordion || !accordion.id) {
+                      return null;
+                    }
+                    return (
+                      <AccordionItem
+                        key={accordion.id}
+                        title={accordion.title || 'Untitled'}
+                        isExpanded={expandedAccordion === accordion.id}
+                        onToggle={() => toggleAccordion(accordion.id)}
+                      >
+                        {accordion.steps && accordion.steps.length > 0 ? (
+                          <VerticalTimeline steps={accordion.steps} />
+                        ) : (
+                          <View style={styles.emptyContainer}>
+                            <AppText style={styles.emptyText}>No steps available</AppText>
+                          </View>
+                        )}
+                      </AccordionItem>
+                    );
+                  })
+                ) : (
+                  <View style={styles.emptyContainer}>
+                    <AppText style={styles.emptyText}>No workflow timeline data available</AppText>
+                  </View>
+                )}
+
+              </View>
+
+            ) : (
+              <View style={styles.emptyContainer}>
+                <AppText style={styles.emptyText}>No workflow data available</AppText>
+              </View>
+            )}
+          </ScrollView>
         </View>
       </SafeAreaView>
     </Modal>
@@ -516,10 +685,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
     paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    // borderBottomWidth: 1,
+    // borderBottomColor: '#E5E7EB',
     flexShrink: 0,
   },
   title: {
@@ -553,7 +722,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    paddingHorizontal:16,
     paddingBottom: 40,
   },
   // Accordion Styles
@@ -647,7 +816,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 4,
+    // marginBottom: 4,
   },
   dateTimeContainer: {
     flexDirection: 'row',
@@ -678,6 +847,136 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontStyle: 'italic',
   },
+
+
+
+  dropdownSection: {
+    marginBottom: 16,
+   
+  },
+
+  dropdownWrapper: {
+    position: 'relative',
+    
+  },
+  dropdownLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#111827',
+    marginBottom: 6,
+  },
+
+  /* Selected value box */
+  dropdownSelector: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+     borderColor:"#909090",
+  },
+
+  dropdownSelectedText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#111827',
+    flex: 1,
+    marginRight: 8,
+  },
+
+  /* Dropdown list container */
+  dropdownList: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    zIndex: 9999,
+    elevation: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    maxHeight: 280,
+    overflow: 'hidden',
+  },
+
+  /* Each row */
+  dropdownItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    paddingBottom:15
+  },
+
+  /* Left side text */
+  itemName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#111827',
+  },
+
+  itemType: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+
+  /* Right side ID */
+  itemId: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginLeft: 12,
+    textAlign: 'right',
+  },
+
+
+
+
+
+  parentCustomerSection: {
+    marginBottom: 20,
+  },
+
+  parentCustomerBox: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderColor:"#909090",
+
+  },
+
+  parentName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
+
+  parentId: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+
+  classification: {
+    marginTop: 6,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+
+
+  selectedCustomer: {
+    borderColor: "#F7941E",
+    backgroundColor: "#F7941E0D"
+  }
 });
 
 export default WorkflowTimelineModal;

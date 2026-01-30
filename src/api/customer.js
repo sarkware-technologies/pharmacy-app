@@ -894,7 +894,7 @@ export const customerAPI = {
     },
 
 
-      getDocZip: async (customerId, isStaging) => {
+    getDocZip: async (customerId, isStaging) => {
         try {
             const response = await apiClient.get(`/user-management/customer/download-doc-zip?customerId=${customerId}&isStaging=${isStaging}`);
             return response;
@@ -905,28 +905,39 @@ export const customerAPI = {
     },
 
 
-      getAttributes: async (
-    type,
-    category,
-    subCategory,
-    form = 1
-) => {
-    try {
-         let endpoint = `/user-management/attribute-master/forms/${form}/attributes?type=${type}`;
-   
-        if (category) {
-            endpoint += `&category=${category}`;
+    getAttributes: async (
+        type,
+        category,
+        subCategory,
+        form = 1
+    ) => {
+        try {
+            let endpoint = `/user-management/attribute-master/forms/${form}/attributes?type=${type}`;
+
+            if (category) {
+                endpoint += `&category=${category}`;
+            }
+            if (subCategory) {
+                endpoint += `&subCategory=${subCategory}`;
+            }
+            const response = await apiClient.get(endpoint);
+            return response;
+        } catch (error) {
+            console.error("Error fetching attributes:", error);
+            throw error;
         }
-        if (subCategory) {
-            endpoint += `&subCategory=${subCategory}`;
+    },
+
+    getLinkedChildByParentId: async (customerId) => {
+        try {
+            const response = await apiClient.get(`/user-management/customer/linked-child-by-parent-id?customerId=${customerId}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching latest draft:', error);
+            throw error;
         }
-        const response = await apiClient.get(endpoint);
-        return response;
-    } catch (error) {
-        console.error("Error fetching attributes:", error);
-        throw error;
-    }
-},
+    },
+
 
 
 
