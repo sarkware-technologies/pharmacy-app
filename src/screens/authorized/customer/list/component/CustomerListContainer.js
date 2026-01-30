@@ -15,6 +15,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
 
     useEffect(() => {
         const unsubscribe = navigation.getParent()?.addListener("tabPress", e => {
+            console.log(8947293472)
             setCustomers([]);
             setPage(1);
             setHasMore(true);
@@ -22,7 +23,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
         });
         return unsubscribe;
     }, [navigation]);
-
+ 
 
     const fetchCustomers = useCallback(
         async ({ pageNo = 1, append = false, limit = 10 }) => {
@@ -87,6 +88,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
 
 
     const refreshCurrentPage = useCallback(async (reFetch = false) => {
+        console.log(reFetch,2984273)
         let fetchPage = 1;
         let limit = 10;
         if (reFetch) {
@@ -96,6 +98,7 @@ const CustomerListContainer = ({ search, primaryTab, secondaryTab, appliedFilter
         else {
             setCustomers([]);
         }
+        console.log(page,limit,fetchPage,2321312)
         setRefreshing(true);
         setPage(fetchPage);
         setHasMore(true);

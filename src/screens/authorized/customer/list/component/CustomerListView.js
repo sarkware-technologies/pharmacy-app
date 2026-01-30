@@ -144,6 +144,7 @@ const CustomerListView = ({ customers = [], loadMore, primaryTab, secondaryTab, 
                 setExpandedChild={setExpandedChild}
                 expandedChild={expandedChild}
                 _handleAction={handleAction}
+                refreshCurrentPage={refreshCurrentPage}
             />
         ),
         [primaryTab, secondaryTab, expandedChild]
