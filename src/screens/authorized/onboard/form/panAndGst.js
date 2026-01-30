@@ -14,7 +14,7 @@ import { ErrorMessage } from "../../../../components/view/error";
 import FetchGst from '../../../../components/icons/FetchGst';
 import { AppToastService } from '../../../../components/AppToast';
 
-const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview, closePreview }) => {    
+const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview, closePreview, scheme }) => {
 
     const handleSetValue = (key, value, extra = {}) => {
         setValue?.(prev => {
@@ -57,19 +57,19 @@ const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview,
                 isOcrRequired: true,
             });
 
-             if(response?.success){
+            if (response?.success) {
                 AppToastService.show(response?.message, "success", "File Upload");
-                
-                
+
+
             }
 
-            
+
             if (!response?.data?.length) return;
 
             const uploadFile = response?.data?.[0];
 
             if (uploadFile) {
-                 onPreview?.(uploadFile)
+                onPreview?.(uploadFile)
             }
 
 
@@ -215,10 +215,19 @@ const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview,
         e => e.id === formData?.securityDetails?.gstNumber
     );
 
+    const isRequired = (attributeKey, key = "securityDetails") => {
+        return !!scheme?.[key]?.find(
+            (e) => e?.attributeKey === attributeKey
+        )?.isMandatory;
 
-        useEffect(() => {
-            setGstOptions(transferData?.gstOptions ?? [])
-        }, [transferData?.gstOptions])
+    }
+
+
+    useEffect(() => {
+        setGstOptions(transferData?.gstOptions ?? [])
+    }, [transferData?.gstOptions])
+
+
     return (
         <AppView>
             <AppView >
@@ -231,7 +240,8 @@ const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview,
                     }}
                     accept={[]}
                     onSelectFile={(file) => handleFileUpload(file, 'pan', staticDOCcode.PAN)}
-                    isRequired={true} placeholder="Upload PAN"
+                    isRequired={isRequired("isPanUpload", 'customerDocs')}
+                    placeholder="Upload PAN"
                     isLoading={uploading?.['pan']}
                     handleDelete={() => {
                         setValue?.((prev) => {
@@ -256,7 +266,8 @@ const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview,
                         if (fetchGst) {
                             setFetchGst(false)
                         }
-                    }} label="PAN number" isRequired={true}
+                    }} label="PAN number"
+                    isRequired={isRequired("panNumber")}
                     suffix={
                         verifyPan ?
                             <ActivityIndicator size="large" color={colors.primary} /> :
@@ -294,6 +305,7 @@ const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview,
                         remove: true,
                     }}
                     placeholder="Upload GST"
+                    isRequired={isRequired("isGstUpload", 'customerDocs')}
                     onSelectFile={(file) => handleFileUpload(file, 'gst', staticDOCcode.GST)}
                     isLoading={uploading?.['gst']}
                     handleDelete={() => {
@@ -317,36 +329,37 @@ const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview,
                     searchTitle="GST number"
                     onSelect={(e) => handleSetValue("gstNumber", e?.id)}
                     options={gstOptions}
+                    isRequired={isRequired("gstNumber")}
                 />
 
                 {selectedGst && (
-  <AppView style={{ marginTop: 4, marginLeft: 2 }}>
+                    <AppView style={{ marginTop: 4, marginLeft: 2 }}>
 
-    {selectedGst?.status && (
-      <AppText>
-        GST Status:{" "}
-        <AppText
-          color={selectedGst.status.toLowerCase() === "active" ? "green" : "red"}
-          fontWeight="400"
-          fontFamily="normal"
-        >
-          {selectedGst.status.charAt(0).toUpperCase() +
-            selectedGst.status.slice(1)}
-        </AppText>
-      </AppText>
-    )}
+                        {selectedGst?.status && (
+                            <AppText>
+                                GST Status:{" "}
+                                <AppText
+                                    color={selectedGst.status.toLowerCase() === "active" ? "green" : "red"}
+                                    fontWeight="400"
+                                    fontFamily="normal"
+                                >
+                                    {selectedGst.status.charAt(0).toUpperCase() +
+                                        selectedGst.status.slice(1)}
+                                </AppText>
+                            </AppText>
+                        )}
 
-    {selectedGst?.type && (
-      <AppText style={{ marginTop: 4 }}>
-        GST Type:{" "}
-        <AppText fontFamily="normal" fontWeight="400">
-          {selectedGst.type}
-        </AppText>
-      </AppText>
-    )}
+                        {selectedGst?.type && (
+                            <AppText style={{ marginTop: 4 }}>
+                                GST Type:{" "}
+                                <AppText fontFamily="normal" fontWeight="400">
+                                    {selectedGst.type}
+                                </AppText>
+                            </AppText>
+                        )}
 
-  </AppView>
-)}
+                    </AppView>
+                )}
 
             </AppView>
         </AppView>
