@@ -88,7 +88,7 @@ const RenderLicense = memo(
 
 
 
-const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData, action, licenseList, error, setTransferData, formType = null, onPreview, closePreview }) => {
+const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData, action, licenseList, error, setTransferData, formType = null, onPreview, closePreview, scheme }) => {
     const uniqueLicenses = licenseList.reduce((acc, cur) => {
         if (!acc.some(e => e.code === cur.code)) {
             acc.push({
@@ -151,7 +151,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
             const uploadFile = response?.data?.[0];
 
             if (uploadFile) {
-                 onPreview?.(uploadFile)
+                onPreview?.(uploadFile)
             }
 
             const isLicenceAlreadyExist = uploadFile?.statusCode == 203;
@@ -547,6 +547,21 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
         });
     };
 
+    const isRequired = (attributeKey, documentName, key = "licenceDetails") => {
+        if (key == 'licenceDetails') {
+            const findLicene = scheme?.[key]?.find((e) => e?.documentName == documentName);
+            return findLicene?.[attributeKey]?.isMandatory
+        }
+        else if (key == 'customerDocs' && documentName) {
+            return !!scheme?.[key]?.find((e) => e?.documentName === documentName)?.isMandatory;
+        }
+        return !!scheme?.[key]?.find(
+            (e) => e?.attributeKey === attributeKey
+        )?.isMandatory;
+
+    }
+
+
 
 
     const LICENSE_UI_CONFIG = useMemo(() => ({
@@ -555,7 +570,6 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
             filePlaceholder: "Upload 20 license",
             codeLabel: "Drug license number",
             dateLabel: "Expiry date",
-            isRequired: true,
             info: true,
         },
         LIC21: {
@@ -563,28 +577,24 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
             filePlaceholder: "Upload 21 license",
             codeLabel: "Drug license number",
             dateLabel: "Expiry date",
-            isRequired: true,
         },
         LIC20B: {
             title: "20B",
             filePlaceholder: "Upload 20B license",
             codeLabel: "Drug license number",
             dateLabel: "Expiry date",
-            isRequired: true,
         },
         LIC21B: {
             title: "21B",
             filePlaceholder: "Upload 21B license",
             codeLabel: "Drug license number",
             dateLabel: "Expiry date",
-            isRequired: true,
         },
         PRLIC: {
             title: "MCI Registration",
             filePlaceholder: "Upload",
             codeLabel: "MCI Registration number",
             dateLabel: "Expiry date",
-            isRequired: true,
         },
     }), []);
 
@@ -601,18 +611,17 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
         const findData = findLicense(license, lic?.licenceTypeId);
         const findFile = findDocument(formData?.customerDocs, lic?.docTypeId);
 
-
         return (
             <RenderLicense
                 key={code}
                 titleFontSize={16}
                 title={ui.title}
-                isRequired={ui.isRequired}
+                isRequired={isRequired("isFileUploaded", code, 'customerDocs') && isRequired("licenceNo", code) && isRequired("licenceValidUpto", code)}
                 info={ui.info}
                 file={{
                     placeholder: ui.filePlaceholder,
                     onSelectFile: (file) => handleFileUpload(file, lic.code, lic.docTypeId),
-                    isRequired: ui.isRequired,
+                    isRequired: isRequired("isFileUploaded", code, 'customerDocs'),
                     isLoading: uploading?.[lic.code],
                     uploadedFile: findFile && { name: findFile?.fileName, url: findFile?.s3Path, view: true, remove: true },
                     handleDelete: () => remove_Document(lic.docTypeId),
@@ -621,7 +630,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                 }}
                 code={{
                     label: ui.codeLabel,
-                    isRequired: ui.isRequired,
+                    isRequired: isRequired("licenceNo", code),
                     onChangeText: (text) => handleUpdate(text, lic.code, lic.docTypeId, 'licenceNo'),
                     value: findData?.licenceNo ?? '',
                     error: error?.licenceDetails?.[lic.docTypeId]?.licenceNo,
@@ -629,7 +638,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                 }}
                 date={{
                     label: ui.dateLabel,
-                    isRequired: ui.isRequired,
+                    isRequired: isRequired("licenceValidUpto", code),
                     onChange: (date) => handleUpdate(date, lic.code, lic.docTypeId, 'licenceValidUpto'),
                     value: findData?.licenceValidUpto ?? '',
                     error: error?.licenceDetails?.[lic.docTypeId]?.licenceValidUpto,
@@ -679,7 +688,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                         <RenderLicense
                             titleFontSize={16}
                             title={[2].includes(formData?.typeId) ? "" : "Clinic registration"}
-                            isRequired
+                            isRequired={isRequired("isFileUploaded", licenseMap.REG.code, 'customerDocs') && isRequired("licenceNo", licenseMap.REG.code) && isRequired("licenceValidUpto", licenseMap.REG.code)}
                             file={{
                                 placeholder: getPlaceholder("file"),
                                 onSelectFile: (file) =>
@@ -687,7 +696,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                                 isLoading: uploading?.['REG'],
                                 uploadedFile: findREG && { name: findREG?.fileName, url: findREG?.s3Path, view: true, remove: true },
                                 handleDelete: () => remove_Document(licenseMap.REG.docTypeId),
-                                isRequired: true,
+                                isRequired: isRequired("isFileUploaded", licenseMap.REG.code, 'customerDocs'),
                                 error: error?.customerDocs?.[licenseMap.REG.docTypeId],
                                 onPreview: onPreview
                             }}
@@ -736,7 +745,8 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                                         );
                                     },
 
-                                    isRequired: true,
+                                    isRequired: isRequired(fieldType, licenseMap.REG.code),
+
                                     error: fieldError
                                 };
                             })()}
@@ -744,7 +754,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                             date={{
                                 label: getPlaceholder("date"),
                                 onChange: (date) => handleUpdate(date, licenseMap.REG.code, licenseMap.REG.docTypeId, 'licenceValidUpto'),
-                                isRequired: true,
+                                isRequired: isRequired("licenceValidUpto", licenseMap.REG.code),
                                 value: findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceValidUpto,
                                 error: error?.licenceDetails?.[licenseMap.REG.docTypeId]?.licenceValidUpto,
 
@@ -756,7 +766,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                                         nin: {
                                             label: "NIN (National Identification Number)",
                                             onChangeText: (text) => handleUpdate(text, licenseMap.REG.code, licenseMap.REG.docTypeId, 'licenceNo'),
-                                            isRequired: true,
+                                            isRequired: isRequired("licenceNo", licenseMap.REG.code),
                                             value: findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo,
                                             onBlur: () => handleValidateLicense(findLicense(license, licenseMap.REG?.licenceTypeId)?.licenceNo, licenseMap.REG.code, 'licenceNo'),
                                             error: error?.licenceDetails?.[licenseMap.REG.docTypeId]?.licenceNo,
@@ -767,7 +777,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                                                 handleFileUpload(file, "officialLetter", staticDOCcode.IMAGE),
                                             isLoading: uploading?.['officialLetter'],
                                             uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
-                                            isRequired: true,
+                                            isRequired: isRequired("isImageUpload", null, 'customerDocs'),
                                             handleDelete: () => remove_Document(staticDOCcode.IMAGE),
                                             error: error?.customerDocs?.[staticDOCcode.IMAGE]
 
@@ -777,6 +787,8 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                             )}
                         />
                     )}
+
+
                     {LICENSE_CODES.map(renderLicenseByCode)}
 
 
@@ -785,13 +797,13 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                         <RenderLicense
                             titleFontSize={16}
                             title="Address proof"
-                            isRequired
+                            isRequired={isRequired("isAddressProofUploaded", null, 'customerDocs')}
                             file={{
                                 placeholder: "Upload Electricity/Telephone bill",
                                 onSelectFile: (file) => handleFileUpload(file, "ADDRESS_PROOF", staticDOCcode.ADDRESS_PROOF, false),
                                 isLoading: uploading?.['ADDRESS_PROOF'],
                                 uploadedFile: findADDRESS_PROOF && { name: findADDRESS_PROOF?.fileName, url: findADDRESS_PROOF?.s3Path, view: true, remove: true },
-                                isRequired: true,
+                                isRequired: isRequired("isAddressProofUploaded", null, 'customerDocs'),
                                 handleDelete: () => remove_Document(staticDOCcode.ADDRESS_PROOF),
                                 error: error?.customerDocs?.[staticDOCcode.ADDRESS_PROOF],
                                 onPreview: onPreview
@@ -802,15 +814,16 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                         <RenderLicense
                             titleFontSize={16}
                             title="Clinic image"
-                            isRequired
+                            isRequired={isRequired("isImageUpload", null, 'customerDocs')}
                             file={{
                                 placeholder: "Upload License",
                                 onSelectFile: (file) => handleFileUpload(file, "CLINIC_IMAGE", staticDOCcode.IMAGE, false),
                                 isLoading: uploading?.['CLINIC_IMAGE'],
-                                uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true }, isRequired: true,
+                                uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
                                 handleDelete: () => remove_Document(staticDOCcode.IMAGE),
                                 error: error?.customerDocs?.[staticDOCcode.IMAGE],
-                                onPreview: onPreview
+                                onPreview: onPreview,
+                                isRequired: isRequired("isImageUpload", null, 'customerDocs'),
                             }}
                         />
                     )}
@@ -819,13 +832,13 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                         <RenderLicense
                             titleFontSize={16}
                             title="Pharmacy Image"
-                            isRequired
+                            isRequired={isRequired("isImageUpload", null, 'customerDocs')}
                             file={{
                                 placeholder: "Upload",
                                 onSelectFile: (file) => handleFileUpload(file, "PHARMACY_IMAGE", staticDOCcode.IMAGE, false),
                                 isLoading: uploading?.['PHARMACY_IMAGE'],
                                 uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
-                                isRequired: true,
+                                isRequired: isRequired("isImageUpload", null, 'customerDocs'),
                                 handleDelete: () => remove_Document(staticDOCcode.IMAGE),
                                 error: error?.customerDocs?.[staticDOCcode.IMAGE],
                                 onPreview: onPreview
@@ -836,13 +849,13 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                         <RenderLicense
                             titleFontSize={16}
                             title="image"
-                            isRequired
+                            isRequired={isRequired("isImageUpload", null, 'customerDocs')}
                             file={{
                                 placeholder: "Upload",
                                 onSelectFile: (file) => handleFileUpload(file, "IMAGE", staticDOCcode.IMAGE, false),
                                 isLoading: uploading?.['IMAGE'],
                                 uploadedFile: findIMAGE && { name: findIMAGE?.fileName, url: findIMAGE?.s3Path, view: true, remove: true },
-                                isRequired: true,
+                                isRequired: isRequired("isImageUpload", null, 'customerDocs'),
                                 handleDelete: () => remove_Document(staticDOCcode.IMAGE),
                                 error: error?.customerDocs?.[staticDOCcode.IMAGE],
                                 onPreview: onPreview
@@ -852,7 +865,7 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                     )}
 
                     {((action == 'onboard') || (action == "assigntocustomer")) && (
-                        <PanAndGST formData={formData} setValue={setValue} action={action} error={error} transferData={transferData} />
+                        <PanAndGST scheme={scheme} formData={formData} setValue={setValue} action={action} error={error} transferData={transferData} />
                     )}
 
 

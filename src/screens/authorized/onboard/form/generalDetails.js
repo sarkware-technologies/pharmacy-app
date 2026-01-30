@@ -17,7 +17,7 @@ import { useSelector } from "react-redux";
 import { ErrorMessage } from "../../../../components/view/error";
 import { AppToastService } from '../../../../components/AppToast';
 
-const GeneralDetails = ({ License, setValue, isAccordion = false, formData, action, error, setTransferData, transferData, setCustomerDetails, calledFrom=null }) => {
+const GeneralDetails = ({ License, setValue, isAccordion = false, formData, action, error, setTransferData, transferData, setCustomerDetails, calledFrom = null, scheme }) => {
     const [toggle, setToggle] = useState("open");
     const loggedInUser = useSelector(state => state.auth.user);
 
@@ -70,7 +70,7 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
         }
         else {
             setAreaOptions([]);
-           
+
             // setCityOptions([]);
             setStateOptions([]);
             setValue?.((prev) => {
@@ -89,16 +89,16 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
             setValue?.((prev) => {
                 return { ...prev, generalDetails: { ...prev?.generalDetails, area: area?.[0]?.name, areaId: area?.[0]?.id, stateId: state?.[0]?.id, stateName: state?.[0]?.name } }
             })
-             setCustomerDetails?.((prev) => {
+            setCustomerDetails?.((prev) => {
                 return { ...prev, generalDetails: { ...prev?.generalDetails, area: area?.[0]?.name, areaId: area?.[0]?.id, stateId: state?.[0]?.id, stateName: state?.[0]?.name } }
             })
-            
+
             setAreaOptions(area)
-             if(calledFrom == 'addEntity'){
+            if (calledFrom == 'addEntity') {
                 setCityOptions(city)
-                
+
             }
-        
+
             setStateOptions(state)
         }
         catch (error) {
@@ -233,6 +233,10 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
         }
     };
 
+    const isRequired = (attributeKey, key = "generalDetails") =>
+        !!scheme?.[key]?.find(
+            (e) => e?.attributeKey === attributeKey
+        )?.isMandatory;
 
     return (
         <AppView style={{ marginTop: 20 }}>
@@ -260,21 +264,27 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
             >
                 <AppView style={OnboardStyle.accordionView}>
                     <AppView>
-                        <FloatingInput error={error?.generalDetails?.name} value={formData?.generalDetails?.name} onChangeText={(text) => handleSetValue("name", text)} label={getPlaceholder("name")} isRequired={true} />
+                        <FloatingInput
+                            error={error?.generalDetails?.name}
+                            value={formData?.generalDetails?.name}
+                            onChangeText={(text) => handleSetValue("name", text)} label={getPlaceholder("name")}
+                            isRequired={isRequired("name")}  >
+
+                        </FloatingInput>
                     </AppView>
                     {formData?.typeId != 3 && (
                         <AppView>
-                            <FloatingInput error={error?.generalDetails?.shortName} value={formData?.generalDetails?.shortName} onChangeText={(text) => handleSetValue("shortName", text)} label={getPlaceholder("shortName")} />
+                            <FloatingInput error={error?.generalDetails?.shortName} value={formData?.generalDetails?.shortName} onChangeText={(text) => handleSetValue("shortName", text)} isRequired={isRequired("shortName")} label={getPlaceholder("shortName")} />
                         </AppView>
                     )}
                     {formData?.typeId == 3 && (
                         <AppView>
-                            <FloatingInput error={error?.generalDetails?.specialist} value={formData?.generalDetails?.specialist} onChangeText={(text) => handleSetValue("specialist", text)} label={"Speciality"} isRequired={true} />
+                            <FloatingInput error={error?.generalDetails?.specialist} value={formData?.generalDetails?.specialist} onChangeText={(text) => handleSetValue("specialist", text)} isRequired={isRequired("specialist")} label={"Speciality"} />
                         </AppView>
                     )}
                     {formData?.typeId == 3 && (
                         <AppView>
-                            <FloatingInput error={error?.generalDetails?.clinicName} value={formData?.generalDetails?.clinicName} onChangeText={(text) => handleSetValue("clinicName", text)} label={"Clinic name"} isRequired={true} />
+                            <FloatingInput error={error?.generalDetails?.clinicName} value={formData?.generalDetails?.clinicName} onChangeText={(text) => handleSetValue("clinicName", text)} isRequired={isRequired("clinicName")} label={"Clinic name"} />
                         </AppView>
                     )}
 
@@ -283,7 +293,7 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                             error={error?.stationCode}
                             selected={formData?.stationCode}
                             label="Station code"
-                            isRequired={true}
+                            isRequired={isRequired("stationCode", 'default')}
                             searchTitle="Station Code"
                             onSelect={(e) => setValue?.((prev) => {
                                 return { ...prev, stationCode: e?.id }
@@ -294,7 +304,7 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                     <AppView>
                         <FloatingInput
                             error={error?.generalDetails?.address1}
-                            value={formData?.generalDetails?.address1} onChangeText={(text) => handleSetValue("address1", text)} label="Address 1" isRequired={true}
+                            value={formData?.generalDetails?.address1} onChangeText={(text) => handleSetValue("address1", text)} isRequired={isRequired("address1")} label="Address 1"
                             suffix={<TouchableOpacity
                                 activeOpacity={0.7}
                                 style={{ paddingRight: 5 }}
@@ -305,16 +315,16 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                         />
                     </AppView>
                     <AppView>
-                        <FloatingInput error={error?.generalDetails?.address2} value={formData?.generalDetails?.address2} onChangeText={(text) => handleSetValue("address2", text)} label="Address 2" />
+                        <FloatingInput error={error?.generalDetails?.address2} value={formData?.generalDetails?.address2} onChangeText={(text) => handleSetValue("address2", text)} isRequired={isRequired("address2")} label="Address 2" />
                     </AppView>
                     <AppView>
-                        <FloatingInput error={error?.generalDetails?.address3} value={formData?.generalDetails?.address3} onChangeText={(text) => handleSetValue("address3", text)} label="Address 3" />
+                        <FloatingInput error={error?.generalDetails?.address3} value={formData?.generalDetails?.address3} onChangeText={(text) => handleSetValue("address3", text)} isRequired={isRequired("address3")} label="Address 3" />
                     </AppView>
                     <AppView>
-                        <FloatingInput error={error?.generalDetails?.address4} value={formData?.generalDetails?.address4} onChangeText={(text) => handleSetValue("address4", text)} label="Address 4" />
+                        <FloatingInput error={error?.generalDetails?.address4} value={formData?.generalDetails?.address4} onChangeText={(text) => handleSetValue("address4", text)} isRequired={isRequired("address4")} label="Address 4" />
                     </AppView>
                     <AppView>
-                        <FloatingInput error={error?.generalDetails?.pincode} keyboardType="number-pad" maxLength={6} value={String(formData?.generalDetails?.pincode)} onChangeText={(text) => handleSetValue("pincode", text)} label="Pincode" isRequired={true} />
+                        <FloatingInput error={error?.generalDetails?.pincode} keyboardType="number-pad" maxLength={6} value={String(formData?.generalDetails?.pincode)} onChangeText={(text) => handleSetValue("pincode", text)} isRequired={isRequired("pincode")} label="Pincode" />
                     </AppView>
                     <AppView>
 
@@ -323,9 +333,8 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                             error={error?.generalDetails?.areaId}
                             selected={formData?.generalDetails?.areaId}
                             label="Area"
-                            isRequired={true}
                             searchTitle="Area"
-
+                            isRequired={isRequired("areaId")}
                             onSelect={(e) => {
                                 setValue?.((prev) => {
                                     return { ...prev, generalDetails: { ...prev?.generalDetails, areaId: e?.id, area: e?.name } }
@@ -340,10 +349,8 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                             error={error?.generalDetails?.cityId}
                             selected={formData?.generalDetails?.cityId}
                             label="City"
-                            isRequired={true}
                             searchTitle="City"
-                            // onSelect={(e) => handleSetValue("cityId", e?.id)}
-
+                            isRequired={isRequired("cityId")}
                             onSelect={(e) => {
                                 setValue?.((prev) => {
                                     return { ...prev, generalDetails: { ...prev?.generalDetails, cityId: e?.id, cityName: e?.name } }
@@ -359,10 +366,10 @@ const GeneralDetails = ({ License, setValue, isAccordion = false, formData, acti
                             error={error?.generalDetails?.stateId}
                             selected={formData?.generalDetails?.stateId}
                             label="State"
-                            isRequired={true}
                             searchTitle="State"
+                            isRequired={isRequired("stateId")}
                             // onSelect={(e) => handleSetValue("stateId", e?.id)}
-                             onSelect={(e) => {
+                            onSelect={(e) => {
                                 setValue?.((prev) => {
                                     return { ...prev, generalDetails: { ...prev?.generalDetails, stateId: e?.id, stateName: e?.name } }
                                 })

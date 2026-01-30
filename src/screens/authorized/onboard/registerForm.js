@@ -201,44 +201,32 @@ const RegisterForm = () => {
     };
 
 
-
-    useEffect(() => {
-
-        const fetchAttributes = async () => {
+    const fetchAttributes = async () => {
 
 
-            if (!formData?.typeId) return;
-            const { type, category, subCategory } = getMetaById(formData);
+        if (!formData?.typeId) return;
+        const { type, category, subCategory } = getMetaById(formData);
 
-            const form = action === 'onboard' || action === 'assigntocustomer' ? 2 : 1;
-            try {
-                setLoading(true);
+        const form = action === 'onboard' || action === 'assigntocustomer' ? 2 : 1;
+        try {
+            setLoading(true);
 
-                const response = await customerAPI.getAttributes(
-                    type,
-                    category,
-                    subCategory,
-                    form
-                );
+            const response = await customerAPI.getAttributes(
+                type,
+                category,
+                subCategory,
+                form
+            );
 
-                if (response?.success && response?.data?.sections) {
-                    setRawScheme(response?.data?.sections);
-                }
-            } catch (err) {
-                console.log("Attribute fetch failed, using fallback scheme");
-            } finally {
-                setLoading(false);
+            if (response?.success && response?.data?.sections) {
+                setRawScheme(response?.data?.sections);
             }
-        };
-
-        fetchAttributes();
-    }, [
-        formData?.typeId,
-        formData?.categoryId,
-        formData?.subCategoryId,
-    ]);
-
-
+        } catch (err) {
+            console.log("Attribute fetch failed, using fallback scheme");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchCustomerType = async () => {
         try {
@@ -311,6 +299,7 @@ const RegisterForm = () => {
                 }
             }
             if (fetch) {
+                fetchAttributes();
                 const getLicense = await customerAPI.getLicenseTypes(payload?.typeId, payload?.categoryId, payload?.subCategoryId);
                 setFormData((prev) => {
                     const prevLicenceDetails = prev?.licenceDetails ?? {};
@@ -767,10 +756,10 @@ const RegisterForm = () => {
     }, [formData.typeId, formData.categoryId, formData.subCategoryId]);
 
     const renderForm = [
-        { key: "license", component: <LicenseDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} onPreview={handlePreview} closePreview={closePreview} />, show: uploadDocument, order: (action == 'onboard' || action == 'assigntocustomer') ? 5 : 1 },
-        { key: "general", component: <GeneralDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} setCustomerDetails={setCustomerDetails} />, show: true, order: 2 },
-        { key: "security", component: <SecurityDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSaveDraft={handleSaveDraft} onPreview={handlePreview} closePreview={closePreview} />, show: true, order: 3 },
-        { key: "mapping", component: <MappingDetails setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSave={handleSave} />, show: true, order: 4 },
+        { key: "license", component: <LicenseDetails scheme={scheme} setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} licenseList={licenseList} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} onPreview={handlePreview} closePreview={closePreview} />, show: uploadDocument, order: (action == 'onboard' || action == 'assigntocustomer') ? 5 : 1 },
+        { key: "general", component: <GeneralDetails scheme={scheme} setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} setCustomerDetails={setCustomerDetails} />, show: true, order: 2 },
+        { key: "security", component: <SecurityDetails scheme={scheme} setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSaveDraft={handleSaveDraft} onPreview={handlePreview} closePreview={closePreview} />, show: true, order: 3 },
+        { key: "mapping", component: <MappingDetails scheme={scheme} setTransferData={setTransferData} transferData={transferData} error={error} scrollToSection={scrollToSection} action={action} setValue={setFormData} formData={formData} isAccordion={action == 'onboard'} handleSave={handleSave} />, show: true, order: 4 },
     ]
 
 
