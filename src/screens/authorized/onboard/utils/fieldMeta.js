@@ -567,6 +567,7 @@ export const buildCreatePayload = (formData) => {
             return {
                 ...rest,
                 pincode: rest?.pincode ? Number(rest.pincode) : undefined,
+                cityId: rest?.cityId ? Number(rest.cityId) : null,
             };
         })(),
 

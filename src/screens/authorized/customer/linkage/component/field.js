@@ -70,8 +70,8 @@ const Fields = ({ customerData, isLoading, isChild, saveDraft }) => {
             <View style={Linkagestyles.header}>
                 <>
                     <View style={[Linkagestyles.flatheader, { marginTop: 20 }]}>
-                        <AppText style={Linkagestyles.flatheaderText}>Employee Name & Code</AppText>
-                        <AppText style={Linkagestyles.flatheaderText}>Designation</AppText>
+                        <AppText style={Linkagestyles.flatheaderText}>Employee Details</AppText>
+                        <AppText style={Linkagestyles.flatheaderText}>Division Details</AppText>
                     </View>
                     <View
                         style={{
@@ -106,7 +106,7 @@ const Fields = ({ customerData, isLoading, isChild, saveDraft }) => {
                                             borderBottomWidth: 0.5,
                                             paddingHorizontal: 20,
                                             paddingVertical: 7,
-                                            alignItems: "center",
+                                            alignItems: "top",
                                         },
                                     ]}
                                 >
@@ -132,27 +132,64 @@ const Fields = ({ customerData, isLoading, isChild, saveDraft }) => {
                                             ]}
                                         >
 
-                                            
+                                            {console.log(item, 'itemitemitemitem')}
+
+
                                             {item?.userCode}
+                                            {item?.designation && ` | ${item.designation}`}
+                                        </AppText>
+
+                                        <AppText
+
+                                            style={[
+                                                CommonStyle.secondaryText,
+                                                { color: colors.primaryText, fontSize: 12 },
+                                            ]}
+                                        >
+                                            {item?.cityCode}
                                         </AppText>
                                     </View>
 
                                     {/* RIGHT COLUMN */}
-                                    <AppText
-                                        numberOfLines={1}
-                                        ellipsizeMode="tail"
-                                        style={[
-                                            CommonStyle.secondaryText,
-                                            {
-                                                color: colors.secondaryText,
-                                                fontSize: 14,
-                                                maxWidth: "50%",
-                                                textAlign: "right",
-                                            },
-                                        ]}
+
+                                    <View
+                                        style={{
+                                            alignItems: 'flex-end',   // align to right
+                                        }}
                                     >
-                                        {item?.designation}
-                                    </AppText>
+                                        <AppText
+                                            numberOfLines={1}
+                                            ellipsizeMode="tail"
+                                            style={[
+                                                CommonStyle.secondaryText,
+                                                {
+                                                    color: colors.primaryText,
+                                                    fontSize: 14,
+                                                    textAlign: 'right',
+                                                },
+                                            ]}
+                                        >
+                                            {item?.divisions?.[0]?.divisionName}
+                                        </AppText>
+
+                                        <AppText
+                                            style={[
+                                                CommonStyle.secondaryText,
+                                                {
+                                                    color: colors.secondaryText,
+                                                    fontSize: 12,
+                                                    textAlign: 'right',
+                                                },
+                                            ]}
+                                        >
+                                            {item?.divisions?.[0]?.divisionCode}
+                                        </AppText>
+                                    </View>
+
+
+
+
+
                                 </View>
 
                             )
