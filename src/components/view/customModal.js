@@ -22,7 +22,9 @@ const CustomModal = ({
     footerStyle,
     headerStyle,
     showClose = true,
-    bodyScrollable = true
+    bodyScrollable = true,
+    maxHeight = "85%",
+    minHeight
 }) => {
     return (
         <Modal
@@ -37,7 +39,7 @@ const CustomModal = ({
             >
                 <View style={styles.overlay}>
                     <TouchableWithoutFeedback>
-                        <View style={[styles.container, viewStyle]}>
+                        <View style={[styles.container, viewStyle, { maxHeight, minHeight }]}>
 
                             {/* Header */}
                             {customHeader ? (
@@ -89,7 +91,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
-        maxHeight: '85%',
         overflow: 'hidden',
         flexDirection: 'column',
     },

@@ -36,6 +36,8 @@ import DivisionList from '../screens/authorized/division/DivisionList';
 import ChargebackListing from '../screens/authorized/chargeback/ChargebackListing';
 
 import NetRateListing from '../screens/authorized/netrate/NetRateListing';
+import MyProfile from '../screens/authorized/myProfile/myProfile';
+
 import MoreMenu from "../components/MoreMenu"
 import PermissionWrapper from '../utils/RBAC/permissionWrapper';
 import PERMISSIONS from '../utils/RBAC/permissionENUM';
@@ -142,6 +144,8 @@ const DynamicScreen = ({ route }) => {
       return <ChargebackListing />;
     case 'NetRateListing':
       return <NetRateListing />
+    case 'myProfile':
+      return <MyProfile />
     default:
       return <HomeScreen />;
   }

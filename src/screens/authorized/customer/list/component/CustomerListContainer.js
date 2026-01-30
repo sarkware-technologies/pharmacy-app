@@ -39,7 +39,7 @@ const CustomerListContainer = ({ isActive, search, primaryTab, secondaryTab, app
                     searchText: search,
                     statusIds: primaryTab?.statusIds ?? [],
                     isStaging: primaryTab?.isStaging,
-                    isAll: true,
+                    ...(primaryTab?.key === "all" && { isAll: true, }),
                     ...(secondaryTab?.filter && { filter: secondaryTab?.filter }),
                     customerGroupIds: appliedFilter?.customerGroup ?? [],
                     stateIds: appliedFilter?.status ?? [],
