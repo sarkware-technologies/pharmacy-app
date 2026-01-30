@@ -29,6 +29,7 @@ const CustomerDetails = () => {
         customerId,
         isStaging,
         activeTab = "details",
+        onGoBack
     } = route.params || {};
     const {
         data,
@@ -197,11 +198,10 @@ const CustomerDetails = () => {
 
             // ✅ SUCCESS
             if (response?.status === "success") {
-                navigation.getParent()?.setParams({
-                    pendingCustomerAction: action,
-                });
-
-                navigation.goBack(); // screen unmounts → loader auto clears
+                setTimeout(() => {
+                    onGoBack?.()
+                    navigation.goBack();
+                }, 400)
                 return response;
             }
 
@@ -215,7 +215,9 @@ const CustomerDetails = () => {
 
         }
         finally {
-            hideLoader();
+            setTimeout(() => {
+                hideLoader();
+            }, 400)
         }
     };
 

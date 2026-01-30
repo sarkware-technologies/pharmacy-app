@@ -254,17 +254,14 @@ const validateValue = (value, field) => {
     const rules = field?.validationRules || [];
     const isBooleanField = field?.attributeType === "boolean";
 
-    const isEmpty =
-        value === undefined ||
-        value === null ||
-        value === "";
+    const isEmpty = value === undefined || value === null || value === "";
 
     for (let i = 0; i < rules.length; i++) {
         const rule = rules[i];
 
         switch (rule.ruleType) {
             case "required":
-                if (!field?.isMandatory) return;
+                if (!field?.isMandatory) continue;
                 if (isBooleanField) {
                     if (value !== true) return rule.errorMessage;
                 } else {
@@ -273,14 +270,13 @@ const validateValue = (value, field) => {
                 break;
 
             case "custom":
-                if (!field?.isMandatory) return;
+                if (!field?.isMandatory) continue;
                 if (isBooleanField) {
                     if (value !== true) return rule.errorMessage;
                 } else {
                     if (isEmpty) return rule.errorMessage;
                 }
                 break;
-
             case "minLength":
                 if (!isEmpty && value.length < Number(rule.ruleValue)) {
                     return rule.errorMessage;
@@ -387,10 +383,11 @@ export const validateForm = async (payload, scheme) => {
 
 
 
-     const securityFields = scheme?.securityDetails || [];
+    const securityFields = scheme?.securityDetails || [];
     securityFields.forEach((field) => {
         const value = payload?.securityDetails?.[field.attributeKey];
         const error = validateValue(value, field);
+        console.log(field, error, 23894279)
         if (error) {
             setDeep(errors, ["securityDetails", field.attributeKey], error);
         }
@@ -427,25 +424,37 @@ export const validateForm = async (payload, scheme) => {
 
             }
         } else {
+            const preValidationMap = {
+                isMobileVerified: () =>
+                    !errors?.securityDetails?.mobile &&
+                    !!payload?.securityDetails?.mobile,
 
-            if(!['isMobileVerified', 'isEmailVerified', 'isPanVerified'].includes(field.attributeKey)){
+                isEmailVerified: () =>
+                    !errors?.securityDetails?.email &&
+                    !!payload?.securityDetails?.email,
+
+                isPanVerified: () =>
+                    !errors?.securityDetails?.panNumber &&
+                    !!payload?.securityDetails?.panNumber,
+            };
+
+            const isValidForCheck =
+                preValidationMap[field?.attributeKey]?.() ?? true;
+
+            if (!isValidForCheck) return;
+
             const value = payload?.[field.attributeKey];
             const error = validateValue(value, field);
 
-            
             if (error) {
                 setDeep(errors, [field.attributeKey], error);
             }
-
-            }
-
-            
-
         }
+
 
     });
 
-   
+
 
     const customerDocsFields = scheme?.customerDocs || [];
     console.log(customerDocsFields, payload?.customerDocs, 238497239)

@@ -365,7 +365,8 @@ const CustomerItem = ({
     secondaryTab,
     setExpandedChild,
     expandedChild,
-    _handleAction
+    _handleAction,
+    refreshCurrentPage
 }) => {
     const navigation = useNavigation();
     const customerId = item?.stgCustomerId ?? item?.customerId;
@@ -382,6 +383,9 @@ const CustomerItem = ({
             setIsLoading(false);
         }
     }, [item?.childStageId]);
+    const fetchCustomers = () => {
+            refreshCurrentPage?.(true)
+    }
 
     const handleAction = useCallback(
         (action, customer) => {
@@ -395,6 +399,8 @@ const CustomerItem = ({
                     isStaging: !!item?.stgCustomerId,
                     activeTab: action == 'APPROVE' ? 'linkaged' : action,
                     activeSubTab: action == 'details' ? 'divisions' : 'hierarchy',
+                    onGoBack: () => fetchCustomers(),
+
                 })
             }
             else if (action === "ONBOARD" || action === "EDIT") {

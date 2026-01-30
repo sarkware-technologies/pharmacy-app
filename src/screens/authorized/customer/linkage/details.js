@@ -31,7 +31,7 @@ import { AppToastService } from "../../../../components/AppToast"
 import { isAllApprovedChecked } from "./service/formatData";
 
 
-const DetailsView = ({ loading = false, customerData, instance, isChild = false, saveDraft, workflowAction, setActiveTab }) => {
+const DetailsView = ({ loading = false, customerData, instance, isChild = false, saveDraft, workflowAction, setActiveTab, onGoBack }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(40)).current;
     const scaleAnim = useRef(new Animated.Value(0.96)).current;
@@ -107,7 +107,7 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
 
     const handleDocAction = (licence, action) => {
         if (!licence?.s3Path) {
-            
+
             AppToastService("Document not available", "error", "Document Error")
             return;
         }
@@ -338,8 +338,8 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
 
                                     <View style={Customerstyles.card}>
                                         <View style={Customerstyles.valueWithIcons}>
-                                                {FindDoc(1, 0)}
-                                            </View>
+                                            {FindDoc(1, 0)}
+                                        </View>
                                     </View>
                                 </AnimatedSection>
                             );
@@ -505,7 +505,10 @@ const DetailsView = ({ loading = false, customerData, instance, isChild = false,
                                         [Customerstyles.approveButton, isDisabled && { opacity: 0.5 }]
                                     }
                                     disabled={isDisabled}
-                                    onPress={() => setApproveModalVisible(true)}
+                                    onPress={() => {
+                                        onGoBack?.()
+                                        setApproveModalVisible(true)
+                                    }}
                                 >
                                     <>
                                         <MaterialIcons name="check" size={20} color="#fff" />
