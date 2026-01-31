@@ -91,7 +91,8 @@ const FilePicker = ({
                 uploadedFile != null ?
                     <View style={[styles.container, { borderWidth: 0, backgroundColor: "#F7941E0D" }]}>
                         <AppText style={[styles.text, { maxWidth: "75%" }]} numberOfLines={1} ellipsizeMode="tail" >
-                            {uploadedFile?.name}
+                           {uploadedFile?.name && decodeURIComponent(uploadedFile.name)}
+
                         </AppText>
                         <View style={[CommonStyle.SpaceBetween, { gap: 15 }]}>
                             {uploadedFile?.view && (

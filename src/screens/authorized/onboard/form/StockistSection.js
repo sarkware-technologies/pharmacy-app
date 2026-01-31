@@ -66,6 +66,11 @@ const StockistSection = ({
   const loggedInUser = useSelector(state => state.auth.user);
   const [stockistSearch, setStockistSearch] = useState('');
 
+ const handleSetValue = (key, value) => {
+        setValue?.((prev) => {
+            return { ...prev, [key]: value }
+        })
+    }
 
   const removeStockist = (index) => {
     handleSetValue(

@@ -271,12 +271,13 @@ const RegisterForm = () => {
         );
     };
 
-    const builLicense = async (customerType, formData) => {
+    const builLicense = async (customerType, formData) => {        
         try {
             setLoading(true);
             const payload = {}
             let fetch = true
             const findType = customerType?.find((e) => e.id == formData?.typeId);
+
             if (findType) {
                 payload.typeId = findType?.id;
                 if (findType?.customerCategories?.length != 0) {
@@ -295,10 +296,14 @@ const RegisterForm = () => {
                         }
                     }
                 }
+                
             }
+
+
             if (fetch) {
                 fetchAttributes();
                 const getLicense = await customerAPI.getLicenseTypes(payload?.typeId, payload?.categoryId, payload?.subCategoryId);
+                
                 setFormData((prev) => {
                     const prevLicenceDetails = prev?.licenceDetails ?? {};
                     const prevLicences = prevLicenceDetails?.licence ?? [];
@@ -339,7 +344,6 @@ const RegisterForm = () => {
             }
         }
         catch (error) {
-            console.log(error);
             if (error?.status == 400) {
                 ErrorMessage(error);
             }
@@ -374,7 +378,8 @@ const RegisterForm = () => {
     }, [rawScheme, formData?.typeId, formData?.categoryId, formData?.subCategoryId, formData?.licenceDetails, uploadDocument]);
 
 
-    console.log(scheme, 'scheme');
+
+    
 
     const runValidation = async (submitted) => {
         const result = await validateForm(formData, scheme);
@@ -500,11 +505,9 @@ const RegisterForm = () => {
                         navigation.navigate("RegistrationSuccess", {});
                     }
                 } catch (error) {
-                    console.log(error);
                     
                     // Prefer backend error message if available
                     const errorMessage = error?.message || "Something went wrong. Please try again.";
-                    console.log(errorMessage, 'errorMessage');
                     
                     AppToastService.show(errorMessage, "error", "Create Error");
                 }
@@ -648,7 +651,6 @@ const RegisterForm = () => {
 
             }
         } catch (err) {
-            console.error(err);
             AppToastService.show(err?.message ?? "Error while creationg customer", "error", "Error");
         }
     };
@@ -896,6 +898,7 @@ const RegisterForm = () => {
                                     <AppText color={"#E94346"}>Customer has been already registered </AppText>
                                 </AppView>
                             </AppView>}
+
 
 
                         {customerType != null && licenseList && licenseList.length != 0 && (

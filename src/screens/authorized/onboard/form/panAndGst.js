@@ -86,14 +86,16 @@ const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview,
 
             if (type === "gst") {
                 // UpdateOCR(uploadFile?.verificationData);
-                handleSetValue(
-                    "gstNumber",
-                    uploadFile?.GSTNumber
-                );
+
+                if ((!formData?.securityDetails?.gstNumber)) {
+                    handleSetValue(
+                        "gstNumber",
+                        uploadFile?.GSTNumber
+                    );
+                }
 
 
-
-                if (uploadFile?.GSTNumber && uploadFile?.verificationData) {
+                if ((uploadFile?.GSTNumber && uploadFile?.verificationData)) {
                     setGstOptions(prev => [
                         ...prev,
                         {
@@ -149,28 +151,48 @@ const PanAndGST = ({ setValue, formData, action, error, transferData, onPreview,
         }
     };
 
-    const UpdateOCR = (verificationData) => {
-        setGstOptions(verificationData?.gstByPan?.records?.map((e) => ({
-            id: e?.gstin,
-            name: e?.gstin,
-            status: e?.active ? 'Active' : 'Inactive',
-            type: e?.type,
-
-        })));
-    }
+    const UpdateOCR = (records = []) => {
+        setGstOptions(
+            records.map((e) => ({
+                id: e?.gstin,
+                name: e?.gstin,
+                status: e?.active ? 'Active' : 'Inactive',
+                type: e?.type,
+            }))
+        );
+    };
 
     const panVerfiy = async (panNumber = null) => {
         try {
             setVerifyPan(true)
             const response = await customerAPI.documentVerify({ docTypeId: staticDOCcode.PAN, panNumber: panNumber ?? formData?.securityDetails?.panNumber });
             setVerifyPan(false)
-            UpdateOCR(response?.verificationData);
+
+            const records = response?.verificationData?.gstByPan?.records;
+            const isGstAvailable = Array.isArray(records) && records.length > 0;
+
+
+            // GST found → use UpdateOCR
+            if (isGstAvailable) {
+                UpdateOCR(records);
+            }
+            // No GST → ONLY Unregistered option
+            else {
+                setGstOptions([
+                    {
+                        id: 'Unregistered',
+                        name: 'Unregistered',
+                        status: '',
+                        type: '',
+                    },
+                ]);
+            }
             setValue?.(prev => ({
                 ...prev,
                 isPanVerified: true,
                 securityDetails: {
                     ...prev?.securityDetails,
-                    gstNumber: "",
+                    gstNumber: isGstAvailable ? "" : "Unregistered",
                 },
             }));
         }
