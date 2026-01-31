@@ -25,7 +25,7 @@ const Customerstyles = StyleSheet.create({
         fontWeight: '600',
         color: '#333',
         marginRight: 'auto',
-        marginLeft: 15,
+        marginLeft: 6,
         flex: 1,
         flexShrink: 1,
 
@@ -491,6 +491,8 @@ const Customerstyles = StyleSheet.create({
 
     backBtn: {
         marginRight: 8,
+        paddingHorizontal:10,
+        paddingVertical:5
     },
 
     logsButton: {

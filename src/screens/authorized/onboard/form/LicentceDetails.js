@@ -683,6 +683,16 @@ const LicenseDetails = ({ transferData, setValue, isAccordion = false, formData,
                 onToggle={isAccordion ? toggle : undefined}
                 isOpen={!isAccordion}
             >
+                {(licenseList?.length == 0) && (
+                    <AppView style={{ padding: 20 }} >
+                        <AppView style={{ paddingHorizontal: 10, paddingVertical: 10, borderRadius: 10 }} flexDirection={"row"} alignItems={"center"} backgroundColor={"#FFE2E2"} >
+                            <Svg style={{ marginRight: 5 }} width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <Path d="M5.83333 11.6667C2.61158 11.6667 0 9.05508 0 5.83333C0 2.61158 2.61158 0 5.83333 0C9.05508 0 11.6667 2.61217 11.6667 5.83333C11.6667 9.0545 9.05508 11.6667 5.83333 11.6667ZM5.83333 2.91667C5.67862 2.91667 5.53025 2.97812 5.42085 3.08752C5.31146 3.19692 5.25 3.34529 5.25 3.5V6.41667C5.25 6.57138 5.31146 6.71975 5.42085 6.82915C5.53025 6.93854 5.67862 7 5.83333 7C5.98804 7 6.13642 6.93854 6.24581 6.82915C6.35521 6.71975 6.41667 6.57138 6.41667 6.41667V3.5C6.41667 3.34529 6.35521 3.19692 6.24581 3.08752C6.13642 2.97812 5.98804 2.91667 5.83333 2.91667ZM5.83333 8.75C5.98804 8.75 6.13642 8.68854 6.24581 8.57915C6.35521 8.46975 6.41667 8.32138 6.41667 8.16667C6.41667 8.01196 6.35521 7.86358 6.24581 7.75419C6.13642 7.64479 5.98804 7.58333 5.83333 7.58333C5.67862 7.58333 5.53025 7.64479 5.42085 7.75419C5.31146 7.86358 5.25 8.01196 5.25 8.16667C5.25 8.32138 5.31146 8.46975 5.42085 8.57915C5.53025 8.68854 5.67862 8.75 5.83333 8.75Z" fill="#E94346" />
+                            </Svg>
+                            <AppText color={"#E94346"}> Document details empty </AppText>
+                        </AppView>
+                    </AppView>
+                )}
                 <AppView style={[OnboardStyle.accordionView, { gap: 15 }]} marginTop={10}>
                     {licenseMap?.REG && (
                         <RenderLicense

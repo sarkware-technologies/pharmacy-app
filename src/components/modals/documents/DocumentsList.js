@@ -46,7 +46,7 @@ const DocumentsList = ({
                             numberOfLines={1}
                             style={styles.label}
                         >
-                            {doc.doctypeName}
+                            {doc?.docTypeName??doc?.doctypeName}
                         </AppText>
                     </View>
 

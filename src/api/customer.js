@@ -115,6 +115,19 @@ export const customerAPI = {
         }
     },
 
+    // Get customer details by ID - UPDATED ENDPOINT
+    getDocuments: async (customerId, isStaging = false) => {
+        try {
+            // Add isStaging as query parameter
+            const endpoint = `/user-management/customer/document-list/${customerId}?isStaging=${isStaging}`;
+            const response = await apiClient.get(endpoint);
+            return response;
+        } catch (error) {
+            console.error('Error fetching customer details:', error);
+            throw error;
+        }
+    },
+
     // Create new customer (for registration)
     createCustomer: async (customerData) => {
         try {

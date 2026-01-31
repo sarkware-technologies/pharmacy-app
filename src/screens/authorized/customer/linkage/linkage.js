@@ -15,7 +15,7 @@ import checkPermission from "../../../../utils/RBAC/permissionHelper";
 import HorizontalSelector from "../../../../components/view/HorizontalSelector";
 import { SkeletonDetailPage } from "../../../../components/SkeletonLoader";
 
-const LinkageView = ({ activeTab = "divisions", customerData, loading, isChild, saveDraft,setChildCustomer,instance }) => {
+const LinkageView = ({ activeTab = "divisions", customerData, loading, isChild, saveDraft, setChildCustomer, instance }) => {
     const [hasOtherDivisionPermission, setHasOtherDivisionPermission] = useState(false);
     const [hasPreferredDistributorPermission, setHasPreferredDistributorPermission,] = useState(false);
     const [checkLinkeEditAccess, setCheckLinkeEditAccess,] = useState(false);
@@ -56,7 +56,7 @@ const LinkageView = ({ activeTab = "divisions", customerData, loading, isChild, 
 
 
     console.log(loading, 868);
-    
+
 
     const tabs = [
         {
@@ -95,12 +95,12 @@ const LinkageView = ({ activeTab = "divisions", customerData, loading, isChild, 
 
     return (
 
-       
-        
 
-        loading ? ( <SkeletonDetailPage/>):( <View style={Linkagestyles.container}>
+
+
+        loading ? (<SkeletonDetailPage />) : (<View style={Linkagestyles.container}>
             <View style={Linkagestyles.stickyTabsContainer}>
-               
+
                 <HorizontalSelector
                     onTabChange={(index) => {
                         if (!tabs[index].disabled) {
@@ -138,7 +138,7 @@ const LinkageView = ({ activeTab = "divisions", customerData, loading, isChild, 
                 {tabs.find((e) => e?.key == activeSubTab)?.component}
             </View>
         </View>)
-       
+
     )
 
 }

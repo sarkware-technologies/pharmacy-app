@@ -21,19 +21,16 @@ import ConfirmModal from "../../../../components/modals/ConfirmModal"
 
 import AddEntity from '../selector/AddEntity';
 import CheckCircle from '../../../../components/icons/CheckCircle'
-import { colors } from "../../../../styles/colors";
-import ChildLinkageDetails from "../../customer/linkage/childLinkage";
+import { useNavigation } from "@react-navigation/native";
 
 const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrollToSection, error, handleSave, scheme }) => {
     const [toggle, setToggle] = useState("open");
     const [customerOption, setCustomerOption] = useState([]);
     const [activeSelector, setActiveSelector] = useState(null);
     const [showAddEntity, setShowAddEntity] = useState(false);
-    const [showLinkageModal, setShowLinkageModal] = useState(false);
-    const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [deleteDraftItem, setDeleteDraftItem] = useState(null);
-
-
+    const navigation = useNavigation();
+ 
     useEffect(() => {
         if (!formData) return;
 
@@ -278,8 +275,10 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
             });
 
         } else {
-            setSelectedCustomer(item);
-            setShowLinkageModal(true);
+            navigation.navigate('CustomerDetail', {
+                customerId: item?.id,
+                isStaging:item?.isNew,
+            })
         }
     };
 
@@ -1044,22 +1043,7 @@ const MappingDetails = ({ setValue, isAccordion = false, formData, action, scrol
                 />
             )}
 
-            <Modal
-                visible={showLinkageModal}
-                animationType="slide"
-                transparent
-                onRequestClose={() => setShowLinkageModal(false)}
-            >
-                <ChildLinkageDetails
-                    customerId={selectedCustomer?.id}
-                    isStaging={selectedCustomer?.isNew}
-                    onClose={() => setShowLinkageModal(false)}
-                    activeTab={"details"}
-                />
-            </Modal>
-
             {/*  */}
-
 
             <ConfirmModal
 

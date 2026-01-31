@@ -71,7 +71,7 @@ const CommentCard = ({ item }) => {
         <AppText style={styles.commentTitle}>
           {item.title || '—'}
         </AppText>
-        <StatusBadge status={item.status} />
+        <StatusBadge status={item.status=="SKIPPED"?'REASSIGNED':item.status} />
       </View>
       <AppText style={styles.commentBody}>
         {item.comment || 'No comment provided.'}

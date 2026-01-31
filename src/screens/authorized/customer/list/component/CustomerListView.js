@@ -48,13 +48,13 @@ const CustomerListView = ({ isActive, customers = [], loadMore, primaryTab, seco
         try {
             const customerId = customer?.customerId || customer?.stgCustomerId;
             const isStaging = !!customer?.stgCustomerId;
-            const res = await customerAPI.getCustomerDetails(customerId, isStaging);
+            const res = await customerAPI.getDocuments(customerId, isStaging);
+                console.log(res?.data,234972638)
             if (res?.data) {
-                const details = res.data;
                 setCustomerDocuments({
-                    gstDoc: details.docType?.find(d => d.doctypeName === 'GSTIN') || null,
-                    panDoc: details.docType?.find(d => d.doctypeName === 'PAN CARD') || null,
-                    allDocuments: details.docType || [],
+                    gstDoc: res?.data?.find(d => d.doctypeName === 'GSTIN') || null,
+                    panDoc: res?.data?.find(d => d.doctypeName === 'PAN CARD') || null,
+                    allDocuments: res?.data || [],
                 });
             }
         } finally {

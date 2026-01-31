@@ -355,6 +355,7 @@ const MainStack = () => (
 
 
     <Stack.Screen name="onboarding" component={RegisterForm} />
+    <Stack.Screen name="CustomerDetail" component={CustomerDetails} />
 
     {/* Product Stack - opens without bottom tabs */}
     <Stack.Screen name="ProductStack" component={ProductStack} />
@@ -410,7 +411,8 @@ const DrawerNavigator = () => (
 );
 
 const LoadingScreen = () => (
-  <View style={{ position: 'absolute',
+  <View style={{
+    position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
@@ -418,7 +420,8 @@ const LoadingScreen = () => (
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 9999,}}>
+    zIndex: 9999,
+  }}>
     <ActivityIndicator size="large" color="#FF9A3E" />
   </View>
 );
@@ -426,15 +429,15 @@ const LoadingScreen = () => (
 const AppNavigator = ({ navigationRef }) => {
   const dispatch = useDispatch();
 
-  const { isAuthenticated, loading, authInitialized  } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, authInitialized } = useSelector((state) => state.auth);
 
   useEffect(() => {
     dispatch(checkAuthStatus());
   }, [dispatch]);
 
-if (!authInitialized) {
-  return <LoadingScreen />; // ✅ ONLY allowed here
-}
+  if (!authInitialized) {
+    return <LoadingScreen />; // ✅ ONLY allowed here
+  }
 
   return (
     <>
@@ -449,7 +452,7 @@ if (!authInitialized) {
 
       </NavigationContainer>
       {loading && <LoadingScreen />}
-      </>
+    </>
   );
 };
 

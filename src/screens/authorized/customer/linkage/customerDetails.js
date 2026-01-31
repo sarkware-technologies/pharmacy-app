@@ -19,6 +19,7 @@ import { findAndUpdate, transformCustomerData } from "./service/formatData";
 import Toast from "react-native-toast-message";
 import { showLoader, hideLoader } from '../../../../components/ScreenLoader';
 import { AppToastService } from "../../../../components/AppToast"
+import BackButton from "../../../../components/view/backButton";
 
 
 const CustomerDetails = () => {
@@ -29,7 +30,8 @@ const CustomerDetails = () => {
         customerId,
         isStaging,
         activeTab = "details",
-        onGoBack
+        onGoBack,
+        activeSubTab
     } = route.params || {};
     const {
         data,
@@ -98,6 +100,8 @@ const CustomerDetails = () => {
                     instance?.workflowInstance?.id,
                     draftEditPayload
                 );
+                AppToastService.show("Draft Saved", "success", "Saved");
+
             } else {
                 if (!customerDetails?.stgCustomerId && customerDetails?.customerId) {
                     setCustomerDetails((prev) => ({ ...prev, ...data }));
@@ -111,6 +115,7 @@ const CustomerDetails = () => {
                         await customerAPI.linkDivisions(customerId, {
                             divisions: divi,
                         });
+                        AppToastService.show("Divisions Updated", "success", "Saved");
                     } else if (action === "distributors") {
                         const distributor = data?.distributors?.map((dist) => ({
                             distributorId: Number(dist?.id),
@@ -127,22 +132,20 @@ const CustomerDetails = () => {
                         await customerAPI.linkDistributorDivisions(customerId, {
                             mappings: distributor,
                         });
+                        AppToastService.show("Distributors Updated", "success", "Saved");
                     } else if (action === "customerGroup") {
                         const cleanedPayload =
                             transformCustomerData(customerDetails);
-
-                        await customerAPI.updateCustomerGroup(customerId, {
+                        await customerAPI.updateCustomerGroup({
                             ...cleanedPayload,
                             customerGroupId: data?.customerGroupId,
                         });
+                        AppToastService.show("Customer Group Updated", "success", "Saved");
                     }
                 } else {
-                    throw new Error("Task not assigned to you");
+                    AppToastService.show("Task not assigned to you", "error", "Task");
                 }
             }
-
-            // ✅ SUCCESS
-            AppToastService.show("Draft Saved", "success", "Saved");
 
             return true;
         } catch (error) {
@@ -236,12 +239,7 @@ const CustomerDetails = () => {
             <View style={Customerstyles.header}>
                 {/* LEFT SECTION – 60% */}
                 <View style={Customerstyles.leftSection}>
-                    <TouchableOpacity
-                        onPress={() => navigation.goBack()}
-                        style={Customerstyles.backBtn}
-                    >
-                        <ChevronLeft color="#333" />
-                    </TouchableOpacity>
+                    <BackButton />
 
                     <AppText
                         style={Customerstyles.headerTitle}
@@ -299,7 +297,7 @@ const CustomerDetails = () => {
 
 
 
-            {active == "details" ? <DetailsView instance={customerDetails?.instance} customerData={customerDetails} loading={isLoading} saveDraft={saveDraft} workflowAction={workflowAction} setActiveTab={setActiveTab} /> : <LinkageView instance={customerDetails?.instance} setChildCustomer={setChildCustomer} customerData={customerDetails} loading={isLoading} isChild={false} saveDraft={saveDraft} />}
+            {active == "details" ? <DetailsView instance={customerDetails?.instance} customerData={customerDetails} loading={isLoading} saveDraft={saveDraft} workflowAction={workflowAction} setActiveTab={setActiveTab} /> : <LinkageView activeTab={activeSubTab} instance={customerDetails?.instance} setChildCustomer={setChildCustomer} customerData={customerDetails} loading={isLoading} isChild={false} saveDraft={saveDraft} />}
 
             <Modal
                 visible={childCustomer != null}

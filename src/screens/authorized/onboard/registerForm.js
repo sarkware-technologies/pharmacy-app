@@ -190,6 +190,7 @@ const RegisterForm = () => {
     }, [])
     const [customerType, setCustomerType] = useState();
     const [licenseList, setLicenseList] = useState([]);
+    const [licenseFetched, setLicenseFetched] = useState(false);
 
     const scrollRef = useRef(null);
 
@@ -271,7 +272,7 @@ const RegisterForm = () => {
         );
     };
 
-    const builLicense = async (customerType, formData) => {        
+    const builLicense = async (customerType, formData) => {
         try {
             setLoading(true);
             const payload = {}
@@ -293,17 +294,21 @@ const RegisterForm = () => {
                                 fetch = true;
                                 payload.subCategoryId = findChildCategory?.id;
                             }
+                            else if (formData?.subCategoryId) {
+                                fetch = true;
+                                payload.subCategoryId = formData?.subCategoryId;
+                            }
                         }
                     }
                 }
-                
+
             }
 
 
             if (fetch) {
                 fetchAttributes();
                 const getLicense = await customerAPI.getLicenseTypes(payload?.typeId, payload?.categoryId, payload?.subCategoryId);
-                
+
                 setFormData((prev) => {
                     const prevLicenceDetails = prev?.licenceDetails ?? {};
                     const prevLicences = prevLicenceDetails?.licence ?? [];
@@ -350,9 +355,11 @@ const RegisterForm = () => {
         }
         finally {
             setLoading(false)
+            setLicenseFetched(true);
         }
     }
     useEffect(() => {
+        setLicenseFetched(false);
         setLicenseList([]);
         setIsFormSubmited(false);
         setError({});
@@ -362,6 +369,7 @@ const RegisterForm = () => {
         }
         else {
             setLicenseList([]);
+            setLicenseFetched(false);
         }
 
     }, [customerType, formData?.typeId, formData?.categoryId, formData?.subCategoryId])
@@ -379,7 +387,7 @@ const RegisterForm = () => {
 
 
 
-    
+
 
     const runValidation = async (submitted) => {
         const result = await validateForm(formData, scheme);
@@ -505,10 +513,10 @@ const RegisterForm = () => {
                         navigation.navigate("RegistrationSuccess", {});
                     }
                 } catch (error) {
-                    
+
                     // Prefer backend error message if available
                     const errorMessage = error?.message || "Something went wrong. Please try again.";
-                    
+
                     AppToastService.show(errorMessage, "error", "Create Error");
                 }
             }
@@ -901,7 +909,7 @@ const RegisterForm = () => {
 
 
 
-                        {customerType != null && licenseList && licenseList.length != 0 && (
+                        {customerType != null && (licenseList && licenseList.length != 0 || licenseFetched ) && (
                             sortedForms.map((e) => (
                                 <AnimatedContent key={e.order}>
                                     <View ref={sectionRefs[e.key]}>

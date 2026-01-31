@@ -8,7 +8,7 @@ const BackButton = () => {
   const navigation = useNavigation();
 
   return (
-    <TouchableOpacity onPress={() => navigation.goBack()} style={{paddingHorizontal:6}}>
+    <TouchableOpacity onPress={() => navigation.goBack()} style={{ paddingHorizontal: 10 }}>
       <BackArrow />
     </TouchableOpacity>
   );

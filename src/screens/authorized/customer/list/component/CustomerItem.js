@@ -61,47 +61,94 @@ const CustomerView = ({ item, primaryTab, secondaryTab, handleAction }) => {
     const instanceData = item?.instance?.stepInstances?.[0];
     const { can } = usePermissions();
 
-    const editPermissionTabBased = {
-        all: [
-            PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_EDIT,
-            PERMISSIONS.ONBOARDING_WORKFLOW_EDIT,
-        ],
-        waitingForApproval: [
-            PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_EDIT,
-            PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_REASSIGNED_EDIT,
-            PERMISSIONS.ONBOARDING_WORKFLOW_EDIT,
-        ],
-        notOnboarded: [],
-        unverified: [
-            PERMISSIONS.ONBOARDING_LISTING_PAGE_UNVERIFIED_EDIT,
-        ],
-        rejected: [
-            PERMISSIONS.ONBOARDING_LISTING_PAGE_REJECTED_EDIT,
-        ],
-        doctorSupply: [],
-        draft: [
-            PERMISSIONS.ONBOARDING_LISTING_PAGE_DRAFT_EDIT_DELETE,
-        ],
+
+
+    const getEditPermission = (tab) => {
+        switch (tab) {
+            case "NEW":
+                return [PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_NEW_CUSTOMER_EDIT];
+
+            case "GROUP_CHANGED":
+                return [PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_CUSTOMER_GROUP_CHANGE_EDIT];
+
+            case "EDITED":
+                return [PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_EDIT_CUSTOMER_EDIT];
+
+            case "EXISTING":
+                return [PERMISSIONS.ONBOARDING_LISTING_PAGE_WAITING_FOR_APPROVAL_EXISTING_CUSTOMER_EDIT];
+            default:
+                return []
+        }
     };
 
-    const canEnterEditFlow =
-        item?.statusName !== 'NOT-ONBOARDED' &&
-        (
-            item?.statusName === 'DRAFT' ||
-            !!item?.instance?.stepInstances?.length ||
-            (item?.customerId && !item?.stgCustomerId)
-        );
-    const canEditByPermission = can(
-        editPermissionTabBased[primaryTab?.key] || []
+
+    const getEditPermissionTabBased = useCallback(
+        (customer) => {
+            // DRAFT (but not NOT-ONBOARDED)
+            if (
+                customer?.statusName !== "NOT-ONBOARDED" &&
+                customer?.statusName === "DRAFT"
+            ) {
+                return primaryTab?.key === "all"
+                    ? [PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_EDIT]
+                    : [PERMISSIONS.ONBOARDING_LISTING_PAGE_DRAFT_EDIT_DELETE];
+            }
+
+            // Workflow present
+            if (customer?.instance?.stepInstances?.length) {
+                const instance = customer.instance.stepInstances[0];
+
+                const isReassigned =
+                    instance?.approverType === "INITIATOR" &&
+                    instance?.stepInstanceStatus !== "APPROVED";
+
+                const editPermission = getEditPermission(secondaryTab?.filter);
+                if (isReassigned) {
+                    return primaryTab?.key === "all"
+                        ? [PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_EDIT]
+                        : editPermission;
+                }
+
+                if (primaryTab?.key === "waitingForApproval") {
+                    return editPermission;
+                }
+
+                return [PERMISSIONS.ONBOARDING_WORKFLOW_EDIT];
+            }
+
+            if (
+                customer?.customerId &&
+                !customer?.stgCustomerId &&
+                primaryTab?.key === "all"
+            ) {
+                return [PERMISSIONS.ONBOARDING_LISTING_PAGE_ALL_EDIT];
+            }
+
+            // UNVERIFIED tab
+            if (primaryTab?.key === "unverified") {
+                return [PERMISSIONS.ONBOARDING_LISTING_PAGE_UNVERIFIED_EDIT];
+            }
+
+            // REJECTED tab
+            if (primaryTab?.key === "rejected") {
+                return [PERMISSIONS.ONBOARDING_LISTING_PAGE_REJECTED_EDIT];
+            }
+
+            return [];
+        },
+        [primaryTab?.key, secondaryTab?.filter]
     );
+
+
+    const editPermissions = getEditPermissionTabBased(item);
+    const canEditByPermission = can(editPermissions);
 
     const unverifiedEdit = can(PERMISSIONS.ONBOARDING_LISTING_PAGE_UNVERIFIED_EDIT);
 
     const hideEdit =
-        (item?.statusName === 'UNVERIFIED' && !unverifiedEdit) ||
-        item?.instance?.stepInstances?.[0]?.stepInstanceStatus === 'APPROVED' ||
+        (item?.statusName === "UNVERIFIED" && !unverifiedEdit) ||
+        item?.instance?.stepInstances?.[0]?.stepInstanceStatus === "APPROVED" ||
         (item?.childStageId || []).length > 0;
-
     const statusColor = useMemo(() => {
         const color = {
             ACTIVE: { backgroundColor: "#E8F5F0", color: "#169560" },
@@ -111,6 +158,7 @@ const CustomerView = ({ item, primaryTab, secondaryTab, handleAction }) => {
             PENDING: { backgroundColor: "#F4AD481A", color: "#F4AD48" },
             IN_PROGRESS: { backgroundColor: "#F4AD481A", color: "#F4AD48" },
             UNVERIFIED: { backgroundColor: "#2B2B2B1A", color: "#2B2B2B" },
+            HOLD: { backgroundColor: "#e5e7eb", color: "#7777777" },
             DRAFT: { backgroundColor: "#9C561E1A", color: "#63321A" },
             REJECTED: { backgroundColor: "#E841411A", color: "#E84141" },
             REASSIGNED: { backgroundColor: "#AB65AD1A", color: "#AB65AD" },
@@ -281,11 +329,12 @@ const CustomerView = ({ item, primaryTab, secondaryTab, handleAction }) => {
                 </AppView>
 
                 <AppView flexDirection={"row"} gap={10} >
-                    {canEnterEditFlow && canEditByPermission && !hideEdit && (
-                        <TouchableOpacity onPress={() => handleAction("EDIT")} >
+                    {canEditByPermission && !hideEdit && (
+                        <TouchableOpacity onPress={() => handleAction("EDIT")}>
                             <Edit width={15} height={15} />
                         </TouchableOpacity>
                     )}
+
                     {item?.statusName !== 'NOT-ONBOARDED' && (
 
                         <TouchableOpacity onPress={() => handleAction("DOWNLOAD")}>
@@ -399,7 +448,6 @@ const CustomerItem = ({
                     activeTab: action == 'APPROVE' ? 'linkaged' : action,
                     activeSubTab: action == 'details' ? 'divisions' : 'hierarchy',
                     onGoBack: () => fetchCustomers(),
-
                 })
             }
             else if (action === "ONBOARD" || action === "EDIT") {
